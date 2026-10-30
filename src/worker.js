@@ -12,6 +12,11 @@ export default {
       const h = Math.max(0, Math.min(HALLS - 1, parseInt(url.searchParams.get("hall") || "0", 10) || 0));
       return env.HALL.get(env.HALL.idFromName("hall-" + h)).fetch(req);
     }
+    if (["/lamps", "/lamp", "/wishes", "/wish"].includes(url.pathname)) {
+      const lobby = env.LOBBY.get(env.LOBBY.idFromName("lobby"));
+      const r = await lobby.fetch(new Request("https://lobby" + url.pathname + url.search, { method: req.method, headers: req.headers, body: req.method === "POST" ? await req.text() : undefined }));
+      return new Response(await r.text(), { status: r.status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
+    }
     if (url.pathname === "/halls") {
       const r = await env.LOBBY.get(env.LOBBY.idFromName("lobby")).fetch("https://lobby/counts");
       return new Response(await r.text(), { headers: { "content-type": "application/json", "cache-control": "no-store" } });
@@ -65,9 +70,32 @@ export class Hall extends DurableObject {
   }
 }
 
+const LAMPS = 140;
+const clean = (t, n) => String(t || "").replace(/[\u0000-\u001f\u007f\u200b-\u200f\u202a-\u202e\u2060-\u2064\ufeff<>]/g, "").replace(/\s+/g, " ").trim().slice(0, n);
+const looksLikeAd = t => /(https?:|www\.|\.com|\.tw|line|@)/i.test(t) || (t.match(/\d/g) || []).length >= 6;
+const json = o => new Response(JSON.stringify(o), { headers: { "content-type": "application/json" } });
+
 export class Lobby extends DurableObject {
   async fetch(req) {
     const url = new URL(req.url);
+    // 光明燈: every lit lamp stays lit until its owner turns it off
+    if (url.pathname === "/lamps") { const m = (await this.ctx.storage.get("lamps")) || {}; return json({ lit: Object.keys(m).map(Number) }); }
+    if (url.pathname === "/lamp" && req.method === "POST") {
+      const i = parseInt(url.searchParams.get("i"), 10), id = clean(url.searchParams.get("id"), 16), off = url.searchParams.get("off") === "1";
+      if (!(i >= 0 && i < LAMPS) || !id) return json({ ok: false });
+      const m = (await this.ctx.storage.get("lamps")) || {};
+      if (off) { if (m[i] === id) delete m[i]; } else if (!m[i]) { for (const k in m) if (m[k] === id) delete m[k]; m[i] = id; }
+      await this.ctx.storage.put("lamps", m); return json({ ok: true, lit: Object.keys(m).map(Number) });
+    }
+    // 許願樹: newest 300 wishes, one per person every 10 seconds
+    if (url.pathname === "/wishes") { return json({ wishes: (await this.ctx.storage.get("wishes")) || [] }); }
+    if (url.pathname === "/wish" && req.method === "POST") {
+      let b = {}; try { b = await req.json(); } catch {}
+      const text = clean(b.text, 40), name = clean(b.name, 10) || "香客", id = clean(b.id, 16);
+      if (!text || looksLikeAd(text)) return json({ ok: false });
+      this.last = this.last || new Map(); const now = Date.now(); if (id && now - (this.last.get(id) || 0) < 10000) return json({ ok: false, slow: true }); if (id) this.last.set(id, now);
+      const w = (await this.ctx.storage.get("wishes")) || []; w.unshift({ name, text, at: now }); await this.ctx.storage.put("wishes", w.slice(0, 300)); return json({ ok: true });
+    }
     let c = (await this.ctx.storage.get("c")) || new Array(HALLS).fill(0);
     if (url.pathname === "/set") { const h = parseInt(url.searchParams.get("h"), 10), n = parseInt(url.searchParams.get("n"), 10); if (h >= 0 && h < HALLS && n >= 0) { c[h] = n; await this.ctx.storage.put("c", c); } return new Response("ok"); }
     return new Response(JSON.stringify({ cap: CAP, counts: c }));
