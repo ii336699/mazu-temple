@@ -8,7 +8,7 @@ const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes":
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
-    if (url.pathname === "/ws" || url.pathname === "/halls" || ["/lamps", "/lamp", "/wishes", "/wish"].includes(url.pathname)) {
+    if (url.pathname === "/ws" || url.pathname === "/halls" || ["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs"].includes(url.pathname)) {
       try { return await api(req, env, url); }
       catch (e) { return new Response(JSON.stringify({ error: String(e && e.message || e).slice(0, 300) }), { status: 503, headers: { "content-type": "application/json", "cache-control": "no-store" } }); }
     }
@@ -27,7 +27,7 @@ async function api(req, env, url) {
       const m = MEMO.get(url.pathname);
       if (m && Date.now() - m.at < MEMO_TTL[url.pathname]) return new Response(m.body, { headers: { "content-type": "application/json", "cache-control": "no-store" } });
     }
-    if (["/lamps", "/lamp", "/wishes", "/wish"].includes(url.pathname)) {
+    if (["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs"].includes(url.pathname)) {
       if (req.method === "POST") MEMO.delete(url.pathname === "/lamp" ? "/lamps" : "/wishes");
       const lobby = env.LOBBY.get(env.LOBBY.idFromName("lobby"));
       const r = await lobby.fetch(new Request("https://lobby" + url.pathname + url.search, { method: req.method, headers: req.headers, body: req.method === "POST" ? await req.text() : undefined }));
@@ -99,8 +99,28 @@ const looksLikeAd = t => /(https?:|www\.|\.com|\.tw|line|@)/i.test(t) || (t.matc
 const json = o => new Response(JSON.stringify(o), { headers: { "content-type": "application/json" } });
 
 export class Lobby extends DurableObject {
+  constructor(ctx, env) { super(ctx, env); this.env = env; }
   async fetch(req) {
     const url = new URL(req.url);
+    // 聯絡作者: private messages. Reading needs the ADMIN_KEY secret (set in the Cloudflare dashboard, never in this public repo);
+    // wrong keys are limited to 10 per day so the short code cannot be guessed.
+    if (url.pathname === "/msg" && req.method === "POST") {
+      let b = {}; try { b = await req.json(); } catch {}
+      const text = String(b.text || "").replace(/[\u0000-\u0008\u000b-\u001f\u007f\u202a-\u202e\u2066-\u2069]/g, "").trim().slice(0, 500), name = clean(b.name, 16) || "香客", id = clean(b.id, 16);
+      if (!text) return json({ ok: false });
+      this.lastMsg = this.lastMsg || new Map(); const now = Date.now(); const key = id || req.headers.get("cf-connecting-ip") || "?";
+      if (now - (this.lastMsg.get(key) || 0) < 30000) return json({ ok: false, slow: true }); this.lastMsg.set(key, now);
+      const m = (await this.ctx.storage.get("msgs")) || []; m.unshift({ name, text, at: now }); await this.ctx.storage.put("msgs", m.slice(0, 1000)); return json({ ok: true });
+    }
+    if (url.pathname === "/msgs") {
+      const secret = String(this.env.ADMIN_KEY || ""); if (!secret) return json({ ok: false, unset: true });
+      const day = new Date().toISOString().slice(0, 10); const f = (await this.ctx.storage.get("fails")) || { day, n: 0 }; if (f.day !== day) { f.day = day; f.n = 0; }
+      if (f.n >= 10) return json({ ok: false, locked: true });
+      const given = String(req.headers.get("x-key") || "");
+      let diff = given.length ^ secret.length; for (let i = 0; i < secret.length; i++) diff |= secret.charCodeAt(i) ^ given.charCodeAt(i % (given.length || 1));
+      if (diff !== 0) { f.n++; await this.ctx.storage.put("fails", f); return json({ ok: false }); }
+      return json({ ok: true, msgs: (await this.ctx.storage.get("msgs")) || [] });
+    }
     // 光明燈: every lit lamp stays lit until its owner turns it off
     if (url.pathname === "/lamps") { const m = (await this.ctx.storage.get("lamps")) || {}; return json({ lit: Object.keys(m).map(Number) }); }
     if (url.pathname === "/lamp" && req.method === "POST") {
