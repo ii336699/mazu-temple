@@ -149,6 +149,7 @@ body.customizing .hall,body.customizing .actions,body.customizing .rot{display:n
 .row{display:flex;gap:10px;flex-wrap:wrap}
 .row>*{flex:1 1 140px}
 .shop-extra{display:grid;gap:10px;margin-top:18px;padding-top:16px;border-top:1px solid var(--gold-soft)}.good.wide{width:100%;box-sizing:border-box;text-decoration:none;color:inherit}.jko-qr{display:block;width:min(100%,300px);height:auto;margin:12px auto;border-radius:16px}.jko-link{margin-bottom:10px}.give-red{color:#ff5a4f!important;font-weight:700;margin-bottom:10px}.lead.small{font-size:13px;margin:4px 0 12px}.mail-row{display:flex;gap:8px;margin:12px 0}.mail-box{flex:1;min-width:0;font:inherit;font-size:16px;padding:12px;border-radius:12px;border:1px solid var(--gold-soft);background:rgba(255,255,255,.06);color:inherit;user-select:text;-webkit-user-select:text}.mail-copy{flex:none;align-items:center;justify-content:center}
+.vol-row{display:grid;grid-template-columns:5em 1fr 3.2em;align-items:center;gap:10px;margin:10px 0;font-size:14px}.vol-row input{width:100%;accent-color:var(--gold);touch-action:pan-x}.vol-row b{font-weight:500;color:var(--gold);text-align:right;font-variant-numeric:tabular-nums}
 .goods{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
 .good{display:flex;flex-direction:column;gap:4px;align-items:flex-start;text-align:left;border:1px solid var(--gold-soft);background:rgba(255,255,255,.04);border-radius:14px;padding:12px}
 .good .name{font-family:var(--f-display);font-size:18px}
@@ -1627,14 +1628,15 @@ document.addEventListener("visibilitychange",()=>{ if(room) sendPresence(); });
 
 /* ================= audio ================= */
 let ac=null, soundOn=load("mz.sound",true);
-const bgm=$("#bgm"); bgm.volume=.38; let audioUnlocked=false, catMode=false; const trackPos={main:0,cat:0}; let curTrack="main";
+const VOL=Object.assign({m:100,s:100},load("mz.vol",{})); const mVol=()=>Math.max(0,Math.min(100,+VOL.m||0))/100, sVol=()=>Math.max(0,Math.min(100,+VOL.s||0))/100;
+const bgm=$("#bgm"); bgm.volume=.38*mVol(); let audioUnlocked=false, catMode=false; const trackPos={main:0,cat:0}; let curTrack="main";
 function setTrack(name){ if(name===curTrack) return; trackPos[curTrack]=bgm.currentTime||0; curTrack=name; const wasPlaying=!bgm.paused; bgm.src=name==="cat"?"catsong.mp3":"music.mp3";
   const seek=()=>{ try{ bgm.currentTime=trackPos[name]||0; }catch(e){} bgm.removeEventListener("loadedmetadata",seek); }; bgm.addEventListener("loadedmetadata",seek);
   if(wasPlaying&&soundOn&&!document.hidden){ const p=bgm.play(); if(p&&p.catch) p.catch(()=>{}); } }
 function playMusic(){ if(!soundOn) return; audioUnlocked=true; setTrack(catMode?"cat":"main"); if(bgm.paused){ const p=bgm.play(); if(p&&p.catch) p.catch(()=>{}); } }
 function ensureAudio(){ if(!soundOn) return null; playMusic(); if(!ac){ try{ ac=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; } } if(ac.state==="suspended") ac.resume(); return ac; }
-function tone(f,dur,vol,type="sine",delay=0){ const a=ensureAudio(); if(!a) return; const o=a.createOscillator(), g=a.createGain(); o.type=type; o.frequency.value=f; const t=a.currentTime+delay; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+dur); o.connect(g).connect(a.destination); o.start(t); o.stop(t+dur+.05); }
-function noiseBurst(dur,vol,freq,delay=0){ const a=ensureAudio(); if(!a) return; const n=a.createBufferSource(); const b=a.createBuffer(1,a.sampleRate*dur,a.sampleRate); const d=b.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(1-i/d.length); n.buffer=b; const f=a.createBiquadFilter(); f.type="bandpass"; f.frequency.value=freq; const g=a.createGain(); g.gain.value=vol; n.connect(f).connect(g).connect(a.destination); n.start(a.currentTime+delay); }
+function tone(f,dur,vol,type="sine",delay=0){ vol*=sVol(); if(vol<=0) return; const a=ensureAudio(); if(!a) return; const o=a.createOscillator(), g=a.createGain(); o.type=type; o.frequency.value=f; const t=a.currentTime+delay; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+dur); o.connect(g).connect(a.destination); o.start(t); o.stop(t+dur+.05); }
+function noiseBurst(dur,vol,freq,delay=0){ vol*=sVol(); if(vol<=0) return; const a=ensureAudio(); if(!a) return; const n=a.createBufferSource(); const b=a.createBuffer(1,a.sampleRate*dur,a.sampleRate); const d=b.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(1-i/d.length); n.buffer=b; const f=a.createBiquadFilter(); f.type="bandpass"; f.frequency.value=freq; const g=a.createGain(); g.gain.value=vol; n.connect(f).connect(g).connect(a.destination); n.start(a.currentTime+delay); }
 const sfx={ bell(){ [[262,4,.12],[524,3,.05],[786,2.2,.03],[1310,1.5,.015]].forEach(([f,d,v])=>tone(f,d,v)); },
   clack(){ tone(820,.08,.18,"triangle"); noiseBurst(.06,.25,2400); }, coin(){ tone(1560,.18,.08,"square"); tone(2090,.25,.06,"square",.07); },
   rattle(){ for(let i=0;i<8;i++) noiseBurst(.05,.2,1800+Math.random()*900,i*.09); }, fire(){ noiseBurst(1.4,.25,600); noiseBurst(.9,.15,1600,.2); } };
@@ -1749,8 +1751,14 @@ function openBag(){ let html=`<p class="lead">平安幣每天補到 300。到服
   html+=`<div class="goods">${GOODS.map(g=>`<div class="good"><span class="name">${g.name}</span><span class="meta">${g.meta}</span><span class="own">持有 ${bag.items[g.k]||0}</span></div>`).join("")}</div>`;
   html+=`<div class="group"><span class="group-label">收下的籤詩</span>${bag.poems.length?`<div class="chips">${bag.poems.slice(-12).reverse().map(n=>`<button class="chip" data-act="showPoem" data-v="${n}">第${CN_NUM(n)}籤</button>`).join("")}</div>`:`<p class="note">還沒有籤詩。到右前方的籤詩櫃求籤。</p>`}</div>`;
   openSheet("bag","背包",html); }
+document.addEventListener("input",e=>{ const k=e.target&&e.target.dataset&&e.target.dataset.vol; if(!k) return; VOL[k]=+e.target.value; save("mz.vol",VOL); const lb=$("#vol"+k); if(lb) lb.textContent=VOL[k]+"%";
+  if(k==="m"){ bgm.volume=(curTrack==="cat"?.55:.38)*mVol(); } });
+document.addEventListener("change",e=>{ if(e.target&&e.target.dataset&&e.target.dataset.vol==="s") sfx.coin(); });
 function openGfx(){ const opt=(v,t,d)=>`<button class="good" data-act="quality" data-v="${v}" aria-pressed="${Q.mode===v}" style="${Q.mode===v?"border-color:var(--gold);background:rgba(142,28,20,.35)":""}"><span class="name">${t}${Q.mode===v?"　✓":""}</span><span class="meta">${d}</span></button>`;
-  openSheet("gfx","設定",`<div class="group"><span class="group-label">畫質</span><p class="lead">畫面卡頓或手機發燙時，可以改用省電畫質。</p></div><div class="goods">${opt("auto","自動","進場後自動偵測，太卡會切到省電")}${opt("high","高畫質","光束、灰塵、全部燈光，最漂亮")}${opt("low","省電","降低解析度與特效，舊手機也順")}</div><p class="note">目前：${Q.low?"省電畫質":"高畫質"}</p><div class="group"><span class="group-label">其他</span><div class="chips"><button class="chip" data-act="toggleNpc" aria-pressed="${showNpc}">顯示示範香客</button></div><p class="note">示範香客是電腦角色，不算在殿內人數裡，關掉也能讓畫面更順。</p></div>`); }
+  openSheet("gfx","設定",`<div class="group"><span class="group-label">音量</span>
+  <label class="vol-row"><span>背景音樂</span><input type="range" min="0" max="100" step="5" value="${VOL.m}" data-vol="m" aria-label="背景音樂音量"><b id="volm">${VOL.m}%</b></label>
+  <label class="vol-row"><span>音效</span><input type="range" min="0" max="100" step="5" value="${VOL.s}" data-vol="s" aria-label="音效音量"><b id="vols">${VOL.s}%</b></label>
+  <p class="note">音效是敲鐘、擲筊、搖籤、投錢這些聲音。</p></div><div class="group"><span class="group-label">畫質</span><p class="lead">畫面卡頓或手機發燙時，可以改用省電畫質。</p></div><div class="goods">${opt("auto","自動","進場後自動偵測，太卡會切到省電")}${opt("high","高畫質","光束、灰塵、全部燈光，最漂亮")}${opt("low","省電","降低解析度與特效，舊手機也順")}</div><p class="note">目前：${Q.low?"省電畫質":"高畫質"}</p><div class="group"><span class="group-label">其他</span><div class="chips"><button class="chip" data-act="toggleNpc" aria-pressed="${showNpc}">顯示示範香客</button></div><p class="note">示範香客是電腦角色，不算在殿內人數裡，關掉也能讓畫面更順。</p></div>`); }
 HANDLERS.quality=v=>{ applyQuality(v==="auto"?(perf.done&&Q.low?"low":"high"):v,false); if(v==="auto"){ Q.mode="auto"; save("mz.q","auto"); } openGfx(); toast(v==="low"?"已切換為省電畫質":v==="high"?"已切換為高畫質":"畫質改為自動偵測"); };
 HANDLERS.toggleNpc=(v,b)=>{ showNpc=!showNpc; save("mz.npc",showNpc); b.setAttribute("aria-pressed",String(showNpc)); buildNpcs(); toast(showNpc?"已顯示示範香客":"已隱藏示範香客"); };
 HANDLERS.showPoem=v=>openPoem(+v,true);
@@ -2055,7 +2063,7 @@ function tick(){ const dt=Math.min(.05,clock.getDelta()); const t=clock.elapsedT
     p.s.position.x+=(p.vx+Math.sin(t*1.3+i)*.04)*dt; p.s.position.y+=p.vy*dt; p.s.position.z+=p.vz*dt; const sc=p.s.scale.x+p.grow*dt; p.s.scale.set(Math.max(.02,sc),Math.max(.02,sc),1);
     p.s.material.opacity=p.op*Math.sin(Math.min(1,k)*Math.PI); }
   const dp=dustGeo.attributes.position.array; for(let i=0;i<dustN;i++){ dp[i*3+1]+=Math.sin(t*.5+i)*.0015; dp[i*3]+=Math.cos(t*.3+i*.7)*.001; } dustGeo.attributes.position.needsUpdate=true;
-  if(duckT>0){ duckT-=dt; } { const top=curTrack==="cat"?.55:.38; bgm.volume=duckT>0?.16:Math.min(top,bgm.volume+dt*.1); }
+  if(duckT>0){ duckT-=dt; } { const mv=mVol(), top=(curTrack==="cat"?.55:.38)*mv; bgm.volume=duckT>0?.16*mv:Math.min(top,bgm.volume+dt*.1); }
   { const dc=Math.hypot(meAv.pos.x-CATS.c.x,meAv.pos.y-CATS.c.z); const want=catMode?dc<4.2:dc<3.2;
     if(want!==catMode){ catMode=want; setTrack(catMode?"cat":"main"); } }
   bellSwing*=Math.pow(.25,dt); bell.rotation.x=Math.sin(t*4)*.22*bellSwing; drumBounce*=Math.pow(.02,dt); drum.scale.setScalar(1+Math.sin(t*40)*.03*drumBounce);
