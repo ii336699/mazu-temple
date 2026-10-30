@@ -3,6 +3,7 @@
 import { DurableObject } from "cloudflare:workers";
 
 const HALLS = 10, CAP = 100, MAX_MSG = 4000;
+const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000 };
 
 export default {
   async fetch(req, env) {
@@ -21,14 +22,22 @@ async function api(req, env, url) {
       const h = Math.max(0, Math.min(HALLS - 1, parseInt(url.searchParams.get("hall") || "0", 10) || 0));
       return env.HALL.get(env.HALL.idFromName("hall-" + h)).fetch(req);
     }
+    // Shared read-only lists are cached in this worker's memory so thousands of players don't each wake the Durable Object.
+    if (req.method === "GET" && MEMO_TTL[url.pathname]) {
+      const m = MEMO.get(url.pathname);
+      if (m && Date.now() - m.at < MEMO_TTL[url.pathname]) return new Response(m.body, { headers: { "content-type": "application/json", "cache-control": "no-store" } });
+    }
     if (["/lamps", "/lamp", "/wishes", "/wish"].includes(url.pathname)) {
+      if (req.method === "POST") MEMO.delete(url.pathname === "/lamp" ? "/lamps" : "/wishes");
       const lobby = env.LOBBY.get(env.LOBBY.idFromName("lobby"));
       const r = await lobby.fetch(new Request("https://lobby" + url.pathname + url.search, { method: req.method, headers: req.headers, body: req.method === "POST" ? await req.text() : undefined }));
-      return new Response(await r.text(), { status: r.status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
+      const body = await r.text(); if (req.method === "GET" && r.ok) MEMO.set(url.pathname, { at: Date.now(), body });
+      return new Response(body, { status: r.status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
     }
     if (url.pathname === "/halls") {
       const r = await env.LOBBY.get(env.LOBBY.idFromName("lobby")).fetch("https://lobby/counts");
-      return new Response(await r.text(), { headers: { "content-type": "application/json", "cache-control": "no-store" } });
+      const body = await r.text(); if (r.ok) MEMO.set("/halls", { at: Date.now(), body });
+      return new Response(body, { headers: { "content-type": "application/json", "cache-control": "no-store" } });
     }
     return env.ASSETS.fetch(req);
 }
@@ -72,9 +81,15 @@ export class Hall extends DurableObject {
     try { ws.close(1000, "bye"); } catch {}
     this.report(a.h);
   }
+  // Head-count updates to the lobby are batched: at most one every 5 seconds, and only when the number changed.
   report(h) {
-    const n = this.ctx.getWebSockets().filter(w => { const a = w.deserializeAttachment() || {}; return a.u !== 0 && w.readyState === 1; }).length;
-    this.ctx.waitUntil(this.env.LOBBY.get(this.env.LOBBY.idFromName("lobby")).fetch("https://lobby/set?h=" + (h | 0) + "&n=" + n).catch(() => {}));
+    this.h = h | 0; if (this.timer) return;
+    this.timer = setTimeout(() => {
+      this.timer = null;
+      const n = this.ctx.getWebSockets().filter(w => { const a = w.deserializeAttachment() || {}; return a.u !== 0 && w.readyState === 1; }).length;
+      if (n === this.lastN) return; this.lastN = n;
+      this.env.LOBBY.get(this.env.LOBBY.idFromName("lobby")).fetch("https://lobby/set?h=" + this.h + "&n=" + n).catch(() => {});
+    }, 5000);
   }
 }
 

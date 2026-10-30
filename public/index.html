@@ -1487,7 +1487,7 @@ let dirty=true, lastSend=0, lastSentHead=0;
 function markDirty(){ dirty=true; }
 function presencePayload(){ return {v:1,u:(customizing||document.hidden)?0:1,n:(me.name||"").slice(0,10),k:me.no||0,l:me.look,x:+meAv.target.x.toFixed(2),z:+meAv.target.y.toFixed(2),r:+meAv.rotY.toFixed(1),s:meAv.seat,b:myBow,h:meAv.hold?1:0,j:myJiao,f:myBurn,o:myOffers,a:bag.items.fu?1:0,g:me.lamp??-1,k:myBell,d:myDrum,m:myMsg,c:myChat,p:myPlant,gf:myGF,fx:myFx,t:bag.redThread?1:0,q:me.sp?1:0,w:myWish,y:+meAv.headGoal.toFixed(1)}; }
 let lastSent="", lastBeat=0;
-function sendPresence(force){ if(!room) return; dirty=false; const p=presencePayload(), str=JSON.stringify(p), now=performance.now(); lastSend=now; if(str===lastSent&&force!==true&&now-lastBeat<25000) return; lastSent=str; lastBeat=now; room.presence(p).catch(()=>{}); }
+function sendPresence(force){ if(!room) return; dirty=false; const p=presencePayload(), str=JSON.stringify(p), now=performance.now(); lastSend=now; if(str===lastSent&&force!==true&&now-lastBeat<60000) return; lastSent=str; lastBeat=now; room.presence(p).catch(()=>{}); }
 function seatTakenByPeer(i){ for(const r of remotes.values()) if(r.seat===i) return true; return false; }
 function num(v,a,b,d){ v=Number(v); return Number.isFinite(v)?Math.max(a,Math.min(b,v)):d; }
 function cleanName(n){ return String(n||"").replace(/[\u0000-\u001f​-‏‪-‮]/g,"").slice(0,10); }
@@ -1558,10 +1558,16 @@ function initCF(first){
     ws.onclose=()=>{ roomConnected=false; updateCount(); if(closedByUs) return; retry++; setTimeout(()=>{ if(!closedByUs&&(!ws||ws.readyState>1)) connect(hall); },Math.min(15000,1000*retry*retry)); }; }
   room={ presence(p){ if(ws&&ws.readyState===1){ try{ ws.send(JSON.stringify({t:"st",p})); }catch(e){} } return Promise.resolve(); } };
   HALLS.current=()=>hall;
-  HALLS.switchTo=i=>{ if(i===hall||i<0||i>=HALL_NAMES.length) return; closedByUs=true; try{ ws&&ws.close(); }catch(e){} connect(i); toast(`前往${HALL_NAMES[i]}`); };
+  // Idle players drop their connection (hidden 60s, or 5 min without touching anything) so halls can sleep; any touch reconnects.
+  let parked=false, lastInput=Date.now(), hiddenAt=document.hidden?Date.now():0;
+  const wake=()=>{ lastInput=Date.now(); if(parked&&!document.hidden){ parked=false; connect(hall); } };
+  ["pointerdown","keydown","touchstart","wheel"].forEach(ev=>window.addEventListener(ev,wake,{capture:true,passive:true}));
+  document.addEventListener("visibilitychange",()=>{ if(document.hidden) hiddenAt=Date.now(); else wake(); });
+  setInterval(()=>{ if(parked||!ws) return; const now=Date.now(); if(document.hidden?now-hiddenAt>60000:now-lastInput>300000){ parked=true; closedByUs=true; try{ ws.close(); }catch(e){} roomConnected=false; peerState.clear(); rebuild(); updateCount(); } },10000);
+  HALLS.switchTo=i=>{ if(i===hall||i<0||i>=HALL_NAMES.length) return; parked=false; closedByUs=true; try{ ws&&ws.close(); }catch(e){} connect(i); toast(`前往${HALL_NAMES[i]}`); };
   const poll=async()=>{ const j=await probeCF(); if(j){ HALLS.counts=j.counts.slice(); HALLS.counts[hall]=Math.max(HALLS.counts[hall],1+[...peerState.values()].filter(v=>v.p&&v.p.u!==0).length); if(sheetKind==="halls") renderHalls(); } };
   setInterval(()=>{ if(sheetKind==="halls") poll(); },4000);
-  setInterval(()=>{ const now=Date.now(); let ch=false; for(const [id,v] of peerState) if(now-v.t>70000){ peerState.delete(id); ch=true; } if(ch) rebuild(); },10000);
+  setInterval(()=>{ const now=Date.now(); let ch=false; for(const [id,v] of peerState) if(now-v.t>150000){ peerState.delete(id); ch=true; } if(ch) rebuild(); },10000);
   let pick=0; for(let i=0;i<HALLS.counts.length;i++){ if(HALLS.counts[i]<HALL_CAP){ pick=i; break; } } connect(pick); }
 function initSupabase(){
   let myId=load("mz.id",""); if(!myId){ myId=Math.random().toString(36).slice(2,12); save("mz.id",myId); }
@@ -1592,8 +1598,8 @@ function initSupabase(){
     ch.on("presence",{event:"sync"},()=>{ const st=ch.presenceState(); const ids=Object.keys(st);
       const activeN=ids.filter(k=>k!==myId&&(st[k]||[]).some(x=>x&&x.u!==0)).length;
       if(!checked){ checked=true; if(activeN>=HALL_CAP&&hall<HALL_NAMES.length-1){ const old=ch; ch=null; client.removeChannel(old).finally(()=>join(hall+1)); toast(`${HALL_NAMES[hall]}人滿了，帶你到${HALL_NAMES[hall+1]}`,3200); return; } }
-      let changed=false; const now=Date.now(); for(const [id,v] of peerState) if((!st[id]&&now-v.t>8000)||now-v.t>70000){ peerState.delete(id); changed=true; } if(changed) rebuild(); });
-    clearInterval(window.__sweep); window.__sweep=setInterval(()=>{ const now=Date.now(); let ch2=false; for(const [id,v] of peerState) if(now-v.t>70000){ peerState.delete(id); ch2=true; } if(ch2) rebuild(); },10000);
+      let changed=false; const now=Date.now(); for(const [id,v] of peerState) if((!st[id]&&now-v.t>8000)||now-v.t>150000){ peerState.delete(id); changed=true; } if(changed) rebuild(); });
+    clearInterval(window.__sweep); window.__sweep=setInterval(()=>{ const now=Date.now(); let ch2=false; for(const [id,v] of peerState) if(now-v.t>150000){ peerState.delete(id); ch2=true; } if(ch2) rebuild(); },10000);
     ch.subscribe(async status=>{ if(status==="SUBSCRIBED"){ roomConnected=true; lastSent=""; updateCount(); try{ await ch.track({at:Date.now(),u:active()?1:0}); }catch(e){} trackLobby(); ch.send({type:"broadcast",event:"hi",payload:{id:myId}}).catch(()=>{}); dirty=true; lastSend=0; }
       else if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"||status==="CLOSED"){ roomConnected=false; updateCount(); } }); }
   room={ presence(p){ if(!ch||!roomConnected) return Promise.resolve(); return Promise.resolve(ch.send({type:"broadcast",event:"st",payload:{id:myId,p}})).catch(()=>{}); } };
@@ -1608,7 +1614,7 @@ function initSupabase(){
   room.onConnection(c=>{ roomConnected=c; updateCount(); if(c) markDirty(); });
   updateCount(); markDirty(); }catch(e){ room=null; updateCount(); } })();
 setTimeout(()=>{ if(!room) updateCount(); },10500);
-setInterval(()=>{ if(room&&roomConnected&&SEND_GAP>200&&performance.now()-lastSend>25000){ if(document.hidden) sendPresence(); else dirty=true; } },5000);
+setInterval(()=>{ if(room&&roomConnected&&SEND_GAP>200&&performance.now()-lastSend>60000){ if(document.hidden) sendPresence(); else dirty=true; } },5000);
 document.addEventListener("visibilitychange",()=>{ if(room) sendPresence(); });
 
 /* ================= audio ================= */
@@ -1844,12 +1850,16 @@ function openSay(){ openSheet("say","聊天",`<div class="chat-log" id="chatLog"
 HANDLERS.say=v=>{ const i=+v; myMsg=[i,Math.random().toString(36).slice(2,8)]; markDirty(); meAv.say(PHRASES[i],"#f7ecd6"); logChat(me.name||"你",PHRASES[i],true); };
 
 /* ---- halls ---- */
-function renderHalls(){ const c=HALLS.counts||[]; const cur=HALLS.current(); let last=0; c.forEach((n,i)=>{ if(n>0) last=i; }); const show=Math.min(HALL_NAMES.length,Math.max(3,last+2,cur+1));
-  const rows=HALL_NAMES.slice(0,show).map((nm,i)=>{ const n=c[i]||0, me_=i===cur; const full=n>=HALL_CAP&&!me_; const pct=Math.min(100,n/HALL_CAP*100);
+// Only halls with people (plus yours) are listed; the next empty hall appears once every listed hall is nearly full, so players gather instead of spreading out.
+function renderHalls(){ const c=HALLS.counts||[]; const cur=HALLS.current(); const list=[];
+  HALL_NAMES.forEach((_,i)=>{ if((c[i]||0)>0||i===cur) list.push(i); });
+  if(list.every(i=>(c[i]||0)>=HALL_CAP*.8)){ const nx=HALL_NAMES.findIndex((_,i)=>!list.includes(i)); if(nx>=0) list.push(nx); }
+  list.sort((a,b)=>a-b);
+  const rows=list.map(i=>{ const nm=HALL_NAMES[i]; const n=c[i]||0, me_=i===cur; const full=n>=HALL_CAP&&!me_; const pct=Math.min(100,n/HALL_CAP*100);
     return `<button class="hall-row" data-act="hallGo" data-v="${i}" aria-current="${me_}" ${full?"disabled":""}><span class="hn">${nm}</span><span class="bar"><i style="width:${pct}%"></i></span><span class="hc">${n}/${HALL_CAP} 人</span><span class="hc">${me_?"目前":full?"已滿":"前往"}</span></button>`; }).join("");
   const el=$("#hallList"); if(el) el.innerHTML=rows; }
 function openHalls(){ if(!HALLS.switchTo){ openSheet("halls","殿別",`<p class="lead">目前在單人或預覽模式，沒有其他殿可以切換。</p>`); return; }
-  openSheet("halls","切換殿別",`<p class="lead">每殿最多 ${HALL_CAP} 人，人數每幾秒自動更新。</p><div class="hall-list" id="hallList"></div>`); renderHalls(); }
+  openSheet("halls","切換殿別",`<p class="lead">每殿最多 ${HALL_CAP} 人。前面的殿快滿時，下一殿才會開放。</p><div class="hall-list" id="hallList"></div>`); renderHalls(); }
 HANDLERS.hallGo=v=>{ const i=+v; if(i===HALLS.current()){ closeSheet(); return; } if((HALLS.counts[i]||0)>=HALL_CAP){ toast("這一殿已經滿了"); return; } HALLS.switchTo(i); closeSheet(); };
 
 /* ---- 小貓 ---- */
@@ -1954,7 +1964,7 @@ function tick(){ const dt=Math.min(.05,clock.getDelta()); const t=clock.elapsedT
     if(arrived||tapT>12){ const f=Math.max(0,r1.material.opacity-dt*3); r1.material.opacity=f; dot.material.opacity=f; if(f<=0){ tapMark.visible=false; r1.material.opacity=.9; dot.material.opacity=.9; } } }
   npcs.forEach(n=>{ n.update(dt); n.next-=dt; if(n.next<0){ n.next=rand(8,24); n.bow(); } });
   remotes.forEach(r=>r.update(dt));
-  if(room&&dirty&&performance.now()-lastSend>SEND_GAP) sendPresence();
+  if(room&&dirty&&performance.now()-lastSend>(keys.size?800:SEND_GAP)) sendPresence();
   updateFlyers(dt); updateFu(dt); updateCats(dt); updateWater(dt);
   { let best=null, bd=2.6; if(!sheetKind&&!customizing&&!pendingStation&&meAv.seat<0&&!(meAv.danceT>0)) for(const k in stations){ if(k==="cats"){ const dc=Math.hypot(meAv.pos.x-CATS.c.x,meAv.pos.y-CATS.c.z); if(dc<3.6){ best=k; bd=0; } continue; } const d=meAv.pos.distanceTo(stations[k].approach); if(d<bd){ bd=d; best=k; } }
     const nc=$("#nearChip"); if(best!==nearKey){ nearKey=best; if(best){ nc.textContent=best==="cats"?"🐾 一起祈求":"點我："+(STATION_LABEL[best]||STATION_HINT[best]||best).replace(/^走(向|去)/,""); nc.hidden=false; } else nc.hidden=true; } }
@@ -2029,7 +2039,7 @@ function applyQuality(mode,auto){ if(!auto){ Q.mode=mode; save("mz.q",mode); } Q
   scene.traverse(o=>{ if(o.isSprite&&o.material===glowMat) o.visible=!Q.low; }); buildNpcs(); }
 
 /* ================= boot ================= */
-meAv.setAmulet(!!bag.items.fu); meAv.setThread(!!bag.redThread); syncLamps(); setInterval(syncLamps,60000); if(me.sp) meAv.setSp(true); if(Q.low) setTimeout(()=>applyQuality("low",true),0); refreshLamps();
+meAv.setAmulet(!!bag.items.fu); meAv.setThread(!!bag.redThread); syncLamps(); setInterval(syncLamps,300000); if(me.sp) meAv.setSp(true); if(Q.low) setTimeout(()=>applyQuality("low",true),0); refreshLamps();
 /* ---- merge static scenery by material: hundreds of draw calls become a few dozen ---- */
 function mergeStatic(){ const buckets=new Map(); scene.updateMatrixWorld(true);
   const skip=o=>{ for(let p=o;p;p=p.parent){ if(p.userData&&p.userData.noMerge) return true; if(p===scene) return false; } return false; };
