@@ -149,6 +149,7 @@ body.customizing .hall,body.customizing .actions,body.customizing .rot{display:n
 .row{display:flex;gap:10px;flex-wrap:wrap}
 .row>*{flex:1 1 140px}
 .shop-extra{display:grid;gap:10px;margin-top:18px;padding-top:16px;border-top:1px solid var(--gold-soft)}.good.wide{width:100%;box-sizing:border-box;text-decoration:none;color:inherit}.jko-qr{display:block;width:min(100%,300px);height:auto;margin:12px auto;border-radius:16px}.jko-link{margin-bottom:10px}.give-red{color:#ff5a4f!important;font-weight:700;margin-bottom:10px}.lead.small{font-size:13px;margin:4px 0 12px}.mail-row{display:flex;gap:8px;margin:12px 0}.mail-box{flex:1;min-width:0;font:inherit;font-size:16px;padding:12px;border-radius:12px;border:1px solid var(--gold-soft);background:rgba(255,255,255,.06);color:inherit;user-select:text;-webkit-user-select:text}.mail-copy{flex:none;align-items:center;justify-content:center}
+.tools{position:relative}.vol-pop{position:absolute;right:0;top:50px;z-index:30;width:min(280px,calc(100vw - 32px));padding:12px 14px;border-radius:16px;border:1px solid var(--gold-soft)}.vol-pop[hidden]{display:none}.vol-mute{width:100%;margin-top:4px;justify-content:center}
 .vol-row{display:grid;grid-template-columns:5em 1fr 3.2em;align-items:center;gap:10px;margin:10px 0;font-size:14px}.vol-row input{width:100%;accent-color:var(--gold);touch-action:pan-x}.vol-row b{font-weight:500;color:var(--gold);text-align:right;font-variant-numeric:tabular-nums}
 .goods{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
 .good{display:flex;flex-direction:column;gap:4px;align-items:flex-start;text-align:left;border:1px solid var(--gold-soft);background:rgba(255,255,255,.04);border-radius:14px;padding:12px}
@@ -191,6 +192,11 @@ input,textarea{-webkit-user-select:text;user-select:text}
   </div>
   <div class="tools">
     <audio id="bgm" src="music.mp3" loop preload="auto"></audio>
+    <div class="vol-pop glass" id="volPop" hidden role="dialog" aria-label="音量">
+      <label class="vol-row"><span>背景音樂</span><input type="range" min="0" max="100" step="5" data-vol="m" aria-label="背景音樂音量"><b id="volm"></b></label>
+      <label class="vol-row"><span>音效</span><input type="range" min="0" max="100" step="5" data-vol="s" aria-label="音效音量"><b id="vols"></b></label>
+      <button class="chip vol-mute" id="muteBtn"></button>
+    </div>
     <button class="icon-btn glass" id="soundBtn" aria-label="聲音開關" aria-pressed="true"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path id="soundWave" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/><path id="soundOff" d="M16 9l5 6M21 9l-5 6"/></svg></button>
     <button class="icon-btn glass" id="sayBtn" aria-label="聊天"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg></button>
     <button class="icon-btn glass" id="lookBtn" aria-label="換造型"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></button>
@@ -1641,7 +1647,11 @@ const sfx={ bell(){ [[262,4,.12],[524,3,.05],[786,2.2,.03],[1310,1.5,.015]].forE
   clack(){ tone(820,.08,.18,"triangle"); noiseBurst(.06,.25,2400); }, coin(){ tone(1560,.18,.08,"square"); tone(2090,.25,.06,"square",.07); },
   rattle(){ for(let i=0;i<8;i++) noiseBurst(.05,.2,1800+Math.random()*900,i*.09); }, fire(){ noiseBurst(1.4,.25,600); noiseBurst(.9,.15,1600,.2); } };
 function renderSound(){ $("#soundBtn").setAttribute("aria-pressed",String(soundOn)); $("#soundWave").style.display=soundOn?"":"none"; $("#soundOff").style.display=soundOn?"none":""; $("#soundBtn").setAttribute("aria-label",soundOn?"關閉音樂":"開啟音樂"); }
-$("#soundBtn").onclick=()=>{ soundOn=!soundOn; save("mz.sound",soundOn); renderSound(); if(soundOn) ensureAudio(); else { bgm.pause(); } toast(soundOn?"音樂已開啟":"音樂已關閉，點喇叭可再打開"); };
+// The speaker button opens a small volume panel: music and sound-effect sliders plus mute-all.
+function renderVolPop(){ for(const k of ["m","s"]){ const r=$(`[data-vol="${k}"]`); if(r) r.value=VOL[k]; $("#vol"+k).textContent=VOL[k]+"%"; } $("#muteBtn").textContent=soundOn?"🔇 全部靜音":"🔊 開啟聲音"; }
+$("#soundBtn").onclick=e=>{ e.stopPropagation(); const p=$("#volPop"); p.hidden=!p.hidden; if(!p.hidden) renderVolPop(); };
+$("#muteBtn").onclick=()=>{ soundOn=!soundOn; save("mz.sound",soundOn); renderSound(); if(soundOn) ensureAudio(); else { bgm.pause(); } renderVolPop(); toast(soundOn?"聲音已開啟":"已全部靜音"); };
+document.addEventListener("pointerdown",e=>{ const p=$("#volPop"); if(!p.hidden&&!p.contains(e.target)&&!$("#soundBtn").contains(e.target)) p.hidden=true; },true);
 window.addEventListener("pointerdown",()=>{ if(soundOn) playMusic(); },{once:true,capture:true});
 document.addEventListener("visibilitychange",()=>{ if(document.hidden){ bgm.pause(); } else if(soundOn&&ac) playMusic(); }); renderSound();
 
@@ -1755,10 +1765,7 @@ document.addEventListener("input",e=>{ const k=e.target&&e.target.dataset&&e.tar
   if(k==="m"){ bgm.volume=(curTrack==="cat"?.55:.38)*mVol(); } });
 document.addEventListener("change",e=>{ if(e.target&&e.target.dataset&&e.target.dataset.vol==="s") sfx.coin(); });
 function openGfx(){ const opt=(v,t,d)=>`<button class="good" data-act="quality" data-v="${v}" aria-pressed="${Q.mode===v}" style="${Q.mode===v?"border-color:var(--gold);background:rgba(142,28,20,.35)":""}"><span class="name">${t}${Q.mode===v?"　✓":""}</span><span class="meta">${d}</span></button>`;
-  openSheet("gfx","設定",`<div class="group"><span class="group-label">音量</span>
-  <label class="vol-row"><span>背景音樂</span><input type="range" min="0" max="100" step="5" value="${VOL.m}" data-vol="m" aria-label="背景音樂音量"><b id="volm">${VOL.m}%</b></label>
-  <label class="vol-row"><span>音效</span><input type="range" min="0" max="100" step="5" value="${VOL.s}" data-vol="s" aria-label="音效音量"><b id="vols">${VOL.s}%</b></label>
-  <p class="note">音效是敲鐘、擲筊、搖籤、投錢這些聲音。</p></div><div class="group"><span class="group-label">畫質</span><p class="lead">畫面卡頓或手機發燙時，可以改用省電畫質。</p></div><div class="goods">${opt("auto","自動","進場後自動偵測，太卡會切到省電")}${opt("high","高畫質","光束、灰塵、全部燈光，最漂亮")}${opt("low","省電","降低解析度與特效，舊手機也順")}</div><p class="note">目前：${Q.low?"省電畫質":"高畫質"}</p><div class="group"><span class="group-label">其他</span><div class="chips"><button class="chip" data-act="toggleNpc" aria-pressed="${showNpc}">顯示示範香客</button></div><p class="note">示範香客是電腦角色，不算在殿內人數裡，關掉也能讓畫面更順。</p></div>`); }
+  openSheet("gfx","設定",`<div class="group"><span class="group-label">畫質</span><p class="lead">畫面卡頓或手機發燙時，可以改用省電畫質。</p></div><div class="goods">${opt("auto","自動","進場後自動偵測，太卡會切到省電")}${opt("high","高畫質","光束、灰塵、全部燈光，最漂亮")}${opt("low","省電","降低解析度與特效，舊手機也順")}</div><p class="note">目前：${Q.low?"省電畫質":"高畫質"}</p><div class="group"><span class="group-label">其他</span><div class="chips"><button class="chip" data-act="toggleNpc" aria-pressed="${showNpc}">顯示示範香客</button></div><p class="note">示範香客是電腦角色，不算在殿內人數裡，關掉也能讓畫面更順。</p></div>`); }
 HANDLERS.quality=v=>{ applyQuality(v==="auto"?(perf.done&&Q.low?"low":"high"):v,false); if(v==="auto"){ Q.mode="auto"; save("mz.q","auto"); } openGfx(); toast(v==="low"?"已切換為省電畫質":v==="high"?"已切換為高畫質":"畫質改為自動偵測"); };
 HANDLERS.toggleNpc=(v,b)=>{ showNpc=!showNpc; save("mz.npc",showNpc); b.setAttribute("aria-pressed",String(showNpc)); buildNpcs(); toast(showNpc?"已顯示示範香客":"已隱藏示範香客"); };
 HANDLERS.showPoem=v=>openPoem(+v,true);
