@@ -7,6 +7,13 @@ const HALLS = 10, CAP = 100, MAX_MSG = 4000;
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
+    if (url.pathname === "/ws" || url.pathname === "/halls" || ["/lamps", "/lamp", "/wishes", "/wish"].includes(url.pathname)) {
+      try { return await this.api(req, env, url); }
+      catch (e) { return new Response(JSON.stringify({ error: String(e && e.message || e).slice(0, 300) }), { status: 503, headers: { "content-type": "application/json", "cache-control": "no-store" } }); }
+    }
+    return env.ASSETS.fetch(req);
+  },
+  async api(req, env, url) {
     if (url.pathname === "/ws") {
       if (req.headers.get("Upgrade") !== "websocket") return new Response("expected websocket", { status: 426 });
       const h = Math.max(0, Math.min(HALLS - 1, parseInt(url.searchParams.get("hall") || "0", 10) || 0));
