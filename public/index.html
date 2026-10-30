@@ -1533,9 +1533,15 @@ let HALL_CAP=20; const HALL_NAMES=["正殿","二殿","三殿","四殿","五殿",
 let SEND_GAP=400;
 function startSupabase(){
   SEND_GAP=350; updateCount();
-  probeCF().then(j=>{ if(j){ USE_CF=true; try{ initCF(j); }catch(e){ USE_CF=false; } }
+  probeCF().then(j=>{ if(j){ USE_CF=true; try{ initCF(j); }catch(e){ USE_CF=false; } } else watchDailyReset();
     const sc=document.createElement("script"); sc.src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js";
     sc.onload=()=>{ try{ initSupabase(); }catch(e){ if(!USE_CF){ room=null; updateCount(); } } }; sc.onerror=()=>updateCount(); document.head.appendChild(sc); }); }
+// When the free daily quota runs out the game falls back to 20-per-hall mode. The quota resets at 00:00 UTC (08:00 Taiwan),
+// so between 07:55 and 08:05 Taiwan time fallback players check once a minute and reload into 100-per-hall mode when it is back.
+function watchDailyReset(){ const off=Math.random()*30000; let ready=false;
+  setInterval(async()=>{ if(ready) return; const d=new Date(), m=d.getUTCHours()*60+d.getUTCMinutes(); if(!(m>=1435||m<=5)) return;
+    await new Promise(r=>setTimeout(r,off)); const j=await probeCF(); if(!j) return; ready=true; toast("大殿伺服器恢復了，馬上帶你回到每殿百人的大殿",3500);
+    const go=setInterval(()=>{ const typing=document.activeElement&&/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName); if(!sheetKind&&!customizing&&!typing){ clearInterval(go); setTimeout(()=>location.reload(),1500); } },2000); },60000); }
 // ---- Cloudflare Durable Objects (used automatically when the site's server answers /halls) ----
 let USE_CF=false;
 async function probeCF(){ try{ const r=await fetch("/halls",{cache:"no-store"}); if(!r.ok) return null; const j=await r.json(); return j&&Array.isArray(j.counts)?j:null; }catch(e){ return null; } }
