@@ -1688,7 +1688,7 @@ const HANDLERS={};
 // ---- 聯絡作者: anyone can leave a private message; only the chair (unlocked on this device) can read them ----
 const msgName=()=>(me.name||(me.no?`香客${me.no}`:"香客")).slice(0,16);
 function openContact(){ const isChair=!!(me.sp&&load("mz.t",""));
-  openSheet("contact","聯絡作者",`<p class="lead">有建議、發現問題或想對作者說的話，都可以寫在這裡，只有作者看得到。</p>
+  openSheet("contact","聯絡作者",`<p class="lead">有建議、發現問題或想對作者說的話，都可以寫在這裡，只有作者看得到。</p><p class="lead small">請勿留下電話、地址、帳號等個人資料。</p>
   <textarea class="msg-box" id="msgText" maxlength="500" placeholder="想說的話（500 字以內）"></textarea>
   <div class="msg-meta"><span id="msgCount">0 / 500</span><span>署名：${esc(msgName())}</span></div>
   <button class="good wide" data-act="sendMsg"><span class="name">送出留言</span></button>
@@ -1696,10 +1696,11 @@ function openContact(){ const isChair=!!(me.sp&&load("mz.t",""));
   const t=$("#msgText"); t.addEventListener("input",()=>{ $("#msgCount").textContent=`${[...t.value].length} / 500`; }); }
 HANDLERS.sendMsg=async()=>{ const t=$("#msgText"); const text=(t&&t.value||"").trim(); if(!text){ toast("先寫點什麼吧"); return; }
   try{ const r=await fetch("/msg",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({text:[...text].slice(0,500).join(""),name:msgName(),id:load("mz.id","")})}); const j=await r.json().catch(()=>({}));
+    if(r.status===503){ toast("伺服器今天的額度用完了，早上 8 點後恢復，請晚點再送",4000); return; }
     if(j.ok){ t.value=""; $("#msgCount").textContent="0 / 500"; toast("留言已送給作者，謝謝你！",3200); } else toast(j.slow?"留言太快了，請稍等一下再送":"目前送不出去，請稍後再試"); }catch(e){ toast("目前送不出去，請稍後再試"); } };
 HANDLERS.readMsgs=async()=>{ const el=$("#msgList"); if(!el) return; el.innerHTML=`<p class="lead">讀取中…</p>`;
   try{ const r=await fetch("/msgs",{headers:{"x-key":String(load("mz.t",""))},cache:"no-store"}); const j=await r.json().catch(()=>({}));
-    if(!j.ok){ el.innerHTML=`<p class="lead">${j.locked?"嘗試次數過多，今天先鎖住了，明天再試。":j.unset?"伺服器還沒設定主委密碼。":"無法讀取留言。"}</p>`; return; }
+    if(!j.ok){ el.innerHTML=`<p class="lead">${r.status===503?"伺服器今天的額度用完了，早上 8 點後恢復。":j.locked?"嘗試次數過多，今天先鎖住了，明天再試。":j.unset?"伺服器還沒設定主委密碼。":"無法讀取留言。"}</p>`; return; }
     el.innerHTML=j.msgs.length?j.msgs.map(m=>`<div class="msg-item"><small>${esc(m.name||"香客")}・${new Date(m.at).toLocaleString("zh-TW",{hour12:false})}</small>${esc(m.text)}</div>`).join(""):`<p class="lead">目前還沒有留言。</p>`; }catch(e){ el.innerHTML=`<p class="lead">無法讀取留言。</p>`; } };
 $("#contactBtn").onclick=()=>{ ensureAudio(); openContact(); };
 { let x0=0,y0=0; const scroller=el=>{ for(let n=el;n&&n!==document.body;n=n.parentElement){ if(n.nodeType!==1) continue; const cs=getComputedStyle(n); if((cs.overflowY==="auto"||cs.overflowY==="scroll")&&n.scrollHeight>n.clientHeight+1) return n; } return null; };
