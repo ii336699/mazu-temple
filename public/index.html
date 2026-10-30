@@ -1485,8 +1485,9 @@ const remotes=new Map(); let myWish=["",""]; let myBell=0, myDrum=0, myMsg=[0,""
 let room=null, myBow=0, myJiao=[0,""], myBurn=0, myOffers=[];
 let dirty=true, lastSend=0, lastSentHead=0;
 function markDirty(){ dirty=true; }
-function presencePayload(){ return {v:1,u:(customizing||document.hidden)?0:1,n:(me.name||"").slice(0,10),k:me.no||0,l:me.look,x:+meAv.target.x.toFixed(2),z:+meAv.target.y.toFixed(2),r:+meAv.rotY.toFixed(2),s:meAv.seat,b:myBow,h:meAv.hold?1:0,j:myJiao,f:myBurn,o:myOffers,a:bag.items.fu?1:0,g:me.lamp??-1,k:myBell,d:myDrum,m:myMsg,c:myChat,p:myPlant,gf:myGF,fx:myFx,t:bag.redThread?1:0,q:me.sp?1:0,w:myWish,y:+meAv.headGoal.toFixed(2)}; }
-function sendPresence(){ if(!room) return; dirty=false; lastSend=performance.now(); room.presence(presencePayload()).catch(()=>{}); }
+function presencePayload(){ return {v:1,u:(customizing||document.hidden)?0:1,n:(me.name||"").slice(0,10),k:me.no||0,l:me.look,x:+meAv.target.x.toFixed(2),z:+meAv.target.y.toFixed(2),r:+meAv.rotY.toFixed(1),s:meAv.seat,b:myBow,h:meAv.hold?1:0,j:myJiao,f:myBurn,o:myOffers,a:bag.items.fu?1:0,g:me.lamp??-1,k:myBell,d:myDrum,m:myMsg,c:myChat,p:myPlant,gf:myGF,fx:myFx,t:bag.redThread?1:0,q:me.sp?1:0,w:myWish,y:+meAv.headGoal.toFixed(1)}; }
+let lastSent="", lastBeat=0;
+function sendPresence(force){ if(!room) return; dirty=false; const p=presencePayload(), str=JSON.stringify(p), now=performance.now(); lastSend=now; if(str===lastSent&&force!==true&&now-lastBeat<25000) return; lastSent=str; lastBeat=now; room.presence(p).catch(()=>{}); }
 function seatTakenByPeer(i){ for(const r of remotes.values()) if(r.seat===i) return true; return false; }
 function num(v,a,b,d){ v=Number(v); return Number.isFinite(v)?Math.max(a,Math.min(b,v)):d; }
 function cleanName(n){ return String(n||"").replace(/[\u0000-\u001f​-‏‪-‮]/g,"").slice(0,10); }
@@ -1529,7 +1530,7 @@ let roomConnected=false;
 const SB_URL="https://zgwbthrqjrsnhqpdcona.supabase.co", SB_KEY="sb_publishable_Xl0v2Yrg0OrDw90ddpV35A_AzRta8FH";
 const HALLS={counts:[],current:()=>0,switchTo:null};
 let HALL_CAP=20; const HALL_NAMES=["正殿","二殿","三殿","四殿","五殿","六殿","七殿","八殿","九殿","十殿"];
-let SEND_GAP=140;
+let SEND_GAP=400;
 function startSupabase(){
   SEND_GAP=350; updateCount();
   probeCF().then(j=>{ if(j){ USE_CF=true; try{ initCF(j); }catch(e){ USE_CF=false; } }
@@ -1548,7 +1549,7 @@ function initCF(first){
     document.querySelector(".hall-name").textContent="天后宮 "+HALL_NAMES[i];
     const proto=location.protocol==="https:"?"wss:":"ws:"; closedByUs=false;
     try{ ws=new WebSocket(`${proto}//${location.host}/ws?hall=${i}&id=${myId}`); }catch(e){ return; }
-    ws.onopen=()=>{ retry=0; roomConnected=true; updateCount(); dirty=true; lastSend=0; };
+    ws.onopen=()=>{ retry=0; roomConnected=true; updateCount(); dirty=true; lastSend=0; lastSent=""; };
     ws.onmessage=ev=>{ let m; try{ m=JSON.parse(ev.data); }catch(e){ return; }
       if(m.t==="full"){ closedByUs=true; if(hall<HALL_NAMES.length-1){ toast(`${HALL_NAMES[hall]}人滿了，帶你到${HALL_NAMES[hall+1]}`,3200); connect(hall+1); } return; }
       if(m.t==="hello"&&Array.isArray(m.peers)){ m.peers.forEach(x=>{ if(okId(x.id)&&x.p&&typeof x.p==="object") peerState.set(x.id,{p:x.p,t:Date.now()}); }); rebuild(); return; }
@@ -1593,7 +1594,7 @@ function initSupabase(){
       if(!checked){ checked=true; if(activeN>=HALL_CAP&&hall<HALL_NAMES.length-1){ const old=ch; ch=null; client.removeChannel(old).finally(()=>join(hall+1)); toast(`${HALL_NAMES[hall]}人滿了，帶你到${HALL_NAMES[hall+1]}`,3200); return; } }
       let changed=false; const now=Date.now(); for(const [id,v] of peerState) if((!st[id]&&now-v.t>8000)||now-v.t>70000){ peerState.delete(id); changed=true; } if(changed) rebuild(); });
     clearInterval(window.__sweep); window.__sweep=setInterval(()=>{ const now=Date.now(); let ch2=false; for(const [id,v] of peerState) if(now-v.t>70000){ peerState.delete(id); ch2=true; } if(ch2) rebuild(); },10000);
-    ch.subscribe(async status=>{ if(status==="SUBSCRIBED"){ roomConnected=true; updateCount(); try{ await ch.track({at:Date.now(),u:active()?1:0}); }catch(e){} trackLobby(); ch.send({type:"broadcast",event:"hi",payload:{id:myId}}).catch(()=>{}); dirty=true; lastSend=0; }
+    ch.subscribe(async status=>{ if(status==="SUBSCRIBED"){ roomConnected=true; lastSent=""; updateCount(); try{ await ch.track({at:Date.now(),u:active()?1:0}); }catch(e){} trackLobby(); ch.send({type:"broadcast",event:"hi",payload:{id:myId}}).catch(()=>{}); dirty=true; lastSend=0; }
       else if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"||status==="CLOSED"){ roomConnected=false; updateCount(); } }); }
   room={ presence(p){ if(!ch||!roomConnected) return Promise.resolve(); return Promise.resolve(ch.send({type:"broadcast",event:"st",payload:{id:myId,p}})).catch(()=>{}); } };
   document.addEventListener("visibilitychange",()=>{ if(!document.hidden&&ch&&roomConnected){ dirty=true; lastSend=0; } });
