@@ -94,7 +94,6 @@ export class Hall extends DurableObject {
 }
 
 const LAMPS = 140;
-const CHAIR_HASH = "93658ae4f71996ca4aec46178ad076040e8b5523de7369746f71e09f3faf66b0";
 const clean = (t, n) => String(t || "").replace(/[\u0000-\u001f\u007f\u200b-\u200f\u202a-\u202e\u2060-\u2064\ufeff<>]/g, "").replace(/\s+/g, " ").trim().slice(0, n);
 const looksLikeAd = t => /(https?:|www\.|\.com|\.tw|line|@)/i.test(t) || (t.match(/\d/g) || []).length >= 6;
 const json = o => new Response(JSON.stringify(o), { headers: { "content-type": "application/json" } });
@@ -114,13 +113,15 @@ export class Lobby extends DurableObject {
       const m = (await this.ctx.storage.get("msgs")) || []; m.unshift({ name, text, at: now }); await this.ctx.storage.put("msgs", m.slice(0, 1000)); return json({ ok: true });
     }
     if (url.pathname === "/msgs") {
-      // The chair unlocks reading with the same code that unlocks the 主委 outfit (checked by its salted hash; an ADMIN_KEY secret, if set, also works).
+      // Reading needs the long password kept in Cloudflare Secrets Store (binding ADMIN_KEY); it never appears in this repo or the page.
+      let secret = ""; try { const k = this.env.ADMIN_KEY; secret = String((k && typeof k.get === "function") ? await k.get() : (k || "")); } catch {}
+      if (!secret) return json({ ok: false, unset: true });
       const day = new Date().toISOString().slice(0, 10); const f = (await this.ctx.storage.get("fails")) || { day, n: 0 }; if (f.day !== day) { f.day = day; f.n = 0; }
       if (f.n >= 10) return json({ ok: false, locked: true });
-      const given = String(req.headers.get("x-key") || "").trim().slice(0, 64);
-      const hex = [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("tianhou-gong-salt::" + given)))].map(x => x.toString(16).padStart(2, "0")).join("");
-      const secret = String(this.env.ADMIN_KEY || "");
-      if (!(given && (hex === CHAIR_HASH || (secret && given === secret)))) { f.n++; await this.ctx.storage.put("fails", f); return json({ ok: false }); }
+      const given = String(req.headers.get("x-key") || "").trim().slice(0, 200);
+      const h = async t => new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t)));
+      const [a, b] = await Promise.all([h(given), h(secret)]); let diff = 0; for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
+      if (!given || diff !== 0) { f.n++; await this.ctx.storage.put("fails", f); return json({ ok: false }); }
       return json({ ok: true, msgs: (await this.ctx.storage.get("msgs")) || [] });
     }
     // 光明燈: every lit lamp stays lit until its owner turns it off
