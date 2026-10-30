@@ -147,6 +147,7 @@ body.customizing .hall,body.customizing .actions,body.customizing .rot{display:n
 .secondary{background:rgba(255,255,255,.05);border:1px solid var(--gold-soft);border-radius:12px;padding:11px 16px;font-size:15px}
 .row{display:flex;gap:10px;flex-wrap:wrap}
 .row>*{flex:1 1 140px}
+.shop-extra{display:grid;gap:10px;margin-top:18px;padding-top:16px;border-top:1px solid var(--gold-soft)}.good.wide{width:100%;box-sizing:border-box;text-decoration:none;color:inherit}.jko-qr{display:block;width:min(100%,300px);height:auto;margin:12px auto;border-radius:16px}.jko-link{margin-bottom:10px}.lead.small{font-size:13px;margin:4px 0 12px}.mail-row{display:flex;gap:8px;margin:12px 0}.mail-box{flex:1;min-width:0;font:inherit;font-size:16px;padding:12px;border-radius:12px;border:1px solid var(--gold-soft);background:rgba(255,255,255,.06);color:inherit;user-select:text;-webkit-user-select:text}.mail-copy{flex:none;align-items:center;justify-content:center}
 .goods{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
 .good{display:flex;flex-direction:column;gap:4px;align-items:flex-start;text-align:left;border:1px solid var(--gold-soft);background:rgba(255,255,255,.04);border-radius:14px;padding:12px}
 .good .name{font-family:var(--f-display);font-size:18px}
@@ -1737,7 +1738,21 @@ HANDLERS.showPoem=v=>openPoem(+v,true);
 /* ---- stations ---- */
 function openStation(k){ if(k==="cats"){ openCats(); return; } if(k==="fountain"){ openFountain(); return; } if(k==="wish"){ openWish(); return; } if(CENSER_INFO[k]){ openCenser(k); return; } if(k==="jieqian"){ openJieqian(); return; } if(k==="shop") openShop(); if(k==="altar") openAltar(); if(k==="burn") openBurn(); if(k==="donate") openDonate(); if(k==="lot") openLot("ask"); if(k==="lamp"||k==="lampR") openLamp(); if(k==="bell"){ myBell++; meAv.burnT=0; ringBell(true); markDirty(); toast("咚——鐘聲迴盪殿內"); } if(k==="drum"){ myDrum++; meAv.burnT=0; hitDrum(true); markDirty(); toast("咚！鼓聲響起"); } }
 function openShop(){ const html=`<p class="lead">拜拜順序：先到廟埕天公爐，再拜媽祖、龍邊財神爺、虎邊月老，最後是供桌下的虎爺。五爐都插好香，再到廟埕金爐燒金紙。</p>
-  <div class="goods">${GOODS.map(g=>`<button class="good" data-act="buy" data-v="${g.k}" ${bag.coins<g.price?"disabled":""}><span class="name">${g.name}</span><span class="meta">${g.meta}</span><span class="price">${g.price} 平安幣</span><span class="own">持有 ${bag.items[g.k]||0}</span></button>`).join("")}</div>`; openSheet("shop","服務處",html); }
+  <div class="goods">${GOODS.map(g=>`<button class="good" data-act="buy" data-v="${g.k}" ${bag.coins<g.price?"disabled":""}><span class="name">${g.name}</span><span class="meta">${g.meta}</span><span class="price">${g.price} 平安幣</span><span class="own">持有 ${bag.items[g.k]||0}</span></button>`).join("")}</div>
+  <div class="shop-extra"><button class="good wide" data-act="shopCoffee"><span class="name">☕ 用街口買杯咖啡給我、贊助伺服器</span><span class="meta">掃 QR Code 或點連結開啟街口支付</span></button>
+  <button class="good wide" data-act="shopMail"><span class="name">✉️ 寫信給主委</span><span class="meta">有建議或想說的話，歡迎來信</span></button></div>`; openSheet("shop","服務處",html); }
+const JKO_URL="https://service.jkopay.com/r/transfer?j=Transfer:901627312", CHAIR_MAIL="harper88888@gmail.com";
+HANDLERS.shopCoffee=()=>openSheet("shopx","買杯咖啡給主委",`<p class="lead">這座廟靠伺服器運作，香客越多費用越高。用街口買杯咖啡給我，就是幫忙贊助伺服器，讓大家可以繼續一起拜拜。</p>
+  <img class="jko-qr" src="jkopay.jpg" alt="街口支付轉帳 QR Code" width="640" height="960" loading="lazy">
+  <a class="good wide jko-link" href="${JKO_URL}" target="_blank" rel="noopener"><span class="name">開啟街口支付轉帳</span><span class="meta">手機上直接點這裡最方便</span></a>
+  <p class="lead small">如有盈餘 50% 將捐贈給流浪動物及捐棺團體。</p>
+  <button class="good wide" data-act="shopBack"><span class="name">← 回服務處</span></button>`);
+HANDLERS.shopMail=()=>openSheet("shopx","寫信給主委",`<p class="lead">有建議、發現問題或想說的話，歡迎寫信給主委。</p>
+  <div class="mail-row"><input class="mail-box" id="chairMail" value="${CHAIR_MAIL}" readonly aria-label="主委信箱"><button class="good mail-copy" data-act="copyMail"><span class="name">一鍵複製</span></button></div>
+  <a class="good wide" href="mailto:${CHAIR_MAIL}"><span class="name">開啟郵件 App 寫信</span></a>
+  <button class="good wide" data-act="shopBack"><span class="name">← 回服務處</span></button>`);
+HANDLERS.shopBack=()=>openShop();
+HANDLERS.copyMail=async()=>{ let ok=false; try{ await navigator.clipboard.writeText(CHAIR_MAIL); ok=true; }catch(e){ const i=$("#chairMail"); if(i){ i.focus(); i.select(); i.setSelectionRange(0,99); try{ ok=document.execCommand("copy"); }catch(e2){} i.blur(); } } toast(ok?"已複製主委信箱":"請長按信箱自行複製"); };
 HANDLERS.buy=k=>{ const g=GOOD_BY[k]; if(!g||bag.coins<g.price){ toast("平安幣不夠了"); return; } if(k==="fu"&&bag.items.fu){ toast("已經有平安符了"); return; } bag.coins-=g.price; bag.items[k]=(bag.items[k]||0)+(k==="xiang"?5:1); saveBag(); sfx.coin(); if(k==="fu"){ meAv.setAmulet(true); markDirty(); } { const it=bag.items; if((it.xiang||0)>=5&&(it.jin||0)>=1&&((it.hua||0)+(it.guo||0)+(it.bing||0))>=1){ flow().bought=1; saveBag(); } } toast(`請到${g.name}${k==="xiang"?" 5 支":""}`); openShop(); };
 function openAltar(){ const foods=["hua","guo","bing"].filter(k=>bag.items[k]>0); const hasX=bag.items.xiang>0;
   let html=`<p class="lead">供桌上可以擺鮮花、水果和糕餅，清香插進中間媽祖的香爐。你擺的供品其他香客也看得到，離開大殿後會收回。</p>${plantProgress()}<div class="goods">`;
