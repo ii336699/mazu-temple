@@ -8,7 +8,7 @@ const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes":
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
-    if (url.pathname === "/ws" || url.pathname === "/halls" || ["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks"].includes(url.pathname)) {
+    if (url.pathname === "/ws" || url.pathname === "/halls" || ["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan"].includes(url.pathname)) {
       try { return await api(req, env, url); }
       catch (e) { return new Response(JSON.stringify({ error: String(e && e.message || e).slice(0, 300) }), { status: 503, headers: { "content-type": "application/json", "cache-control": "no-store" } }); }
     }
@@ -27,7 +27,7 @@ async function api(req, env, url) {
       const m = MEMO.get(url.pathname);
       if (m && Date.now() - m.at < MEMO_TTL[url.pathname]) return new Response(m.body, { headers: { "content-type": "application/json", "cache-control": "no-store" } });
     }
-    if (["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks"].includes(url.pathname)) {
+    if (["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan"].includes(url.pathname)) {
       if (req.method === "POST") MEMO.delete(url.pathname === "/lamp" ? "/lamps" : "/wishes");
       const lobby = env.LOBBY.get(env.LOBBY.idFromName("lobby"));
       const r = await lobby.fetch(new Request("https://lobby" + url.pathname + url.search, { method: req.method, headers: req.headers, body: req.method === "POST" ? await req.text() : undefined }));
@@ -143,6 +143,16 @@ export class Lobby extends DurableObject {
       const text = clean(b.text, 80); if (!text) return json({ ok: false });
       await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/announce", { method: "POST", body: JSON.stringify({ text }) }).catch(() => {})));
       return json({ ok: true });
+    }
+    // 斬小人排行榜: best score per player, top 20 kept
+    if (url.pathname === "/zhan" && req.method === "POST") {
+      let b = {}; try { b = await req.json(); } catch {}
+      const score = Math.max(0, Math.min(120, b.score | 0)), name = clean(b.name, 10) || "香客", id = clean(b.id, 16) || "anon";
+      this.lastZhan = this.lastZhan || new Map(); const now = Date.now(); const ok = now - (this.lastZhan.get(id) || 0) > 12000; this.lastZhan.set(id, now);
+      let top = (await this.ctx.storage.get("zhan")) || [];
+      if (ok) { const cur = top.find(e => e.id === id); if (!cur) top.push({ id, name, score, at: now }); else if (score > cur.score) { cur.score = score; cur.name = name; cur.at = now; } else cur.name = name;
+        top.sort((a, b) => b.score - a.score || a.at - b.at); top = top.slice(0, 20); await this.ctx.storage.put("zhan", top); }
+      return json({ ok, top: top.slice(0, 10) });
     }
     if (url.pathname === "/fireworks" && req.method === "POST") {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
