@@ -479,7 +479,7 @@ const GOODS=[
 const GOOD_BY = Object.fromEntries(GOODS.map(g=>[g.k,g]));
 const OFFER_KINDS=["hua","guo","bing","xiang"];
 const PHRASES=["媽祖保庇","平安順遂","感恩","大家好","一起拜拜","加油","闔家平安","謝謝"];
-const SIGN_NAMES={bell:"鐘",drum:"鼓"};
+const SIGN_NAMES={};
 // sponsor thank-you boards on the courtyard wall behind Guanyin (x = which wall panel)
 // eight slots on the wall (x = ±3.6, ±6.6, ±9.6, ±12.6); a slot without a sponsor stays a carved gold panel; neon:true gives a rainbow chase
 const THANK_SLOTS=[-12.6,-9.6,-6.6,-3.6,3.6,6.6,9.6,12.6];
@@ -947,14 +947,14 @@ station("lamp",[-8.7,LAMPZ],-Math.PI/2);
 const bell=new T.Group(); const drum=new T.Group(); bell.userData.noMerge=1; drum.userData.noMerge=1;
 { const wood=mat("#4a0d09",{roughness:.6}); const g=new T.Group(); g.position.set(-10.6,0,-9.6); scene.add(g);
   for(const z of [-.7,.7]) box(.14,3.2,.14,wood,0,1.6,z,g); box(.2,.2,1.7,wood,0,3.15,0,g); box(.3,.12,1.9,GOLD(),0,3.3,0,g);
-  bell.position.set(0,3.05,0); g.add(bell); const bm=lathe([[0,0],[.08,0],[.1,-.1],[.28,-.4],[.36,-.95],[.42,-1.05],[0,-1.05]],mat("#6b5134",{metalness:.85,roughness:.38}),bell,28); bm.userData.act="bell";
+  bell.position.set(0,3.05,0); g.add(bell); const bm=lathe([[0,0],[.08,0],[.1,-.1],[.28,-.4],[.36,-.95],[.42,-1.05],[0,-1.05]],mat("#6b5134",{metalness:.85,roughness:.38}),bell,28);
   for(let i=0;i<3;i++){ const r=mesh(new T.TorusGeometry(.31+i*.03,.015,6,28),mat("#8a6a40",{metalness:.8,roughness:.4}),0,-.45-i*.22,0,bell); r.rotation.x=Math.PI/2; }
-  station("bell",[-9.3,-9.0],-Math.PI/2); }
+ }
 { const g=new T.Group(); g.position.set(10.6,0,-9.6); scene.add(g); const wood=mat("#4a0d09",{roughness:.6});
   for(const z of [-.7,.7]) box(.14,2.0,.14,wood,0,1.0,z,g); box(.16,.16,1.6,wood,0,1.95,0,g);
-  drum.position.set(0,1.45,0); g.add(drum); const body=mesh(new T.CylinderGeometry(.6,.6,.7,28),mat("#a8261d",{roughness:.45}),0,0,0,drum); body.rotation.z=Math.PI/2; body.userData.act="drum";
-  for(const s of [-1,1]){ const skin=mesh(new T.CircleGeometry(.6,28),mat("#d9c49a",{roughness:.8,side:T.DoubleSide}),s*.355,0,0,drum); skin.rotation.y=Math.PI/2; skin.userData.act="drum"; const rim=mesh(new T.TorusGeometry(.6,.03,6,28),GOLD(),s*.35,0,0,drum); rim.rotation.y=Math.PI/2; }
-  station("drum",[9.3,-9.0],Math.PI/2); }
+  drum.position.set(0,1.45,0); g.add(drum); const body=mesh(new T.CylinderGeometry(.6,.6,.7,28),mat("#a8261d",{roughness:.45}),0,0,0,drum); body.rotation.z=Math.PI/2;
+  for(const s of [-1,1]){ const skin=mesh(new T.CircleGeometry(.6,28),mat("#d9c49a",{roughness:.8,side:T.DoubleSide}),s*.355,0,0,drum); skin.rotation.y=Math.PI/2; const rim=mesh(new T.TorusGeometry(.6,.03,6,28),GOLD(),s*.35,0,0,drum); rim.rotation.y=Math.PI/2; }
+ }
 let bellSwing=0, drumBounce=0; let duckT=0;
 function duck(){ duckT=2.5; }
 function ringBell(mine){ bellSwing=1; duck(); const a=ensureAudio(); if(a){ [[98,6,.16],[196,4.5,.08],[294,3,.04],[466,2,.02]].forEach(([f,d,v])=>tone(f,d,v)); } }
@@ -1754,7 +1754,7 @@ let room=null, myBow=0, myJiao=[0,""], myBurn=0, myOffers=[];
 let dirty=true, lastSend=0, lastSentHead=0;
 function markDirty(){ dirty=true; }
 let chairHidden=false;
-function presencePayload(){ return {v:1,u:(customizing||document.hidden||chairHidden)?0:1,n:(me.name||"").slice(0,10),k:me.no||0,l:me.look,x:+meAv.target.x.toFixed(2),z:+meAv.target.y.toFixed(2),r:+meAv.rotY.toFixed(1),s:meAv.seat,b:myBow,h:meAv.hold?1:0,j:myJiao,f:myBurn,o:myOffers,a:bag.items.fu?1:0,g:me.lamp??-1,k:myBell,d:myDrum,m:myMsg,c:myChat,p:myPlant,gf:myGF,fx:myFx,t:bag.redThread?1:0,q:me.sp?1:0,w:myWish,y:+meAv.headGoal.toFixed(1),sq:mySj?[mySj.g+1,mySj.at]:0,sk:mySparkler?1:0,fs:myFwShow||0,e:myEmo,sl:mySL,sm:myMassSL||0}; }
+function presencePayload(){ return {v:1,u:(customizing||document.hidden||chairHidden)?0:1,n:(me.name||"").slice(0,10),k:me.no||0,l:me.look,x:+meAv.target.x.toFixed(2),z:+meAv.target.y.toFixed(2),r:+meAv.rotY.toFixed(1),s:meAv.seat,b:myBow,h:meAv.hold?1:0,j:myJiao,f:myBurn,o:myOffers,a:bag.items.fu?1:0,g:me.lamp??-1,m:myMsg,c:myChat,p:myPlant,gf:myGF,fx:myFx,t:bag.redThread?1:0,q:me.sp?1:0,w:myWish,y:+meAv.headGoal.toFixed(1),sq:mySj?[mySj.g+1,mySj.at]:0,sk:mySparkler?1:0,fs:myFwShow||0,e:myEmo,sl:mySL,sm:myMassSL||0}; }
 let lastSent="", lastBeat=0;
 function sendPresence(force){ if(!room) return; dirty=false; const p=presencePayload(), str=JSON.stringify(p), now=performance.now(); lastSend=now; if(str===lastSent&&force!==true&&now-lastBeat<60000) return; lastSent=str; lastBeat=now; room.presence(p).catch(()=>{}); }
 function seatTakenByPeer(i){ for(const r of remotes.values()) if(r.seat===i) return true; return false; }
@@ -1777,8 +1777,6 @@ function syncPeers(peers){ const seen=new Set();
     if(Array.isArray(pr.w)&&typeof pr.w[0]==="string"&&pr.w[1]&&pr.w[1]!==av.lastW){ av.lastW=pr.w[1]; const tx=cleanWish(pr.w[0]); if(tx&&!chatCheck(tx)) addWishCard({name:av.name||"香客",text:tx,at:Date.now()}); }
     const lamp=Number.isInteger(pr.g)&&pr.g>=0&&pr.g<LAMPS?pr.g:-1; if(lamp!==av.lamp){ av.lamp=lamp; refreshLamps(); }
     if(av.lastK===undefined){ av.lastK=pr.k; av.lastD=pr.d; av.lastM=Array.isArray(pr.m)?pr.m[1]:""; }
-    if(pr.k!==av.lastK){ av.lastK=pr.k; ringBell(false); }
-    if(pr.d!==av.lastD){ av.lastD=pr.d; hitDrum(false); }
     if(Array.isArray(pr.m)&&pr.m[1]&&pr.m[1]!==av.lastM){ av.lastM=pr.m[1]; const ph=PHRASES[num(pr.m[0],0,PHRASES.length-1,0)|0]; av.say(ph,"#f7ecd6"); logChat(av.name||"香客",ph,false); }
     if(av.lastC===undefined) av.lastC=Array.isArray(pr.c)?pr.c[1]:"";
     if(av.lastFX===undefined) av.lastFX=Array.isArray(pr.fx)?pr.fx[1]:"";
@@ -2047,7 +2045,7 @@ function renderLook(first){ const tabs=[["face","臉"],["hair","髮型"],["wear"
     <div class="mail-row"><input class="mail-box code-in" id="pasteCode" placeholder="貼上之前存的代碼" aria-label="貼上造型代碼" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="good mail-copy" data-act="applyCode"><span class="name">套用</span></button></div>
     <p class="note">代碼裡存著你的名字、造型、平安幣、背包裡的供品和最近 5 支籤詩。在 Threads、IG 等 App 裡開啟時資料可能會被清掉，先按「複製」把代碼存在記事本，下次貼上按「套用」就能全部找回。</p></div>`;
   body+=`<div class="row"><button class="secondary" data-act="randomLook">隨機一套</button><button class="primary" data-act="saveLook">${first?"進入大殿":"完成"}</button></div>`;
-  if(first) body+=`<p class="note">拖曳上方角色可以轉動預覽。進殿後拖曳畫面轉視角，點拜墊入座，點供桌、籤詩櫃、光明燈、鐘鼓、服務處、金爐或香油錢箱就會走過去。</p>`;
+  if(first) body+=`<p class="note">拖曳上方角色可以轉動預覽。進殿後拖曳畫面轉視角，點拜墊入座，點供桌、籤詩櫃、光明燈、服務處、金爐或香油錢箱就會走過去。</p>`;
   openSheet("look",first?"打扮一下再進殿":"換造型",body); }
 HANDLERS.spin=v=>{ pvSpin=0; pvYaw+= (+v)*Math.PI/4; };
 HANDLERS.pv=v=>{ if(v==="turn"){ pvSpin=Math.PI*2; return; } pvMode=v; syncPvSeg(); };
@@ -2075,7 +2073,7 @@ HANDLERS.toggleNpc=(v,b)=>{ showNpc=!showNpc; save("mz.npc",showNpc); b.setAttri
 HANDLERS.showPoem=v=>openPoem(+v,true);
 
 /* ---- stations ---- */
-function openStation(k){ if(k==="cats"){ openCats(); return; } if(k==="fountain"){ openFountain(); return; } if(k==="wish"){ openWish(); return; } if(CENSER_INFO[k]){ openCenser(k); return; } if(k==="jieqian"){ openJieqian(); return; } if(k==="shop") openShop(); if(k==="altar") openAltar(); if(k==="burn") openBurn(); if(k==="donate") openDonate(); if(k==="lot") openLot("ask"); if(k==="lamp"||k==="lampR") openLamp(); if(k==="bell"){ myBell++; meAv.burnT=0; ringBell(true); markDirty(); toast("咚——鐘聲迴盪殿內"); } if(k==="drum"){ myDrum++; meAv.burnT=0; hitDrum(true); markDirty(); toast("咚！鼓聲響起"); } }
+function openStation(k){ if(k==="cats"){ openCats(); return; } if(k==="fountain"){ openFountain(); return; } if(k==="wish"){ openWish(); return; } if(CENSER_INFO[k]){ openCenser(k); return; } if(k==="jieqian"){ openJieqian(); return; } if(k==="shop") openShop(); if(k==="altar") openAltar(); if(k==="burn") openBurn(); if(k==="donate") openDonate(); if(k==="lot") openLot("ask"); if(k==="lamp"||k==="lampR") openLamp(); }
 function openThanks(i){ const th=THANKS[i]; if(!th) return; sfx.coin(); openSheet("thanks","感謝贊助",`<img class="thanks-img" src="${th.img}" alt="感謝看板" width="1024" height="768"><p class="thanks-text">${esc(th.text)}</p>`); }
 function openShop(){ const html=`<p class="lead">拜拜順序：先到廟埕天公爐，再拜媽祖、龍邊財神爺、虎邊月老，最後是供桌下的虎爺。五爐都插好香，再到廟埕金爐燒金紙。</p>
   <div class="goods">${GOODS.map(g=>`<button class="good" data-act="buy" data-v="${g.k}" ${bag.coins<g.price?"disabled":""}><span class="name">${g.name}</span><span class="meta">${g.meta}</span><span class="price">${g.price} 平安幣</span><span class="own">持有 ${bag.items[g.k]||0}</span></button>`).join("")}</div>
