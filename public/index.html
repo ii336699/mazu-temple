@@ -1686,6 +1686,7 @@ function initCF(first){
   ["pointerdown","keydown","touchstart","wheel"].forEach(ev=>window.addEventListener(ev,wake,{capture:true,passive:true}));
   document.addEventListener("visibilitychange",()=>{ if(document.hidden) hiddenAt=Date.now(); else wake(); });
   setInterval(()=>{ if(parked||!ws) return; const now=Date.now(); if(document.hidden?now-hiddenAt>60000:now-lastInput>300000){ parked=true; closedByUs=true; try{ ws.close(); }catch(e){} roomConnected=false; peerState.clear(); rebuild(); updateCount(); } },10000);
+  window.__mzDisconnect=()=>{ closedByUs=true; parked=true; try{ ws&&ws.close(); }catch(e){} };
   HALLS.switchTo=i=>{ if(i===hall||i<0||i>=HALL_NAMES.length) return; parked=false; closedByUs=true; try{ ws&&ws.close(); }catch(e){} connect(i); toast(`前往${HALL_NAMES[i]}`); };
   const poll=async()=>{ const j=await probeCF(); if(j){ HALLS.counts=j.counts.slice(); HALLS.counts[hall]=Math.max(HALLS.counts[hall],1+[...peerState.values()].filter(v=>v.p&&v.p.u!==0).length); if(sheetKind==="halls") renderHalls(); } };
   setInterval(()=>{ if(sheetKind==="halls") poll(); },4000);
@@ -2203,7 +2204,8 @@ function popStick(){ if(poppedStick) lotTube.remove(poppedStick); poppedStick=ne
 let headFront=false;
 const clock=new T.Clock(); let smokeAcc=0, emberAcc=0;
 const tmpV=new T.Vector3();
-function tick(){ const dt=Math.min(.05,clock.getDelta()); const t=clock.elapsedTime;
+let gameAsleep=false;
+function tick(){ if(gameAsleep) return; const dt=Math.min(.05,clock.getDelta()); const t=clock.elapsedTime;
   meAv.update(dt); arrivedCheck();
   if(tapMark.visible){ tapT+=dt; const arrived=!(meAv.path&&meAv.path.length)&&meAv.pos.distanceTo(meAv.target)<.06; const k=1+Math.sin(tapT*6)*.12; const [r1,r2,dot]=tapMark.userData.parts;
     r1.scale.setScalar(k); r2.scale.setScalar(1+((tapT*1.2)%1)*.8); r2.material.opacity=.7*(1-((tapT*1.2)%1));
@@ -2316,15 +2318,17 @@ if(firstVisit) setTimeout(()=>openLook(true),600); else setTimeout(()=>toast(gui
   const ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1), android=/Android/.test(ua);
   const inApp=/Barcelona|Instagram|FBAN|FBAV|FB_IAB|Line\/|Threads|MicroMessenger|KAKAOTALK|; wv\)/i.test(ua)||(ios&&!/Safari\//.test(ua));
   let seen=false; try{ seen=sessionStorage.getItem("mz.inapp")==="1"; }catch(e){}
-  if(inApp&&!seen){ const box=$("#inapp"); box.hidden=false; const done=()=>{ box.hidden=true; try{ sessionStorage.setItem("mz.inapp","1"); }catch(e){} };
+  if(inApp&&!seen){ const box=$("#inapp"); box.hidden=false; const done=()=>{ if(gameAsleep) return; box.hidden=true; try{ sessionStorage.setItem("mz.inapp","1"); }catch(e){} };
     $("#inappNo").onclick=done;
-    const guide=()=>{ $("#inappHelp").hidden=false; $("#inappArrow").hidden=false; $("#inappYes").textContent="我知道了"; $("#inappYes").onclick=done; };
-    $("#inappYes").onclick=()=>{ setTimeout(guide,700);
+    const guide=()=>{ $("#inappHelp").hidden=false; $("#inappArrow").hidden=false; $("#inappYes").hidden=true; };
+    const sleepHere=()=>{ if(gameAsleep) return; gameAsleep=true; try{ bgm.pause(); }catch(e){} try{ ac&&ac.suspend(); }catch(e){} soundOn=false; try{ window.__mzDisconnect&&window.__mzDisconnect(); }catch(e){}
+      $("#inappT").textContent="已改用瀏覽器參拜"; $("#inappNo").textContent="繼續在這裡玩"; $("#inappNo").onclick=()=>location.reload(); box.querySelector(".inapp-card > p").textContent="這個視窗的遊戲已經暫停、音樂也關了，不會跟瀏覽器裡的遊戲打架。可以點左上角的 ✕ 把這個視窗關掉。"; };
+    $("#inappYes").onclick=()=>{ sleepHere(); setTimeout(guide,700);
       if(/Line\//i.test(ua)){ location.href=SITE+"?openExternalBrowser=1"; return; }
       if(android){ location.href="intent://"+SITE.replace(/^https:\/\//,"")+"#Intent;scheme=https;action=android.intent.action.VIEW;end"; return; }
       if(ios){ location.href="x-safari-"+SITE; return; }
       window.open(SITE,"_blank"); };
-    $("#inappCopy").onclick=async()=>{ let ok=false; try{ await navigator.clipboard.writeText(SITE); ok=true; }catch(e){} toast(ok?"網址已複製，貼到 Safari 或 Chrome 開啟":"請長按網址列自行複製",3600); };
+    $("#inappCopy").onclick=async()=>{ sleepHere(); let ok=false; try{ await navigator.clipboard.writeText(SITE); ok=true; }catch(e){} toast(ok?"網址已複製，貼到 Safari 或 Chrome 開啟":"請長按網址列自行複製",3600); };
     box.addEventListener("click",e=>{ if(e.target===box) done(); }); } }
 window.__mz={FT,sideMuralMat,CATS,fuAnims,passFu,walkTo,tapMark,camLimit,HZ,renderer,scene,stations,jiaoCam,flyers,sheet,meAv,openPoem,openLot,openStation,goStation,trySit,bag,camera,setYaw:v=>camYaw=v,setPitch:v=>camPitch=v,setDist:v=>camDist=v};
 })();
