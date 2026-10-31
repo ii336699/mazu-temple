@@ -1839,12 +1839,12 @@ function initCF(first){
     ws.onclose=()=>{ roomConnected=false; updateCount(); if(closedByUs) return; retry++; setTimeout(()=>{ if(!closedByUs&&(!ws||ws.readyState>1)) connect(hall); },Math.min(15000,1000*retry*retry)); }; }
   room={ presence(p){ if(ws&&ws.readyState===1){ try{ ws.send(JSON.stringify({t:"st",p})); }catch(e){} } return Promise.resolve(); } };
   HALLS.current=()=>hall;
-  // Idle players drop their connection (hidden 60s, or 5 min without touching anything) so halls can sleep; any touch reconnects.
+  // Idle players drop their connection (hidden 60s, or 5 min without touching anything) so halls can sleep; any touch reconnects. The 主委 account is never parked.
   let parked=false, lastInput=Date.now(), hiddenAt=document.hidden?Date.now():0;
   const wake=()=>{ lastInput=Date.now(); if(parked&&!document.hidden){ parked=false; connect(hall); } };
   ["pointerdown","keydown","touchstart","wheel"].forEach(ev=>window.addEventListener(ev,wake,{capture:true,passive:true}));
   document.addEventListener("visibilitychange",()=>{ if(document.hidden) hiddenAt=Date.now(); else wake(); });
-  setInterval(()=>{ if(parked||!ws) return; const now=Date.now(); if(document.hidden?now-hiddenAt>60000:now-lastInput>300000){ parked=true; closedByUs=true; try{ ws.close(); }catch(e){} roomConnected=false; peerState.clear(); rebuild(); updateCount(); } },10000);
+  setInterval(()=>{ if(parked||!ws||me.sp) return; const now=Date.now(); if(document.hidden?now-hiddenAt>60000:now-lastInput>300000){ parked=true; closedByUs=true; try{ ws.close(); }catch(e){} roomConnected=false; peerState.clear(); rebuild(); updateCount(); } },10000);
   window.__mzDisconnect=()=>{ closedByUs=true; parked=true; try{ ws&&ws.close(); }catch(e){} };
   HALLS.switchTo=i=>{ if(i===hall||i<0||i>=HALL_NAMES.length) return; parked=false; closedByUs=true; try{ ws&&ws.close(); }catch(e){} connect(i); toast(`前往${HALL_NAMES[i]}`); };
   const poll=async()=>{ const j=await probeCF(); if(j){ HALLS.counts=j.counts.slice(); HALLS.counts[hall]=Math.max(HALLS.counts[hall],1+[...peerState.values()].filter(v=>v.p&&v.p.u!==0).length); if(sheetKind==="halls") renderHalls(); } };
