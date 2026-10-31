@@ -8,7 +8,7 @@ const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes":
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
-    if (url.pathname === "/ws" || url.pathname === "/halls" || ["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan"].includes(url.pathname)) {
+    if (url.pathname === "/ws" || url.pathname === "/halls" || ["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns"].includes(url.pathname)) {
       try { return await api(req, env, url); }
       catch (e) { return new Response(JSON.stringify({ error: String(e && e.message || e).slice(0, 300) }), { status: 503, headers: { "content-type": "application/json", "cache-control": "no-store" } }); }
     }
@@ -27,7 +27,7 @@ async function api(req, env, url) {
       const m = MEMO.get(url.pathname);
       if (m && Date.now() - m.at < MEMO_TTL[url.pathname]) return new Response(m.body, { headers: { "content-type": "application/json", "cache-control": "no-store" } });
     }
-    if (["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan"].includes(url.pathname)) {
+    if (["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns"].includes(url.pathname)) {
       if (req.method === "POST") MEMO.delete(url.pathname === "/lamp" ? "/lamps" : "/wishes");
       const lobby = env.LOBBY.get(env.LOBBY.idFromName("lobby"));
       const r = await lobby.fetch(new Request("https://lobby" + url.pathname + url.search, { method: req.method, headers: req.headers, body: req.method === "POST" ? await req.text() : undefined }));
@@ -51,6 +51,7 @@ export class Hall extends DurableObject {
       const fw = { seed: (b.seed | 0) >>> 0, at: Date.now() }; await this.ctx.storage.put("fw", fw);
       const out = JSON.stringify({ t: "fw", seed: fw.seed, el: 0 }); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
     }
+    if (url.pathname === "/lanterns") { let b = {}; try { b = await req.json(); } catch {} const out = JSON.stringify({ t: "sl50", seed: (b.seed | 0) >>> 0 }); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok"); }
     if (url.pathname === "/announce") { // from the lobby: push the chair's announcement to everyone in this hall
       let b = {}; try { b = await req.json(); } catch {}
       const ann = { t: "ann", text: String(b.text || "").slice(0, 80), at: Number(b.at) || Date.now() }; await this.ctx.storage.put("ann", ann);
@@ -153,6 +154,13 @@ export class Lobby extends DurableObject {
       if (ok) { const cur = top.find(e => e.id === id); if (!cur) top.push({ id, name, score, at: now }); else if (score > cur.score) { cur.score = score; cur.name = name; cur.at = now; } else cur.name = name;
         top.sort((a, b) => b.score - a.score || a.at - b.at); top = top.slice(0, 20); await this.ctx.storage.put("zhan", top); }
       return json({ ok, top: top.slice(0, 10) });
+    }
+    if (url.pathname === "/lanterns" && req.method === "POST") {
+      const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
+      const last = (await this.ctx.storage.get("slAt")) || 0; if (Date.now() - last < 30000) return json({ ok: false, busy: true });
+      await this.ctx.storage.put("slAt", Date.now()); const seed = (Math.random() * 4294967295) >>> 0;
+      await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/lanterns", { method: "POST", body: JSON.stringify({ seed }) }).catch(() => {})));
+      return json({ ok: true });
     }
     if (url.pathname === "/fireworks" && req.method === "POST") {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);

@@ -1747,7 +1747,7 @@ let room=null, myBow=0, myJiao=[0,""], myBurn=0, myOffers=[];
 let dirty=true, lastSend=0, lastSentHead=0;
 function markDirty(){ dirty=true; }
 let chairHidden=false;
-function presencePayload(){ return {v:1,u:(customizing||document.hidden||chairHidden)?0:1,n:(me.name||"").slice(0,10),k:me.no||0,l:me.look,x:+meAv.target.x.toFixed(2),z:+meAv.target.y.toFixed(2),r:+meAv.rotY.toFixed(1),s:meAv.seat,b:myBow,h:meAv.hold?1:0,j:myJiao,f:myBurn,o:myOffers,a:bag.items.fu?1:0,g:me.lamp??-1,k:myBell,d:myDrum,m:myMsg,c:myChat,p:myPlant,gf:myGF,fx:myFx,t:bag.redThread?1:0,q:me.sp?1:0,w:myWish,y:+meAv.headGoal.toFixed(1),sq:mySj?[mySj.g+1,mySj.at]:0,sk:mySparkler?1:0,fs:myFwShow||0,e:myEmo,sl:mySL}; }
+function presencePayload(){ return {v:1,u:(customizing||document.hidden||chairHidden)?0:1,n:(me.name||"").slice(0,10),k:me.no||0,l:me.look,x:+meAv.target.x.toFixed(2),z:+meAv.target.y.toFixed(2),r:+meAv.rotY.toFixed(1),s:meAv.seat,b:myBow,h:meAv.hold?1:0,j:myJiao,f:myBurn,o:myOffers,a:bag.items.fu?1:0,g:me.lamp??-1,k:myBell,d:myDrum,m:myMsg,c:myChat,p:myPlant,gf:myGF,fx:myFx,t:bag.redThread?1:0,q:me.sp?1:0,w:myWish,y:+meAv.headGoal.toFixed(1),sq:mySj?[mySj.g+1,mySj.at]:0,sk:mySparkler?1:0,fs:myFwShow||0,e:myEmo,sl:mySL,sm:myMassSL||0}; }
 let lastSent="", lastBeat=0;
 function sendPresence(force){ if(!room) return; dirty=false; const p=presencePayload(), str=JSON.stringify(p), now=performance.now(); lastSend=now; if(str===lastSent&&force!==true&&now-lastBeat<60000) return; lastSent=str; lastBeat=now; room.presence(p).catch(()=>{}); }
 function seatTakenByPeer(i){ for(const r of remotes.values()) if(r.seat===i) return true; return false; }
@@ -1780,6 +1780,7 @@ function syncPeers(peers){ const seen=new Set();
     if(Array.isArray(pr.gf)&&CENSERS[pr.gf[0]]&&pr.gf[1]&&pr.gf[1]!==av.lastGF){ av.lastGF=pr.gf[1]; passFu(av,pr.gf[0]); }
     if(av.lastP===undefined) av.lastP=Array.isArray(pr.p)?pr.p[1]:"";
     if(Array.isArray(pr.p)&&CENSERS[pr.p[0]]&&pr.p[1]&&pr.p[1]!==av.lastP){ av.lastP=pr.p[1]; addIncenseTo(pr.p[0],1); av.burnT=0; }
+    if(Array.isArray(pr.sm)&&Number.isFinite(pr.sm[0])&&Date.now()-num(pr.sm[1],0,1e13,0)<15000) massLanterns(pr.sm[0]);
     if(av.lastSL===undefined) av.lastSL=Array.isArray(pr.sl)?pr.sl[1]:"";
     if(Array.isArray(pr.sl)&&pr.sl[1]&&pr.sl[1]!==av.lastSL){ av.lastSL=pr.sl[1]; if(Date.now()-num(pr.sl[0],0,1e13,0)<20000) launchSkyLantern(av,null); }
     if(av.lastE===undefined) av.lastE=Array.isArray(pr.e)?pr.e[1]:"";
@@ -1826,6 +1827,7 @@ function initCF(first){
       if(m.t==="full"){ closedByUs=true; if(hall<HALL_NAMES.length-1){ toast(`${HALL_NAMES[hall]}人滿了，帶你到${HALL_NAMES[hall+1]}`,3200); connect(hall+1); } return; }
       if(m.t==="hello"&&Array.isArray(m.peers)){ m.peers.forEach(x=>{ if(okId(x.id)&&x.p&&typeof x.p==="object") peerState.set(x.id,{p:x.p,t:Date.now()}); }); rebuild(); return; }
       if(m.t==="ann"&&typeof m.text==="string"){ if(seenOnce("a"+(m.at||m.text))) return; showMarquee(m.text); return; }
+      if(m.t==="sl50"&&Number.isFinite(m.seed)){ massLanterns(m.seed); return; }
       if(m.t==="fw"&&Number.isFinite(m.seed)){ fwStart(m.seed,+m.el||0); return; }
       if(m.t==="st"&&okId(m.id)&&m.p&&typeof m.p==="object"){ peerState.set(m.id,{p:m.p,t:Date.now()}); rebuild(); return; }
       if(m.t==="leave"&&okId(m.id)){ if(peerState.delete(m.id)) rebuild(); } };
@@ -1970,7 +1972,7 @@ function openContact(){ const isChair=!!me.sp;
   <div class="group" style="margin-top:14px"><span class="group-label">🛠️ 主委工具</span><div class="goods">
     <button class="good" data-act="chairHide"><span class="name">${chairHidden?"👁 解除隱形":"🫥 隱形"}</span><span class="meta">${chairHidden?"目前隱形中，其他人看不到你":"其他香客看不到你，也不算在殿內人數"}</span></button>
     <button class="good" data-act="chairReset"><span class="name">🔄 重置今日紀錄</span><span class="meta">發財金、紅線、參拜進度、收驚等每日限制全部歸零，方便測試</span></button></div></div>
-  <div class="group" style="margin-top:14px"><span class="group-label">🎆 全服煙火（主委）</span><button class="good wide" data-act="askFw"><span class="name">施放全服煙火（3 分鐘）</span><span class="meta">每一殿的廟外廣場同時開始，大家都會拿到仙女棒</span></button></div><div id="msgList" style="margin-top:12px"></div>`:""}`);
+  <div class="group" style="margin-top:14px"><span class="group-label">🎆 全服煙火（主委）</span><button class="good wide" data-act="askSL" style="margin-bottom:8px"><span class="name">施放 50 盞天燈</span><span class="meta">每一殿的廟埕同時從各處升起天燈</span></button><button class="good wide" data-act="askFw"><span class="name">施放全服煙火（3 分鐘）</span><span class="meta">每一殿的廟外廣場同時開始，大家都會拿到仙女棒</span></button></div><div id="msgList" style="margin-top:12px"></div>`:""}`);
   const t=$("#msgText"); t.addEventListener("input",()=>{ $("#msgCount").textContent=`${[...t.value].length} / 500`; }); }
 HANDLERS.sendMsg=async()=>{ const t=$("#msgText"); const text=(t&&t.value||"").trim(); if(!text){ toast("先寫點什麼吧"); return; }
   try{ const r=await fetch("/msg",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({text:[...text].slice(0,500).join(""),name:msgName(),id:load("mz.id","")})}); const j=await r.json().catch(()=>({}));
@@ -2417,8 +2419,12 @@ function makeSkyLantern(img){ const g=new T.Group(); g.userData.noMerge=1;
   const fl=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffb04a"),transparent:true,blending:T.AdditiveBlending,depthWrite:false})); fl.scale.set(1.6,1.6,1); fl.position.y=-.2; g.add(fl);
   const core=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#fff2c0"),transparent:true,blending:T.AdditiveBlending,depthWrite:false})); core.scale.set(.35,.35,1); core.position.y=-.45; g.add(core);
   g.userData.mats=[m,fl.material,core.material]; return g; }
-function launchSkyLantern(av,img){ const g=makeSkyLantern(img); g.position.set(av.pos.x,1.6,av.pos.y); scene.add(g);
-  skyLanterns.push({g,t:0,vx:(Math.random()-.5)*.25,vz:.25+Math.random()*.25,ph:Math.random()*6}); if(skyLanterns.length>40){ const o=skyLanterns.shift(); scene.remove(o.g); } }
+function launchSkyLantern(av,img,y0){ const g=makeSkyLantern(img); g.position.set(av.pos.x,y0||1.6,av.pos.y); scene.add(g);
+  skyLanterns.push({g,t:0,vx:(Math.random()-.5)*.25,vz:.25+Math.random()*.25,ph:Math.random()*6}); if(skyLanterns.length>90){ const o=skyLanterns.shift(); scene.remove(o.g); } }
+// 主委: fifty sky lanterns rising all over the courtyard (same layout on every screen from the shared seed)
+function massLanterns(seed){ if(seenOnce("s"+seed)) return; const r=fwRng(seed); const pts=[]; let tries=0;
+  while(pts.length<50&&tries++<2000){ const x=(r()-.5)*34, z=HZ+2.5+r()*20; if(Math.hypot(x,z-(HZ+20.2))<3.2) continue; if(pts.some(p=>Math.hypot(p[0]-x,p[1]-z)<2.1)) continue; pts.push([x,z]); }
+  pts.forEach(([x,z],i)=>setTimeout(()=>launchSkyLantern({pos:{x,y:z}},null,.4+r()*1.2),i*160+r()*400)); showCaption("天燈滿天，願望成真"); healSound(); }
 function updateSkyLanterns(dt){ for(let i=skyLanterns.length-1;i>=0;i--){ const s=skyLanterns[i]; s.t+=dt; const g=s.g; const up=s.t<1.5?.3:.55+Math.min(.4,s.t*.01);
     g.position.y+=up*dt; g.position.x+=(s.vx+Math.sin(s.t*.6+s.ph)*.15)*dt; g.position.z+=s.vz*dt; g.rotation.y+=dt*.15; g.rotation.z=Math.sin(s.t*.8+s.ph)*.06;
     const f=s.t>70?Math.max(0,1-(s.t-70)/10):1; g.userData.mats.forEach(m=>{ m.opacity=(m.isSpriteMaterial?1:.96)*f; }); g.userData.mats[1].opacity=f*(.75+Math.sin(s.t*9+s.ph)*.15);
@@ -2802,6 +2808,13 @@ HANDLERS.chairHide=()=>{ if(!me.sp) return; chairHidden=!chairHidden; meAv.root.
 HANDLERS.chairReset=()=>{ if(!me.sp) return; delete bag.fcDay; delete bag.fcTry; delete bag.rxDay; delete bag.rxTry; bag.redThread=0; bag.planted=[]; bag.bowed={}; bag.flow={}; delete bag.zhanDay;
   bag.coins=Math.max(bag.coins,300); saveBag(); meAv.setThread(false); myOffers=[]; try{ rebuildMyOffers(); }catch(e){} markDirty(); renderWallet(); openContact(); toast("今日紀錄已重置，可以重新測試",2600); };
 let fwKeyHold="";
+let slKeyHold="";
+HANDLERS.askSL=()=>{ slKeyHold=(($("#readKey")||{}).value||"").trim(); openSheet("contact","施放 50 盞天燈？",`<p class="lead">確定要一次施放 50 盞天燈嗎？每一殿的廟埕都會同時從各處升起天燈。</p><div class="row"><button class="secondary" data-act="fwCancel">先不要</button><button class="primary" data-act="sendSL">確定施放 🏮</button></div>`); };
+let myMassSL=0;
+HANDLERS.sendSL=async()=>{ const key=((($("#readKey")||{}).value||"").trim())||slKeyHold; closeSheet();
+  if(!USE_CF){ const seed=(Math.random()*1e9)|0; myMassSL=[seed,Date.now()]; markDirty(); massLanterns(seed); return; } if(!key){ toast("請先輸入留言讀取密碼"); return; }
+  try{ const r=await fetch("/lanterns",{method:"POST",headers:{"content-type":"application/json","x-key":key}}); const j=await r.json().catch(()=>({}));
+    if(j.ok){ save("mz.rk",key); toast("50 盞天燈施放中！",3000); } else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.busy?"剛剛才放過，等半分鐘再放":j.locked?"嘗試次數過多，今天先鎖住了":"密碼不對，天燈沒有施放",3200); }catch(e){ toast("天燈沒有施放，請稍後再試"); } };
 HANDLERS.askFw=()=>{ fwKeyHold=(($("#readKey")||{}).value||"").trim(); openSheet("contact","施放全服煙火？",`<p class="lead">確定要施放全服煙火嗎？每一殿的所有香客都會同時看到 3 分 36 秒的煙火秀，背景音樂也會換成煙火歌。上一場沒放完前不能再放。</p><div class="row"><button class="secondary" data-act="fwCancel">先不要</button><button class="primary" data-act="sendFw">確定施放 🎆</button></div>`); };
 HANDLERS.fwCancel=()=>openContact();
 HANDLERS.sendFw=async()=>{ const key=((($("#readKey")||{}).value||"").trim())||fwKeyHold; if(!USE_CF){ const seed=(Math.random()*1e9)|0; myFwShow=[seed,Date.now()]; markDirty(); fwStart(seed,0); closeSheet(); return; } if(!key){ toast("請先輸入留言讀取密碼"); return; }
