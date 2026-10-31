@@ -149,7 +149,8 @@ body.customizing .hall,body.customizing .actions,body.customizing .rot{display:n
 .row{display:flex;gap:10px;flex-wrap:wrap}
 .row>*{flex:1 1 140px}
 .shop-extra{display:grid;gap:10px;margin-top:18px;padding-top:16px;border-top:1px solid var(--gold-soft)}.good.wide{width:100%;box-sizing:border-box;text-decoration:none;color:inherit}.jko-qr{display:block;width:min(100%,300px);height:auto;margin:12px auto;border-radius:16px}.jko-link{margin-bottom:10px}.thanks-img{display:block;width:100%;height:auto;border-radius:12px;margin:4px 0 12px}.thanks-text{font-family:var(--f-display);font-size:19px;line-height:1.6;color:#ffe2a0;text-align:center;margin:0 0 6px}
-.inapp{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:16px;background:rgba(12,4,2,.62)}.inapp[hidden]{display:none}.inapp-card{max-width:360px;width:100%;border-radius:20px;padding:20px}.inapp-card h2{margin:0 0 8px;font-family:var(--f-display);font-size:21px;color:var(--gold)}.inapp-card p{margin:0 0 14px;font-size:15px;line-height:1.65;color:var(--ink)}.inapp-row{display:flex;gap:10px}.inapp-row button{flex:1}.inapp-help{color:var(--muted)!important;font-size:14px!important;margin-top:14px!important}
+.inapp{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:16px;background:rgba(12,4,2,.62)}.inapp[hidden]{display:none}.inapp-card{max-width:360px;width:100%;border-radius:20px;padding:20px}.inapp-card h2{margin:0 0 8px;font-family:var(--f-display);font-size:21px;color:var(--gold)}.inapp-card p{margin:0 0 14px;font-size:15px;line-height:1.65;color:var(--ink)}.inapp-row{display:flex;gap:10px}.inapp-row button{flex:1}.inapp-arrow{position:fixed;top:6px;right:10px;display:flex;flex-direction:column;align-items:flex-end;gap:2px;color:#ffe2a0;text-align:right;font-size:15px;line-height:1.35;animation:inappBob 1s ease-in-out infinite;pointer-events:none}.inapp-arrow span{font-size:40px;line-height:1;margin-right:6px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.6))}.inapp-arrow b{background:rgba(142,28,20,.92);border:1px solid var(--gold);border-radius:12px;padding:6px 10px}.inapp-arrow[hidden]{display:none}@keyframes inappBob{50%{transform:translateY(-8px)}}@media (prefers-reduced-motion:reduce){.inapp-arrow{animation:none}}
+.inapp-help{color:var(--muted)!important;font-size:14px!important;margin-top:14px!important}
 .give-red{color:#ff5a4f!important;font-weight:700;margin-bottom:10px}.lead.small{font-size:13px;margin:4px 0 12px}.mail-row{display:flex;gap:8px;margin:12px 0}.mail-box{flex:1;min-width:0;font:inherit;font-size:16px;padding:12px;border-radius:12px;border:1px solid var(--gold-soft);background:rgba(255,255,255,.06);color:inherit;user-select:text;-webkit-user-select:text}.mail-copy{flex:none;align-items:center;justify-content:center}
 .tools{position:relative}.vol-pop{position:absolute;right:0;top:50px;z-index:30;width:min(280px,calc(100vw - 32px));padding:12px 14px;border-radius:16px;border:1px solid var(--gold-soft)}.vol-pop[hidden]{display:none}.vol-mute{width:100%;margin-top:4px;justify-content:center}
 .vol-row{display:grid;grid-template-columns:5em 1fr 3.2em;align-items:center;gap:10px;margin:10px 0;font-size:14px}.vol-row input{width:100%;accent-color:var(--gold);touch-action:pan-x}.vol-row b{font-weight:500;color:var(--gold);text-align:right;font-variant-numeric:tabular-nums}
@@ -191,8 +192,9 @@ input,textarea{-webkit-user-select:text;user-select:text}
     <h2 id="inappT">建議用瀏覽器參拜</h2>
     <p>你現在是在 App 裡開啟，畫面可能比較卡，滑動也容易不小心跳出。用 Safari 或 Chrome 參拜會順暢很多。</p>
     <div class="inapp-row"><button class="secondary" id="inappNo">繼續在這裡</button><button class="primary" id="inappYes">用瀏覽器開啟</button></div>
-    <div id="inappHelp" hidden><p class="inapp-help">如果沒有自動跳轉：點右上角的「⋯」，選「在瀏覽器中開啟」（或「用 Safari 開啟」）。</p><button class="secondary" id="inappCopy" style="width:100%">複製網址</button></div>
-  </div></div>
+    <div id="inappHelp" hidden><p class="inapp-help">App 不讓網頁自動跳出去，請照右上角箭頭：<br>① 點畫面最上方右邊的「<b>⋯</b>」<br>② 選「<b>在外部瀏覽器開啟</b>」或「<b>用 Safari 開啟</b>」</p><button class="secondary" id="inappCopy" style="width:100%">或複製網址，自己貼到 Safari / Chrome</button></div>
+  </div>
+  <div class="inapp-arrow" id="inappArrow" hidden aria-hidden="true"><span>⬆</span><b>點右上角「⋯」<br>選外部瀏覽器開啟</b></div></div>
 <div class="top">
   <div class="hall">
     <button class="pill glass hall-btn" id="hallBtn" aria-label="切換殿別"><span class="seal">媽</span><span class="hall-name">天后宮 正殿</span><span class="count hall-count"><span class="dot off" id="dot"></span><span id="countText">連線中…</span></span><span class="hall-more">切換 ▾</span></button>
@@ -2214,7 +2216,8 @@ if(firstVisit) setTimeout(()=>openLook(true),600); else setTimeout(()=>toast(gui
   let seen=false; try{ seen=sessionStorage.getItem("mz.inapp")==="1"; }catch(e){}
   if(inApp&&!seen){ const box=$("#inapp"); box.hidden=false; const done=()=>{ box.hidden=true; try{ sessionStorage.setItem("mz.inapp","1"); }catch(e){} };
     $("#inappNo").onclick=done;
-    $("#inappYes").onclick=()=>{ $("#inappHelp").hidden=false;
+    const guide=()=>{ $("#inappHelp").hidden=false; $("#inappArrow").hidden=false; $("#inappYes").textContent="我知道了"; $("#inappYes").onclick=done; };
+    $("#inappYes").onclick=()=>{ setTimeout(guide,700);
       if(/Line\//i.test(ua)){ location.href=SITE+"?openExternalBrowser=1"; return; }
       if(android){ location.href="intent://"+SITE.replace(/^https:\/\//,"")+"#Intent;scheme=https;action=android.intent.action.VIEW;end"; return; }
       if(ios){ location.href="x-safari-"+SITE; return; }
