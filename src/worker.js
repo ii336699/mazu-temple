@@ -8,7 +8,7 @@ const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes":
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
-    if (url.pathname === "/ws" || url.pathname === "/halls" || ["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs"].includes(url.pathname)) {
+    if (url.pathname === "/ws" || url.pathname === "/halls" || ["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce"].includes(url.pathname)) {
       try { return await api(req, env, url); }
       catch (e) { return new Response(JSON.stringify({ error: String(e && e.message || e).slice(0, 300) }), { status: 503, headers: { "content-type": "application/json", "cache-control": "no-store" } }); }
     }
@@ -27,7 +27,7 @@ async function api(req, env, url) {
       const m = MEMO.get(url.pathname);
       if (m && Date.now() - m.at < MEMO_TTL[url.pathname]) return new Response(m.body, { headers: { "content-type": "application/json", "cache-control": "no-store" } });
     }
-    if (["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs"].includes(url.pathname)) {
+    if (["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce"].includes(url.pathname)) {
       if (req.method === "POST") MEMO.delete(url.pathname === "/lamp" ? "/lamps" : "/wishes");
       const lobby = env.LOBBY.get(env.LOBBY.idFromName("lobby"));
       const r = await lobby.fetch(new Request("https://lobby" + url.pathname + url.search, { method: req.method, headers: req.headers, body: req.method === "POST" ? await req.text() : undefined }));
@@ -46,6 +46,11 @@ export class Hall extends DurableObject {
   constructor(ctx, env) { super(ctx, env); this.env = env; }
   async fetch(req) {
     const url = new URL(req.url);
+    if (url.pathname === "/announce") { // from the lobby: push the chair's announcement to everyone in this hall
+      let b = {}; try { b = await req.json(); } catch {}
+      const ann = { t: "ann", text: String(b.text || "").slice(0, 80), at: Date.now() }; await this.ctx.storage.put("ann", ann);
+      const out = JSON.stringify(ann); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
+    }
     const h = Math.max(0, Math.min(HALLS - 1, parseInt(url.searchParams.get("hall") || "0", 10) || 0));
     const id = (url.searchParams.get("id") || "").replace(/[^a-z0-9]/g, "").slice(0, 16) || crypto.randomUUID().slice(0, 12);
     const active = this.ctx.getWebSockets().filter(w => (w.deserializeAttachment() || {}).u !== 0).length;
@@ -57,6 +62,7 @@ export class Hall extends DurableObject {
     const peers = [];
     for (const w of this.ctx.getWebSockets()) { if (w === server) continue; const a = w.deserializeAttachment() || {}; if (a.p) peers.push({ id: a.id, p: a.p }); }
     server.send(JSON.stringify({ t: "hello", peers }));
+    const ann = await this.ctx.storage.get("ann"); if (ann && Date.now() - ann.at < 5 * 60 * 1000) server.send(JSON.stringify(ann));
     this.report(h);
     return new Response(null, { status: 101, webSocket: client });
   }
@@ -100,6 +106,19 @@ const json = o => new Response(JSON.stringify(o), { headers: { "content-type": "
 
 export class Lobby extends DurableObject {
   constructor(ctx, env) { super(ctx, env); this.env = env; }
+  async checkKey(req) {
+      // Reading needs the long password kept in Cloudflare Secrets Store (binding ADMIN_KEY); it never appears in this repo or the page.
+      let secret = ""; try { const k = this.env.ADMIN_KEY; secret = String((k && typeof k.get === "function") ? await k.get() : (k || "")); } catch {}
+      if (!secret) return { ok: false, unset: true };
+      const day = new Date().toISOString().slice(0, 10); const f = (await this.ctx.storage.get("fails")) || { day, n: 0 }; if (f.day !== day) { f.day = day; f.n = 0; }
+      if (f.n >= 10) return { ok: false, locked: true };
+      const given = String(req.headers.get("x-key") || "").trim().slice(0, 200);
+      const h = async t => new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t)));
+      const [a, b] = await Promise.all([h(given), h(secret)]); let diff = 0; for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
+      if (!given || diff !== 0) { f.n++; await this.ctx.storage.put("fails", f); return { ok: false }; }
+    return { ok: true };
+  }
+
   async fetch(req) {
     const url = new URL(req.url);
     // 聯絡作者: private messages. Reading needs the ADMIN_KEY secret (set in the Cloudflare dashboard, never in this public repo);
@@ -112,16 +131,15 @@ export class Lobby extends DurableObject {
       if (now - (this.lastMsg.get(key) || 0) < 30000) return json({ ok: false, slow: true }); this.lastMsg.set(key, now);
       const m = (await this.ctx.storage.get("msgs")) || []; m.unshift({ name, text, at: now }); await this.ctx.storage.put("msgs", m.slice(0, 1000)); return json({ ok: true });
     }
+    if (url.pathname === "/announce" && req.method === "POST") {
+      const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
+      let b = {}; try { b = await req.json(); } catch {}
+      const text = clean(b.text, 80); if (!text) return json({ ok: false });
+      await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/announce", { method: "POST", body: JSON.stringify({ text }) }).catch(() => {})));
+      return json({ ok: true });
+    }
     if (url.pathname === "/msgs") {
-      // Reading needs the long password kept in Cloudflare Secrets Store (binding ADMIN_KEY); it never appears in this repo or the page.
-      let secret = ""; try { const k = this.env.ADMIN_KEY; secret = String((k && typeof k.get === "function") ? await k.get() : (k || "")); } catch {}
-      if (!secret) return json({ ok: false, unset: true });
-      const day = new Date().toISOString().slice(0, 10); const f = (await this.ctx.storage.get("fails")) || { day, n: 0 }; if (f.day !== day) { f.day = day; f.n = 0; }
-      if (f.n >= 10) return json({ ok: false, locked: true });
-      const given = String(req.headers.get("x-key") || "").trim().slice(0, 200);
-      const h = async t => new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t)));
-      const [a, b] = await Promise.all([h(given), h(secret)]); let diff = 0; for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
-      if (!given || diff !== 0) { f.n++; await this.ctx.storage.put("fails", f); return json({ ok: false }); }
+      const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
       return json({ ok: true, msgs: (await this.ctx.storage.get("msgs")) || [] });
     }
     // 光明燈: every lit lamp stays lit until its owner turns it off
