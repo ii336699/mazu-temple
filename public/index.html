@@ -148,7 +148,9 @@ body.customizing .hall,body.customizing .actions,body.customizing .rot{display:n
 .secondary{background:rgba(255,255,255,.05);border:1px solid var(--gold-soft);border-radius:12px;padding:11px 16px;font-size:15px}
 .row{display:flex;gap:10px;flex-wrap:wrap}
 .row>*{flex:1 1 140px}
-.shop-extra{display:grid;gap:10px;margin-top:18px;padding-top:16px;border-top:1px solid var(--gold-soft)}.good.wide{width:100%;box-sizing:border-box;text-decoration:none;color:inherit}.jko-qr{display:block;width:min(100%,300px);height:auto;margin:12px auto;border-radius:16px}.jko-link{margin-bottom:10px}.give-red{color:#ff5a4f!important;font-weight:700;margin-bottom:10px}.lead.small{font-size:13px;margin:4px 0 12px}.mail-row{display:flex;gap:8px;margin:12px 0}.mail-box{flex:1;min-width:0;font:inherit;font-size:16px;padding:12px;border-radius:12px;border:1px solid var(--gold-soft);background:rgba(255,255,255,.06);color:inherit;user-select:text;-webkit-user-select:text}.mail-copy{flex:none;align-items:center;justify-content:center}
+.shop-extra{display:grid;gap:10px;margin-top:18px;padding-top:16px;border-top:1px solid var(--gold-soft)}.good.wide{width:100%;box-sizing:border-box;text-decoration:none;color:inherit}.jko-qr{display:block;width:min(100%,300px);height:auto;margin:12px auto;border-radius:16px}.jko-link{margin-bottom:10px}.thanks-img{display:block;width:100%;height:auto;border-radius:12px;margin:4px 0 12px}.thanks-text{font-family:var(--f-display);font-size:19px;line-height:1.6;color:#ffe2a0;text-align:center;margin:0 0 6px}
+.inapp{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:16px;background:rgba(12,4,2,.62)}.inapp[hidden]{display:none}.inapp-card{max-width:360px;width:100%;border-radius:20px;padding:20px}.inapp-card h2{margin:0 0 8px;font-family:var(--f-display);font-size:21px;color:var(--gold)}.inapp-card p{margin:0 0 14px;font-size:15px;line-height:1.65;color:var(--ink)}.inapp-row{display:flex;gap:10px}.inapp-row button{flex:1}.inapp-help{color:var(--muted)!important;font-size:14px!important;margin-top:14px!important}
+.give-red{color:#ff5a4f!important;font-weight:700;margin-bottom:10px}.lead.small{font-size:13px;margin:4px 0 12px}.mail-row{display:flex;gap:8px;margin:12px 0}.mail-box{flex:1;min-width:0;font:inherit;font-size:16px;padding:12px;border-radius:12px;border:1px solid var(--gold-soft);background:rgba(255,255,255,.06);color:inherit;user-select:text;-webkit-user-select:text}.mail-copy{flex:none;align-items:center;justify-content:center}
 .tools{position:relative}.vol-pop{position:absolute;right:0;top:50px;z-index:30;width:min(280px,calc(100vw - 32px));padding:12px 14px;border-radius:16px;border:1px solid var(--gold-soft)}.vol-pop[hidden]{display:none}.vol-mute{width:100%;margin-top:4px;justify-content:center}
 .vol-row{display:grid;grid-template-columns:5em 1fr 3.2em;align-items:center;gap:10px;margin:10px 0;font-size:14px}.vol-row input{width:100%;accent-color:var(--gold);touch-action:pan-x}.vol-row b{font-weight:500;color:var(--gold);text-align:right;font-variant-numeric:tabular-nums}
 .goods{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
@@ -184,6 +186,13 @@ input,textarea{-webkit-user-select:text;user-select:text}
 <canvas id="c" tabindex="0" aria-label="媽祖廟正殿 3D 場景"></canvas>
 <div class="loading" id="loading">正在點燈</div>
 
+<div class="inapp" id="inapp" hidden role="dialog" aria-modal="true" aria-labelledby="inappT">
+  <div class="inapp-card glass">
+    <h2 id="inappT">建議用瀏覽器參拜</h2>
+    <p>你現在是在 App 裡開啟，畫面可能比較卡，滑動也容易不小心跳出。用 Safari 或 Chrome 參拜會順暢很多。</p>
+    <div class="inapp-row"><button class="secondary" id="inappNo">繼續在這裡</button><button class="primary" id="inappYes">用瀏覽器開啟</button></div>
+    <div id="inappHelp" hidden><p class="inapp-help">如果沒有自動跳轉：點右上角的「⋯」，選「在瀏覽器中開啟」（或「用 Safari 開啟」）。</p><button class="secondary" id="inappCopy" style="width:100%">複製網址</button></div>
+  </div></div>
 <div class="top">
   <div class="hall">
     <button class="pill glass hall-btn" id="hallBtn" aria-label="切換殿別"><span class="seal">媽</span><span class="hall-name">天后宮 正殿</span><span class="count hall-count"><span class="dot off" id="dot"></span><span id="countText">連線中…</span></span><span class="hall-more">切換 ▾</span></button>
@@ -454,6 +463,8 @@ const GOOD_BY = Object.fromEntries(GOODS.map(g=>[g.k,g]));
 const OFFER_KINDS=["hua","guo","bing","xiang"];
 const PHRASES=["媽祖保庇","平安順遂","感恩","大家好","一起拜拜","加油","闔家平安","謝謝"];
 const SIGN_NAMES={bell:"鐘",drum:"鼓"};
+// sponsor thank-you boards on the courtyard wall behind Guanyin (x = which wall panel)
+const THANKS=[{x:-4.5,img:"thanks1.jpg",text:"謝謝阿詠贊助50元伺服器營運費用 🫶"}];
 
 /* ================= persisted per-viewer state ================= */
 function load(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } }
@@ -1138,7 +1149,20 @@ const FT={x:0,z:HZ+20.2,H:4.4,k:1,mouth:new T.Vector3(),pool:new T.Vector3(0,.55
 { const redM=mat("#8a1a12",{roughness:.7}), goldP=mat("#d6a24a",{metalness:.85,roughness:.3}), stone=mat("#8a8278",{roughness:.85});
   box(28,3.6,.6,redM,0,1.8,HZ+22.9); box(28.4,.25,.9,mat("#3a1d14",{roughness:.9}),0,3.72,HZ+22.9); box(28.2,.08,.66,goldP,0,3.55,HZ+22.6);
   box(28,.5,.7,stone,0,.25,HZ+22.9);
-  for(const x of [-9,-4.5,4.5,9]){ const p=new T.Mesh(new T.PlaneGeometry(2.6,1.5),new T.MeshStandardMaterial({map:goldCarvedTex,metalness:.6,roughness:.4})); p.position.set(x,2.1,HZ+22.58); p.rotation.y=Math.PI; scene.add(p); }
+  // each wall panel is its own object; a panel listed in THANKS shows a sponsor thank-you picture and opens it when tapped
+  for(const x of [-9,-4.5,4.5,9]){ const th=THANKS.find(t=>t.x===x);
+    if(!th){ const p=new T.Mesh(new T.PlaneGeometry(2.6,1.5),new T.MeshStandardMaterial({map:goldCarvedTex,metalness:.6,roughness:.4})); p.position.set(x,2.1,HZ+22.58); p.rotation.y=Math.PI; scene.add(p); continue; }
+    const g=new T.Group(); g.position.set(x,2.1,HZ+22.56); g.rotation.y=Math.PI; g.userData.noMerge=1; scene.add(g);
+    const fr=new T.Mesh(new T.PlaneGeometry(2.24,1.7),new T.MeshStandardMaterial({map:goldCarvedTex,metalness:.6,roughness:.4})); g.add(fr);
+    const pm=new T.MeshStandardMaterial({color:new T.Color("#3a1a10"),roughness:.7,emissive:new T.Color("#000")}); const pic=new T.Mesh(new T.PlaneGeometry(2.0,1.5),pm); pic.position.z=.012; g.add(pic);
+    // marquee bulbs around the frame, alternating so they twinkle like a sign
+    { const bm=[new T.MeshBasicMaterial({color:new T.Color("#fff2c2")}),new T.MeshBasicMaterial({color:new T.Color("#ffd27a")})], gm=[0,1].map(()=>new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffcf73"),transparent:true,opacity:.75,blending:T.AdditiveBlending,depthWrite:false}));
+      const bg=new T.SphereGeometry(.034,10,8), W2=1.2, H2=.93, pts=[]; const nx=13, ny=10;
+      for(let i=0;i<=nx;i++){ const x2=-W2+i*2*W2/nx; pts.push([x2,H2,i%2],[x2,-H2,i%2]); } for(let j=1;j<ny;j++){ const y2=-H2+j*2*H2/ny; pts.push([-W2,y2,j%2],[W2,y2,j%2]); }
+      pts.forEach(([bx,by,ph])=>{ const b=new T.Mesh(bg,bm[ph]); b.position.set(bx,by,.04); g.add(b); const sp=new T.Sprite(gm[ph]); sp.scale.set(.2,.2,1); sp.position.set(bx,by,.06); g.add(sp); });
+      let on=0; setInterval(()=>{ on^=1; bm[on].color.set("#fff6d6"); bm[1-on].color.set("#c9862e"); gm[on].opacity=.85; gm[1-on].opacity=.15; },550); }
+    new T.TextureLoader().load(th.img,t=>{ t.encoding=T.sRGBEncoding; t.anisotropy=renderer.capabilities.getMaxAnisotropy(); pm.map=t; pm.color.set("#ffffff"); pm.emissiveMap=t; pm.emissive.set("#4a3020"); pm.needsUpdate=true; });
+    g.userData.act="thanks:"+THANKS.indexOf(th); }
   // a soft glow where the water lands
   const pool=new T.Mesh(new T.CircleGeometry(.9,32),new T.MeshBasicMaterial({color:new T.Color("#8fd6ff"),transparent:true,opacity:.18,depthWrite:false,blending:T.AdditiveBlending})); pool.rotation.x=-Math.PI/2; pool.position.set(0,.62,HZ+19.2); pool.userData.noMerge=1; scene.add(pool); FT.poolMesh=pool; }
 const waterDrops=[]; { const wm=new T.SpriteMaterial({map:softTex,color:new T.Color("#bfe9ff"),transparent:true,opacity:.75,depthWrite:false,blending:T.AdditiveBlending}); for(let i=0;i<46;i++){ const sp=new T.Sprite(wm); sp.scale.set(.07,.07,1); sp.visible=false; sp.userData.noMerge=1; scene.add(sp); waterDrops.push({sp,t:i/46*1.1,v:new T.Vector3()}); } }
@@ -1538,6 +1562,7 @@ function addHit(key,x,y,z,r,h){ const m=new T.Mesh(new T.CylinderGeometry(r,r,h,
 function onTap(cx,cy){ ensureAudio(); if(customizing) return; if(sheetKind){ closeSheet(); return; } const r=canvas.getBoundingClientRect(); ndc.set((cx-r.left)/r.width*2-1,-(cy-r.top)/r.height*2+1); raycaster.setFromCamera(ndc,camera);
   const hits=raycaster.intersectObjects(pickables,true); if(!hits.length) return; let h=hits[0];
   let o=h.object, act=null; while(o){ if(o.userData&&o.userData.act){ act=o.userData.act; break; } o=o.parent; }
+  if(act&&act.startsWith("thanks:")){ openThanks(+act.split(":")[1]); return; }
   if(act==="altar") act="altar";
   if(act&&stations[act]||act==="altar"){ goStation(act); return; }
   if(h.object===cushions&&h.instanceId!=null){ trySit(h.instanceId); return; }
@@ -1845,11 +1870,12 @@ HANDLERS.showPoem=v=>openPoem(+v,true);
 
 /* ---- stations ---- */
 function openStation(k){ if(k==="cats"){ openCats(); return; } if(k==="fountain"){ openFountain(); return; } if(k==="wish"){ openWish(); return; } if(CENSER_INFO[k]){ openCenser(k); return; } if(k==="jieqian"){ openJieqian(); return; } if(k==="shop") openShop(); if(k==="altar") openAltar(); if(k==="burn") openBurn(); if(k==="donate") openDonate(); if(k==="lot") openLot("ask"); if(k==="lamp"||k==="lampR") openLamp(); if(k==="bell"){ myBell++; meAv.burnT=0; ringBell(true); markDirty(); toast("咚——鐘聲迴盪殿內"); } if(k==="drum"){ myDrum++; meAv.burnT=0; hitDrum(true); markDirty(); toast("咚！鼓聲響起"); } }
+function openThanks(i){ const th=THANKS[i]; if(!th) return; sfx.coin(); openSheet("thanks","感謝贊助",`<img class="thanks-img" src="${th.img}" alt="感謝看板" width="1024" height="768"><p class="thanks-text">${esc(th.text)}</p>`); }
 function openShop(){ const html=`<p class="lead">拜拜順序：先到廟埕天公爐，再拜媽祖、龍邊財神爺、虎邊月老，最後是供桌下的虎爺。五爐都插好香，再到廟埕金爐燒金紙。</p>
   <div class="goods">${GOODS.map(g=>`<button class="good" data-act="buy" data-v="${g.k}" ${bag.coins<g.price?"disabled":""}><span class="name">${g.name}</span><span class="meta">${g.meta}</span><span class="price">${g.price} 平安幣</span><span class="own">持有 ${bag.items[g.k]||0}</span></button>`).join("")}</div>
-  <div class="shop-extra"><button class="good wide" data-act="shopCoffee"><span class="name">☕ 用街口買杯咖啡給我、贊助伺服器</span><span class="meta give-red">如有盈餘 50% 捐贈給流浪動物及捐棺團體</span></button></div>`; openSheet("shop","服務處",html); }
+  <div class="shop-extra"><button class="good wide" data-act="shopCoffee"><span class="name">☕ 用街口買杯咖啡給我、贊助伺服器</span><span class="meta">掃 QR Code 或點連結開啟街口支付</span></button></div>`; openSheet("shop","服務處",html); }
 const JKO_URL="https://service.jkopay.com/r/transfer?j=Transfer:901627312";
-HANDLERS.shopCoffee=()=>openSheet("shopx","買杯咖啡給主委",`<p class="lead give-red">如有盈餘 50% 將捐贈給流浪動物及捐棺團體。</p><p class="lead">這座廟靠伺服器運作，香客越多費用越高。用街口買杯咖啡給我，就是幫忙贊助伺服器，讓大家可以繼續一起拜拜。</p>
+HANDLERS.shopCoffee=()=>openSheet("shopx","買杯咖啡給主委",`<p class="lead">這座廟靠伺服器運作，香客越多費用越高。用街口買杯咖啡給我，就是幫忙贊助伺服器，讓大家可以繼續一起拜拜。</p>
   <img class="jko-qr" src="jkopay.jpg" alt="街口支付轉帳 QR Code" width="560" height="560" loading="lazy">
   <a class="good wide jko-link" href="${JKO_URL}" target="_blank" rel="noopener"><span class="name">開啟街口支付轉帳</span><span class="meta">手機上直接點這裡最方便</span></a>
   <button class="good wide" data-act="shopBack"><span class="name">← 回服務處</span></button>`);
@@ -2181,6 +2207,20 @@ buildNpcs();
 if(document.fonts&&document.fonts.load){ Promise.all([document.fonts.load(`700 64px "LXGW WenKai TC"`,"母聖上天邊德護千家海慈航庇萬眾香油籤詩服務處金爐"),document.fonts.load(`500 30px "Noto Sans TC"`,"你香客")]).then(()=>{ fontTextures.forEach(redraw); meAv.setName(myLabel()); }).catch(()=>{}); }
 requestAnimationFrame(()=>{ tick(); setTimeout(()=>$("#loading").setAttribute("data-done",""),250); });
 if(firstVisit) setTimeout(()=>openLook(true),600); else setTimeout(()=>toast(guideStep().n===1?"先到大殿入口右手邊的服務處，請清香、金紙和供品":(matchMedia("(pointer:fine)").matches?"WASD 走動・拖曳滑鼠轉視角":"點地板走動・拖曳畫面轉視角"),4200),900);
+// ---- in-app browser hint (Threads / Instagram / Facebook / LINE / other app web views) ----
+{ const ua=navigator.userAgent||"", SITE="https://mazu-temple.harper88888.workers.dev/";
+  const ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1), android=/Android/.test(ua);
+  const inApp=/Barcelona|Instagram|FBAN|FBAV|FB_IAB|Line\/|Threads|MicroMessenger|KAKAOTALK|; wv\)/i.test(ua)||(ios&&!/Safari\//.test(ua));
+  let seen=false; try{ seen=sessionStorage.getItem("mz.inapp")==="1"; }catch(e){}
+  if(inApp&&!seen){ const box=$("#inapp"); box.hidden=false; const done=()=>{ box.hidden=true; try{ sessionStorage.setItem("mz.inapp","1"); }catch(e){} };
+    $("#inappNo").onclick=done;
+    $("#inappYes").onclick=()=>{ $("#inappHelp").hidden=false;
+      if(/Line\//i.test(ua)){ location.href=SITE+"?openExternalBrowser=1"; return; }
+      if(android){ location.href="intent://"+SITE.replace(/^https:\/\//,"")+"#Intent;scheme=https;action=android.intent.action.VIEW;end"; return; }
+      if(ios){ location.href="x-safari-"+SITE; return; }
+      window.open(SITE,"_blank"); };
+    $("#inappCopy").onclick=async()=>{ let ok=false; try{ await navigator.clipboard.writeText(SITE); ok=true; }catch(e){} toast(ok?"網址已複製，貼到 Safari 或 Chrome 開啟":"請長按網址列自行複製",3600); };
+    box.addEventListener("click",e=>{ if(e.target===box) done(); }); } }
 window.__mz={FT,sideMuralMat,CATS,fuAnims,passFu,walkTo,tapMark,camLimit,HZ,renderer,scene,stations,jiaoCam,flyers,sheet,meAv,openPoem,openLot,openStation,goStation,trySit,bag,camera,setYaw:v=>camYaw=v,setPitch:v=>camPitch=v,setDist:v=>camDist=v};
 })();
 </script>
