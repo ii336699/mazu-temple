@@ -8,7 +8,7 @@ const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes":
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
-    if (url.pathname === "/ws" || url.pathname === "/halls" || ["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce"].includes(url.pathname)) {
+    if (url.pathname === "/ws" || url.pathname === "/halls" || ["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks"].includes(url.pathname)) {
       try { return await api(req, env, url); }
       catch (e) { return new Response(JSON.stringify({ error: String(e && e.message || e).slice(0, 300) }), { status: 503, headers: { "content-type": "application/json", "cache-control": "no-store" } }); }
     }
@@ -27,7 +27,7 @@ async function api(req, env, url) {
       const m = MEMO.get(url.pathname);
       if (m && Date.now() - m.at < MEMO_TTL[url.pathname]) return new Response(m.body, { headers: { "content-type": "application/json", "cache-control": "no-store" } });
     }
-    if (["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce"].includes(url.pathname)) {
+    if (["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks"].includes(url.pathname)) {
       if (req.method === "POST") MEMO.delete(url.pathname === "/lamp" ? "/lamps" : "/wishes");
       const lobby = env.LOBBY.get(env.LOBBY.idFromName("lobby"));
       const r = await lobby.fetch(new Request("https://lobby" + url.pathname + url.search, { method: req.method, headers: req.headers, body: req.method === "POST" ? await req.text() : undefined }));
@@ -46,6 +46,11 @@ export class Hall extends DurableObject {
   constructor(ctx, env) { super(ctx, env); this.env = env; }
   async fetch(req) {
     const url = new URL(req.url);
+    if (url.pathname === "/fireworks") { // from the lobby: everyone here starts the same seeded 3-minute show
+      let b = {}; try { b = await req.json(); } catch {}
+      const fw = { seed: (b.seed | 0) >>> 0, at: Date.now() }; await this.ctx.storage.put("fw", fw);
+      const out = JSON.stringify({ t: "fw", seed: fw.seed, el: 0 }); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
+    }
     if (url.pathname === "/announce") { // from the lobby: push the chair's announcement to everyone in this hall
       let b = {}; try { b = await req.json(); } catch {}
       const ann = { t: "ann", text: String(b.text || "").slice(0, 80), at: Date.now() }; await this.ctx.storage.put("ann", ann);
@@ -63,6 +68,7 @@ export class Hall extends DurableObject {
     for (const w of this.ctx.getWebSockets()) { if (w === server) continue; const a = w.deserializeAttachment() || {}; if (a.p) peers.push({ id: a.id, p: a.p }); }
     server.send(JSON.stringify({ t: "hello", peers }));
     const ann = await this.ctx.storage.get("ann"); if (ann && Date.now() - ann.at < 5 * 60 * 1000) server.send(JSON.stringify(ann));
+    const fw = await this.ctx.storage.get("fw"); if (fw && Date.now() - fw.at < 218000) server.send(JSON.stringify({ t: "fw", seed: fw.seed, el: Date.now() - fw.at }));
     this.report(h);
     return new Response(null, { status: 101, webSocket: client });
   }
@@ -136,6 +142,13 @@ export class Lobby extends DurableObject {
       let b = {}; try { b = await req.json(); } catch {}
       const text = clean(b.text, 80); if (!text) return json({ ok: false });
       await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/announce", { method: "POST", body: JSON.stringify({ text }) }).catch(() => {})));
+      return json({ ok: true });
+    }
+    if (url.pathname === "/fireworks" && req.method === "POST") {
+      const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
+      const last = (await this.ctx.storage.get("fwAt")) || 0; if (Date.now() - last < 224000) return json({ ok: false, busy: true });
+      await this.ctx.storage.put("fwAt", Date.now()); const seed = (Math.random() * 4294967295) >>> 0;
+      await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/fireworks", { method: "POST", body: JSON.stringify({ seed }) }).catch(() => {})));
       return json({ ok: true });
     }
     if (url.pathname === "/msgs") {
