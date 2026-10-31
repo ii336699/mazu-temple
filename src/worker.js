@@ -53,7 +53,7 @@ export class Hall extends DurableObject {
     }
     if (url.pathname === "/announce") { // from the lobby: push the chair's announcement to everyone in this hall
       let b = {}; try { b = await req.json(); } catch {}
-      const ann = { t: "ann", text: String(b.text || "").slice(0, 80), at: Date.now() }; await this.ctx.storage.put("ann", ann);
+      const ann = { t: "ann", text: String(b.text || "").slice(0, 80), at: Number(b.at) || Date.now() }; await this.ctx.storage.put("ann", ann);
       const out = JSON.stringify(ann); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
     }
     const h = Math.max(0, Math.min(HALLS - 1, parseInt(url.searchParams.get("hall") || "0", 10) || 0));
@@ -140,8 +140,8 @@ export class Lobby extends DurableObject {
     if (url.pathname === "/announce" && req.method === "POST") {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
       let b = {}; try { b = await req.json(); } catch {}
-      const text = clean(b.text, 80); if (!text) return json({ ok: false });
-      await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/announce", { method: "POST", body: JSON.stringify({ text }) }).catch(() => {})));
+      const text = clean(b.text, 80); if (!text) return json({ ok: false }); const at = Date.now(); // one id for every hall, so switching halls doesn't replay it
+      await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/announce", { method: "POST", body: JSON.stringify({ text, at }) }).catch(() => {})));
       return json({ ok: true });
     }
     // 斬小人排行榜: best score per player, top 20 kept
