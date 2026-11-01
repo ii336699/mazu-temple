@@ -704,7 +704,7 @@ const furnaceLight=plight("#ff6a20",1.6,7,-10.2,1.2,27);
 const spot=new T.SpotLight("#ffd7a0",1.5,22,.36,.7,1.5); spot.position.set(0,8.5,-5.5); spot.target.position.set(0,3.2,-13.1); scene.add(spot,spot.target);
 
 /* ================= the hall ================= */
-const HX=12, HZ=15, HH=10;
+const HX=12, HZ=15, HH=10, YX=8; // YX: extra depth of the 廟埕, so the opera stage fits between the 天公爐 and the Guanyin fountain
 const floor=mesh(new T.PlaneGeometry(HX*2,HZ*2),new T.MeshStandardMaterial({map:floorTex,roughness:.3,metalness:0,envMapIntensity:.8}));
 floor.rotation.x=-Math.PI/2; floor.userData.floor=true;
 const outsideGround=mesh(new T.PlaneGeometry(300,300),mat("#2a1a12",{roughness:.95})); outsideGround.rotation.x=-Math.PI/2; outsideGround.position.y=-.02;
@@ -1224,7 +1224,7 @@ station("tiangong",[TG.x,TG.z-1.7],0);
 const yardTex=cvs(512,512,(x,w,h)=>{ const s=64; for(let i=0;i<8;i++)for(let j=0;j<8;j++){ const v=150+Math.random()*28; x.fillStyle=`rgb(${v+12},${v},${v-14})`; x.fillRect(i*s,j*s,s,s); }
   noise(x,w,h,.14,"rgba(40,30,24,A)"); x.strokeStyle="rgba(60,44,36,.8)"; x.lineWidth=2; for(let i=0;i<=8;i++){ x.beginPath(); x.moveTo(i*s,0); x.lineTo(i*s,h); x.stroke(); x.beginPath(); x.moveTo(0,i*s); x.lineTo(w,i*s); x.stroke(); } });
 yardTex.wrapS=yardTex.wrapT=T.RepeatWrapping; yardTex.repeat.set(9,7);
-const yard=mesh(new T.PlaneGeometry(40,30),new T.MeshStandardMaterial({map:yardTex,roughness:.75}),0,.012,HZ+15.2); yard.rotation.x=-Math.PI/2; yard.userData.floor=true;
+const yard=mesh(new T.PlaneGeometry(40,30+YX),new T.MeshStandardMaterial({map:yardTex,roughness:.75}),0,.012,HZ+15.2+YX/2); yard.rotation.x=-Math.PI/2; yard.userData.floor=true;
 // facade: porch columns, porch roof, door plaque, lanterns, stone lions, hall roof
 { const redM=mat("#9c1d13",{roughness:.45}), goldP=mat("#d6a24a",{metalness:.85,roughness:.3}), stone=mat("#8a8278",{roughness:.85}), roofM=new T.MeshStandardMaterial({map:tileTex,roughness:.55});
   for(const x of [-8.6,-3.9,3.9,8.6]){ cyl(.32,.32,6.8,redM,x,3.4,HZ+2.2,scene,18); cyl(.46,.5,.4,stone,x,.2,HZ+2.2,scene,18); cyl(.36,.36,.25,goldP,x,6.6,HZ+2.2,scene,18); }
@@ -1248,18 +1248,18 @@ plight("#ffb070",1.3,16,0,4.2,HZ+6);
 // extra strings of lanterns criss-crossing the courtyard (one instanced mesh, glows on every other lantern)
 { const pos=[]; const strM=mat("#2a1a10");
   const string=(x0,z0,x1,z1,h,n,sag)=>{ for(let i=0;i<n;i++){ const t=(i+.5)/n; pos.push([x0+(x1-x0)*t,h-Math.sin(t*Math.PI)*sag,z0+(z1-z0)*t]); } const L=Math.hypot(x1-x0,z1-z0); const w=new T.Mesh(new T.CylinderGeometry(.012,.012,L,4),strM); w.position.set((x0+x1)/2,h+.33-sag*.5,(z0+z1)/2); w.rotation.z=Math.PI/2; w.rotation.y=-Math.atan2(z1-z0,x1-x0); scene.add(w); };
-  for(const x of [-18.8,18.8]){ string(x,HZ+1.5,x,HZ+22.3,5.4,10,.5); for(const z of [HZ+1.5,HZ+22.3]) cyl(.1,.12,5.6,mat("#4a0d09"),x,2.8,z,scene,8); }
+  for(const x of [-18.8,18.8]){ string(x,HZ+1.5,x,HZ+YX+22.3,5.4,10,.5); for(const z of [HZ+1.5,HZ+YX+22.3]) cyl(.1,.12,5.6,mat("#4a0d09"),x,2.8,z,scene,8); }
   for(const sd of [-1,1]){ const x=sd*(SHXC+1.45); string(x,0,x,HZ+1,4.4,8,.35); for(const z of [0,HZ+1]) cyl(.08,.1,4.7,mat("#4a0d09"),x,2.35,z,scene,8); }
   const im=new T.InstancedMesh(new T.SphereGeometry(.26,12,9),lanternMat,pos.length), cap=new T.InstancedMesh(new T.CylinderGeometry(.12,.12,.05,8),GOLD(),pos.length*2), M=new T.Matrix4(), S=new T.Vector3(1,.85,1), Q=new T.Quaternion();
   pos.forEach(([x,y,z],i)=>{ im.setMatrixAt(i,M.compose(new T.Vector3(x,y,z),Q,S)); cap.setMatrixAt(i*2,M.makeTranslation(x,y+.22,z)); cap.setMatrixAt(i*2+1,M.makeTranslation(x,y-.22,z)); if(i%2===0){ const sp=new T.Sprite(glowMat); sp.userData.lanternGlow=1; sp.scale.set(1.3,1.3,1); sp.position.set(x,y,z); scene.add(sp); } });
   im.userData.noMerge=1; cap.userData.noMerge=1; scene.add(im,cap); }
 { const strM=mat("#2a1a10"); const bodyGeo=new T.SphereGeometry(.3,14,10); const capGeo=new T.CylinderGeometry(.14,.14,.06,10);
-  for(const x of [-11.35,11.35]){ for(const z of [HZ+2.4,HZ+22.3]) cyl(.1,.12,5.4,mat("#4a0d09"),x,2.7,z,scene,8); const n=8;
+  for(const x of [-11.35,11.35]){ for(const z of [HZ+2.4,HZ+YX+22.3]) cyl(.1,.12,5.4,mat("#4a0d09"),x,2.7,z,scene,8); const n=11;
     for(let i=0;i<n;i++){ const z=HZ+3.6+i*2.6, sag=Math.sin(i/(n-1)*Math.PI)*.35; const g=new T.Group(); g.position.set(x,4.9-sag,z); scene.add(g);
       const b=new T.Mesh(bodyGeo,lanternMat); b.scale.y=.85; g.add(b); for(const y of [.26,-.26]){ const c=new T.Mesh(capGeo,GOLD()); c.position.y=y; g.add(c); }
       const sp=new T.Sprite(glowMat); sp.scale.set(1.6,1.6,1); g.add(sp); }
-    const wire=new T.Mesh(new T.CylinderGeometry(.012,.012,19.9,4),strM); wire.rotation.x=Math.PI/2; wire.position.set(x,5.25,HZ+12.35); scene.add(wire); }
-  for(const x of [-2.6,2.6]) for(const z of [HZ+9,HZ+15]){ const g=new T.Group(); g.position.set(x,0,z); scene.add(g); const st=mat("#8a8278",{roughness:.85});
+    const wire=new T.Mesh(new T.CylinderGeometry(.012,.012,19.9+YX,4),strM); wire.rotation.x=Math.PI/2; wire.position.set(x,5.25,HZ+12.35+YX/2); scene.add(wire); }
+  for(const x of [-2.6,2.6]) for(const z of [HZ+9,HZ+YX+15]){ const g=new T.Group(); g.position.set(x,0,z); scene.add(g); const st=mat("#8a8278",{roughness:.85});
     box(.5,.2,.5,st,0,.1,0,g); cyl(.12,.14,.9,st,0,.65,0,g,10); box(.55,.12,.55,st,0,1.15,0,g); box(.38,.36,.38,new T.MeshBasicMaterial({color:new T.Color("#ffbf6a")}),0,1.39,0,g); box(.62,.1,.62,st,0,1.62,0,g); mesh(new T.ConeGeometry(.42,.32,4),st,0,1.83,0,g).rotation.y=Math.PI/4;
     const sp=new T.Sprite(glowMat); sp.scale.set(1.3,1.3,1); sp.position.y=1.39; g.add(sp); } }
 ["tiangong","caishen","yuelao","huye"].forEach(k=>addIncenseTo(k,5+Math.floor(Math.random()*4)));
@@ -1343,14 +1343,14 @@ function updateCats(dt){ if(Q.low&&Math.abs(meAv.pos.y-CATS.c.z)>14){ return; } 
     g.rotation.y=ph===1?Math.atan2(-Math.sin(ang),Math.cos(ang)):lerpAngle(g.rotation.y,Math.atan2(0-g.position.x,(HZ+12)-g.position.z),Math.min(1,dt*4)); }); }
 
 // 觀音菩薩噴泉 at the front of the courtyard
-const FT={x:0,z:HZ+20.2,H:4.4,k:1,mouth:new T.Vector3(),pool:new T.Vector3(0,.55,HZ+18.6),ready:false};
+const FT={x:0,z:HZ+YX+20.2,H:4.4,k:1,mouth:new T.Vector3(),pool:new T.Vector3(0,.55,HZ+YX+18.6),ready:false};
 { const redM=mat("#8a1a12",{roughness:.7}), goldP=mat("#d6a24a",{metalness:.85,roughness:.3}), stone=mat("#8a8278",{roughness:.85});
-  box(28,3.6,.6,redM,0,1.8,HZ+22.9); box(28.4,.25,.9,mat("#3a1d14",{roughness:.9}),0,3.72,HZ+22.9); box(28.2,.08,.66,goldP,0,3.55,HZ+22.6);
-  box(28,.5,.7,stone,0,.25,HZ+22.9);
+  box(28,3.6,.6,redM,0,1.8,HZ+YX+22.9); box(28.4,.25,.9,mat("#3a1d14",{roughness:.9}),0,3.72,HZ+YX+22.9); box(28.2,.08,.66,goldP,0,3.55,HZ+YX+22.6);
+  box(28,.5,.7,stone,0,.25,HZ+YX+22.9);
   // each wall panel is its own object; a panel listed in THANKS shows a sponsor thank-you picture and opens it when tapped
   for(const [x,y] of THANK_SLOTS){ const th=THANKS.find(t=>t.x===x&&t.y===y);
-    if(!th){ const p=new T.Mesh(new T.PlaneGeometry(1.68,1.27),new T.MeshStandardMaterial({map:goldCarvedTex,metalness:.6,roughness:.4})); p.position.set(x,y,HZ+22.58); p.rotation.y=Math.PI; scene.add(p); continue; }
-    const g=new T.Group(); g.position.set(x,y,HZ+22.56); g.rotation.y=Math.PI; g.scale.setScalar(.75); g.userData.noMerge=1; scene.add(g); const tier=th.amt>=300?3:th.amt>=100?2:th.amt>=50?1:0;
+    if(!th){ const p=new T.Mesh(new T.PlaneGeometry(1.68,1.27),new T.MeshStandardMaterial({map:goldCarvedTex,metalness:.6,roughness:.4})); p.position.set(x,y,HZ+YX+22.58); p.rotation.y=Math.PI; scene.add(p); continue; }
+    const g=new T.Group(); g.position.set(x,y,HZ+YX+22.56); g.rotation.y=Math.PI; g.scale.setScalar(.75); g.userData.noMerge=1; scene.add(g); const tier=th.amt>=300?3:th.amt>=100?2:th.amt>=50?1:0;
     const fr=new T.Mesh(new T.PlaneGeometry(2.24,1.7),new T.MeshStandardMaterial({map:goldCarvedTex,metalness:.6,roughness:.4})); g.add(fr);
     const pm=new T.MeshStandardMaterial({color:new T.Color("#3a1a10"),roughness:.7,emissive:new T.Color("#000")}); const pic=new T.Mesh(new T.PlaneGeometry(2.0,1.5),pm); pic.position.z=.012; g.add(pic);
     // marquee bulbs around the frame, alternating so they twinkle like a sign
@@ -1377,17 +1377,17 @@ const FT={x:0,z:HZ+20.2,H:4.4,k:1,mouth:new T.Vector3(),pool:new T.Vector3(0,.55
     new T.TextureLoader().load(th.img,t=>{ t.encoding=T.sRGBEncoding; t.anisotropy=renderer.capabilities.getMaxAnisotropy(); pm.map=t; pm.color.set("#ffffff"); pm.emissiveMap=t; pm.emissive.set("#4a3020"); pm.needsUpdate=true; });
     g.userData.act="thanks:"+THANKS.indexOf(th); }
   // a soft glow where the water lands
-  const pool=new T.Mesh(new T.CircleGeometry(.9,32),new T.MeshBasicMaterial({color:new T.Color("#8fd6ff"),transparent:true,opacity:.18,depthWrite:false,blending:T.AdditiveBlending})); pool.rotation.x=-Math.PI/2; pool.position.set(0,.62,HZ+19.2); pool.userData.noMerge=1; scene.add(pool); FT.poolMesh=pool; }
+  const pool=new T.Mesh(new T.CircleGeometry(.9,32),new T.MeshBasicMaterial({color:new T.Color("#8fd6ff"),transparent:true,opacity:.18,depthWrite:false,blending:T.AdditiveBlending})); pool.rotation.x=-Math.PI/2; pool.position.set(0,.62,HZ+YX+19.2); pool.userData.noMerge=1; scene.add(pool); FT.poolMesh=pool; }
 const waterDrops=[]; { const wm=new T.SpriteMaterial({map:softTex,color:new T.Color("#bfe9ff"),transparent:true,opacity:.75,depthWrite:false,blending:T.AdditiveBlending}); for(let i=0;i<46;i++){ const sp=new T.Sprite(wm); sp.scale.set(.07,.07,1); sp.visible=false; sp.userData.noMerge=1; scene.add(sp); waterDrops.push({sp,t:i/46*1.1,v:new T.Vector3()}); } }
 loadModel("guanyin",m=>{ const w=fitModel(m,FT.H); const k=FT.H/0.98026; FT.k=k; w.rotation.y=Math.PI; w.position.set(FT.x,0,FT.z); scene.add(w); setAct(w,"fountain"); w.traverse(o=>{ if(o.isMesh){ pickables.push(o); o.material.envMapIntensity=1.3; } });
   // vase mouth in the model's own space (front faces +z before the 180° turn)
   FT.mouth.set(FT.x-.02*k, .71*k, FT.z-.13*k); FT.ready=true; });
-station("fountain",[0,HZ+16.9],0);
-setTimeout(()=>addHit("fountain",0,0,HZ+20.2,1.9,4.6),0);
+station("fountain",[0,HZ+YX+16.9],0);
+setTimeout(()=>addHit("fountain",0,0,HZ+YX+20.2,1.9,4.6),0);
 // 投射燈: two ground spotlights washing the Guanyin statue in warm white, with a faint visible beam
 { const base=mat("#2a2622",{metalness:.6,roughness:.4}), lens=new T.MeshBasicMaterial({color:new T.Color("#ffe2a8")});
   const beamMat=new T.MeshBasicMaterial({color:new T.Color("#ffd99a"),transparent:true,opacity:.025,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide});
-  for(const sx of [-2.6,2.6]){ const pos=new T.Vector3(sx,.25,HZ+16.2), aim=new T.Vector3(0,3.2,FT.z);
+  for(const sx of [-2.6,2.6]){ const pos=new T.Vector3(sx,.25,HZ+YX+16.2), aim=new T.Vector3(0,3.2,FT.z);
     const sp=new T.SpotLight("#ffd79a",1.1,16,.32,.6,1.2); sp.position.copy(pos); sp.target.position.copy(aim); scene.add(sp,sp.target);
     const g=new T.Group(); g.position.copy(pos); g.lookAt(aim); g.userData.noMerge=1; scene.add(g);
     const body=new T.Mesh(new T.CylinderGeometry(.16,.2,.32,16),base); body.rotation.x=Math.PI/2; g.add(body);
@@ -1799,7 +1799,7 @@ class Avatar{
     else if(this.danceStart!=null){ this.danceStart=null; this.danceCycles=0; }
     else if(this.torso.rotation.y){ this.torso.rotation.y*=.85; this.torso.rotation.z*=.85; }
     const fwLook=!this.isMe&&!walking&&this.seat<0&&this.bowT<0&&typeof FW!=="undefined"&&FW.on&&this.pos.y>HZ&&!this.sjBusy;
-    if(fwLook){ this.rotY=lerpAngle(this.rotY,Math.atan2(-this.pos.x*.3,HZ+38-this.pos.y),Math.min(1,dt*3)); this.root.rotation.y=this.rotY; }
+    if(fwLook){ this.rotY=lerpAngle(this.rotY,Math.atan2(-this.pos.x*.3,HZ+YX+38-this.pos.y),Math.min(1,dt*3)); this.root.rotation.y=this.rotY; }
     this.headTilt=(this.headTilt||0)+((fwLook?-.5:0)-(this.headTilt||0))*Math.min(1,dt*3); this.head.rotation.x=this.headTilt;
     const hg=(this.bowT>=0||walking||fwLook)?0:this.headGoal; this.headYaw+=(hg-this.headYaw)*Math.min(1,dt*7); this.head.rotation.y=this.headYaw; this.head.rotation.z=-this.headYaw*.08;
     this.incense.visible=!!this.hold&&this.root.visible;
@@ -1816,7 +1816,7 @@ class Avatar{
 }
 const _v1=new T.Vector3(), _v2=new T.Vector3(); let sheetOff=0;
 function camOK(x,y,z){ if(y<.35) return false; const ax=Math.abs(x);
-  if(z>HZ+.45) return ax<19.5&&z<HZ+27&&y<16;
+  if(z>HZ+.45) return ax<19.5&&z<HZ+YX+27&&y<16;
   if(ax<11.5){ if(z<HZ-.35) return z>-14.5&&y<HH-.35; return ax<2.7&&y<5.1; }
   if(ax<12.5) return Math.abs(z-BGZ)<1.3&&y<3.1;
   if(z<SHZ1-.3) return ax<SHX1-.3&&z>SHZ0+.3&&y<SHH-.3;
@@ -1926,7 +1926,7 @@ function onTap(cx,cy){ ensureAudio(); if(customizing) return; if(sheetKind){ clo
 const isIn=z=>z<HZ;
 // zones: M main hall, C courtyard, S± side hall, P± garden path; doors link them
 function zoneOf(x,z){ const ax=Math.abs(x), sd=x<0?"-":"+"; if(z>=HZ+.1) return "C"; if(ax<12.2) return "M"; return (z<SHZ1?"S":"P")+sd; }
-const ZRECT={M:[-11,11,-9.5,HZ-.6],C:[-17,17,HZ+.7,HZ+17.6],"S+":[12.9,16,-7,-2],"S-":[-16,-12.9,-7,-2],"P+":[SHXC-1,SHXC+1,-.7,HZ+.6],"P-":[-SHXC-1,-SHXC+1,-.7,HZ+.6]};
+const ZRECT={M:[-11,11,-9.5,HZ-.6],C:[-17,17,HZ+.7,HZ+YX+17.6],"S+":[12.9,16,-7,-2],"S-":[-16,-12.9,-7,-2],"P+":[SHXC-1,SHXC+1,-.7,HZ+.6],"P-":[-SHXC-1,-SHXC+1,-.7,HZ+.6]};
 const ZLINK={M:["S+","S-","C"],C:["M","P+","P-"],"S+":["P+","M"],"S-":["P-","M"],"P+":["S+","C"],"P-":["S-","C"]};
 function doorPts(a,b,fx,tx){ const key=a+">"+b, s=(a+b).includes("-")?-1:1;
   if(key==="M>C"||key==="C>M"){ const dx=Math.max(-1.8,Math.min(1.8,(fx+tx)/2)); return a==="M"?[[dx,HZ-.9],[dx,HZ+1]]:[[dx,HZ+1],[dx,HZ-.9]]; }
@@ -1934,7 +1934,7 @@ function doorPts(a,b,fx,tx){ const key=a+">"+b, s=(a+b).includes("-")?-1:1;
   if(a[0]==="S") return [[s*SHXC,-2.1],[s*SHXC,-.5]]; if(b[0]==="S") return [[s*SHXC,-.5],[s*SHXC,-2.1]];
   if(a[0]==="P") return [[s*SHXC,HZ+.2],[s*SHXC,HZ+1.2]]; return [[s*SHXC,HZ+1.2],[s*SHXC,HZ+.2]]; }
 function walkable(x,z){ if(opInside(x,z)) return false; const ax=Math.abs(x);
-  if(ax<=11&&z>=-9.5&&z<=HZ-.6) return true; if(ax<2.2&&z>HZ-.7&&z<HZ+.8) return true; if(ax<=17&&z>=HZ+.7&&z<=HZ+18) return true;
+  if(ax<=11&&z>=-9.5&&z<=HZ-.6) return true; if(ax<2.2&&z>HZ-.7&&z<HZ+.8) return true; if(ax<=17&&z>=HZ+.7&&z<=HZ+YX+18) return true;
   if(ax>10.9&&ax<13&&Math.abs(z-BGZ)<1.1) return true; if(ax>=12.9&&ax<=16&&z>=-7&&z<=-2) return true;
   if(Math.abs(ax-SHXC)<=.9&&z>=-2.2&&z<=HZ+.8) return true; return false; }
 function clampSpot(x,z){ if(opInside(x,z)){ const o=opRect(); z=z<OP.z?o.z0-.3:o.z1+.3; } const r=ZRECT[zoneOf(x,z)]; return [Math.max(r[0],Math.min(r[1],x)),Math.max(r[2],Math.min(r[3],z))]; }
@@ -1975,11 +1975,11 @@ function cleanName(n){ const t=String(n||"").replace(/[\u0000-\u001f​-‏‪-�
 function syncPeers(peers){ const seen=new Set();
   for(const p of peers){ if(p.sameTab||p.kind!=="viewer") continue; const pr=p.presence||{}; if(pr.v!==1||pr.u===0) continue; seen.add(p.peer);
     let av=remotes.get(p.peer); const look=sanitizeLook(pr.l,pr.q===1); if(av) av.setSp(pr.q===1);
-    if(!av){ av=new Avatar(look,{sp:pr.q===1,x:num(pr.x,-19,19,0),z:num(pr.z,-10,HZ+18,HZ+12)}); av.lastBow=pr.b; av.lastJ=Array.isArray(pr.j)?pr.j[1]:""; av.lastF=pr.f; av.offerGroup=new T.Group(); scene.add(av.offerGroup); remotes.set(p.peer,av); if(customizing) av.root.visible=false; }
+    if(!av){ av=new Avatar(look,{sp:pr.q===1,x:num(pr.x,-19,19,0),z:num(pr.z,-10,HZ+YX+18,HZ+12)}); av.lastBow=pr.b; av.lastJ=Array.isArray(pr.j)?pr.j[1]:""; av.lastF=pr.f; av.offerGroup=new T.Group(); scene.add(av.offerGroup); remotes.set(p.peer,av); if(customizing) av.root.visible=false; }
     else if(look.join()!==av.look.join()) av.setLook(look);
     const pno=Number.isInteger(pr.k)&&pr.k>0&&pr.k<1e8?pr.k:0; let nm=cleanName(pr.n)||(pno?`香客${pno}`:"香客"); if(pr.q!==1&&[SP_NAME,SP_OLD].includes(nm)) nm=pno?`香客${pno}`:"香客"; if(nm!==av.name){ av.name=nm; av.setName(nm); }
     av.setSp(pr.q===1); if(pr.q===1) av.name=SP_NAME;
-    { const tx=num(pr.x,-19,19,av.target.x), tz=num(pr.z,-10,HZ+18,av.target.y); if(tx!==av.goalX||tz!==av.goalZ){ av.goalX=tx; av.goalZ=tz; const pth=planPath(av.pos.x,av.pos.y,tx,tz); av.target.set(pth[0][0],pth[0][1]); av.path=pth.slice(1); } } const seat=Number.isInteger(pr.s)&&pr.s>=0&&pr.s<SEATS.length?pr.s:-1; av.seat=seat; if(seat>=0) npcYield(seat);
+    { const tx=num(pr.x,-19,19,av.target.x), tz=num(pr.z,-10,HZ+YX+18,av.target.y); if(tx!==av.goalX||tz!==av.goalZ){ av.goalX=tx; av.goalZ=tz; const pth=planPath(av.pos.x,av.pos.y,tx,tz); av.target.set(pth[0][0],pth[0][1]); av.path=pth.slice(1); } } const seat=Number.isInteger(pr.s)&&pr.s>=0&&pr.s<SEATS.length?pr.s:-1; av.seat=seat; if(seat>=0) npcYield(seat);
     av.faceGoal=num(pr.r,-10,10,Math.PI); av.hold=pr.h===1?1:0; av.headGoal=num(pr.y,-1.2,1.2,0); av.sparkler=pr.sk===1; if(Array.isArray(pr.fs)&&Number.isFinite(pr.fs[0])&&pr.fs[0]!==FW.seed){ const el=Date.now()-num(pr.fs[1],0,1e13,0); if(el>=0&&el<FW_LEN*1000) fwStart(pr.fs[0],el); } av.sq=(Array.isArray(pr.sq)&&pr.sq[0]>=1&&pr.sq[0]<=2)?[pr.sq[0]-1,num(pr.sq[1],0,1e13,0)]:null;
     if(pr.b!==av.lastBow){ av.lastBow=pr.b; av.bow(); }
     if(Array.isArray(pr.j)&&pr.j[1]&&pr.j[1]!==av.lastJ){ av.lastJ=pr.j[1]; const res=RESULT[pr.j[0]]?pr.j[0]:"sheng"; throwJiao(av,res,()=>av.say(RESULT[res].t,RESULT[res].c)); }
@@ -2665,7 +2665,7 @@ const coinGeo=new T.CylinderGeometry(.06,.06,.012,16);
 function fxArrows(av){ for(let i=0;i<16;i++) setTimeout(()=>{ const s=new T.Sprite(new T.SpriteMaterial({map:arrowTex,transparent:true,depthWrite:false})); const a=rand(0,Math.PI*2), r=rand(.2,.9); s.position.set(av.pos.x+Math.cos(a)*r,rand(.3,1.0),av.pos.y+Math.sin(a)*r); const sc=rand(.18,.32); s.scale.set(sc*.66,sc,1); scene.add(s); parts.push({s,vx:0,vy:rand(1.2,2.0),vz:0,life:0,max:rand(1.4,2.0),grow:.12,op:1}); },i*90);
   av.say("股市飆漲","#ff4a4a",3.5); if(av===meAv) sfx.coin(); }
 function showCaption(t){ const el=$("#caption"); el.textContent=t; el.removeAttribute("data-hide"); clearTimeout(showCaption.tm); showCaption.tm=setTimeout(()=>el.setAttribute("data-hide",""),3200); }
-function fxCoin(av){ const c=new T.Mesh(coinGeo,GOLD()); c.userData.noMerge=1; scene.add(c); const p0=new T.Vector3(av.pos.x,1.1,av.pos.y); const p1=new T.Vector3(rand(-.5,.5),.65,HZ+18.9+rand(-.2,.2)); const t0=performance.now();
+function fxCoin(av){ const c=new T.Mesh(coinGeo,GOLD()); c.userData.noMerge=1; scene.add(c); const p0=new T.Vector3(av.pos.x,1.1,av.pos.y); const p1=new T.Vector3(rand(-.5,.5),.65,HZ+YX+18.9+rand(-.2,.2)); const t0=performance.now();
   sfx.coin(); av.burnT=0;
   const step=()=>{ const k=Math.min(1,(performance.now()-t0)/900); c.position.lerpVectors(p0,p1,k); c.position.y+=Math.sin(k*Math.PI)*1.2; c.rotation.x+=.4; c.rotation.z+=.25;
     if(k<1) requestAnimationFrame(step); else { scene.remove(c); for(let i=0;i<8;i++) spawnSmoke(p1.x+rand(-.15,.15),.68,p1.z+rand(-.15,.15),{mat:new T.SpriteMaterial({map:softTex,color:new T.Color("#bfe9ff"),transparent:true,depthWrite:false}),size:.08,grow:.3,life:.7,op:.8,vy:rand(.4,.9)});
@@ -2717,7 +2717,7 @@ function launchSkyLantern(av,img,y0){ const g=makeSkyLantern(img); g.position.se
   skyLanterns.push({g,t:0,vx:(Math.random()-.5)*.25,vz:.25+Math.random()*.25,ph:Math.random()*6}); if(skyLanterns.length>90){ const o=skyLanterns.shift(); scene.remove(o.g); } }
 // 主委: fifty sky lanterns rising all over the courtyard (same layout on every screen from the shared seed)
 function massLanterns(seed){ if(seenOnce("s"+seed)) return; const r=fwRng(seed); const pts=[]; let tries=0;
-  while(pts.length<50&&tries++<2000){ const x=(r()-.5)*34, z=HZ+2.5+r()*20; if(Math.hypot(x,z-(HZ+20.2))<3.2) continue; if(pts.some(p=>Math.hypot(p[0]-x,p[1]-z)<2.1)) continue; pts.push([x,z]); }
+  while(pts.length<50&&tries++<2000){ const x=(r()-.5)*34, z=HZ+2.5+r()*(20+YX); if(Math.hypot(x,z-(HZ+YX+20.2))<3.2) continue; if(pts.some(p=>Math.hypot(p[0]-x,p[1]-z)<2.1)) continue; pts.push([x,z]); }
   pts.forEach(([x,z],i)=>setTimeout(()=>launchSkyLantern({pos:{x,y:z}},null,.4+r()*1.2),i*160+r()*400)); showCaption("天燈滿天，願望成真"); healSound(); }
 function updateSkyLanterns(dt){ for(let i=skyLanterns.length-1;i>=0;i--){ const s=skyLanterns[i]; s.t+=dt; const g=s.g; const up=s.t<1.5?.3:.55+Math.min(.4,s.t*.01);
     g.position.y+=up*dt; g.position.x+=(s.vx+Math.sin(s.t*.6+s.ph)*.15)*dt; g.position.z+=s.vz*dt; g.rotation.y+=dt*.15; g.rotation.z=Math.sin(s.t*.8+s.ph)*.06;
@@ -2982,14 +2982,14 @@ const FW_LEN=218;
 // 媽祖 outline for the final shell (points traced from the line drawing, 0-255 grid, 177 wide x 255 tall)
 const MAZU_PTS=(()=>{ const b=atob("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"), o=[]; for(let i=0;i<b.length;i+=2) o.push([b.charCodeAt(i),b.charCodeAt(i+1)]); return o; })();
 function fwProgram(seed){ const r=fwRng(seed), ev=[]; const pick=a=>a[(r()*a.length)|0];
-  const backZ=()=>HZ+30+r()*14;
+  const backZ=()=>HZ+YX+30+r()*14;
   const shell=(t,type,o={})=>{ const big=!!o.big; const x=o.x??(r()-.5)*40, z=o.z??backZ(); const y=o.y??(big?34+r()*10:16+r()*12); ev.push({t,kind:"shell",type,x,y,z,big,s:o.s??(big?15+r()*4:9+r()*4),n:o.n??(big?460:220),c:o.c??pick(FWC),ci:(r()*8)|0,fl:o.fl??(1.1+y/24)}); };
   // symmetric pair: same shell mirrored left/right at the same moment
   const pair=(t,type,o={})=>{ const x=o.x??(6+r()*16), y=o.y??(o.big?34+r()*8:16+r()*10), z=o.z??backZ(), c=o.c??pick(FWC); shell(t,type,{...o,x,y,z,c}); shell(t,type,{...o,x:-x,y,z,c}); };
-  const gerb=(t,x,dur,c)=>ev.push({t,kind:"gerb",x,z:HZ+22.9,y:3.9,dur,c:c||pick(FWC)[0]});
-  const mine=(t,x,c)=>ev.push({t,kind:"mine",x,z:HZ+22.3,c:c||pick(FWC)});
+  const gerb=(t,x,dur,c)=>ev.push({t,kind:"gerb",x,z:HZ+YX+22.9,y:3.9,dur,c:c||pick(FWC)[0]});
+  const mine=(t,x,c)=>ev.push({t,kind:"mine",x,z:HZ+YX+22.3,c:c||pick(FWC)});
   // fan cake: every tube fires at once in a symmetric fan
-  const fan=(t,x,shots,c)=>{ const pal=c||pick(FWC); for(let k=0;k<shots;k++){ const ang=(k/(shots-1)*2-1)*1.05; const h=9+r()*2; ev.push({t,kind:"comet",sx:x,sy:3.9,sz:HZ+22.9,ex:x+Math.sin(ang)*h,ey:3.9+Math.cos(ang)*h,ez:HZ+23.5,c:[pal[k%2],pal[(k+1)%2]]}); } };
+  const fan=(t,x,shots,c)=>{ const pal=c||pick(FWC); for(let k=0;k<shots;k++){ const ang=(k/(shots-1)*2-1)*1.05; const h=9+r()*2; ev.push({t,kind:"comet",sx:x,sy:3.9,sz:HZ+YX+22.9,ex:x+Math.sin(ang)*h,ey:3.9+Math.cos(ang)*h,ez:HZ+YX+23.5,c:[pal[k%2],pal[(k+1)%2]]}); } };
   const fans=(t,c)=>{ const pal=c||pick(FWC); for(const x of [-12,0,12]) fan(t,x,11,pal); };
   const types=["peony","chrys","willow","glitter","ring","palm","crossette","crackle","dring","multi","rainbow","twotone","meteor"];
   // 0–20s opening: centre shell, then mirrored pairs
@@ -2997,7 +2997,7 @@ function fwProgram(seed){ const r=fwRng(seed), ev=[]; const pick=a=>a[(r()*a.len
   for(let t=2.5;t<20;t+=1.0+r()*.5){ if(r()<.6) pair(t,pick(["peony","chrys","ring","rainbow","twotone"])); else shell(t,pick(["peony","rainbow"]),{x:0}); }
   // 20–60s: wall-top fountains, fan cakes, mixed shells
   for(const x of [-12,-6,6,12]) gerb(20,x,14); for(const x of [-9,0,9]) gerb(40,x,12);
-  for(let t=20;t<60;t+=.6+r()*.4){ if(r()<.5) pair(t,pick(types)); else shell(t,pick(types)); if(r()<.3) pair(t+.3,pick(["peony","glitter"]),{y:7+r()*4,z:HZ+26+r()*6,s:5+r()*2,n:120}); }
+  for(let t=20;t<60;t+=.6+r()*.4){ if(r()<.5) pair(t,pick(types)); else shell(t,pick(types)); if(r()<.3) pair(t+.3,pick(["peony","glitter"]),{y:7+r()*4,z:HZ+YX+26+r()*6,s:5+r()*2,n:120}); }
   for(let t=24;t<58;t+=4+r()*2){ mine(t,-10); mine(t,10); }
   for(let t=26;t<60;t+=6+r()*2) fans(t);
   // 60–100s: shapes, willows, and full-sky 彩千輪
@@ -3012,7 +3012,7 @@ function fwProgram(seed){ const r=fwRng(seed), ev=[]; const pick=a=>a[(r()*a.len
   for(let t=106+D;t<140+D;t+=9+r()*3){ shell(t,"senrin",{x:0,big:true,y:36,s:16}); pair(t+.2,"senrin",{x:18,big:true,y:30,s:13}); }
   for(const x of [-14,-7,0,7,14]) gerb(118+D,x,10);
   // 140–165s: low show — fans, mines and low shells
-  for(let t=140+D;t<165+D;t+=.45+r()*.3){ if(r()<.4){ mine(t,-8-r()*6); mine(t,8+r()*6); } else pair(t,pick(["peony","glitter","crackle","ring","rainbow"]),{y:7+r()*5,z:HZ+25+r()*8,s:5+r()*3,n:140}); }
+  for(let t=140+D;t<165+D;t+=.45+r()*.3){ if(r()<.4){ mine(t,-8-r()*6); mine(t,8+r()*6); } else pair(t,pick(["peony","glitter","crackle","ring","rainbow"]),{y:7+r()*5,z:HZ+YX+25+r()*8,s:5+r()*3,n:140}); }
   for(let t=141+D;t<165+D;t+=3.5+r()*1.5) fans(t);
   for(const x of [-12,-4,4,12]) gerb(142+D,x,20);
   // 165–180s: finale barrage, high and low together, ending in a sky-wide 千輪
@@ -3020,7 +3020,7 @@ function fwProgram(seed){ const r=fwRng(seed), ev=[]; const pick=a=>a[(r()*a.len
   fans(166+D); fans(170+D); fans(174+D);
   shell(177.4+D,"senrin",{x:0,big:true,y:34,s:18}); pair(177.5+D,"senrin",{x:20,big:true,y:30,s:15});
   shell(178.6+D,"willow",{big:true,x:0,n:700,s:20}); pair(178.8+D,"glitter",{big:true,x:15,n:420});
-  shell(FW_LEN-1.5,"mazu",{x:0,y:30,z:HZ+36,big:true,fl:2.2});
+  shell(FW_LEN-1.5,"mazu",{x:0,y:30,z:HZ+YX+36,big:true,fl:2.2});
   ev.sort((a,b)=>a.t-b.t); return ev; }
 function fwEndMsg(){ const el=$("#fwEnd"); el.classList.remove("on"); el.hidden=false; void el.offsetWidth; el.classList.add("on"); el.onanimationend=()=>{ el.hidden=true; el.classList.remove("on"); if(fwFinale){ fwFinale=false; setFwView(false); } renderSparkBtn(); }; renderSparkBtn(); }
 let myFwShow=null;
@@ -3190,7 +3190,7 @@ const clock=new T.Clock(); let smokeAcc=0, emberAcc=0;
 // take turns forever: a pair comes on, performs (亮相, 雲手, 圓場, 水袖, 對唱), goes back behind the backdrop and vanishes, and
 // the next pair comes out. The three tracks play in turn. Music and singing fade in as you walk up and fade out as you leave.
 // Everything is computed from the time the stage went up, so every player sees the same moment of the show.
-var OP={x:0,z:27.8,k:6.4,on:false,at:0,built:false,root:null,actors:[],spots:[],beams:[],neon:[],glowMats:[],prox:0,cue:"",musicGain:null,voiceGain:null,aud:null,track:-1,lastSync:0};
+var OP={x:0,z:HZ+YX+7.5,k:9.6,on:false,at:0,built:false,root:null,actors:[],spots:[],beams:[],neon:[],glowMats:[],prox:0,cue:"",musicGain:null,voiceGain:null,aud:null,track:-1,lastSync:0};
 const OP_TRACKS=[["opera1.mp3",147.38],["opera2.mp3",154.04],["opera3.mp3",143.05]], OP_TOTAL=OP_TRACKS.reduce((a,t)=>a+t[1],0);
 const OP_GROUP=56, OP_ENTER=6, OP_EXIT=48, OP_GONE=53, OP_MOVE=8.4; // seconds within each pair's turn; five moves of 8.4 s
 const opW=(lx,lz)=>[OP.x-lx*OP.k, OP.z-lz*OP.k]; // stage-local → world; the stage is turned round to face the temple
@@ -3274,12 +3274,12 @@ function opBuild(){ if(OP.built) return; OP.built=true;
   tube(V(-.415,.5,.16),V(.415,.5,.16),18);                    // under the 天后歌劇團 banner
   for(let i=0;i<9;i++){ const sp=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffe2a0"),transparent:true,opacity:.7,blending:T.AdditiveBlending,depthWrite:false})); sp.position.copy(V(-.36+i*.09,.16,.13)); sp.scale.set(.5,.5,1); root.add(sp); } // footlights
   // three moving coloured spotlights from the truss, each with a soft visible beam
-  const beamGeo=new T.CylinderGeometry(.12,1.5,1,20,1,true); beamGeo.translate(0,-.5,0);
+  const beamGeo=new T.CylinderGeometry(.15,2.2,1,20,1,true); beamGeo.translate(0,-.5,0);
   for(let i=0;i<3;i++){ const from=V((i-1)*.3,.6,.22); const sl=Q.low?null:new T.SpotLight(0xffffff,0,22,.42,.55,1.2); const tgt=new T.Object3D(); root.add(tgt);
     if(sl){ sl.position.copy(from); sl.target=tgt; root.add(sl); }
     const bm=new T.MeshBasicMaterial({color:new T.Color(),transparent:true,opacity:.11,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide,toneMapped:false}); const beam=new T.Mesh(beamGeo,bm); beam.position.copy(from); root.add(beam);
     OP.spots.push({sl,tgt,beam,bm,from,i}); }
-  OP_ROLES.forEach(r=>{ const [x,z]=opW(r.side*.3,-.11); const av=new Avatar(r.look,{npc:true,x,z}); av.moveSpeed=0; av.sjBusy=1; opDress(av,r); OP.actors.push({av,role:r}); }); }
+  OP_ROLES.forEach(r=>{ const [x,z]=opW(r.side*.3,-.11); const av=new Avatar(r.look,{npc:true,x,z}); av.moveSpeed=0; av.sjBusy=1; av.root.scale.setScalar(1.35); /* a touch larger than life so they read on the big stage */ opDress(av,r); OP.actors.push({av,role:r}); }); }
 
 function opSet(on,at){ const was=OP.on; OP.on=!!on; OP.at=at||Date.now(); if(OP.on) opBuild(); if(OP.root) OP.root.visible=OP.on; if(!OP.on){ OP.actors.forEach(a=>a.av.root.visible=false); if(OP.aud){ OP.aud.pause(); } }
   if(OP.on&&!was&&Date.now()-OP.at<60000) toast("🎭 主委擺出歌仔戲台了！到廟埕看戲",4200); if(sheetKind==="contact"&&me.sp) openContact(); }
@@ -3298,16 +3298,16 @@ function opMusic(dt){ const want=OP.on&&soundOn&&audioUnlocked&&OP.prox>.01; if(
   const [ti,off]=opTrackAt(); const now=performance.now();
   if(OP.track!==ti||OP.aud.paused||(now-OP.lastSync>4000&&Math.abs(OP.aud.currentTime-off)>2.5)){ OP.lastSync=now;
     if(OP.track!==ti){ OP.track=ti; OP.aud.src=OP_TRACKS[ti][0]; } try{ OP.aud.currentTime=off; }catch(e){} const p=OP.aud.play(); if(p&&p.catch) p.catch(()=>{}); }
-  const v=OP.prox*mVol()*.9; if(OP.musicGain) OP.musicGain.gain.setTargetAtTime(v,ac.currentTime,.12); else OP.aud.volume=Math.min(1,v); }
+  const v=OP.prox*mVol()*.42; if(OP.musicGain) OP.musicGain.gain.setTargetAtTime(v,ac.currentTime,.12); else OP.aud.volume=Math.min(1,v); }
 // one sung or spoken syllable: a sawtooth voice through two vowel formants, Taiwanese-like tone contour, vibrato on long notes
 const OP_VOWELS=[[800,1200],[400,2200],[300,2700],[500,900],[350,800],[600,1700]];
 function opSyllable(a,r,at,dur,f0,contour,sung){ const o=a.createOscillator(); o.type=r.rough?"square":"sawtooth";
   const ends={hi:1,fall:.72,low:.85,rise:1.28,dip:1.1,stop:.92}[contour]||1; o.frequency.setValueAtTime(f0,at);
   if(contour==="dip"){ o.frequency.linearRampToValueAtTime(f0*.86,at+dur*.45); o.frequency.linearRampToValueAtTime(f0*ends,at+dur); } else o.frequency.linearRampToValueAtTime(f0*ends,at+dur*(sung?.35:1));
   if(sung&&dur>.5){ const lfo=a.createOscillator(), lg=a.createGain(); lfo.frequency.value=5.6; lg.gain.setValueAtTime(0,at); lg.gain.linearRampToValueAtTime(f0*ends*.03,at+dur*.6); lfo.connect(lg).connect(o.frequency); lfo.start(at); lfo.stop(at+dur+.05); }
-  const out=a.createGain(), peak=(sung?.13:.11)*(r.rough?.6:1); out.gain.setValueAtTime(0,at); out.gain.linearRampToValueAtTime(peak,at+.02);
+  const out=a.createGain(), peak=(sung?.38:.3)*(r.rough?.6:1); out.gain.setValueAtTime(0,at); out.gain.linearRampToValueAtTime(peak,at+.02);
   if(contour==="stop") out.gain.setValueAtTime(peak,at+dur*.85); out.gain.linearRampToValueAtTime(0,at+dur); out.connect(OP.voiceGain);
-  const fm=OP_VOWELS[(Math.random()*OP_VOWELS.length)|0]; for(const fr of fm){ const bp=a.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=fr*(r.pitch>400?1.25:1.05); bp.Q.value=r.quick?9:6; o.connect(bp).connect(out); }
+  const fm=OP_VOWELS[(Math.random()*OP_VOWELS.length)|0]; for(const fr of fm){ const bp=a.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=fr*(r.pitch>400?1.25:1.05); bp.Q.value=r.quick?9:6; o.connect(bp).connect(out); } { const lp=a.createBiquadFilter(), body=a.createGain(); lp.type="lowpass"; lp.frequency.value=f0*3.2; body.gain.value=.22; o.connect(lp).connect(body).connect(out); } /* a little of the raw voice under the vowels makes it fuller and easier to hear over the band */
   o.start(at); o.stop(at+dur+.05); }
 // a line of 唱 (slow, pentatonic, drawn-out last note) or 口白 (quick patter with checked syllables), speeding up and slowing down
 function opVoice(r,sung,len){ const a=ac; if(!a||!OP.voiceGain||!soundOn) return; let t=a.currentTime+.05; const end=t+len, SC=[0,2,4,7,9,12], C=["hi","fall","low","rise","dip","stop"];
@@ -3340,7 +3340,7 @@ function opActor(A,gi,gt,el,dt){ const r=A.role, av=A.av; if(r.group!==gi||gt>=O
   if(move>=0&&move!==2&&OP.prox>.03){ const half=mt<OP_MOVE/2?0:1, singer=(r.side>0?0:1)===((half+move)%2); const cue=`${gi}:${Math.floor((gt-OP_ENTER)/OP_MOVE)}:${half}:${r.key}`;
     const left=OP_MOVE/2-mt%(OP_MOVE/2)-.3; if(singer&&!A.cues) A.cues=new Set(); if(singer&&!A.cues.has(cue)&&left>1.2){ A.cues.add(cue); if(A.cues.size>40) A.cues=new Set([cue]); opVoice(r,move!==4||r.key==="chou"?Math.random()<.7:false,left); } } }
 function opTick(dt){ if(!OP.on||!OP.root){ opMusic(dt); if(OP.voiceGain) OP.voiceGain.gain.value=0; return; }
-  const d=Math.hypot(meAv.pos.x-OP.x,meAv.pos.y-(OP.z-1.6)); const want=d<6?1:d>24?0:1-(d-6)/18; OP.prox+=(want-OP.prox)*Math.min(1,dt*1.2);
+  const d=Math.hypot(meAv.pos.x-OP.x,meAv.pos.y-(OP.z-.3*OP.k)); const want=d<4?1:d>14?0:1-(d-4)/10; /* full within 4 m of the stage front, silent past 14 m */ OP.prox+=(want-OP.prox)*Math.min(1,dt*1.2);
   const el=(Date.now()-OP.at)/1000, gi=Math.floor(el/OP_GROUP)%3, gt=el%OP_GROUP;
   OP.actors.forEach(A=>opActor(A,gi,gt,el,dt));
   const nt=_dn.night||0; OP.glowMats.forEach(m=>m.emissiveIntensity=.2+.45*nt);
