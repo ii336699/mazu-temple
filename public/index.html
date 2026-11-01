@@ -925,7 +925,7 @@ const LAMPS=140; const lampPos=[];
 const LX=[196.5,288,378,467,555.5,642,729,815,902.5,990,1077,1165.5,1253.5,1340.5], LY=[261,366,471,577,684];
 const CW=5.64, CH=CW*976/1536, LB=.6, LAMPZ=5.5;
 const lampCabMat=new T.MeshBasicMaterial({color:new T.Color("#3a1408"),transparent:true,alphaTest:.5,side:T.FrontSide});
-new T.TextureLoader().load("lamps.webp",t=>{ t.encoding=T.sRGBEncoding; t.anisotropy=renderer.capabilities.getMaxAnisotropy(); lampCabMat.map=t; lampCabMat.color.set("#ffffff"); lampCabMat.needsUpdate=true; });
+new T.TextureLoader().load("lamps.webp",t=>{ t.encoding=T.sRGBEncoding; t.anisotropy=renderer.capabilities.getMaxAnisotropy(); /* no mipmaps: at an angle the blurred small mip levels made the far lamps look dimmer than the near ones */ t.generateMipmaps=false; t.minFilter=T.LinearFilter; lampCabMat.map=t; lampCabMat.color.set("#bdb5ad"); /* a touch darker, so unlit lamps sit back and lit ones stand out */ lampCabMat.needsUpdate=true; });
 const lampNormal={};
 for(const side of [-1,1]){ const g=new T.Group(); g.position.set(side*(HX-.2-.72),0,LAMPZ); g.rotation.y=side>0?-Math.PI/2:Math.PI/2; scene.add(g); const k=side<0?"lamp":"lampR";
   box(CW*.96,LB,.8,mat("#9c1d13",{roughness:.4}),0,LB/2,-.3,g); box(CW*.98,.06,.84,GOLD(),0,LB,-.3,g);
@@ -937,7 +937,7 @@ for(const side of [-1,1]){ const g=new T.Group(); g.position.set(side*(HX-.2-.72
 const litGroup=new T.Group(); scene.add(litGroup);
 // lit lamps are flat glows lying on the cabinet face. (They used to be camera-facing sprites, which cut into the cabinet when seen
 // from the side, so lit lamps looked brighter or dimmer depending on where you stood.)
-const litMat=new T.MeshBasicMaterial({map:glowTex,color:new T.Color("#ffcf70"),transparent:true,blending:T.AdditiveBlending,depthWrite:false}), litGeo=new T.PlaneGeometry(.5,.5);
+const litMat=new T.MeshBasicMaterial({map:glowTex,color:new T.Color("#ffd27a"),transparent:true,blending:T.AdditiveBlending,depthWrite:false}), litGeo=new T.PlaneGeometry(.62,.62), litCoreMat=new T.SpriteMaterial({map:glowTex,color:new T.Color("#fff3c4"),transparent:true,blending:T.AdditiveBlending,depthWrite:false});
 const lampRotY=i=>i<70?Math.PI/2:-Math.PI/2, lampOut=(i,d)=>new T.Vector3(i<70?d:-d,0,0);
 const myLampSpark=new T.Mesh(new T.PlaneGeometry(.8,.8),new T.MeshBasicMaterial({map:glowTex,color:new T.Color("#fff0b0"),transparent:true,blending:T.AdditiveBlending,depthWrite:false})); myLampSpark.visible=false; scene.add(myLampSpark);
 let myLampTag=null;
@@ -945,7 +945,7 @@ const serverLit=new Set();
 async function syncLamps(){ try{ const r=await fetch("/lamps",{cache:"no-store"}); if(!r.ok) return; const j=await r.json(); if(!j||!Array.isArray(j.lit)) return; serverLit.clear(); j.lit.forEach(i=>{ if(Number.isInteger(i)&&i>=0&&i<LAMPS) serverLit.add(i); }); refreshLamps(); }catch(e){} }
 function refreshLamps(){ while(litGroup.children.length) litGroup.remove(litGroup.children[0]);
   const lit=new Set(serverLit); remotes.forEach(r=>{ if(r.lamp>=0&&r.lamp<LAMPS) lit.add(r.lamp); });
-  lit.forEach(i=>{ if(i===me.lamp) return; const sp=new T.Mesh(litGeo,litMat); sp.position.copy(lampPos[i]).add(lampOut(i,.02)); sp.rotation.y=lampRotY(i); litGroup.add(sp); });
+  lit.forEach(i=>{ if(i===me.lamp) return; const sp=new T.Mesh(litGeo,litMat); sp.position.copy(lampPos[i]).add(lampOut(i,.02)); sp.rotation.y=lampRotY(i); litGroup.add(sp); const co=new T.Sprite(litCoreMat); co.scale.set(.3,.3,1); co.position.copy(lampPos[i]).add(lampOut(i,.16)); litGroup.add(co); /* small camera-facing core held far enough out that it never cuts into the cabinet */ });
   if(myLampTag){ scene.remove(myLampTag); myLampTag=null; }
   if(me.lamp!=null&&me.lamp>=0&&me.lamp<LAMPS){ myLampSpark.visible=true; myLampSpark.position.copy(lampPos[me.lamp]).add(lampOut(me.lamp,.03)); myLampSpark.rotation.y=lampRotY(me.lamp); myLampTag=textSprite("你的燈",{fs:28,h:.13,color:"#ffe2a0"}); myLampTag.position.copy(lampPos[me.lamp]).add(new T.Vector3(me.lamp<70?.05:-.05,.24,0)); scene.add(myLampTag); }
   else myLampSpark.visible=false; }
