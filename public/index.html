@@ -500,8 +500,8 @@ const SKIN=["#f4d4b6","#e3b18c","#c68c63","#8e5b3c"];
 const HAIRS=["光頭", "01 粉色捲雙馬尾", "02 金色編髮丸子", "03 藍色雙丸子", "04 紫色花飾高髻", "05 橘色貓耳短鮑伯", "06 綠色精靈短髮", "07 紅色長波浪", "08 彩虹漸層高馬尾", "09 棕色雙麻花辮", "10 灰金半束編髮", "11 黑色長馬尾", "12 薄荷綠半束丸子", "13 灰金層次刺髮", "14 栗棕波浪鮑伯", "15 深藍凌亂馬尾", "16 薰衣草側削髮", "17 橘色凌亂高髻", "18 銀色中分瀏海", "19 紅色螺旋捲", "20 綠色飛鷹頭", "21 金色編辮莫霍克", "22 棕色後梳丸子", "23 黑色層次長髮", "24 薄荷綠短飛機頭"];
 const HAIRC=["#1c1512", "#4b2d1d", "#8d8882", "#6e2b2b", "#d9b45a", "#e8e4dc", "#e89ab4", "#3f6fb5", "#4c9a6a", "#7b56b3", "#e8c68d", "#ef9a54", "#bd4f49", "#8bd0bb", "#aaa297", "#465779", "#bca9ce", "#dad9e3", "#78503e", "#916b53"];
 const HAIR_PRESET_COLOR=[0,6,10,7,9,11,8,12,13,1,14,0,13,10,18,15,16,11,17,12,8,10,19,0,13];
-const STYLES=["唐衫","海青","陣頭背心","T恤","西裝","運動外套","道袍","旗袍","吊帶褲","漢服","披風","圍裙","盔甲","學院開襟衫","花瓣洋裝","軟萌連帽衫","主委背心","公主蓬裙"];
-const ROBE_STYLES=new Set([1,6,7,9,14]);
+const STYLES=["唐衫","潮流帽T寬褲","陣頭背心","T恤","西裝","運動外套","道袍","旗袍","吊帶褲","夏日短褲T恤","披風","圍裙","盔甲","學院開襟衫","花瓣洋裝","軟萌連帽衫","主委背心","公主蓬裙"];
+const ROBE_STYLES=new Set([6,7,14]);
 const OUTFIT=["#2b2521","#6c4b2f","#ebe1ce","#a8261d","#2f507b","#3f6c50","#d9aa3d","#d990a2","#4f86c9"];
 const ACCENT=["#d9aa3d","#a8261d","#f2ece0","#3f6c50","#2f507b","#1c1512"];
 const HATS=["無","斗笠","頭巾","進香帽","棒球帽","毛線帽","皇冠","光環","兔耳","貓耳","花圈","紳士帽","廚師帽","蝴蝶結","珍珠貝雷帽","山茶花髮夾","星月髮箍"];
@@ -1575,7 +1575,11 @@ function collar(t,color,kind='round'){if(kind==='round'){mk(t,gx('neckline',()=>
 function button(t,color,x,y,robe=false,r=.009){return plush(t,color,x,y,frontZ(x,y,.026,robe),r,r,.006);}
 function buildStyle(t,v,out,acc){const g=new T.Group();g.name='outfit-'+v;t.add(g);const robe=ROBE_STYLES.has(v)?v:false,ivory='#fff4e8',dark=new T.Color(out).multiplyScalar(.69).getStyle();const base=garment(g,out,robe);
  if(v===0){collar(g,acc);trim(g,acc,[[0,.40],[0,.22],[0,.015]]);for(let i=0;i<4;i++){const y=.34-i*.078;trim(g,acc,[[-.036,y],[.036,y]],.006);button(g,acc,.029,y);}}
- if(v===1){panel(g,acc,[[-.095,.42],[.095,.33],[.018,.16],[-.075,.08]],robe);trim(g,ivory,[[-.095,.42],[.085,.32],[.008,.16]],.008,robe);waist(g,acc,.10,robe,.045);}
+ if(v===1){ // 潮流帽T: oversized hoodie with a colour-block chest band, big hood, drawstrings and a kangaroo pocket (wide trousers below)
+  garment(g,out,false,1.06);waist(g,acc,.25,false,.06);waist(g,dark,.02,false,.035);
+  mk(g,gx('street-hood',()=>new T.TorusGeometry(.13,.04,10,28,Math.PI*1.7)),mat(out),0,.418,-.02,Math.PI/2,0,.48);
+  for(const side of [-1,1]){trim(g,ivory,[[side*.035,.40],[side*.04,.33],[side*.036,.29]],.005,false,.04);plush(g,ivory,side*.036,.283,frontZ(side*.036,.283,.042),.009,.012,.009);}
+  panel(g,dark,[[-.10,.17],[.10,.17],[.12,.05],[-.12,.05]],false,.035);trim(g,acc,[[-.08,.17],[.08,.17]],.004,false,.041);}
  if(v===2){garment(g,acc,false,1.025);panel(g,out,[[-.09,.43],[.09,.43],[.055,.19],[-.055,.19]],false,.027);for(const side of [-1,1])trim(g,ivory,[[side*.075,.41],[side*.042,.23],[side*.04,.02]],.008,false,.033);}
  if(v===3){collar(g,acc);panel(g,acc,[[-.045,.27],[.045,.27],[.045,.21],[-.045,.21]],false,.019);}
  if(v===4){panel(g,ivory,[[-.09,.42],[.09,.42],[.05,.09],[-.05,.09]]);collar(g,acc,'point');panel(g,acc,[[-.014,.37],[.014,.37],[.025,.20],[0,.16],[-.025,.20]],false,.032);for(const side of [-1,1])panel(g,dark,[[side*.10,.42],[side*.155,.36],[side*.075,.22],[side*.028,.32]],false,.039);button(g,acc,0,.12);}
@@ -1583,7 +1587,9 @@ function buildStyle(t,v,out,acc){const g=new T.Group();g.name='outfit-'+v;t.add(
  if(v===6){collar(g,acc);waist(g,acc,.13,robe,.05);for(const side of [-1,1])trim(g,acc,[[side*.11,.34],[side*.12,.07],[side*.17,-.105]],.008,robe);waist(g,acc,-.11,robe,.024);}
  if(v===7){collar(g,acc);trim(g,acc,[[.03,.41],[.105,.34],[.10,.19]],.007,robe);for(let i=0;i<3;i++){const y=.325-i*.058;trim(g,acc,[[.072,y],[.12,y]],.005,robe);button(g,acc,.115,y,robe,.007);}waist(g,acc,-.11,robe,.014);}
  if(v===8){base.material=mat(acc,{roughness:.82});const trouserWaist=mk(g,gx('overalls-waist-v9',()=>new T.LatheGeometry([new T.Vector2(0,0),new T.Vector2(clothRadius(0)+.007,0),new T.Vector2(clothRadius(.025)+.007,.025),new T.Vector2(clothRadius(.13)+.007,.13),new T.Vector2(0,.13)],36)),mat(out,{roughness:.82}),0,0,0,0,0,0,1,1,.86);trouserWaist.name='overalls-waist';const bib=panel(g,out,[[-.114,.275],[.114,.275],[.15,.01],[-.15,.01]],false,.027);bib.name='overalls-bib';for(const side of [-1,1]){trim(g,out,[[side*.105,.41],[side*.085,.30],[side*.09,.26]],.017);button(g,ivory,side*.09,.272);seam(g,out,[[side*.10,.405,-frontZ(side*.10,.405,.016)],[side*.095,.29,-frontZ(side*.095,.29,.019)],[side*.10,.14,-frontZ(side*.10,.14,.019)]],.015);}const back=new T.Group();back.rotation.y=Math.PI;g.add(back);panel(back,out,[[-.10,.24],[.10,.24],[.13,.10],[-.13,.10]],false,.023);panel(g,out,[[-.045,.21],[.045,.21],[.04,.14],[-.04,.14]],false,.041);trim(g,acc,[[-.045,.21],[.045,.21],[.04,.14],[-.04,.14],[-.045,.21]],.003,false,.047);}
- if(v===9){panel(g,ivory,[[-.10,.42],[.07,.32],[-.03,.10],[-.12,.21]],robe);trim(g,acc,[[-.10,.42],[.08,.32],[-.025,.10]],.012,robe);waist(g,acc,.10,robe,.046);ribbon(g,acc,.11,.10,frontZ(.11,.10,.03,robe),.50);}
+ if(v===9){ // 夏日短褲T恤: loose tee with a sun-and-wave print, shorts below
+  collar(g,acc);plush(g,acc,0,.27,frontZ(0,.27,.02),.042,.042,.008);
+  panel(g,ivory,[[-.075,.215],[-.04,.235],[0,.215],[.04,.235],[.075,.215],[.075,.19],[-.075,.19]],false,.024);waist(g,dark,.015,false,.022);}
  if(v===10){collar(g,acc);const geo=gx('cape-drape-v9',()=>{const pos=[],ix=[],uv=[],N=64,M=48;for(let j=0;j<=M;j++)for(let i=0;i<=N;i++){const u=j/M,v=i/N,opening=.84+.57*(u*u*(3-2*u)),a=opening+v*(Math.PI*2-opening*2),r=.151+.105*(1-Math.exp(-u/.085))+.055*Math.pow(u,1.6),fold=.005*Math.cos(a*7)*Math.pow(Math.sin(Math.PI*u),2),y=.427-.56*u-.012*Math.sin(Math.PI*v)*Math.pow(u,3);pos.push(Math.sin(a)*(r+fold),y,Math.cos(a)*(r+fold)*.94);uv.push(v,1-u);if(j<M&&i<N){const k=j*(N+1)+i;ix.push(k,k+1,k+N+1,k+1,k+N+2,k+N+1);}}const q=new T.BufferGeometry();q.setAttribute('position',new T.Float32BufferAttribute(pos,3));q.setAttribute('uv',new T.Float32BufferAttribute(uv,2));q.setIndex(ix);q.computeVertexNormals();return q;});const cape=mk(g,geo,mat(acc,{side:T.DoubleSide,roughness:.88}));cape.name='draped-cape';for(const side of [-1,1])seam(g,acc,[[side*.117,.423,.102],[side*.075,.399,.137],[0,.385,.16]],.008);ribbon(g,acc,0,.385,.160,.55);}
  if(v===11){panel(g,ivory,[[-.09,.31],[.09,.31],[.16,.015],[-.16,.015]],false,.027);for(const side of [-1,1])trim(g,ivory,[[side*.08,.41],[side*.07,.34],[side*.075,.30]],.011);panel(g,acc,[[-.055,.14],[.055,.14],[.05,.065],[-.05,.065]],false,.041);trim(g,acc,[[-.145,.04],[0,.025],[.145,.04]],.005,false,.044);waist(g,ivory,.17,false,.016);}
  if(v===12){const steel='#aebbc6';garment(g,steel,false,1.02);for(const side of [-1,1])trim(g,acc,[[side*.12,.36],[side*.095,.27],[side*.14,.15]],.009,false,.03);waist(g,acc,.075,false,.038);button(g,acc,0,.29,false,.026);}
@@ -1635,7 +1641,7 @@ function buildGear(t,v,out,acc,avatar=null){const g=new T.Group();g.name='gear-'
  return g;
 }
 function refineAvatar(av,l,out,acc){const h=av.head;h.children[0].scale.set(1.035,1.025,.96);for(const side of [-1,1]){plush(h,SKIN[l[0]],side*.256,-.025,0,.039,.052,.032);plush(h,'#d99c87',side*.278,-.026,.015,.011,.023,.007);const leg=av.legs[side===-1?0:1];plush(leg,'#f6eadb',0,-.315,.033,.071,.011,.094);plush(leg,acc,0,-.281,.087,.029,.008,.010);}plush(h,SKIN[l[0]],0,-.05,.25,.015,.018,.014);}
-function buildSleeve(arm,v,out,acc){if(v===17){mk(arm,gx('puff-sleeve',()=>new T.SphereGeometry(.085,18,12)),mat(out,{roughness:.7}),0,-.035,0,0,0,0,1,.78,1);mk(arm,gx('puff-cuff',()=>new T.TorusGeometry(.06,.008,6,22)),mat(acc),0,-.09,0,Math.PI/2);return;}const short=[2,3,8,11].includes(v),len=short?.13:.225,r=ROBE_STYLES.has(v)? .076:.066;// profile runs bottom to top so the lathe faces point outward (top to bottom turns the sleeve inside out and it disappears)
+function buildSleeve(arm,v,out,acc){if(v===17){mk(arm,gx('puff-sleeve',()=>new T.SphereGeometry(.085,18,12)),mat(out,{roughness:.7}),0,-.035,0,0,0,0,1,.78,1);mk(arm,gx('puff-cuff',()=>new T.TorusGeometry(.06,.008,6,22)),mat(acc),0,-.09,0,Math.PI/2);return;}const short=[2,3,8,9,11].includes(v),len=short?.13:.225,r=(ROBE_STYLES.has(v)||v===1)? .078:.066;// profile runs bottom to top so the lathe faces point outward (top to bottom turns the sleeve inside out and it disappears)
 const geo=gx('sleeve2:'+v,()=>new T.LatheGeometry([new T.Vector2(0,-len),new T.Vector2(r*.93,-len),new T.Vector2(r,-len*.15),new T.Vector2(r*.8,0),new T.Vector2(0,0)],22));mk(arm,geo,mat(out,{roughness:.85}));if(v===12){plush(arm,'#aebbc6',0,-.025,0,.077,.05,.075);return;}mk(arm,gx('sleeve-cuff:'+v,()=>new T.TorusGeometry(r*.95,.006,6,22)),mat([0,5,6,7,9,13].includes(v)?acc:out),0,-len+.009,0,Math.PI/2);}
 
 function faceTexture(l){ const key=[l[0],l[7],l[8],l[9],l[10],l[11]].join(","); if(faceCache.has(key)) return faceCache.get(key);
@@ -1713,7 +1719,7 @@ class Avatar{
     const out=OUTFIT[l[4]], acc=ACCENT[l[5]], skinM=mat(SKIN[l[0]],{roughness:.6}), outM=mat(out,{roughness:.75});
     const pants=mat(l[3]===8?out:new T.Color(out).multiplyScalar(.6).getStyle(),{roughness:.82});
     this.hips=new T.Group(); this.hips.position.y=.3; p.add(this.hips);
-    this.legs=[]; for(const s of [-1,1]){ const lg=new T.Group(); lg.position.x=s*.09; this.hips.add(lg); const m=new T.Mesh(G.leg,pants); lg.add(m); const f=new T.Mesh(G.foot,mat("#1a1210")); f.position.set(0,-.29,.03); f.scale.set(1,.6,1.3); lg.add(f); const sole=new T.Mesh(gx('shoe-sole',()=>new T.CylinderGeometry(.071,.071,.016,18)),mat("#050505",{roughness:.9})); sole.position.set(0,-.324,.03); sole.scale.set(1,1,1.32); lg.add(sole); this.legs.push(lg); m.visible=(!ROBE_STYLES.has(l[3])||l[3]===14)&&l[3]!==17; }
+    this.legs=[]; for(const s of [-1,1]){ const lg=new T.Group(); lg.position.x=s*.09; this.hips.add(lg); const m=new T.Mesh(G.leg,l[3]===9?skinM:pants); lg.add(m); if(l[3]===9){ mk(lg,gx('shorts-leg',()=>{ const q=new T.CylinderGeometry(.084,.09,.13,16); q.translate(0,-.06,0); return q; }),pants); } if(l[3]===1){ m.scale.set(1.45,1,1.45); mk(lg,gx('wide-cuff',()=>new T.TorusGeometry(.088,.008,6,20)),mat(new T.Color(out).multiplyScalar(.45).getStyle()),0,-.27,0,Math.PI/2); } const f=new T.Mesh(G.foot,mat("#1a1210")); f.position.set(0,-.29,.03); f.scale.set(1,.6,1.3); lg.add(f); const sole=new T.Mesh(gx('shoe-sole',()=>new T.CylinderGeometry(.071,.071,.016,18)),mat("#050505",{roughness:.9})); sole.position.set(0,-.324,.03); sole.scale.set(1,1,1.32); lg.add(sole); this.legs.push(lg); m.visible=(!ROBE_STYLES.has(l[3])||l[3]===14)&&l[3]!==17; }
     this.torso=new T.Group(); this.hips.add(this.torso);
     buildStyle(this.torso,l[3],out,acc);
     this.arms=[]; this.hands=[]; for(const s of [-1,1]){ const a=new T.Group(); a.position.set(s*.18,.37,0); this.torso.add(a); a.add(new T.Mesh(G.arm,skinM)); buildSleeve(a,l[3],l[3]===8?acc:out,l[3]===8?out:acc); const h=new T.Mesh(G.hand,skinM); h.position.y=-.28; a.add(h); this.arms.push(a); this.hands.push(h); }
@@ -1955,7 +1961,7 @@ let lastSent="", lastBeat=0;
 function sendPresence(force){ if(!room) return; dirty=false; const p=presencePayload(), str=JSON.stringify(p), now=performance.now(); lastSend=now; if(str===lastSent&&force!==true&&now-lastBeat<60000) return; lastSent=str; lastBeat=now; room.presence(p).catch(()=>{}); }
 function seatTakenByPeer(i){ for(const r of remotes.values()) if(r.seat===i) return true; return false; }
 function num(v,a,b,d){ v=Number(v); return Number.isFinite(v)?Math.max(a,Math.min(b,v)):d; }
-function cleanName(n){ return String(n||"").replace(/[\u0000-\u001f​-‏‪-‮]/g,"").slice(0,10); }
+function cleanName(n){ const t=String(n||"").replace(/[\u0000-\u001f​-‏‪-‮]/g,"").slice(0,10); return hasAddLine(t)?"":t; }
 function syncPeers(peers){ const seen=new Set();
   for(const p of peers){ if(p.sameTab||p.kind!=="viewer") continue; const pr=p.presence||{}; if(pr.v!==1||pr.u===0) continue; seen.add(p.peer);
     let av=remotes.get(p.peer); const look=sanitizeLook(pr.l,pr.q===1); if(av) av.setSp(pr.q===1);
@@ -1973,7 +1979,7 @@ function syncPeers(peers){ const seen=new Set();
     if(Array.isArray(pr.w)&&typeof pr.w[0]==="string"&&pr.w[1]&&pr.w[1]!==av.lastW){ av.lastW=pr.w[1]; const tx=cleanWish(pr.w[0]); if(tx&&!chatCheck(tx)) addWishCard({name:av.name||"香客",text:tx,at:Date.now()}); }
     const lamp=Number.isInteger(pr.g)&&pr.g>=0&&pr.g<LAMPS?pr.g:-1; if(lamp!==av.lamp){ av.lamp=lamp; refreshLamps(); }
     if(av.lastK===undefined){ av.lastK=pr.k; av.lastD=pr.d; av.lastM=Array.isArray(pr.m)?pr.m[1]:""; }
-    if(Array.isArray(pr.m)&&pr.m[1]&&pr.m[1]!==av.lastM){ av.lastM=pr.m[1]; const ph=PHRASES[num(pr.m[0],0,PHRASES.length-1,0)|0]; av.say(ph,"#f7ecd6"); logChat(av.name||"香客",ph,false); }
+    if(Array.isArray(pr.m)&&pr.m[1]&&pr.m[1]!==av.lastM){ av.lastM=pr.m[1]; const ph=PHRASES[num(pr.m[0],0,PHRASES.length-1,0)|0]; if(!peerFlood(av,ph)){ av.say(ph,"#f7ecd6"); logChat(av.name||"香客",ph,false); } }
     if(av.lastC===undefined) av.lastC=Array.isArray(pr.c)?pr.c[1]:"";
     if(av.lastFX===undefined) av.lastFX=Array.isArray(pr.fx)?pr.fx[1]:"";
     if(Array.isArray(pr.fx)&&pr.fx[1]&&pr.fx[1]!==av.lastFX){ av.lastFX=pr.fx[1]; if(pr.fx[0]==="coin") fxCoin(av); else if(pr.fx[0]==="drink") fxDrink(av); else if(pr.fx[0]==="dance") av.danceT=1e9; else if(pr.fx[0]==="undance") av.danceT=0; else if(pr.fx[0]==="pet") fxHearts(); }
@@ -1986,7 +1992,7 @@ function syncPeers(peers){ const seen=new Set();
     if(Array.isArray(pr.sl)&&pr.sl[1]&&pr.sl[1]!==av.lastSL){ av.lastSL=pr.sl[1]; if(Date.now()-num(pr.sl[0],0,1e13,0)<20000) launchSkyLantern(av,null); }
     if(av.lastE===undefined) av.lastE=Array.isArray(pr.e)?pr.e[1]:"";
     if(Array.isArray(pr.e)&&pr.e[1]&&pr.e[1]!==av.lastE){ av.lastE=pr.e[1]; showEmo(av,pr.e[0]|0); }
-    if(Array.isArray(pr.c)&&typeof pr.c[0]==="string"&&pr.c[1]&&pr.c[1]!==av.lastC){ av.lastC=pr.c[1]; const txt=cleanChat(pr.c[0]); if(txt&&!chatCheck(txt)){ av.say(txt,"#f7ecd6",5); logChat(av.name||"香客",txt,false); } }
+    if(Array.isArray(pr.c)&&typeof pr.c[0]==="string"&&pr.c[1]&&pr.c[1]!==av.lastC){ av.lastC=pr.c[1]; const txt=cleanChat(pr.c[0]); if(txt&&!chatCheck(txt)&&!peerFlood(av,txt)){ av.say(txt,"#f7ecd6",5); logChat(av.name||"香客",txt,false); } }
     const offersKey=JSON.stringify(pr.o||[]); if(offersKey!==av.offersKey){ av.offersKey=offersKey; while(av.offerGroup.children.length) av.offerGroup.remove(av.offerGroup.children[0]);
       (Array.isArray(pr.o)?pr.o.slice(0,4):[]).forEach(o=>{ if(Array.isArray(o)&&OFFER_KINDS.includes(o[0])&&o[0]!=="xiang") offerMesh(o[0],num(o[1],0,11,0)|0,av.offerGroup); }); }
   }
@@ -2185,11 +2191,11 @@ function openContact(){ const isChair=!!me.sp;
     <button class="good" data-act="chairReset"><span class="name">🔄 重置今日紀錄</span><span class="meta">發財金、紅線、參拜進度、收驚等每日限制全部歸零，方便測試</span></button></div></div>
   <div class="group" style="margin-top:14px"><span class="group-label">🎆 全服煙火（主委）</span><button class="good wide" data-act="askSL" style="margin-bottom:8px"><span class="name">施放 50 盞天燈</span><span class="meta">每一殿的廟埕同時從各處升起天燈</span></button><button class="good wide" data-act="askFw"><span class="name">施放全服煙火（3 分鐘）</span><span class="meta">每一殿的廟外廣場同時開始，大家都會拿到仙女棒</span></button></div><div id="msgList" style="margin-top:12px"></div>`:""}`);
   const t=$("#msgText"); t.addEventListener("input",()=>{ $("#msgCount").textContent=`${[...t.value].length} / 500`; }); }
-HANDLERS.sendMsg=async()=>{ const t=$("#msgText"); const text=(t&&t.value||"").trim(); if(!text){ toast("先寫點什麼吧"); return; }
+HANDLERS.sendMsg=async()=>{ const t=$("#msgText"); const text=(t&&t.value||"").trim(); if(!text){ toast("先寫點什麼吧"); return; } if(hasAddLine(text)){ toast("沒有送出：不能寫加賴",2800); return; } if(floodKey(text)===HANDLERS.sendMsg.last){ toast("同一段留言不能連續送出",2800); return; }
   try{ const r=await fetch("/msg",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({text:[...text].slice(0,500).join(""),name:msgName(),id:myMailId()})}); const j=await r.json().catch(()=>({}));
     if(r.status===503){ toast("伺服器今天的額度用完了，早上 8 點後恢復，請晚點再送",4000); return; }
-    if(j.ok){ save("mz.sentMsg",Date.now()); t.value=""; $("#msgCount").textContent="0 / 500"; toast("留言已送給作者，謝謝你！",3200); } else toast(j.slow?"留言太快了，請稍等一下再送":"目前送不出去，請稍後再試"); }catch(e){ toast("目前送不出去，請稍後再試"); } };
-HANDLERS.sendAnn=async()=>{ const text=(($("#annText")||{}).value||"").trim(); const key=(($("#readKey")||{}).value||"").trim(); if(!text){ toast("先寫公告內容"); return; } if(!key){ toast("請先輸入留言讀取密碼"); return; }
+    if(j.ok){ HANDLERS.sendMsg.last=floodKey(text); save("mz.sentMsg",Date.now()); t.value=""; $("#msgCount").textContent="0 / 500"; toast("留言已送給作者，謝謝你！",3200); } else toast(j.slow?"留言太快了，請稍等一下再送":"目前送不出去，請稍後再試"); }catch(e){ toast("目前送不出去，請稍後再試"); } };
+HANDLERS.sendAnn=async()=>{ const text=(($("#annText")||{}).value||"").trim(); const key=(($("#readKey")||{}).value||"").trim(); if(!text){ toast("先寫公告內容"); return; } if(hasAddLine(text)){ toast("公告不能寫加賴",2800); return; } if(!key){ toast("請先輸入留言讀取密碼"); return; }
   if(!USE_CF){ showMarquee(text); toast("預覽版沒有伺服器，只有你自己看得到",3200); return; }
   try{ const r=await fetch("/announce",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({text})}); const j=await r.json().catch(()=>({}));
     if(j.ok){ save("mz.rk",key); $("#annText").value=""; toast("全服公告已發佈",3000); } else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":"密碼不對，公告沒有發出",3200); }catch(e){ toast("公告沒有發出，請稍後再試"); } };
@@ -2212,7 +2218,7 @@ function openBoard(){ if(board.at) save("mz.boardSeen",board.at); renderBoardBtn
   ${me.sp?`<div class="group" style="margin-top:8px"><span class="group-label">✏️ 修改公告（主委）</span><textarea class="msg-box" id="boardEdit" maxlength="1000" placeholder="公告內容，1000 字以內，可以換行">${esc(board.text)}</textarea>
   <input class="mail-box" id="boardKey" type="password" autocomplete="current-password" placeholder="留言讀取密碼" value="${esc(load("mz.rk",""))}">
   <button class="good wide" data-act="saveBoard"><span class="name">儲存公告</span><span class="meta">儲存後，每個人的公告按鈕都會亮起黃色，直到他們點開看過。清空再儲存就是撤下公告。</span></button></div>`:""}`); }
-HANDLERS.saveBoard=async(v,b)=>{ const text=(($("#boardEdit")||{}).value||"").trim(); const key=(($("#boardKey")||{}).value||"").trim(); if(!key){ toast("請先輸入留言讀取密碼"); return; }
+HANDLERS.saveBoard=async(v,b)=>{ const text=(($("#boardEdit")||{}).value||"").trim(); const key=(($("#boardKey")||{}).value||"").trim(); if(hasAddLine(text)){ toast("公告不能寫加賴",2800); return; } if(!key){ toast("請先輸入留言讀取密碼"); return; }
   b.disabled=true; try{ const r=await fetch("/board",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({text})}); const j=await r.json().catch(()=>({}));
     if(j.ok){ save("mz.rk",key); board={text:j.text,at:j.at}; openBoard(); toast(text?"公告已更新":"公告已撤下",2600); }
     else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":"密碼不對，公告沒有儲存",3200); }catch(e){ toast("公告沒有儲存，請稍後再試"); } b.disabled=false; };
@@ -2236,7 +2242,7 @@ HANDLERS.delLetter=v=>{ const at=+v; letters=letters.filter(l=>l.at!==at); rende
   fetch(`/letters?id=${encodeURIComponent(myMailId())}&at=${at}&del=1`,{method:"POST"}).catch(()=>{}); };
 $("#letterBtn").onclick=()=>{ ensureAudio(); if(sheetKind==="letters") closeSheet(); else openLetters(); };
 HANDLERS.openReply=(v,b)=>{ const box=b.parentElement.querySelector(".reply-box"); if(!box) return; box.hidden=!box.hidden; if(!box.hidden) box.querySelector("textarea").focus(); };
-HANDLERS.sendReply=async(v,b)=>{ const box=b.closest(".reply-box"); const text=(box.querySelector("textarea").value||"").trim(); if(!text){ toast("先寫回覆內容"); return; }
+HANDLERS.sendReply=async(v,b)=>{ const box=b.closest(".reply-box"); const text=(box.querySelector("textarea").value||"").trim(); if(!text){ toast("先寫回覆內容"); return; } if(hasAddLine(text)){ toast("回信不能寫加賴",2800); return; }
   const key=(($("#readKey")||{}).value||"").trim(); if(!key){ toast("請先輸入留言讀取密碼"); return; }
   b.disabled=true; try{ const r=await fetch("/reply",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({at:+v,text})}); const j=await r.json().catch(()=>({}));
     if(j.ok){ toast("回信已寄出，對方下次上線會收到",3200); HANDLERS.readMsgs(); return; }
@@ -2301,7 +2307,7 @@ HANDLERS.pv=v=>{ if(v==="turn"){ pvSpin=Math.PI*2; return; } pvMode=v; syncPvSeg
 HANDLERS.tab=v=>{ me.name=$("#nameInput").value; lookTab=v; renderLook(firstVisitPending); sheetBody.scrollTop=0; };
 HANDLERS.look=v=>{ const [i,n]=v.split(":").map(Number); if(i===3&&n===16&&!me.sp){ toast("這是主委專屬背心"); return; } if(!Number.isInteger(i)||i<0||i>=LOOK_RANGE.length||!Number.isInteger(n)||n<0||n>=LOOK_RANGE[i]) return; draftLook[i]=n; if(i===1&&n>0){ draftLook[2]=HAIR_PRESET_COLOR[n]; } draftLook=sanitizeLook(draftLook,!!me.sp); meAv.setLook(draftLook); if(i===1) sheetBody.querySelectorAll(`[data-v^="2:"]`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===`2:${draftLook[2]}`))); sheetBody.querySelectorAll(`[data-v^="${i}:"]`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===v))); };
 HANDLERS.randomLook=()=>{ draftLook=randomLook(!!me.sp); meAv.setLook(draftLook); renderLook(firstVisitPending); };
-HANDLERS.saveLook=async()=>{ const raw=$("#nameInput").value.trim(); const ok=await _chk(raw);
+HANDLERS.saveLook=async()=>{ const raw=$("#nameInput").value.trim(); if(hasAddLine(raw)){ toast("名字不能寫加賴",2800); return; } const ok=await _chk(raw);
   if(ok){ me.sp=1; me.name=SP_NAME; } else if(raw===SP_NAME&&me.sp){ me.name=SP_NAME; } else { me.sp=0; me.name=cleanName(raw)===SP_NAME?"":cleanName(raw); }
   meAv.setSp(!!me.sp); if(ok) toast("✨ 主委駕到 ✨",3200); me.look=sanitizeLook(draftLook,!!me.sp); meAv.setLook(me.look); save("mz.me",me); meAv.setName(myLabel()); markDirty(); const first=firstVisitPending; firstVisitPending=false; closeSheet(); if(!ok) toast("歡迎來拜拜！先到大殿入口右手邊的服務處，請清香、金紙和供品",4800); };
 function endCustomize(){ customizing=false; markDirty(); if(window.__retrack) window.__retrack(); if(meAv.label) meAv.label.visible=true; document.body.classList.remove("customizing"); setOthersVisible(true); meAv.setLook(me.look); updateStandBtn(); }
@@ -2571,7 +2577,10 @@ function fuzzyPolitics(t){ const idx=buildPy(); if(!idx) return false; const tc=
     for(let i=0;i+n<=tc.length;i++){ let ok=true; for(let j=0;j<n;j++){ const a=tc[i+j]; if(!a){ ok=false; break; } let hit=false; for(const v of a) if(k.chars[j].has(v)){ hit=true; break; } if(!hit){ ok=false; break; } } if(ok) return true; }
     if(k.flat.length>=6&&latin.length>=6&&syl("x"+latin).slice(1)&&latin.replace(/zh/g,"z").replace(/ch/g,"c").replace(/sh/g,"s").replace(/ng/g,"n").includes(k.flat.replace(/ng/g,"n"))) return true; }
   return false; }
+// 加賴 / +賴 (and 加line / +line) is never allowed anywhere you can type, spaces and symbols in between included
+function hasAddLine(raw){ const t=String(raw||"").normalize("NFKC").toLowerCase().replace(/[\s._\-~*·・、，,。]/g,""); return /(加|\+|十|＋)(賴|赖|line|ㄌㄞ)/.test(t); }
 function chatCheck(raw){ const nf=String(raw||"").normalize("NFKC"); const lower=nf.toLowerCase();
+  if(hasAddLine(nf)) return "line";
   if(/(https?:|www\.|\.com|\.net|\.org|\.tw\b|\.cc\b|\.io\b|\.me\b|\.ly\b|t\.me|@)/.test(lower)) return "ads";
   if((nf.match(/\d/g)||[]).length>=6) return "phone";
   let t=lower.replace(/[\s\p{P}\p{S}_]/gu,"");
@@ -2580,13 +2589,24 @@ function chatCheck(raw){ const nf=String(raw||"").normalize("NFKC"); const lower
   for(const k of ["politics","profanity","ads"]) for(const w of BLOCK[k]) if(t.includes(w.toLowerCase())) return k;
   if(fuzzyPolitics(t)) return "politics";
   return null; }
-const CHAT_REASON={politics:"殿內不聊政治",profanity:"請注意言詞",phone:"不能留電話號碼",ads:"不能發廣告或聯絡方式"};
+const CHAT_REASON={line:"不能寫加賴",politics:"殿內不聊政治",profanity:"請注意言詞",phone:"不能留電話號碼",ads:"不能發廣告或聯絡方式"};
 function cleanChat(t){ return String(t||"").replace(/[\u0000-\u001f\u007f​-‏‪-‮⁠-⁤﻿]/g,"").replace(/\s+/g," ").trim().slice(0,40); }
 const chatLog=[]; let lastChatAt=0;
 function logChat(name,text,mine){ chatLog.push({name,text,mine}); if(chatLog.length>30) chatLog.shift(); if(sheetKind==="say") renderChatLog(); }
 function renderChatLog(){ const el=$("#chatLog"); if(!el) return; el.innerHTML=chatLog.length?chatLog.slice(-20).map(m=>`<div class="msg${m.mine?" mine":""}"><b>${esc(m.name)}</b><span>${esc(m.text)}</span></div>`).join(""):`<p class="note">還沒有人說話。打個招呼吧。</p>`; el.scrollTop=el.scrollHeight; }
+// 洗頻: the same sentence twice in a row is refused, and a third line within 15 seconds pauses chat for 30 seconds
+const FLOOD={last:"",times:[],muteUntil:0};
+const floodKey=t=>String(t||"").normalize("NFKC").toLowerCase().replace(/[\s\p{P}\p{S}]/gu,"");
+function floodCheck(text){ const now=Date.now(); if(now<FLOOD.muteUntil) return `發言太頻繁，${Math.ceil((FLOOD.muteUntil-now)/1000)} 秒後再說`;
+  if(floodKey(text)&&floodKey(text)===FLOOD.last) return "同一句話不能連續發送";
+  FLOOD.times=FLOOD.times.filter(t=>now-t<15000); if(FLOOD.times.length>=2){ FLOOD.muteUntil=now+30000; FLOOD.times=[]; return "短時間連發太多句，聊天暫停 30 秒"; }
+  return null; }
+function floodNote(text){ FLOOD.last=floodKey(text); FLOOD.times.push(Date.now()); }
+// the same rules applied to what other players send, so a modified page can't flood everyone else's screen
+function peerFlood(av,text){ const now=Date.now(), k=floodKey(text); av.fl=av.fl||{last:"",times:[]}; if(k&&k===av.fl.last) return true; av.fl.times=av.fl.times.filter(t=>now-t<15000); if(av.fl.times.length>=2) return true; av.fl.last=k; av.fl.times.push(now); return false; }
 function sendChat(text){ text=cleanChat(text); if(!text) return false; const now=performance.now(); if(now-lastChatAt<2500){ toast("說慢一點，稍等再送出"); return false; }
   const bad=chatCheck(text); if(bad){ toast(`沒有送出：${CHAT_REASON[bad]}`,2800); return false; }
+  const fl=floodCheck(text); if(fl){ toast(fl,2800); return false; } floodNote(text);
   lastChatAt=now; myChat=[text,Math.random().toString(36).slice(2,8)]; markDirty(); meAv.say(text,"#f7ecd6",5); logChat(me.name||"你",text,true); return true; }
 /* ---- greetings ---- */
 function openSay(){ openSheet("say","聊天",`<div class="chat-log" id="chatLog" aria-live="polite"></div>
@@ -2594,7 +2614,7 @@ function openSay(){ openSheet("say","聊天",`<div class="chat-log" id="chatLog"
   <div class="chips">${PHRASES.map((p,i)=>`<button class="chip" data-act="say" data-v="${i}">${p}</button>`).join("")}</div>`);
   renderChatLog(); $("#chatForm").addEventListener("submit",e=>{ e.preventDefault(); const inp=$("#chatInput"); if(sendChat(inp.value)) inp.value=""; });
   if(matchMedia("(pointer:fine)").matches) setTimeout(()=>{ const i=$("#chatInput"); if(i) i.focus(); },320); }
-HANDLERS.say=v=>{ const i=+v; myMsg=[i,Math.random().toString(36).slice(2,8)]; markDirty(); meAv.say(PHRASES[i],"#f7ecd6"); logChat(me.name||"你",PHRASES[i],true); };
+HANDLERS.say=v=>{ const i=+v; { const fl=floodCheck(PHRASES[i]); if(fl){ toast(fl,2800); return; } floodNote(PHRASES[i]); } myMsg=[i,Math.random().toString(36).slice(2,8)]; markDirty(); meAv.say(PHRASES[i],"#f7ecd6"); logChat(me.name||"你",PHRASES[i],true); };
 
 /* ---- halls ---- */
 // Only halls with people (plus yours) are listed; the next empty hall appears once every listed hall is nearly full, so players gather instead of spreading out.
@@ -3083,6 +3103,7 @@ HANDLERS.ftDrink=()=>{ closeSheet(); fxDrink(meAv); myFx=["drink",Math.random().
 
 /* ---- 許願樹 ---- */
 let wishes=load("mz.wishes",[]); if(!Array.isArray(wishes)) wishes=[];
+let lastWishKey="";
 function cleanWish(t){ return String(t||"").replace(/[\u0000-\u001f\u007f\u200b-\u200f\u202a-\u202e\u2060-\u2064\ufeff]/g,"").replace(/\s+/g," ").trim().slice(0,40); }
 function addWishCard(w){ if(!w||!w.text) return; if(wishes.some(x=>x.text===w.text&&x.name===w.name)) return; wishes.push(w); wishes.sort((a,b)=>(b.at||0)-(a.at||0)); wishes=wishes.slice(0,300); save("mz.wishes",wishes.filter(x=>x.mine).slice(0,10)); if(sheetKind==="wish") renderWishList(); }
 function renderWishList(){ const el=$("#wishList"); if(!el) return; const list=wishes.filter(w=>!chatCheck(w.text)); el.innerHTML=list.length?list.map(w=>`<div class="wish">${esc(w.text)}<small>${esc(w.name||"香客")}</small></div>`).join(""):`<p class="note">還沒有祈願卡，寫下第一張吧。</p>`; }
@@ -3096,7 +3117,7 @@ function openWish(){ openSheet("wish","許願樹",`<p class="lead">寫一張祈�
   renderWishList(); fetchWishes();
   $("#wishForm").addEventListener("submit",async e=>{ e.preventDefault(); const inp=$("#wishInput"); const tx=cleanWish(inp.value); if(!tx) return;
     if(performance.now()-lastWishAt<10000){ toast("剛掛過一張，稍等再寫"); return; }
-    const bad=chatCheck(tx); if(bad){ toast(`沒有掛上：${CHAT_REASON[bad]}`,2800); return; }
+    const bad=chatCheck(tx); if(bad){ toast(`沒有掛上：${CHAT_REASON[bad]}`,2800); return; } if(floodKey(tx)===lastWishKey){ toast("同一個心願不能連續掛",2800); return; } lastWishKey=floodKey(tx);
     lastWishAt=performance.now(); const w={name:me.name||"香客",text:tx,at:Date.now(),mine:1}; addWishCard(w); inp.value=""; myWish=[tx,Math.random().toString(36).slice(2,8)]; markDirty(); meAv.burnT=0; toast("祈願卡掛上許願樹了");
     try{ const r=await fetch("/wish",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:(me.name||(me.no?`香客${me.no}`:"香客")).slice(0,10),text:tx,id:load("mz.id","")})}); if(!r.ok) throw 0; }catch(e){ if(window.__sb){ try{ await window.__sb.from("wishes").insert({name:(me.name||"香客").slice(0,10),text:tx}); }catch(e2){} } } }); }
 

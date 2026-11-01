@@ -110,7 +110,8 @@ export class Hall extends DurableObject {
 
 const LAMPS = 140;
 const clean = (t, n) => String(t || "").replace(/[\u0000-\u001f\u007f\u200b-\u200f\u202a-\u202e\u2060-\u2064\ufeff<>]/g, "").replace(/\s+/g, " ").trim().slice(0, n);
-const looksLikeAd = t => /(https?:|www\.|\.com|\.tw|line|@)/i.test(t) || (t.match(/\d/g) || []).length >= 6;
+const addsLine = t => /(加|\+|十|＋)(賴|赖|line|ㄌㄞ)/i.test(String(t || "").normalize("NFKC").replace(/[\s._\-~*·・、，,。]/g, "")); // 加賴 / +賴 is refused everywhere
+const looksLikeAd = t => addsLine(t) || /(https?:|www\.|\.com|\.tw|line|@)/i.test(t) || (t.match(/\d/g) || []).length >= 6;
 const plain = (t, n) => String(t || "").replace(/[\u0000-\u0008\u000b-\u001f\u007f\u202a-\u202e\u2066-\u2069]/g, "").trim().slice(0, n); // keeps line breaks
 const LETTER_TTL = 24 * 3600 * 1000;
 const json = o => new Response(JSON.stringify(o), { headers: { "content-type": "application/json" } });
@@ -137,7 +138,7 @@ export class Lobby extends DurableObject {
     if (url.pathname === "/msg" && req.method === "POST") {
       let b = {}; try { b = await req.json(); } catch {}
       const text = String(b.text || "").replace(/[\u0000-\u0008\u000b-\u001f\u007f\u202a-\u202e\u2066-\u2069]/g, "").trim().slice(0, 500), name = clean(b.name, 16) || "香客", id = clean(b.id, 16);
-      if (!text) return json({ ok: false });
+      if (!text || addsLine(text)) return json({ ok: false, line: addsLine(text) });
       this.lastMsg = this.lastMsg || new Map(); const now = Date.now(); const key = id || req.headers.get("cf-connecting-ip") || "?";
       if (now - (this.lastMsg.get(key) || 0) < 30000) return json({ ok: false, slow: true }); this.lastMsg.set(key, now);
       const m = (await this.ctx.storage.get("msgs")) || []; m.unshift(id ? { name, text, at: now, id } : { name, text, at: now }); await this.ctx.storage.put("msgs", m.slice(0, 1000)); return json({ ok: true });
@@ -218,7 +219,7 @@ export class Lobby extends DurableObject {
     if (url.pathname === "/wishes") { return json({ wishes: (await this.ctx.storage.get("wishes")) || [] }); }
     if (url.pathname === "/wish" && req.method === "POST") {
       let b = {}; try { b = await req.json(); } catch {}
-      const text = clean(b.text, 40), name = clean(b.name, 10) || "香客", id = clean(b.id, 16);
+      const text = clean(b.text, 40), name = (addsLine(b.name) ? "" : clean(b.name, 10)) || "香客", id = clean(b.id, 16);
       if (!text || looksLikeAd(text)) return json({ ok: false });
       this.last = this.last || new Map(); const now = Date.now(); if (id && now - (this.last.get(id) || 0) < 10000) return json({ ok: false, slow: true }); if (id) this.last.set(id, now);
       const w = (await this.ctx.storage.get("wishes")) || []; w.unshift({ name, text, at: now }); await this.ctx.storage.put("wishes", w.slice(0, 300)); return json({ ok: true });
