@@ -572,11 +572,11 @@ function saveBag(){ save("mz.bag",bag); renderWallet(); }
 function sanitizeLook(l,allowChair=false){ const out=[]; for(let i=0;i<LOOK_RANGE.length;i++){ const v=Array.isArray(l)?l[i]|0:0; out.push(Math.max(0,Math.min(LOOK_RANGE[i]-1, Number.isFinite(v)?v:0))); } if(!allowChair&&out[3]===16) out[3]=0; return out; }
 
 /* ================= quality ================= */
-const Q={mode:load("mz.q","auto")}; Q.low=Q.mode==="low";
+const Q={mode:load("mz.q","auto")}; Q.lite=Q.mode==="lite"; Q.low=Q.mode==="low"||Q.lite; // 低配 (lite) = 省電 plus lighter models, small textures and no anti-aliasing
 /* ================= renderer & scene ================= */
 const canvas=$("#c");
-const renderer=new T.WebGLRenderer({canvas,antialias:true,powerPreference:"high-performance"});
-renderer.setPixelRatio(Q.low?Math.min(window.devicePixelRatio||1,1)*.8:Math.min(window.devicePixelRatio||1,1.5));
+const renderer=new T.WebGLRenderer({canvas,antialias:!Q.lite,powerPreference:"high-performance"});
+renderer.setPixelRatio(Q.lite?.6:Q.low?Math.min(window.devicePixelRatio||1,1)*.8:Math.min(window.devicePixelRatio||1,1.5));
 renderer.outputEncoding=T.sRGBEncoding;
 renderer.toneMapping=T.ACESFilmicToneMapping;
 renderer.toneMappingExposure=.82;
@@ -869,21 +869,25 @@ const mazu=buildMazu(); mazu.userData.noMerge=1; mazu.scale.setScalar(1.5); mazu
 const IN_ARTIFACT=!!(window.claude&&window.claude.use);
 function loadModel(name,cb){ if(!T.GLTFLoader) return; const gl=new T.GLTFLoader(); if(window.MeshoptDecoder) gl.setMeshoptDecoder(window.MeshoptDecoder);
   const fix=g=>{ g.scene.traverse(o=>{ if(o.isMesh){ if(!o.geometry.attributes.normal) o.geometry.computeVertexNormals(); o.material.envMapIntensity=.9; if(o.material.map) o.material.map.anisotropy=4; } }); cb(g.scene); };
-  const viaScript=()=>{ const sc=document.createElement("script"); sc.src=name+"-model.js"; sc.async=true; const key="GLB_"+name.toUpperCase();
+  const viaScript=()=>{ const sc=document.createElement("script"); sc.src=name+(Q.lite?"-lite":"")+"-model.js"; sc.async=true; const key="GLB_"+name.toUpperCase()+(Q.lite?"_LITE":"");
     sc.onload=()=>{ try{ const b=atob(window[key]||""); const u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); window[key]=null; gl.parse(u.buffer,"",fix,()=>{}); }catch(e){} }; document.head.appendChild(sc); };
-  if(IN_ARTIFACT) setTimeout(viaScript,300); else gl.load(name+".glb",fix,undefined,()=>setTimeout(viaScript,100)); }
+  if(IN_ARTIFACT) setTimeout(viaScript,300); else gl.load(name+(Q.lite?"-lite":"")+".glb",fix,undefined,()=>setTimeout(viaScript,100)); }
 function fitModel(m,height){ const bb=new T.Box3().setFromObject(m); const sz=bb.getSize(new T.Vector3()); const k=height/sz.y; m.scale.setScalar(k); const c=bb.getCenter(new T.Vector3()); m.position.set(-c.x*k,-bb.min.y*k,-c.z*k); const w=new T.Group(); w.add(m); return w; }
 // 千里眼 and 順風耳 guard Mazu from the two side bays of the shrine, half her height, turned a little towards her.
 // Facing the shrine, 順風耳 (red, hand to ear) stands on the left and 千里眼 (green, hand shading the eyes) on the right.
-setTimeout(()=>{ for(const [name,x] of [["shunfeng",-3.8],["qianli",3.8]]) loadModel(name,m=>{ const w=fitModel(m,3.75/2); w.position.set(x,1.55,PAV.z+.2); w.rotation.y=x<0?.2:-.2; w.userData.noMerge=1; scene.add(w); }); },1500);
+for(const x of [-3.8,3.8]){ // lights are made now (not when the models arrive) so adding them doesn't stall the game later
+  const glow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffcf80"),transparent:true,opacity:.35,blending:T.AdditiveBlending,depthWrite:false})); glow.position.set(x,2.5,PAV.z-.25); glow.scale.set(2.4,3.2,1); scene.add(glow);
+  if(!Q.low){ const sl=new T.SpotLight(0xffd9a0,2.4,9,.42,.6,1.2); sl.position.set(x*.8,5.4,PAV.z+2.6); const tg=new T.Object3D(); tg.position.set(x,2.4,PAV.z+.2); scene.add(tg); sl.target=tg; scene.add(sl); } }
+setTimeout(()=>{ for(const [name,x] of [["shunfeng",-3.8],["qianli",3.8]]) loadModel(name,m=>{ m.traverse(o=>{ if(o.isMesh&&o.material&&o.material.map){ o.material.emissiveMap=o.material.map; o.material.emissive=new T.Color("#ffffff"); o.material.emissiveIntensity=Q.low?.32:.14; } });
+  const w=fitModel(m,3.75/2); w.position.set(x,1.55,PAV.z+.2); w.rotation.y=x<0?.2:-.2; w.userData.noMerge=1; scene.add(w); }); },1500);
 if(T.GLTFLoader){ const gl=new T.GLTFLoader(); if(window.MeshoptDecoder) gl.setMeshoptDecoder(window.MeshoptDecoder);
   const onModel=g=>{ const m=g.scene; const bb=new T.Box3().setFromObject(m); const sz=bb.getSize(new T.Vector3()); const k=3.75/sz.y; m.scale.setScalar(k);
     const c=bb.getCenter(new T.Vector3()); m.position.set(-c.x*k,1.55-bb.min.y*k,PAV.z-.1-c.z*k);
     m.traverse(o=>{ if(o.isMesh){ o.material.envMapIntensity=.9; if(o.material.map) o.material.map.anisotropy=4; } });
     scene.add(m); scene.remove(mazu); window.__mazuModel=m; };
-  const sc=document.createElement("script"); sc.src="mazu-model.js"; sc.async=true;
-  sc.onload=()=>{ try{ const b=atob(window.MAZU_GLB_B64||""); const u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); window.MAZU_GLB_B64=null; gl.parse(u.buffer,"",onModel,()=>{}); }catch(e){} };
-  if(window.claude&&window.claude.use) setTimeout(()=>document.head.appendChild(sc),300); else gl.load("mazu.glb",onModel,undefined,()=>setTimeout(()=>document.head.appendChild(sc),100)); }
+  const sc=document.createElement("script"); sc.src=Q.lite?"mazu-lite-model.js":"mazu-model.js"; sc.async=true; const MK=Q.lite?"MAZU_LITE_B64":"MAZU_GLB_B64";
+  sc.onload=()=>{ try{ const b=atob(window[MK]||""); const u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); window[MK]=null; gl.parse(u.buffer,"",onModel,()=>{}); }catch(e){} };
+  if(window.claude&&window.claude.use) setTimeout(()=>document.head.appendChild(sc),300); else gl.load(Q.lite?"mazu-lite.glb":"mazu.glb",onModel,undefined,()=>setTimeout(()=>document.head.appendChild(sc),100)); }
 
 // offering table
 const ALTAR={z:-10.55};
@@ -1960,7 +1964,7 @@ function updateStandBtn(){ $("#standBtn").hidden=meAv.seat<0||customizing; }
 let showNpc=load("mz.npc",true); const npcs=[];
 function randomLook(allowChair=false){ return sanitizeLook(LOOK_RANGE.map((n,i)=>(i===11||i===12)?(Math.random()<.6?0:Math.floor(Math.random()*n)):Math.floor(Math.random()*n)),allowChair); }
 function freeSeat(){ const taken=new Set([meAv.seat,...npcs.map(n=>n.seat)]); remotes.forEach(r=>taken.add(r.seat)); const free=[]; for(let i=0;i<SEATS.length;i++) if(!taken.has(i)) free.push(i); return free.length?free[Math.floor(Math.random()*free.length)]:-1; }
-function buildNpcs(){ npcs.forEach(n=>n.dispose()); npcs.length=0; if(!showNpc) return; for(let i=0;i<(Q.low?6:12);i++){ const s=freeSeat(); if(s<0) break; const a=new Avatar(randomLook(),{npc:true,x:SEATS[s].x,z:SEATS[s].y}); a.seat=s; a.kneel=1; a.next=rand(2,18); npcs.push(a); } }
+function buildNpcs(){ npcs.forEach(n=>n.dispose()); npcs.length=0; if(!showNpc) return; for(let i=0;i<(Q.lite?3:Q.low?6:12);i++){ const s=freeSeat(); if(s<0) break; const a=new Avatar(randomLook(),{npc:true,x:SEATS[s].x,z:SEATS[s].y}); a.seat=s; a.kneel=1; a.next=rand(2,18); npcs.push(a); } }
 function npcYield(i){ npcs.forEach(n=>{ if(n.seat===i){ const s=freeSeat(); if(s<0){ n.seat=-1; n.target.set(rand(-10,10),13); } else n.sitAt(s); } }); }
 
 /* ================= multiplayer (room presence) ================= */
@@ -2337,8 +2341,8 @@ document.addEventListener("input",e=>{ const k=e.target&&e.target.dataset&&e.tar
   if(k==="m"){ bgm.volume=(curTrack==="cat"?.55:.38)*mVol(); } });
 document.addEventListener("change",e=>{ if(e.target&&e.target.dataset&&e.target.dataset.vol==="s") sfx.coin(); });
 function openGfx(){ const opt=(v,t,d)=>`<button class="good" data-act="quality" data-v="${v}" aria-pressed="${Q.mode===v}" style="${Q.mode===v?"border-color:var(--gold);background:rgba(142,28,20,.35)":""}"><span class="name">${t}${Q.mode===v?"　✓":""}</span><span class="meta">${d}</span></button>`;
-  openSheet("gfx","設定",`<div class="group"><span class="group-label">畫質</span><p class="lead">畫面卡頓或手機發燙時，可以改用省電畫質。</p></div><div class="goods">${opt("auto","自動","進場後自動偵測，太卡會切到省電")}${opt("high","高畫質","光束、灰塵、全部燈光，最漂亮")}${opt("low","省電","降低解析度與特效，舊手機也順")}</div><p class="note">目前：${Q.low?"省電畫質":"高畫質"}</p><div class="group"><span class="group-label">其他</span><div class="chips"><button class="chip" data-act="toggleNpc" aria-pressed="${showNpc}">顯示示範香客</button></div><p class="note">示範香客是電腦角色，不算在殿內人數裡，關掉也能讓畫面更順。</p></div>`); }
-HANDLERS.quality=v=>{ applyQuality(v==="auto"?(perf.done&&Q.low?"low":"high"):v,false); if(v==="auto"){ Q.mode="auto"; save("mz.q","auto"); } openGfx(); toast(v==="low"?"已切換為省電畫質":v==="high"?"已切換為高畫質":"畫質改為自動偵測"); };
+  openSheet("gfx","設定",`<div class="group"><span class="group-label">畫質</span><p class="lead">畫面卡頓或手機發燙時，可以改用省電畫質。</p></div><div class="goods">${opt("auto","自動","進場後自動偵測，太卡會切到省電")}${opt("high","高畫質","光束、灰塵、全部燈光，最漂亮")}${opt("low","省電","降低解析度與特效，舊手機也順")}${opt("lite","低配","最省：模型減面、小貼圖、關閉抗鋸齒，給比較舊的手機（會重新載入）")}</div><p class="note">目前：${Q.lite?"低配":Q.low?"省電畫質":"高畫質"}</p><div class="group"><span class="group-label">其他</span><div class="chips"><button class="chip" data-act="toggleNpc" aria-pressed="${showNpc}">顯示示範香客</button></div><p class="note">示範香客是電腦角色，不算在殿內人數裡，關掉也能讓畫面更順。</p></div>`); }
+HANDLERS.quality=v=>{ if((v==="lite")!==Q.lite){ Q.mode=v; save("mz.q",v); toast(v==="lite"?"切換為低配，重新載入中…":"離開低配，重新載入中…",2500); setTimeout(()=>location.reload(),900); return; } applyQuality(v==="auto"?(perf.done&&Q.low?"low":"high"):v,false); if(v==="auto"){ Q.mode="auto"; save("mz.q","auto"); } openGfx(); toast(v==="low"?"已切換為省電畫質":v==="high"?"已切換為高畫質":"畫質改為自動偵測"); };
 HANDLERS.toggleNpc=(v,b)=>{ showNpc=!showNpc; save("mz.npc",showNpc); b.setAttribute("aria-pressed",String(showNpc)); buildNpcs(); toast(showNpc?"已顯示示範香客":"已隱藏示範香客"); };
 HANDLERS.showPoem=v=>openPoem(+v,true);
 
@@ -3267,9 +3271,9 @@ function opBuild(){ if(OP.built) return; OP.built=true;
   const root=new T.Group(); root.userData.noMerge=1; root.position.set(OP.x,0,OP.z); root.rotation.y=Math.PI; root.visible=false; scene.add(root); OP.root=root; const k=OP.k;
   loadModel("stage",m=>{ m.scale.setScalar(k); m.traverse(o=>{ if(o.isMesh&&o.material&&o.material.map){ const mt=o.material; mt.emissiveMap=mt.map; mt.emissive=new T.Color("#ffffff"); mt.emissiveIntensity=.25; OP.glowMats.push(mt); } }); root.add(m); });
   // neon tubes (螢光燈) round the proscenium and along the deck edge, segment colours chase round
-  const tube=(a,b,n)=>{ for(let i=0;i<n;i++){ const p=a.clone().lerp(b,(i+.5)/n), len=a.distanceTo(b)/n; const m=new T.MeshBasicMaterial({color:new T.Color(),toneMapped:false});
+  const tube=(a,b,n)=>{ if(Q.lite) n=Math.max(2,n>>1); for(let i=0;i<n;i++){ const p=a.clone().lerp(b,(i+.5)/n), len=a.distanceTo(b)/n; const m=new T.MeshBasicMaterial({color:new T.Color(),toneMapped:false});
       const t=new T.Mesh(new T.CylinderGeometry(.03,.03,len*.92,6),m); t.position.copy(p); t.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),b.clone().sub(a).normalize()); root.add(t);
-      const gm=new T.SpriteMaterial({map:glowTex,color:new T.Color(),transparent:true,opacity:.55,blending:T.AdditiveBlending,depthWrite:false}); const sp=new T.Sprite(gm); sp.position.copy(p); sp.scale.set(.75,.75,1); root.add(sp);
+      const gm=new T.SpriteMaterial({map:glowTex,color:new T.Color(),transparent:true,opacity:.55,blending:T.AdditiveBlending,depthWrite:false}); const sp=new T.Sprite(gm); sp.position.copy(p); sp.scale.set(.75,.75,1); if(!Q.lite) root.add(sp);
       OP.neon.push({m,gm,u:OP.neon.length}); } };
   const V=(x,y,z)=>new T.Vector3(x*k,y*k,z*k);
   tube(V(-.46,.148,.16),V(.46,.148,.16),18);                  // deck edge
@@ -3441,13 +3445,13 @@ function tick(){ if(gameAsleep) return; const dt=Math.min(.05,clock.getDelta());
 const perf={t:0,n:0,done:false,warm:0};
 function perfSample(dt){ if(perf.done||Q.mode!=="auto"||customizing||document.hidden) return; perf.warm+=dt; if(perf.warm<3) return; perf.t+=dt; perf.n++;
   if(perf.t>=4){ perf.done=true; const fps=perf.n/perf.t; if(fps<32){ applyQuality("low",true); toast("偵測到裝置較吃力，已切換為省電畫質，可在背包設定調整",4200); } } }
-function applyQuality(mode,auto){ if(!auto){ Q.mode=mode; save("mz.q",mode); } Q.low=mode==="low";
-  renderer.setPixelRatio(Q.low?Math.min(window.devicePixelRatio||1,1)*.8:Math.min(window.devicePixelRatio||1,1.5)); resize();
+function applyQuality(mode,auto){ if(!auto){ Q.mode=mode; save("mz.q",mode); } Q.low=mode==="low"||Q.lite;
+  renderer.setPixelRatio(Q.lite?.6:Q.low?Math.min(window.devicePixelRatio||1,1)*.8:Math.min(window.devicePixelRatio||1,1.5)); resize();
   dust.visible=!Q.low; shafts.forEach(m=>m.visible=!Q.low); extraLights.forEach(l=>l.visible=!Q.low); farDecor.forEach(o=>o.visible=!Q.low);
   scene.traverse(o=>{ if(o.isSprite&&o.material===glowMat) o.visible=!Q.low; }); buildNpcs(); }
 
 /* ================= boot ================= */
-meAv.setAmulet(!!bag.items.fu); meAv.setThread(!!bag.redThread); syncLamps(); setInterval(syncLamps,300000); if(me.sp) meAv.setSp(true); if(Q.low) setTimeout(()=>applyQuality("low",true),0); refreshLamps();
+meAv.setAmulet(!!bag.items.fu); meAv.setThread(!!bag.redThread); syncLamps(); setInterval(syncLamps,300000); if(me.sp) meAv.setSp(true); if(Q.low) setTimeout(()=>applyQuality(Q.lite?"lite":"low",true),0); refreshLamps();
 /* ---- merge static scenery by material: hundreds of draw calls become a few dozen ---- */
 function mergeStatic(){ const buckets=new Map(); scene.updateMatrixWorld(true);
   const skip=o=>{ for(let p=o;p;p=p.parent){ if(p.userData&&p.userData.noMerge) return true; if(p===scene) return false; } return false; };
