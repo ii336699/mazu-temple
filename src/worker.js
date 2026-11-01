@@ -3,12 +3,14 @@
 import { DurableObject } from "cloudflare:workers";
 
 const HALLS = 10, CAP = 100, MAX_MSG = 4000;
-const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000 };
+const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000 };
+const LOBBY_PATHS = ["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters"];
+const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board" }; // a POST here makes that cached list stale
 
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
-    if (url.pathname === "/ws" || url.pathname === "/halls" || ["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns"].includes(url.pathname)) {
+    if (url.pathname === "/ws" || url.pathname === "/halls" || LOBBY_PATHS.includes(url.pathname)) {
       try { return await api(req, env, url); }
       catch (e) { return new Response(JSON.stringify({ error: String(e && e.message || e).slice(0, 300) }), { status: 503, headers: { "content-type": "application/json", "cache-control": "no-store" } }); }
     }
@@ -27,11 +29,11 @@ async function api(req, env, url) {
       const m = MEMO.get(url.pathname);
       if (m && Date.now() - m.at < MEMO_TTL[url.pathname]) return new Response(m.body, { headers: { "content-type": "application/json", "cache-control": "no-store" } });
     }
-    if (["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns"].includes(url.pathname)) {
-      if (req.method === "POST") MEMO.delete(url.pathname === "/lamp" ? "/lamps" : "/wishes");
+    if (LOBBY_PATHS.includes(url.pathname)) {
+      if (req.method === "POST" && MEMO_OF[url.pathname]) MEMO.delete(MEMO_OF[url.pathname]);
       const lobby = env.LOBBY.get(env.LOBBY.idFromName("lobby"));
       const r = await lobby.fetch(new Request("https://lobby" + url.pathname + url.search, { method: req.method, headers: req.headers, body: req.method === "POST" ? await req.text() : undefined }));
-      const body = await r.text(); if (req.method === "GET" && r.ok) MEMO.set(url.pathname, { at: Date.now(), body });
+      const body = await r.text(); if (req.method === "GET" && r.ok && MEMO_TTL[url.pathname]) MEMO.set(url.pathname, { at: Date.now(), body });
       return new Response(body, { status: r.status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
     }
     if (url.pathname === "/halls") {
@@ -109,6 +111,8 @@ export class Hall extends DurableObject {
 const LAMPS = 140;
 const clean = (t, n) => String(t || "").replace(/[\u0000-\u001f\u007f\u200b-\u200f\u202a-\u202e\u2060-\u2064\ufeff<>]/g, "").replace(/\s+/g, " ").trim().slice(0, n);
 const looksLikeAd = t => /(https?:|www\.|\.com|\.tw|line|@)/i.test(t) || (t.match(/\d/g) || []).length >= 6;
+const plain = (t, n) => String(t || "").replace(/[\u0000-\u0008\u000b-\u001f\u007f\u202a-\u202e\u2066-\u2069]/g, "").trim().slice(0, n); // keeps line breaks
+const LETTER_TTL = 24 * 3600 * 1000;
 const json = o => new Response(JSON.stringify(o), { headers: { "content-type": "application/json" } });
 
 export class Lobby extends DurableObject {
@@ -136,7 +140,7 @@ export class Lobby extends DurableObject {
       if (!text) return json({ ok: false });
       this.lastMsg = this.lastMsg || new Map(); const now = Date.now(); const key = id || req.headers.get("cf-connecting-ip") || "?";
       if (now - (this.lastMsg.get(key) || 0) < 30000) return json({ ok: false, slow: true }); this.lastMsg.set(key, now);
-      const m = (await this.ctx.storage.get("msgs")) || []; m.unshift({ name, text, at: now }); await this.ctx.storage.put("msgs", m.slice(0, 1000)); return json({ ok: true });
+      const m = (await this.ctx.storage.get("msgs")) || []; m.unshift(id ? { name, text, at: now, id } : { name, text, at: now }); await this.ctx.storage.put("msgs", m.slice(0, 1000)); return json({ ok: true });
     }
     if (url.pathname === "/announce" && req.method === "POST") {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
@@ -144,6 +148,34 @@ export class Lobby extends DurableObject {
       const text = clean(b.text, 80); if (!text) return json({ ok: false }); const at = Date.now(); // one id for every hall, so switching halls doesn't replay it
       await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/announce", { method: "POST", body: JSON.stringify({ text, at }) }).catch(() => {})));
       return json({ ok: true });
+    }
+    // 公告欄: one board the chair can rewrite any time; the page lights its button until each player has read the newest version
+    if (url.pathname === "/board" && req.method === "POST") {
+      const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
+      let b = {}; try { b = await req.json(); } catch {}
+      const board = { text: plain(b.text, 1000), at: Date.now() }; await this.ctx.storage.put("board", board);
+      return json({ ok: true, ...board });
+    }
+    if (url.pathname === "/board") return json((await this.ctx.storage.get("board")) || { text: "", at: 0 });
+    // 主委回信: a reply lands in the sender's mailbox (keyed by their device id) for 24 hours, or until they delete it
+    if (url.pathname === "/reply" && req.method === "POST") {
+      const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
+      let b = {}; try { b = await req.json(); } catch {}
+      const text = plain(b.text, 500), at = Number(b.at) || 0; if (!text || !at) return json({ ok: false });
+      const m = (await this.ctx.storage.get("msgs")) || []; const msg = m.find(x => x.at === at);
+      if (!msg || !msg.id) return json({ ok: false, noid: true });
+      const now = Date.now(); msg.reply = { text, at: now }; await this.ctx.storage.put("msgs", m);
+      const key = "L:" + msg.id; const box = ((await this.ctx.storage.get(key)) || []).filter(l => now - l.at < LETTER_TTL);
+      box.unshift({ at: now, text, q: msg.text.slice(0, 80) }); await this.ctx.storage.put(key, box.slice(0, 10));
+      return json({ ok: true });
+    }
+    if (url.pathname === "/letters") {
+      const id = clean(url.searchParams.get("id"), 16); if (!id) return json({ letters: [] });
+      const key = "L:" + id, now = Date.now(), box = (await this.ctx.storage.get(key)) || [];
+      let live = box.filter(l => now - l.at < LETTER_TTL);
+      if (req.method === "POST" && url.searchParams.get("del") === "1") { const at = Number(url.searchParams.get("at")) || 0; live = live.filter(l => l.at !== at); }
+      if (live.length !== box.length) { if (live.length) await this.ctx.storage.put(key, live); else await this.ctx.storage.delete(key); }
+      return json({ letters: live, ttl: LETTER_TTL });
     }
     // 斬小人排行榜: best score per player, top 20 kept
     if (url.pathname === "/zhan" && req.method === "POST") {
