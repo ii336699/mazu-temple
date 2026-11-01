@@ -873,6 +873,9 @@ function loadModel(name,cb){ if(!T.GLTFLoader) return; const gl=new T.GLTFLoader
     sc.onload=()=>{ try{ const b=atob(window[key]||""); const u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); window[key]=null; gl.parse(u.buffer,"",fix,()=>{}); }catch(e){} }; document.head.appendChild(sc); };
   if(IN_ARTIFACT) setTimeout(viaScript,300); else gl.load(name+".glb",fix,undefined,()=>setTimeout(viaScript,100)); }
 function fitModel(m,height){ const bb=new T.Box3().setFromObject(m); const sz=bb.getSize(new T.Vector3()); const k=height/sz.y; m.scale.setScalar(k); const c=bb.getCenter(new T.Vector3()); m.position.set(-c.x*k,-bb.min.y*k,-c.z*k); const w=new T.Group(); w.add(m); return w; }
+// 千里眼 and 順風耳 guard Mazu from the two side bays of the shrine, half her height, turned a little towards her.
+// Facing the shrine, 順風耳 (red, hand to ear) stands on the left and 千里眼 (green, hand shading the eyes) on the right.
+setTimeout(()=>{ for(const [name,x] of [["shunfeng",-3.8],["qianli",3.8]]) loadModel(name,m=>{ const w=fitModel(m,3.75/2); w.position.set(x,1.55,PAV.z+.2); w.rotation.y=x<0?.2:-.2; w.userData.noMerge=1; scene.add(w); }); },1500);
 if(T.GLTFLoader){ const gl=new T.GLTFLoader(); if(window.MeshoptDecoder) gl.setMeshoptDecoder(window.MeshoptDecoder);
   const onModel=g=>{ const m=g.scene; const bb=new T.Box3().setFromObject(m); const sz=bb.getSize(new T.Vector3()); const k=3.75/sz.y; m.scale.setScalar(k);
     const c=bb.getCenter(new T.Vector3()); m.position.set(-c.x*k,1.55-bb.min.y*k,PAV.z-.1-c.z*k);
