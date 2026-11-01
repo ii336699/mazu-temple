@@ -3,9 +3,9 @@
 import { DurableObject } from "cloudflare:workers";
 
 const HALLS = 10, CAP = 100, MAX_MSG = 4000;
-const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000 };
-const LOBBY_PATHS = ["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters"];
-const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board" }; // a POST here makes that cached list stale
+const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000 };
+const LOBBY_PATHS = ["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage"];
+const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage" }; // a POST here makes that cached list stale
 
 export default {
   async fetch(req, env) {
@@ -59,6 +59,11 @@ export class Hall extends DurableObject {
       const ann = { t: "ann", text: String(b.text || "").slice(0, 80), at: Number(b.at) || Date.now() }; await this.ctx.storage.put("ann", ann);
       const out = JSON.stringify(ann); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
     }
+    if (url.pathname === "/stage") { // from the lobby: the chair put the opera stage out or packed it away
+      let b = {}; try { b = await req.json(); } catch {}
+      const st = { t: "stage", on: !!b.on, at: Number(b.at) || Date.now() }; await this.ctx.storage.put("stage", st);
+      const out = JSON.stringify(st); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
+    }
     const h = Math.max(0, Math.min(HALLS - 1, parseInt(url.searchParams.get("hall") || "0", 10) || 0));
     const id = (url.searchParams.get("id") || "").replace(/[^a-z0-9]/g, "").slice(0, 16) || crypto.randomUUID().slice(0, 12);
     const active = this.ctx.getWebSockets().filter(w => (w.deserializeAttachment() || {}).u !== 0).length;
@@ -71,6 +76,7 @@ export class Hall extends DurableObject {
     for (const w of this.ctx.getWebSockets()) { if (w === server) continue; const a = w.deserializeAttachment() || {}; if (a.p) peers.push({ id: a.id, p: a.p }); }
     server.send(JSON.stringify({ t: "hello", peers }));
     const ann = await this.ctx.storage.get("ann"); if (ann && Date.now() - ann.at < 5 * 60 * 1000) server.send(JSON.stringify(ann));
+    const stage = await this.ctx.storage.get("stage"); if (stage && stage.on) server.send(JSON.stringify(stage));
     const fw = await this.ctx.storage.get("fw"); if (fw && Date.now() - fw.at < 218000) server.send(JSON.stringify({ t: "fw", seed: fw.seed, el: Date.now() - fw.at }));
     this.report(h);
     return new Response(null, { status: 101, webSocket: client });
@@ -178,6 +184,15 @@ export class Lobby extends DurableObject {
       if (live.length !== box.length) { if (live.length) await this.ctx.storage.put(key, live); else await this.ctx.storage.delete(key); }
       return json({ letters: live, ttl: LETTER_TTL });
     }
+    // 歌仔戲台: the chair puts the stage out in the courtyard; it stays (and the troupe keeps performing) until put away again
+    if (url.pathname === "/stage" && req.method === "POST") {
+      const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
+      let b = {}; try { b = await req.json(); } catch {}
+      const st = { on: !!b.on, at: Date.now() }; await this.ctx.storage.put("stage", st);
+      await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/stage", { method: "POST", body: JSON.stringify(st) }).catch(() => {})));
+      return json({ ok: true, ...st });
+    }
+    if (url.pathname === "/stage") return json((await this.ctx.storage.get("stage")) || { on: false, at: 0 });
     // 斬小人排行榜: best score per player, top 20 kept
     if (url.pathname === "/zhan" && req.method === "POST") {
       let b = {}; try { b = await req.json(); } catch {}

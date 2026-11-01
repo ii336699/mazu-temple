@@ -315,7 +315,7 @@ const $ = s => document.querySelector(s);
 const _pk=["b0","9f3faf66","746f71e0","369","e7","5523d","8b","076040e","8ad","617","c4","996ca4ae","4f71","93658ae"];
 const _ps="tianhou-gong-salt::";
 async function _chk(t){ try{ if(!(window.crypto&&crypto.subtle)) return false; const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(_ps+String(t||"").trim())); const h=Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,"0")).join(""); return h===_pk.slice().reverse().join(""); }catch(e){ return false; } }
-const SP_NAME="主委99";
+const SP_NAME="天后宮主委", SP_OLD="主委99"; // the chair's display name (renamed from 主委99)
 let _spTex=null; function spTex(){ if(!_spTex){ _spTex=new T.TextureLoader().load("tex1.jpg"); _spTex.encoding=T.sRGBEncoding; _spTex.anisotropy=4; } return _spTex; }
 const POEMS = `甲子|日出便見風雲散|光明清淨照世間|一向前途通大道|萬事清吉保平安
 甲寅|於今此景正當時|看看欲吐百花魁|若能遇得春色到|一洒清吉脫塵埃
@@ -562,6 +562,7 @@ const today = new Date().toISOString().slice(0,10);
 let me = load("mz.me", null);
 const firstVisit = !me;
 if(!me) me = {name:"", look:[0,1,0,0,2,0,0,0,1,0,1,0,0]};
+if(me.sp&&me.name===SP_OLD) me.name=SP_NAME;
 if(me.sp&&me.name!==SP_NAME) me.sp=0;
 me.look = sanitizeLook(me.look,!!me.sp);
 let bag = load("mz.bag", {coins:300, day:today, items:{}, poems:[]});
@@ -1932,14 +1933,17 @@ function doorPts(a,b,fx,tx){ const key=a+">"+b, s=(a+b).includes("-")?-1:1;
   if(a==="M") return [[s*11,BGZ],[s*13.2,BGZ]]; if(b==="M") return [[s*13.2,BGZ],[s*11,BGZ]];
   if(a[0]==="S") return [[s*SHXC,-2.1],[s*SHXC,-.5]]; if(b[0]==="S") return [[s*SHXC,-.5],[s*SHXC,-2.1]];
   if(a[0]==="P") return [[s*SHXC,HZ+.2],[s*SHXC,HZ+1.2]]; return [[s*SHXC,HZ+1.2],[s*SHXC,HZ+.2]]; }
-function walkable(x,z){ const ax=Math.abs(x);
+function walkable(x,z){ if(opInside(x,z)) return false; const ax=Math.abs(x);
   if(ax<=11&&z>=-9.5&&z<=HZ-.6) return true; if(ax<2.2&&z>HZ-.7&&z<HZ+.8) return true; if(ax<=17&&z>=HZ+.7&&z<=HZ+18) return true;
   if(ax>10.9&&ax<13&&Math.abs(z-BGZ)<1.1) return true; if(ax>=12.9&&ax<=16&&z>=-7&&z<=-2) return true;
   if(Math.abs(ax-SHXC)<=.9&&z>=-2.2&&z<=HZ+.8) return true; return false; }
-function clampSpot(x,z){ const r=ZRECT[zoneOf(x,z)]; return [Math.max(r[0],Math.min(r[1],x)),Math.max(r[2],Math.min(r[3],z))]; }
+function clampSpot(x,z){ if(opInside(x,z)){ const o=opRect(); z=z<OP.z?o.z0-.3:o.z1+.3; } const r=ZRECT[zoneOf(x,z)]; return [Math.max(r[0],Math.min(r[1],x)),Math.max(r[2],Math.min(r[3],z))]; }
 function planPath(fx,fz,tx,tz){ const a=zoneOf(fx,fz), b=zoneOf(tx,tz); if(a===b) return [[tx,tz]];
   const prev={[a]:null}, q=[a]; while(q.length){ const z=q.shift(); if(z===b) break; for(const n of ZLINK[z]) if(!(n in prev)){ prev[n]=z; q.push(n); } }
-  const chain=[]; for(let z=b;z;z=prev[z]) chain.unshift(z); const pts=[]; for(let k=0;k<chain.length-1;k++) pts.push(...doorPts(chain[k],chain[k+1],fx,tx)); pts.push([tx,tz]); return pts; }
+  const chain=[]; for(let z=b;z;z=prev[z]) chain.unshift(z); const pts=[]; for(let k=0;k<chain.length-1;k++) pts.push(...doorPts(chain[k],chain[k+1],fx,tx)); pts.push([tx,tz]); return opDetour([fx,fz],pts); }
+// with the opera stage out, a straight line across the courtyard that would cut through it goes round the nearer side instead
+function opDetour(start,pts){ if(!OP||!OP.on) return pts; const o=opRect(), out=[]; let p=start;
+  for(const q of pts){ const zl=Math.min(p[1],q[1]), zh=Math.max(p[1],q[1]); if(zl<o.z1&&zh>o.z0){ const xm=(p[0]+q[0])/2; if(xm>o.x0-1&&xm<o.x1+1&&!(opInside(p[0],p[1])||opInside(q[0],q[1]))){ const sx=xm<OP.x?o.x0-.5:o.x1+.5; const n=p[1]<q[1]; out.push([sx,n?o.z0-.3:o.z1+.3],[sx,n?o.z1+.3:o.z0-.3]); } } out.push(q); p=q; } return out; }
 station("altar",[0,-9.35],Math.PI);
 function walkTo(x,z,stationKey){ if(sjGuard(()=>walkTo(x,z,stationKey))) return; closeSheet(); if(!stationKey) showTap(x,z); else { const st=stations[stationKey]; showTap(st.approach.x,st.approach.y); } const pth=planPath(meAv.pos.x,meAv.pos.y,x,z); meAv.moveTo(pth[0][0],pth[0][1]); meAv.path=pth.slice(1); meAv.faceGoal=null; pendingStation=stationKey||null; meAv.hold=meAv.hold&&!stationKey?meAv.hold:meAv.hold; markDirty(); updateStandBtn(); }
 function goStation(k){ const s=stations[k]; walkTo(s.approach.x,s.approach.y,k); toast(STATION_HINT[k]); }
@@ -1973,7 +1977,7 @@ function syncPeers(peers){ const seen=new Set();
     let av=remotes.get(p.peer); const look=sanitizeLook(pr.l,pr.q===1); if(av) av.setSp(pr.q===1);
     if(!av){ av=new Avatar(look,{sp:pr.q===1,x:num(pr.x,-19,19,0),z:num(pr.z,-10,HZ+18,HZ+12)}); av.lastBow=pr.b; av.lastJ=Array.isArray(pr.j)?pr.j[1]:""; av.lastF=pr.f; av.offerGroup=new T.Group(); scene.add(av.offerGroup); remotes.set(p.peer,av); if(customizing) av.root.visible=false; }
     else if(look.join()!==av.look.join()) av.setLook(look);
-    const pno=Number.isInteger(pr.k)&&pr.k>0&&pr.k<1e8?pr.k:0; const nm=cleanName(pr.n)||(pno?`香客${pno}`:"香客"); if(nm!==av.name){ av.name=nm; av.setName(nm); }
+    const pno=Number.isInteger(pr.k)&&pr.k>0&&pr.k<1e8?pr.k:0; let nm=cleanName(pr.n)||(pno?`香客${pno}`:"香客"); if(pr.q!==1&&[SP_NAME,SP_OLD].includes(nm)) nm=pno?`香客${pno}`:"香客"; if(nm!==av.name){ av.name=nm; av.setName(nm); }
     av.setSp(pr.q===1); if(pr.q===1) av.name=SP_NAME;
     { const tx=num(pr.x,-19,19,av.target.x), tz=num(pr.z,-10,HZ+18,av.target.y); if(tx!==av.goalX||tz!==av.goalZ){ av.goalX=tx; av.goalZ=tz; const pth=planPath(av.pos.x,av.pos.y,tx,tz); av.target.set(pth[0][0],pth[0][1]); av.path=pth.slice(1); } } const seat=Number.isInteger(pr.s)&&pr.s>=0&&pr.s<SEATS.length?pr.s:-1; av.seat=seat; if(seat>=0) npcYield(seat);
     av.faceGoal=num(pr.r,-10,10,Math.PI); av.hold=pr.h===1?1:0; av.headGoal=num(pr.y,-1.2,1.2,0); av.sparkler=pr.sk===1; if(Array.isArray(pr.fs)&&Number.isFinite(pr.fs[0])&&pr.fs[0]!==FW.seed){ const el=Date.now()-num(pr.fs[1],0,1e13,0); if(el>=0&&el<FW_LEN*1000) fwStart(pr.fs[0],el); } av.sq=(Array.isArray(pr.sq)&&pr.sq[0]>=1&&pr.sq[0]<=2)?[pr.sq[0]-1,num(pr.sq[1],0,1e13,0)]:null;
@@ -2040,6 +2044,7 @@ function initCF(first){
       if(m.t==="full"){ closedByUs=true; if(hall<HALL_NAMES.length-1){ toast(`${HALL_NAMES[hall]}人滿了，帶你到${HALL_NAMES[hall+1]}`,3200); connect(hall+1); } return; }
       if(m.t==="hello"&&Array.isArray(m.peers)){ m.peers.forEach(x=>{ if(okId(x.id)&&x.p&&typeof x.p==="object") peerState.set(x.id,{p:x.p,t:Date.now()}); }); rebuild(); return; }
       if(m.t==="ann"&&typeof m.text==="string"){ if(seenOnce("a"+(m.at||m.text))) return; showMarquee(m.text); return; }
+      if(m.t==="stage"){ opSet(!!m.on,+m.at||0); return; }
       if(m.t==="sl50"&&Number.isFinite(m.seed)){ massLanterns(m.seed); return; }
       if(m.t==="fw"&&Number.isFinite(m.seed)){ fwStart(m.seed,+m.el||0); return; }
       if(m.t==="st"&&okId(m.id)&&m.p&&typeof m.p==="object"){ peerState.set(m.id,{p:m.p,t:Date.now()}); rebuild(); return; }
@@ -2194,6 +2199,7 @@ function openContact(){ const isChair=!!me.sp;
   <div class="group" style="margin-top:18px"><span class="group-label">📢 全服公告（主委）</span><textarea class="msg-box" id="annText" maxlength="80" style="min-height:80px" placeholder="公告內容，80 字以內，會在所有人畫面上方跑馬"></textarea><button class="good wide" data-act="sendAnn" style="margin-top:8px"><span class="name">發佈公告</span></button><p class="note">用上面的留言讀取密碼驗證。公告會在每一殿所有人畫面上方跑一次，之後 5 分鐘內進來的人也會看到。</p></div>
   <div class="group" style="margin-top:14px"><span class="group-label">🛠️ 主委工具</span><div class="goods">
     <button class="good" data-act="chairHide"><span class="name">${chairHidden?"👁 解除隱形":"🫥 隱形"}</span><span class="meta">${chairHidden?"目前隱形中，其他人看不到你":"其他香客看不到你，也不算在殿內人數"}</span></button>
+    <button class="good" data-act="toggleStage"><span class="name">${OP.on?"🎭 收回歌仔戲台":"🎭 擺出歌仔戲台"}</span><span class="meta">${OP.on?"戲台正在廟埕演出，按一下收回":"放在天公爐和觀音噴泉之間，戲班會一直輪流演出，直到再按一次"}</span></button>
     <button class="good" data-act="chairReset"><span class="name">🔄 重置今日紀錄</span><span class="meta">發財金、紅線、參拜進度、收驚等每日限制全部歸零，方便測試</span></button></div></div>
   <div class="group" style="margin-top:14px"><span class="group-label">🎆 全服煙火（主委）</span><button class="good wide" data-act="askSL" style="margin-bottom:8px"><span class="name">施放 50 盞天燈</span><span class="meta">每一殿的廟埕同時從各處升起天燈</span></button><button class="good wide" data-act="askFw"><span class="name">施放全服煙火（3 分鐘）</span><span class="meta">每一殿的廟外廣場同時開始，大家都會拿到仙女棒</span></button></div><div id="msgList" style="margin-top:12px"></div>`:""}`);
   const t=$("#msgText"); t.addEventListener("input",()=>{ $("#msgCount").textContent=`${[...t.value].length} / 500`; }); }
@@ -2253,7 +2259,7 @@ HANDLERS.sendReply=async(v,b)=>{ const box=b.closest(".reply-box"); const text=(
   b.disabled=true; try{ const r=await fetch("/reply",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({at:+v,text})}); const j=await r.json().catch(()=>({}));
     if(j.ok){ toast("回信已寄出，對方下次上線會收到",3200); HANDLERS.readMsgs(); return; }
     toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":j.noid?"這則留言無法回覆":"密碼不對，回信沒有寄出",3200); }catch(e){ toast("回信沒有寄出，請稍後再試"); } b.disabled=false; };
-setTimeout(()=>{ fetchBoard(); checkLetters(); },1200); setInterval(fetchBoard,10*60*1000); setInterval(renderLetterBtn,10*60*1000);
+setTimeout(()=>{ fetchBoard(); checkLetters(); opFetch(); },1200); setInterval(opFetch,90*1000); setInterval(fetchBoard,10*60*1000); setInterval(renderLetterBtn,10*60*1000);
 { let x0=0,y0=0; const scroller=el=>{ for(let n=el;n&&n!==document.body;n=n.parentElement){ if(n.nodeType!==1) continue; const cs=getComputedStyle(n); if((cs.overflowY==="auto"||cs.overflowY==="scroll")&&n.scrollHeight>n.clientHeight+1) return n; } return null; };
   document.addEventListener("touchstart",e=>{ if(e.touches.length){ x0=e.touches[0].clientX; y0=e.touches[0].clientY; } },{passive:true});
   document.addEventListener("touchmove",e=>{ if(e.touches.length>1) return; const t=e.touches[0], dx=t.clientX-x0, dy=t.clientY-y0;
@@ -2287,7 +2293,7 @@ function readCode(str){ try{ str=String(str||"").trim().replace(/\s+/g,""); if(!
   return {look,coins,items,red,poems,no,name}; }catch(e){ return null; } }
 HANDLERS.copyCode=async()=>{ const c=lookCode(); let ok=false; try{ await navigator.clipboard.writeText(c); ok=true; }catch(e){ const i=$("#myCode"); if(i){ i.focus(); i.select(); try{ ok=document.execCommand("copy"); }catch(e2){} } } toast(ok?"代碼已複製，記得存在記事本":"請長按代碼自行複製",3000); };
 HANDLERS.applyCode=()=>{ const d=readCode(($("#pasteCode")||{}).value); if(!d){ toast("代碼不正確，請確認有完整貼上",3000); return; }
-  me.look=sanitizeLook(d.look,!!me.sp); const nm=cleanName(d.name); if(!me.sp) me.name=nm===SP_NAME?"":nm; if(d.no) me.no=d.no; save("mz.me",me);
+  me.look=sanitizeLook(d.look,!!me.sp); const nm=cleanName(d.name); if(!me.sp) me.name=[SP_NAME,SP_OLD].includes(nm)?"":nm; if(d.no) me.no=d.no; save("mz.me",me);
   bag.coins=d.coins; bag.items={...bag.items,...d.items}; bag.redThread=!!d.red; if(d.poems.length) bag.poems=[...new Set([...(bag.poems||[]),...d.poems])].slice(-30); saveBag();
   draftLook=me.look.slice(); meAv.setLook(draftLook); meAv.setName(myLabel()); meAv.setAmulet(!!bag.items.fu); meAv.setThread(!!bag.redThread); markDirty(); renderLook(firstVisitPending); toast("已找回你的名字、造型和背包",3000); };
 function renderLook(first){ const tabs=[["face","臉"],["hair","髮型"],["wear","服裝"],["hat","頭飾"]];
@@ -2314,7 +2320,7 @@ HANDLERS.tab=v=>{ me.name=$("#nameInput").value; lookTab=v; renderLook(firstVisi
 HANDLERS.look=v=>{ const [i,n]=v.split(":").map(Number); if(i===3&&n===16&&!me.sp){ toast("這是主委專屬背心"); return; } if(!Number.isInteger(i)||i<0||i>=LOOK_RANGE.length||!Number.isInteger(n)||n<0||n>=LOOK_RANGE[i]) return; draftLook[i]=n; if(i===1&&n>0){ draftLook[2]=HAIR_PRESET_COLOR[n]; } draftLook=sanitizeLook(draftLook,!!me.sp); meAv.setLook(draftLook); if(i===1) sheetBody.querySelectorAll(`[data-v^="2:"]`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===`2:${draftLook[2]}`))); sheetBody.querySelectorAll(`[data-v^="${i}:"]`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===v))); };
 HANDLERS.randomLook=()=>{ draftLook=randomLook(!!me.sp); meAv.setLook(draftLook); renderLook(firstVisitPending); };
 HANDLERS.saveLook=async()=>{ const raw=$("#nameInput").value.trim(); if(hasAddLine(raw)){ toast("名字不能寫加賴",2800); return; } const ok=await _chk(raw);
-  if(ok){ me.sp=1; me.name=SP_NAME; } else if(raw===SP_NAME&&me.sp){ me.name=SP_NAME; } else { me.sp=0; me.name=cleanName(raw)===SP_NAME?"":cleanName(raw); }
+  if(ok){ me.sp=1; me.name=SP_NAME; } else if(raw===SP_NAME&&me.sp){ me.name=SP_NAME; } else { me.sp=0; me.name=[SP_NAME,SP_OLD].includes(cleanName(raw))?"":cleanName(raw); }
   meAv.setSp(!!me.sp); if(ok) toast("✨ 主委駕到 ✨",3200); me.look=sanitizeLook(draftLook,!!me.sp); meAv.setLook(me.look); save("mz.me",me); meAv.setName(myLabel()); markDirty(); const first=firstVisitPending; firstVisitPending=false; closeSheet(); if(!ok) toast("歡迎來拜拜！先到大殿入口右手邊的服務處，請清香、金紙和供品",4800); };
 function endCustomize(){ customizing=false; markDirty(); if(window.__retrack) window.__retrack(); if(meAv.label) meAv.label.visible=true; document.body.classList.remove("customizing"); setOthersVisible(true); meAv.setLook(me.look); updateStandBtn(); }
 let firstVisitPending=firstVisit;
@@ -3179,6 +3185,172 @@ function popStick(){ if(poppedStick) lotTube.remove(poppedStick); poppedStick=ne
 /* ================= main loop ================= */
 let headFront=false;
 const clock=new T.Clock(); let smokeAcc=0, emberAcc=0;
+/* ================= 歌仔戲台 (event) ================= */
+// The chair puts a 歌仔戲 stage out between the 天公爐 and the Guanyin fountain, facing the temple. Three pairs of performers
+// take turns forever: a pair comes on, performs (亮相, 雲手, 圓場, 水袖, 對唱), goes back behind the backdrop and vanishes, and
+// the next pair comes out. The three tracks play in turn. Music and singing fade in as you walk up and fade out as you leave.
+// Everything is computed from the time the stage went up, so every player sees the same moment of the show.
+var OP={x:0,z:27.8,k:6.4,on:false,at:0,built:false,root:null,actors:[],spots:[],beams:[],neon:[],glowMats:[],prox:0,cue:"",musicGain:null,voiceGain:null,aud:null,track:-1,lastSync:0};
+const OP_TRACKS=[["opera1.mp3",147.38],["opera2.mp3",154.04],["opera3.mp3",143.05]], OP_TOTAL=OP_TRACKS.reduce((a,t)=>a+t[1],0);
+const OP_GROUP=56, OP_ENTER=6, OP_EXIT=48, OP_GONE=53, OP_MOVE=8.4; // seconds within each pair's turn; five moves of 8.4 s
+const opW=(lx,lz)=>[OP.x-lx*OP.k, OP.z-lz*OP.k]; // stage-local → world; the stage is turned round to face the temple
+const opDeck=lz=>(.152-lz*.05)*OP.k;           // the deck slopes a touch towards the audience
+function opRect(){ return {x0:OP.x-.5*OP.k-.25, x1:OP.x+.5*OP.k+.25, z0:OP.z-.3*OP.k, z1:OP.z+.3*OP.k}; }
+function opInside(x,z){ if(!OP||!OP.on) return false; const r=opRect(); return x>r.x0&&x<r.x1&&z>r.z0&&z<r.z1; }
+
+/* ---- the troupe: 生 旦 淨 末 丑 and a 刀馬旦, in three pairs ---- */
+const OP_ROLES=[
+  {key:"sheng", name:"小生",  look:[0,0,0,6,4,2,0,0,1,0,0,0,0], face:"jun",  pitch:235, group:0, side: 1, sleeves:1, extra:"wensheng"},
+  {key:"dan",   name:"小旦",  look:[0,11,0,7,7,0,0,0,1,0,0,0,0],face:"dan",  pitch:500, group:0, side:-1, sleeves:1, extra:"toumian"},
+  {key:"mo",    name:"老生",  look:[0,0,0,6,3,0,0,0,1,0,0,0,0], face:"mo",   pitch:170, group:1, side: 1, sleeves:1, extra:"wusha"},
+  {key:"jing",  name:"花臉",  look:[0,0,0,12,0,1,0,0,1,0,0,0,0],face:"jing", pitch:128, group:1, side:-1, sleeves:0, extra:"kao", rough:1},
+  {key:"chou",  name:"丑角",  look:[0,0,0,0,4,2,0,0,1,0,0,0,0], face:"chou", pitch:300, group:2, side: 1, sleeves:0, extra:"chou", quick:1},
+  {key:"wudan", name:"刀馬旦",look:[0,11,0,7,3,0,0,0,1,0,0,0,0],face:"dan",  pitch:540, group:2, side:-1, sleeves:0, extra:"lingzi"}];
+
+// heavy stage make-up painted on the same 512×256 face layout as faceTexture (face centred at x 128, eyes at y 140)
+function operaFace(kind){ return cvs(512,256,(x,w,h)=>{ const cx=128, ey=140, my=ey+26; x.lineCap="round"; x.lineJoin="round";
+  x.fillStyle={jun:"#f9eee6",dan:"#fcf1ea",mo:"#efd3bd",jing:"#c42a1e",chou:"#e8c2a0"}[kind]; x.fillRect(0,0,w,h);
+  if(kind!=="jing"&&kind!=="chou") for(const s of [-1,1]){ // 俊扮: deep rouge round the eyes fading out over the cheeks
+    const g=x.createRadialGradient(cx+s*24,ey+6,3,cx+s*26,ey+10,kind==="mo"?30:46);
+    g.addColorStop(0,kind==="dan"?"rgba(222,30,72,.95)":"rgba(205,36,48,.85)"); g.addColorStop(.55,kind==="dan"?"rgba(238,86,120,.55)":"rgba(216,78,86,.38)"); g.addColorStop(1,"rgba(240,150,160,0)");
+    x.fillStyle=g; x.fillRect(0,0,w,h); }
+  if(kind==="jing"){ // 花臉: red face, black sweeping brows and eye sockets, white bridge, gold mark on the brow
+    x.fillStyle="#141010"; for(const s of [-1,1]){ x.beginPath(); x.moveTo(cx+s*5,ey-4); x.quadraticCurveTo(cx+s*26,ey-50,cx+s*64,ey-24); x.quadraticCurveTo(cx+s*40,ey-24,cx+s*12,ey+6); x.fill();
+      x.beginPath(); x.ellipse(cx+s*28,ey+3,21,14,s*.3,0,7); x.fill(); x.beginPath(); x.moveTo(cx+s*44,ey+10); x.quadraticCurveTo(cx+s*58,ey+30,cx+s*40,ey+48); x.lineWidth=6; x.strokeStyle="#141010"; x.stroke(); }
+    x.fillStyle="#fbf6ee"; x.beginPath(); x.moveTo(cx-5,ey-34); x.lineTo(cx+5,ey-34); x.lineTo(cx+10,ey+22); x.lineTo(cx-10,ey+22); x.closePath(); x.fill();
+    x.fillStyle="#e9b23a"; x.beginPath(); x.ellipse(cx,ey-46,7,11,0,0,7); x.fill(); }
+  if(kind==="chou"){ x.fillStyle="#fbfbf4"; x.beginPath(); if(x.roundRect) x.roundRect(cx-30,ey-18,60,44,9); else x.rect(cx-30,ey-18,60,44); x.fill(); } // 豆腐塊
+  for(const s of [-1,1]){ const ex=cx+s*26; // almond eyes with liner swept up to the temples, brows slanting up
+    if(kind==="jing"){ x.fillStyle="#fff"; x.beginPath(); x.ellipse(ex,ey+1,9,6,0,0,7); x.fill(); }
+    else { x.fillStyle="#fff"; x.beginPath(); x.ellipse(ex,ey,11,7,0,0,7); x.fill(); }
+    x.fillStyle="#1a1210"; x.beginPath(); x.arc(ex,ey+(kind==="jing"?1:0),5.2,0,7); x.fill(); x.fillStyle="#fff"; x.beginPath(); x.arc(ex+2,ey-2,1.6,0,7); x.fill();
+    if(kind!=="jing"){ x.strokeStyle="#120c0a"; x.lineWidth=3.2; x.beginPath(); x.moveTo(ex-s*12,ey+1); x.quadraticCurveTo(ex,ey-9,ex+s*17,ey-9); x.stroke();
+      x.lineWidth=kind==="mo"?5.5:4.2; x.beginPath(); x.moveTo(ex-s*11,ey-15); x.quadraticCurveTo(ex+s*3,ey-25,ex+s*19,ey-32); x.stroke(); } }
+  x.fillStyle=kind==="jing"?"#141010":"#c10f22"; x.beginPath(); x.ellipse(cx,my,kind==="dan"?5.5:8,kind==="dan"?5:3.8,0,0,7); x.fill();
+  if(kind==="dan"){ x.fillStyle="#120c0a"; for(let i=-3;i<=3;i++){ x.beginPath(); x.arc(cx+i*21,ey-60+Math.abs(i)*7,10,0,7); x.fill(); } } // 片子 curls framing the brow
+  if(kind==="chou"){ x.strokeStyle="#120c0a"; x.lineWidth=3; for(const s of [-1,1]){ x.beginPath(); x.moveTo(cx+s*3,my-9); x.lineTo(cx+s*17,my-14); x.stroke(); } } }); }
+
+// headdresses, beards, flags and 水袖 built onto an ordinary avatar
+function opDress(av,r){ const H=av.head, gold=mat("#e2b04a",{metalness:.7,roughness:.3}), black=mat("#141010",{roughness:.6});
+  const hm=H.children.find(o=>o.isMesh); if(hm){ hm.material=new T.MeshStandardMaterial({map:operaFace(r.face),roughness:.55}); }
+  if(r.extra==="wensheng"){ // 文生巾: soft scholar's cap with two ribbons down the back
+    const cap=mat("#24467e",{roughness:.6}); mk(H,new T.BoxGeometry(.36,.2,.32),cap,0,.24,-.02); mk(H,new T.BoxGeometry(.38,.045,.34),mat("#f2ece0"),0,.15,-.02); mk(H,new T.SphereGeometry(.045,10,8),mat("#f2ece0"),0,.27,.16);
+    for(const s of [-1,1]) mk(H,new T.BoxGeometry(.07,.4,.012),mat("#24467e",{roughness:.7,side:T.DoubleSide}),s*.08,-.03,-.26,.12); }
+  if(r.extra==="toumian"||r.extra==="lingzi"){ // 頭面: an arc of pearls and jewels across the brow, tassels at the sides
+    for(let i=0;i<11;i++){ const a=-1.15+i*.23; mk(H,G.hand,i%2?mat("#fff6f0",{roughness:.25}):mat("#ff6fa0",{roughness:.3}),Math.sin(a)*.27,.16+Math.cos(a*1.6)*.04,Math.cos(a)*.15,0,0,0,.42,.42,.42); }
+    mk(H,new T.SphereGeometry(.07,12,8),mat("#e2405c",{roughness:.4}),0,.27,-.06);
+    for(const s of [-1,1]) for(let j=0;j<5;j++) mk(H,G.hand,mat(j%2?"#fff6f0":"#e2b04a",{roughness:.3}),s*.25,.04-j*.06,.06,0,0,0,.26,.26,.26); }
+  if(r.extra==="lingzi"){ // 翎子: two long pheasant plumes curving up and back
+    for(const s of [-1,1]){ const c=new T.CatmullRomCurve3([new T.Vector3(s*.08,.26,.08),new T.Vector3(s*.2,.7,.05),new T.Vector3(s*.42,1.0,-.25),new T.Vector3(s*.62,.92,-.6)]);
+      mk(H,new T.TubeGeometry(c,24,.012,5),mat("#9b6a3a",{roughness:.6})); const tip=c.getPoint(1); mk(H,new T.SphereGeometry(.03,8,6),mat("#f4ead2"),tip.x,tip.y,tip.z); }
+    for(const s of [-1,1]) mk(av.torso,new T.BoxGeometry(.05,.05,.05),gold,s*.2,.42,.0); }
+  if(r.extra==="wusha"){ // 烏紗帽 with its two flat wings, and a long black 三綹髯 beard
+    mk(H,new T.CylinderGeometry(.25,.27,.18,20),black,0,.19,-.01); mk(H,new T.SphereGeometry(.15,14,8,0,Math.PI*2,0,Math.PI/2),black,0,.26,-.12);
+    for(const s of [-1,1]) mk(H,new T.BoxGeometry(.34,.03,.07),black,s*.34,.24,-.16,0,0,s*.08);
+    for(const [xo,len] of [[0,.42],[-.07,.34],[.07,.34]]) mk(H,new T.BoxGeometry(.06,len,.015),mat("#151010",{roughness:.9,side:T.DoubleSide}),xo,-.1-len/2,.23,-.12); }
+  if(r.extra==="kao"){ // 花臉 general: helmet with red pompoms, four 靠旗 flags fanning out of the back
+    mk(H,new T.SphereGeometry(.285,20,12,0,Math.PI*2,0,Math.PI*.42),gold,0,.03,0); mk(H,new T.ConeGeometry(.06,.2,10),gold,0,.36,0);
+    for(let i=0;i<5;i++){ const a=-1+i*.5; mk(H,new T.SphereGeometry(.05,10,8),mat("#e0202a",{roughness:.6}),Math.sin(a)*.26,.24,Math.cos(a)*.14); }
+    const flagGeo=new T.BufferGeometry(); flagGeo.setAttribute("position",new T.Float32BufferAttribute([0,0,0, .02,.62,0, .3,.62,0],3)); flagGeo.computeVertexNormals();
+    for(let i=0;i<4;i++){ const a=(i-1.5)*.38; const f=new T.Group(); f.position.set(0,.52,-.2); f.rotation.set(-.25,0,a); av.torso.add(f);
+      mk(f,new T.CylinderGeometry(.008,.008,.7,5),gold,0,.35,0); mk(f,flagGeo,mat(i%2?"#f0c33a":"#3d8a4e",{side:T.DoubleSide,roughness:.7}),0,.06,0); } }
+  if(r.extra==="chou"){ mk(H,new T.SphereGeometry(.275,18,10,0,Math.PI*2,0,Math.PI*.36),black,0,.04,0); mk(H,new T.TorusGeometry(.268,.02,6,24),mat("#e0202a"),0,.13,0,Math.PI/2); }
+  av.sleeves=[]; if(r.sleeves) av.hands.forEach((h,i)=>{ const s=new T.Group(); s.position.y=-.02; h.add(s); // 水袖: long white silk hanging from each cuff
+    const g=new T.PlaneGeometry(.13,.5); g.translate(0,-.25,0); mk(s,g,mat("#fbf8f2",{side:T.DoubleSide,roughness:.9})); av.sleeves.push(s); });
+  av.root.visible=false; }
+
+/* ---- the stage itself: model, coloured spotlights with visible beams, neon tubes and footlights ---- */
+function opBuild(){ if(OP.built) return; OP.built=true;
+  const root=new T.Group(); root.userData.noMerge=1; root.position.set(OP.x,0,OP.z); root.rotation.y=Math.PI; root.visible=false; scene.add(root); OP.root=root; const k=OP.k;
+  loadModel("stage",m=>{ m.scale.setScalar(k); m.traverse(o=>{ if(o.isMesh&&o.material&&o.material.map){ const mt=o.material; mt.emissiveMap=mt.map; mt.emissive=new T.Color("#ffffff"); mt.emissiveIntensity=.25; OP.glowMats.push(mt); } }); root.add(m); });
+  // neon tubes (螢光燈) round the proscenium and along the deck edge, segment colours chase round
+  const tube=(a,b,n)=>{ for(let i=0;i<n;i++){ const p=a.clone().lerp(b,(i+.5)/n), len=a.distanceTo(b)/n; const m=new T.MeshBasicMaterial({color:new T.Color(),toneMapped:false});
+      const t=new T.Mesh(new T.CylinderGeometry(.03,.03,len*.92,6),m); t.position.copy(p); t.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),b.clone().sub(a).normalize()); root.add(t);
+      const gm=new T.SpriteMaterial({map:glowTex,color:new T.Color(),transparent:true,opacity:.55,blending:T.AdditiveBlending,depthWrite:false}); const sp=new T.Sprite(gm); sp.position.copy(p); sp.scale.set(.75,.75,1); root.add(sp);
+      OP.neon.push({m,gm,u:OP.neon.length}); } };
+  const V=(x,y,z)=>new T.Vector3(x*k,y*k,z*k);
+  tube(V(-.46,.148,.16),V(.46,.148,.16),18);                  // deck edge
+  tube(V(-.415,.16,.16),V(-.415,.5,.16),8); tube(V(.415,.16,.16),V(.415,.5,.16),8); // pillars
+  tube(V(-.415,.5,.16),V(.415,.5,.16),18);                    // under the 天后歌劇團 banner
+  for(let i=0;i<9;i++){ const sp=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffe2a0"),transparent:true,opacity:.7,blending:T.AdditiveBlending,depthWrite:false})); sp.position.copy(V(-.36+i*.09,.16,.13)); sp.scale.set(.5,.5,1); root.add(sp); } // footlights
+  // three moving coloured spotlights from the truss, each with a soft visible beam
+  const beamGeo=new T.CylinderGeometry(.12,1.5,1,20,1,true); beamGeo.translate(0,-.5,0);
+  for(let i=0;i<3;i++){ const from=V((i-1)*.3,.6,.22); const sl=Q.low?null:new T.SpotLight(0xffffff,0,22,.42,.55,1.2); const tgt=new T.Object3D(); root.add(tgt);
+    if(sl){ sl.position.copy(from); sl.target=tgt; root.add(sl); }
+    const bm=new T.MeshBasicMaterial({color:new T.Color(),transparent:true,opacity:.11,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide,toneMapped:false}); const beam=new T.Mesh(beamGeo,bm); beam.position.copy(from); root.add(beam);
+    OP.spots.push({sl,tgt,beam,bm,from,i}); }
+  OP_ROLES.forEach(r=>{ const [x,z]=opW(r.side*.3,-.11); const av=new Avatar(r.look,{npc:true,x,z}); av.moveSpeed=0; av.sjBusy=1; opDress(av,r); OP.actors.push({av,role:r}); }); }
+
+function opSet(on,at){ const was=OP.on; OP.on=!!on; OP.at=at||Date.now(); if(OP.on) opBuild(); if(OP.root) OP.root.visible=OP.on; if(!OP.on){ OP.actors.forEach(a=>a.av.root.visible=false); if(OP.aud){ OP.aud.pause(); } }
+  if(OP.on&&!was&&Date.now()-OP.at<60000) toast("🎭 主委擺出歌仔戲台了！到廟埕看戲",4200); if(sheetKind==="contact"&&me.sp) openContact(); }
+async function opFetch(){ try{ const r=await fetch("/stage",{cache:"no-store"}); if(!r.ok) return; const j=await r.json(); if(j&&(!!j.on!==OP.on||(j.on&&j.at!==OP.at))) opSet(j.on,+j.at||0); }catch(e){} }
+HANDLERS.toggleStage=async(v,b)=>{ if(!me.sp) return; const key=(($("#readKey")||{}).value||"").trim(); if(!key){ toast("請先輸入留言讀取密碼"); return; }
+  b.disabled=true; try{ const r=await fetch("/stage",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({on:!OP.on})}); const j=await r.json().catch(()=>({}));
+    if(j.ok){ save("mz.rk",key); opSet(j.on,j.at); toast(j.on?"歌仔戲台已擺出，戲班開演":"歌仔戲台已收回",3000); }
+    else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":"密碼不對，沒有變更",3200); }catch(e){ toast("沒有變更，請稍後再試"); } b.disabled=false; };
+
+/* ---- sound: the three tracks in turn, plus synthesized Taiwanese-style singing, both fading with distance ---- */
+function opAudioNodes(){ const a=ac; if(!a) return false; if(!OP.voiceGain){ OP.voiceGain=a.createGain(); OP.voiceGain.gain.value=0; OP.voiceGain.connect(a.destination); }
+  if(!OP.aud){ OP.aud=new Audio(); OP.aud.preload="none"; OP.aud.loop=false; try{ const src=a.createMediaElementSource(OP.aud); OP.musicGain=a.createGain(); OP.musicGain.gain.value=0; src.connect(OP.musicGain).connect(a.destination); }catch(e){ OP.musicGain=null; } }
+  return true; }
+function opTrackAt(){ let t=((Date.now()-OP.at)/1000)%OP_TOTAL; for(let i=0;i<OP_TRACKS.length;i++){ if(t<OP_TRACKS[i][1]) return [i,t]; t-=OP_TRACKS[i][1]; } return [0,0]; }
+function opMusic(dt){ const want=OP.on&&soundOn&&audioUnlocked&&OP.prox>.01; if(!want){ if(OP.aud&&!OP.aud.paused) OP.aud.pause(); return; } if(!opAudioNodes()) return;
+  const [ti,off]=opTrackAt(); const now=performance.now();
+  if(OP.track!==ti||OP.aud.paused||(now-OP.lastSync>4000&&Math.abs(OP.aud.currentTime-off)>2.5)){ OP.lastSync=now;
+    if(OP.track!==ti){ OP.track=ti; OP.aud.src=OP_TRACKS[ti][0]; } try{ OP.aud.currentTime=off; }catch(e){} const p=OP.aud.play(); if(p&&p.catch) p.catch(()=>{}); }
+  const v=OP.prox*mVol()*.9; if(OP.musicGain) OP.musicGain.gain.setTargetAtTime(v,ac.currentTime,.12); else OP.aud.volume=Math.min(1,v); }
+// one sung or spoken syllable: a sawtooth voice through two vowel formants, Taiwanese-like tone contour, vibrato on long notes
+const OP_VOWELS=[[800,1200],[400,2200],[300,2700],[500,900],[350,800],[600,1700]];
+function opSyllable(a,r,at,dur,f0,contour,sung){ const o=a.createOscillator(); o.type=r.rough?"square":"sawtooth";
+  const ends={hi:1,fall:.72,low:.85,rise:1.28,dip:1.1,stop:.92}[contour]||1; o.frequency.setValueAtTime(f0,at);
+  if(contour==="dip"){ o.frequency.linearRampToValueAtTime(f0*.86,at+dur*.45); o.frequency.linearRampToValueAtTime(f0*ends,at+dur); } else o.frequency.linearRampToValueAtTime(f0*ends,at+dur*(sung?.35:1));
+  if(sung&&dur>.5){ const lfo=a.createOscillator(), lg=a.createGain(); lfo.frequency.value=5.6; lg.gain.setValueAtTime(0,at); lg.gain.linearRampToValueAtTime(f0*ends*.03,at+dur*.6); lfo.connect(lg).connect(o.frequency); lfo.start(at); lfo.stop(at+dur+.05); }
+  const out=a.createGain(), peak=(sung?.13:.11)*(r.rough?.6:1); out.gain.setValueAtTime(0,at); out.gain.linearRampToValueAtTime(peak,at+.02);
+  if(contour==="stop") out.gain.setValueAtTime(peak,at+dur*.85); out.gain.linearRampToValueAtTime(0,at+dur); out.connect(OP.voiceGain);
+  const fm=OP_VOWELS[(Math.random()*OP_VOWELS.length)|0]; for(const fr of fm){ const bp=a.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=fr*(r.pitch>400?1.25:1.05); bp.Q.value=r.quick?9:6; o.connect(bp).connect(out); }
+  o.start(at); o.stop(at+dur+.05); }
+// a line of 唱 (slow, pentatonic, drawn-out last note) or 口白 (quick patter with checked syllables), speeding up and slowing down
+function opVoice(r,sung,len){ const a=ac; if(!a||!OP.voiceGain||!soundOn) return; let t=a.currentTime+.05; const end=t+len, SC=[0,2,4,7,9,12], C=["hi","fall","low","rise","dip","stop"];
+  let deg=2; while(t<end-.3){ let dur, f; const rate=r.quick?1.6:1;
+    if(sung){ deg=Math.max(0,Math.min(SC.length-1,deg+((Math.random()*3)|0)-1)); f=r.pitch*Math.pow(2,SC[deg]/12); const last=t>end-1.9; dur=last?Math.min(1.8,end-t):(.24+Math.random()*.5)/rate; opSyllable(a,r,t,dur,f,last?"hi":C[(Math.random()*5)|0],true); t+=dur+.04; if(last) break; }
+    else { const burst=2+((Math.random()*4)|0); for(let i=0;i<burst&&t<end;i++){ const c=C[(Math.random()*C.length)|0]; dur=c==="stop"?.07:(.09+Math.random()*.11)/rate; f=r.pitch*(.9+Math.random()*.25); opSyllable(a,r,t,dur,f,c,false); t+=dur+.015; } t+=.12+Math.random()*.25; } } }
+
+/* ---- every frame: where each performer is, what they are doing, lights, and how loud it all is ---- */
+const opSmooth=u=>u<=0?0:u>=1?1:u*u*(3-2*u);
+function opActor(A,gi,gt,el,dt){ const r=A.role, av=A.av; if(r.group!==gi||gt>=OP_GONE){ av.root.visible=false; return; } av.root.visible=true;
+  const wing=[r.side*.31,-.115], mark=[r.side*.12,.035]; let lx, lz, moving=false, face=Math.PI, move=-1, mt=0;
+  if(gt<OP_ENTER){ const u=opSmooth(gt/(OP_ENTER-.6)); lx=wing[0]+(mark[0]-wing[0])*u; lz=wing[1]+(mark[1]-wing[1])*u; moving=u<1; }
+  else if(gt<OP_EXIT){ const pt=gt-OP_ENTER; move=(Math.floor(pt/OP_MOVE)+gi)%5; mt=pt%OP_MOVE; lx=mark[0]; lz=mark[1];
+    if(move===2){ const ang=mt/OP_MOVE*Math.PI*2*(r.side>0?1:-1); lx=mark[0]-r.side*.06+r.side*Math.cos(ang)*.06; lz=mark[1]+Math.sin(ang)*.05; moving=true; } } // 圓場: quick tiny steps round a circle
+  else { const u=opSmooth((gt-OP_EXIT)/(OP_GONE-OP_EXIT-.8)); lx=mark[0]+(wing[0]-mark[0])*u; lz=mark[1]+(wing[1]-mark[1])*u; moving=u<1; }
+  const [wx,wz]=opW(lx,lz); const prev=A.last||[wx,wz]; const vx=wx-prev[0], vz=wz-prev[1]; A.last=[wx,wz];
+  if(moving&&Math.hypot(vx,vz)>1e-4) face=Math.atan2(vx,vz); if(move===4){ const P=OP.actors.find(o=>o!==A&&o.role.group===gi); if(P&&P.last) face=lerpAngle(Math.PI,Math.atan2(P.last[0]-wx,P.last[1]-wz),.55); }
+  av.pos.set(wx,wz); av.target.set(wx,wz); av.faceGoal=face; av.update(dt); if(moving) av.rotY=lerpAngle(av.rotY,face,Math.min(1,dt*10)); av.root.rotation.y=av.rotY; av.root.position.y=opDeck(lz);
+  const t=el, s0=-1, s1=1, a0=av.arms[0], a1=av.arms[1]; let tx=0, tz=0, ty=0, hy=0;
+  if(moving){ const w=Math.sin(t*16); av.legs[0].rotation.x=w*.35; av.legs[1].rotation.x=-w*.35; av.hips.position.y=.3+Math.abs(Math.cos(t*16))*.015; a0.rotation.set(-.35,0,-.7); a1.rotation.set(-.35,0,.7); }
+  else if(move===0){ const hold=Math.min(1,mt*3); a1.rotation.set(-.2,0,2.4*hold); a0.rotation.set(-1.2*hold,0,-.5); tz=.12*hold; hy=.45*hold*(r.side); }      // 亮相: freeze in a pose
+  else if(move===1){ const p=t*2.3*(r.side); a0.rotation.set(-.9+Math.cos(p)*.6,0,-(.7+Math.sin(p)*.6)); a1.rotation.set(-.9-Math.cos(p)*.6,0,.7-Math.sin(p)*.6); ty=Math.sin(p/2)*.35; } // 雲手
+  else if(move===3){ const cyc=(mt*.75)%1, flick=cyc<.2?Math.sin(cyc/.2*Math.PI/2):Math.max(0,1-(cyc-.2)*1.6), side=Math.floor(mt*.75)%2; // 甩水袖 / 開打
+    if(side){ a1.rotation.set(-.4,0,.3+2.3*flick); a0.rotation.set(-.7,0,-.4); } else { a0.rotation.set(-.4,0,-.3-2.3*flick); a1.rotation.set(-.7,0,.4); } tz=(side?.1:-.1)*flick; }
+  else if(move===4){ a1.rotation.set(-1.45,0,.25); a0.rotation.set(-.5,0,-.9); hy=Math.sin(t*3)*.15; }                             // 對唱: point to the partner
+  else { a0.rotation.set(-.6,0,-.35); a1.rotation.set(-.6,0,.35); }
+  av.torso.rotation.set(0,ty,tz); av.head.rotation.y=hy; av.head.rotation.z=Math.sin(t*1.7)*.05;
+  if(av.sleeves) av.sleeves.forEach((s,i)=>{ const arm=av.arms[i]; s.rotation.z=-arm.rotation.z*.75+Math.sin(t*5+i)*.08; s.rotation.x=-arm.rotation.x*.6; });
+  // singing: in each move one performer sings the first half and the other answers; 圓場 is instrumental
+  if(move>=0&&move!==2&&OP.prox>.03){ const half=mt<OP_MOVE/2?0:1, singer=(r.side>0?0:1)===((half+move)%2); const cue=`${gi}:${Math.floor((gt-OP_ENTER)/OP_MOVE)}:${half}:${r.key}`;
+    const left=OP_MOVE/2-mt%(OP_MOVE/2)-.3; if(singer&&!A.cues) A.cues=new Set(); if(singer&&!A.cues.has(cue)&&left>1.2){ A.cues.add(cue); if(A.cues.size>40) A.cues=new Set([cue]); opVoice(r,move!==4||r.key==="chou"?Math.random()<.7:false,left); } } }
+function opTick(dt){ if(!OP.on||!OP.root){ opMusic(dt); if(OP.voiceGain) OP.voiceGain.gain.value=0; return; }
+  const d=Math.hypot(meAv.pos.x-OP.x,meAv.pos.y-(OP.z-1.6)); const want=d<6?1:d>24?0:1-(d-6)/18; OP.prox+=(want-OP.prox)*Math.min(1,dt*1.2);
+  const el=(Date.now()-OP.at)/1000, gi=Math.floor(el/OP_GROUP)%3, gt=el%OP_GROUP;
+  OP.actors.forEach(A=>opActor(A,gi,gt,el,dt));
+  const nt=_dn.night||0; OP.glowMats.forEach(m=>m.emissiveIntensity=.2+.45*nt);
+  OP.neon.forEach(o=>{ const h=(o.u/14-el*.25)%1; o.m.color.setHSL((h+1)%1,1,.55); o.gm.color.setHSL((h+1)%1,1,.6); o.gm.opacity=.35+.35*nt; });
+  OP.spots.forEach(s=>{ const h=(el*.05+s.i/3)%1, sw=Math.sin(el*.7+s.i*2.1); const aim=new T.Vector3((s.i-1)*.12*OP.k+sw*.9,.15*OP.k,.02*OP.k+Math.cos(el*.5+s.i)*.4);
+    s.tgt.position.copy(aim); if(s.sl){ s.sl.color.setHSL(h,1,.55); s.sl.intensity=(1.6+1.6*nt); }
+    const dir=aim.clone().sub(s.from), L=dir.length(); s.beam.scale.set(1,L,1); s.beam.quaternion.setFromUnitVectors(new T.Vector3(0,-1,0),dir.normalize()); s.bm.color.setHSL(h,1,.5); s.bm.opacity=.05+.08*nt; });
+  if(OP.voiceGain&&ac) OP.voiceGain.gain.setTargetAtTime(OP.prox*sVol()*(soundOn?1:0),ac.currentTime,.12);
+  opMusic(dt); }
+
 const tmpV=new T.Vector3();
 let gameAsleep=false;
 function tick(){ if(gameAsleep) return; const dt=Math.min(.05,clock.getDelta()); const t=clock.elapsedTime;
@@ -3187,7 +3359,7 @@ function tick(){ if(gameAsleep) return; const dt=Math.min(.05,clock.getDelta());
     r1.scale.setScalar(k); r2.scale.setScalar(1+((tapT*1.2)%1)*.8); r2.material.opacity=.7*(1-((tapT*1.2)%1));
     if(arrived||tapT>12){ const f=Math.max(0,r1.material.opacity-dt*3); r1.material.opacity=f; dot.material.opacity=f; if(f<=0){ tapMark.visible=false; r1.material.opacity=.9; dot.material.opacity=.9; } } }
   npcs.forEach(n=>{ n.update(dt); n.next-=dt; if(n.next<0){ n.next=rand(8,24); n.bow(); } });
-  remotes.forEach(r=>r.update(dt)); sjUpdate(dt); fwUpdate(dt); updateSkyLanterns(dt); renderSLBtn();
+  remotes.forEach(r=>r.update(dt)); sjUpdate(dt); fwUpdate(dt); updateSkyLanterns(dt); renderSLBtn(); opTick(dt);
   if(room&&dirty&&performance.now()-lastSend>((keys.size||joy.on)?800:SEND_GAP)) sendPresence();
   updateFlyers(dt); updateFu(dt); updateCats(dt); updateWater(dt);
   { let best=null, bd=2.6; if(!sheetKind&&!customizing&&!pendingStation&&meAv.seat<0&&!(meAv.danceT>0)) for(const k in stations){ if(k==="cats"){ const dc=Math.hypot(meAv.pos.x-CATS.c.x,meAv.pos.y-CATS.c.z); if(dc<3.6){ best=k; bd=0; } continue; } const d=meAv.pos.distanceTo(stations[k].approach); if(d<bd){ bd=d; best=k; } }
@@ -3254,7 +3426,7 @@ function tick(){ if(gameAsleep) return; const dt=Math.min(.05,clock.getDelta());
     if(p.g) p.vy-=p.g*dt; p.s.position.x+=(p.vx+Math.sin(t*1.3+i)*.04)*dt; p.s.position.y+=p.vy*dt; p.s.position.z+=p.vz*dt; const sc=p.s.scale.x+p.grow*dt; p.s.scale.set(Math.max(.02,sc),Math.max(.02,sc),1);
     p.s.material.opacity=p.op*Math.sin(Math.min(1,k)*Math.PI); }
   const dp=dustGeo.attributes.position.array; for(let i=0;i<dustN;i++){ dp[i*3+1]+=Math.sin(t*.5+i)*.0015; dp[i*3]+=Math.cos(t*.3+i*.7)*.001; } dustGeo.attributes.position.needsUpdate=true;
-  if(duckT>0){ duckT-=dt; } { const mv=mVol(), top=(curTrack==="cat"?.55:curTrack==="fw"?.6:.38)*mv; bgm.volume=duckT>0?.16*mv:Math.min(top,bgm.volume+dt*.1); }
+  if(duckT>0){ duckT-=dt; } { const mv=mVol(), top=(curTrack==="cat"?.55:curTrack==="fw"?.6:.38)*mv; const topN=top*(1-.85*((OP&&OP.prox)||0)); bgm.volume=duckT>0?Math.min(.16*mv,topN):Math.min(topN,bgm.volume+dt*.1); } // the temple music steps back near the opera stage
   { const dc=Math.hypot(meAv.pos.x-CATS.c.x,meAv.pos.y-CATS.c.z); const want=catMode?dc<4.2:dc<3.2;
     if(want!==catMode){ catMode=want; if(!FW.on) setTrack(catMode?"cat":"main"); } }
   bellSwing*=Math.pow(.25,dt); bell.rotation.x=Math.sin(t*4)*.22*bellSwing; drumBounce*=Math.pow(.02,dt); drum.scale.setScalar(1+Math.sin(t*40)*.03*drumBounce);
