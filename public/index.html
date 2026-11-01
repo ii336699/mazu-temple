@@ -482,19 +482,24 @@ const PHRASES=["媽祖保庇","平安順遂","感恩","大家好","一起拜拜"
 const SIGN_NAMES={};
 // sponsor thank-you boards on the courtyard wall behind Guanyin (x = which wall panel)
 // eight slots on the wall (x = ±3.6, ±6.6, ±9.6, ±12.6); a slot without a sponsor stays a carved gold panel; neon:true gives a rainbow chase
-// ten sponsor boards on the Guanyin wall; the bigger the gift the closer to the middle.
-// light by amount: 300+ blazing rainbow with halo, rays and sparks · 100+ rainbow neon · 50+ pink neon · others warm gold bulbs
-const THANK_SLOTS=[-12.5,-10.2,-7.9,-5.6,-3.3,3.3,5.6,7.9,10.2,12.5];
-const THANKS=[{x:-7.9,img:"thanks1.jpg",amt:50,text:"謝謝阿詠贊助50元伺服器營運費用 🫶"},
-  {x:-12.5,img:"thanks2.jpg",amt:10,text:"謝謝詩方贊助10元伺服器營運費用 🫶"},
-  {x:10.2,img:"thanks3.jpg",amt:50,text:"謝謝Chu贊助50元伺服器營運費用 🫶"},
-  {x:-10.2,img:"thanks4.jpg",amt:20,text:"謝謝蔡慧贊助20元伺服器營運費用 🫶"},
-  {x:12.5,img:"thanks5.jpg",amt:20,text:"謝謝信徒瘦瘦贊助20元伺服器營運費用 🫶"},
-  {x:-3.3,img:"thanks6.jpg",amt:100,text:"謝謝信徒Albert Chang贊助100元伺服器營運費用 🫶"},
-  {x:3.3,img:"thanks7.jpg",amt:300,text:"謝謝信徒黎絆贊助300元伺服器營運費用 🫶"},
-  {x:5.6,img:"thanks8.jpg",amt:100,text:"謝謝信徒山豬贊助100元伺服器營運費用 🫶"},
-  {x:-5.6,img:"thanks9.jpg",amt:100,text:"謝謝信徒Emily贊助100元伺服器營運費用 🫶"},
-  {x:7.9,img:"thanks10.jpg",amt:50,text:"謝謝信徒40607贊助50元伺服器營運費用 🫶"}];
+// sponsor boards on the Guanyin wall: two rows of eight, four each side of the statue. The lower (eye-level) row fills first,
+// from the middle outwards, so the bigger the gift the closer to Guanyin. Light by amount: 300+ blazing rainbow with halo, rays
+// and sparks · 100+ rainbow neon · 50+ pink neon · others warm gold bulbs. Empty slots show a carved gold panel.
+const THANK_COLS=[3.25,5.2,7.15,9.1], THANK_ROWS=[1.25,2.75];
+const THANK_SLOTS=THANK_ROWS.flatMap(y=>THANK_COLS.flatMap(c=>[[c,y],[-c,y]]));
+const THANKS=[{x:-3.25,y:2.75,img:"thanks1.jpg",amt:50,text:"謝謝阿詠贊助50元伺服器營運費用 🫶"},
+  {x:7.15,y:2.75,img:"thanks2.jpg",amt:10,text:"謝謝詩方贊助10元伺服器營運費用 🫶"},
+  {x:-9.1,y:1.25,img:"thanks3.jpg",amt:50,text:"謝謝Chu贊助50元伺服器營運費用 🫶"},
+  {x:5.2,y:2.75,img:"thanks4.jpg",amt:20,text:"謝謝蔡慧贊助20元伺服器營運費用 🫶"},
+  {x:-5.2,y:2.75,img:"thanks5.jpg",amt:20,text:"謝謝信徒瘦瘦贊助20元伺服器營運費用 🫶"},
+  {x:7.15,y:1.25,img:"thanks6.jpg",amt:100,text:"謝謝信徒Albert Chang贊助100元伺服器營運費用 🫶"},
+  {x:3.25,y:1.25,img:"thanks7.jpg",amt:300,text:"謝謝信徒黎絆贊助300元伺服器營運費用 🫶"},
+  {x:-7.15,y:1.25,img:"thanks8.jpg",amt:100,text:"謝謝信徒山豬贊助100元伺服器營運費用 🫶"},
+  {x:9.1,y:1.25,img:"thanks9.jpg",amt:100,text:"謝謝信徒Emily贊助100元伺服器營運費用 🫶"},
+  {x:3.25,y:2.75,img:"thanks10.jpg",amt:50,text:"謝謝信徒40607贊助50元伺服器營運費用 🫶"},
+  {x:-3.25,y:1.25,img:"thanks11.jpg",amt:300,text:"謝謝信徒Near贊助300元伺服器營運費用 🫶"},
+  {x:5.2,y:1.25,img:"thanks12.jpg",amt:168,text:"謝謝信徒劭臻贊助168元伺服器營運費用 🫶"},
+  {x:-5.2,y:1.25,img:"thanks13.jpg",amt:168,text:"謝謝信徒橙橙呱贊助168元伺服器營運費用 🫶"}];
 
 /* ================= persisted per-viewer state ================= */
 function load(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } }
@@ -1277,9 +1282,9 @@ const FT={x:0,z:HZ+20.2,H:4.4,k:1,mouth:new T.Vector3(),pool:new T.Vector3(0,.55
   box(28,3.6,.6,redM,0,1.8,HZ+22.9); box(28.4,.25,.9,mat("#3a1d14",{roughness:.9}),0,3.72,HZ+22.9); box(28.2,.08,.66,goldP,0,3.55,HZ+22.6);
   box(28,.5,.7,stone,0,.25,HZ+22.9);
   // each wall panel is its own object; a panel listed in THANKS shows a sponsor thank-you picture and opens it when tapped
-  for(const x of THANK_SLOTS){ const th=THANKS.find(t=>t.x===x);
-    if(!th){ const p=new T.Mesh(new T.PlaneGeometry(2.1,1.3),new T.MeshStandardMaterial({map:goldCarvedTex,metalness:.6,roughness:.4})); p.position.set(x,2.1,HZ+22.58); p.rotation.y=Math.PI; scene.add(p); continue; }
-    const g=new T.Group(); g.position.set(x,2.1,HZ+22.56); g.rotation.y=Math.PI; g.scale.setScalar(.86); g.userData.noMerge=1; scene.add(g); const tier=th.amt>=300?3:th.amt>=100?2:th.amt>=50?1:0;
+  for(const [x,y] of THANK_SLOTS){ const th=THANKS.find(t=>t.x===x&&t.y===y);
+    if(!th){ const p=new T.Mesh(new T.PlaneGeometry(1.68,1.27),new T.MeshStandardMaterial({map:goldCarvedTex,metalness:.6,roughness:.4})); p.position.set(x,y,HZ+22.58); p.rotation.y=Math.PI; scene.add(p); continue; }
+    const g=new T.Group(); g.position.set(x,y,HZ+22.56); g.rotation.y=Math.PI; g.scale.setScalar(.75); g.userData.noMerge=1; scene.add(g); const tier=th.amt>=300?3:th.amt>=100?2:th.amt>=50?1:0;
     const fr=new T.Mesh(new T.PlaneGeometry(2.24,1.7),new T.MeshStandardMaterial({map:goldCarvedTex,metalness:.6,roughness:.4})); g.add(fr);
     const pm=new T.MeshStandardMaterial({color:new T.Color("#3a1a10"),roughness:.7,emissive:new T.Color("#000")}); const pic=new T.Mesh(new T.PlaneGeometry(2.0,1.5),pm); pic.position.z=.012; g.add(pic);
     // marquee bulbs around the frame, alternating so they twinkle like a sign
