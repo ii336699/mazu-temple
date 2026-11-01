@@ -935,16 +935,19 @@ for(const side of [-1,1]){ const g=new T.Group(); g.position.set(side*(HX-.2-.72
   setAct(g,k); g.updateMatrixWorld(true); lampNormal[side]=new T.Vector3(-side,0,0);
   for(let r=0;r<5;r++) for(let c=0;c<14;c++) lampPos.push(g.localToWorld(new T.Vector3((LX[c]/1536-.5)*CW,LB+(1-LY[r]/976)*CH,.04))); }
 const litGroup=new T.Group(); scene.add(litGroup);
-const litMat=new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffcf70"),transparent:true,blending:T.AdditiveBlending,depthWrite:false});
-const myLampSpark=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#fff0b0"),transparent:true,blending:T.AdditiveBlending,depthWrite:false})); myLampSpark.visible=false; scene.add(myLampSpark);
+// lit lamps are flat glows lying on the cabinet face. (They used to be camera-facing sprites, which cut into the cabinet when seen
+// from the side, so lit lamps looked brighter or dimmer depending on where you stood.)
+const litMat=new T.MeshBasicMaterial({map:glowTex,color:new T.Color("#ffcf70"),transparent:true,blending:T.AdditiveBlending,depthWrite:false}), litGeo=new T.PlaneGeometry(.5,.5);
+const lampRotY=i=>i<70?Math.PI/2:-Math.PI/2, lampOut=(i,d)=>new T.Vector3(i<70?d:-d,0,0);
+const myLampSpark=new T.Mesh(new T.PlaneGeometry(.8,.8),new T.MeshBasicMaterial({map:glowTex,color:new T.Color("#fff0b0"),transparent:true,blending:T.AdditiveBlending,depthWrite:false})); myLampSpark.visible=false; scene.add(myLampSpark);
 let myLampTag=null;
 const serverLit=new Set();
 async function syncLamps(){ try{ const r=await fetch("/lamps",{cache:"no-store"}); if(!r.ok) return; const j=await r.json(); if(!j||!Array.isArray(j.lit)) return; serverLit.clear(); j.lit.forEach(i=>{ if(Number.isInteger(i)&&i>=0&&i<LAMPS) serverLit.add(i); }); refreshLamps(); }catch(e){} }
 function refreshLamps(){ while(litGroup.children.length) litGroup.remove(litGroup.children[0]);
   const lit=new Set(serverLit); remotes.forEach(r=>{ if(r.lamp>=0&&r.lamp<LAMPS) lit.add(r.lamp); });
-  lit.forEach(i=>{ if(i===me.lamp) return; const sp=new T.Sprite(litMat); sp.position.copy(lampPos[i]); sp.scale.set(.5,.5,1); litGroup.add(sp); });
+  lit.forEach(i=>{ if(i===me.lamp) return; const sp=new T.Mesh(litGeo,litMat); sp.position.copy(lampPos[i]).add(lampOut(i,.02)); sp.rotation.y=lampRotY(i); litGroup.add(sp); });
   if(myLampTag){ scene.remove(myLampTag); myLampTag=null; }
-  if(me.lamp!=null&&me.lamp>=0&&me.lamp<LAMPS){ myLampSpark.visible=true; myLampSpark.position.copy(lampPos[me.lamp]); myLampTag=textSprite("你的燈",{fs:28,h:.13,color:"#ffe2a0"}); myLampTag.position.copy(lampPos[me.lamp]).add(new T.Vector3(me.lamp<70?.05:-.05,.24,0)); scene.add(myLampTag); }
+  if(me.lamp!=null&&me.lamp>=0&&me.lamp<LAMPS){ myLampSpark.visible=true; myLampSpark.position.copy(lampPos[me.lamp]).add(lampOut(me.lamp,.03)); myLampSpark.rotation.y=lampRotY(me.lamp); myLampTag=textSprite("你的燈",{fs:28,h:.13,color:"#ffe2a0"}); myLampTag.position.copy(lampPos[me.lamp]).add(new T.Vector3(me.lamp<70?.05:-.05,.24,0)); scene.add(myLampTag); }
   else myLampSpark.visible=false; }
 station("lampR",[8.7,LAMPZ],Math.PI/2);
 station("lamp",[-8.7,LAMPZ],-Math.PI/2);
