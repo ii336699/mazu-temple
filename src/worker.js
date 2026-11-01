@@ -3,12 +3,12 @@
 import { DurableObject } from "cloudflare:workers";
 
 const HALLS = 10, CAP = 100, MAX_MSG = 4000;
-const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000 };
+const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/notice": 30000 };
 
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
-    if (url.pathname === "/ws" || url.pathname === "/halls" || ["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns"].includes(url.pathname)) {
+    if (url.pathname === "/ws" || url.pathname === "/halls" || ["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/notice", "/reply", "/mail"].includes(url.pathname)) {
       try { return await api(req, env, url); }
       catch (e) { return new Response(JSON.stringify({ error: String(e && e.message || e).slice(0, 300) }), { status: 503, headers: { "content-type": "application/json", "cache-control": "no-store" } }); }
     }
@@ -27,8 +27,8 @@ async function api(req, env, url) {
       const m = MEMO.get(url.pathname);
       if (m && Date.now() - m.at < MEMO_TTL[url.pathname]) return new Response(m.body, { headers: { "content-type": "application/json", "cache-control": "no-store" } });
     }
-    if (["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns"].includes(url.pathname)) {
-      if (req.method === "POST") MEMO.delete(url.pathname === "/lamp" ? "/lamps" : "/wishes");
+    if (["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/notice", "/reply", "/mail"].includes(url.pathname)) {
+      if (req.method === "POST") MEMO.delete(url.pathname === "/lamp" ? "/lamps" : url.pathname === "/notice" ? "/notice" : "/wishes");
       const lobby = env.LOBBY.get(env.LOBBY.idFromName("lobby"));
       const r = await lobby.fetch(new Request("https://lobby" + url.pathname + url.search, { method: req.method, headers: req.headers, body: req.method === "POST" ? await req.text() : undefined }));
       const body = await r.text(); if (req.method === "GET" && r.ok) MEMO.set(url.pathname, { at: Date.now(), body });
@@ -126,6 +126,7 @@ export class Lobby extends DurableObject {
     return { ok: true };
   }
 
+  async replies() { const r = (await this.ctx.storage.get("replies")) || {}, now = Date.now(); for (const k in r) if (now - r[k].at > 86400000) delete r[k]; return r; }
   async fetch(req) {
     const url = new URL(req.url);
     // 聯絡作者: private messages. Reading needs the ADMIN_KEY secret (set in the Cloudflare dashboard, never in this public repo);
@@ -136,7 +137,7 @@ export class Lobby extends DurableObject {
       if (!text) return json({ ok: false });
       this.lastMsg = this.lastMsg || new Map(); const now = Date.now(); const key = id || req.headers.get("cf-connecting-ip") || "?";
       if (now - (this.lastMsg.get(key) || 0) < 30000) return json({ ok: false, slow: true }); this.lastMsg.set(key, now);
-      const m = (await this.ctx.storage.get("msgs")) || []; m.unshift({ name, text, at: now }); await this.ctx.storage.put("msgs", m.slice(0, 1000)); return json({ ok: true });
+      const m = (await this.ctx.storage.get("msgs")) || []; m.unshift({ name, text, at: now, id }); await this.ctx.storage.put("msgs", m.slice(0, 1000)); return json({ ok: true });
     }
     if (url.pathname === "/announce" && req.method === "POST") {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
@@ -171,7 +172,31 @@ export class Lobby extends DurableObject {
     }
     if (url.pathname === "/msgs") {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
-      return json({ ok: true, msgs: (await this.ctx.storage.get("msgs")) || [] });
+      return json({ ok: true, msgs: (await this.ctx.storage.get("msgs")) || [], replies: await this.replies() });
+    }
+    // 主委回信: one letter per player, kept for a day or until the player deletes it
+    if (url.pathname === "/reply" && req.method === "POST") {
+      const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
+      let b = {}; try { b = await req.json(); } catch {}
+      const id = clean(b.id, 16), text = String(b.text || "").replace(/[\u0000-\u0008\u000b-\u001f\u007f\u202a-\u202e\u2066-\u2069]/g, "").trim().slice(0, 500);
+      if (!id || !text) return json({ ok: false });
+      const r = await this.replies(); r[id] = { text, at: Date.now(), to: Number(b.to) || 0, orig: clean(b.orig, 120) }; await this.ctx.storage.put("replies", r); return json({ ok: true });
+    }
+    if (url.pathname === "/mail") {
+      const id = clean(url.searchParams.get("id"), 16); if (!id) return json({ mail: null });
+      const r = await this.replies();
+      if (req.method === "POST" && url.searchParams.get("del") === "1") { if (r[id]) { delete r[id]; await this.ctx.storage.put("replies", r); } return json({ ok: true }); }
+      return json({ mail: r[id] || null });
+    }
+    // 公告 board: anyone reads it, only the chair changes it
+    if (url.pathname === "/notice") {
+      if (req.method === "POST") {
+        const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
+        let b = {}; try { b = await req.json(); } catch {}
+        const n = { text: String(b.text || "").replace(/[\u0000-\u0008\u000b-\u001f\u007f\u202a-\u202e\u2066-\u2069<>]/g, "").trim().slice(0, 500), at: Date.now() };
+        await this.ctx.storage.put("notice", n); return json({ ok: true, ...n });
+      }
+      return json((await this.ctx.storage.get("notice")) || { text: "", at: 0 });
     }
     // 光明燈: every lit lamp stays lit until its owner turns it off
     if (url.pathname === "/lamps") { const m = (await this.ctx.storage.get("lamps")) || {}; return json({ lit: Object.keys(m).map(Number) }); }
