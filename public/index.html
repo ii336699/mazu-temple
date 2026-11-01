@@ -1434,7 +1434,7 @@ scene.add(cushions,rims); cushions.userData.seats=true;
   function hallSil(x,z,w,ry){ const g=new T.Group(); g.position.set(x,0,z); g.rotation.y=ry; scene.add(g); box(w,4,6,dark,0,2,0,g);
     for(const s of [-1,1]){ const r=box(w+1.2,.3,4.2,roof,0,5.2,s*1.6,g); r.rotation.x=s*.45; }
     box(w,.4,.4,roof,0,6.1,0,g); for(const s of [-1,1]) for(const k of [-1,1]){ const t=box(1.6,.22,.22,roof,s*(w/2+.6),6.5,k*.12,g); t.rotation.z=s*.6; t.rotation.y=k*s*.3; } }
-  hallSil(0,46,16,0); hallSil(30,-12,10,Math.PI/2); hallSil(-30,14,12,Math.PI/2);
+  hallSil(0,46+YX,16,0); /* the hall behind the Guanyin wall moves back with the longer 廟埕 */ hallSil(30,-12,10,Math.PI/2); hallSil(-30,14,12,Math.PI/2);
 
  }
 
@@ -3190,7 +3190,7 @@ const clock=new T.Clock(); let smokeAcc=0, emberAcc=0;
 // take turns forever: a pair comes on, performs (亮相, 雲手, 圓場, 水袖, 對唱), goes back behind the backdrop and vanishes, and
 // the next pair comes out. The three tracks play in turn. Music and singing fade in as you walk up and fade out as you leave.
 // Everything is computed from the time the stage went up, so every player sees the same moment of the show.
-var OP={x:0,z:HZ+YX+7.5,k:9.6,on:false,at:0,built:false,root:null,actors:[],spots:[],beams:[],neon:[],glowMats:[],prox:0,cue:"",musicGain:null,voiceGain:null,aud:null,track:-1,lastSync:0};
+var OP={x:0,z:HZ+YX+11.6,k:9.6,on:false,at:0,built:false,root:null,actors:[],spots:[],beams:[],neon:[],glowMats:[],prox:0,cue:"",musicGain:null,voiceGain:null,aud:null,track:-1,lastSync:0};
 const OP_TRACKS=[["opera1.mp3",147.38],["opera2.mp3",154.04],["opera3.mp3",143.05]], OP_TOTAL=OP_TRACKS.reduce((a,t)=>a+t[1],0);
 const OP_GROUP=56, OP_ENTER=6, OP_EXIT=48, OP_GONE=53, OP_MOVE=8.4; // seconds within each pair's turn; five moves of 8.4 s
 const opW=(lx,lz)=>[OP.x-lx*OP.k, OP.z-lz*OP.k]; // stage-local → world; the stage is turned round to face the temple
@@ -3426,7 +3426,7 @@ function tick(){ if(gameAsleep) return; const dt=Math.min(.05,clock.getDelta());
     if(p.g) p.vy-=p.g*dt; p.s.position.x+=(p.vx+Math.sin(t*1.3+i)*.04)*dt; p.s.position.y+=p.vy*dt; p.s.position.z+=p.vz*dt; const sc=p.s.scale.x+p.grow*dt; p.s.scale.set(Math.max(.02,sc),Math.max(.02,sc),1);
     p.s.material.opacity=p.op*Math.sin(Math.min(1,k)*Math.PI); }
   const dp=dustGeo.attributes.position.array; for(let i=0;i<dustN;i++){ dp[i*3+1]+=Math.sin(t*.5+i)*.0015; dp[i*3]+=Math.cos(t*.3+i*.7)*.001; } dustGeo.attributes.position.needsUpdate=true;
-  if(duckT>0){ duckT-=dt; } { const mv=mVol(), top=(curTrack==="cat"?.55:curTrack==="fw"?.6:.38)*mv; const topN=top*(1-.85*((OP&&OP.prox)||0)); bgm.volume=duckT>0?Math.min(.16*mv,topN):Math.min(topN,bgm.volume+dt*.1); } // the temple music steps back near the opera stage
+  if(duckT>0){ duckT-=dt; } { const mv=mVol(), top=(curTrack==="cat"?.55:curTrack==="fw"?.6:.38)*mv; const topN=top*(1-((OP&&OP.prox)||0)); bgm.volume=duckT>0?Math.min(.16*mv,topN):Math.min(topN,bgm.volume+dt*.1); } // near the opera stage the temple music fades all the way out, and back in as you walk away
   { const dc=Math.hypot(meAv.pos.x-CATS.c.x,meAv.pos.y-CATS.c.z); const want=catMode?dc<4.2:dc<3.2;
     if(want!==catMode){ catMode=want; if(!FW.on) setTrack(catMode?"cat":"main"); } }
   bellSwing*=Math.pow(.25,dt); bell.rotation.x=Math.sin(t*4)*.22*bellSwing; drumBounce*=Math.pow(.02,dt); drum.scale.setScalar(1+Math.sin(t*40)*.03*drumBounce);
