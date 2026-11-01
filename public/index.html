@@ -234,6 +234,35 @@ body.hideui .joy,body.customizing .joy{display:none}
 .bank-acct{font-size:19px;font-weight:700;letter-spacing:.08em;font-variant-numeric:tabular-nums;user-select:text;-webkit-user-select:text}
 .bank-thanks{margin:0;font-family:var(--f-display);font-size:16px;color:#ffe2a0;letter-spacing:.08em}
 .real-divider{margin:10px 0 0;text-align:center;color:var(--gold);font-family:var(--f-display);font-size:16px;letter-spacing:.12em}
+/* 鐵口直斷 */
+.ft-form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:420px){.ft-form{grid-template-columns:1fr}}
+.ft-form input,.ft-form select{width:100%;box-sizing:border-box;background:rgba(255,255,255,.06);border:1px solid var(--gold-soft);border-radius:10px;padding:10px 12px;font:inherit;color:var(--ink);font-size:16px;user-select:text;-webkit-user-select:text}
+.ft-form select option{color:#222}
+.ft-wait{text-align:center;font-family:var(--f-display);font-size:18px;color:var(--gold);animation:ftPulse 1s ease-in-out infinite alternate}
+@keyframes ftPulse{from{opacity:.45}to{opacity:1}}
+.ft-card{border:1px solid var(--gold-soft);border-radius:14px;padding:12px 14px;margin-top:12px;background:rgba(255,240,210,.04)}
+.ft-card p{margin:6px 0;font-size:15px;line-height:1.75}
+.ft-card h4{margin:12px 0 2px;font-family:var(--f-display);font-size:17px;color:var(--gold);letter-spacing:.06em}
+.ft-head{font-family:var(--f-display);font-size:19px;color:#ffe2a0;letter-spacing:.08em;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.ft-head small{font-family:var(--f-ui);font-size:12px;color:var(--muted);letter-spacing:0}
+.ft-pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0 4px}
+.ft-p{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px;border-radius:10px;background:rgba(0,0,0,.22);border:1px solid rgba(230,184,100,.2)}
+.ft-p small{font-size:11px;color:var(--muted)}
+.ft-p b{font-family:var(--f-display);font-size:28px;line-height:1.1}
+.ft-p em{font-style:normal;font-size:11px;color:#f2d6a0;text-align:center}
+.ft-p.ft-none b{color:var(--muted)}
+.ft-fact{font-size:14px!important;color:var(--muted)}
+.ft-bars{display:flex;flex-direction:column;gap:4px}
+.ft-bar{display:grid;grid-template-columns:22px 1fr 34px;align-items:center;gap:8px;font-size:13px}
+.ft-bar i{height:8px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden}
+.ft-bar u{display:block;height:100%;border-radius:4px}
+.ft-bar small{color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.ft-luck{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:8px 0}
+.ft-luck div{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,.2)}
+.ft-luck small{font-size:11px;color:var(--muted)}
+.ft-luck b{font-family:var(--f-display);font-size:16px;color:#ffe2a0}
+.ft-verdict{margin:14px 0 6px;padding:14px;border-radius:14px;text-align:center;font-family:var(--f-display);font-size:19px;line-height:1.6;color:#fff3da;background:linear-gradient(#b42b1f,var(--lacquer));border:1px solid var(--gold)}
 </style>
 
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
@@ -2347,7 +2376,7 @@ HANDLERS.toggleNpc=(v,b)=>{ showNpc=!showNpc; save("mz.npc",showNpc); b.setAttri
 HANDLERS.showPoem=v=>openPoem(+v,true);
 
 /* ---- stations ---- */
-function openStation(k){ if(k==="cats"){ openCats(); return; } if(k==="fountain"){ openFountain(); return; } if(k==="wish"){ openWish(); return; } if(CENSER_INFO[k]){ openCenser(k); return; } if(k==="jieqian"){ openJieqian(); return; } if(k==="shop") openShop(); if(k==="altar") openAltar(); if(k==="burn") openBurn(); if(k==="donate") openDonate(); if(k==="lot") openLot("ask"); if(k==="lamp"||k==="lampR") openLamp(); if(k==="bell"){ meAv.burnT=0; ringBell(); toast("咚——鐘聲迴盪（只有你聽得到）"); } if(k==="drum"){ meAv.burnT=0; hitDrum(); toast("咚！鼓聲響起（只有你聽得到）"); } }
+function openStation(k){ if(k==="fortune"){ openFortune(); return; } if(k==="cats"){ openCats(); return; } if(k==="fountain"){ openFountain(); return; } if(k==="wish"){ openWish(); return; } if(CENSER_INFO[k]){ openCenser(k); return; } if(k==="jieqian"){ openJieqian(); return; } if(k==="shop") openShop(); if(k==="altar") openAltar(); if(k==="burn") openBurn(); if(k==="donate") openDonate(); if(k==="lot") openLot("ask"); if(k==="lamp"||k==="lampR") openLamp(); if(k==="bell"){ meAv.burnT=0; ringBell(); toast("咚——鐘聲迴盪（只有你聽得到）"); } if(k==="drum"){ meAv.burnT=0; hitDrum(); toast("咚！鼓聲響起（只有你聽得到）"); } }
 function openThanks(i){ const th=THANKS[i]; if(!th) return; sfx.coin(); openSheet("thanks","感謝贊助",`<img class="thanks-img" src="${th.img}" alt="感謝看板" width="1024" height="768"><p class="thanks-text">${esc(th.text)}</p>`); }
 function openShop(){ const html=`<p class="lead">拜拜順序：先到廟埕天公爐，再拜媽祖、龍邊財神爺、虎邊月老，最後是供桌下的虎爺。五爐都插好香，再到廟埕金爐燒金紙。</p>
   <div class="goods">${GOODS.map(g=>`<button class="good" data-act="buy" data-v="${g.k}" ${bag.coins<g.price?"disabled":""}><span class="name">${g.name}</span><span class="meta">${g.meta}</span><span class="price">${g.price} 平安幣</span><span class="own">持有 ${bag.items[g.k]||0}</span></button>`).join("")}</div>
@@ -3192,6 +3221,195 @@ function popStick(){ if(poppedStick) lotTube.remove(poppedStick); poppedStick=ne
 /* ================= main loop ================= */
 let headFront=false;
 const clock=new T.Clock(); let smokeAcc=0, emberAcc=0;
+/* ---- 鐵口直斷: turn a birth date into a plain-language reading ----
+   The 八字 comes from the lunar-javascript calendar (立春 starts the year, the solar terms start the months).
+   Everything after that is simple and explainable: day master, how strong it is, which elements are many or missing,
+   which kind of 十神 dominates, and how this year's pillar meets the person. Each slot has several phrasings, and the
+   choice is seeded by the 八字 itself, so the same birth always gets the same reading while different people differ. */
+const FT_GAN="甲乙丙丁戊己庚辛壬癸", FT_ZHI="子丑寅卯辰巳午未申酉戌亥";
+const FT_GAN_EL={甲:"木",乙:"木",丙:"火",丁:"火",戊:"土",己:"土",庚:"金",辛:"金",壬:"水",癸:"水"};
+const FT_ZHI_EL={子:"水",丑:"土",寅:"木",卯:"木",辰:"土",巳:"火",午:"火",未:"土",申:"金",酉:"金",戌:"土",亥:"水"};
+const FT_HIDE={子:["癸"],丑:["己","癸","辛"],寅:["甲","丙","戊"],卯:["乙"],辰:["戊","乙","癸"],巳:["丙","庚","戊"],午:["丁","己"],未:["己","丁","乙"],申:["庚","壬","戊"],酉:["辛"],戌:["戊","辛","丁"],亥:["壬","甲"]};
+const FT_ANIMAL={子:"鼠",丑:"牛",寅:"虎",卯:"兔",辰:"龍",巳:"蛇",午:"馬",未:"羊",申:"猴",酉:"雞",戌:"狗",亥:"豬"};
+const FT_EL=["木","火","土","金","水"], FT_GEN={木:"火",火:"土",土:"金",金:"水",水:"木"}, FT_CTRL={木:"土",火:"金",土:"水",金:"木",水:"火"};
+const FT_HOURS=[["子時","23:00–00:59",0],["丑時","01:00–02:59",2],["寅時","03:00–04:59",4],["卯時","05:00–06:59",6],["辰時","07:00–08:59",8],["巳時","09:00–10:59",10],["午時","11:00–12:59",12],["未時","13:00–14:59",14],["申時","15:00–16:59",16],["酉時","17:00–18:59",18],["戌時","19:00–20:59",20],["亥時","21:00–22:59",22]];
+const FT_LUCK={木:{color:"綠色、青色",dir:"東方",num:"3、8",act:"多去公園走走、在家裡放盆植物"},火:{color:"紅色、紫色",dir:"南方",num:"2、7",act:"多曬太陽、多運動流汗"},
+  土:{color:"黃色、咖啡色",dir:"住家附近、中央",num:"5、0",act:"規律作息、存小錢、常回家吃飯"},金:{color:"白色、金色",dir:"西方",num:"4、9",act:"把房間整理乾淨、戴點金屬飾品"},水:{color:"黑色、藍色",dir:"北方",num:"1、6",act:"多喝水、多看書、去海邊或河邊走走"}};
+const FT_MONTH_EL={1:"土",2:"木",3:"木",4:"土",5:"火",6:"火",7:"土",8:"金",9:"金",10:"土",11:"水",12:"水"}; // roughly the 國曆 month each 月支 falls in
+
+const FT_TXT={
+  self:{
+    甲:["你是「甲木」命，像一棵往上長的大樹。個性正直、有主見，認定的事就會一路做到底，最受不了被人看扁。","甲木的人像森林裡最高的那棵樹，天生有領袖味，喜歡照顧別人，只是有時候太硬，不太會轉彎。","你是大樹型的人：講義氣、肯負責，別人遇到事情第一個想到你。缺點是很愛面子，要你先認錯有點難。"],
+    乙:["你是「乙木」命，像花草、像藤蔓。外表溫和好相處，其實韌性很強，環境再難也找得到路長出去。","乙木的人很會看氣氛、懂得配合，人緣好；但心裡其實很有自己的想法，只是不一定說出口。","你像一株蘭花：細膩、有品味，對美的東西很敏感。容易想太多，給自己一點時間就會開花。"],
+    丙:["你是「丙火」命，像太陽。熱情、大方，走到哪裡都亮，心裡藏不住事，喜怒都寫在臉上。","丙火的人天生有感染力，朋友多、愛熱鬧、願意分享。只是脾氣來得快去得也快，說話要小心太衝。","你像正中午的太陽：樂觀、直爽、有正義感，看不慣的事一定會講。衝勁十足，耐心稍微少了一點。"],
+    丁:["你是「丁火」命，像一盞燭光。外表安靜，內心很溫暖，很會照顧身邊的人，觀察力特別細。","丁火的人心思細膩、重感情，別人一個小動作你都看在眼裡。常替別人操心，記得也照顧一下自己。","你像夜裡的燈籠：不刺眼，但讓人安心。點子多、有才華，只是情緒起伏比較大，需要懂你的人。"],
+    戊:["你是「戊土」命，像一座大山。穩重、可靠、守信用，答應的事一定做到，是大家的靠山。","戊土的人沉得住氣，遇到大事反而冷靜，很適合當主管或當家的人。缺點是有點固執，不容易被說服。","你像城牆一樣厚實：話不多但很有份量，包容心大。只是太悶的話，別人不知道你在想什麼。"],
+    己:["你是「己土」命，像一塊肥沃的田地。溫和、包容、很會照顧人，默默付出不求回報。","己土的人實際、細心，擅長把亂七八糟的事整理好，是最好的幫手。有時太為別人著想，委屈了自己。","你像後院的菜園：踏實、有耐心，慢慢累積就會有收成。不愛出風頭，但大家都離不開你。"],
+    庚:["你是「庚金」命，像一把刀劍。果斷、講義氣、做事乾脆，最討厭拖拖拉拉。","庚金的人很有俠氣，看到不公平會挺身而出。只是說話直、不修飾，容易無意間得罪人。","你像剛打好的鐵：硬、有原則，越磨越亮。壓力越大反而越能表現，順的時候要小心太自信。"],
+    辛:["你是「辛金」命，像一顆珠寶。外表秀氣、重視形象，品味好，對自己要求也高。","辛金的人心思敏銳、自尊心強，很在意別人怎麼看你。其實你比自己以為的還要堅強。","你像一顆小鑽石：精緻、有光彩，人緣不錯。只是容易鑽牛角尖，放過自己就會更閃亮。"],
+    壬:["你是「壬水」命，像大江大海。聰明、反應快、點子多，喜歡自由，不喜歡被綁住。","壬水的人很會交朋友、懂變通，什麼場面都應付得來。缺點是三分鐘熱度，興趣換得很快。","你像奔流的河：有衝勁、有遠見，適合到處跑、見世面。只是方向太多時，容易分心。"],
+    癸:["你是「癸水」命，像雨水和露珠。溫柔、直覺很準、想像力豐富，常常一眼看穿別人的心思。","癸水的人安靜、細膩，很會默默觀察。內心戲很多，表面上卻看不出來。","你像清晨的霧：神秘、有靈氣，適合需要創意和耐心的事。情緒上來時，記得找人說說話。"]},
+  strong:["你的命格「身強」：本身能量很足，抗壓性高、行動力強。別太固執，聽聽別人意見會更順。","整體來看你屬於「身強」：自己就是自己的靠山，遇到困難不太會倒，適合自己闖、自己當老闆。","你是「身強」的命：底子厚、精神好，只要方向對，拚起來很少輸人。缺點是有時太相信自己。"],
+  weak:["你的命格「身弱」：心思細、懂得借力使力，有貴人幫忙時會發揮得特別好。別一個人扛所有事。","整體來看你屬於「身弱」：比較敏感，容易受環境影響。找對團隊、跟對人，運勢會大大加分。","你是「身弱」的命：不是能力差，而是需要對的環境。多休息、多交好朋友，就是你的開運法。"],
+  lack:{木:"命中木比較少，做事有時缺一點長遠計畫。",火:"命中火比較少，有時提不起勁、熱情不夠。",土:"命中土比較少，有時心定不下來，錢也比較難存。",金:"命中金比較少，做決定時容易猶豫。",水:"命中水比較少，有時想法比較固定、不夠圓融。"},
+  much:{木:"木很旺：成長心強、點子多，但容易一次想做太多事，一件一件來就好。",火:"火很旺：熱情衝勁滿滿，但脾氣也比較急，生氣前先深呼吸三下。",土:"土很旺：很穩、很能扛，但有時太保守，偶爾試試新東西會有驚喜。",金:"金很旺：有原則、標準高，對別人要求也高，放鬆一點會更有人緣。",水:"水很旺：聰明又想得多，但想太多容易失眠，睡前少滑手機。"},
+  cat:{
+    財:{work:["命中「財星」明顯，你對賺錢很有感覺，適合業務、生意、跟數字或買賣有關的工作。","你天生有生意頭腦，看得到別人沒注意到的機會，適合做買賣或理財相關的事。"],
+        money:["錢來得不算慢，但也花得快，記得每個月先存一筆再花。","財運不錯，偏財也有機會，但別貪快，穩穩來才留得住。"],
+        love:["感情上你很實際，喜歡用行動對人好，請吃飯、送禮物是你表達愛的方式。","你重視生活品質，另一半如果跟你有共同目標，感情會走得很長。"]},
+    官:{work:["命中「官星」明顯，你有責任感、守規矩，很適合公家機關、大公司或管理職。","你適合有制度的環境，越有挑戰越能表現，主管會看到你的努力。"],
+        money:["財運是靠努力穩穩累積型，固定薪水最可靠，不太適合賭運氣。","錢不會一下子很多，但只要升遷順，收入會一步一步往上。"],
+        love:["感情上你認真、專一，一旦認定就很負責，只是有時太嚴肅，記得多一點浪漫。","你重視承諾，適合穩定、可靠的對象，閃婚不是你的風格。"]},
+    印:{work:["命中「印星」明顯，你學習力強、有長輩緣，適合教育、研究、文字、醫療或需要專業證照的工作。","你身邊常有貴人，遇到困難總有人拉一把，多請教前輩會少走很多冤枉路。"],
+        money:["你對錢不算執著，比較在乎穩定和安心，存款、保險這類保守的方式最適合你。","財運普通但很穩，靠專業和名聲賺錢，越老越值錢。"],
+        love:["感情上你喜歡被照顧，也很會照顧人，適合成熟、溫柔的另一半。","你重視心靈交流，能跟你聊得來的人，比外表更重要。"]},
+    食傷:{work:["命中「食傷」明顯，你很有才華、表達力好，適合創作、表演、設計、教學或經營自媒體。","你點子多、手很巧，適合做讓人眼睛一亮的事，太死板的工作會讓你悶壞。"],
+        money:["你靠才華賺錢，作品或技能就是你的財庫，多經營自己的專長。","錢的來源比較多元，斜槓有機會成功，但記得要記帳。"],
+        love:["感情上你很浪漫、很會逗人開心，但也容易忽冷忽熱，穩定下來會更幸福。","你喜歡有趣的人，兩個人要常一起玩、一起嘗試新東西，感情才會保鮮。"]},
+    比劫:{work:["命中「比劫」明顯，你朋友多、講義氣，適合團隊合作、業務開發或跟朋友一起創業。","你很有競爭心，有對手時反而跑得更快，適合有業績、有排名的環境。"],
+        money:["錢財容易因為朋友進出，借錢、合夥前先講清楚，白紙黑字最保險。","賺得到也花得掉，請客、幫朋友是常態，記得留一點給自己。"],
+        love:["感情上你很有主見，喜歡平等、互相尊重的關係，太黏的對象會讓你有壓力。","你重朋友也重另一半，兩邊時間要分好，別讓對方吃醋。"]}},
+  year:{
+    比劫:["今年是「比劫年」：身邊競爭變多，朋友也變多。合作前先講清楚，錢不要隨便借出去。","今年身邊很熱鬧，常有朋友找你，也可能遇到競爭對手。保持風度，最後贏的還是你。"],
+    食傷:["今年是「食傷年」：表現的一年！很適合學新技能、展現才華、換個新造型。說話注意分寸。","今年創意滿滿，做喜歡的事特別順手。很適合開始一個小計畫，但別同時開太多坑。"],
+    財:["今年是「財星年」：賺錢機會變多，工作上容易有新案子。也容易花錢，大筆支出前多想三天。","今年財運有起色，偏財也有小驚喜，但投資要量力而為，見好就收。"],
+    官:["今年是「官殺年」：責任變重、壓力比較大，但也是升遷、被看見的好機會。別太操，注意身體。","今年事情會變多，常常被交辦重要任務。撐過去就是升級，記得適時休息。"],
+    印:["今年是「印星年」：貴人運好，適合進修、考證照、搬家或處理文件。長輩的建議要多聽。","今年心比較定，適合讀書、思考、規劃未來。遇到困難時，會有人主動幫你。"]},
+  taisui:{
+    值:"今年你的生肖「值太歲」（本命年），變動比較多，建議到廟裡安個太歲，凡事穩一點。",
+    沖:"今年你的生肖「沖太歲」，容易有搬家、換工作、出遠門的變動。安個太歲、開車小心，變動也可能是轉機。",
+    害:"今年你的生肖「害太歲」，人際上容易有小誤會，說話多想一下，別在背後評論別人。",
+    破:"今年你的生肖「破太歲」，計畫容易被打亂，重要的事多準備一個備案就好。",
+    刑:"今年你的生肖「刑太歲」，要小心口舌是非和小意外，簽約前看仔細。",
+    合:"今年你的生肖跟太歲「相合」，人緣好、貴人多，是很適合衝一波的一年。",
+    無:"今年跟太歲相處和平，沒有沖犯，照著自己的步調走就好。"},
+  verdict:{
+    財:["鐵口直斷：你天生帶點偏財運，小賭可以怡情，大賭千萬別碰。","鐵口直斷：你這輩子不怕沒錢，怕的是錢留不住，學會存錢就是富貴命。"],
+    官:["鐵口直斷：你是越挫越勇的命，今年的辛苦，都是明年的本錢。","鐵口直斷：你天生是當主管的料，只差一個願意相信你的人。"],
+    印:["鐵口直斷：你這輩子不缺貴人，缺的是開口請人幫忙的勇氣。","鐵口直斷：你最該投資的是自己，學到的東西沒人搶得走。"],
+    食傷:["鐵口直斷：你的嘴巴是你的寶，也是你的刀，好話多說，運勢就順。","鐵口直斷：你的才華藏不住，越早讓別人看見，越早翻身。"],
+    比劫:["鐵口直斷：你最大的財富是人脈，好好經營朋友，錢自然會來。","鐵口直斷：你心太軟，常常吃虧，學會說「不」，運勢馬上變好。"],
+    any:["鐵口直斷：你是「先苦後甘」的命，越晚越好，四十歲以後會越活越輕鬆。","鐵口直斷：你是慢熱型的好命，急不得，但該是你的跑不掉。","鐵口直斷：你的福氣在家裡，家和萬事興，對家人好就是對自己好。","鐵口直斷：你命中帶「驛馬」，多出門、多走動，好運在外面等你。","鐵口直斷：你外表看起來很好，心裡其實很累，記得對自己好一點。","鐵口直斷：你這個人，認真起來誰都擋不住，只差一個開始。"]}};
+
+function ftHash(s){ let h=2166136261; for(const ch of s){ h^=ch.codePointAt(0); h=Math.imul(h,16777619)>>>0; } return h; }
+function ftPick(arr,seed,salt){ return arr[ftHash(seed+"|"+salt)%arr.length]; }
+function ftTenGod(dayGan,otherGan){ const a=FT_GAN_EL[dayGan], b=FT_GAN_EL[otherGan], same=(FT_GAN.indexOf(dayGan)%2)===(FT_GAN.indexOf(otherGan)%2);
+  if(a===b) return same?"比肩":"劫財"; if(FT_GEN[a]===b) return same?"食神":"傷官"; if(FT_CTRL[a]===b) return same?"偏財":"正財"; if(FT_CTRL[b]===a) return same?"七殺":"正官"; return same?"偏印":"正印"; }
+const FT_CAT={比肩:"比劫",劫財:"比劫",食神:"食傷",傷官:"食傷",偏財:"財",正財:"財",七殺:"官",正官:"官",偏印:"印",正印:"印"};
+function ftTaiSui(a,b){ // a: the person's year branch, b: this year's branch
+  if(a===b) return "值"; const d=(FT_ZHI.indexOf(a)-FT_ZHI.indexOf(b)+12)%12; if(d===6) return "沖";
+  const pair=(x,y)=>[x+y,y+x].includes(a+b);
+  if([["子","丑"],["寅","亥"],["卯","戌"],["辰","酉"],["巳","申"],["午","未"]].some(p=>pair(...p))) return "合";
+  if([["子","未"],["丑","午"],["寅","巳"],["卯","辰"],["申","亥"],["酉","戌"]].some(p=>pair(...p))) return "害";
+  if([["子","酉"],["卯","午"],["辰","丑"],["未","戌"],["寅","亥"],["巳","申"]].some(p=>pair(...p))) return "破";
+  if(pair("子","卯")||["寅巳","巳申","申寅","丑戌","戌未","未丑"].some(s=>pair(s[0],s[1]))) return "刑";
+  return "無"; }
+
+// y, m, d: 國曆 birth date; hourIdx: 0–11 for 子…亥, or -1 when the hour is unknown. now: Date for this year's luck.
+function ftReading(y,m,d,hourIdx,now){ const H=hourIdx>=0?FT_HOURS[hourIdx][2]:12;
+  const ec=Solar.fromYmdHms(y,m,d,H,0,0).getLunar().getEightChar();
+  const P=[ec.getYear(),ec.getMonth(),ec.getDay(),hourIdx>=0?ec.getTime():null]; const day=P[2][0], me=FT_GAN_EL[day];
+  // five elements: each stem 1, each branch's main element 1, its other hidden stems .3; the month branch counts 1.5 for strength
+  const cnt={木:0,火:0,土:0,金:0,水:0}; let sup=0, tot=0;
+  P.forEach((p,i)=>{ if(!p) return; const g=p[0], z=p[1];
+    const add=(el,w,isDay)=>{ cnt[el]+=w; if(isDay) return; const k=i===1&&w>=1?1.5:1; tot+=w*k; if(el===me||FT_GEN[el]===me) sup+=w*k; };
+    add(FT_GAN_EL[g],1,i===2); add(FT_ZHI_EL[z],1,false); FT_HIDE[z].slice(1).forEach(h=>add(FT_GAN_EL[h],.3,false)); });
+  const strong=sup/tot>=.45;
+  const order=FT_EL.slice().sort((a,b)=>cnt[a]-cnt[b]); const least=order[0], most=order[4];
+  // favourable element: a strong chart wants an outlet (what it produces, controls, or is controlled by), a weak one wants support
+  const cand=strong?[FT_GEN[me],FT_CTRL[me],FT_EL.find(e=>FT_CTRL[e]===me)]:[FT_EL.find(e=>FT_GEN[e]===me),me];
+  const fav=cand.slice().sort((a,b)=>cnt[a]-cnt[b])[0], avoid=FT_EL.find(e=>FT_CTRL[e]===fav);
+  // dominant kind of 十神 among the other stems and the branches' main stems
+  const cats={財:0,官:0,印:0,食傷:0,比劫:0};
+  P.forEach((p,i)=>{ if(!p) return; if(i!==2) cats[FT_CAT[ftTenGod(day,p[0])]]+=1; cats[FT_CAT[ftTenGod(day,FT_HIDE[p[1]][0])]]+=.8; });
+  const cat=Object.keys(cats).sort((a,b)=>cats[b]-cats[a]||a.localeCompare(b))[0];
+  // this year's pillar (the year turns at 立春, like the birth year)
+  const nowL=Solar.fromDate(now||new Date()).getLunar(), yp=nowL.getEightChar().getYear(), yCat=FT_CAT[ftTenGod(day,yp[0])];
+  const ts=ftTaiSui(P[0][1],yp[1]); const seed=P.map(p=>p||"--").join("");
+  const goodMonths=Object.keys(FT_MONTH_EL).filter(k=>FT_MONTH_EL[k]===fav).map(Number), badMonths=Object.keys(FT_MONTH_EL).filter(k=>FT_MONTH_EL[k]===avoid).map(Number);
+  const T=FT_TXT, C=T.cat[cat];
+  const verdict=ftHash(seed+"v")%2?ftPick(T.verdict[cat],seed,"vc"):ftPick(T.verdict.any,seed,"va");
+  return { pillars:P, day, me, animal:FT_ANIMAL[P[0][1]], strong, cnt, least, most, fav, avoid, cat, year:yp, yearAnimal:FT_ANIMAL[yp[1]], taisui:ts,
+    text:{ self:ftPick(T.self[day],seed,"s"), strength:ftPick(strong?T.strong:T.weak,seed,"st"),
+      elements:(cnt[least]<.5?T.lack[least]+"建議"+FT_LUCK[least].act+"，補一點"+least+"氣。":"五行算是有齊，")+T.much[most],
+      work:ftPick(C.work,seed,"w"), money:ftPick(C.money,seed,"m"), love:ftPick(C.love,seed,"l"),
+      year:ftPick(T.year[yCat],seed+yp,"y"), taisui:T.taisui[ts], verdict },
+    luck:{ el:fav, ...FT_LUCK[fav], good:goodMonths, bad:badMonths, avoid } }; }
+
+/* ---- 鐵口直斷 booth in the 廟埕: an old fortune teller behind a red table, facing the middle of the courtyard ----
+   Everything is worked out on the player's own phone; the birth date is kept only in this browser and never sent anywhere. */
+const FTB={x:-13.6,z:HZ+YX+14,av:null};
+const FT_ELC={木:"#4fae6a",火:"#e0533a",土:"#c99a3c",金:"#cfc8b8",水:"#4a8fe0"};
+{ const g=new T.Group(); g.position.set(FTB.x,0,FTB.z); g.rotation.y=Math.PI/2; scene.add(g); // local +z = the courtyard side
+  const red=mat("#a3221a",{roughness:.7}), wood=mat("#4a2a18",{roughness:.8}), goldP=mat("#d6a24a",{metalness:.8,roughness:.3});
+  box(1.9,.08,.85,mat("#7a1a12",{roughness:.6}),0,.84,0,g); box(1.95,.06,.9,goldP,0,.79,0,g);
+  for(const sx of [-.85,.85]) for(const sz of [-.35,.35]) box(.07,.8,.07,wood,sx,.4,sz,g);
+  const cloth=cvs(512,256,(x,w,h)=>{ x.fillStyle="#b3261a"; x.fillRect(0,0,w,h); x.strokeStyle="#e6b864"; x.lineWidth=10; x.strokeRect(10,10,w-20,h-20);
+    x.fillStyle="#ffe7a8"; x.font='700 92px "LXGW WenKai TC","Noto Serif TC",serif'; x.textAlign="center"; x.textBaseline="middle"; x.fillText("鐵口直斷",w/2,h*.42); x.font='600 40px "LXGW WenKai TC",serif'; x.fillText("八字・流年・指點迷津",w/2,h*.78); });
+  mesh(new T.PlaneGeometry(1.86,.74),new T.MeshStandardMaterial({map:cloth,roughness:.8}),0,.44,.43,g);
+  const flagTex=cvs(128,512,(x,w,h)=>{ x.fillStyle="#f6ead0"; x.fillRect(0,0,w,h); x.strokeStyle="#b3261a"; x.lineWidth=12; x.strokeRect(6,6,w-12,h-12);
+    x.fillStyle="#1c120c"; x.font='700 92px "LXGW WenKai TC","Noto Serif TC",serif'; x.textAlign="center"; x.textBaseline="middle"; "鐵口直斷".split("").forEach((c,i)=>x.fillText(c,w/2,70+i*118)); });
+  cyl(.03,.03,3.0,wood,-1.15,1.5,-.55,g,6); mesh(new T.PlaneGeometry(.55,2.0,1,1),new T.MeshStandardMaterial({map:flagTex,side:T.DoubleSide,roughness:.85}),-1.15+.3,1.95,-.55,g);
+  box(.5,.03,.35,mat("#e9dcb8"),-.35,.895,.05,g); box(.5,.035,.04,mat("#7a4a2a"),-.35,.9,.05,g);           // an open almanac
+  cyl(.1,.12,.22,mat("#5a3a1e"),.5,.99,0,g,10); for(let i=0;i<9;i++) cyl(.008,.008,.38,mat("#c9a26a"),.5+Math.cos(i)*.04,1.18,Math.sin(i)*.04,g,4); // 籤筒 of bamboo sticks
+  const lamp=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffcf73"),transparent:true,opacity:.6,blending:T.AdditiveBlending,depthWrite:false})); lamp.position.set(.8,1.25,-.2); lamp.scale.set(1.4,1.4,1); g.add(lamp);
+  box(.5,.45,.5,wood,0,.225,-.95,g);
+  // the plaque text uses the web font; redraw once its glyphs have arrived
+  if(document.fonts) document.fonts.load('700 92px "LXGW WenKai TC"',"鐵口直斷八字流年指點迷津・").then(()=>{ for(const t of [cloth,flagTex]){ const c=t.image, x=c.getContext("2d"); x.clearRect(0,0,c.width,c.height); t._draw(x,c.width,c.height); t.needsUpdate=true; } }).catch(()=>{}); }
+// the master himself: grey robe, round glasses, long white beard
+{ const av=new Avatar([1,0,0,6,0,0,2,0,1,0,0,0,0],{npc:true,x:FTB.x-.95,z:FTB.z}); av.sjBusy=1; av.rotY=Math.PI/2; av.faceGoal=Math.PI/2; av.kneel=0;
+  const H=av.head, ink=mat("#141010",{roughness:.4}), white=mat("#f3efe6",{roughness:.9,side:T.DoubleSide});
+  for(const s of [-1,1]) mk(H,new T.TorusGeometry(.06,.011,6,18),ink,s*.085,.02,.245); mk(H,new T.BoxGeometry(.06,.012,.012),ink,0,.03,.255);
+  for(const [x,len] of [[0,.36],[-.06,.26],[.06,.26]]) mk(H,new T.BoxGeometry(.07,len,.015),white,x,-.12-len/2,.22,-.15);
+  FTB.av=av; }
+station("fortune",[FTB.x+1.9,FTB.z],-Math.PI/2);
+setTimeout(()=>addHit("fortune",FTB.x-.2,0,FTB.z,1.3,2.4),0);
+STATION_LABEL.fortune="鐵口直斷"; STATION_HINT.fortune="走向算命攤";
+function ftTick(dt){ const av=FTB.av; if(!av) return; av.pos.set(FTB.x-.95,FTB.z); av.target.copy(av.pos); av.faceGoal=Math.PI/2; av.update(dt);
+  if(FTB.talkT>0){ FTB.talkT-=dt; av.arms[1].rotation.set(-.9+Math.sin(av.t*5)*.25,0,.3); av.head.rotation.x=Math.sin(av.t*7)*.06; }
+  else { av.arms[0].rotation.set(-.55,0,-.3); av.arms[1].rotation.set(-.55,0,.3); av.head.rotation.x=Math.sin(av.t*.9)*.05; } }
+// mumbling while he works it out: the same squeaky voice idea as the 收驚阿嬤, lower and slower, only you hear it
+function ftMumble(secs){ const a=soundOn?ensureAudio():null, v=sVol(); FTB.talkT=secs; if(!a||v<=0) return; let t=a.currentTime+.05; const end=t+secs, F=[[700,1100],[400,2000],[320,2400],[500,850]];
+  while(t<end){ const d=.09+Math.random()*.14, f0=150+Math.random()*60; const o=a.createOscillator(); o.type="sawtooth"; o.frequency.setValueAtTime(f0,t); o.frequency.linearRampToValueAtTime(f0*(Math.random()<.5?1.25:.82),t+d);
+    const out=a.createGain(); out.gain.setValueAtTime(0,t); out.gain.linearRampToValueAtTime(.2*v,t+.015); out.gain.linearRampToValueAtTime(0,t+d); out.connect(a.destination);
+    for(const fr of F[(Math.random()*F.length)|0]){ const bp=a.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=fr; bp.Q.value=6; o.connect(bp).connect(out); } o.start(t); o.stop(t+d+.05); t+=d+.03+Math.random()*.08; } }
+let ftLibP=null;
+function ftLib(){ if(window.Solar&&window.Solar.fromYmdHms) return Promise.resolve(); if(!ftLibP) ftLibP=new Promise((res,rej)=>{ const s=document.createElement("script"); s.src="lunar.js"; s.onload=()=>res(); s.onerror=()=>{ ftLibP=null; rej(); }; document.head.appendChild(s); }); return ftLibP; }
+function openFortune(){ const saved=load("mz.bazi",null), today=new Date().toISOString().slice(0,10);
+  openSheet("fortune","鐵口直斷",`<p class="lead">報上你的生辰，老師傅幫你排八字、講白話。</p>
+  <div class="ft-form"><label class="field"><span class="group-label">出生日期（國曆）</span><input type="date" id="ftDate" min="1900-01-01" max="${today}" value="${esc(saved?saved.d:"")}"></label>
+  <label class="field"><span class="group-label">出生時辰</span><select id="ftHour"><option value="-1">不知道時辰</option>${FT_HOURS.map((h,i)=>`<option value="${i}" ${saved&&saved.h===i?"selected":""}>${h[0]}（${h[1]}）</option>`).join("")}</select></label></div>
+  <button class="primary" data-act="ftGo" style="width:100%">請老師傅開示</button>
+  <p class="note">請填出生當時的鐘錶時間。晚上 11 點後算子時，以當天計。不知道時辰就不排時柱，其他照算。<br>生日只存在你這支手機，不會上傳。</p><div id="ftOut"></div>`);
+  if(saved&&saved.d) HANDLERS.ftGo(null,null,true); }
+HANDLERS.ftGo=async(v,b,quiet)=>{ const ds=(($("#ftDate")||{}).value||""), h=+(($("#ftHour")||{}).value??-1); const out=$("#ftOut"); if(!out) return;
+  const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(ds); if(!m){ toast("先選出生日期"); return; } const y=+m[1], mo=+m[2], d=+m[3];
+  if(y<1900||new Date(y,mo-1,d)>new Date()){ toast("日期不太對，再確認一下"); return; }
+  out.innerHTML=`<p class="lead ft-wait">老師傅掐指一算……</p>`; if(!quiet){ ftMumble(2.6); FTB.av&&FTB.av.say("嗯…讓我看看…","#ffe2a0",2.6); }
+  try{ await ftLib(); }catch(e){ out.innerHTML=`<p class="lead">萬年曆沒有載入成功，請稍後再試一次。</p>`; return; }
+  await new Promise(r=>setTimeout(r,quiet?0:2400)); save("mz.bazi",{d:ds,h});
+  let r; try{ r=ftReading(y,mo,d,h,new Date()); }catch(e){ out.innerHTML=`<p class="lead">這個日期排不出來，請換個日期試試。</p>`; return; }
+  if(!quiet&&FTB.av){ FTB.av.say("鐵口直斷！","#ffe2a0",3); ftMumble(1.4); }
+  const lab=["年柱","月柱","日柱","時柱"], tg=(g,i)=>i===2?"日主（你）":ftTenGod(r.day,g);
+  const pill=r.pillars.map((p,i)=>p?`<div class="ft-p"><small>${lab[i]}</small><b style="color:${FT_ELC[FT_GAN_EL[p[0]]]}">${p[0]}</b><b style="color:${FT_ELC[FT_ZHI_EL[p[1]]]}">${p[1]}</b><em>${tg(p[0],i)}</em></div>`:`<div class="ft-p ft-none"><small>${lab[i]}</small><b>？</b><b>？</b><em>時辰不詳</em></div>`).join("");
+  const max=Math.max(...FT_EL.map(e=>r.cnt[e]),1), bars=FT_EL.map(e=>`<div class="ft-bar"><span>${e}</span><i><u style="width:${Math.round(r.cnt[e]/max*100)}%;background:${FT_ELC[e]}"></u></i><small>${r.cnt[e].toFixed(1)}</small></div>`).join("");
+  const T=r.text, L=r.luck, mon=a=>a.length?a.map(n=>n+"月").join("、"):"沒有特別要避開的";
+  out.innerHTML=`<div class="ft-card"><div class="ft-head">命盤<small>照萬年曆算出來的，這部分是固定的</small></div>
+    <div class="ft-pillars">${pill}</div>
+    <p class="ft-fact">日主是「${r.day}」，屬${r.me}（${FT_GAN.indexOf(r.day)%2?"陰":"陽"}${r.me}）；生肖屬${r.animal}。五行數量（藏干算 0.3）：</p><div class="ft-bars">${bars}</div></div>
+  <div class="ft-card"><div class="ft-head">老師傅白話<small>傳統命理的說法，看看就好</small></div>
+    <h4>你是怎樣的人</h4><p>${T.self}</p><p>${T.strength}</p><p>${T.elements}</p>
+    <h4>工作</h4><p>${T.work}</p><h4>錢財</h4><p>${T.money}</p><h4>感情</h4><p>${T.love}</p>
+    <h4>今年（${r.year}${r.yearAnimal}年）</h4><p>${T.year}</p><p>${T.taisui}</p></div>
+  <div class="ft-card"><div class="ft-head">開運小建議</div>
+    <div class="ft-luck"><div><small>幸運色</small><b>${L.color}</b></div><div><small>幸運方位</small><b>${L.dir}</b></div><div><small>幸運數字</small><b>${L.num}</b></div><div><small>補運</small><b>${L.el}</b></div></div>
+    <p>${L.act}，對你特別有幫助。</p><p>今年比較順的月份：${mon(L.good)}；要多留意的月份：${mon(L.bad)}（國曆，大約）。</p></div>
+  <div class="ft-verdict">${T.verdict}</div>
+  <p class="note">以上依子平八字的基本規則簡化成白話，屬於傳統文化的娛樂參考，不是預言；人生怎麼走，還是看你自己。</p>
+  <button class="secondary" data-act="ftAgain" style="width:100%">幫別人算</button>`;
+  if(!quiet) out.scrollIntoView({behavior:"smooth",block:"start"}); };
+HANDLERS.ftAgain=()=>{ try{ localStorage.removeItem("mz.bazi"); }catch(e){} openFortune(); };
+
 /* ================= 歌仔戲台 (event) ================= */
 // The chair puts a 歌仔戲 stage out between the 天公爐 and the Guanyin fountain, facing the temple. Three pairs of performers
 // take turns forever: a pair comes on, performs (亮相, 雲手, 圓場, 水袖, 對唱), goes back behind the backdrop and vanishes, and
@@ -3366,7 +3584,7 @@ function tick(){ if(gameAsleep) return; const dt=Math.min(.05,clock.getDelta());
     r1.scale.setScalar(k); r2.scale.setScalar(1+((tapT*1.2)%1)*.8); r2.material.opacity=.7*(1-((tapT*1.2)%1));
     if(arrived||tapT>12){ const f=Math.max(0,r1.material.opacity-dt*3); r1.material.opacity=f; dot.material.opacity=f; if(f<=0){ tapMark.visible=false; r1.material.opacity=.9; dot.material.opacity=.9; } } }
   npcs.forEach(n=>{ n.update(dt); n.next-=dt; if(n.next<0){ n.next=rand(8,24); n.bow(); } });
-  remotes.forEach(r=>r.update(dt)); sjUpdate(dt); fwUpdate(dt); updateSkyLanterns(dt); renderSLBtn(); opTick(dt);
+  remotes.forEach(r=>r.update(dt)); sjUpdate(dt); fwUpdate(dt); updateSkyLanterns(dt); renderSLBtn(); opTick(dt); ftTick(dt);
   if(room&&dirty&&performance.now()-lastSend>((keys.size||joy.on)?800:SEND_GAP)) sendPresence();
   updateFlyers(dt); updateFu(dt); updateCats(dt); updateWater(dt);
   { let best=null, bd=2.6; if(!sheetKind&&!customizing&&!pendingStation&&meAv.seat<0&&!(meAv.danceT>0)) for(const k in stations){ if(k==="cats"){ const dc=Math.hypot(meAv.pos.x-CATS.c.x,meAv.pos.y-CATS.c.z); if(dc<3.6){ best=k; bd=0; } continue; } const d=meAv.pos.distanceTo(stations[k].approach); if(d<bd){ bd=d; best=k; } }
