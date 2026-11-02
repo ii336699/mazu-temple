@@ -1869,7 +1869,7 @@ class Avatar{
     this.thread=new T.Mesh(new T.TorusGeometry(.055,.012,6,16),mat("#e0202a",{roughness:.5})); this.thread.rotation.x=Math.PI/2; this.thread.position.y=-.23; this.arms[0].add(this.thread); this.thread.visible=!!this.hasThread;
     refineAvatar(this,l,out,acc);
     window.TempleQuest?.decorateAvatar(this);
-    this.applyPose(); }
+    this.applyPose(); if(this.autoBake) try{ bakeAvatar(this); }catch(e){} }
   setThread(v){ this.hasThread=!!v; if(this.thread) this.thread.visible=this.hasThread; }
   setAmulet(v){ this.hasAmulet=!!v; if(this.amulet) this.amulet.visible=this.hasAmulet; }
   setSp(v){ v=!!v; if(v===!!this.sp) return; this.sp=v; this.setLook(this.look); this.setName(this.lastNameArg); }
@@ -2120,7 +2120,7 @@ function botFps(dt){ if(document.hidden||dt>.5) return; BOT.ema+=(dt-BOT.ema)*.0
   else { BOT.slow=0; BOT.fast=0; } }
 function sitterLimit(){ return !showNpc?0:Q.lite?3:Q.low?6:12; }       // the classic ones on the cushions
 function hereCount(){ return FAKE_CROWD?(fakeSplit(fakeTotal(Date.now()))[HALLS.current()]||0):16; }
-function botWant(){ const lim=botLimit(); if(!lim) return 0; return Math.max(Math.min(2,lim),Math.min(lim,Math.round(hereCount()*.45))); }
+function botWant(){ const lim=botLimit(); if(!lim) return 0; const room=Math.max(0,lim-remotes.size); return Math.min(room,Math.max(2,Math.round(hereCount()*.45))); }
 function sitterWant(){ const lim=sitterLimit(); if(!lim) return 0; return Math.max(Math.min(1,lim),Math.min(lim,Math.round(hereCount()/5))); }
 function botSpot(){ for(let k=0;k<30;k++){ const x=rand(-15,15), z=rand(HZ+2,HZ+YX+16); if(walkable(x,z)) return [x,z]; } return [0,HZ+6]; }
 function hallSpot(){ for(let k=0;k<30;k++){ const x=rand(-10,10), z=rand(-6,HZ-1.5); if(walkable(x,z)) return [x,z]; } return [0,4]; }
@@ -2176,7 +2176,7 @@ function botPose(n){ if(n.anim==="shake"){ const k=Math.sin(n.st*13)*.16, rest=(
 const BOT_VC=new T.MeshStandardMaterial({vertexColors:true,roughness:.7,metalness:.05}), BOT_VC2=new T.MeshStandardMaterial({vertexColors:true,roughness:.7,metalness:.05,side:T.DoubleSide});
 function bakeAvatar(av){ const bones=new Set([av.root,av.parts,av.hips,av.torso,av.head,...av.legs,...av.arms].filter(Boolean)), keep=new Set([av.incense,av.amulet,av.thread,av.shoulderPet].filter(Boolean));
   av.root.updateMatrixWorld(true); const buckets=new Map(), inv=new T.Matrix4(), mtx=new T.Matrix4(), c=new T.Color();
-  av.root.traverse(o=>{ if(!o.isMesh||!o.visible||Array.isArray(o.material)) return; const m=o.material; if(m.transparent||m.map||m.emissiveMap||m.alphaMap||!m.color||o.geometry.morphAttributes.position) return;
+  av.root.traverse(o=>{ if(!o.isMesh||!o.visible||Array.isArray(o.material)) return; const m=o.material; if(m===BOT_VC||m===BOT_VC2||m.transparent||m.map||m.emissiveMap||m.alphaMap||!m.color||o.geometry.morphAttributes.position) return;
     for(let q=o;q&&q!==av.root;q=q.parent) if(keep.has(q)) return;
     let b=o.parent; while(b&&!bones.has(b)) b=b.parent; if(!b||!o.geometry.attributes.position) return;
     const k=b.uuid+(m.side===T.DoubleSide?"|2":"|1"); if(!buckets.has(k)) buckets.set(k,{b,ds:m.side===T.DoubleSide,list:[]}); buckets.get(k).list.push(o); });
@@ -2234,7 +2234,7 @@ function cleanName(n){ const t=String(n||"").replace(/[\u0000-\u001f​-‏‪-�
 function syncPeers(peers){ const seen=new Set();
   for(const p of peers){ if(p.sameTab||p.kind!=="viewer") continue; const pr=p.presence||{}; if(pr.v!==1||pr.u===0) continue; seen.add(p.peer);
     let av=remotes.get(p.peer); const look=sanitizeLook(pr.l,pr.q===1); if(av) av.setSp(pr.q===1);
-    if(!av){ av=new Avatar(look,{sp:pr.q===1,x:num(pr.x,-19,19,0),z:num(pr.z,-10,HZ+YX+18,HZ+12)}); av.lastBow=pr.b; av.lastJ=Array.isArray(pr.j)?pr.j[1]:""; av.lastF=pr.f; av.offerGroup=new T.Group(); scene.add(av.offerGroup); remotes.set(p.peer,av); if(customizing) av.root.visible=false; }
+    if(!av){ av=new Avatar(look,{sp:pr.q===1,x:num(pr.x,-19,19,0),z:num(pr.z,-10,HZ+YX+18,HZ+12)}); av.autoBake=true; try{ bakeAvatar(av); }catch(e){} av.lastBow=pr.b; av.lastJ=Array.isArray(pr.j)?pr.j[1]:""; av.lastF=pr.f; av.offerGroup=new T.Group(); scene.add(av.offerGroup); remotes.set(p.peer,av); if(customizing) av.root.visible=false; }
     else if(look.join()!==av.look.join()) av.setLook(look);
     const pno=Number.isInteger(pr.k)&&pr.k>0&&pr.k<1e8?pr.k:0; let nm=cleanName(pr.n)||(pno?`香客${pno}`:"香客"); if(pr.q!==1&&[SP_NAME,SP_OLD].includes(nm)) nm=pno?`香客${pno}`:"香客"; if(nm!==av.name){ av.name=nm; av.setName(nm); }
     av.setSp(pr.q===1); if(pr.q===1) av.name=SP_NAME;
