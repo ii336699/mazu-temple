@@ -2105,12 +2105,16 @@ function fakeTotal(ts){ const a=autoCrowd(ts); if(!CROWD.at) return a; const k=M
 // every phone gets the same numbers from the clock (no server traffic)
 function crowdWobble(ts){ const step=6000; let i=Math.floor(ts/step); for(let k=0;k<40&&fakeRand(i*13+5)>=.32;k++) i--;
   const v=Math.round((fakeNoise(i*step,5*60e3,3)*2-1)*7+(fakeRand(i*29+11)-.5)*5.5); return Math.max(-10,Math.min(10,v)); }
-async function crowdFetch(){ try{ const r=await fetch("/crowd",{cache:"no-store"}); if(!r.ok) return; const j=await r.json(); if(j&&typeof j.at==="number") CROWD={target:j.target??null,from:j.from??null,at:j.at}; }catch(e){} }
+async function crowdFetch(){ try{ const r=await fetch("/crowd",{cache:"no-store"}); if(!r.ok) return; const j=await r.json(); if(j&&typeof j.at==="number"&&j.at>=(CROWD.at||0)) CROWD={target:j.target??null,from:j.from??null,at:j.at}; }catch(e){} }
 const FAKE_W=[.34,.2,.14,.1,.07,.05,.04,.03,.02,.01]; // how the crowd spreads over 正殿…十殿
 // halls fill in order: a hall takes 86–94 people before anyone shows up in the next one
 function fakeSplit(T){ const ts=Date.now(), out=[]; let left=Math.max(0,T); for(let i=0;i<FAKE_W.length;i++){ const cap=Math.round(86+8*fakeNoise(ts,20*60e3,10+i)), v=Math.min(left,cap); out.push(Math.round(v)); left-=v; } return out; }
 function realCounts(){ const c=(HALLS.counts||[]).slice(); const cur=HALLS.current(); c[cur]=Math.max(c[cur]||0,1+remotes.size); return c; }
-function hallShown(i,ts){ const real=realCounts()[i]||0; if(!FAKE_CROWD) return real; return Math.max(real,Math.min(Math.max(HALL_CAP,100)-4,real+fakeSplit(fakeTotal(ts))[i])); } // shown out of 100 per hall even in the 20-per-hall fallback
+// real players take the place of demo ones: the target is the whole temple's count, real players included, so every real
+// player who comes in means one demo worshipper fewer (if there are more real players than the target, only they count)
+function fakeHalls(ts){ const real=realCounts(), R=real.reduce((a,b)=>a+(b||0),0); let left=Math.max(0,fakeTotal(ts)-R); const out=[];
+  for(let i=0;i<FAKE_W.length;i++){ const cap=Math.round(86+8*fakeNoise(ts,20*60e3,10+i)), v=Math.max(0,Math.min(left,cap-(real[i]||0))); out.push(Math.round(v)); left-=v; } return out; }
+function hallShown(i,ts){ const real=realCounts()[i]||0; if(!FAKE_CROWD) return real; return real+(fakeHalls(ts)[i]||0); }
 function shownTotal(){ const ts=Date.now(); let t=0; for(let i=0;i<HALL_NAMES.length;i++) t+=hallShown(i,ts); return t; }
 
 // ---- demo worshippers: they behave like real visitors and take their time. The favourite is drawing a 籤 (shake the
@@ -2129,7 +2133,7 @@ function botFps(dt){ if(document.hidden||dt>.5) return; BOT.ema+=(dt-BOT.ema)*.0
   else if(BOT.ema<1/35){ BOT.fast+=dt; BOT.slow=0; if(BOT.fast>25&&BOT.cap<botMax()){ BOT.cap=Math.min(botMax(),BOT.cap+2); BOT.fast=0; } }
   else { BOT.slow=0; BOT.fast=0; } }
 function sitterLimit(){ return !showNpc?0:Q.lite?3:Q.low?6:12; }       // the classic ones on the cushions
-function hereCount(){ return FAKE_CROWD?(fakeSplit(fakeTotal(Date.now()))[HALLS.current()]||0):16; }
+function hereCount(){ return FAKE_CROWD?(fakeHalls(Date.now())[HALLS.current()]||0):16; }
 function botWant(){ const lim=botLimit(); if(!lim) return 0; const room=Math.max(0,lim-remotes.size); return Math.min(room,Math.max(2,hereCount())); }
 function sitterWant(){ const lim=sitterLimit(); if(!lim) return 0; return Math.max(Math.min(1,lim),Math.min(lim,Math.round(hereCount()/5))); }
 function botSpot(){ for(let k=0;k<30;k++){ const x=rand(-15,15), z=rand(HZ+2,HZ+YX+16); if(walkable(x,z)) return [x,z]; } return [0,HZ+6]; }
@@ -2284,10 +2288,14 @@ function botNear(n,r){ return Math.hypot(n.pos.x-meAv.pos.x,n.pos.y-meAv.pos.y)<
 function botTick(dt){ const now=performance.now(); botFps(dt);
   // 隱藏其他玩家: checked every frame, so nobody can pop back into view (only the nameless kneeling demo worshippers stay)
   if(!customizing){ for(const n of npcs){ const v=othersShown||!!n.classic; if(n.root.visible!==v) n.root.visible=v; } remotes.forEach(r=>{ if(r.root.visible!==othersShown) r.root.visible=othersShown; }); }
-  if(now>BOT.nextAdjust){ const live=npcs.filter(n=>!n.leaving&&!n.classic), want=botWant(); BOT.nextAdjust=now+(Math.abs(live.length-want)>4?rand(1500,4000):rand(15000,40000));
+  // a big change in how many should be here (the chair set a new number, real players came in) is acted on within a second
+  if(now>(BOT.chk||0)){ BOT.chk=now+1000; let live=0; for(const n of npcs) if(!n.leaving&&!n.classic) live++; if(Math.abs(live-botWant())>4&&BOT.nextAdjust>now+4000) BOT.nextAdjust=now+rand(500,1500); }
+  if(now>BOT.nextAdjust){ const live=npcs.filter(n=>!n.leaving&&!n.classic), want=botWant(); BOT.nextAdjust=now+(Math.abs(live.length-want)>10?rand(600,1500):Math.abs(live.length-want)>4?rand(1500,4000):rand(15000,40000));
     if(live.length<want-6){ for(let k=Math.min(4,want-live.length);k>0;k--) placeBot(); BOT.nextAdjust=now+rand(800,1600); }
     else if(live.length<want){ const a=makeBot([(Math.random()<.5?-1:1)*16.5,rand(HZ+3,HZ+YX+15)]); a.role=pickRole(); }              // someone walks in from the side of the courtyard
-    else if(live.length>want){ const n=live[(Math.random()*live.length)|0]; n.pauseT=0; n.saved=null; n.leaving=true; n.hold=0; n.danceT=0; n.anim=null; n.steps=[]; botStart(n,{leave:[(n.pos.x<0?-1:1)*16.5,Math.max(HZ+3,Math.min(HZ+YX+15,n.pos.y))]}); } } // someone heads home
+    else if(live.length>want){ for(let k=Math.min(live.length-want,live.length-want>4?1+((Math.random()*4)|0):1);k>0;k--){ const j=(Math.random()*live.length)|0, n=live.splice(j,1)[0]; if(!n) break;
+        if(Math.random()<.65){ n.sjq=null; n.dispose(); npcs.splice(npcs.indexOf(n),1); continue; }   // logs off: gone at once, like a player closing the game
+        n.pauseT=0; n.saved=null; n.sjq=null; n.leaving=true; n.hold=0; n.danceT=0; n.anim=null; n.steps=[]; botStart(n,{leave:[(n.pos.x<0?-1:1)*16.5,Math.max(HZ+3,Math.min(HZ+YX+15,n.pos.y))]}); } } } // or heads home on foot
   if(FW.on) for(const n of npcs){ if(n.classic||n.leaving||n.sjq||n.fwSeed===FW.seed) continue; n.fwSeed=FW.seed; if(n.role==="afk"&&Math.random()<.7) continue; if(Math.random()<.2) continue;
     if(n.act>=0) stopAct(n); n.anim=null; n.danceT=0; n.hold=0; n.seat=-1; n.goalSeat=false; n.pauseT=0; n.saved=null; const out=n.pos.y<HZ+1.5, [x,z]=botSpot();
     n.steps=out?[{go:[x,Math.min(z,HZ+YX+8)]},{watch:1}]:[{watch:1}]; if(!out){ n.target.copy(n.pos); n.path=[]; } n.step=null; }
