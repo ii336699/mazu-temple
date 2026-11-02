@@ -1075,6 +1075,7 @@ const furnace=new T.Group(); furnace.position.set(FX,0,FZ); scene.add(furnace); 
 // 金爐 model (jinlu.glb): about 3.6 m tall, its fire door turned to face the courtyard; FURN_TOP is where the chimney ends
 const FURN_H=3.6, FURN_TOP=FURN_H, FURN_FRONT=1.25;
 loadModel("jinlu",m=>{ const w=fitModel(m,FURN_H); w.rotation.y=Math.PI/2; furnace.add(w); setAct(w,"burn"); });
+setTimeout(()=>addHit("burn",FX,0,FZ,1.35,FURN_H),0);
 station("burn",[FX+FURN_FRONT+.85,FZ],-Math.PI/2);
 const furnaceGlow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ff7a30"),transparent:true,blending:T.AdditiveBlending,depthWrite:false}));
 furnaceGlow.position.set(FX+FURN_FRONT,1.1,FZ); furnaceGlow.scale.set(1.6,1.6,1); scene.add(furnaceGlow);
@@ -1310,6 +1311,7 @@ const TG={x:0,z:21.5};
 { const g=new T.Group(); g.position.set(TG.x,0,TG.z); scene.add(g); g.userData.noMerge=1; TG.g=g;
   // 天公爐 model (tiangong.glb), 2.6 m tall, the 天公爐 plaque turned toward the person praying; incense goes in the bowl (rim ≈ 1.27 m)
   loadModel("tiangong",m=>{ const w=fitModel(m,2.6); w.rotation.y=Math.PI; g.add(w); setAct(w,"tiangong"); });
+  setTimeout(()=>addHit("tiangong",TG.x,0,TG.z,1.1,2.6),0);
   const cz=new T.Group(); cz.position.y=0; g.add(cz);
   const inc=new T.Group(); inc.userData.noMerge=1; cz.add(inc); CENSERS.tiangong={inc,r:.45,y:1.22,k:1.2,g:cz}; }
 station("tiangong",[TG.x,TG.z-1.7],0);
@@ -2095,7 +2097,8 @@ function autoCrowd(ts){ const tw=new Date(ts+8*3600e3), h=tw.getUTCHours()+tw.ge
   const night=h>=3&&h<5?1:h>=2&&h<3?sm(h-2):h>=5&&h<6?1-sm(h-5):0, slow=fakeNoise(ts,30*60e3,1), fast=fakeNoise(ts,3*60e3,2)-.5;
   const lo=120*(1-night)+50*night, hi=200*(1-night)+70*night; return Math.round(Math.max(lo,Math.min(hi,lo+(hi-lo)*slow+fast*6))); }
 let CROWD={target:null,from:null,at:0}; // set by the chair: ease from `from` to `target` (or back to automatic when target is null)
-function fakeTotal(ts){ const a=autoCrowd(ts); if(!CROWD.at) return a; const k=Math.max(0,Math.min(1,(ts-CROWD.at)/1800e3)), s=k*k*(3-2*k), from=CROWD.from==null?a:CROWD.from;
+const CROWD_RAMP=60e3; // how long the count takes to reach the chair's target (1 minute)
+function fakeTotal(ts){ const a=autoCrowd(ts); if(!CROWD.at) return a; const k=Math.max(0,Math.min(1,(ts-CROWD.at)/CROWD_RAMP)), s=k*k*(3-2*k), from=CROWD.from==null?a:CROWD.from;
   if(CROWD.target==null) return Math.round(from+(a-from)*s);
   const wob=((fakeNoise(ts,8*60e3,3)-.5)*24+(fakeNoise(ts,2*60e3,4)-.5)*6)*s; return Math.max(0,Math.round(from+(CROWD.target-from)*s+wob)); }
 async function crowdFetch(){ try{ const r=await fetch("/crowd",{cache:"no-store"}); if(!r.ok) return; const j=await r.json(); if(j&&typeof j.at==="number") CROWD={target:j.target??null,from:j.from??null,at:j.at}; }catch(e){} }
@@ -2582,7 +2585,7 @@ function openChair(){ if(!me.sp) return;
   <div class="ct-group"><span class="group-label">訊息</span><div class="ct-grid">${ctTile("msgsOpen","📬","香客留言")}${ctTile("annOpen","📢","全服公告","跑馬燈")}${ctTile("boardOpen","📋","公告欄",board.text?"有公告":"空白")}</div></div>
   <div class="ct-group"><span class="group-label">活動</span><div class="ct-grid">${ctTile("askFw","🎆","全服煙火","3 分鐘")}${ctTile("askSL","🏮","50 盞天燈")}${ctTile("toggleStage","🎭",OP.on?"收回戲台":"擺出戲台",OP.on?"演出中":"")}</div></div>
   <div class="ct-group"><span class="group-label">線上人數</span><div class="crowd-row"><span class="crowd-now"><span>全廟 <b>${shownTotal()}</b> 人</span><small>這殿 ${hallShown(HALLS.current(),Date.now())} 人・${CROWD.at&&CROWD.target!=null?`目標 ${CROWD.target}`:"自動"}</small></span><input id="crowdIn" type="text" inputmode="numeric" maxlength="3" placeholder="目標"><button class="chip" data-act="crowdSet">設定</button><button class="chip" data-act="crowdAuto">自動</button></div>
-    <p class="real-count" id="realCount">真實在線：讀取中…</p><p class="note">目標是全廟人數，會依序分到各殿（前一殿快滿才開下一殿）。約半小時慢慢變到目標，之後在上下 15 人內浮動。「自動」回到依時段變化（凌晨少、白天多）。</p></div>
+    <p class="real-count" id="realCount">真實在線：讀取中…</p><p class="note">目標是全廟人數，會依序分到各殿（前一殿快滿才開下一殿）。約 1 分鐘慢慢變到目標，之後在上下 15 人內浮動。「自動」回到依時段變化（凌晨少、白天多）。</p></div>
   <div class="ct-group"><span class="group-label">主委自己</span><div class="ct-grid">${ctTile("chairHide",chairHidden?"👁":"🫥",chairHidden?"解除隱形":"隱形",chairHidden?"隱形中":"")}${ctTile("chairReset","🔄","重置今日","測試用")}</div></div>`);
   const k=$("#readKey"); const keep=()=>{ save("mz.rk",k.value.trim()); }; k.addEventListener("input",keep); k.addEventListener("change",keep); realStats(); }
 // real players only (no demo worshippers, no added numbers), straight from the server's hall counts
@@ -2599,7 +2602,7 @@ HANDLERS.crowdSet=async()=>{ const v=(($("#crowdIn")||{}).value||"").trim(); if(
 HANDLERS.crowdAuto=()=>crowdSend(null);
 async function crowdSend(target){ const key=ck(); if(!key){ toast("請先輸入留言讀取密碼"); return; }
   try{ const r=await fetch("/crowd",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({target,from:fakeTotal(Date.now())})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
-    if(j.ok){ save("mz.rk",key); CROWD={target:j.target,from:j.from,at:j.at}; toast(target==null?"人數改回自動，半小時內慢慢回到時段人數":`人數會在半小時內慢慢變成約 ${target} 人`,3400); openChair(); }
+    if(j.ok){ save("mz.rk",key); CROWD={target:j.target,from:j.from,at:j.at}; toast(target==null?"人數改回自動，1 分鐘內慢慢回到時段人數":`人數會在 1 分鐘內慢慢變成約 ${target} 人`,3400); openChair(); }
     else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":j.unset?"伺服器讀不到密碼設定（不是你打錯）":"密碼不對，沒有變更",3200); }catch(e){ toast("沒有變更，請稍後再試"); } }
 
 // ---- 公告: the chair's notice board. The button glows yellow until this device has opened the newest version, then turns grey ----
