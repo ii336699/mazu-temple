@@ -2244,16 +2244,18 @@ function makeBot(at){ const [x,z]=at||botSpot(); const a=new Avatar(randomLook()
 // someone in chat says let's dance: a few people nearby (and some from further off) walk over and dance next to them;
 // next to the three cats it means joining the cats' blessing dance
 const DANCE_RE=/跳舞|來跳|一起跳|跳起來|跳一下|尬舞|dance/i; let lastDanceCall=0;
-function botHear(av,text){ if(!DANCE_RE.test(text)||performance.now()-lastDanceCall<15000||!av||!av.pos) return; lastDanceCall=performance.now();
+// how people answer a dance call (seconds): the first one sets off after FIRST, then one at a time, GAP apart; at most MAX come
+const DANCE_CALL={FIRST:[5,9], GAP:[4,12], MAX:8, COOLDOWN:15};
+function botHear(av,text){ if(!DANCE_RE.test(text)||performance.now()-lastDanceCall<DANCE_CALL.COOLDOWN*1000||!av||!av.pos) return; lastDanceCall=performance.now();
   const cats=stations.cats&&Math.hypot(av.pos.x-CATS.c.x,av.pos.y-CATS.c.z)<4.5;
   const pool=npcs.filter(n=>!n.classic&&!n.leaving&&!n.sjq&&!(n.step&&n.step.watch)&&n!==av&&(n.role!=="afk"||Math.random()<.1)).sort((a,b)=>a.pos.distanceTo(av.pos)-b.pos.distanceTo(av.pos));
-  const near=pool.slice(0,10).filter(()=>Math.random()<.55), far=pool.slice(10).filter(()=>Math.random()<.06), go=[...near,...far].slice(0,8);
+  const near=pool.slice(0,10).filter(()=>Math.random()<.55), far=pool.slice(10).filter(()=>Math.random()<.06), go=[...near,...far].slice(0,DANCE_CALL.MAX); let when=rand(...DANCE_CALL.FIRST)*1000; const delays=go.map((_,k)=>{ const d=when; when+=rand(...DANCE_CALL.GAP)*1000; return d; });
   go.forEach((n,k)=>setTimeout(()=>{ if(!npcs.includes(n)||n.leaving) return; if(n.act>=0) stopAct(n); n.anim=null; n.danceT=0; n.seat=-1; n.goalSeat=false; n.sjq=null;
     if(Math.random()<.3){ const ph=["走啊","來了來了","我也要跳","💃","跳起來！","衝","好啊好啊"][(Math.random()*7)|0]; n.say(ph,"#f7ecd6",3); if(Math.random()<.5) logChat(n.name,ph,false); }
     if(cats) n.steps=planOne("cats",[{dance:rand(20,45)}]);
     else { let x=av.pos.x, z=av.pos.y; for(let t=0;t<12;t++){ const a=Math.random()*Math.PI*2, d=rand(.9,2.6), X=av.pos.x+Math.cos(a)*d, Z=av.pos.y+Math.sin(a)*d; if(walkable(X,Z)){ x=X; z=Z; break; } }
       n.steps=[{go:[x,z]},{face:Math.atan2(av.pos.x-x,av.pos.y-z)},{act:5+((Math.random()*4)|0)},{act:5+((Math.random()*4)|0)}]; }
-    n.steps.push({look:rand(3,8)}); n.step=null; },rand(1200,6500)+k*rand(200,900))); }
+    n.steps.push({look:rand(3,8)}); n.step=null; },delays[k])); }
 function botNear(n,r){ return Math.hypot(n.pos.x-meAv.pos.x,n.pos.y-meAv.pos.y)<r; }
 function botTick(dt){ const now=performance.now(); botFps(dt);
   if(now>BOT.nextAdjust){ const live=npcs.filter(n=>!n.leaving&&!n.classic), want=botWant(); BOT.nextAdjust=now+(Math.abs(live.length-want)>4?rand(1500,4000):rand(15000,40000));
