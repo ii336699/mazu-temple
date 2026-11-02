@@ -235,6 +235,20 @@ body.hideui .joy,body.customizing .joy{display:none}
 .bank-thanks{margin:0;font-family:var(--f-display);font-size:16px;color:#ffe2a0;letter-spacing:.08em}
 .real-divider{margin:10px 0 0;text-align:center;color:var(--gold);font-family:var(--f-display);font-size:16px;letter-spacing:.12em}
 /* 鐵口直斷 */
+.ft-in{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:8px}
+.ft-box{display:flex;align-items:center;gap:4px;min-width:0}
+.ft-box input{width:100%;min-width:0;box-sizing:border-box;text-align:center;background:rgba(255,255,255,.07);border:1px solid var(--gold-soft);border-radius:10px;padding:11px 4px;font:inherit;font-size:18px;color:var(--ink);font-variant-numeric:tabular-nums;user-select:text;-webkit-user-select:text}
+.ft-box input:focus{border-color:var(--gold);outline:none}
+.ft-box span{flex:none;font-family:var(--f-display);font-size:17px;color:var(--gold)}
+.ft-warn{margin:12px 0 0;padding:10px 12px;border-radius:10px;background:rgba(224,32,42,.14);border:1px solid #e0202a;color:#ff5a4f;font-weight:700;font-size:15px;text-align:center}
+.ft-today{display:grid;grid-template-columns:repeat(2,1fr);gap:6px 12px;margin:10px 0 4px}
+.ft-today div{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:14px}
+.ft-today small{color:var(--muted);font-size:13px}
+.ft-st{color:#ffcf4a;letter-spacing:1px;font-size:16px;white-space:nowrap}
+.ft-st i{font-style:normal;color:rgba(255,255,255,.18)}
+.ft-yj b{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:6px;margin-right:6px;font-family:var(--f-display);font-size:14px;color:#fff3da}
+.ft-yj b.yi{background:#3f8a4e}.ft-yj b.ji{background:#a8261d}
+.ft-luck{grid-template-columns:repeat(3,1fr)!important}
 .ft-form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media (max-width:420px){.ft-form{grid-template-columns:1fr}}
 .ft-form input,.ft-form select{width:100%;box-sizing:border-box;background:rgba(255,255,255,.06);border:1px solid var(--gold-soft);border-radius:10px;padding:10px 12px;font:inherit;color:var(--ink);font-size:16px;user-select:text;-webkit-user-select:text}
@@ -1066,7 +1080,7 @@ let bellSwing=0, drumBounce=0; let duckT=0;
 function duck(){ duckT=2.5; }
 // one decaying partial for the bell/drum: optional pitch glide, attack, exponential decay
 function strikeVoice(a,f,dur,vol,{to=0,glide=0,delay=0,type="sine",attack=.004}={}){ vol*=sVol(); if(vol<=0) return; const o=a.createOscillator(), g=a.createGain(), t=a.currentTime+delay; o.type=type; o.frequency.setValueAtTime(f,t); if(to) o.frequency.exponentialRampToValueAtTime(to,t+glide);
-  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+attack); g.gain.exponentialRampToValueAtTime(.0001,t+dur); o.connect(g).connect(a.destination); o.start(t); o.stop(t+dur+.05); }
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+attack); g.gain.exponentialRampToValueAtTime(.0001,t+dur); o.connect(g).connect(sfxBus(a)); o.start(t); o.stop(t+dur+.05); }
 // 梵鐘: a wooden log strikes a big bronze bell. A dull thud, then the inharmonic bell partials (hum, prime, minor third, fifth,
 // nominal...) each as a slightly detuned pair so they beat and "wow", the low ones ringing for many seconds.
 function ringBell(){ bellSwing=1; duck(); const a=ensureAudio(); if(!a) return; const F=128;
@@ -2017,9 +2031,9 @@ function syncPeers(peers){ const seen=new Set();
     av.setSp(pr.q===1); if(pr.q===1) av.name=SP_NAME;
     { const tx=num(pr.x,-19,19,av.target.x), tz=num(pr.z,-10,HZ+YX+18,av.target.y); if(tx!==av.goalX||tz!==av.goalZ){ av.goalX=tx; av.goalZ=tz; const pth=planPath(av.pos.x,av.pos.y,tx,tz); av.target.set(pth[0][0],pth[0][1]); av.path=pth.slice(1); } } const seat=Number.isInteger(pr.s)&&pr.s>=0&&pr.s<SEATS.length?pr.s:-1; av.seat=seat; if(seat>=0) npcYield(seat);
     av.faceGoal=num(pr.r,-10,10,Math.PI); av.hold=pr.h===1?1:0; av.headGoal=num(pr.y,-1.2,1.2,0); av.sparkler=pr.sk===1; if(Array.isArray(pr.fs)&&Number.isFinite(pr.fs[0])&&pr.fs[0]!==FW.seed){ const el=Date.now()-num(pr.fs[1],0,1e13,0); if(el>=0&&el<FW_LEN*1000) fwStart(pr.fs[0],el); } av.sq=(Array.isArray(pr.sq)&&pr.sq[0]>=1&&pr.sq[0]<=2)?[pr.sq[0]-1,num(pr.sq[1],0,1e13,0)]:null;
-    if(pr.b!==av.lastBow){ av.lastBow=pr.b; av.bow(); }
-    if(Array.isArray(pr.j)&&pr.j[1]&&pr.j[1]!==av.lastJ){ av.lastJ=pr.j[1]; const res=RESULT[pr.j[0]]?pr.j[0]:"sheng"; throwJiao(av,res,()=>av.say(RESULT[res].t,RESULT[res].c)); }
-    if(pr.f!==av.lastF){ av.lastF=pr.f; av.burnT=0; burnFx(); }
+    if(pr.b!==av.lastBow){ av.lastBow=pr.b; if(!quietFx()) av.bow(); }
+    if(Array.isArray(pr.j)&&pr.j[1]&&pr.j[1]!==av.lastJ){ av.lastJ=pr.j[1]; const res=RESULT[pr.j[0]]?pr.j[0]:"sheng"; if(!quietFx()) throwJiao(av,res,()=>av.say(RESULT[res].t,RESULT[res].c)); }
+    if(pr.f!==av.lastF){ av.lastF=pr.f; if(!quietFx()){ av.burnT=0; burnFx(); } }
     av.setAmulet(pr.a===1); av.setThread(pr.t===1);
     if(av.lastW===undefined) av.lastW=Array.isArray(pr.w)?pr.w[1]:"";
     if(Array.isArray(pr.w)&&typeof pr.w[0]==="string"&&pr.w[1]&&pr.w[1]!==av.lastW){ av.lastW=pr.w[1]; const tx=cleanWish(pr.w[0]); if(tx&&!chatCheck(tx)) addWishCard({name:av.name||"香客",text:tx,at:Date.now()}); }
@@ -2028,16 +2042,16 @@ function syncPeers(peers){ const seen=new Set();
     if(Array.isArray(pr.m)&&pr.m[1]&&pr.m[1]!==av.lastM){ av.lastM=pr.m[1]; const ph=PHRASES[num(pr.m[0],0,PHRASES.length-1,0)|0]; if(!peerFlood(av,ph)){ av.say(ph,"#f7ecd6"); logChat(av.name||"香客",ph,false); } }
     if(av.lastC===undefined) av.lastC=Array.isArray(pr.c)?pr.c[1]:"";
     if(av.lastFX===undefined) av.lastFX=Array.isArray(pr.fx)?pr.fx[1]:"";
-    if(Array.isArray(pr.fx)&&pr.fx[1]&&pr.fx[1]!==av.lastFX){ av.lastFX=pr.fx[1]; if(pr.fx[0]==="coin") fxCoin(av); else if(pr.fx[0]==="drink") fxDrink(av); else if(pr.fx[0]==="dance") av.danceT=1e9; else if(pr.fx[0]==="undance") av.danceT=0; else if(pr.fx[0]==="pet") fxHearts(); }
+    if(Array.isArray(pr.fx)&&pr.fx[1]&&pr.fx[1]!==av.lastFX){ av.lastFX=pr.fx[1]; const q=quietFx(); if(pr.fx[0]==="coin"){ if(!q) fxCoin(av); } else if(pr.fx[0]==="drink"){ if(!q) fxDrink(av); } else if(pr.fx[0]==="dance") av.danceT=1e9; else if(pr.fx[0]==="undance") av.danceT=0; else if(pr.fx[0]==="pet"&&!q) fxHearts(); }
     if(av.lastGF===undefined) av.lastGF=Array.isArray(pr.gf)?pr.gf[1]:"";
-    if(Array.isArray(pr.gf)&&CENSERS[pr.gf[0]]&&pr.gf[1]&&pr.gf[1]!==av.lastGF){ av.lastGF=pr.gf[1]; passFu(av,pr.gf[0]); }
+    if(Array.isArray(pr.gf)&&CENSERS[pr.gf[0]]&&pr.gf[1]&&pr.gf[1]!==av.lastGF){ av.lastGF=pr.gf[1]; if(!quietFx()) passFu(av,pr.gf[0]); }
     if(av.lastP===undefined) av.lastP=Array.isArray(pr.p)?pr.p[1]:"";
     if(Array.isArray(pr.p)&&CENSERS[pr.p[0]]&&pr.p[1]&&pr.p[1]!==av.lastP){ av.lastP=pr.p[1]; addIncenseTo(pr.p[0],1); av.burnT=0; }
     if(Array.isArray(pr.sm)&&Number.isFinite(pr.sm[0])&&Date.now()-num(pr.sm[1],0,1e13,0)<15000) massLanterns(pr.sm[0]);
     if(av.lastSL===undefined) av.lastSL=Array.isArray(pr.sl)?pr.sl[1]:"";
-    if(Array.isArray(pr.sl)&&pr.sl[1]&&pr.sl[1]!==av.lastSL){ av.lastSL=pr.sl[1]; if(Date.now()-num(pr.sl[0],0,1e13,0)<20000) launchSkyLantern(av,null); }
+    if(Array.isArray(pr.sl)&&pr.sl[1]&&pr.sl[1]!==av.lastSL){ av.lastSL=pr.sl[1]; if(!quietFx()&&Date.now()-num(pr.sl[0],0,1e13,0)<20000) launchSkyLantern(av,null); }
     if(av.lastE===undefined) av.lastE=Array.isArray(pr.e)?pr.e[1]:"";
-    if(Array.isArray(pr.e)&&pr.e[1]&&pr.e[1]!==av.lastE){ av.lastE=pr.e[1]; showEmo(av,pr.e[0]|0); }
+    if(Array.isArray(pr.e)&&pr.e[1]&&pr.e[1]!==av.lastE){ av.lastE=pr.e[1]; if(!quietFx()) showEmo(av,pr.e[0]|0); }
     if(Array.isArray(pr.c)&&typeof pr.c[0]==="string"&&pr.c[1]&&pr.c[1]!==av.lastC){ av.lastC=pr.c[1]; const txt=cleanChat(pr.c[0]); if(txt&&!chatCheck(txt)&&!peerFlood(av,txt)){ av.say(txt,"#f7ecd6",5); logChat(av.name||"香客",txt,false); } }
     const offersKey=JSON.stringify(pr.o||[]); if(offersKey!==av.offersKey){ av.offersKey=offersKey; while(av.offerGroup.children.length) av.offerGroup.remove(av.offerGroup.children[0]);
       (Array.isArray(pr.o)?pr.o.slice(0,4):[]).forEach(o=>{ if(Array.isArray(o)&&OFFER_KINDS.includes(o[0])&&o[0]!=="xiang") offerMesh(o[0],num(o[1],0,11,0)|0,av.offerGroup); }); }
@@ -2152,26 +2166,38 @@ document.addEventListener("visibilitychange",()=>{ if(room) sendPresence(); });
 let ac=null, soundOn=load("mz.sound",true);
 const VOL=Object.assign({m:100,s:100},load("mz.vol",{})); const mVol=()=>Math.max(0,Math.min(100,+VOL.m||0))/100, sVol=()=>Math.max(0,Math.min(100,+VOL.s||0))/100;
 const bgm=$("#bgm"); bgm.volume=.38*mVol(); let audioUnlocked=false, catMode=false; const trackPos={main:0,cat:0,fw:0}; let curTrack="main";
+// Sound effects all go through one bus. Muting, hiding the page or switching away disconnects it, which silences
+// anything still ringing at once, and new sounds are refused while the page is hidden so nothing piles up for later.
+// Background music runs through a gain node because iPhones ignore an audio element's volume.
+const AU={bus:null,src:null,music:null,lv:-1};
+const AUQ={until:0,frame:0}; // other players' actions are not replayed while hidden or for a moment after coming back
+const quietFx=()=>document.hidden||performance.now()<AUQ.until||(AUQ.frame>0&&performance.now()-AUQ.frame>800);
+function sfxBus(a){ if(!AU.bus){ AU.bus=a.createGain(); AU.bus.connect(a.destination); } return AU.bus; }
+function cutSfx(){ if(AU.bus){ try{ AU.bus.disconnect(); }catch(e){} AU.bus=null; } if(typeof OP!=="undefined"&&OP&&OP.voiceGain){ try{ OP.voiceGain.disconnect(); }catch(e){} OP.voiceGain=null; } }
+function musicRoute(){ if(AU.src!==null||!ac) return; try{ AU.src=ac.createMediaElementSource(bgm); AU.music=ac.createGain(); AU.music.gain.value=Math.max(0,AU.lv); AU.src.connect(AU.music).connect(ac.destination); bgm.volume=1; }catch(e){ AU.src=false; AU.music=null; } }
+function musicLevel(v){ v=Math.max(0,Math.min(1,v)); if(AU.music&&ac){ AU.music.gain.setTargetAtTime(v,ac.currentTime,.05); if(bgm.volume!==1) bgm.volume=1; } else if(Math.abs(bgm.volume-v)>.004) bgm.volume=v; }
+function stopAllSound(){ try{ bgm.pause(); }catch(e){} if(typeof OP!=="undefined"&&OP&&OP.aud) try{ OP.aud.pause(); }catch(e){} cutSfx(); }
 function setTrack(name){ if(name===curTrack) return; trackPos[curTrack]=bgm.currentTime||0; curTrack=name; const wasPlaying=!bgm.paused; bgm.src=name==="cat"?"catsong.mp3":name==="fw"?"fwsong.mp3":"music.mp3";
   const seek=()=>{ try{ bgm.currentTime=trackPos[name]||0; }catch(e){} bgm.removeEventListener("loadedmetadata",seek); }; bgm.addEventListener("loadedmetadata",seek);
   if(wasPlaying&&soundOn&&!document.hidden){ const p=bgm.play(); if(p&&p.catch) p.catch(()=>{}); } }
-function playMusic(){ if(!soundOn) return; audioUnlocked=true; setTrack(FW.on?"fw":catMode?"cat":"main"); if(bgm.paused){ const p=bgm.play(); if(p&&p.catch) p.catch(()=>{}); } }
-function ensureAudio(){ if(!soundOn) return null; playMusic(); if(!ac){ try{ ac=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; } } if(ac.state==="suspended") ac.resume(); return ac; }
-function tone(f,dur,vol,type="sine",delay=0){ vol*=sVol(); if(vol<=0) return; const a=ensureAudio(); if(!a) return; const o=a.createOscillator(), g=a.createGain(); o.type=type; o.frequency.value=f; const t=a.currentTime+delay; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+dur); o.connect(g).connect(a.destination); o.start(t); o.stop(t+dur+.05); }
-function noiseBurst(dur,vol,freq,delay=0){ vol*=sVol(); if(vol<=0) return; const a=ensureAudio(); if(!a) return; const n=a.createBufferSource(); const b=a.createBuffer(1,a.sampleRate*dur,a.sampleRate); const d=b.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(1-i/d.length); n.buffer=b; const f=a.createBiquadFilter(); f.type="bandpass"; f.frequency.value=freq; const g=a.createGain(); g.gain.value=vol; n.connect(f).connect(g).connect(a.destination); n.start(a.currentTime+delay); }
+function playMusic(){ if(!soundOn||document.hidden) return; audioUnlocked=true; setTrack(FW.on?"fw":catMode?"cat":"main"); if(bgm.paused){ const p=bgm.play(); if(p&&p.catch) p.catch(()=>{}); } }
+function ensureAudio(){ if(!soundOn||document.hidden) return null; playMusic(); if(!ac){ try{ ac=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; } } if(ac.state!=="running"&&ac.state!=="closed") ac.resume(); musicRoute(); return ac; }
+function tone(f,dur,vol,type="sine",delay=0){ vol*=sVol(); if(vol<=0) return; const a=ensureAudio(); if(!a) return; const o=a.createOscillator(), g=a.createGain(); o.type=type; o.frequency.value=f; const t=a.currentTime+delay; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+dur); o.connect(g).connect(sfxBus(a)); o.start(t); o.stop(t+dur+.05); }
+function noiseBurst(dur,vol,freq,delay=0){ vol*=sVol(); if(vol<=0) return; const a=ensureAudio(); if(!a) return; const n=a.createBufferSource(); const b=a.createBuffer(1,a.sampleRate*dur,a.sampleRate); const d=b.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(1-i/d.length); n.buffer=b; const f=a.createBiquadFilter(); f.type="bandpass"; f.frequency.value=freq; const g=a.createGain(); g.gain.value=vol; n.connect(f).connect(g).connect(sfxBus(a)); n.start(a.currentTime+delay); }
 const sfx={ // 叮咚: a two-note door chime (high then low), each note with a soft octave overtone
   dingdong(){ [[659,0],[523,.42]].forEach(([f,d])=>{ tone(f,1.5,.16,"sine",d); tone(f*2,.7,.035,"sine",d); tone(f*3,.35,.012,"sine",d); }); },
   bell(){ [[262,4,.12],[524,3,.05],[786,2.2,.03],[1310,1.5,.015]].forEach(([f,d,v])=>tone(f,d,v)); },
-  clack(){ tone(820,.08,.18,"triangle"); noiseBurst(.06,.25,2400); }, coin(){ tone(1560,.18,.08,"square"); tone(2090,.25,.06,"square",.07); },
+  clack(){ tone(820,.08,.18,"triangle"); noiseBurst(.06,.25,2400); }, coin(k=1){ tone(1568,.45,.07*k,"sine"); tone(3136,.18,.012*k,"sine"); tone(2093,.5,.06*k,"sine",.08); tone(4186,.16,.01*k,"sine",.08); },
   rattle(){ for(let i=0;i<8;i++) noiseBurst(.05,.2,1800+Math.random()*900,i*.09); }, fire(){ noiseBurst(1.4,.25,600); noiseBurst(.9,.15,1600,.2); } };
 function renderSound(){ $("#soundBtn").setAttribute("aria-pressed",String(soundOn)); $("#soundWave").style.display=soundOn?"":"none"; $("#soundOff").style.display=soundOn?"none":""; $("#soundBtn").setAttribute("aria-label",soundOn?"關閉音樂":"開啟音樂"); }
 // The speaker button opens a small volume panel: music and sound-effect sliders plus mute-all.
 function renderVolPop(){ for(const k of ["m","s"]){ const r=$(`[data-vol="${k}"]`); if(r) r.value=VOL[k]; $("#vol"+k).textContent=VOL[k]+"%"; } $("#muteBtn").textContent=soundOn?"🔇 全部靜音":"🔊 開啟聲音"; }
 $("#soundBtn").onclick=e=>{ e.stopPropagation(); const p=$("#volPop"); p.hidden=!p.hidden; if(!p.hidden) renderVolPop(); };
-$("#muteBtn").onclick=()=>{ soundOn=!soundOn; save("mz.sound",soundOn); renderSound(); if(soundOn) ensureAudio(); else { bgm.pause(); } renderVolPop(); toast(soundOn?"聲音已開啟":"已全部靜音"); };
+$("#muteBtn").onclick=()=>{ soundOn=!soundOn; save("mz.sound",soundOn); renderSound(); if(soundOn) ensureAudio(); else stopAllSound(); renderVolPop(); toast(soundOn?"聲音已開啟":"已全部靜音"); };
 document.addEventListener("pointerdown",e=>{ const p=$("#volPop"); if(!p.hidden&&!p.contains(e.target)&&!$("#soundBtn").contains(e.target)) p.hidden=true; },true);
-window.addEventListener("pointerdown",()=>{ if(soundOn) playMusic(); },{once:true,capture:true});
-document.addEventListener("visibilitychange",()=>{ if(document.hidden){ bgm.pause(); } else if(soundOn&&ac) playMusic(); }); renderSound();
+window.addEventListener("pointerdown",()=>{ if(!soundOn) return; playMusic(); if(ac&&ac.state!=="running"&&ac.state!=="closed") ac.resume(); },{capture:true});
+document.addEventListener("visibilitychange",()=>{ if(document.hidden){ stopAllSound(); return; } AUQ.until=performance.now()+1500; if(soundOn&&ac){ if(ac.state!=="running"&&ac.state!=="closed") ac.resume(); playMusic(); } });
+window.addEventListener("pagehide",stopAllSound); renderSound();
 
 /* ================= HUD ================= */
 let toastTimer=0;
@@ -2367,7 +2393,7 @@ function openBag(){ let html=`<p class="lead">平安幣每天補到 300。到服
   html+=`<div class="group"><span class="group-label">收下的籤詩</span>${bag.poems.length?`<div class="chips">${bag.poems.slice(-12).reverse().map(n=>`<button class="chip" data-act="showPoem" data-v="${n}">第${CN_NUM(n)}籤</button>`).join("")}</div>`:`<p class="note">還沒有籤詩。到右前方的籤詩櫃求籤。</p>`}</div>`;
   openSheet("bag","背包",html); }
 document.addEventListener("input",e=>{ const k=e.target&&e.target.dataset&&e.target.dataset.vol; if(!k) return; VOL[k]=+e.target.value; save("mz.vol",VOL); const lb=$("#vol"+k); if(lb) lb.textContent=VOL[k]+"%";
-  if(k==="m"){ bgm.volume=(curTrack==="cat"?.55:.38)*mVol(); } });
+  if(k==="m"){ /* the music level follows VOL.m every frame */ } });
 document.addEventListener("change",e=>{ if(e.target&&e.target.dataset&&e.target.dataset.vol==="s") sfx.coin(); });
 function openGfx(){ const opt=(v,t,d)=>`<button class="good" data-act="quality" data-v="${v}" aria-pressed="${Q.mode===v}" style="${Q.mode===v?"border-color:var(--gold);background:rgba(142,28,20,.35)":""}"><span class="name">${t}${Q.mode===v?"　✓":""}</span><span class="meta">${d}</span></button>`;
   openSheet("gfx","設定",`<div class="group"><span class="group-label">畫質</span><p class="lead">畫面卡頓或手機發燙時，可以改用省電畫質。</p></div><div class="goods">${opt("auto","自動","進場後自動偵測，太卡會切到省電")}${opt("high","高畫質","光束、灰塵、全部燈光，最漂亮")}${opt("low","省電","降低解析度與特效，舊手機也順")}${opt("lite","低配","最省：模型減面、小貼圖、關閉抗鋸齒，給比較舊的手機（會重新載入）")}</div><p class="note">目前：${Q.lite?"低配":Q.low?"省電畫質":"高畫質"}</p><div class="group"><span class="group-label">其他</span><div class="chips"><button class="chip" data-act="toggleNpc" aria-pressed="${showNpc}">顯示示範香客</button></div><p class="note">示範香客是電腦角色，不算在殿內人數裡，關掉也能讓畫面更順。</p></div>`); }
@@ -2701,8 +2727,8 @@ const coinGeo=new T.CylinderGeometry(.06,.06,.012,16);
 function fxArrows(av){ for(let i=0;i<16;i++) setTimeout(()=>{ const s=new T.Sprite(new T.SpriteMaterial({map:arrowTex,transparent:true,depthWrite:false})); const a=rand(0,Math.PI*2), r=rand(.2,.9); s.position.set(av.pos.x+Math.cos(a)*r,rand(.3,1.0),av.pos.y+Math.sin(a)*r); const sc=rand(.18,.32); s.scale.set(sc*.66,sc,1); scene.add(s); parts.push({s,vx:0,vy:rand(1.2,2.0),vz:0,life:0,max:rand(1.4,2.0),grow:.12,op:1}); },i*90);
   av.say("股市飆漲","#ff4a4a",3.5); if(av===meAv) sfx.coin(); }
 function showCaption(t){ const el=$("#caption"); el.textContent=t; el.removeAttribute("data-hide"); clearTimeout(showCaption.tm); showCaption.tm=setTimeout(()=>el.setAttribute("data-hide",""),3200); }
-function fxCoin(av){ const c=new T.Mesh(coinGeo,GOLD()); c.userData.noMerge=1; scene.add(c); const p0=new T.Vector3(av.pos.x,1.1,av.pos.y); const p1=new T.Vector3(rand(-.5,.5),.65,HZ+YX+18.9+rand(-.2,.2)); const t0=performance.now();
-  sfx.coin(); av.burnT=0;
+function fxCoin(av){ if(av===meAv) sfx.coin(); else if(Math.hypot(av.pos.x-meAv.pos.x,av.pos.y-meAv.pos.y)<8) sfx.coin(.45); const c=new T.Mesh(coinGeo,GOLD()); c.userData.noMerge=1; scene.add(c); const p0=new T.Vector3(av.pos.x,1.1,av.pos.y); const p1=new T.Vector3(rand(-.5,.5),.65,HZ+YX+18.9+rand(-.2,.2)); const t0=performance.now();
+  av.burnT=0;
   const step=()=>{ const k=Math.min(1,(performance.now()-t0)/900); c.position.lerpVectors(p0,p1,k); c.position.y+=Math.sin(k*Math.PI)*1.2; c.rotation.x+=.4; c.rotation.z+=.25;
     if(k<1) requestAnimationFrame(step); else { scene.remove(c); for(let i=0;i<8;i++) spawnSmoke(p1.x+rand(-.15,.15),.68,p1.z+rand(-.15,.15),{mat:new T.SpriteMaterial({map:softTex,color:new T.Color("#bfe9ff"),transparent:true,depthWrite:false}),size:.08,grow:.3,life:.7,op:.8,vy:rand(.4,.9)});
       av.faceGoal=0; av.bow(); setTimeout(()=>{ av.say("祝您願望成真","#ffe2a0",4); if(av===meAv) showCaption("祝您願望成真"); },1600); } };
@@ -2770,8 +2796,8 @@ function gameLayer(title,hint){ closeSheet(); miniOpen=true; const el=document.c
   const L={el,cv,x,W:()=>innerWidth,H:()=>innerHeight,done:false,close(){ L.done=true; miniOpen=false; window.removeEventListener("resize",fit); el.remove(); }};
   window.addEventListener("resize",fit); el.querySelector(".mini-x").onclick=()=>L.close(); return L; }
 function healSound(){ const a=ensureAudio(); if(!a) return; const v=sVol(); if(v<=0) return; const t=a.currentTime;
-  [523.25,659.25,783.99,1046.5,1318.5,1568].forEach((f,i)=>{ const o=a.createOscillator(), g=a.createGain(); o.type="sine"; o.frequency.value=f; g.gain.setValueAtTime(0,t+i*.12); g.gain.linearRampToValueAtTime(.12*v,t+i*.12+.05); g.gain.exponentialRampToValueAtTime(.0001,t+i*.12+3.2); o.connect(g).connect(a.destination); o.start(t+i*.12); o.stop(t+i*.12+3.3); });
-  const o=a.createOscillator(), g=a.createGain(); o.type="triangle"; o.frequency.setValueAtTime(261.6,t); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.08*v,t+.4); g.gain.exponentialRampToValueAtTime(.0001,t+4.5); o.connect(g).connect(a.destination); o.start(t); o.stop(t+4.6); }
+  [523.25,659.25,783.99,1046.5,1318.5,1568].forEach((f,i)=>{ const o=a.createOscillator(), g=a.createGain(); o.type="sine"; o.frequency.value=f; g.gain.setValueAtTime(0,t+i*.12); g.gain.linearRampToValueAtTime(.12*v,t+i*.12+.05); g.gain.exponentialRampToValueAtTime(.0001,t+i*.12+3.2); o.connect(g).connect(sfxBus(a)); o.start(t+i*.12); o.stop(t+i*.12+3.3); });
+  const o=a.createOscillator(), g=a.createGain(); o.type="triangle"; o.frequency.setValueAtTime(261.6,t); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.08*v,t+.4); g.gain.exponentialRampToValueAtTime(.0001,t+4.5); o.connect(g).connect(sfxBus(a)); o.start(t); o.stop(t+4.6); }
 // 北斗七星: draw through the seven stars in order (天樞→搖光), lifting the finger is fine
 const DIPPER=[[.20,.38],[.30,.52],[.44,.50],[.52,.40],[.63,.36],[.75,.30],[.86,.22]];
 const DIPPER_NAMES=["天樞","天璇","天璣","天權","玉衡","開陽","搖光"];
@@ -2890,7 +2916,7 @@ function sjBabble(g,dur){ // squeaky gibberish only this player hears, mouth syn
     setTimeout(()=>{ if(!g.serving||g.serving.key!=="me") return; g.headMat.map=g.faceB; g.headMat.needsUpdate=true; setTimeout(()=>{ g.headMat.map=g.faceA; g.headMat.needsUpdate=true; },d*700); },start*1000);
     if(a&&v>0){ const at=a.currentTime+.05+start, f0=380+Math.random()*320, fm=F[(Math.random()*F.length)|0];
       const o=a.createOscillator(); o.type="sawtooth"; o.frequency.setValueAtTime(f0,at); o.frequency.linearRampToValueAtTime(f0*(Math.random()<.5?1.35:.8),at+d);
-      const out=a.createGain(); out.gain.setValueAtTime(0,at); out.gain.linearRampToValueAtTime(.16*v,at+.015); out.gain.linearRampToValueAtTime(0,at+d); out.connect(a.destination);
+      const out=a.createGain(); out.gain.setValueAtTime(0,at); out.gain.linearRampToValueAtTime(.16*v,at+.015); out.gain.linearRampToValueAtTime(0,at+d); out.connect(sfxBus(a));
       for(const fr of fm){ const bp=a.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=fr*1.25; bp.Q.value=6; o.connect(bp).connect(out); } o.start(at); o.stop(at+d+.05); }
     t+=d+gap; if(Math.random()<.12) t+=.18; } }
 function fxSpirit(av){ av.burnT=0; const ring=new T.Mesh(new T.RingGeometry(.3,.4,40),new T.MeshBasicMaterial({color:new T.Color("#ffd86b"),transparent:true,opacity:.85,depthWrite:false,side:T.DoubleSide,blending:T.AdditiveBlending})); ring.rotation.x=-Math.PI/2; ring.position.set(av.pos.x,.05,av.pos.y); ring.userData.noMerge=1; scene.add(ring);
@@ -2971,15 +2997,15 @@ function fwEmit(x,y,z,vx,vy,vz,c1,c2,life,size,drag,grav,flick,split,sk){ const 
 function fwRng(seed){ let a=seed>>>0; return ()=>{ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
 // a short punchy "蹦": sine kick with a fast pitch drop plus a muffled noise thud
 function fwThump(dur,vol,f0){ const a=ensureAudio(); if(!a) return; const v=vol*sVol(); if(v<=0) return; const t=a.currentTime;
-  const o=a.createOscillator(), g=a.createGain(); o.type="sine"; o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(f0*.32,t+dur*.6); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v,t+.006); g.gain.exponentialRampToValueAtTime(.0001,t+dur); o.connect(g).connect(a.destination); o.start(t); o.stop(t+dur+.05);
+  const o=a.createOscillator(), g=a.createGain(); o.type="sine"; o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(f0*.32,t+dur*.6); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v,t+.006); g.gain.exponentialRampToValueAtTime(.0001,t+dur); o.connect(g).connect(sfxBus(a)); o.start(t); o.stop(t+dur+.05);
   const n=a.createBufferSource(), b=a.createBuffer(1,Math.floor(a.sampleRate*dur*.5),a.sampleRate), d=b.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,3); n.buffer=b;
-  const lp=a.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=900; const ng=a.createGain(); ng.gain.value=v*.7; n.connect(lp).connect(ng).connect(a.destination); n.start(t); }
+  const lp=a.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=900; const ng=a.createGain(); ng.gain.value=v*.7; n.connect(lp).connect(ng).connect(sfxBus(a)); n.start(t); }
 function fwSound(kind,x,y,z){ const d=camera.position.distanceTo(_v1.set(x,y,z)); const k=Math.max(.15,Math.min(1,26/d));
   if(kind==="boom") fwThump(.55,.5*k,130);
   if(kind==="big") fwThump(.9,.7*k,95);
   if(kind==="pop") fwThump(.28,.3*k,190);
   if(kind==="crackle"){ for(let i=0;i<14;i++) noiseBurst(.04,.1*k,2600+Math.random()*1800,.5+Math.random()*1.4); }
-  if(kind==="whistle"){ const a=ensureAudio(); if(!a) return; const v=sVol()*.05*k; if(v<=0) return; const o=a.createOscillator(), g=a.createGain(); o.type="sine"; o.frequency.setValueAtTime(900,a.currentTime); o.frequency.exponentialRampToValueAtTime(2200,a.currentTime+1.1); g.gain.setValueAtTime(v,a.currentTime); g.gain.linearRampToValueAtTime(0,a.currentTime+1.15); o.connect(g).connect(a.destination); o.start(); o.stop(a.currentTime+1.2); } }
+  if(kind==="whistle"){ const a=ensureAudio(); if(!a) return; const v=sVol()*.05*k; if(v<=0) return; const o=a.createOscillator(), g=a.createGain(); o.type="sine"; o.frequency.setValueAtTime(900,a.currentTime); o.frequency.exponentialRampToValueAtTime(2200,a.currentTime+1.1); g.gain.setValueAtTime(v,a.currentTime); g.gain.linearRampToValueAtTime(0,a.currentTime+1.15); o.connect(g).connect(sfxBus(a)); o.start(); o.stop(a.currentTime+1.2); } }
 const LOW=Q.low?.55:1;
 function fwBurst(e){ const {x,y,z}=e, r=Math.random; const [c1,c2]=e.c, sp=e.s, n=Math.round((e.n||140)*LOW);
   const sph=(cb)=>{ const ga=Math.PI*(3-Math.sqrt(5)); for(let i=0;i<n;i++){ const u=1-2*(i+.5)/n, th=i*ga, q=Math.sqrt(1-u*u); cb(q*Math.cos(th),u,q*Math.sin(th),i); } };
@@ -3079,7 +3105,7 @@ function fwStart(seed,elapsedMs){ const el=Math.max(0,(elapsedMs||0)/1000); if(e
   showCaption("全服煙火秀開始！"); toast("主委施放全服煙火！到廟外廣場看，還可以拿仙女棒",4500); renderSparkBtn(); }
 function fwUpdate(dt){ const now=performance.now();
   if(FW.on){ const t=(now-FW.t0)/1000;
-    while(FW.i<FW.ev.length&&FW.ev[FW.i].t<=t){ const e=FW.ev[FW.i++];
+    while(FW.i<FW.ev.length&&FW.ev[FW.i].t<=t){ const e=FW.ev[FW.i++]; if(t-e.t>1.5) continue;
       if(e.kind==="shell"){ const lx=e.x*.6, lz=e.z; FW.rockets.push({e,x:lx,y:1,z:lz,t:0,fl:e.fl});  }
       if(e.kind==="gerb") FW.gerbs.push({...e,t:0});
       if(e.kind==="comet") FW.rockets.push({comet:e,t:0,fl:e.fl||.8});
@@ -3239,42 +3265,42 @@ const FT_MONTH_EL={1:"土",2:"木",3:"木",4:"土",5:"火",6:"火",7:"土",8:"�
 
 const FT_TXT={
   self:{
-    甲:["你是「甲木」命，像一棵往上長的大樹。個性正直、有主見，認定的事就會一路做到底，最受不了被人看扁。","甲木的人像森林裡最高的那棵樹，天生有領袖味，喜歡照顧別人，只是有時候太硬，不太會轉彎。","你是大樹型的人：講義氣、肯負責，別人遇到事情第一個想到你。缺點是很愛面子，要你先認錯有點難。"],
-    乙:["你是「乙木」命，像花草、像藤蔓。外表溫和好相處，其實韌性很強，環境再難也找得到路長出去。","乙木的人很會看氣氛、懂得配合，人緣好；但心裡其實很有自己的想法，只是不一定說出口。","你像一株蘭花：細膩、有品味，對美的東西很敏感。容易想太多，給自己一點時間就會開花。"],
-    丙:["你是「丙火」命，像太陽。熱情、大方，走到哪裡都亮，心裡藏不住事，喜怒都寫在臉上。","丙火的人天生有感染力，朋友多、愛熱鬧、願意分享。只是脾氣來得快去得也快，說話要小心太衝。","你像正中午的太陽：樂觀、直爽、有正義感，看不慣的事一定會講。衝勁十足，耐心稍微少了一點。"],
-    丁:["你是「丁火」命，像一盞燭光。外表安靜，內心很溫暖，很會照顧身邊的人，觀察力特別細。","丁火的人心思細膩、重感情，別人一個小動作你都看在眼裡。常替別人操心，記得也照顧一下自己。","你像夜裡的燈籠：不刺眼，但讓人安心。點子多、有才華，只是情緒起伏比較大，需要懂你的人。"],
-    戊:["你是「戊土」命，像一座大山。穩重、可靠、守信用，答應的事一定做到，是大家的靠山。","戊土的人沉得住氣，遇到大事反而冷靜，很適合當主管或當家的人。缺點是有點固執，不容易被說服。","你像城牆一樣厚實：話不多但很有份量，包容心大。只是太悶的話，別人不知道你在想什麼。"],
-    己:["你是「己土」命，像一塊肥沃的田地。溫和、包容、很會照顧人，默默付出不求回報。","己土的人實際、細心，擅長把亂七八糟的事整理好，是最好的幫手。有時太為別人著想，委屈了自己。","你像後院的菜園：踏實、有耐心，慢慢累積就會有收成。不愛出風頭，但大家都離不開你。"],
-    庚:["你是「庚金」命，像一把刀劍。果斷、講義氣、做事乾脆，最討厭拖拖拉拉。","庚金的人很有俠氣，看到不公平會挺身而出。只是說話直、不修飾，容易無意間得罪人。","你像剛打好的鐵：硬、有原則，越磨越亮。壓力越大反而越能表現，順的時候要小心太自信。"],
-    辛:["你是「辛金」命，像一顆珠寶。外表秀氣、重視形象，品味好，對自己要求也高。","辛金的人心思敏銳、自尊心強，很在意別人怎麼看你。其實你比自己以為的還要堅強。","你像一顆小鑽石：精緻、有光彩，人緣不錯。只是容易鑽牛角尖，放過自己就會更閃亮。"],
-    壬:["你是「壬水」命，像大江大海。聰明、反應快、點子多，喜歡自由，不喜歡被綁住。","壬水的人很會交朋友、懂變通，什麼場面都應付得來。缺點是三分鐘熱度，興趣換得很快。","你像奔流的河：有衝勁、有遠見，適合到處跑、見世面。只是方向太多時，容易分心。"],
-    癸:["你是「癸水」命，像雨水和露珠。溫柔、直覺很準、想像力豐富，常常一眼看穿別人的心思。","癸水的人安靜、細膩，很會默默觀察。內心戲很多，表面上卻看不出來。","你像清晨的霧：神秘、有靈氣，適合需要創意和耐心的事。情緒上來時，記得找人說說話。"]},
-  strong:["你的命格「身強」：本身能量很足，抗壓性高、行動力強。別太固執，聽聽別人意見會更順。","整體來看你屬於「身強」：自己就是自己的靠山，遇到困難不太會倒，適合自己闖、自己當老闆。","你是「身強」的命：底子厚、精神好，只要方向對，拚起來很少輸人。缺點是有時太相信自己。"],
-  weak:["你的命格「身弱」：心思細、懂得借力使力，有貴人幫忙時會發揮得特別好。別一個人扛所有事。","整體來看你屬於「身弱」：比較敏感，容易受環境影響。找對團隊、跟對人，運勢會大大加分。","你是「身弱」的命：不是能力差，而是需要對的環境。多休息、多交好朋友，就是你的開運法。"],
+    甲:["你像一棵往上長的大樹。個性正直、有主見，認定的事就會一路做到底，最受不了被人看扁。","你像森林裡最高的那棵樹，天生有領袖味，喜歡照顧別人，只是有時候太硬，不太會轉彎。","你是大樹型的人：講義氣、肯負責，別人遇到事情第一個想到你。缺點是很愛面子，要你先認錯有點難。"],
+    乙:["你像花草、像藤蔓。外表溫和好相處，其實韌性很強，環境再難也找得到路長出去。","你很會看氣氛、懂得配合，人緣好；但心裡其實很有自己的想法，只是不一定說出口。","你像一株蘭花：細膩、有品味，對美的東西很敏感。容易想太多，給自己一點時間就會開花。"],
+    丙:["你像太陽。熱情、大方，走到哪裡都亮，心裡藏不住事，喜怒都寫在臉上。","你天生有感染力，朋友多、愛熱鬧、願意分享。只是脾氣來得快去得也快，說話要小心太衝。","你像正中午的太陽：樂觀、直爽、有正義感，看不慣的事一定會講。衝勁十足，耐心稍微少了一點。"],
+    丁:["你像一盞燭光。外表安靜，內心很溫暖，很會照顧身邊的人，觀察力特別細。","你心思細膩、重感情，別人一個小動作你都看在眼裡。常替別人操心，記得也照顧一下自己。","你像夜裡的燈籠：不刺眼，但讓人安心。點子多、有才華，只是情緒起伏比較大，需要懂你的人。"],
+    戊:["你像一座大山。穩重、可靠、守信用，答應的事一定做到，是大家的靠山。","你沉得住氣，遇到大事反而冷靜，很適合當主管或當家的人。缺點是有點固執，不容易被說服。","你像城牆一樣厚實：話不多但很有份量，包容心大。只是太悶的話，別人不知道你在想什麼。"],
+    己:["你像一塊肥沃的田地。溫和、包容、很會照顧人，默默付出不求回報。","你實際、細心，擅長把亂七八糟的事整理好，是最好的幫手。有時太為別人著想，委屈了自己。","你像後院的菜園：踏實、有耐心，慢慢累積就會有收成。不愛出風頭，但大家都離不開你。"],
+    庚:["你像一把刀劍。果斷、講義氣、做事乾脆，最討厭拖拖拉拉。","你很有俠氣，看到不公平會挺身而出。只是說話直、不修飾，容易無意間得罪人。","你像剛打好的鐵：硬、有原則，越磨越亮。壓力越大反而越能表現，順的時候要小心太自信。"],
+    辛:["你像一顆珠寶。外表秀氣、重視形象，品味好，對自己要求也高。","你心思敏銳、自尊心強，很在意別人怎麼看你。其實你比自己以為的還要堅強。","你像一顆小鑽石：精緻、有光彩，人緣不錯。只是容易鑽牛角尖，放過自己就會更閃亮。"],
+    壬:["你像大江大海。聰明、反應快、點子多，喜歡自由，不喜歡被綁住。","你很會交朋友、懂變通，什麼場面都應付得來。缺點是三分鐘熱度，興趣換得很快。","你像奔流的河：有衝勁、有遠見，適合到處跑、見世面。只是方向太多時，容易分心。"],
+    癸:["你像雨水和露珠。溫柔、直覺很準、想像力豐富，常常一眼看穿別人的心思。","你安靜、細膩，很會默默觀察。內心戲很多，表面上卻看不出來。","你像清晨的霧：神秘、有靈氣，適合需要創意和耐心的事。情緒上來時，記得找人說說話。"]},
+  strong:["整體來看，你本身能量很足，抗壓性高、行動力強。別太固執，聽聽別人意見會更順。","整體來看，你自己就是自己的靠山，遇到困難不太會倒，適合自己闖、自己當老闆。","你底子厚、精神好，只要方向對，拚起來很少輸人。缺點是有時太相信自己。"],
+  weak:["整體來看，你心思細、懂得借力使力，有貴人幫忙時會發揮得特別好。別一個人扛所有事。","整體來看，你比較敏感，容易受環境影響。找對團隊、跟對人，運勢會大大加分。","你不是能力差，而是需要對的環境。多休息、多交好朋友，就是你的開運法。"],
   lack:{木:"命中木比較少，做事有時缺一點長遠計畫。",火:"命中火比較少，有時提不起勁、熱情不夠。",土:"命中土比較少，有時心定不下來，錢也比較難存。",金:"命中金比較少，做決定時容易猶豫。",水:"命中水比較少，有時想法比較固定、不夠圓融。"},
   much:{木:"木很旺：成長心強、點子多，但容易一次想做太多事，一件一件來就好。",火:"火很旺：熱情衝勁滿滿，但脾氣也比較急，生氣前先深呼吸三下。",土:"土很旺：很穩、很能扛，但有時太保守，偶爾試試新東西會有驚喜。",金:"金很旺：有原則、標準高，對別人要求也高，放鬆一點會更有人緣。",水:"水很旺：聰明又想得多，但想太多容易失眠，睡前少滑手機。"},
   cat:{
-    財:{work:["命中「財星」明顯，你對賺錢很有感覺，適合業務、生意、跟數字或買賣有關的工作。","你天生有生意頭腦，看得到別人沒注意到的機會，適合做買賣或理財相關的事。"],
+    財:{work:["你對賺錢很有感覺，適合業務、生意、跟數字或買賣有關的工作。","你天生有生意頭腦，看得到別人沒注意到的機會，適合做買賣或理財相關的事。"],
         money:["錢來得不算慢，但也花得快，記得每個月先存一筆再花。","財運不錯，偏財也有機會，但別貪快，穩穩來才留得住。"],
         love:["感情上你很實際，喜歡用行動對人好，請吃飯、送禮物是你表達愛的方式。","你重視生活品質，另一半如果跟你有共同目標，感情會走得很長。"]},
-    官:{work:["命中「官星」明顯，你有責任感、守規矩，很適合公家機關、大公司或管理職。","你適合有制度的環境，越有挑戰越能表現，主管會看到你的努力。"],
+    官:{work:["你有責任感、守規矩，很適合公家機關、大公司或管理職。","你適合有制度的環境，越有挑戰越能表現，主管會看到你的努力。"],
         money:["財運是靠努力穩穩累積型，固定薪水最可靠，不太適合賭運氣。","錢不會一下子很多，但只要升遷順，收入會一步一步往上。"],
         love:["感情上你認真、專一，一旦認定就很負責，只是有時太嚴肅，記得多一點浪漫。","你重視承諾，適合穩定、可靠的對象，閃婚不是你的風格。"]},
-    印:{work:["命中「印星」明顯，你學習力強、有長輩緣，適合教育、研究、文字、醫療或需要專業證照的工作。","你身邊常有貴人，遇到困難總有人拉一把，多請教前輩會少走很多冤枉路。"],
+    印:{work:["你學習力強、有長輩緣，適合教育、研究、文字、醫療或需要專業證照的工作。","你身邊常有貴人，遇到困難總有人拉一把，多請教前輩會少走很多冤枉路。"],
         money:["你對錢不算執著，比較在乎穩定和安心，存款、保險這類保守的方式最適合你。","財運普通但很穩，靠專業和名聲賺錢，越老越值錢。"],
         love:["感情上你喜歡被照顧，也很會照顧人，適合成熟、溫柔的另一半。","你重視心靈交流，能跟你聊得來的人，比外表更重要。"]},
-    食傷:{work:["命中「食傷」明顯，你很有才華、表達力好，適合創作、表演、設計、教學或經營自媒體。","你點子多、手很巧，適合做讓人眼睛一亮的事，太死板的工作會讓你悶壞。"],
+    食傷:{work:["你很有才華、表達力好，適合創作、表演、設計、教學或經營自媒體。","你點子多、手很巧，適合做讓人眼睛一亮的事，太死板的工作會讓你悶壞。"],
         money:["你靠才華賺錢，作品或技能就是你的財庫，多經營自己的專長。","錢的來源比較多元，斜槓有機會成功，但記得要記帳。"],
         love:["感情上你很浪漫、很會逗人開心，但也容易忽冷忽熱，穩定下來會更幸福。","你喜歡有趣的人，兩個人要常一起玩、一起嘗試新東西，感情才會保鮮。"]},
-    比劫:{work:["命中「比劫」明顯，你朋友多、講義氣，適合團隊合作、業務開發或跟朋友一起創業。","你很有競爭心，有對手時反而跑得更快，適合有業績、有排名的環境。"],
+    比劫:{work:["你朋友多、講義氣，適合團隊合作、業務開發或跟朋友一起創業。","你很有競爭心，有對手時反而跑得更快，適合有業績、有排名的環境。"],
         money:["錢財容易因為朋友進出，借錢、合夥前先講清楚，白紙黑字最保險。","賺得到也花得掉，請客、幫朋友是常態，記得留一點給自己。"],
         love:["感情上你很有主見，喜歡平等、互相尊重的關係，太黏的對象會讓你有壓力。","你重朋友也重另一半，兩邊時間要分好，別讓對方吃醋。"]}},
   year:{
-    比劫:["今年是「比劫年」：身邊競爭變多，朋友也變多。合作前先講清楚，錢不要隨便借出去。","今年身邊很熱鬧，常有朋友找你，也可能遇到競爭對手。保持風度，最後贏的還是你。"],
-    食傷:["今年是「食傷年」：表現的一年！很適合學新技能、展現才華、換個新造型。說話注意分寸。","今年創意滿滿，做喜歡的事特別順手。很適合開始一個小計畫，但別同時開太多坑。"],
-    財:["今年是「財星年」：賺錢機會變多，工作上容易有新案子。也容易花錢，大筆支出前多想三天。","今年財運有起色，偏財也有小驚喜，但投資要量力而為，見好就收。"],
-    官:["今年是「官殺年」：責任變重、壓力比較大，但也是升遷、被看見的好機會。別太操，注意身體。","今年事情會變多，常常被交辦重要任務。撐過去就是升級，記得適時休息。"],
-    印:["今年是「印星年」：貴人運好，適合進修、考證照、搬家或處理文件。長輩的建議要多聽。","今年心比較定，適合讀書、思考、規劃未來。遇到困難時，會有人主動幫你。"]},
+    比劫:["今年身邊競爭變多，朋友也變多。合作前先講清楚，錢不要隨便借出去。","今年身邊很熱鬧，常有朋友找你，也可能遇到競爭對手。保持風度，最後贏的還是你。"],
+    食傷:["今年是表現的一年！很適合學新技能、展現才華、換個新造型。說話注意分寸。","今年創意滿滿，做喜歡的事特別順手。很適合開始一個小計畫，但別同時開太多坑。"],
+    財:["今年賺錢機會變多，工作上容易有新案子。也容易花錢，大筆支出前多想三天。","今年財運有起色，偏財也有小驚喜，但投資要量力而為，見好就收。"],
+    官:["今年責任變重、壓力比較大，但也是升遷、被看見的好機會。別太操，注意身體。","今年事情會變多，常常被交辦重要任務。撐過去就是升級，記得適時休息。"],
+    印:["今年貴人運好，適合進修、考證照、搬家或處理文件。長輩的建議要多聽。","今年心比較定，適合讀書、思考、規劃未來。遇到困難時，會有人主動幫你。"]},
   taisui:{
     值:"今年你的生肖「值太歲」（本命年），變動比較多，建議到廟裡安個太歲，凡事穩一點。",
     沖:"今年你的生肖「沖太歲」，容易有搬家、換工作、出遠門的變動。安個太歲、開車小心，變動也可能是轉機。",
@@ -3306,6 +3332,25 @@ function ftTaiSui(a,b){ // a: the person's year branch, b: this year's branch
   return "無"; }
 
 // y, m, d: 國曆 birth date; hourIdx: 0–11 for 子…亥, or -1 when the hour is unknown. now: Date for this year's luck.
+const FT_DAY={
+  財:["今天有小財運，可能會撿到小便宜，或收到意外的好消息。","今天適合處理錢的事，記帳、比價都會很順。","今天花錢的機會也不少，喜歡的東西多看一天再買。"],
+  官:["今天事情比較多，可能被交辦任務，認真做會被看見。","今天適合處理正事、繳費、跑流程，拖著的事今天解決。","今天壓力稍大，說話保守一點，忍一下就過了。"],
+  印:["今天貴人運不錯，有問題就開口問，會有人幫你。","今天適合讀書、整理東西、跟長輩聊天，心情會很平靜。","今天容易想太多，早點睡就是最好的開運。"],
+  食傷:["今天靈感很多，適合拍照、寫東西、做喜歡的事。","今天嘴巴特別甜，人緣好，但小心一句話講太快。","今天適合吃頓好的、犒賞自己，心情好運氣就好。"],
+  比劫:["今天朋友運旺，可能有人約你，出門走走會有收穫。","今天身邊競爭比較多，別跟人比，做好自己的事就好。","今天容易因為人情花錢，借錢的事今天先別答應。"]};
+const FT_YI={財:["比價","記帳","談生意","整理錢包"],官:["處理公事","繳費","早點出門","整理桌面"],印:["讀書","拜拜","請教前輩","早睡"],食傷:["拍照","唱歌","吃美食","畫畫"],比劫:["約朋友","運動","團購","出門走走"],any:["多喝水","拜媽祖","微笑","散步","打掃"]};
+const FT_JI=["熬夜","借錢給人","衝動購物","吵架","吃太辣","滑手機到半夜","遲到","說人閒話","喝冰的"];
+function ftToday(r,now){ const dt=now||new Date(), ds=dt.getFullYear()+"-"+(dt.getMonth()+1)+"-"+dt.getDate();
+  const dp=Solar.fromYmdHms(dt.getFullYear(),dt.getMonth()+1,dt.getDate(),12,0,0).getLunar().getDayInGanZhi(); const g=dp[0], z=dp[1], el=FT_GAN_EL[g];
+  const cat=FT_CAT[ftTenGod(r.day,g)], rel=ftTaiSui(r.pillars[2][1],z), seed=r.seed+ds, j=k=>(ftHash(seed+k)%3)-1;
+  const base=3+(el===r.fav?1:0)+(el===r.avoid?-1:0)+(rel==="沖"?-1:rel==="合"?1:0);
+  const star=v=>Math.max(1,Math.min(5,Math.round(v)));
+  const all=star(base+j("a")*.5), money=star(base+(cat==="財"?1:0)+j("m")), love=star(base+(cat==="食傷"||rel==="合"?1:0)+j("l")), work=star(base+(cat==="官"||cat==="印"?1:0)+j("w"));
+  let text=ftPick(FT_DAY[cat],seed,"t"); if(rel==="沖") text+="另外今天跟你有點沖，出門注意安全、開車慢一點。"; else if(rel==="合") text+="今天跟你特別合，想做的事就去做吧！";
+  const pool=[...FT_YI[cat],...FT_YI.any], yi=[], ji=[]; for(let i=0;yi.length<2&&i<20;i++){ const x=pool[ftHash(seed+"y"+i)%pool.length]; if(!yi.includes(x)) yi.push(x); }
+  for(let i=0;ji.length<2&&i<20;i++){ const x=FT_JI[ftHash(seed+"j"+i)%FT_JI.length]; if(!ji.includes(x)) ji.push(x); }
+  const lel=(el===r.fav||FT_GEN[el]===r.fav)?el:r.fav, cols=FT_LUCK[lel].color.split("、");
+  return {all,money,love,work,text,yi,ji,color:cols[ftHash(seed+"c")%cols.length],num:(ftHash(seed+"n")%9)+1,dir:FT_LUCK[lel].dir,date:(dt.getMonth()+1)+"/"+dt.getDate()}; }
 function ftReading(y,m,d,hourIdx,now){ const H=hourIdx>=0?FT_HOURS[hourIdx][2]:12;
   const ec=Solar.fromYmdHms(y,m,d,H,0,0).getLunar().getEightChar();
   const P=[ec.getYear(),ec.getMonth(),ec.getDay(),hourIdx>=0?ec.getTime():null]; const day=P[2][0], me=FT_GAN_EL[day];
@@ -3329,7 +3374,7 @@ function ftReading(y,m,d,hourIdx,now){ const H=hourIdx>=0?FT_HOURS[hourIdx][2]:1
   const goodMonths=Object.keys(FT_MONTH_EL).filter(k=>FT_MONTH_EL[k]===fav).map(Number), badMonths=Object.keys(FT_MONTH_EL).filter(k=>FT_MONTH_EL[k]===avoid).map(Number);
   const T=FT_TXT, C=T.cat[cat];
   const verdict=ftHash(seed+"v")%2?ftPick(T.verdict[cat],seed,"vc"):ftPick(T.verdict.any,seed,"va");
-  return { pillars:P, day, me, animal:FT_ANIMAL[P[0][1]], strong, cnt, least, most, fav, avoid, cat, year:yp, yearAnimal:FT_ANIMAL[yp[1]], taisui:ts,
+  return { seed, pillars:P, day, me, animal:FT_ANIMAL[P[0][1]], strong, cnt, least, most, fav, avoid, cat, year:yp, yearAnimal:FT_ANIMAL[yp[1]], taisui:ts,
     text:{ self:ftPick(T.self[day],seed,"s"), strength:ftPick(strong?T.strong:T.weak,seed,"st"),
       elements:(cnt[least]<.5?T.lack[least]+"建議"+FT_LUCK[least].act+"，補一點"+least+"氣。":"五行算是有齊，")+T.much[most],
       work:ftPick(C.work,seed,"w"), money:ftPick(C.money,seed,"m"), love:ftPick(C.love,seed,"l"),
@@ -3345,7 +3390,7 @@ const FT_ELC={木:"#4fae6a",火:"#e0533a",土:"#c99a3c",金:"#cfc8b8",水:"#4a8f
   box(1.9,.08,.85,mat("#7a1a12",{roughness:.6}),0,.84,0,g); box(1.95,.06,.9,goldP,0,.79,0,g);
   for(const sx of [-.85,.85]) for(const sz of [-.35,.35]) box(.07,.8,.07,wood,sx,.4,sz,g);
   const cloth=cvs(512,256,(x,w,h)=>{ x.fillStyle="#b3261a"; x.fillRect(0,0,w,h); x.strokeStyle="#e6b864"; x.lineWidth=10; x.strokeRect(10,10,w-20,h-20);
-    x.fillStyle="#ffe7a8"; x.font='700 92px "LXGW WenKai TC","Noto Serif TC",serif'; x.textAlign="center"; x.textBaseline="middle"; x.fillText("鐵口直斷",w/2,h*.42); x.font='600 40px "LXGW WenKai TC",serif'; x.fillText("八字・流年・指點迷津",w/2,h*.78); });
+    x.fillStyle="#ffe7a8"; x.font='700 120px "LXGW WenKai TC","Noto Serif TC",serif'; x.textAlign="center"; x.textBaseline="middle"; x.fillText("鐵口直斷",w/2,h*.52); });
   mesh(new T.PlaneGeometry(1.86,.74),new T.MeshStandardMaterial({map:cloth,roughness:.8}),0,.44,.43,g);
   const flagTex=cvs(128,512,(x,w,h)=>{ x.fillStyle="#f6ead0"; x.fillRect(0,0,w,h); x.strokeStyle="#b3261a"; x.lineWidth=12; x.strokeRect(6,6,w-12,h-12);
     x.fillStyle="#1c120c"; x.font='700 92px "LXGW WenKai TC","Noto Serif TC",serif'; x.textAlign="center"; x.textBaseline="middle"; "鐵口直斷".split("").forEach((c,i)=>x.fillText(c,w/2,70+i*118)); });
@@ -3353,12 +3398,23 @@ const FT_ELC={木:"#4fae6a",火:"#e0533a",土:"#c99a3c",金:"#cfc8b8",水:"#4a8f
   box(.5,.03,.35,mat("#e9dcb8"),-.35,.895,.05,g); box(.5,.035,.04,mat("#7a4a2a"),-.35,.9,.05,g);           // an open almanac
   cyl(.1,.12,.22,mat("#5a3a1e"),.5,.99,0,g,10); for(let i=0;i<9;i++) cyl(.008,.008,.38,mat("#c9a26a"),.5+Math.cos(i)*.04,1.18,Math.sin(i)*.04,g,4); // 籤筒 of bamboo sticks
   const lamp=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffcf73"),transparent:true,opacity:.6,blending:T.AdditiveBlending,depthWrite:false})); lamp.position.set(.8,1.25,-.2); lamp.scale.set(1.4,1.4,1); g.add(lamp);
-  box(.5,.45,.5,wood,0,.225,-.95,g);
+  box(.5,.45,.5,wood,0,.225,-.95,g); // his stool
+  { const cane=cyl(.022,.022,1.05,wood,.42,.52,-.62,g,6); cane.rotation.z=-.28; const top=new T.Mesh(new T.TorusGeometry(.06,.02,6,12,Math.PI),wood); top.position.set(.27,1.04,-.62); g.add(top); }
   // the plaque text uses the web font; redraw once its glyphs have arrived
-  if(document.fonts) document.fonts.load('700 92px "LXGW WenKai TC"',"鐵口直斷八字流年指點迷津・").then(()=>{ for(const t of [cloth,flagTex]){ const c=t.image, x=c.getContext("2d"); x.clearRect(0,0,c.width,c.height); t._draw(x,c.width,c.height); t.needsUpdate=true; } }).catch(()=>{}); }
+  if(document.fonts) document.fonts.load('700 92px "LXGW WenKai TC"',"鐵口直斷").then(()=>{ for(const t of [cloth,flagTex]){ const c=t.image, x=c.getContext("2d"); x.clearRect(0,0,c.width,c.height); t._draw(x,c.width,c.height); t.needsUpdate=true; } }).catch(()=>{}); }
 // the master himself: grey robe, round glasses, long white beard
-{ const av=new Avatar([1,0,0,6,0,0,2,0,1,0,0,0,0],{npc:true,x:FTB.x-.95,z:FTB.z}); av.sjBusy=1; av.rotY=Math.PI/2; av.faceGoal=Math.PI/2; av.kneel=0;
+{ const look=[1,0,0,6,1,0,0,7,1,0,0,0,0]; const av=new Avatar(look,{npc:true,x:FTB.x-.95,z:FTB.z}); av.sjBusy=1; av.rotY=Math.PI/2; av.faceGoal=Math.PI/2; av.kneel=0;
   const H=av.head, ink=mat("#141010",{roughness:.4}), white=mat("#f3efe6",{roughness:.9,side:T.DoubleSide});
+  // an old face: the usual face plus bushy white brows, forehead lines, crow's feet, smile lines and a few age spots
+  { const hm=H.children.find(o=>o.isMesh); const base=faceTexture(look).image; const tex=cvs(base.width,base.height,(x)=>{ x.drawImage(base,0,0); const cx=128, ey=140; x.lineCap="round";
+      x.strokeStyle="rgba(120,70,40,.55)"; x.lineWidth=2.4; for(let i=0;i<3;i++){ x.beginPath(); x.moveTo(cx-34,ey-46-i*10); x.quadraticCurveTo(cx,ey-52-i*10,cx+34,ey-46-i*10); x.stroke(); }
+      for(const s of [-1,1]){ for(let i=-1;i<=1;i++){ x.beginPath(); x.moveTo(cx+s*40,ey+i*5); x.lineTo(cx+s*52,ey+i*9); x.stroke(); } x.beginPath(); x.moveTo(cx+s*16,ey+16); x.quadraticCurveTo(cx+s*26,ey+30,cx+s*20,ey+42); x.stroke(); }
+      x.fillStyle="rgba(130,80,50,.35)"; for(const [ax,ay,r] of [[cx-40,ey-30,4],[cx+44,ey+18,3],[cx+30,ey-38,3]]){ x.beginPath(); x.arc(ax,ay,r,0,7); x.fill(); }
+      x.strokeStyle="#f6f2ea"; x.lineWidth=9; for(const s of [-1,1]){ x.beginPath(); x.moveTo(cx+s*12,ey-20); x.quadraticCurveTo(cx+s*26,ey-30,cx+s*42,ey-18); x.stroke(); } });
+    if(hm) hm.material=new T.MeshStandardMaterial({map:tex,roughness:.65}); }
+  mk(H,new T.SphereGeometry(.272,20,10,0,Math.PI*2,0,Math.PI*.3),mat("#1a1414",{roughness:.6}),0,.03,0); mk(H,new T.SphereGeometry(.035,10,8),mat("#b3261a",{roughness:.5}),0,.3,0); // 瓜皮帽
+  mk(H,new T.TorusGeometry(.25,.055,8,20,Math.PI*1.25),mat("#eeeae2",{roughness:.95}),0,-.02,0,Math.PI/2,0,Math.PI*1.12); // white hair round the back
+  for(const s of [-1,1]) mk(H,new T.BoxGeometry(.11,.025,.02),white,s*.06,-.085,.25,0,0,s*.35); // drooping moustache
   for(const s of [-1,1]) mk(H,new T.TorusGeometry(.06,.011,6,18),ink,s*.085,.02,.245); mk(H,new T.BoxGeometry(.06,.012,.012),ink,0,.03,.255);
   for(const [x,len] of [[0,.36],[-.06,.26],[.06,.26]]) mk(H,new T.BoxGeometry(.07,len,.015),white,x,-.12-len/2,.22,-.15);
   FTB.av=av; }
@@ -3366,46 +3422,49 @@ station("fortune",[FTB.x+1.9,FTB.z],-Math.PI/2);
 setTimeout(()=>addHit("fortune",FTB.x-.2,0,FTB.z,1.3,2.4),0);
 STATION_LABEL.fortune="鐵口直斷"; STATION_HINT.fortune="走向算命攤";
 function ftTick(dt){ const av=FTB.av; if(!av) return; av.pos.set(FTB.x-.95,FTB.z); av.target.copy(av.pos); av.faceGoal=Math.PI/2; av.update(dt);
-  if(FTB.talkT>0){ FTB.talkT-=dt; av.arms[1].rotation.set(-.9+Math.sin(av.t*5)*.25,0,.3); av.head.rotation.x=Math.sin(av.t*7)*.06; }
-  else { av.arms[0].rotation.set(-.55,0,-.3); av.arms[1].rotation.set(-.55,0,.3); av.head.rotation.x=Math.sin(av.t*.9)*.05; } }
+  av.root.position.y=.17; av.hips.position.y=.28; av.legs.forEach(l=>l.rotation.x=1.45); av.torso.rotation.x=.3; // sitting on his stool, a little bent
+  if(FTB.talkT>0){ FTB.talkT-=dt; av.arms[1].rotation.set(-.9+Math.sin(av.t*5)*.25,0,.3); av.head.rotation.x=-.28+Math.sin(av.t*7)*.06; }
+  else { av.arms[0].rotation.set(-.55,0,-.3); av.arms[1].rotation.set(-.55,0,.3); av.head.rotation.x=-.28+Math.sin(av.t*.9)*.05; } }
 // mumbling while he works it out: the same squeaky voice idea as the 收驚阿嬤, lower and slower, only you hear it
-function ftMumble(secs){ const a=soundOn?ensureAudio():null, v=sVol(); FTB.talkT=secs; if(!a||v<=0) return; let t=a.currentTime+.05; const end=t+secs, F=[[700,1100],[400,2000],[320,2400],[500,850]];
-  while(t<end){ const d=.09+Math.random()*.14, f0=150+Math.random()*60; const o=a.createOscillator(); o.type="sawtooth"; o.frequency.setValueAtTime(f0,t); o.frequency.linearRampToValueAtTime(f0*(Math.random()<.5?1.25:.82),t+d);
-    const out=a.createGain(); out.gain.setValueAtTime(0,t); out.gain.linearRampToValueAtTime(.2*v,t+.015); out.gain.linearRampToValueAtTime(0,t+d); out.connect(a.destination);
+function ftMumble(secs){ const a=soundOn?ensureAudio():null, v=sVol(); FTB.talkT=secs; if(!a||v<=0) return; let t=a.currentTime+.05; const end=t+secs, F=[[700,1100],[400,2000],[320,2400],[500,850]]; /* an old man's voice: low, slow and a little shaky */
+  while(t<end){ const d=.12+Math.random()*.18, f0=118+Math.random()*40; const o=a.createOscillator(); o.type="sawtooth"; o.frequency.setValueAtTime(f0,t); o.frequency.linearRampToValueAtTime(f0*(Math.random()<.5?1.25:.82),t+d);
+    const out=a.createGain(); out.gain.setValueAtTime(0,t); out.gain.linearRampToValueAtTime(.2*v,t+.015); out.gain.linearRampToValueAtTime(0,t+d); out.connect(sfxBus(a));
     for(const fr of F[(Math.random()*F.length)|0]){ const bp=a.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=fr; bp.Q.value=6; o.connect(bp).connect(out); } o.start(t); o.stop(t+d+.05); t+=d+.03+Math.random()*.08; } }
 let ftLibP=null;
 function ftLib(){ if(window.Solar&&window.Solar.fromYmdHms) return Promise.resolve(); if(!ftLibP) ftLibP=new Promise((res,rej)=>{ const s=document.createElement("script"); s.src="lunar.js"; s.onload=()=>res(); s.onerror=()=>{ ftLibP=null; rej(); }; document.head.appendChild(s); }); return ftLibP; }
-function openFortune(){ const saved=load("mz.bazi",null), today=new Date().toISOString().slice(0,10);
-  openSheet("fortune","鐵口直斷",`<p class="lead">報上你的生辰，老師傅幫你排八字、講白話。</p>
-  <div class="ft-form"><label class="field"><span class="group-label">出生日期（國曆）</span><input type="date" id="ftDate" min="1900-01-01" max="${today}" value="${esc(saved?saved.d:"")}"></label>
-  <label class="field"><span class="group-label">出生時辰</span><select id="ftHour"><option value="-1">不知道時辰</option>${FT_HOURS.map((h,i)=>`<option value="${i}" ${saved&&saved.h===i?"selected":""}>${h[0]}（${h[1]}）</option>`).join("")}</select></label></div>
-  <button class="primary" data-act="ftGo" style="width:100%">請老師傅開示</button>
-  <p class="note">請填出生當時的鐘錶時間。晚上 11 點後算子時，以當天計。不知道時辰就不排時柱，其他照算。<br>生日只存在你這支手機，不會上傳。</p><div id="ftOut"></div>`);
-  if(saved&&saved.d) HANDLERS.ftGo(null,null,true); }
-HANDLERS.ftGo=async(v,b,quiet)=>{ const ds=(($("#ftDate")||{}).value||""), h=+(($("#ftHour")||{}).value??-1); const out=$("#ftOut"); if(!out) return;
-  const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(ds); if(!m){ toast("先選出生日期"); return; } const y=+m[1], mo=+m[2], d=+m[3];
-  if(y<1900||new Date(y,mo-1,d)>new Date()){ toast("日期不太對，再確認一下"); return; }
+function openFortune(){ let sv=load("mz.bazi",null); if(sv&&sv.d&&sv.y==null){ const q=String(sv.d).split("-").map(Number); sv={y:q[0],m:q[1],d:q[2],hh:sv.h>=0?FT_HOURS[sv.h][2]:-1}; }
+  const v=k=>sv&&sv[k]!=null&&sv[k]>=0?sv[k]:"", box=(id,k,len,ph,unit)=>`<label class="ft-box"><input id="${id}" type="text" inputmode="numeric" autocomplete="off" maxlength="${len}" placeholder="${ph}" value="${v(k)}"><span>${unit}</span></label>`;
+  openSheet("fortune","鐵口直斷",`<p class="lead">報上你的生日，老師傅幫你看看。</p>
+  <div class="ft-in">${box("ftY","y",4,"1990","年")}${box("ftM","m",2,"5","月")}${box("ftD","d",2,"17","日")}${box("ftH","hh",2,"14","時")}</div>
+  <p class="note">國曆生日。時填 0–23 點，不知道可以空著。生日只存在你這支手機。</p>
+  <button class="primary" data-act="ftGo" style="width:100%">請老師傅開示</button><div id="ftOut"></div>`);
+  const ids=["ftY","ftM","ftD","ftH"], full=[v=>v.length>=4,v=>v.length>=2||+v>1,v=>v.length>=2||+v>3,v=>v.length>=2||+v>2];
+  ids.forEach((id,i)=>{ const el=$("#"+id); el.addEventListener("input",()=>{ el.value=el.value.replace(/\D/g,""); if(i<3&&full[i](el.value)) $("#"+ids[i+1]).focus(); });
+    el.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); HANDLERS.ftGo(); } if(e.key==="Backspace"&&!el.value&&i>0) $("#"+ids[i-1]).focus(); }); });
+  if(sv&&sv.y) HANDLERS.ftGo(null,null,true); }
+HANDLERS.ftGo=async(v,b,quiet)=>{ const out=$("#ftOut"); if(!out) return; const num=id=>{ const t=(($("#"+id)||{}).value||"").trim(); return t===""?null:+t; };
+  const y=num("ftY"), mo=num("ftM"), d=num("ftD"), hh=num("ftH"); if(y==null||mo==null||d==null){ toast("先填出生的年、月、日"); return; }
+  const dt=new Date(y,mo-1,d); if(y<1900||mo<1||mo>12||d<1||dt.getMonth()!==mo-1||dt>new Date()){ toast("日期不太對，再確認一下"); return; }
+  if(hh!=null&&(hh<0||hh>23)){ toast("時要填 0 到 23"); return; } const h=hh==null?-1:Math.floor(((hh+1)%24)/2); try{ document.activeElement&&document.activeElement.blur(); }catch(e){}
   out.innerHTML=`<p class="lead ft-wait">老師傅掐指一算……</p>`; if(!quiet){ ftMumble(2.6); FTB.av&&FTB.av.say("嗯…讓我看看…","#ffe2a0",2.6); }
   try{ await ftLib(); }catch(e){ out.innerHTML=`<p class="lead">萬年曆沒有載入成功，請稍後再試一次。</p>`; return; }
-  await new Promise(r=>setTimeout(r,quiet?0:2400)); save("mz.bazi",{d:ds,h});
+  await new Promise(r=>setTimeout(r,quiet?0:2400)); save("mz.bazi",{y,m:mo,d,hh:hh==null?-1:hh});
   let r; try{ r=ftReading(y,mo,d,h,new Date()); }catch(e){ out.innerHTML=`<p class="lead">這個日期排不出來，請換個日期試試。</p>`; return; }
   if(!quiet&&FTB.av){ FTB.av.say("鐵口直斷！","#ffe2a0",3); ftMumble(1.4); }
-  const lab=["年柱","月柱","日柱","時柱"], tg=(g,i)=>i===2?"日主（你）":ftTenGod(r.day,g);
-  const pill=r.pillars.map((p,i)=>p?`<div class="ft-p"><small>${lab[i]}</small><b style="color:${FT_ELC[FT_GAN_EL[p[0]]]}">${p[0]}</b><b style="color:${FT_ELC[FT_ZHI_EL[p[1]]]}">${p[1]}</b><em>${tg(p[0],i)}</em></div>`:`<div class="ft-p ft-none"><small>${lab[i]}</small><b>？</b><b>？</b><em>時辰不詳</em></div>`).join("");
-  const max=Math.max(...FT_EL.map(e=>r.cnt[e]),1), bars=FT_EL.map(e=>`<div class="ft-bar"><span>${e}</span><i><u style="width:${Math.round(r.cnt[e]/max*100)}%;background:${FT_ELC[e]}"></u></i><small>${r.cnt[e].toFixed(1)}</small></div>`).join("");
-  const T=r.text, L=r.luck, mon=a=>a.length?a.map(n=>n+"月").join("、"):"沒有特別要避開的";
-  out.innerHTML=`<div class="ft-card"><div class="ft-head">命盤<small>照萬年曆算出來的，這部分是固定的</small></div>
-    <div class="ft-pillars">${pill}</div>
-    <p class="ft-fact">日主是「${r.day}」，屬${r.me}（${FT_GAN.indexOf(r.day)%2?"陰":"陽"}${r.me}）；生肖屬${r.animal}。五行數量（藏干算 0.3）：</p><div class="ft-bars">${bars}</div></div>
-  <div class="ft-card"><div class="ft-head">老師傅白話<small>傳統命理的說法，看看就好</small></div>
+  const T=r.text, L=r.luck, D=ftToday(r,new Date()), mon=a=>a.length?a.map(n=>n+"月").join("、"):"沒有特別要避開的", st=n=>`<span class="ft-st">${"★".repeat(n)}<i>${"★".repeat(5-n)}</i></span>`;
+  out.innerHTML=`<p class="ft-warn">這是趣味性小遊戲，沒有根據，僅供參考。</p>
+  <div class="ft-card"><div class="ft-head">今日運勢<small>${D.date}　每天都不一樣</small></div>
+    <div class="ft-today"><div><small>整體</small>${st(D.all)}</div><div><small>財運</small>${st(D.money)}</div><div><small>感情</small>${st(D.love)}</div><div><small>工作</small>${st(D.work)}</div></div>
+    <p>${D.text}</p><p class="ft-yj"><b class="yi">宜</b>${D.yi.join("、")}　<b class="ji">忌</b>${D.ji.join("、")}</p>
+    <div class="ft-luck"><div><small>今日幸運色</small><b>${D.color}</b></div><div><small>幸運數字</small><b>${D.num}</b></div><div><small>幸運方位</small><b>${D.dir}</b></div></div></div>
+  <div class="ft-card"><div class="ft-head">老師傅說</div>
     <h4>你是怎樣的人</h4><p>${T.self}</p><p>${T.strength}</p><p>${T.elements}</p>
     <h4>工作</h4><p>${T.work}</p><h4>錢財</h4><p>${T.money}</p><h4>感情</h4><p>${T.love}</p>
-    <h4>今年（${r.year}${r.yearAnimal}年）</h4><p>${T.year}</p><p>${T.taisui}</p></div>
+    <h4>今年（${r.yearAnimal}年）</h4><p>${T.year}</p><p>${T.taisui}</p></div>
   <div class="ft-card"><div class="ft-head">開運小建議</div>
-    <div class="ft-luck"><div><small>幸運色</small><b>${L.color}</b></div><div><small>幸運方位</small><b>${L.dir}</b></div><div><small>幸運數字</small><b>${L.num}</b></div><div><small>補運</small><b>${L.el}</b></div></div>
-    <p>${L.act}，對你特別有幫助。</p><p>今年比較順的月份：${mon(L.good)}；要多留意的月份：${mon(L.bad)}（國曆，大約）。</p></div>
+    <div class="ft-luck"><div><small>幸運色</small><b>${L.color}</b></div><div><small>幸運方位</small><b>${L.dir}</b></div><div><small>幸運數字</small><b>${L.num}</b></div></div>
+    <p>${L.act}，對你特別有幫助。</p><p>今年比較順的月份：${mon(L.good)}；要多留意的月份：${mon(L.bad)}。</p></div>
   <div class="ft-verdict">${T.verdict}</div>
-  <p class="note">以上依子平八字的基本規則簡化成白話，屬於傳統文化的娛樂參考，不是預言；人生怎麼走，還是看你自己。</p>
   <button class="secondary" data-act="ftAgain" style="width:100%">幫別人算</button>`;
   if(!quiet) out.scrollIntoView({behavior:"smooth",block:"start"}); };
 HANDLERS.ftAgain=()=>{ try{ localStorage.removeItem("mz.bazi"); }catch(e){} openFortune(); };
@@ -3515,8 +3574,8 @@ HANDLERS.toggleStage=async(v,b)=>{ if(!me.sp) return; const key=(($("#readKey")|
     else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":"密碼不對，沒有變更",3200); }catch(e){ toast("沒有變更，請稍後再試"); } b.disabled=false; };
 
 /* ---- sound: the three tracks in turn, plus synthesized Taiwanese-style singing, both fading with distance ---- */
-function opAudioNodes(){ const a=ac; if(!a) return false; if(!OP.voiceGain){ OP.voiceGain=a.createGain(); OP.voiceGain.gain.value=0; OP.voiceGain.connect(a.destination); }
-  if(!OP.aud){ OP.aud=new Audio(); OP.aud.preload="none"; OP.aud.loop=false; try{ const src=a.createMediaElementSource(OP.aud); OP.musicGain=a.createGain(); OP.musicGain.gain.value=0; src.connect(OP.musicGain).connect(a.destination); }catch(e){ OP.musicGain=null; } }
+function opAudioNodes(){ const a=ac; if(!a) return false; if(!OP.voiceGain){ OP.voiceGain=a.createGain(); OP.voiceGain.gain.value=0; OP.voiceGain.connect(sfxBus(a)); }
+  if(!OP.aud){ OP.aud=new Audio(); OP.aud.preload="none"; OP.aud.loop=false; try{ const src=a.createMediaElementSource(OP.aud); OP.musicGain=a.createGain(); OP.musicGain.gain.value=0; src.connect(OP.musicGain).connect(a.destination) /* stage music: its own gain, not the effects bus */; }catch(e){ OP.musicGain=null; } }
   return true; }
 function opTrackAt(){ let t=((Date.now()-OP.at)/1000)%OP_TOTAL; for(let i=0;i<OP_TRACKS.length;i++){ if(t<OP_TRACKS[i][1]) return [i,t]; t-=OP_TRACKS[i][1]; } return [0,0]; }
 function opMusic(dt){ const want=OP.on&&soundOn&&audioUnlocked&&OP.prox>.01; if(!want){ if(OP.aud&&!OP.aud.paused) OP.aud.pause(); return; } if(!opAudioNodes()) return;
@@ -3535,7 +3594,7 @@ function opSyllable(a,r,at,dur,f0,contour,sung){ const o=a.createOscillator(); o
   const fm=OP_VOWELS[(Math.random()*OP_VOWELS.length)|0]; for(const fr of fm){ const bp=a.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=fr*(r.pitch>400?1.25:1.05); bp.Q.value=r.quick?9:6; o.connect(bp).connect(out); } { const lp=a.createBiquadFilter(), body=a.createGain(); lp.type="lowpass"; lp.frequency.value=f0*3.2; body.gain.value=.22; o.connect(lp).connect(body).connect(out); } /* a little of the raw voice under the vowels makes it fuller and easier to hear over the band */
   o.start(at); o.stop(at+dur+.05); }
 // a line of 唱 (slow, pentatonic, drawn-out last note) or 口白 (quick patter with checked syllables), speeding up and slowing down
-function opVoice(r,sung,len){ const a=ac; if(!a||!OP.voiceGain||!soundOn) return; let t=a.currentTime+.05; const end=t+len, SC=[0,2,4,7,9,12], C=["hi","fall","low","rise","dip","stop"];
+function opVoice(r,sung,len){ const a=ac; if(!a||!OP.voiceGain||!soundOn||document.hidden) return; let t=a.currentTime+.05; const end=t+len, SC=[0,2,4,7,9,12], C=["hi","fall","low","rise","dip","stop"];
   let deg=2; while(t<end-.3){ let dur, f; const rate=r.quick?1.6:1;
     if(sung){ deg=Math.max(0,Math.min(SC.length-1,deg+((Math.random()*3)|0)-1)); f=r.pitch*Math.pow(2,SC[deg]/12); const last=t>end-1.9; dur=last?Math.min(1.8,end-t):(.24+Math.random()*.5)/rate; opSyllable(a,r,t,dur,f,last?"hi":C[(Math.random()*5)|0],true); t+=dur+.04; if(last) break; }
     else { const burst=2+((Math.random()*4)|0); for(let i=0;i<burst&&t<end;i++){ const c=C[(Math.random()*C.length)|0]; dur=c==="stop"?.07:(.09+Math.random()*.11)/rate; f=r.pitch*(.9+Math.random()*.25); opSyllable(a,r,t,dur,f,c,false); t+=dur+.015; } t+=.12+Math.random()*.25; } } }
@@ -3579,6 +3638,7 @@ function opTick(dt){ if(!OP.on||!OP.root){ opMusic(dt); if(OP.voiceGain) OP.voic
 const tmpV=new T.Vector3();
 let gameAsleep=false;
 function tick(){ if(gameAsleep) return; const dt=Math.min(.05,clock.getDelta()); const t=clock.elapsedTime;
+  { const nowP=performance.now(); if(AUQ.frame&&nowP-AUQ.frame>800){ AUQ.until=nowP+1500; remotes.forEach(av=>{ if(av.goalX!=null){ av.pos.set(av.goalX,av.goalZ); av.target.set(av.goalX,av.goalZ); av.path=[]; } }); } AUQ.frame=nowP; }
   meAv.update(dt); arrivedCheck();
   if(tapMark.visible){ tapT+=dt; const arrived=!(meAv.path&&meAv.path.length)&&meAv.pos.distanceTo(meAv.target)<.06; const k=1+Math.sin(tapT*6)*.12; const [r1,r2,dot]=tapMark.userData.parts;
     r1.scale.setScalar(k); r2.scale.setScalar(1+((tapT*1.2)%1)*.8); r2.material.opacity=.7*(1-((tapT*1.2)%1));
@@ -3651,7 +3711,7 @@ function tick(){ if(gameAsleep) return; const dt=Math.min(.05,clock.getDelta());
     if(p.g) p.vy-=p.g*dt; p.s.position.x+=(p.vx+Math.sin(t*1.3+i)*.04)*dt; p.s.position.y+=p.vy*dt; p.s.position.z+=p.vz*dt; const sc=p.s.scale.x+p.grow*dt; p.s.scale.set(Math.max(.02,sc),Math.max(.02,sc),1);
     p.s.material.opacity=p.op*Math.sin(Math.min(1,k)*Math.PI); }
   const dp=dustGeo.attributes.position.array; for(let i=0;i<dustN;i++){ dp[i*3+1]+=Math.sin(t*.5+i)*.0015; dp[i*3]+=Math.cos(t*.3+i*.7)*.001; } dustGeo.attributes.position.needsUpdate=true;
-  if(duckT>0){ duckT-=dt; } { const mv=mVol(), top=(curTrack==="cat"?.55:curTrack==="fw"?.6:.38)*mv; const topN=top*(1-((OP&&OP.prox)||0)); bgm.volume=duckT>0?Math.min(.16*mv,topN):Math.min(topN,bgm.volume+dt*.1); } // near the opera stage the temple music fades all the way out, and back in as you walk away
+  if(duckT>0){ duckT-=dt; } { const mv=mVol(), top=(curTrack==="cat"?.55:curTrack==="fw"?.6:.38)*mv, near=(OP&&OP.on)?OP.prox:0; const goal=(duckT>0?Math.min(.16*mv,top):top)*(1-near); if(AU.lv<0) AU.lv=goal; AU.lv+=(goal-AU.lv)*Math.min(1,dt*(goal<AU.lv?2.5:1)); musicLevel(AU.lv<.004?0:AU.lv); } // near the opera stage the temple music fades all the way out, and back in as you walk away
   { const dc=Math.hypot(meAv.pos.x-CATS.c.x,meAv.pos.y-CATS.c.z); const want=catMode?dc<4.2:dc<3.2;
     if(want!==catMode){ catMode=want; if(!FW.on) setTrack(catMode?"cat":"main"); } }
   bellSwing*=Math.pow(.25,dt); bell.rotation.x=Math.sin(t*4)*.22*bellSwing; drumBounce*=Math.pow(.02,dt); drum.scale.setScalar(1+Math.sin(t*40)*.03*drumBounce);
