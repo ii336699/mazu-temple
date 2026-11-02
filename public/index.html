@@ -227,7 +227,10 @@ input,textarea{-webkit-user-select:text;user-select:text}
 .joy-knob{position:absolute;left:50%;top:50%;width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:50%;background:rgba(255,236,200,.2);border:1.5px solid rgba(255,230,180,.42);transition:transform .15s;pointer-events:none}
 .joy.on{border-color:rgba(255,215,120,.55);background:radial-gradient(circle,rgba(255,220,140,.06) 40%,rgba(255,220,140,.16))}
 .joy.on .joy-knob{transition:none;background:rgba(255,215,120,.38)}
-body.hideui .joy,body.customizing .joy{display:none}
+.camreset{position:fixed;left:calc(max(12px,env(safe-area-inset-left,0px)) + 33px);bottom:calc(env(safe-area-inset-bottom,0px) + 188px);width:30px;height:30px;border:0;padding:0;background:none;z-index:5;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.camreset::after{content:"";position:absolute;left:9px;top:9px;width:12px;height:12px;border-radius:50%;background:rgba(255,230,180,.55);box-shadow:0 0 0 1.5px rgba(255,230,180,.25),0 0 6px rgba(255,200,120,.35)}
+.camreset:active::after{background:#ffe6b4}
+body.hideui .joy,body.customizing .joy,body.hideui .camreset,body.customizing .camreset{display:none}
 .bank{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border:1px solid var(--gold-soft);border-radius:14px;background:rgba(255,240,210,.05)}
 .bank-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
 .bank-row b{font-family:var(--f-display);font-size:18px;color:var(--gold);letter-spacing:.06em}
@@ -358,7 +361,7 @@ body.hideui .joy,body.customizing .joy{display:none}
 <div class="caption" id="caption" data-hide></div>
 <button class="rot glass" id="rotL" aria-label="視角向左轉"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 3-6.2"/><path d="M4 4v4h4"/></svg></button>
 <button class="rot glass" id="rotR" aria-label="視角向右轉"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-3-6.2"/><path d="M20 4v4h-4"/></svg></button>
-<div class="joy" id="joy" role="application" aria-label="移動搖桿：按住往想去的方向推"><i></i><i></i><i></i><i></i><div class="joy-knob" id="joyKnob"></div></div>
+<button class="camreset" id="camReset" aria-label="回到正常視角" title="回到正常視角"></button><div class="joy" id="joy" role="application" aria-label="移動搖桿：按住往想去的方向推"><i></i><i></i><i></i><i></i><div class="joy-knob" id="joyKnob"></div></div>
 
 <nav class="actions" aria-label="動作">
   <button class="act" id="bowBtn"><span class="stamp">拜</span>參拜</button>
@@ -1805,7 +1808,7 @@ const shadowMat=new T.MeshBasicMaterial({map:shadowTex,transparent:true,depthWri
 const shadowGeo=new T.PlaneGeometry(.9,.9); shadowGeo.rotateX(-Math.PI/2);
 
 /* ---- 動作: ten silly body actions in the 表情 menu; the first five play once, the last five loop until you move or stop ---- */
-const ACTS=[{n:"跌倒",i:"🤕",d:3.2},{n:"伸懶腰",i:"🥱",d:3.2},{n:"開心跳跳",i:"🙌",d:2.6},{n:"轉圈圈",i:"🌀",d:3.4},{n:"比愛心",i:"🫶",d:3.0},
+const ACTS=[{n:"我不依",i:"😤",d:3.2},{n:"伸懶腰",i:"🥱",d:3.2},{n:"開心跳跳",i:"🙌",d:2.6},{n:"轉圈圈",i:"🌀",d:3.4},{n:"鞠躬九十度",i:"🙇",d:3.0},
   {n:"廣場舞",i:"💃",loop:1},{n:"機器人舞",i:"🤖",loop:1},{n:"小雞舞",i:"🐔",loop:1},{n:"甩手舞",i:"🕺",loop:1},{n:"躺平耍廢",i:"😪",loop:1}];
 function startAct(av,id){ av.act=id; av.actT=0; av.danceT=0; actReset(av); }
 function stopAct(av){ av.act=-1; actReset(av); }
@@ -1814,15 +1817,16 @@ function actPose(av,dt){ const a=ACTS[av.act]; av.actT+=dt; const t=av.actT; if(
   const L=av.legs, A=av.arms, P=av.parts, B=av.torso, H=av.head, s=Math.sin, cl=v=>Math.max(0,Math.min(1,v)), ez=v=>{ v=cl(v); return v*v*(3-2*v); };
   P.rotation.set(0,0,0); P.position.set(0,0,0); B.rotation.set(0,0,0); H.rotation.set(0,0,0); av.hips.position.y=.3; L[0].rotation.set(0,0,0); L[1].rotation.set(0,0,0);
   switch(av.act){
-    case 0: { const e=t<.45?ez(t/.45):t<2.3?1:1-ez((t-2.3)/.8); P.rotation.x=e*1.42; A[0].rotation.set(-2.7*e,0,-.35*e); A[1].rotation.set(-2.7*e,0,.35*e);
-      if(t>.45&&t<2.3){ L[0].rotation.x=-.5+s(t*14)*.45; L[1].rotation.x=-.5-s(t*14)*.45; } break; }                       // splat, kick, get up
+    case 0: { const w=Math.max(0,1-Math.max(0,t-2.8)/.4), st=s(t*9); L[0].rotation.x=-Math.max(0,st)*.65*w; L[1].rotation.x=-Math.max(0,-st)*.65*w;
+      P.position.y=Math.abs(st)*.04*w; P.rotation.y=st*.22*w; B.rotation.z=s(t*18)*.07*w; H.rotation.y=s(t*12)*.38*w; H.rotation.x=.12*w;
+      A[0].rotation.set(.3*w,0,(-.3+s(t*18)*.12)*w); A[1].rotation.set(.3*w,0,(.3-s(t*18)*.12)*w); break; }                // 我不依: stamp feet, twist, shake head
     case 1: { const e=t<.8?ez(t/.8):t<2.4?1:1-ez((t-2.4)/.8); A[0].rotation.set(-3.0*e,0,-.25*e+s(t*7)*.05*e); A[1].rotation.set(-3.0*e,0,.25*e-s(t*7)*.05*e);
       B.rotation.x=-.28*e; H.rotation.x=-.35*e; P.position.y=.03*e; break; }                                                  // big stretch and yawn
     case 2: { const j=Math.abs(s(t*Math.PI*1.15)); P.position.y=j*.36; A[0].rotation.set(-2.9+s(t*12)*.2,0,-.5); A[1].rotation.set(-2.9-s(t*12)*.2,0,.5);
       L[0].rotation.x=-j*.5; L[1].rotation.x=-j*.5; break; }                                                                   // three happy hops
     case 3: { const spin=ez(t/1.6); P.rotation.y=spin*Math.PI*4; A[0].rotation.set(-.4,0,-1.3); A[1].rotation.set(-.4,0,1.3);
       if(t>1.6){ const w=Math.max(0,1-(t-1.6)/1.8); P.rotation.z=s(t*7)*.28*w; H.rotation.z=s(t*9)*.4*w; A[0].rotation.z=-.5; A[1].rotation.z=.5; } break; } // spin, then dizzy
-    case 4: { const e=ez(t/.5)*(t>2.6?1-ez((t-2.6)/.4):1); A[0].rotation.set(-2.75*e,0,.75*e); A[1].rotation.set(-2.75*e,0,-.75*e); P.rotation.z=s(t*3.5)*.1*e; H.rotation.z=s(t*3.5)*.15*e; break; } // heart over the head
+    case 4: { const e=t<.6?ez(t/.6):t<2.2?1:1-ez((t-2.2)/.7); B.rotation.x=1.5*e; H.rotation.x=.15*e; A[0].rotation.set(.12*e,0,.05*e); A[1].rotation.set(.12*e,0,-.05*e); av.hips.position.y=.3-.02*e; break; } // 鞠躬九十度
     case 5: { const w=t*3.4; P.position.x=s(w)*.13; L[0].rotation.z=s(w)*.22; L[1].rotation.z=s(w)*.22; A[0].rotation.set(-1.6+s(w)*1.25,0,-.4); A[1].rotation.set(-1.6-s(w)*1.25,0,.4);
       B.rotation.z=s(w)*.12; H.rotation.z=-s(w)*.12; av.hips.position.y=.3-Math.abs(s(w))*.03; break; }                       // 廣場舞
     case 6: { const q=Math.floor(t*3.2)%4, ax=[[-1.57,0],[0,-1.57],[-1.57,-1.57],[0,0]][q], hy=[.5,-.5,0,.5][q];
@@ -1877,7 +1881,7 @@ class Avatar{
   moveTo(x,z){ this.seat=-1; this.goalSeat=false; this.target.set(x,z); this.path=[]; }
   bow(){ this.bowT=0; }
   applyPose(){ if(!this.hips) return; }
-  update(dt){ this.t+=dt; const d=this.target.clone().sub(this.pos); const dist=d.length(); const speed=this.moveSpeed??(this.isMe?2.76:3.0);
+  update(dt){ this.t+=dt; const d=this.target.clone().sub(this.pos); const dist=d.length(); const speed=this.moveSpeed??(this.isMe?3.31:3.6);
     let walking=false;
     if(dist<=.04&&this.path&&this.path.length){ const n=this.path.shift(); this.target.set(n[0],n[1]); if(this.isMe) markDirty(); }
     if(dist>.04){ walking=true; const step=Math.min(dist,speed*dt*(this.isMe||this.moveSpeed!=null?1:Math.min(3,1+dist))); this.pos.add(d.multiplyScalar(step/dist)); const want=Math.atan2(this.target.x-this.pos.x,this.target.y-this.pos.y); this.rotY=lerpAngle(this.rotY,want,Math.min(1,dt*10)); }
@@ -2067,6 +2071,8 @@ function walkTo(x,z,stationKey){ if(sjGuard(()=>walkTo(x,z,stationKey))) return;
 function goStation(k){ const s=stations[k]; walkTo(s.approach.x,s.approach.y,k); toast(STATION_HINT[k]); }
 const STATION_HINT={xuantian:"走向玄天上帝",guangong:"走向關聖帝君",cats:"走向小貓",fountain:"走向觀音噴泉",wish:"走向許願樹",jieqian:"走向解籤處",tiangong:"走向天公爐",caishen:"走向財神爺",yuelao:"走向月老",huye:"走向虎爺",lamp:"走向光明燈",lampR:"走向光明燈",bell:"走去敲鐘",drum:"走去擊鼓",altar:"走向供桌",lot:"走向籤詩櫃",shop:"走向服務處",burn:"走向金爐",donate:"走向香油錢箱"};
 function trySit(i){ if(sjGuard(()=>trySit(i))) return; if(seatTakenByPeer(i)){ toast("這個拜墊已經有人了"); return; } closeSheet(); showTap(SEATS[i].x,SEATS[i].y); pendingStation=null; meAv.sitAt(i); { const pth=planPath(meAv.pos.x,meAv.pos.y,SEATS[i].x,SEATS[i].y); meAv.target.set(pth[0][0],pth[0][1]); meAv.path=pth.slice(1); } meAv.faceGoal=null; npcYield(i); markDirty(); updateStandBtn(); }
+/* the small dot above the joystick: camera back behind your character at the normal height and distance */
+$("#camReset").onclick=()=>{ rotAnim={to:camYaw+wrapA(meAv.rotY+Math.PI-camYaw)}; camPitch=.3; camDist=4.6; };
 function arrivedCheck(){ if(pendingStation&&!(meAv.path&&meAv.path.length)&&meAv.pos.distanceTo(meAv.target)<.05){ const k=pendingStation; pendingStation=null; meAv.faceGoal=stations[k].face; { const want=stations[k].face+Math.PI; rotAnim={to:camYaw+wrapA(want-camYaw)}; camPitch=Math.max(camPitch,.28); } openStation(k); } }
 $("#standBtn").onclick=()=>{ meAv.seat=-1; meAv.target.set(meAv.pos.x,meAv.pos.y+.9); markDirty(); updateStandBtn(); };
 function updateStandBtn(){ $("#standBtn").hidden=meAv.seat<0||customizing; }
@@ -2182,14 +2188,16 @@ function botTick(dt){ const now=performance.now();
     if(live.length<want) makeBot([(Math.random()<.5?-1:1)*16.5,rand(HZ+3,HZ+YX+15)]);              // someone walks in from the side of the courtyard
     else if(live.length>want){ const n=live[(Math.random()*live.length)|0]; n.leaving=true; n.hold=0; n.danceT=0; n.anim=null; n.steps=[]; botStart(n,{leave:[(n.pos.x<0?-1:1)*16.5,Math.max(HZ+3,Math.min(HZ+YX+15,n.pos.y))]}); } } // someone heads home
   for(let i=npcs.length-1;i>=0;i--){ const n=npcs[i]; n.update(dt);
-    if(n.classic){ n.next-=dt; if(n.next<0){ n.next=rand(8,24); n.bow(); } if(Math.random()<dt/400) showEmo(n,BOT_EMO[(Math.random()*BOT_EMO.length)|0]); continue; }
+    if(n.classic){ n.next-=dt; if(n.next<0){ n.next=rand(8,24); n.bow(); } continue; }
     if(!n.step){ if(!n.steps||!n.steps.length){ if(n.leaving){ n.dispose(); npcs.splice(i,1); continue; } botPlan(n); } botStart(n,n.steps.shift()); }
     else if(botStep(n,dt)){ if(n.act>=0&&ACTS[n.act].loop) stopAct(n); n.anim=null; n.step=null; if(n.leaving&&(!n.steps||!n.steps.length)){ n.dispose(); npcs.splice(i,1); continue; } }
     botPose(n); if(n.afk) continue;
     if(Math.random()<dt/160){ const ph=PHRASES[(Math.random()*PHRASES.length)|0]; n.say(ph,"#f7ecd6"); if(Math.random()<.25) logChat(n.name,ph,false); }
     if(Math.random()<dt/240) showEmo(n,BOT_EMO[(Math.random()*BOT_EMO.length)|0]); } }
 function buildNpcs(){ npcs.forEach(n=>n.dispose()); npcs.length=0;
-  for(let i=0;i<sitterWant();i++){ const s=freeSeat(); if(s<0) break; const a=makeBot([SEATS[s].x,SEATS[s].y]); a.classic=true; a.seat=s; a.kneel=1; a.next=rand(2,18); a.steps=[]; a.step=null; }
+  // the original demo worshippers, exactly as before: no name, always kneeling on the mats in the hall and bowing now and then
+  if(showNpc) for(let i=0;i<(Q.lite?3:Q.low?6:12);i++){ const s=freeSeat(); if(s<0) break; const a=new Avatar(randomLook(),{npc:true,x:SEATS[s].x,z:SEATS[s].y}); try{ bakeAvatar(a); }catch(e){}
+    a.classic=true; a.seat=s; a.kneel=1; a.next=rand(2,18); a.steps=[]; a.step=null; if(customizing) a.root.visible=false; npcs.push(a); }
   const want=botWant(); BOT.afkFrac=rand(.2,.4); let afk=Math.round(want*BOT.afkFrac);
   for(let i=0;i<want;i++){ const r=Math.random(); let a;
     if(afk>0){ afk--; const [x,z]=Math.random()<.5?hallSpot():botSpot(); a=makeBot([x,z]); a.rotY=rand(-Math.PI,Math.PI); a.steps=[{afk:rand(120,1500)}]; continue; }
