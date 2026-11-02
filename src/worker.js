@@ -3,9 +3,9 @@
 import { DurableObject } from "cloudflare:workers";
 
 const HALLS = 10, CAP = 100, MAX_MSG = 4000;
-const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000, "/crowd": 5000 };
-const LOBBY_PATHS = ["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/crowd"];
-const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage", "/crowd": "/crowd" }; // a POST here makes that cached list stale
+const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000, "/crowd": 5000, "/market": 5000 };
+const LOBBY_PATHS = ["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/crowd", "/market"];
+const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage", "/crowd": "/crowd", "/market": "/market" }; // a POST here makes that cached list stale
 
 export default {
   async fetch(req, env) {
@@ -58,6 +58,10 @@ export class Hall extends DurableObject {
       let b = {}; try { b = await req.json(); } catch {}
       const ann = { t: "ann", text: String(b.text || "").slice(0, 80), at: Number(b.at) || Date.now() }; await this.ctx.storage.put("ann", ann);
       const out = JSON.stringify(ann); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
+    }
+    if (url.pathname === "/market") { // from the lobby: the chair opened or closed night-market stalls
+      let b = {}; try { b = await req.json(); } catch {}
+      const out = JSON.stringify({ t: "market", open: b.open || {} }); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
     }
     if (url.pathname === "/stage") { // from the lobby: the chair put the opera stage out or packed it away
       let b = {}; try { b = await req.json(); } catch {}
@@ -193,6 +197,18 @@ export class Lobby extends DurableObject {
       return json({ ok: true, ...st });
     }
     if (url.pathname === "/stage") return json((await this.ctx.storage.get("stage")) || { on: false, at: 0 });
+    // 夜市: which stalls are open and when each was opened (that order is the order along the wall)
+    if (url.pathname === "/market" && req.method === "POST") {
+      const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
+      let b = {}; try { b = await req.json(); } catch {}
+      const KEYS = ["qq", "sausage", "bbq", "fish", "pachinko", "boba", "balloon"], st = (await this.ctx.storage.get("market")) || { open: {} }, now = Date.now();
+      if (b.all != null) KEYS.forEach((k, i) => { if (b.all) st.open[k] = st.open[k] || now + i; else delete st.open[k]; });
+      else if (KEYS.includes(b.k)) { if (b.on) st.open[b.k] = now; else delete st.open[b.k]; }
+      await this.ctx.storage.put("market", st);
+      await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/market", { method: "POST", body: JSON.stringify(st) }).catch(() => {})));
+      return json({ ok: true, ...st });
+    }
+    if (url.pathname === "/market") return json((await this.ctx.storage.get("market")) || { open: {} });
     // 線上人數: the chair sets a target the shown count eases to over about half an hour (null = back to the time-of-day pattern).
     // Each phone works the number out from these three values and the clock, so this is read rarely and never pushed.
     if (url.pathname === "/crowd" && req.method === "POST") {
