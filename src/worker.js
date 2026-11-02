@@ -233,7 +233,8 @@ export class Lobby extends DurableObject {
       let b = {}; try { b = await req.json(); } catch {}
       const t = b.target == null ? null : Math.max(0, Math.min(900, Math.round(Number(b.target) || 0)));
       const from = Math.max(0, Math.min(1000, Math.round(Number(b.from) || 0)));
-      const c = { target: t, from, at: Date.now() }; await this.ctx.storage.put("crowd", c); return json({ ok: true, ...c });
+      const real = !!b.real; /* real: show only real players, no demo crowd */
+      const c = { target: real ? 0 : t, from, at: Date.now(), real }; await this.ctx.storage.put("crowd", c); return json({ ok: true, ...c });
     }
     if (url.pathname === "/crowd") return json((await this.ctx.storage.get("crowd")) || { target: null, from: null, at: 0 });
     // 斬小人排行榜: best score per player, top 20 kept

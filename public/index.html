@@ -2106,12 +2106,13 @@ let CROWD={target:null,from:null,at:0}; // set by the chair: ease from `from` to
 const CROWD_RAMP=60e3; // how long the count takes to reach the chair's target (1 minute)
 function fakeTotal(ts){ const a=autoCrowd(ts); if(!CROWD.at) return a; const k=Math.max(0,Math.min(1,(ts-CROWD.at)/CROWD_RAMP)), s=k*k*(3-2*k), from=CROWD.from==null?a:CROWD.from;
   if(CROWD.target==null) return Math.round(from+(a-from)*s);
+  if(CROWD.real) return Math.max(0,Math.round(from*(1-s))); // 真實人數: the demo crowd fades out within a minute
   return Math.max(0,Math.round(from+(CROWD.target-from)*s+crowdWobble(ts)*s)); }
 // around the chair's target the count jumps now and then, by a few people at a time and at uneven moments, never beyond ±10;
 // every phone gets the same numbers from the clock (no server traffic)
 function crowdWobble(ts){ const step=6000; let i=Math.floor(ts/step); for(let k=0;k<40&&fakeRand(i*13+5)>=.32;k++) i--;
   const v=Math.round((fakeNoise(i*step,5*60e3,3)*2-1)*7+(fakeRand(i*29+11)-.5)*5.5); return Math.max(-10,Math.min(10,v)); }
-async function crowdFetch(){ try{ const r=await fetch("/crowd",{cache:"no-store"}); if(!r.ok) return; const j=await r.json(); if(j&&typeof j.at==="number"&&j.at>=(CROWD.at||0)) CROWD={target:j.target??null,from:j.from??null,at:j.at}; }catch(e){} }
+async function crowdFetch(){ try{ const r=await fetch("/crowd",{cache:"no-store"}); if(!r.ok) return; const j=await r.json(); if(j&&typeof j.at==="number"&&j.at>=(CROWD.at||0)) CROWD={target:j.target??null,from:j.from??null,at:j.at,real:!!j.real}; }catch(e){} }
 const FAKE_W=[.34,.2,.14,.1,.07,.05,.04,.03,.02,.01]; // how the crowd spreads over 正殿…十殿
 // halls fill in order: a hall takes 86–94 people before anyone shows up in the next one
 function fakeSplit(T){ const ts=Date.now(), out=[]; let left=Math.max(0,T); for(let i=0;i<FAKE_W.length;i++){ const cap=Math.round(86+8*fakeNoise(ts,20*60e3,10+i)), v=Math.min(left,cap); out.push(Math.round(v)); left-=v; } return out; }
@@ -2140,7 +2141,7 @@ function botFps(dt){ if(document.hidden||dt>.5) return; BOT.ema+=(dt-BOT.ema)*.0
   else { BOT.slow=0; BOT.fast=0; } }
 function sitterLimit(){ return !showNpc?0:Q.lite?3:Q.low?6:12; }       // the classic ones on the cushions
 function hereCount(){ return FAKE_CROWD?(fakeHalls(Date.now())[HALLS.current()]||0):16; }
-function botWant(){ const lim=botLimit(); if(!lim) return 0; const room=Math.max(0,lim-remotes.size); return Math.min(room,Math.max(2,hereCount())); }
+function botWant(){ const lim=botLimit(); if(!lim) return 0; const room=Math.max(0,lim-remotes.size), h=hereCount(); return h<=0?0:Math.min(room,Math.max(2,h)); }
 function sitterWant(){ const lim=sitterLimit(); if(!lim) return 0; return Math.max(Math.min(1,lim),Math.min(lim,Math.round(hereCount()/5))); }
 function botSpot(){ for(let k=0;k<30;k++){ const x=rand(-15,15), z=rand(HZ+2,HZ+YX+16); if(walkable(x,z)) return [x,z]; } return [0,HZ+6]; }
 function hallSpot(){ for(let k=0;k<30;k++){ const x=rand(-10,10), z=rand(-6,HZ-1.5); if(walkable(x,z)) return [x,z]; } return [0,4]; }
@@ -2614,8 +2615,8 @@ function openChair(){ if(!me.sp) return;
   openSheet("chair","主委工具",`<input class="mail-box ck" id="readKey" type="password" autocomplete="off" placeholder="留言讀取密碼（輸入一次就會記住）" value="${esc(load("mz.rk",""))}">
   <div class="ct-group"><span class="group-label">訊息</span><div class="ct-grid">${ctTile("msgsOpen","📬","香客留言")}${ctTile("annOpen","📢","全服公告","跑馬燈")}${ctTile("boardOpen","📋","公告欄",board.text?"有公告":"空白")}</div></div>
   <div class="ct-group"><span class="group-label">活動</span><div class="ct-grid">${ctTile("askFw","🎆","全服煙火","3 分鐘")}${ctTile("askSL","🏮","50 盞天燈")}${ctTile("toggleStage","🎭",OP.on?"收回戲台":"擺出戲台",OP.on?"演出中":"")}${ctTile("marketOpen","🏮","夜市",Object.keys(MK.open).length?`${Object.keys(MK.open).length} 攤營業中`:"")}</div></div>
-  <div class="ct-group"><span class="group-label">線上人數</span><div class="crowd-row"><span class="crowd-now"><span>全廟 <b>${shownTotal()}</b> 人</span><small>這殿 ${hallShown(HALLS.current(),Date.now())} 人・${CROWD.at&&CROWD.target!=null?`目標 ${CROWD.target}`:"自動"}</small></span><input id="crowdIn" type="text" inputmode="numeric" maxlength="3" placeholder="目標"><button class="chip" data-act="crowdSet">設定</button><button class="chip" data-act="crowdAuto">自動</button></div>
-    <p class="real-count" id="realCount">真實在線：讀取中…</p><p class="note">目標是全廟人數，會依序分到各殿（前一殿快滿才開下一殿）。約 1 分鐘慢慢變到目標，之後在上下 10 人內浮動。「自動」回到依時段變化（凌晨少、白天多）。</p></div>
+  <div class="ct-group"><span class="group-label">線上人數</span><div class="crowd-row"><span class="crowd-now"><span>全廟 <b>${shownTotal()}</b> 人</span><small>這殿 ${hallShown(HALLS.current(),Date.now())} 人・${CROWD.real?"真實人數":CROWD.at&&CROWD.target!=null?`目標 ${CROWD.target}`:"自動"}</small></span><input id="crowdIn" type="text" inputmode="numeric" maxlength="3" placeholder="目標"><button class="chip" data-act="crowdSet">設定</button><button class="chip" data-act="crowdAuto">自動</button><button class="chip" data-act="crowdReal" aria-pressed="${!!CROWD.real}">真實人數</button></div>
+    <p class="real-count" id="realCount">真實在線：讀取中…</p><p class="note">目標是全廟人數，會依序分到各殿（前一殿快滿才開下一殿）。約 1 分鐘慢慢變到目標，之後在上下 10 人內浮動。「自動」回到依時段變化（凌晨少、白天多）。「真實人數」不加假人，有多少玩家就顯示多少。</p></div>
   <div class="ct-group"><span class="group-label">主委自己</span><div class="ct-grid">${ctTile("chairHide",chairHidden?"👁":"🫥",chairHidden?"解除隱形":"隱形",chairHidden?"隱形中":"")}${ctTile("chairReset","🔄","重置今日","測試用")}</div></div>`);
   const k=$("#readKey"); const keep=()=>{ save("mz.rk",k.value.trim()); }; k.addEventListener("input",keep); k.addEventListener("change",keep); realStats(); }
 // real players only (no demo worshippers, no added numbers), straight from the server's hall counts
@@ -2630,9 +2631,10 @@ HANDLERS.annOpen=()=>openSheet("ann","全服公告",`${backBtn}<textarea class="
 HANDLERS.boardOpen=()=>openBoard();
 HANDLERS.crowdSet=async()=>{ const v=(($("#crowdIn")||{}).value||"").trim(); if(!/^\d{1,3}$/.test(v)||+v>900){ toast("請輸入 0 到 900 的人數"); return; } await crowdSend(+v); };
 HANDLERS.crowdAuto=()=>crowdSend(null);
-async function crowdSend(target){ const key=ck(); if(!key){ toast("請先輸入留言讀取密碼"); return; }
-  try{ const r=await fetch("/crowd",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({target,from:fakeTotal(Date.now())})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
-    if(j.ok){ save("mz.rk",key); CROWD={target:j.target,from:j.from,at:j.at}; toast(target==null?"人數改回自動，1 分鐘內慢慢回到時段人數":`人數會在 1 分鐘內慢慢變成約 ${target} 人`,3400); openChair(); }
+HANDLERS.crowdReal=()=>crowdSend(null,true);
+async function crowdSend(target,real=false){ const key=ck(); if(!key){ toast("請先輸入留言讀取密碼"); return; }
+  try{ const r=await fetch("/crowd",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({target,real,from:fakeTotal(Date.now())})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
+    if(j.ok){ save("mz.rk",key); CROWD={target:j.target,from:j.from,at:j.at,real:!!j.real}; toast(real?"改成只顯示真實玩家，假人 1 分鐘內離開":target==null?"人數改回自動，1 分鐘內慢慢回到時段人數":`人數會在 1 分鐘內慢慢變成約 ${target} 人`,3400); openChair(); }
     else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":j.unset?"伺服器讀不到密碼設定（不是你打錯）":"密碼不對，沒有變更",3200); }catch(e){ toast("沒有變更，請稍後再試"); } }
 
 // ---- 公告: the chair's notice board. The button glows yellow until this device has opened the newest version, then turns grey ----
@@ -4175,7 +4177,7 @@ function fxDraw(L,x,W,H){ const now=performance.now(), dt=Math.min(.05,(now-(L.f
   x.restore(); x.globalAlpha=1; }
 // 紀錄保持者: each stall keeps its best results from when it was last put out (the next time it is put out, they start over)
 const NM_REC={qq:["最多讚",1,"下"],bbq:["最快烤完",0,"秒"],fish:["撈金魚最高分",1,"幣"],pachinko:["最多彈珠",1,"顆"],boba:["最快做完三杯",0,"秒"],balloon:["最快全破",0,"秒"]};
-async function nmRecSend(k,v){ if(!NM_REC[k]||!(v>0)) return; try{ await fetch("/nmrec",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({k,v,name:(me.name||"香客").slice(0,10),id:(()=>{ let i=load("mz.id",""); if(!i){ i=Math.random().toString(36).slice(2,12); save("mz.id",i); } return i; })()})}); }catch(e){} }
+async function nmRecSend(k,v){ if(!NM_REC[k]||!(v>0)||MK.local) return; try{ await fetch("/nmrec",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({k,v,name:(me.name||"香客").slice(0,10),id:(()=>{ let i=load("mz.id",""); if(!i){ i=Math.random().toString(36).slice(2,12); save("mz.id",i); } return i; })()})}); }catch(e){} }
 async function nmRecGet(k){ try{ const r=await fetch("/nmrec?k="+k,{cache:"no-store"}); if(!r.ok) return []; const j=await r.json(); return j.list||[]; }catch(e){ return []; } }
 function nmEnd(L,win,msg,sub){ L.endMsg={win,msg,sub,at:performance.now()}; if(win){ L.rain=performance.now()+2600; fxBurst(L,L.W()/2,L.H()*.42,50,{speed:420,kind:"star",size:5,life:1.4}); } if(win){ tone(523,.15,.12,"triangle"); tone(659,.15,.12,"triangle",.12); tone(784,.3,.12,"triangle",.24); } else { tone(300,.25,.1,"sawtooth"); tone(220,.4,.1,"sawtooth",.2); } }
 function nmEndDraw(L,x,W,H){ const e=L.endMsg; if(!e) return false; x.fillStyle="rgba(0,0,0,.6)"; x.fillRect(0,0,W,H); nmText(x,e.msg,W/2,H*.42,Math.min(40,W*.085),e.win?"#ffe08a":"#ffb3a0"); if(e.sub) nmText(x,e.sub,W/2,H*.42+46,18,"#fff",undefined,600);
@@ -4526,7 +4528,7 @@ function playBalloon(){ const L=gameLayer("射氣球","準星會飄，抓準時�
 
 /* ---- 夜市攤位: the chair opens each stall on its own; open stalls stand in a row along the wall beside the 許願樹,
    in the order they were opened (no fixed places). Each has its own shopkeeper. ---- */
-const MK={open:{}, built:{}, x:15.5, z0:24.6, gap:3.1, H:2.8};
+const MK={local:false, open:{}, built:{}, x:15.5, z0:24.6, gap:3.1, H:2.8};
 const MK_KEEPER={qq:{n:"地瓜球阿嬤",seed:11,say:["地瓜球一份十塊喔","壓得越蓬越好吃","來，跟著阿嬤的節奏"]},
   sausage:{n:"香腸伯",seed:23,say:["十八仔來喔！","贏三把送香腸","骰子不會騙人啦"]},
   bbq:{n:"烤肉哥",seed:37,say:["烤肉串現烤！","不要烤焦喔","翻面翻面"]},
@@ -4561,7 +4563,7 @@ function mkMove(k,z){ const B=MK.built[k]; if(B.z===z) return; B.z=z; B.g.positi
 function mkRemove(k){ const B=MK.built[k]; if(!B) return; scene.remove(B.g); scene.remove(B.lights); scene.remove(B.hit); const i=pickables.indexOf(B.hit); if(i>=0) pickables.splice(i,1); B.av.dispose(); delete stations["nm:"+k]; delete MK.built[k]; }
 function mkTick(dt){ for(const k in MK.built){ const av=MK.built[k].av; av.pos.set(MK.x-1.45,MK.built[k].z+1.05); av.target.copy(av.pos); av.faceGoal=-Math.PI/2; av.update(dt);
     av.talkIn-=dt; if(av.talkIn<0){ av.talkIn=rand(9,18); if(Math.hypot(meAv.pos.x-av.pos.x,meAv.pos.y-av.pos.y)<9){ const K=MK_KEEPER[k]; av.say(K.say[(Math.random()*K.say.length)|0],"#ffe2a0",3); if(Math.random()<.4) av.bow(); } } } }
-function mkSet(open){ MK.open={}; for(const k in (open||{})) if(NM_STALLS.some(s=>s.k===k)&&open[k]) MK.open[k]=+open[k]; mkLayout(); }
+function mkSet(open,mine){ if(MK.local&&!mine){ MK.saved=open||{}; return; } MK.open={}; for(const k in (open||{})) if(NM_STALLS.some(s=>s.k===k)&&open[k]) MK.open[k]=+open[k]; mkLayout(); }
 async function mkFetch(){ if(!USE_CF) return; try{ const r=await fetch("/market",{cache:"no-store"}); if(!r.ok) return; const j=await r.json(); if(j&&j.open) mkSet(j.open); }catch(e){} }
 function openStall(k){ const s=NM_STALLS.find(x=>x.k===k); if(!s) return; const K=MK_KEEPER[k], d=nmDay(); const B=MK.built[k]; if(B) B.av.say(K.say[0],"#ffe2a0",2.5);
   const lim={fish:"每天可以玩一次，撈到的魚直接換平安幣。",pachinko:"彈珠一顆 1 幣，每天最多換回 1000 平安幣。"}[k]||"";
@@ -4569,8 +4571,10 @@ function openStall(k){ const s=NM_STALLS.find(x=>x.k===k); if(!s) return; const 
   openSheet("stall",s.name,`<p class="lead">${K.n}：「${K.say[0]}」</p><p class="note">${s.note}${lim?"<br>"+lim:""}</p><div class="group" id="nmRec"></div><div class="goods"><button class="good wide" data-act="nmPlay" data-v="${k}" ${k==="fish"&&d.fish?"disabled":""}><span class="name">${s.icon} ${k==="pachinko"?"進去打彈珠":"玩一次"}</span><span class="own">${s.price?`${s.price} 平安幣`:"免費入場，彈珠一顆 1 幣"}${k==="fish"&&d.fish?"・今天玩過了":""}</span></button></div>`); }
 // chair: open / close each stall
 HANDLERS.marketOpen=()=>{ const row=s=>`<button class="good" data-act="mkToggle" data-v="${s.k}" style="${MK.open[s.k]?"border-color:var(--gold);background:rgba(142,28,20,.35)":""}"><span class="name">${s.icon} ${s.name}${MK.open[s.k]?"　✓ 營業中":""}</span><span class="meta">${MK.open[s.k]?"點一下收攤":"點一下擺攤"}</span></button>`;
-  openSheet("market","夜市",`${backBtn}<p class="lead">擺出來的攤位會照開的順序，排在許願樹旁的圍牆邊。</p><div class="goods">${NM_STALLS.map(row).join("")}</div><div class="row"><button class="secondary" data-act="mkAll" data-v="1">全部擺出</button><button class="secondary" data-act="mkAll" data-v="0">全部收攤</button></div>`); };
-async function mkSend(body){ const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return; }
+  openSheet("market","夜市",`${backBtn}<div class="chips"><button class="chip" data-act="mkLocal" aria-pressed="${MK.local}">🧪 只有我看得到（試玩）</button></div><p class="note">${MK.local?"試玩中：擺攤、收攤只在你的手機上，其他玩家看不到，也不記紀錄。關掉就回到全服的攤位。":"打開「只有我看得到」可以先自己試玩，不會開給大家。"}</p><p class="lead">擺出來的攤位會照開的順序，排在許願樹旁的圍牆邊。</p><div class="goods">${NM_STALLS.map(row).join("")}</div><div class="row"><button class="secondary" data-act="mkAll" data-v="1">全部擺出</button><button class="secondary" data-act="mkAll" data-v="0">全部收攤</button></div>`); };
+HANDLERS.mkLocal=()=>{ MK.local=!MK.local; if(MK.local){ MK.saved={...MK.open}; mkSet({},true); toast("試玩模式：攤位只有你看得到",2600); } else { const sv=MK.saved||{}; MK.saved=null; mkSet(sv); mkFetch(); toast("回到全服的攤位",2200); } HANDLERS.marketOpen(); };
+async function mkSend(body){ if(MK.local){ const o={...MK.open}; if(body.all!=null) NM_STALLS.forEach((s,i)=>{ if(body.all) o[s.k]=o[s.k]||Date.now()+i; else delete o[s.k]; }); else if(body.on) o[body.k]=Date.now(); else delete o[body.k]; mkSet(o,true); HANDLERS.marketOpen(); return; }
+  const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return; }
   if(!USE_CF){ const o={...MK.open}; if(body.all!=null) NM_STALLS.forEach(s=>{ if(body.all) o[s.k]=o[s.k]||Date.now()+NM_STALLS.indexOf(s); else delete o[s.k]; }); else if(body.on) o[body.k]=Date.now(); else delete o[body.k]; mkSet(o); HANDLERS.marketOpen(); return; }
   try{ const r=await fetch("/market",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify(body)}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
     if(j.ok){ save("mz.rk",key); mkSet(j.open); HANDLERS.marketOpen(); } else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":j.unset?"伺服器讀不到密碼設定（不是你打錯）":"密碼不對，沒有變更",3000); }catch(e){ toast("沒有變更，請稍後再試"); } }
