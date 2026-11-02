@@ -235,6 +235,7 @@ body.hideui .joy,body.customizing .joy{display:none}
 .bank-thanks{margin:0;font-family:var(--f-display);font-size:16px;color:#ffe2a0;letter-spacing:.08em}
 .real-divider{margin:10px 0 0;text-align:center;color:var(--gold);font-family:var(--f-display);font-size:16px;letter-spacing:.12em}
 /* 鐵口直斷 */
+.name-row{display:flex;gap:8px;align-items:center}.name-row input{flex:1;min-width:0}.name-row .chip{flex:none;white-space:nowrap}
 .ft-in{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:8px}
 .ft-box{display:flex;align-items:center;gap:4px;min-width:0}
 .ft-box input{width:100%;min-width:0;box-sizing:border-box;text-align:center;background:rgba(255,255,255,.07);border:1px solid var(--gold-soft);border-radius:10px;padding:11px 4px;font:inherit;font-size:18px;color:var(--ink);font-variant-numeric:tabular-nums;user-select:text;-webkit-user-select:text}
@@ -604,7 +605,14 @@ function save(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} 
 const today = new Date().toISOString().slice(0,10);
 let me = load("mz.me", null);
 const firstVisit = !me;
+/* ---- random names: a cheerful or silly adjective, a fruit and an animal. Only kind words; animals that double as insults are left out. ---- */
+const NM_GOOD=["快樂","幸運","勇敢","溫柔","閃亮","元氣","開心","聰明","可愛","暖暖","優雅","發財","好運","平安","熱情","微笑","樂觀","甜甜","活潑","善良"];
+const NM_FUNNY=["愛睡覺的","想吃宵夜的","會跳舞的","愛唱歌的","想放假的","剛睡醒的","跑很快的","愛撒嬌的","很會吃的","走路很慢的","愛拍照的","怕癢的"];
+const NM_FRUIT=["鳳梨","芒果","西瓜","草莓","香蕉","蘋果","葡萄","荔枝","芭樂","柳丁","龍眼","蓮霧","橘子","檸檬","木瓜","櫻桃","柚子","奇異果","水蜜桃","百香果"];
+const NM_ANIMAL=["貓","兔","熊","羊","鹿","虎","狐狸","熊貓","企鵝","海豚","柴犬","松鼠","水獺","小鳥","河馬","刺蝟","海獺","鸚鵡","小象","浣熊","無尾熊","長頸鹿"];
+function randomName(){ const p=a=>a[(Math.random()*a.length)|0]; for(let k=0;k<30;k++){ const r=Math.random(); const n=r<.4?p(NM_GOOD)+p(NM_FRUIT)+p(NM_ANIMAL):r<.62?p(NM_FUNNY)+p(NM_ANIMAL):r<.84?p(NM_FUNNY)+p(NM_FRUIT)+p(NM_ANIMAL):p(NM_GOOD)+"的"+p(NM_ANIMAL); if([...n].length<=10) return n; } return "快樂鳳梨貓"; }
 if(!me) me = {name:"", look:[0,1,0,0,2,0,0,0,1,0,1,0,0]};
+if(!me.sp&&!me.name){ me.name=randomName(); save("mz.me",me); } // everyone gets a random name on arrival; they can change it
 if(me.sp&&me.name===SP_OLD) me.name=SP_NAME;
 if(me.sp&&me.name!==SP_NAME) me.sp=0;
 me.look = sanitizeLook(me.look,!!me.sp);
@@ -1918,10 +1926,10 @@ const jiaoCam={blocks:[],on:false,until:0,landed:0,simT:0};
 function throwJiao(av,res,cb){ if(av===meAv){ jiaoCam.blocks=[]; jiaoCam.on=true; jiaoCam.until=0; jiaoCam.landed=0; sheet.classList.add("peek"); } const ups= res==="sheng"?[true,false]:res==="xiao"?[true,true]:[false,false];
   const fwd=new T.Vector3(Math.sin(av.rotY),0,Math.cos(av.rotY)), side=new T.Vector3(fwd.z,0,-fwd.x);
   ups.forEach((flatUp,i)=>{ const b=makeBlock(); const start=new T.Vector3(av.pos.x,0,av.pos.y).addScaledVector(fwd,.25).setY(.75);
-    b.position.copy(start); if(av===meAv) jiaoCam.blocks.push(b); flyers.push({b,v:fwd.clone().multiplyScalar(rand(.45,.6)).addScaledVector(side,(i?1:-1)*rand(.22,.34)).setY(rand(1.7,2.0)),spin:new T.Vector3(rand(8,14),rand(-4,4),rand(-6,6)),flatUp,landed:false,life:0,cb:i===1?cb:null}); }); }
+    b.position.copy(start); if(av===meAv) jiaoCam.blocks.push(b); flyers.push({b,src:av,v:fwd.clone().multiplyScalar(rand(.45,.6)).addScaledVector(side,(i?1:-1)*rand(.22,.34)).setY(rand(1.7,2.0)),spin:new T.Vector3(rand(8,14),rand(-4,4),rand(-6,6)),flatUp,landed:false,life:0,cb:i===1?cb:null}); }); }
 function updateFlyers(dt){ for(let i=flyers.length-1;i>=0;i--){ const f=flyers[i]; f.life+=dt;
   if(!f.landed){ f.v.y-=9.8*dt; f.b.position.addScaledVector(f.v,dt); f.b.rotation.x+=f.spin.x*dt; f.b.rotation.y+=f.spin.y*dt; f.b.rotation.z+=f.spin.z*dt;
-    if(f.b.position.y<=.06&&f.v.y<0){ f.landed=true; if(jiaoCam.blocks.includes(f.b)) jiaoCam.landed++; f.b.rotation.set(f.flatUp?Math.PI/2:-Math.PI/2,f.b.rotation.y,0); f.b.position.y=f.flatUp?.05:.004; sfx.clack(); if(f.cb){ const cb=f.cb; f.cb=null; setTimeout(cb,250); } } }
+    if(f.b.position.y<=.06&&f.v.y<0){ f.landed=true; if(jiaoCam.blocks.includes(f.b)) jiaoCam.landed++; f.b.rotation.set(f.flatUp?Math.PI/2:-Math.PI/2,f.b.rotation.y,0); f.b.position.y=f.flatUp?.05:.004; if(!f.src||f.src===meAv||Math.hypot(f.b.position.x-meAv.pos.x,f.b.position.z-meAv.pos.y)<9) sfx.clack(); if(f.cb){ const cb=f.cb; f.cb=null; setTimeout(cb,250); } } }
   if(f.life>6){ scene.remove(f.b); flyers.splice(i,1); } } }
 
 /* ================= state, input, camera ================= */
@@ -2007,7 +2015,60 @@ function updateStandBtn(){ $("#standBtn").hidden=meAv.seat<0||customizing; }
 let showNpc=load("mz.npc",true); const npcs=[];
 function randomLook(allowChair=false){ return sanitizeLook(LOOK_RANGE.map((n,i)=>(i===11||i===12)?(Math.random()<.6?0:Math.floor(Math.random()*n)):Math.floor(Math.random()*n)),allowChair); }
 function freeSeat(){ const taken=new Set([meAv.seat,...npcs.map(n=>n.seat)]); remotes.forEach(r=>taken.add(r.seat)); const free=[]; for(let i=0;i<SEATS.length;i++) if(!taken.has(i)) free.push(i); return free.length?free[Math.floor(Math.random()*free.length)]:-1; }
-function buildNpcs(){ npcs.forEach(n=>n.dispose()); npcs.length=0; if(!showNpc) return; for(let i=0;i<(Q.lite?3:Q.low?6:12);i++){ const s=freeSeat(); if(s<0) break; const a=new Avatar(randomLook(),{npc:true,x:SEATS[s].x,z:SEATS[s].y}); a.seat=s; a.kneel=1; a.next=rand(2,18); npcs.push(a); } }
+/* ================= 熱鬧的廟: the online count and the demo worshippers ================= */
+// Both live only on each player's phone: nothing here is sent to the server, so they cost no server traffic.
+// The count follows Taiwan time and moves smoothly (every phone computes the same number from the clock):
+// 03:00–05:00 about 50–70 people, the rest of the day 120–200, easing in and out over an hour around the night dip.
+const FAKE_CROWD=true;
+function fakeRand(i){ let h=(i*2654435761)>>>0; h^=h>>>15; h=Math.imul(h,2246822519)>>>0; h^=h>>>13; return (h>>>0)/4294967296; }
+function fakeNoise(ts,period,salt){ const k=ts/period, i=Math.floor(k), u=k-i, s=(1-Math.cos(u*Math.PI))/2; const a=fakeRand(i*7+salt), b=fakeRand((i+1)*7+salt); return a+(b-a)*s; }
+function fakeTotal(ts){ const tw=new Date(ts+8*3600e3), h=tw.getUTCHours()+tw.getUTCMinutes()/60+tw.getUTCSeconds()/3600, sm=v=>v*v*(3-2*v);
+  const night=h>=3&&h<5?1:h>=2&&h<3?sm(h-2):h>=5&&h<6?1-sm(h-5):0, slow=fakeNoise(ts,30*60e3,1), fast=fakeNoise(ts,3*60e3,2)-.5;
+  const lo=120*(1-night)+50*night, hi=200*(1-night)+70*night; return Math.round(Math.max(lo,Math.min(hi,lo+(hi-lo)*slow+fast*6))); }
+const FAKE_W=[.34,.2,.14,.1,.07,.05,.04,.03,.02,.01]; // how the crowd spreads over 正殿…十殿
+function realCounts(){ const c=(HALLS.counts||[]).slice(); const cur=HALLS.current(); c[cur]=Math.max(c[cur]||0,1+remotes.size); return c; }
+function hallShown(i,ts){ const real=realCounts()[i]||0; if(!FAKE_CROWD) return real; return Math.max(real,Math.min(Math.max(HALL_CAP,100)-4,real+Math.round(fakeTotal(ts)*FAKE_W[i]))); } // shown out of 100 per hall even in the 20-per-hall fallback
+function shownTotal(){ const ts=Date.now(); let t=0; for(let i=0;i<HALL_NAMES.length;i++) t+=hallShown(i,ts); return t; }
+
+// ---- demo worshippers: they come and go a few at a time, sit and bow, visit the shrines, throw 筊, burn paper,
+// toss coins, dance with the cats and greet people. How many are in view follows the online count, within what the phone can draw.
+const BOT_ACTS=["altar","lot","jieqian","burn","tiangong","caishen","yuelao","huye","xuantian","guangong","fountain","wish","lamp","lampR","cats","fortune","donate","shop"];
+const BOT_EMO=[0,1,2,3,5,9]; // only the cheerful faces
+const BOT={nextAdjust:0};
+function botLimit(){ return !showNpc?0:Q.lite?4:Q.low?8:14; }
+function botWant(){ return Math.max(Math.min(3,botLimit()),Math.min(botLimit(),Math.round(fakeTotal(Date.now())/13))); }
+function botSpot(){ for(let k=0;k<30;k++){ const x=rand(-15,15), z=rand(HZ+2,HZ+YX+16); if(walkable(x,z)) return [x,z]; } return [0,HZ+6]; }
+function botWalk(n,x,z){ const p=planPath(n.pos.x,n.pos.y,x,z); n.seat=-1; n.goalSeat=false; n.faceGoal=null; n.hold=0; n.danceT=0; n.target.set(p[0][0],p[0][1]); n.path=p.slice(1); }
+function botArrived(n){ return !(n.path&&n.path.length)&&n.pos.distanceTo(n.target)<.08; }
+function makeBot(at){ const [x,z]=at||botSpot(); const a=new Avatar(randomLook(),{npc:true,x,z}); a.isBot=true; a.name=randomName(); a.setName(a.name); a.mode="idle"; a.wait=rand(.5,4); if(customizing) a.root.visible=false; npcs.push(a); return a; }
+function botNear(n,r){ return Math.hypot(n.pos.x-meAv.pos.x,n.pos.y-meAv.pos.y)<r; }
+function botPlan(n){ const r=Math.random();
+  if(r<.32){ const s=freeSeat(); if(s>=0){ const S=SEATS[s], p=planPath(n.pos.x,n.pos.y,S.x,S.y); n.hold=0; n.danceT=0; n.faceGoal=null; n.seat=s; n.goalSeat=true; n.target.set(p[0][0],p[0][1]); n.path=p.slice(1); n.mode="sit"; n.wait=rand(25,70); n.bowIn=rand(2,8); return; } }
+  if(r<.78){ const ks=BOT_ACTS.filter(k=>stations[k]), k=ks[(Math.random()*ks.length)|0], st=stations[k]; botWalk(n,st.approach.x+rand(-.35,.35),st.approach.y+rand(-.35,.35)); n.mode="go"; n.goal=k; n.wait=45; return; }
+  const [x,z]=botSpot(); botWalk(n,x,z); n.mode="go"; n.goal=null; n.wait=45; }
+function botAct(n,k){ const st=stations[k]; n.faceGoal=st?st.face:null; n.mode="do"; n.wait=rand(5,12);
+  if(k==="altar"){ if(Math.random()<.5){ const res=["sheng","sheng","xiao","yin"][(Math.random()*4)|0]; throwJiao(n,res,()=>n.say(RESULT[res].t,RESULT[res].c)); } else n.bow(); }
+  else if(k==="burn"){ n.burnT=0; if(botNear(n,10)) burnFx(); }
+  else if(k==="fountain"){ if(Math.random()<.6) fxCoin(n); else fxDrink(n); }
+  else if(k==="cats"){ n.danceT=1e9; n.wait=rand(14,30); }
+  else if(["tiangong","caishen","yuelao","huye","xuantian","guangong"].includes(k)){ n.hold=1; n.bow(); }
+  else n.bow();
+  if(Math.random()<.15) showEmo(n,BOT_EMO[(Math.random()*BOT_EMO.length)|0]); }
+function botTick(dt){ const now=performance.now();
+  if(now>BOT.nextAdjust){ BOT.nextAdjust=now+rand(15000,40000); const live=npcs.filter(n=>n.mode!=="leave"), want=botWant();
+    if(live.length<want){ makeBot([(Math.random()<.5?-1:1)*16.5,rand(HZ+3,HZ+YX+15)]).wait=.2; }            // someone walks in from the side of the courtyard
+    else if(live.length>want){ const n=live[(Math.random()*live.length)|0]; botWalk(n,(n.pos.x<0?-1:1)*16.5,Math.max(HZ+3,Math.min(HZ+YX+15,n.pos.y))); n.mode="leave"; } } // someone heads home
+  for(let i=npcs.length-1;i>=0;i--){ const n=npcs[i]; n.update(dt);
+    if(n.mode==="leave"){ if(botArrived(n)){ n.dispose(); npcs.splice(i,1); } continue; }
+    n.wait-=dt;
+    if(n.mode==="sit"){ if(n.seat>=0&&botArrived(n)){ n.bowIn-=dt; if(n.bowIn<0){ n.bowIn=rand(8,22); n.bow(); } } if(n.wait<0){ n.mode="idle"; n.wait=0; } }
+    else if(n.mode==="go"){ if(botArrived(n)){ if(n.goal) botAct(n,n.goal); else { n.mode="do"; n.wait=rand(4,10); if(Math.random()<.3) showEmo(n,BOT_EMO[(Math.random()*BOT_EMO.length)|0]); } } else if(n.wait<0){ n.mode="idle"; n.wait=0; } }
+    else if(n.mode==="do"){ if(n.wait<0){ n.danceT=0; n.hold=0; n.mode="idle"; n.wait=rand(.5,3); } }
+    else if(n.wait<0) botPlan(n);
+    if(Math.random()<dt/90){ const ph=PHRASES[(Math.random()*PHRASES.length)|0]; n.say(ph,"#f7ecd6"); if(Math.random()<.3) logChat(n.name,ph,false); } } }
+function buildNpcs(){ npcs.forEach(n=>n.dispose()); npcs.length=0; const want=botWant();
+  for(let i=0;i<want;i++){ const a=makeBot(); if(i%2===0){ const s=freeSeat(); if(s>=0){ a.pos.set(SEATS[s].x,SEATS[s].y); a.target.copy(a.pos); a.seat=s; a.goalSeat=true; a.kneel=1; a.mode="sit"; a.wait=rand(10,60); a.bowIn=rand(2,10); } } }
+  BOT.nextAdjust=performance.now()+rand(15000,30000); }
 function npcYield(i){ npcs.forEach(n=>{ if(n.seat===i){ const s=freeSeat(); if(s<0){ n.seat=-1; n.target.set(rand(-10,10),13); } else n.sitAt(s); } }); }
 
 /* ================= multiplayer (room presence) ================= */
@@ -2058,7 +2119,7 @@ function syncPeers(peers){ const seen=new Set();
   }
   let lampGone=false; for(const [k,av] of remotes){ if(!seen.has(k)){ av.dispose(); if(av.offerGroup) scene.remove(av.offerGroup); if(av.lamp>=0) lampGone=true; remotes.delete(k); } } if(lampGone) refreshLamps();
   updateCount(); }
-function updateCount(){ const n=1+remotes.size; $("#countText").textContent=room?`殿內 ${n} 人`:"單人模式"; $("#dot").classList.toggle("off",!room||!roomConnected); }
+function updateCount(){ const n=FAKE_CROWD?shownTotal():1+remotes.size; $("#countText").textContent=FAKE_CROWD||room?`線上 ${n} 人`:"單人模式"; $("#dot").classList.toggle("off",!room||!roomConnected); }
 let roomConnected=false;
 /* ---- standalone site: Supabase Realtime, halls of up to HALL_CAP people ---- */
 const SB_URL="https://zgwbthrqjrsnhqpdcona.supabase.co", SB_KEY="sb_publishable_Xl0v2Yrg0OrDw90ddpV35A_AzRta8FH";
@@ -2368,7 +2429,7 @@ function renderLook(first){ const tabs=[["face","臉"],["hair","髮型"],["wear"
   if(lookTab==="wear") body+=chipRow("款式",3,STYLES)+swRow("衣服顏色",4,OUTFIT)+swRow("配色（滾邊・領帶・帽子・配件）",5,ACCENT)+chipRow("身上配件",12,GEAR);
   if(lookTab==="hat") body+=`<p class="note">可以旋轉角色檢查搭配；包覆型帽子會遮住頭頂髮量。</p>`;
   if(lookTab==="hat") body+=chipRow("頭飾",6,HATS);
-  body+=`<div class="field"><label class="group-label" for="nameInput">在殿內顯示的名字</label><input id="nameInput" maxlength="10" placeholder="例如：阿豪" value="${esc(me.name)}"></div>`;
+  body+=`<div class="field"><label class="group-label" for="nameInput">在殿內顯示的名字</label><div class="name-row"><input id="nameInput" maxlength="10" placeholder="例如：阿豪" value="${esc(me.name)}"><button class="chip" type="button" data-act="rollName">🎲 換一個</button></div></div>`;
   body+=`<div class="group code-box"><span class="group-label">造型代碼</span>
     <div class="mail-row"><input class="mail-box code-in" id="myCode" readonly value="${esc(lookCode())}" aria-label="我的造型代碼"><button class="good mail-copy" data-act="copyCode"><span class="name">複製</span></button></div>
     <div class="mail-row"><input class="mail-box code-in" id="pasteCode" placeholder="貼上之前存的代碼" aria-label="貼上造型代碼" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="good mail-copy" data-act="applyCode"><span class="name">套用</span></button></div>
@@ -2378,6 +2439,7 @@ function renderLook(first){ const tabs=[["face","臉"],["hair","髮型"],["wear"
   openSheet("look",first?"打扮一下再進殿":"換造型",body); }
 HANDLERS.spin=v=>{ pvSpin=0; pvYaw+= (+v)*Math.PI/4; };
 HANDLERS.pv=v=>{ if(v==="turn"){ pvSpin=Math.PI*2; return; } pvMode=v; syncPvSeg(); };
+HANDLERS.rollName=()=>{ const el=$("#nameInput"); if(el){ el.value=randomName(); el.focus(); } };
 HANDLERS.tab=v=>{ me.name=$("#nameInput").value; lookTab=v; renderLook(firstVisitPending); sheetBody.scrollTop=0; };
 HANDLERS.look=v=>{ const [i,n]=v.split(":").map(Number); if(i===3&&n===16&&!me.sp){ toast("這是主委專屬背心"); return; } if(!Number.isInteger(i)||i<0||i>=LOOK_RANGE.length||!Number.isInteger(n)||n<0||n>=LOOK_RANGE[i]) return; draftLook[i]=n; if(i===1&&n>0){ draftLook[2]=HAIR_PRESET_COLOR[n]; } draftLook=sanitizeLook(draftLook,!!me.sp); meAv.setLook(draftLook); if(i===1) sheetBody.querySelectorAll(`[data-v^="2:"]`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===`2:${draftLook[2]}`))); sheetBody.querySelectorAll(`[data-v^="${i}:"]`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===v))); };
 HANDLERS.randomLook=()=>{ draftLook=randomLook(!!me.sp); meAv.setLook(draftLook); renderLook(firstVisitPending); };
@@ -2701,14 +2763,15 @@ HANDLERS.say=v=>{ const i=+v; { const fl=floodCheck(PHRASES[i]); if(fl){ toast(f
 /* ---- halls ---- */
 // Only halls with people (plus yours) are listed; the next empty hall appears once every listed hall is nearly full, so players gather instead of spreading out.
 function renderHalls(){ const c=HALLS.counts||[]; const cur=HALLS.current(); const list=[];
-  HALL_NAMES.forEach((_,i)=>{ if((c[i]||0)>0||i===cur) list.push(i); });
+  const ts=Date.now(); HALL_NAMES.forEach((_,i)=>{ if(hallShown(i,ts)>0||i===cur) list.push(i); });
   if(list.every(i=>(c[i]||0)>=HALL_CAP*.8)){ const nx=HALL_NAMES.findIndex((_,i)=>!list.includes(i)); if(nx>=0) list.push(nx); }
   list.sort((a,b)=>a-b);
-  const rows=list.map(i=>{ const nm=HALL_NAMES[i]; const n=c[i]||0, me_=i===cur; const full=n>=HALL_CAP&&!me_; const pct=Math.min(100,n/HALL_CAP*100);
-    return `<button class="hall-row" data-act="hallGo" data-v="${i}" aria-current="${me_}" ${full?"disabled":""}><span class="hn">${nm}</span><span class="bar"><i style="width:${pct}%"></i></span><span class="hc">${n}/${HALL_CAP} 人</span><span class="hc">${me_?"目前":full?"已滿":"前往"}</span></button>`; }).join("");
+  const rows=list.map(i=>{ const nm=HALL_NAMES[i]; const n=hallShown(i,ts), me_=i===cur; const full=(c[i]||0)>=HALL_CAP&&!me_; const capShown=Math.max(HALL_CAP,100); const pct=Math.min(100,n/capShown*100);
+    return `<button class="hall-row" data-act="hallGo" data-v="${i}" aria-current="${me_}" ${full?"disabled":""}><span class="hn">${nm}</span><span class="bar"><i style="width:${pct}%"></i></span><span class="hc">${n}/${capShown} 人</span><span class="hc">${me_?"目前":full?"已滿":"前往"}</span></button>`; }).join("");
   const el=$("#hallList"); if(el) el.innerHTML=rows; }
 function openHalls(){ if(!HALLS.switchTo){ openSheet("halls","殿別",`<p class="lead">目前在單人或預覽模式，沒有其他殿可以切換。</p>`); return; }
   openSheet("halls","切換殿別",`<p class="lead">每殿最多 ${HALL_CAP} 人。前面的殿快滿時，下一殿才會開放。</p><div class="hall-list" id="hallList"></div>`); renderHalls(); }
+setInterval(()=>{ updateCount(); if(sheetKind==="halls") renderHalls(); },10000);
 HANDLERS.hallGo=v=>{ const i=+v; if(i===HALLS.current()){ closeSheet(); return; } if((HALLS.counts[i]||0)>=HALL_CAP){ toast("這一殿已經滿了"); return; } HALLS.switchTo(i); closeSheet(); };
 
 /* ---- 小貓 ---- */
@@ -3643,7 +3706,7 @@ function tick(){ if(gameAsleep) return; const dt=Math.min(.05,clock.getDelta());
   if(tapMark.visible){ tapT+=dt; const arrived=!(meAv.path&&meAv.path.length)&&meAv.pos.distanceTo(meAv.target)<.06; const k=1+Math.sin(tapT*6)*.12; const [r1,r2,dot]=tapMark.userData.parts;
     r1.scale.setScalar(k); r2.scale.setScalar(1+((tapT*1.2)%1)*.8); r2.material.opacity=.7*(1-((tapT*1.2)%1));
     if(arrived||tapT>12){ const f=Math.max(0,r1.material.opacity-dt*3); r1.material.opacity=f; dot.material.opacity=f; if(f<=0){ tapMark.visible=false; r1.material.opacity=.9; dot.material.opacity=.9; } } }
-  npcs.forEach(n=>{ n.update(dt); n.next-=dt; if(n.next<0){ n.next=rand(8,24); n.bow(); } });
+  botTick(dt);
   remotes.forEach(r=>r.update(dt)); sjUpdate(dt); fwUpdate(dt); updateSkyLanterns(dt); renderSLBtn(); opTick(dt); ftTick(dt);
   if(room&&dirty&&performance.now()-lastSend>((keys.size||joy.on)?800:SEND_GAP)) sendPresence();
   updateFlyers(dt); updateFu(dt); updateCats(dt); updateWater(dt);
