@@ -967,7 +967,8 @@ const IN_ARTIFACT=!!(window.claude&&window.claude.use);
 loadModel.tries={};
 function loadModel(name,cb){ if(!T.GLTFLoader) return; const gl=new T.GLTFLoader(); if(window.MeshoptDecoder) gl.setMeshoptDecoder(window.MeshoptDecoder);
   const fix=g=>{ g.scene.traverse(o=>{ if(o.isMesh){ if(!o.geometry.attributes.normal) o.geometry.computeVertexNormals(); o.material.envMapIntensity=.9; if(o.material.map) o.material.map.anisotropy=4; } }); cb(g.scene); };
-  const viaScript=()=>{ const sc=document.createElement("script"); sc.src=name+(Q.lite?"-lite":"")+"-model.js"; sc.async=true; const key="GLB_"+name.toUpperCase()+(Q.lite?"_LITE":"");
+  const viaScript=()=>{ { const key0="GLB_"+name.toUpperCase()+(Q.lite?"_LITE":""); if(window[key0]){ try{ const b=atob(window[key0]); const u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); gl.parse(u.buffer,"",fix,()=>{}); }catch(e){} return; } } // already on the page
+    const sc=document.createElement("script"); sc.src=name+(Q.lite?"-lite":"")+"-model.js"; sc.async=true; const key="GLB_"+name.toUpperCase()+(Q.lite?"_LITE":"");
     sc.onerror=()=>{ sc.remove(); const n=(loadModel.tries[name]=(loadModel.tries[name]||0)+1); if(n<5) setTimeout(viaScript,1500*n); };
     sc.onload=()=>{ if(!window[key]){ sc.onerror(); return; } try{ const b=atob(window[key]||""); const u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); window[key]=null; gl.parse(u.buffer,"",fix,()=>{}); }catch(e){} }; document.head.appendChild(sc); };
   if(IN_ARTIFACT) setTimeout(viaScript,300); else gl.load(name+(Q.lite?"-lite":"")+".glb",fix,undefined,()=>setTimeout(viaScript,100)); }
@@ -4183,7 +4184,7 @@ function nmEndDraw(L,x,W,H){ const e=L.endMsg; if(!e) return false; x.fillStyle=
 /* ---- sprites from the stall art sheets (public/nm/*.webp) ---- */
 // inside the preview host all the stall pictures come in one bundle loaded with the page (nm-pack.js), the same way the
 // 3D models do, because files fetched later don't always arrive there; on the real site each picture is its own file
-if(IN_ARTIFACT){ const sc=document.createElement("script"); sc.src="nm-pack.js"; sc.async=true; sc.onload=()=>{ for(const n in NMI){ const i=NMI[n]; if(!(i.complete&&i.naturalWidth)&&window.NM_PACK&&NM_PACK[n]) i.src=NM_PACK[n]; } }; document.head.appendChild(sc); }
+if(IN_ARTIFACT&&!window.NM_PACK){ const sc=document.createElement("script"); sc.src="nm-pack.js"; sc.async=true; sc.onload=()=>{ for(const n in NMI){ const i=NMI[n]; if(!(i.complete&&i.naturalWidth)&&window.NM_PACK&&NM_PACK[n]) i.src=NM_PACK[n]; } }; document.head.appendChild(sc); }
 const NMI={}; function nmSrc(n,r){ return window.NM_PACK&&NM_PACK[n]?NM_PACK[n]:"nm/"+n+".webp"+(r?"?r="+r:""); }
 function nmImg(n){ let i=NMI[n]; if(!i){ i=NMI[n]=new Image(); i.tries=0; i.onerror=()=>{ if(i.tries++<5) setTimeout(()=>{ i.src=nmSrc(n,i.tries); },800*i.tries); }; if(IN_ARTIFACT&&!window.NM_PACK){ /* wait for the bundle */ } else i.src=nmSrc(n); } return i; }
 const NM_ALL={qq:["qq-pan","qq-y","qq-p","qq-c","qq-spatula","qq-basket"],sausage:["sg-grill","sg-stick","sg-stink","sg-bowl2"],bbq:["bbq-beef","bbq-chicken","bbq-pork","bbq-shroom","bbq-pepper","bbq-corn","bbq-tofu","bbq-squid","bbq-mix","bbq-grill2","bbq-fire","bbq-flip","bbq-ok"],
