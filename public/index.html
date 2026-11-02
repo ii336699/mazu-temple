@@ -6,6 +6,13 @@
 <meta name="description" content="線上媽祖廟：多人同殿參拜、擲筊求籤、點光明燈。">
 <meta name="theme-color" content="#140906">
 <title>線上媽祖廟</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="線上媽祖廟">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
@@ -230,6 +237,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
 .camreset{position:fixed;left:calc(max(12px,env(safe-area-inset-left,0px)) + 33px);bottom:calc(env(safe-area-inset-bottom,0px) + 188px);width:30px;height:30px;border:0;padding:0;background:none;z-index:5;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .camreset::after{content:"";position:absolute;left:9px;top:9px;width:12px;height:12px;border-radius:50%;background:rgba(255,230,180,.55);box-shadow:0 0 0 1.5px rgba(255,230,180,.25),0 0 6px rgba(255,200,120,.35)}
 .camreset:active::after{background:#ffe6b4}
+.steps-ol{margin:6px 0 10px 1.4em;padding:0;line-height:1.9}
 #othersBtn .slash{display:none} #othersBtn.on .slash{display:inline} #othersBtn.on{background:rgba(255,200,120,.28)}
 body.hideui .joy,body.customizing .joy,body.hideui .camreset,body.customizing .camreset{display:none}
 .bank{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border:1px solid var(--gold-soft);border-radius:14px;background:rgba(255,240,210,.05)}
@@ -2139,6 +2147,8 @@ function planStroll(){ const [x,z]=Math.random()<.5?botSpot():hallSpot(); return
 function planOne(k,extra){ return [{go:stNear(k,.4)},{face:stFace(k)},...extra]; }
 // Every walking demo worshipper has a role, kept in these shares: 40% 抽籤, 30% follow the 參拜指引 route, 20% 掛網 (standing
 // still for a long time), 10% playing with faces, actions and dances. A newcomer takes whichever role is furthest below its share.
+// stop-and-go walking: STOP_RATE = stops per second of walking, STOP_SECS = how long each stop lasts, HESITATE = chance to stand a moment before setting off
+const BOT_WALK={STOP_RATE:.2, STOP_SECS:[.5,2.8], HESITATE:.35};
 const BOT_ROLES=[["lot",.4],["guide",.3],["afk",.2],["fun",.1]];
 function pickRole(){ const w=npcs.filter(n=>!n.classic&&!n.leaving&&n.role), tot=w.length+1; let best="lot", gap=-1e9;
   for(const [r,f] of BOT_ROLES){ const g=f-w.filter(n=>n.role===r).length/tot+Math.random()*.02; if(g>gap){ gap=g; best=r; } } return best; }
@@ -2245,8 +2255,8 @@ function makeBot(at){ const [x,z]=at||botSpot(); const a=new Avatar(randomLook()
 // next to the three cats it means joining the cats' blessing dance
 const DANCE_RE=/跳舞|來跳|一起跳|跳起來|跳一下|尬舞|dance/i; let lastDanceCall=0;
 // how people answer a dance call (seconds): the first one sets off after FIRST, then one at a time, GAP apart; at most MAX come
-const DANCE_CALL={FIRST:[5,9], GAP:[4,12], MAX:8, COOLDOWN:15};
-function botHear(av,text){ if(!DANCE_RE.test(text)||performance.now()-lastDanceCall<DANCE_CALL.COOLDOWN*1000||!av||!av.pos) return; lastDanceCall=performance.now();
+const DANCE_CALL={ON:false, FIRST:[5,9], GAP:[4,12], MAX:8, COOLDOWN:15}; // ON:false = people ignore dance calls in chat
+function botHear(av,text){ if(!DANCE_CALL.ON||!DANCE_RE.test(text)||performance.now()-lastDanceCall<DANCE_CALL.COOLDOWN*1000||!av||!av.pos) return; lastDanceCall=performance.now();
   const cats=stations.cats&&Math.hypot(av.pos.x-CATS.c.x,av.pos.y-CATS.c.z)<4.5;
   const pool=npcs.filter(n=>!n.classic&&!n.leaving&&!n.sjq&&!(n.step&&n.step.watch)&&n!==av&&(n.role!=="afk"||Math.random()<.1)).sort((a,b)=>a.pos.distanceTo(av.pos)-b.pos.distanceTo(av.pos));
   const near=pool.slice(0,10).filter(()=>Math.random()<.55), far=pool.slice(10).filter(()=>Math.random()<.06), go=[...near,...far].slice(0,DANCE_CALL.MAX); let when=rand(...DANCE_CALL.FIRST)*1000; const delays=go.map((_,k)=>{ const d=when; when+=rand(...DANCE_CALL.GAP)*1000; return d; });
@@ -2261,13 +2271,17 @@ function botTick(dt){ const now=performance.now(); botFps(dt);
   if(now>BOT.nextAdjust){ const live=npcs.filter(n=>!n.leaving&&!n.classic), want=botWant(); BOT.nextAdjust=now+(Math.abs(live.length-want)>4?rand(1500,4000):rand(15000,40000));
     if(live.length<want-6){ for(let k=Math.min(4,want-live.length);k>0;k--) placeBot(); BOT.nextAdjust=now+rand(800,1600); }
     else if(live.length<want){ const a=makeBot([(Math.random()<.5?-1:1)*16.5,rand(HZ+3,HZ+YX+15)]); a.role=pickRole(); }              // someone walks in from the side of the courtyard
-    else if(live.length>want){ const n=live[(Math.random()*live.length)|0]; n.leaving=true; n.hold=0; n.danceT=0; n.anim=null; n.steps=[]; botStart(n,{leave:[(n.pos.x<0?-1:1)*16.5,Math.max(HZ+3,Math.min(HZ+YX+15,n.pos.y))]}); } } // someone heads home
+    else if(live.length>want){ const n=live[(Math.random()*live.length)|0]; n.pauseT=0; n.saved=null; n.leaving=true; n.hold=0; n.danceT=0; n.anim=null; n.steps=[]; botStart(n,{leave:[(n.pos.x<0?-1:1)*16.5,Math.max(HZ+3,Math.min(HZ+YX+15,n.pos.y))]}); } } // someone heads home
   if(FW.on) for(const n of npcs){ if(n.classic||n.leaving||n.sjq||n.fwSeed===FW.seed) continue; n.fwSeed=FW.seed; if(n.role==="afk"&&Math.random()<.7) continue; if(Math.random()<.2) continue;
-    if(n.act>=0) stopAct(n); n.anim=null; n.danceT=0; n.hold=0; n.seat=-1; n.goalSeat=false; const out=n.pos.y<HZ+1.5, [x,z]=botSpot();
+    if(n.act>=0) stopAct(n); n.anim=null; n.danceT=0; n.hold=0; n.seat=-1; n.goalSeat=false; n.pauseT=0; n.saved=null; const out=n.pos.y<HZ+1.5, [x,z]=botSpot();
     n.steps=out?[{go:[x,Math.min(z,HZ+YX+8)]},{watch:1}]:[{watch:1}]; if(!out){ n.target.copy(n.pos); n.path=[]; } n.step=null; }
   for(let i=npcs.length-1;i>=0;i--){ const n=npcs[i]; n.update(dt);
     if(n.classic){ n.next-=dt; if(n.next<0){ n.next=rand(8,24); n.bow(); } continue; }
-    if(!n.step){ if(!n.steps||!n.steps.length){ if(n.leaving){ n.dispose(); npcs.splice(i,1); continue; } botPlan(n); } botStart(n,n.steps.shift()); }
+    // walking like a person: now and then stop for a moment, look around, then carry on
+    if(n.pauseT>0){ n.pauseT-=dt; if(n.pauseT<=0&&n.saved){ n.target.copy(n.saved.t); n.path=n.saved.p; n.saved=null; n.faceGoal=null; } botPose(n); continue; }
+    if(n.step&&(n.step.go||n.step.leave||n.step.sj!=null)&&!n.leaving&&n.pos.distanceTo(n.target)+(n.path?n.path.length:0)>1.2&&Math.random()<dt*BOT_WALK.STOP_RATE){
+      n.saved={t:n.target.clone(),p:n.path||[]}; n.target.copy(n.pos); n.path=[]; n.pauseT=rand(...BOT_WALK.STOP_SECS); n.headGoal=rand(-.9,.9); if(Math.random()<.3) n.faceGoal=n.rotY+rand(-1,1); continue; }
+    if(!n.step){ if(!n.steps||!n.steps.length){ if(n.leaving){ n.dispose(); npcs.splice(i,1); continue; } botPlan(n); } const nx=n.steps.shift(); if(nx.go&&Math.random()<BOT_WALK.HESITATE){ n.steps.unshift(nx); botStart(n,{look:rand(.6,2.5)}); } else botStart(n,nx); }
     else if(botStep(n,dt)){ if(n.act>=0&&ACTS[n.act].loop) stopAct(n); n.anim=null; n.step=null; if(n.leaving&&(!n.steps||!n.steps.length)){ n.dispose(); npcs.splice(i,1); continue; } }
     botPose(n); if(n.afk) continue;
     if(Math.random()<dt/160){ const ph=PHRASES[(Math.random()*PHRASES.length)|0]; n.say(ph,"#f7ecd6"); if(Math.random()<.25) logChat(n.name,ph,false); }
@@ -2643,6 +2657,19 @@ let lookTab="face", draftLook=null;
 function openLook(first){ customizing=true; if(room) setTimeout(sendPresence,0); if(window.__retrack) setTimeout(window.__retrack,0); if(meAv.seat>=0){ meAv.seat=-1; } meAv.target.copy(meAv.pos); pendingStation=null; { const z=meAv.pos.y; meAv.rotY=z>HZ?0:((14.4-z)>(z+9)?0:Math.PI); meAv.faceGoal=meAv.rotY; } markDirty(); pvYaw=0; pvSpin=0; document.body.classList.add("customizing"); draftLook=me.look.slice(); setOthersVisible(false); updateStandBtn(); renderLook(first); }
 let othersShown=load("mz.others",true);
 function setOthersVisible(v){ npcs.forEach(n=>n.root.visible=v&&(othersShown||n.classic)); remotes.forEach(r=>r.root.visible=v&&othersShown); }
+/* ---- 加到手機桌面: Android / computer Chrome get the system install box; iPhone gets a two-step picture guide ---- */
+let installEvt=null; const isStandalone=()=>matchMedia("(display-mode: standalone)").matches||matchMedia("(display-mode: fullscreen)").matches||navigator.standalone===true;
+window.addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); installEvt=e; });
+window.addEventListener("appinstalled",()=>{ installEvt=null; toast("已經加到桌面了，下次從桌面圖示直接進廟",3200); });
+if("serviceWorker" in navigator&&location.protocol==="https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
+function installBlock(){ if(isStandalone()) return ""; return `<div class="group"><span class="group-label">加到手機桌面</span><p class="lead">把媽祖廟放到桌面，像 App 一樣一點就進廟。</p><button class="good wide" data-act="installApp"><span class="name">📲 加到桌面</span></button></div>`; }
+HANDLERS.installApp=async()=>{ const ua=navigator.userAgent, ios=/iPhone|iPad|iPod/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+  const inApp=/Barcelona|Instagram|FBAN|FBAV|FB_IAB|Line\/|Threads|MicroMessenger|KAKAOTALK|; wv\)/i.test(ua);
+  if(isStandalone()){ toast("你已經是從桌面開的了"); return; }
+  if(inApp){ openSheet("install","加到桌面",`<p class="lead">LINE、Facebook 裡面打開的網頁沒辦法加到桌面。</p><p class="lead">請按右上角「⋯」或「分享」，選「用瀏覽器開啟」（iPhone 選 Safari、Android 選 Chrome），再到設定按一次「📲 加到桌面」。</p>`); return; }
+  if(installEvt){ const e=installEvt; installEvt=null; try{ e.prompt(); const r=await e.userChoice; if(r&&r.outcome==="accepted") closeSheet(); }catch(err){} return; }
+  if(ios){ openSheet("install","加到桌面",`<p class="lead">iPhone 要自己按兩下：</p><ol class="steps-ol"><li>按畫面下方（或網址列旁）的 <b>分享</b> 按鈕 <span style="font-size:1.3em">⬆️</span></li><li>往下滑，選 <b>加入主畫面</b> ➕，再按右上角的 <b>新增</b></li></ol><p class="note">之後桌面就會有媽祖廟的圖示，點了直接進廟。</p>`); return; }
+  openSheet("install","加到桌面",`<p class="lead">請打開瀏覽器右上角的選單 <b>⋮</b>，選 <b>加到主畫面</b> 或 <b>安裝應用程式</b>。</p><p class="note">如果找不到，換用 Chrome 開啟本網站再試一次。</p>`); };
 function renderOthersBtn(){ const b=$("#othersBtn"); if(!b) return; b.setAttribute("aria-pressed",String(!othersShown)); b.classList.toggle("on",!othersShown); b.setAttribute("aria-label",othersShown?"隱藏其他玩家":"顯示其他玩家"); }
 $("#othersBtn").onclick=()=>{ othersShown=!othersShown; save("mz.others",othersShown); if(!customizing) setOthersVisible(true); renderOthersBtn(); toast(othersShown?"其他玩家回來了":"已隱藏其他玩家",2200); };
 renderOthersBtn();
@@ -2706,7 +2733,7 @@ document.addEventListener("input",e=>{ const k=e.target&&e.target.dataset&&e.tar
   if(k==="m"){ /* the music level follows VOL.m every frame */ } });
 document.addEventListener("change",e=>{ if(e.target&&e.target.dataset&&e.target.dataset.vol==="s") sfx.coin(); });
 function openGfx(){ const opt=(v,t,d)=>`<button class="good" data-act="quality" data-v="${v}" aria-pressed="${Q.mode===v}" style="${Q.mode===v?"border-color:var(--gold);background:rgba(142,28,20,.35)":""}"><span class="name">${t}${Q.mode===v?"　✓":""}</span><span class="meta">${d}</span></button>`;
-  openSheet("gfx","設定",`<div class="group"><span class="group-label">畫質</span><p class="lead">畫面卡頓或手機發燙時，可以改用省電畫質。</p></div><div class="goods">${opt("auto","自動","進場後自動偵測，太卡會切到省電")}${opt("high","高畫質","光束、灰塵、全部燈光，最漂亮")}${opt("low","省電","降低解析度與特效，舊手機也順")}${opt("lite","低配","最省：模型減面、小貼圖、關閉抗鋸齒，給比較舊的手機（會重新載入）")}</div><p class="note">目前：${Q.lite?"低配":Q.low?"省電畫質":"高畫質"}</p>`); }
+  openSheet("gfx","設定",`${installBlock()}<div class="group"><span class="group-label">畫質</span><p class="lead">畫面卡頓或手機發燙時，可以改用省電畫質。</p></div><div class="goods">${opt("auto","自動","進場後自動偵測，太卡會切到省電")}${opt("high","高畫質","光束、灰塵、全部燈光，最漂亮")}${opt("low","省電","降低解析度與特效，舊手機也順")}${opt("lite","低配","最省：模型減面、小貼圖、關閉抗鋸齒，給比較舊的手機（會重新載入）")}</div><p class="note">目前：${Q.lite?"低配":Q.low?"省電畫質":"高畫質"}</p>`); }
 HANDLERS.quality=v=>{ if((v==="lite")!==Q.lite){ Q.mode=v; save("mz.q",v); toast(v==="lite"?"切換為低配，重新載入中…":"離開低配，重新載入中…",2500); setTimeout(()=>location.reload(),900); return; } applyQuality(v==="auto"?(perf.done&&Q.low?"low":"high"):v,false); if(v==="auto"){ Q.mode="auto"; save("mz.q","auto"); } openGfx(); toast(v==="low"?"已切換為省電畫質":v==="high"?"已切換為高畫質":"畫質改為自動偵測"); };
 HANDLERS.toggleNpc=(v,b)=>{ showNpc=!showNpc; save("mz.npc",showNpc); b.setAttribute("aria-pressed",String(showNpc)); buildNpcs(); toast(showNpc?"已顯示示範香客":"已隱藏示範香客"); };
 HANDLERS.showPoem=v=>openPoem(+v,true);
