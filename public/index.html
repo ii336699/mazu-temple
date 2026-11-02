@@ -349,7 +349,7 @@ body.hideui .joy,body.customizing .joy,body.hideui .camreset,body.customizing .c
     <button class="icon-btn glass" id="lookBtn" aria-label="換造型"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></button>
     <button class="icon-btn glass" id="bagBtn" aria-label="背包"><svg viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span class="cap"><b id="coins">0</b><span id="bagText"></span></span></button>
     <button class="icon-btn glass" id="uiBtn" aria-label="隱藏介面"><svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18"/></svg></button>
-    <button class="icon-btn glass" id="gfxBtn" aria-label="設定"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></button>
+    <button class="icon-btn glass" id="gfxBtn" aria-label="設定"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
   </div>
 </div>
 
@@ -1934,7 +1934,7 @@ class Avatar{
     if(this.shoulderPet) this.shoulderPet.quaternion.copy(this.arms[1].quaternion).invert();
     sparkTick(this,dt); emoTick(this,dt);
     return walking; }
-  dispose(){ scene.remove(this.root); }
+  dispose(){ scene.remove(this.root); if(this.npcId) npcRelease(this.npcId); }
 }
 const _v1=new T.Vector3(), _v2=new T.Vector3(); let sheetOff=0;
 function camOK(x,y,z){ if(y<.35) return false; const ax=Math.abs(x);
@@ -2141,9 +2141,12 @@ function pickRole(){ const w=npcs.filter(n=>!n.classic&&!n.leaving&&n.role), tot
 function planAfk(){ return [{go:Math.random()<.5?hallSpot():botSpot()},{afk:rand(300,1500)}]; }
 // the 參拜指引 route: 請香 at the shop, 天公爐, offerings and incense at Mazu's altar, then each god's censer in order, then burn paper
 function planGuide(from=0){ const gods=CENSER_ORDER.filter(k=>k!=="tiangong"&&k!=="mazu"&&stations[k]);
-  const stops=[["shop",[{look:rand(5,10)},{hold:1}]],["tiangong",[{bow:1},{look:rand(2,4)}]],["altar",[{bow:1},{look:rand(3,6)}]],...gods.map(k=>[k,[{bow:1},{look:rand(2,5)}]]),["burn",[{hold:0},{fx:"burn"},{look:rand(6,10)}]]];
-  const out=[]; stops.slice(from).forEach(([k,extra])=>{ if(!stations[k]) return; out.push({go:stNear(k,.5)},{face:stFace(k)},...extra); });
-  if(from>0) out.unshift({hold:1}); if(Math.random()<.35) out.push({sj:Math.random()<.5?0:1}); return out; }
+  const stops=[["shop",[{look:rand(5,10)},{hold:1}]],["tiangong",[{look:rand(1,3)},{bow:1},{look:rand(1,3)},{plant:"tiangong"},{look:rand(1,3)}]],["altar",[{look:rand(1,3)},{bow:1},{look:rand(2,4)},{plant:"mazu"},{look:rand(2,4)}]],
+    ...gods.map(k=>[k,[{look:rand(1,2)},{bow:1},{look:rand(1,3)},{plant:k},{look:rand(1,3)}]]),["burn",[{hold:0},{fx:"burn"},{look:rand(6,10)}]]];
+  const out=[]; stops.slice(from).forEach(([k,extra])=>{ if(!stations[k]) return; out.push({go:stNear(k)},{face:stFace(k)},...extra); });
+  if(from>0) out.unshift({hold:1});
+  const r=Math.random(); if(r<.3) out.push({sj:Math.random()<.5?0:1}); else if(r<.55&&stations.fortune) out.push(...planOne("fortune",[{look:rand(25,55)}]));
+  return out; }
 function planFun(){ const [x,z]=Math.random()<.4?hallSpot():botSpot(), out=[{go:[x,z]}];
   for(let i=0,k=2+((Math.random()*3)|0);i<k;i++){ if(Math.random()<.4) out.push({emo:BOT_EMO[(Math.random()*BOT_EMO.length)|0]},{look:rand(2,5)}); out.push({act:(Math.random()*ACTS.length)|0}); }
   if(Math.random()<.3) return [...planOne("cats",[{dance:rand(15,30)}]),...out.slice(1)];
@@ -2169,11 +2172,14 @@ function botStart(n,st){ n.step=st; n.st=0; n.anim=null; n.afk=!!st.afk;
   else if(st.dance){ n.danceT=1e9; n.limit=st.dance; }
   else if(st.sit!=null){ const S=SEATS[st.sit], p=planPath(n.pos.x,n.pos.y,S.x,S.y); n.hold=0; n.faceGoal=null; n.seat=st.sit; n.goalSeat=true; n.target.set(p[0][0],p[0][1]); n.path=p.slice(1); n.limit=st.dur+60; n.bowIn=rand(6,14); }
   else if(st.leave){ botWalk(n,st.leave[0],st.leave[1]); n.limit=80; }
+  else if(st.plant){ if(CENSERS[st.plant]) addIncenseTo(st.plant,1); n.burnT=0; n.limit=1; }
+  else if(st.watch){ n.limit=1e9; n.hold=0; n.danceT=0; n.faceGoal=rand(-.35,.35); n.sparkIn=Math.random()<.65?rand(1,20):-1; }
   else if(st.sj!=null){ n.bkey=n.bkey||"bot"+(BOT.seq=(BOT.seq||0)+1); n.sjq={g:st.sj,at:Date.now()}; n.limit=300; n.hold=0; }
   else if(st.act!=null){ startAct(n,st.act); n.limit=ACTS[st.act].loop?rand(10,25):ACTS[st.act].d+.3; }
   else if(st.emo!=null){ showEmo(n,st.emo); n.limit=.5; }
   else if(st.afk){ n.limit=st.afk; n.faceGoal=n.rotY+rand(-.6,.6); n.headGoal=0; } }
 function botStep(n,dt){ const st=n.step; n.st+=dt;
+  if(st.watch){ if(!FW.on){ n.sparkler=false; return true; } if(n.sparkIn>0){ n.sparkIn-=dt; if(n.sparkIn<=0) n.sparkler=true; } if(n.st>3&&Math.random()<dt/25) n.faceGoal=rand(-.35,.35); return false; }
   if(st.sj!=null){ const g=SJ.g[st.sj], k=g.q.findIndex(e=>e.key===n.bkey); if(!n.sjq||k<0){ n.sjq=null; return true; }
     if(g.serving&&g.serving.key===n.bkey){ n.faceGoal=-Math.PI/2; if(performance.now()-g.t0>5600){ n.sjq=null; return true; } return false; }
     if(n.st>n.limit){ n.sjq=null; return true; }
@@ -2186,6 +2192,7 @@ function botStep(n,dt){ const st=n.step; n.st+=dt;
   if(st.dance&&n.st>n.limit){ n.danceT=0; return true; }
   return n.st>n.limit; }
 function botPose(n){ if(n.anim==="shake"){ const k=Math.sin(n.st*13)*.16, rest=(n.st%9)>7; for(const a of n.arms){ a.rotation.x=rest?-.7:-1.2+k; a.rotation.z=a===n.arms[0]?.42:-.42; } n.torso.rotation.x=.12; }
+  else if(n.step&&n.step.watch){ n.head.rotation.x=-.5-Math.sin(n.st*.7)*.08; }
   else if(n.anim==="read"){ for(const a of n.arms){ a.rotation.x=-1.0; a.rotation.z=a===n.arms[0]?.3:-.3; } n.head.rotation.x=.32; } }
 // draw each worshipper with a few meshes: per moving part (a leg, an arm, the torso, the head) every plain-coloured piece is merged
 // into one mesh that carries its colours per vertex (one shared material); textured pieces (the face) stay as they are
@@ -2207,14 +2214,51 @@ function bakeAvatar(av){ const bones=new Set([av.root,av.parts,av.hips,av.torso,
       const ix=g.index.array; for(let i=0;i<ix.length;i++) I[io+i]=ix[i]+vo; vo+=n; io+=ix.length; g.dispose(); });
     const G=new T.BufferGeometry(); G.setAttribute("position",new T.BufferAttribute(P,3)); G.setAttribute("normal",new T.BufferAttribute(N,3)); G.setAttribute("color",new T.BufferAttribute(C,3)); G.setIndex(new T.BufferAttribute(I,1)); G.computeBoundingSphere();
     const M=new T.Mesh(G,ds?BOT_VC2:BOT_VC); M.raycast=()=>{}; b.add(M); list.forEach(o=>o.parent&&o.parent.remove(o)); }); }
-function makeBot(at){ const [x,z]=at||botSpot(); const a=new Avatar(randomLook(),{npc:true,x,z}); a.isBot=true; a.moveSpeed=3.31; a.name=randomName(); a.setName(a.name); try{ bakeAvatar(a); }catch(e){}
+/* ---- NPC names: built on the phone from the patterns and word lists in npc-names.json (no AI, no server).
+   Real players keep randomName(); this is only for the demo worshippers. To add words or patterns, edit npc-names.json only.
+   Each NPC has a fixed id; its name comes from a random generator seeded by that id, so the same NPC always gets the same
+   name (after a reload too, and on everyone's phone). Two NPCs on screen never share a name. Every finished name is checked
+   against the file's blocked words and the game's own chat filter before use. */
+const NPC_NAMES={cfg:null, active:new Map(), stored:new Map(), used:new Set()};
+fetch("npc-names.json").then(r=>r.ok?r.json():null).then(c=>{ if(!c||!c.pools||!Array.isArray(c.patterns)) return; NPC_NAMES.cfg=c;
+  npcs.forEach(n=>{ if(n.npcId&&n.name){ const nm=npcName(n.npcId); n.name=nm; n.setName(nm); } }); }).catch(()=>{});
+function seededRng(str){ let h=1779033703^str.length; for(let i=0;i<str.length;i++){ h=Math.imul(h^str.charCodeAt(i),3432918353); h=h<<13|h>>>19; }
+  return ()=>{ h=Math.imul(h^h>>>16,2246822507); h=Math.imul(h^h>>>13,3266489909); h^=h>>>16; return (h>>>0)/4294967296; }; }
+function npcNameOk(name,c){ const L=c.limits||{}, max=Math.min(L.maxChars||10,10); if(name.length<(L.minChars||2)||name.length>max) return false;
+  if((c.blockedSubstrings||[]).some(b=>b&&name.includes(b))) return false; if(hasAddLine(name)) return false; try{ if(chatCheck(name)) return false; }catch(e){} return true; }
+function npcName(id){ const c=NPC_NAMES.cfg, A=NPC_NAMES.active, S=NPC_NAMES.stored; if(!c) return randomName();
+  if(S.has(id)){ const old=S.get(id); if(!A.has(old)||A.get(old)===id){ A.set(old,id); return old; } S.delete(id); }
+  const rng=seededRng(id), pick=a=>a[Math.floor(rng()*a.length)], pats=c.patterns.filter(x=>x.weight>0&&x.parts.every(k=>Array.isArray(c.pools[k])&&c.pools[k].length)), total=pats.reduce((a,p)=>a+p.weight,0);
+  for(let t=0;t<((c.limits&&c.limits.maxAttempts)||100);t++){ let th=rng()*total, pat=pats[pats.length-1]; for(const p of pats){ th-=p.weight; if(th<0){ pat=p; break; } }
+    const name=pat.parts.map(k=>pick(c.pools[k])).join(pat.join??c.defaultJoin??""); if(!npcNameOk(name,c)||A.has(name)) continue; A.set(name,id); S.set(id,name); return name; }
+  const base=pick(c.pools.people||["阿明"]); for(let i=1;i<1e4;i++){ const name=base+i; if(!A.has(name)&&npcNameOk(name,c)){ A.set(name,id); S.set(id,name); return name; } } return randomName(); }
+function npcRelease(id){ const nm=NPC_NAMES.stored.get(id); if(nm&&NPC_NAMES.active.get(nm)===id) NPC_NAMES.active.delete(nm); NPC_NAMES.used.delete(id); }
+// each hall has its own 400 regulars; someone who walks in is one of them who isn't here right now
+function npcNewId(){ const h=HALLS.current?HALLS.current():0; for(let t=0;t<50;t++){ const id=`npc-${h}-${(Math.random()*400)|0}`; if(!NPC_NAMES.used.has(id)){ NPC_NAMES.used.add(id); return id; } } const id=`npc-${h}-x${Date.now().toString(36)}`; NPC_NAMES.used.add(id); return id; }
+function makeBot(at){ const [x,z]=at||botSpot(); const a=new Avatar(randomLook(),{npc:true,x,z}); a.isBot=true; a.npc=true; a.npcId=npcNewId(); a.moveSpeed=3.31; a.name=npcName(a.npcId); a.setName(a.name); try{ bakeAvatar(a); }catch(e){}
   a.steps=[{look:rand(.5,4)}]; a.step=null; if(customizing||!othersShown) a.root.visible=false; npcs.push(a); return a; }
+// someone in chat says let's dance: a few people nearby (and some from further off) walk over and dance next to them;
+// next to the three cats it means joining the cats' blessing dance
+const DANCE_RE=/跳舞|來跳|一起跳|跳起來|跳一下|尬舞|dance/i; let lastDanceCall=0;
+function botHear(av,text){ if(!DANCE_RE.test(text)||performance.now()-lastDanceCall<15000||!av||!av.pos) return; lastDanceCall=performance.now();
+  const cats=stations.cats&&Math.hypot(av.pos.x-CATS.c.x,av.pos.y-CATS.c.z)<4.5;
+  const pool=npcs.filter(n=>!n.classic&&!n.leaving&&!n.sjq&&!(n.step&&n.step.watch)&&n!==av&&(n.role!=="afk"||Math.random()<.1)).sort((a,b)=>a.pos.distanceTo(av.pos)-b.pos.distanceTo(av.pos));
+  const near=pool.slice(0,10).filter(()=>Math.random()<.55), far=pool.slice(10).filter(()=>Math.random()<.06), go=[...near,...far].slice(0,8);
+  go.forEach((n,k)=>setTimeout(()=>{ if(!npcs.includes(n)||n.leaving) return; if(n.act>=0) stopAct(n); n.anim=null; n.danceT=0; n.seat=-1; n.goalSeat=false; n.sjq=null;
+    if(Math.random()<.3){ const ph=["走啊","來了來了","我也要跳","💃","跳起來！","衝","好啊好啊"][(Math.random()*7)|0]; n.say(ph,"#f7ecd6",3); if(Math.random()<.5) logChat(n.name,ph,false); }
+    if(cats) n.steps=planOne("cats",[{dance:rand(20,45)}]);
+    else { let x=av.pos.x, z=av.pos.y; for(let t=0;t<12;t++){ const a=Math.random()*Math.PI*2, d=rand(.9,2.6), X=av.pos.x+Math.cos(a)*d, Z=av.pos.y+Math.sin(a)*d; if(walkable(X,Z)){ x=X; z=Z; break; } }
+      n.steps=[{go:[x,z]},{face:Math.atan2(av.pos.x-x,av.pos.y-z)},{act:5+((Math.random()*4)|0)},{act:5+((Math.random()*4)|0)}]; }
+    n.steps.push({look:rand(3,8)}); n.step=null; },rand(1200,6500)+k*rand(200,900))); }
 function botNear(n,r){ return Math.hypot(n.pos.x-meAv.pos.x,n.pos.y-meAv.pos.y)<r; }
 function botTick(dt){ const now=performance.now(); botFps(dt);
   if(now>BOT.nextAdjust){ const live=npcs.filter(n=>!n.leaving&&!n.classic), want=botWant(); BOT.nextAdjust=now+(Math.abs(live.length-want)>4?rand(1500,4000):rand(15000,40000));
     if(live.length<want-6){ for(let k=Math.min(4,want-live.length);k>0;k--) placeBot(); BOT.nextAdjust=now+rand(800,1600); }
     else if(live.length<want){ const a=makeBot([(Math.random()<.5?-1:1)*16.5,rand(HZ+3,HZ+YX+15)]); a.role=pickRole(); }              // someone walks in from the side of the courtyard
     else if(live.length>want){ const n=live[(Math.random()*live.length)|0]; n.leaving=true; n.hold=0; n.danceT=0; n.anim=null; n.steps=[]; botStart(n,{leave:[(n.pos.x<0?-1:1)*16.5,Math.max(HZ+3,Math.min(HZ+YX+15,n.pos.y))]}); } } // someone heads home
+  if(FW.on) for(const n of npcs){ if(n.classic||n.leaving||n.sjq||n.fwSeed===FW.seed) continue; n.fwSeed=FW.seed; if(n.role==="afk"&&Math.random()<.7) continue; if(Math.random()<.2) continue;
+    if(n.act>=0) stopAct(n); n.anim=null; n.danceT=0; n.hold=0; n.seat=-1; n.goalSeat=false; const out=n.pos.y<HZ+1.5, [x,z]=botSpot();
+    n.steps=out?[{go:[x,Math.min(z,HZ+YX+8)]},{watch:1}]:[{watch:1}]; if(!out){ n.target.copy(n.pos); n.path=[]; } n.step=null; }
   for(let i=npcs.length-1;i>=0;i--){ const n=npcs[i]; n.update(dt);
     if(n.classic){ n.next-=dt; if(n.next<0){ n.next=rand(8,24); n.bow(); } continue; }
     if(!n.step){ if(!n.steps||!n.steps.length){ if(n.leaving){ n.dispose(); npcs.splice(i,1); continue; } botPlan(n); } botStart(n,n.steps.shift()); }
@@ -2235,7 +2279,7 @@ function placeBot(){ const role=pickRole(); let a;
 function buildNpcs(){ npcs.forEach(n=>n.dispose()); npcs.length=0;
   // the original demo worshippers, exactly as before: no name, always kneeling on the mats in the hall and bowing now and then
   if(showNpc) for(let i=0;i<(Q.lite?3:Q.low?6:12);i++){ const s=freeSeat(); if(s<0) break; const a=new Avatar(randomLook(),{npc:true,x:SEATS[s].x,z:SEATS[s].y}); try{ bakeAvatar(a); }catch(e){}
-    a.classic=true; a.seat=s; a.kneel=1; a.next=rand(2,18); a.steps=[]; a.step=null; if(customizing) a.root.visible=false; npcs.push(a); }
+    a.classic=true; a.seat=s; a.kneel=1; a.next=rand(2,18); a.steps=[]; a.step=null; if(customizing||!othersShown) a.root.visible=false; npcs.push(a); }
   const want=Math.min(40,botWant()); for(let i=0;i<want;i++) placeBot();
   BOT.nextAdjust=performance.now()+rand(1500,4000); }
 function npcYield(i){ npcs.forEach(n=>{ if(n.seat===i){ const s=freeSeat(); if(s<0){ n.seat=-1; n.target.set(rand(-10,10),13); } else n.sitAt(s); } }); }
@@ -2285,7 +2329,7 @@ function syncPeers(peers){ const seen=new Set();
     if(Array.isArray(pr.e)&&pr.e[1]&&pr.e[1]!==av.lastE){ av.lastE=pr.e[1]; if(!quietFx()) showEmo(av,pr.e[0]|0); }
     if(av.lastAC===undefined){ av.lastAC=Array.isArray(pr.ac)?pr.ac[1]:""; if(Array.isArray(pr.ac)&&ACTS[pr.ac[0]|0]&&ACTS[pr.ac[0]|0].loop&&pr.ac[0]>=0) startAct(av,pr.ac[0]|0); }
     if(Array.isArray(pr.ac)&&pr.ac[1]&&pr.ac[1]!==av.lastAC){ av.lastAC=pr.ac[1]; const id=pr.ac[0]|0; if(id<0||!ACTS[id]) stopAct(av); else if(ACTS[id].loop||!quietFx()) startAct(av,id); }
-    if(Array.isArray(pr.c)&&typeof pr.c[0]==="string"&&pr.c[1]&&pr.c[1]!==av.lastC){ av.lastC=pr.c[1]; const txt=cleanChat(pr.c[0]); if(txt&&!chatCheck(txt)&&!peerFlood(av,txt)){ av.say(txt,"#f7ecd6",5); logChat(av.name||"香客",txt,false); } }
+    if(Array.isArray(pr.c)&&typeof pr.c[0]==="string"&&pr.c[1]&&pr.c[1]!==av.lastC){ av.lastC=pr.c[1]; const txt=cleanChat(pr.c[0]); if(txt&&!chatCheck(txt)&&!peerFlood(av,txt)){ av.say(txt,"#f7ecd6",5); logChat(av.name||"香客",txt,false); botHear(av,txt); } }
     const offersKey=JSON.stringify(pr.o||[]); if(offersKey!==av.offersKey){ av.offersKey=offersKey; while(av.offerGroup.children.length) av.offerGroup.remove(av.offerGroup.children[0]);
       (Array.isArray(pr.o)?pr.o.slice(0,4):[]).forEach(o=>{ if(Array.isArray(o)&&OFFER_KINDS.includes(o[0])&&o[0]!=="xiang") offerMesh(o[0],num(o[1],0,11,0)|0,av.offerGroup); }); }
   }
@@ -2592,7 +2636,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",
 let lookTab="face", draftLook=null;
 function openLook(first){ customizing=true; if(room) setTimeout(sendPresence,0); if(window.__retrack) setTimeout(window.__retrack,0); if(meAv.seat>=0){ meAv.seat=-1; } meAv.target.copy(meAv.pos); pendingStation=null; { const z=meAv.pos.y; meAv.rotY=z>HZ?0:((14.4-z)>(z+9)?0:Math.PI); meAv.faceGoal=meAv.rotY; } markDirty(); pvYaw=0; pvSpin=0; document.body.classList.add("customizing"); draftLook=me.look.slice(); setOthersVisible(false); updateStandBtn(); renderLook(first); }
 let othersShown=load("mz.others",true);
-function setOthersVisible(v){ npcs.forEach(n=>n.root.visible=v&&(othersShown||n.classic)); remotes.forEach(r=>r.root.visible=v&&othersShown); }
+function setOthersVisible(v){ npcs.forEach(n=>n.root.visible=v&&othersShown); remotes.forEach(r=>r.root.visible=v&&othersShown); }
 HANDLERS.toggleOthers=(v,b)=>{ othersShown=!othersShown; save("mz.others",othersShown); b.setAttribute("aria-pressed",String(othersShown)); if(!customizing) setOthersVisible(true); toast(othersShown?"已顯示其他玩家":"已隱藏其他玩家，自己一個人慢慢拜"); };
 function syncPvSeg(){ sheetBody.querySelectorAll("[data-act=pv]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===pvMode))); }
 function chipRow(label,idx,names){ return `<div class="group"><span class="group-label">${label}</span><div class="chips">${names.map((n,i)=>idx===3&&i===16&&!me.sp?"":`<button class="chip" data-act="look" data-v="${idx}:${i}" aria-pressed="${draftLook[idx]===i}">${n}</button>`).join("")}</div></div>`; }
@@ -2944,7 +2988,7 @@ function peerFlood(av,text){ const k=floodKey(text); av.fl=av.fl||{last:""}; if(
 function sendChat(text){ text=cleanChat(text); if(!text) return false; const now=performance.now(); if(now-lastChatAt<800) return false; /* only stops an accidental double tap */
   const bad=chatCheck(text); if(bad){ toast(`沒有送出：${CHAT_REASON[bad]}`,2800); return false; }
   const fl=floodCheck(text); if(fl){ toast(fl,2800); return false; } floodNote(text);
-  lastChatAt=now; myChat=[text,Math.random().toString(36).slice(2,8)]; markDirty(); meAv.say(text,"#f7ecd6",5); logChat(me.name||"你",text,true); return true; }
+  lastChatAt=now; myChat=[text,Math.random().toString(36).slice(2,8)]; markDirty(); meAv.say(text,"#f7ecd6",5); logChat(me.name||"你",text,true); botHear(meAv,text); return true; }
 /* ---- greetings ---- */
 function openSay(){ openSheet("say","聊天",`<div class="chat-log" id="chatLog" aria-live="polite"></div>
   <form class="chat-row" id="chatForm"><input id="chatInput" maxlength="40" autocomplete="off" placeholder="說點什麼，會顯示在你頭上" aria-label="聊天訊息"><button class="primary" type="submit">送出</button></form>
