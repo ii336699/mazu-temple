@@ -4167,7 +4167,7 @@ function ptSet(s){ const was=PT.on; PT.on=!!s.on; PT.at=+s.at||Date.now(); PT.te
   if(!PT.on){ PT.actors.forEach(a=>a.av.root.visible=false); PT.sparks.forEach(o=>o.sp.visible=false); if(PT.flash) PT.flash.visible=false; if(PT.aud) PT.aud.pause(); delete stations.puppet; } else if(PT.built&&!stations.puppet) station("puppet",[PT.x,PT.z-.15*PT.k-1.6],0);
   if(PT.on&&!was&&Date.now()-PT.at<60000) toast("🎎 主委擺出布袋戲台了！在天公爐前面",4200); if(sheetKind==="chair"&&me.sp) openChair(); if(sheetKind==="puppetChair") HANDLERS.puppetChair(); }
 async function ptFetch(){ try{ const r=await fetch("/puppet",{cache:"no-store"}); if(!r.ok) return; const j=await r.json(); if(j&&(!!j.on!==PT.on||(j.on&&(j.at!==PT.at||(j.text||"")!==PT.text)))) ptSet(j); }catch(e){} }
-function ptOpen(){ const t=(PT.text||"").trim(); openSheet("puppet","雲端布袋戲",`${t?`<p class="pt-banner">${esc(t)}</p>`:""}<p class="lead">六尊布袋戲偶兩兩上台，鬥法、飛天、旋轉開打，打完換下一組，一直演下去。走近一點聽鑼鼓和口白。</p>`); }
+function ptOpen(){ const t=(PT.text||"").trim(); openSheet("puppet","雲端布袋戲",t?`<p class="pt-banner">${esc(t)}</p>`:""); }
 // chair: type the line for the red cloth, then put the stage out (or change the line / pack it away)
 HANDLERS.puppetChair=()=>{ if(!me.sp) return; openSheet("puppetChair","布袋戲台",`${backBtn}<p class="lead">${PT.on?"布袋戲台演出中。可以改紅布條上的字，或收回戲台。":"擺出前先寫好紅布條上的字（掛在戲台下方鳳凰蓮花的位置，玩家點戲台也看得到）。"}</p>
   <div class="field"><label class="group-label" for="ptText">紅布條文字（24 字內，可留空）</label><input id="ptText" maxlength="24" placeholder="例如：恭祝天上聖母聖誕千秋" value="${esc(PT.text||"")}"></div>
