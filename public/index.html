@@ -624,7 +624,7 @@ const SIGN_NAMES={bell:"鐘",drum:"鼓"};
 // Light by amount: 500+ everything below plus searchlight beams, fireworks over the board and falling gold · 300+ blazing
 // rainbow with halo, rays and sparks · 100+ rainbow neon · 50+ pink neon · others warm gold bulbs. Empty slots: carved gold panel.
 // To add a sponsor, just append to THANKS below; no position needed.
-const THANK_COLS=[2.6,3.95,5.3,6.65,8.0,9.35], THANK_ROWS=[2.95,1.95,.95], THANK_K=.5;
+const THANK_COLS=[2.7,4.25,5.8,7.35,8.9,10.45], THANK_ROWS=[3.05,2.0,.95], THANK_K=.42;
 // seen from the courtyard the wall faces the temple, so +x is the viewer's left: each pair fills left, then right
 const THANK_SLOTS=THANK_COLS.flatMap(c=>THANK_ROWS.flatMap(y=>[[c,y],[-c,y]]));
 const THANKS=[{img:"thanks1.jpg",amt:50,text:"謝謝阿詠贊助50元伺服器營運費用 🫶"},
@@ -1504,7 +1504,9 @@ const FT={x:0,z:HZ+YX+20.2,H:4.4,k:1,mouth:new T.Vector3(),pool:new T.Vector3(0,
         } else { pts.forEach(([bx,by,ph])=>{ const b=new T.Mesh(bg,bm[ph]); b.position.set(bx,by,.04); g.add(b); const sp=new T.Sprite(gm[ph]); sp.scale.set(.2,.2,1); sp.position.set(bx,by,.06); g.add(sp); });
       let on=0; setInterval(()=>{ on^=1; bm[on].color.set("#fff6d6"); bm[1-on].color.set("#c9862e"); gm[on].opacity=.85; gm[1-on].opacity=.15; },550); } }
     new T.TextureLoader().load(th.img,t=>{ t.encoding=T.sRGBEncoding; t.anisotropy=renderer.capabilities.getMaxAnisotropy(); pm.map=t; pm.color.set("#ffffff"); pm.emissiveMap=t; pm.emissive.set("#4a3020"); pm.needsUpdate=true; });
-    g.userData.act="thanks:"+THANKS.indexOf(th); }
+    g.userData.act="thanks:"+THANKS.indexOf(th);
+    // only the board itself answers a tap: lights, halo, beams and fireworks can't steal taps meant for the boards next to it
+    g.traverse(o=>{ if(o!==g&&o!==fr&&o!==pic) o.raycast=()=>{}; }); }
   // a soft glow where the water lands
   const pool=new T.Mesh(new T.CircleGeometry(.9,32),new T.MeshBasicMaterial({color:new T.Color("#8fd6ff"),transparent:true,opacity:.18,depthWrite:false,blending:T.AdditiveBlending})); pool.rotation.x=-Math.PI/2; pool.position.set(0,.62,HZ+YX+19.2); pool.userData.noMerge=1; scene.add(pool); FT.poolMesh=pool; }
 const waterDrops=[]; { const wm=new T.SpriteMaterial({map:softTex,color:new T.Color("#bfe9ff"),transparent:true,opacity:.75,depthWrite:false,blending:T.AdditiveBlending}); for(let i=0;i<46;i++){ const sp=new T.Sprite(wm); sp.scale.set(.07,.07,1); sp.visible=false; sp.userData.noMerge=1; scene.add(sp); waterDrops.push({sp,t:i/46*1.1,v:new T.Vector3()}); } }
