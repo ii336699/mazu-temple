@@ -3169,7 +3169,7 @@ $("#slBtn").onclick=()=>{ if(!myLantern) return; ensureAudio(); const img=myLant
   meAv.faceGoal=0; meAv.bow(); setTimeout(()=>{ launchSkyLantern(meAv,img); mySL=[Date.now(),Math.random().toString(36).slice(2,8)]; markDirty(); healSound(); meAv.say("天燈升空，心願上達天聽","#ffd27a",4); showCaption("願望成真"); },900); };
 
 /* ================= 玄天上帝：畫北斗七星消災解厄 ／ 關聖帝君：斬小人 ================= */
-let miniOpen=false;
+let miniOpen=false, bgmHush=false; // bgmHush: the background music fades out (the rhythm game needs quiet)
 function gameLayer(title,hint){ closeSheet(); miniOpen=true; const el=document.createElement("div"); el.className="mini"; el.innerHTML=`<div class="mini-top"><b>${title}</b><span class="mini-hint">${hint}</span><button class="mini-x" aria-label="離開">✕</button></div><canvas></canvas>`; document.body.appendChild(el);
   const cv=el.querySelector("canvas"), x=cv.getContext("2d"); const fit=()=>{ const d=Math.min(2,window.devicePixelRatio||1); cv.width=innerWidth*d; cv.height=innerHeight*d; cv.style.width=innerWidth+"px"; cv.style.height=innerHeight+"px"; x.setTransform(d,0,0,d,0,0); }; fit();
   const L={el,cv,x,W:()=>innerWidth,H:()=>innerHeight,done:false,close(){ L.done=true; miniOpen=false; window.removeEventListener("resize",fit); el.remove(); }};
@@ -4215,8 +4215,10 @@ function playQQ(){ const L=gameLayer("地瓜球","老闆壓一次，你照著節
   const pk=(a,n)=>a.slice().sort(()=>Math.random()-.5).slice(0,n);
   const ROUNDS=[...pk(EASY,3),...pk(MID,3),...pk(HARD,2)];
   const a=ensureAudio(); let t0=null, started=false, notes=[], good=0, perfect=0, combo=0, puff=0, fb=null;
-  ROUNDS.forEach((pat,r)=>{ const bar=1+r*2; pat.forEach(o=>{ notes.push({who:"boss",t:(bar*4+o)*B}); notes.push({who:"me",t:((bar+1)*4+o)*B,done:false}); }); });
-  const total=notes.filter(n=>n.who==="me").length, END=(1+ROUNDS.length*2)*4*B+1;
+  const PER=3; // each round: the boss's bar, your bar, then a bar to breathe
+  ROUNDS.forEach((pat,r)=>{ const bar=1+r*PER; pat.forEach(o=>{ notes.push({who:"boss",t:(bar*4+o)*B}); notes.push({who:"me",t:((bar+1)*4+o)*B,done:false}); }); });
+  const total=notes.filter(n=>n.who==="me").length, END=(1+ROUNDS.length*PER-1)*4*B+1;
+  bgmHush=true; { const c0=L.close; L.close=()=>{ bgmHush=false; c0(); }; }
   const click=(t,f,v)=>{ if(!a) return; const o=a.createOscillator(), g=a.createGain(); o.type="square"; o.frequency.value=f; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v*sVol(),t+.005); g.gain.exponentialRampToValueAtTime(.0001,t+.08); o.connect(g).connect(sfxBus(a)); o.start(t); o.stop(t+.1); };
   const squish=t=>{ if(!a) return; const o=a.createOscillator(), g=a.createGain(); o.type="sine"; o.frequency.setValueAtTime(420,t); o.frequency.exponentialRampToValueAtTime(140,t+.12); g.gain.setValueAtTime(.0001,t); g.gain.linearRampToValueAtTime(.22*sVol(),t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+.18); o.connect(g).connect(sfxBus(a)); o.start(t); o.stop(t+.2); };
   const start=()=>{ if(started) return; started=true; t0=(a?a.currentTime:performance.now()/1000)+.6; for(let b=0;b<END/B;b++) click(t0+b*B,b%4===0?1320:880,b%4===0?.07:.04); notes.forEach(n=>{ if(n.who==="boss") squish(t0+n.t); }); };
@@ -4240,8 +4242,8 @@ function playQQ(){ const L=gameLayer("地瓜球","老闆壓一次，你照著節
     const sp=(px,down,flip)=>nmDraw(x,"qq-spatula",px,cy-PW*.32+down*PW*.12,PW*.34,flip?-.5:.5,1,flip);
     sp(cx-PW*.3,bossHit,true); sp(cx+PW*.3,puff,false);
     nmText(x,"老闆",cx-PW*.32,cy+PW*.36,18,"#f0e0c0"); nmText(x,"你",cx+PW*.32,cy+PW*.36,18,"#f0e0c0");
-    if(started&&tn<END){ const bar=Math.floor(tn/(4*B)), inBar=(tn/B)%4, mine=bar>=1&&bar%2===0;
-      nmText(x,bar<1?"預備…":mine?"換你壓！":"看老闆壓",W/2,150,26,mine?"#7dffb0":"#ffe2a0");
+    if(started&&tn<END){ const bar=Math.floor(tn/(4*B)), inBar=(tn/B)%4, ph=bar<1?-1:(bar-1)%PER, mine=ph===1;
+      nmText(x,ph<0?"預備…":ph===1?"換你壓！":ph===2?"休息一下…":"看老闆壓",W/2,150,26,mine?"#7dffb0":ph===2?"#c8b8a0":"#ffe2a0");
       for(let i=0;i<4;i++){ const on=Math.floor(inBar)===i; nmDraw(x,i%2?"qq-p":"qq-y",W/2+(i-1.5)*34,182,on?26:18,0,on?1:.45); } }
     if(!started){ nmText(x,"點畫面開始",W/2,H*.27,30); nmText(x,"老闆壓一小節，你照同樣節奏壓下一小節",W/2,H*.27+36,16,"#fff",undefined,500); }
     if(fb&&performance.now()-fb.at<650){ if(fb.perfect&&combo>=3) qqCard(x,W/2,H*.3,combo,(performance.now()-fb.at)/650); else nmText(x,fb.t,W/2,H*.3,34,fb.c); }
@@ -4375,7 +4377,7 @@ function playPachinko(){ const L=gameLayer("打彈珠","押好彈珠按「發射
   const layout=()=>{ const W=L.W(), H=L.H(), maxH=H-300, w=Math.min(W-16,maxH*IW/IH,460), h=w*IH/IW; const bx=(W-w)/2, by=150, k=w/IW;
     const P=(px,py)=>[bx+px*k,by+py*k]; const pegs=[];
     PEG_Y.forEach((py,r)=>(r%2?PX_B:PX_A).forEach(px=>{ if(HOLES.some(([hx,hy])=>Math.hypot(hx-px,hy-py)<70)) return; const [X,Y]=P(px,py); pegs.push({x:X,y:Y}); }));
-    G={W,H,bx,by,w,h,k,P,pegs,left:bx+48*k,right:bx+1000*k,top:by+175*k,slotY:by+1188*k,slotB:by+1320*k,sw:(1075-48)*k/N,holes:HOLES.map(([hx,hy])=>{ const [X,Y]=P(hx,hy); return {x:X,y:Y,r:30*k,hit:0}; })}; };
+    G={W,H,bx,by,w,h,k,P,pegs,left:bx+48*k,right:bx+1015*k,top:by+175*k,slotY:by+1188*k,slotB:by+1320*k,sw:(1075-48)*k/N,holes:HOLES.map(([hx,hy])=>{ const [X,Y]=P(hx,hy); return {x:X,y:Y,r:30*k,hit:0}; })}; };
   layout(); const onRs=()=>layout(); window.addEventListener("resize",onRs);
   const btns={buy10:{h:42},buy100:{h:42},bet:{h:42},cash:{h:42},fire:{h:50}};
   const say=t=>{ msg=t; msgAt=performance.now(); };
@@ -4394,7 +4396,7 @@ function playPachinko(){ const L=gameLayer("打彈珠","押好彈珠按「發射
     // the slots that pay this round glow, brighter and warmer the more they pay
     G.holes.forEach(p=>{ if(p.hit>0){ p.hit=Math.max(0,p.hit-dt*3); x.save(); x.globalCompositeOperation="lighter"; const r=x.createRadialGradient(p.x,p.y,2,p.x,p.y,p.r*2.4); r.addColorStop(0,`rgba(255,230,120,${p.hit})`); r.addColorStop(1,"rgba(255,120,40,0)"); x.fillStyle=r; x.beginPath(); x.arc(p.x,p.y,p.r*2.4,0,7); x.fill(); x.restore(); } });
     mult.forEach((m,i)=>{ const cx=G.left+(i+.5)*G.sw, cy=(G.slotY+G.slotB)/2;
-      if(m){ const pulse=.7+.3*Math.sin(now/260+i*1.7), col=["","255,236,150","255,206,90","255,160,50","255,90,40"][m], bh=(G.slotY-G.by)*(.35+m*.12)*pulse; // a beam of light rising from the slot
+      if(m){ const pulse=.7+.3*Math.sin(now/260+i*1.7), col=["","255,236,150","255,206,90","255,160,50","255,90,40"][m], bh=(G.slotY-G.by)*(.1+m*.04)*pulse; // a beam of light rising from the slot
         x.save(); x.globalCompositeOperation="lighter"; const g=x.createLinearGradient(0,G.slotY,0,G.slotY-bh); g.addColorStop(0,`rgba(${col},.75)`); g.addColorStop(.6,`rgba(${col},.22)`); g.addColorStop(1,`rgba(${col},0)`);
         x.fillStyle=g; x.beginPath(); x.moveTo(cx-G.sw*.42,G.slotY+4); x.lineTo(cx+G.sw*.42,G.slotY+4); x.lineTo(cx+G.sw*.2,G.slotY-bh); x.lineTo(cx-G.sw*.2,G.slotY-bh); x.closePath(); x.fill();
         const c2=x.createLinearGradient(0,G.slotY,0,G.slotY-bh*.9); c2.addColorStop(0,`rgba(255,255,240,.8)`); c2.addColorStop(1,"rgba(255,255,240,0)"); x.fillStyle=c2; x.fillRect(cx-G.sw*.07,G.slotY-bh*.9,G.sw*.14,bh*.9+4);
@@ -4403,7 +4405,11 @@ function playPachinko(){ const L=gameLayer("打彈珠","押好彈珠按「發射
         nmText(x,`×${m}`,cx,cy+7,Math.max(14,G.sw*.42),m>=4?"#fff27a":"#ffffff"); }
       else nmText(x,"✕",cx,cy+6,Math.max(12,G.sw*.3),"rgba(255,255,255,.35)"); });
     if(ball){ if(ball.phase==="rail"){ ball.t+=dt*1.15; const [px,py]=railPt(Math.min(1,ball.t)); ball.x=px; ball.y=py; if(ball.t>=1){ ball.phase="drop"; ball.vx=(Math.random()-.5)*180*G.k*2; ball.vy=30; } }
-      else { const b=ball, R=Math.max(5,15*G.k); b.vy+=900*dt; b.x+=b.vx*dt; b.y+=b.vy*dt;
+      else { const b=ball, R=Math.max(5,15*G.k); b.vy+=900*dt; b.x+=b.vx*dt; b.y+=b.vy*dt; b.age=(b.age||0)+dt;
+        // never stuck: if it hasn't really moved for a moment, give it a nudge down and sideways and let it carry on
+        b.chk=(b.chk||0)+dt; if(b.chk>.35){ const mv=Math.hypot(b.x-(b.lx??b.x+99),b.y-(b.ly??b.y+99)); if(mv<6*G.k*4){ b.vx=(Math.random()<.5?-1:1)*(140+Math.random()*120); b.vy=160; b.y+=R*.6; } b.lx=b.x; b.ly=b.y; b.chk=0; }
+        if(b.y<G.top-R*2){ b.y=G.top-R*2; b.vy=Math.abs(b.vy)*.4; }
+        if(b.age>9) b.vy=Math.max(b.vy,260); // a very long fall just drops through
         if(b.x<G.left+R){ b.x=G.left+R; b.vx=Math.abs(b.vx)*.6; } if(b.x>G.right-R){ b.x=G.right-R; b.vx=-Math.abs(b.vx)*.6; }
         for(const p of G.pegs){ const dx=b.x-p.x, dy=b.y-p.y, dd=Math.hypot(dx,dy), rr=R+4*G.k*2; if(dd<rr){ const nx=dx/dd, ny=dy/dd, dot=b.vx*nx+b.vy*ny; if(dot<0){ b.vx-=1.5*dot*nx; b.vy-=1.5*dot*ny; b.vx+=(Math.random()-.5)*40; b.vy*=.8; } b.x=p.x+nx*rr; b.y=p.y+ny*rr; if(Math.random()<.3) tone(1400+Math.random()*400,.02,.02,"square"); } }
         for(const p of G.holes){ const dx=b.x-p.x, dy=b.y-p.y, dd=Math.hypot(dx,dy), rr2=p.r+R; if(dd<rr2){ const nx=dx/dd, ny=dy/dd, sp=Math.max(420,Math.hypot(b.vx,b.vy))*1.25; // bumper: kicks the marble away hard
@@ -4647,7 +4653,7 @@ function tick(){ if(gameAsleep) return; { const now=performance.now(), cap=frame
     if(p.g) p.vy-=p.g*dt; p.s.position.x+=(p.vx+Math.sin(t*1.3+i)*.04)*dt; p.s.position.y+=p.vy*dt; p.s.position.z+=p.vz*dt; const sc=p.s.scale.x+p.grow*dt; p.s.scale.set(Math.max(.02,sc),Math.max(.02,sc),1);
     p.s.material.opacity=p.op*Math.sin(Math.min(1,k)*Math.PI); }
   const dp=dustGeo.attributes.position.array; for(let i=0;i<dustN;i++){ dp[i*3+1]+=Math.sin(t*.5+i)*.0015; dp[i*3]+=Math.cos(t*.3+i*.7)*.001; } dustGeo.attributes.position.needsUpdate=true;
-  if(duckT>0){ duckT-=dt; } { const mv=mVol(), top=(curTrack==="cat"?.55:curTrack==="fw"?.6:.38)*mv, near=(OP&&OP.on)?OP.prox:0; const goal=(duckT>0?Math.min(.16*mv,top):top)*(1-near); if(AU.lv<0) AU.lv=goal; AU.lv+=(goal-AU.lv)*Math.min(1,dt*(goal<AU.lv?2.5:1)); musicLevel(AU.lv<.004?0:AU.lv); } // near the opera stage the temple music fades all the way out, and back in as you walk away
+  if(duckT>0){ duckT-=dt; } { const mv=mVol(), top=(curTrack==="cat"?.55:curTrack==="fw"?.6:.38)*mv, near=(OP&&OP.on)?OP.prox:0; const goal=(duckT>0?Math.min(.16*mv,top):top)*(1-near)*(bgmHush?0:1); if(AU.lv<0) AU.lv=goal; AU.lv+=(goal-AU.lv)*Math.min(1,dt*(goal<AU.lv?2.5:1)); musicLevel(AU.lv<.004?0:AU.lv); } // near the opera stage the temple music fades all the way out, and back in as you walk away
   { const dc=Math.hypot(meAv.pos.x-CATS.c.x,meAv.pos.y-CATS.c.z); const want=catMode?dc<4.2:dc<3.2;
     if(want!==catMode){ catMode=want; if(!FW.on) setTrack(catMode?"cat":"main"); } }
   bellSwing*=Math.pow(.25,dt); bell.rotation.x=Math.sin(t*4)*.22*bellSwing; drumBounce*=Math.pow(.02,dt); drum.scale.setScalar(1+Math.sin(t*40)*.03*drumBounce);
