@@ -237,6 +237,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
 .camreset{position:fixed;left:calc(max(12px,env(safe-area-inset-left,0px)) + 33px);bottom:calc(env(safe-area-inset-bottom,0px) + 188px);width:30px;height:30px;border:0;padding:0;background:none;z-index:5;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .camreset::after{content:"";position:absolute;left:9px;top:9px;width:12px;height:12px;border-radius:50%;background:rgba(255,230,180,.55);box-shadow:0 0 0 1.5px rgba(255,230,180,.25),0 0 6px rgba(255,200,120,.35)}
 .camreset:active::after{background:#ffe6b4}
+.nm-bar{height:10px;border-radius:6px;background:rgba(255,255,255,.12);overflow:hidden;margin:10px 0} .nm-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffb347,#ffe14d);transition:width .2s}
 .rec-row{display:flex;gap:8px;align-items:center;padding:5px 2px;border-bottom:1px solid rgba(240,199,94,.18)} .rec-row span{margin-left:auto;color:var(--gold)}
 .steps-ol{margin:6px 0 10px 1.4em;padding:0;line-height:1.9}
 #othersBtn .slash{display:none} #othersBtn.on .slash{display:inline} #othersBtn.on{background:rgba(255,200,120,.28)}
@@ -963,10 +964,12 @@ function buildMazu(){
   return g; }
 const mazu=buildMazu(); mazu.userData.noMerge=1; mazu.scale.setScalar(1.5); mazu.position.set(0,1.55,PAV.z-.1); scene.add(mazu);
 const IN_ARTIFACT=!!(window.claude&&window.claude.use);
+loadModel.tries={};
 function loadModel(name,cb){ if(!T.GLTFLoader) return; const gl=new T.GLTFLoader(); if(window.MeshoptDecoder) gl.setMeshoptDecoder(window.MeshoptDecoder);
   const fix=g=>{ g.scene.traverse(o=>{ if(o.isMesh){ if(!o.geometry.attributes.normal) o.geometry.computeVertexNormals(); o.material.envMapIntensity=.9; if(o.material.map) o.material.map.anisotropy=4; } }); cb(g.scene); };
   const viaScript=()=>{ const sc=document.createElement("script"); sc.src=name+(Q.lite?"-lite":"")+"-model.js"; sc.async=true; const key="GLB_"+name.toUpperCase()+(Q.lite?"_LITE":"");
-    sc.onload=()=>{ try{ const b=atob(window[key]||""); const u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); window[key]=null; gl.parse(u.buffer,"",fix,()=>{}); }catch(e){} }; document.head.appendChild(sc); };
+    sc.onerror=()=>{ sc.remove(); const n=(loadModel.tries[name]=(loadModel.tries[name]||0)+1); if(n<5) setTimeout(viaScript,1500*n); };
+    sc.onload=()=>{ if(!window[key]){ sc.onerror(); return; } try{ const b=atob(window[key]||""); const u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); window[key]=null; gl.parse(u.buffer,"",fix,()=>{}); }catch(e){} }; document.head.appendChild(sc); };
   if(IN_ARTIFACT) setTimeout(viaScript,300); else gl.load(name+(Q.lite?"-lite":"")+".glb",fix,undefined,()=>setTimeout(viaScript,100)); }
 function fitModel(m,height){ const bb=new T.Box3().setFromObject(m); const sz=bb.getSize(new T.Vector3()); const k=height/sz.y; m.scale.setScalar(k); const c=bb.getCenter(new T.Vector3()); m.position.set(-c.x*k,-bb.min.y*k,-c.z*k); const w=new T.Group(); w.add(m); return w; }
 // 千里眼 and 順風耳 guard Mazu from the two side bays of the shrine, half her height, turned a little towards her.
@@ -4138,8 +4141,13 @@ HANDLERS.accTab=v=>{ accTab=v; openBag(); };
 HANDLERS.accWear=id=>{ const a=accState(); if(!a.owned[id]) return; const sl=ACC[id].slot; a[sl]=a[sl]===id?0:id; saveBag(); meAv.setAcc(myEq()); markDirty(); toast(a[sl]?`穿上${ACC[id].name}`:`脫下${ACC[id].name}`); openBag(); };
 function nightMarketHTML(){ const d=nmDay(); return `<div class="group"><span class="group-label">夜市（攤位還在搭，先從這裡玩）</span><div class="goods">${NM_STALLS.map(s=>`<button class="good" data-act="nmPlay" data-v="${s.k}"><span class="name">${s.icon} ${s.name}</span><span class="meta">${s.note}</span><span class="own">${s.price?`${s.price} 幣`:"免費入場"}${s.k==="fish"&&d.fish?"・今天玩過了":""}</span></button>`).join("")}</div></div>`; }
 HANDLERS.nmPlay=k=>{ const s=NM_STALLS.find(x=>x.k===k); if(!s) return; if(k==="fish"&&nmDay().fish){ toast("撈金魚每天只能玩一次，明天再來"); return; }
-  if(k==="pachinko"){ playPachinko(); return; } if(!payStall(s.price)) return; if(k==="fish"){ nmDay().fish=1; saveBag(); }
-  ({qq:playQQ,sausage:playSausage,bbq:playBBQ,fish:playFish,boba:playBoba,balloon:playBalloon})[k](); };
+  if(k==="pachinko"){ nmStart(k); return; } if(!payStall(s.price)) return; if(k==="fish"){ nmDay().fish=1; saveBag(); }
+  nmStart(k); };
+function nmStart(k){ const run=()=>({qq:playQQ,sausage:playSausage,bbq:playBBQ,fish:playFish,pachinko:playPachinko,boba:playBoba,balloon:playBalloon})[k]();
+  if(nmReady(k)){ run(); return; } (NM_ALL[k]||[]).forEach(nmImg);
+  openSheet("nmload","準備中",`<p class="lead">攤位正在準備…</p><div class="nm-bar"><i id="nmBar"></i></div><p class="note">網路比較慢時要等一下，準備好就會自動開始。</p>`);
+  const t0=performance.now(), tick=()=>{ if(sheetKind!=="nmload") return; const L=NM_ALL[k]||[], ok=L.filter(n=>{ const i=nmImg(n); return i.complete&&i.naturalWidth>0; }).length, b=$("#nmBar"); if(b) b.style.width=Math.round(ok/Math.max(1,L.length)*100)+"%";
+    if(ok===L.length){ closeSheet(); run(); return; } if(performance.now()-t0>25000){ closeSheet(); run(); toast("網路比較慢，有些圖片還沒載好",3000); return; } setTimeout(tick,200); }; tick(); }
 
 /* ---- shared drawing helpers for the stall games ---- */
 const NMF=()=>DISPLAY_FONT;
@@ -4173,7 +4181,12 @@ function nmEndDraw(L,x,W,H){ const e=L.endMsg; if(!e) return false; x.fillStyle=
   nmText(x,"點畫面離開",W/2,H*.42+92,16,"#f0e0c0",undefined,500); return true; }
 
 /* ---- sprites from the stall art sheets (public/nm/*.webp) ---- */
-const NMI={}; function nmImg(n){ if(!NMI[n]){ const i=new Image(); i.src="nm/"+n+".webp"; NMI[n]=i; } return NMI[n]; }
+const NMI={}; function nmImg(n){ let i=NMI[n]; if(!i){ i=NMI[n]=new Image(); i.tries=0; i.onerror=()=>{ if(i.tries++<5) setTimeout(()=>{ i.src="nm/"+n+".webp?r="+i.tries; },800*i.tries); }; i.src="nm/"+n+".webp"; } return i; }
+const NM_ALL={qq:["qq-pan","qq-y","qq-p","qq-c","qq-spatula","qq-basket"],sausage:["sg-grill","sg-stick","sg-stink","sg-bowl2"],bbq:["bbq-beef","bbq-chicken","bbq-pork","bbq-shroom","bbq-pepper","bbq-corn","bbq-tofu","bbq-squid","bbq-mix","bbq-grill2","bbq-fire","bbq-flip","bbq-ok"],
+  fish:["fish-red","fish-black","fish-gold","fish-rainbow","fish-scoop","fish-coin","fish-pond"],pachinko:["pk-board","pk-red","pk-orange","pk-yellow","pk-green","pk-blue","pk-purple","pk-jackpot"],
+  boba:["bb-black","bb-green","bb-milk","bb-powder","bb-sugar","bb-pearl","bb-gold","bb-lemon","bb-ice","bb-brownsugar","bb-taro","bb-mango","bb-condensed","bb-strawberry","bb-icecream","bb-d-milktea","bb-d-green","bb-d-lemon","bb-d-brownsugar","bb-d-taro","bb-d-mango","bb-d-strawberry"],
+  balloon:["bl-red","bl-yellow","bl-blue","bl-pop","bl-perfect","bl-afro"]};
+const nmReady=k=>(NM_ALL[k]||[]).every(n=>{ const i=nmImg(n); return i.complete&&i.naturalWidth>0; });
 function nmDraw(x,n,cx,cy,w,rot=0,alpha=1,flip=false){ const i=nmImg(n); if(!i.complete||!i.naturalWidth) return false; const h=w*i.naturalHeight/i.naturalWidth; x.save(); x.translate(cx,cy); if(rot) x.rotate(rot); if(flip) x.scale(-1,1); x.globalAlpha=alpha; x.drawImage(i,-w/2,-h/2,w,h); x.restore(); return true; }
 // draw a picture as large as fits inside a box, keeping its shape
 function nmFit(x,n,cx,cy,bw,bh,alpha=1,rot=0){ const i=nmImg(n); if(!i.complete||!i.naturalWidth) return false; const k=Math.min(bw/i.naturalWidth,bh/i.naturalHeight); return nmDraw(x,n,cx,cy,i.naturalWidth*k,rot,alpha); }
@@ -4524,7 +4537,7 @@ function mkLayout(){ const keys=NM_STALLS.map(s=>s.k).filter(k=>MK.open[k]).sort
   NM_STALLS.forEach(s=>{ if(!MK.open[s.k]&&MK.built[s.k]) mkRemove(s.k); });
   keys.forEach((k,i)=>{ const z=mkSlotZ(i); if(!MK.built[k]) mkBuild(k,z); else mkMove(k,z); }); }
 function mkBuild(k,z){ const s=NM_STALLS.find(x=>x.k===k), g=new T.Group(); g.position.set(MK.x,0,z); g.rotation.y=-Math.PI/2; g.userData.noMerge=1; scene.add(g);
-  const B={g,z,k}; MK.built[k]=B;
+  const B={g,z,k}; MK.built[k]=B; setTimeout(()=>(NM_ALL[k]||[]).forEach(nmImg),1500+Math.random()*2000);
   loadModel("stall-"+k,m=>{ if(MK.built[k]!==B) return; m.traverse(o=>{ if(o.isMesh&&o.material&&o.material.map){ o.material.emissive=new T.Color("#ffffff"); o.material.emissiveMap=o.material.map; o.material.emissiveIntensity=.42; o.material.needsUpdate=true; } }); const w=fitModel(m,MK.H); g.add(w); setAct(w,"nm:"+k); });
   B.lights=mkLights(z);
   B.hit=addHit("nm:"+k,MK.x,0,z,1.45,MK.H);
