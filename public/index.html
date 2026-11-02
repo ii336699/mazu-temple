@@ -2561,29 +2561,30 @@ HANDLERS.sendMsg=async()=>{ const t=$("#msgText"); const text=(t&&t.value||"").t
     if(j.ok){ HANDLERS.sendMsg.last=floodKey(text); save("mz.sentMsg",Date.now()); t.value=""; $("#msgCount").textContent="0 / 500"; toast("留言已送給作者，謝謝你！",3200); } else toast(j.slow?"留言太快了，請稍等一下再送":"目前送不出去，請稍後再試"); }catch(e){ toast("目前送不出去，請稍後再試"); } };
 HANDLERS.sendAnn=async()=>{ const text=(($("#annText")||{}).value||"").trim(); const key=ck(); if(!text){ toast("先寫公告內容"); return; } if(hasAddLine(text)){ toast("公告不能寫加賴",2800); return; } if(!key){ toast("請先輸入留言讀取密碼"); return; }
   if(!USE_CF){ showMarquee(text); toast("預覽版沒有伺服器，只有你自己看得到",3200); return; }
-  try{ const r=await fetch("/announce",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({text})}); const j=await r.json().catch(()=>({}));
-    if(j.ok){ save("mz.rk",key); $("#annText").value=""; toast("全服公告已發佈",3000); openChair(); } else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":"密碼不對，公告沒有發出",3200); }catch(e){ toast("公告沒有發出，請稍後再試"); } };
+  try{ const r=await fetch("/announce",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({text})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
+    if(j.ok){ save("mz.rk",key); $("#annText").value=""; toast("全服公告已發佈",3000); openChair(); } else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":j.unset?"伺服器讀不到密碼設定（不是你打錯）":"密碼不對，公告沒有發出",3200); }catch(e){ toast("公告沒有發出，請稍後再試"); } };
 function showMarquee(text){ const box=$("#marquee"), el=$("#marqueeText"); el.textContent="📢 全服公告：　"+String(text).slice(0,80); box.hidden=false; sfx.dingdong();
   const W=window.innerWidth, w=el.offsetWidth, dist=W+w, speed=110, dur=dist/speed*1000; if(showMarquee.anim) showMarquee.anim.cancel();
   const run=()=>{ showMarquee.anim=el.animate([{transform:`translateX(${W}px)`},{transform:`translateX(${-w}px)`}],{duration:dur,easing:"linear"}); showMarquee.anim.onfinish=()=>{ box.hidden=true; }; }; run(); }
 HANDLERS.readMsgs=async()=>{ const el=$("#msgList"); if(!el) return; el.innerHTML=`<p class="lead">讀取中…</p>`;
   const key=ck(); if(!key){ el.innerHTML=`<p class="lead">請先輸入留言讀取密碼。</p>`; return; }
-  try{ const r=await fetch("/msgs",{headers:{"x-key":key},cache:"no-store"}); const j=await r.json().catch(()=>({})); if(j.ok) save("mz.rk",key);
+  try{ const r=await fetch("/msgs",{headers:{"x-key":key},cache:"no-store"}); const j=await r.json().catch(()=>({})); forgetKey(r,j); if(j.ok) save("mz.rk",key);
     if(!j.ok){ el.innerHTML=`<p class="lead">${r.status===503?"伺服器今天的額度用完了，早上 8 點後恢復。":j.locked?"嘗試次數過多，今天先鎖住了，明天再試。":j.unset?"伺服器還沒設定讀取密碼。":"密碼不對，或暫時無法讀取留言。"}</p>`; return; }
     el.innerHTML=(j.msgs.length?`<p class="note">共 ${j.msgs.length} 則，最新的在最上面。</p>`:"")+(j.msgs.length?j.msgs.map(m=>`<div class="msg-item"><small>${esc(m.name||"香客")}・${fmtT(m.at)}</small>${esc(m.text)}${m.reply?`<div class="msg-reply"><b>主委回覆・${fmtT(m.reply.at)}</b>${esc(m.reply.text)}</div>`:""}${m.id?`<button class="chip reply-btn" data-act="openReply">${m.reply?"✉️ 再回一封":"✉️ 回覆"}</button><div class="reply-box" hidden><textarea class="msg-box" maxlength="500" placeholder="回給 ${esc(m.name||"香客")}，對方下次上線會收到一封信（保留一天）"></textarea><button class="good wide" data-act="sendReply" data-v="${m.at}"><span class="name">寄出回信</span></button></div>`:`<span class="note" style="display:block;margin-top:6px">（回信功能上線前的留言，無法回覆）</span>`}</div>`).join(""):`<p class="lead">目前還沒有留言。</p>`); }catch(e){ el.innerHTML=`<p class="lead">無法讀取留言。</p>`; } };
 $("#contactBtn").onclick=()=>{ ensureAudio(); openContact(); };
 // ---- 主委工具: everything the chair can do on one screen, grouped; each tile opens its own small page ----
 const ck=()=>((($("#readKey")||{}).value||"").trim()||load("mz.rk",""));
+function forgetKey(r,j){ if(j&&!j.ok&&!j.locked&&!j.unset&&r&&r.status!==503) save("mz.rk",""); }
 function renderChairBtn(){ const b=$("#chairBtn"); if(b) b.hidden=!me.sp; }
 const ctTile=(act,icon,name,note="")=>`<button class="ct" data-act="${act}"><b>${icon}</b><span>${name}</span>${note?`<small>${note}</small>`:""}</button>`;
 function openChair(){ if(!me.sp) return;
-  openSheet("chair","主委工具",`<input class="mail-box ck" id="readKey" type="password" autocomplete="current-password" placeholder="留言讀取密碼（輸入一次就會記住）" value="${esc(load("mz.rk",""))}">
+  openSheet("chair","主委工具",`<input class="mail-box ck" id="readKey" type="password" autocomplete="off" placeholder="留言讀取密碼（輸入一次就會記住）" value="${esc(load("mz.rk",""))}">
   <div class="ct-group"><span class="group-label">訊息</span><div class="ct-grid">${ctTile("msgsOpen","📬","香客留言")}${ctTile("annOpen","📢","全服公告","跑馬燈")}${ctTile("boardOpen","📋","公告欄",board.text?"有公告":"空白")}</div></div>
   <div class="ct-group"><span class="group-label">活動</span><div class="ct-grid">${ctTile("askFw","🎆","全服煙火","3 分鐘")}${ctTile("askSL","🏮","50 盞天燈")}${ctTile("toggleStage","🎭",OP.on?"收回戲台":"擺出戲台",OP.on?"演出中":"")}</div></div>
   <div class="ct-group"><span class="group-label">線上人數</span><div class="crowd-row"><span class="crowd-now"><span>全廟 <b>${shownTotal()}</b> 人</span><small>這殿 ${hallShown(HALLS.current(),Date.now())} 人・${CROWD.at&&CROWD.target!=null?`目標 ${CROWD.target}`:"自動"}</small></span><input id="crowdIn" type="text" inputmode="numeric" maxlength="3" placeholder="目標"><button class="chip" data-act="crowdSet">設定</button><button class="chip" data-act="crowdAuto">自動</button></div>
     <p class="real-count" id="realCount">真實在線：讀取中…</p><p class="note">目標是全廟人數，會依序分到各殿（前一殿快滿才開下一殿）。約半小時慢慢變到目標，之後在上下 15 人內浮動。「自動」回到依時段變化（凌晨少、白天多）。</p></div>
   <div class="ct-group"><span class="group-label">主委自己</span><div class="ct-grid">${ctTile("chairHide",chairHidden?"👁":"🫥",chairHidden?"解除隱形":"隱形",chairHidden?"隱形中":"")}${ctTile("chairReset","🔄","重置今日","測試用")}</div></div>`);
-  const k=$("#readKey"); k.addEventListener("change",()=>{ const v=k.value.trim(); if(v) save("mz.rk",v); }); realStats(); }
+  const k=$("#readKey"); const keep=()=>{ save("mz.rk",k.value.trim()); }; k.addEventListener("input",keep); k.addEventListener("change",keep); realStats(); }
 // real players only (no demo worshippers, no added numbers), straight from the server's hall counts
 async function realStats(){ const el=$("#realCount"); if(!el) return; let c=null; if(USE_CF){ const j=await probeCF(); if(j) c=j.counts; } else if(room) c=(HALLS.counts||[]).slice();
   if(!c){ el.innerHTML=`真實在線：<b>1</b> 人（只有你，目前沒有連上伺服器）`; return; } c=c.slice(); const cur=HALLS.current(); c[cur]=Math.max(c[cur]||0,1+remotes.size); const tot=c.reduce((a,b)=>a+(b||0),0);
@@ -2597,9 +2598,9 @@ HANDLERS.boardOpen=()=>openBoard();
 HANDLERS.crowdSet=async()=>{ const v=(($("#crowdIn")||{}).value||"").trim(); if(!/^\d{1,3}$/.test(v)||+v>900){ toast("請輸入 0 到 900 的人數"); return; } await crowdSend(+v); };
 HANDLERS.crowdAuto=()=>crowdSend(null);
 async function crowdSend(target){ const key=ck(); if(!key){ toast("請先輸入留言讀取密碼"); return; }
-  try{ const r=await fetch("/crowd",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({target,from:fakeTotal(Date.now())})}); const j=await r.json().catch(()=>({}));
+  try{ const r=await fetch("/crowd",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({target,from:fakeTotal(Date.now())})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
     if(j.ok){ save("mz.rk",key); CROWD={target:j.target,from:j.from,at:j.at}; toast(target==null?"人數改回自動，半小時內慢慢回到時段人數":`人數會在半小時內慢慢變成約 ${target} 人`,3400); openChair(); }
-    else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":"密碼不對，沒有變更",3200); }catch(e){ toast("沒有變更，請稍後再試"); } }
+    else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":j.unset?"伺服器讀不到密碼設定（不是你打錯）":"密碼不對，沒有變更",3200); }catch(e){ toast("沒有變更，請稍後再試"); } }
 
 // ---- 公告: the chair's notice board. The button glows yellow until this device has opened the newest version, then turns grey ----
 const fmtT=t=>new Date(t).toLocaleString("zh-TW",{hour12:false});
@@ -2609,12 +2610,12 @@ async function fetchBoard(){ try{ const r=await fetch("/board",{cache:"no-store"
 function openBoard(){ if(board.at) save("mz.boardSeen",board.at); renderBoardBtn();
   openSheet("board","公告",`${me.sp?backBtn:""}${board.text?`<div class="board-text">${esc(board.text)}</div><p class="note">更新於 ${fmtT(board.at)}</p>`:`<p class="lead">目前沒有公告。</p>`}
   ${me.sp?`<div class="group" style="margin-top:8px"><span class="group-label">✏️ 修改公告（主委）</span><textarea class="msg-box" id="boardEdit" maxlength="1000" placeholder="公告內容，1000 字以內，可以換行">${esc(board.text)}</textarea>
-  <input class="mail-box" id="boardKey" type="password" autocomplete="current-password" placeholder="留言讀取密碼" value="${esc(load("mz.rk",""))}">
+  <input class="mail-box" id="boardKey" type="password" autocomplete="off" oninput="try{localStorage.setItem('mz.rk',JSON.stringify(this.value.trim()))}catch(e){}" placeholder="留言讀取密碼" value="${esc(load("mz.rk",""))}">
   <button class="good wide" data-act="saveBoard"><span class="name">儲存公告</span><span class="meta">儲存後，每個人的公告按鈕都會亮起黃色，直到他們點開看過。清空再儲存就是撤下公告。</span></button></div>`:""}`); }
 HANDLERS.saveBoard=async(v,b)=>{ const text=(($("#boardEdit")||{}).value||"").trim(); const key=(($("#boardKey")||{}).value||"").trim(); if(hasAddLine(text)){ toast("公告不能寫加賴",2800); return; } if(!key){ toast("請先輸入留言讀取密碼"); return; }
-  b.disabled=true; try{ const r=await fetch("/board",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({text})}); const j=await r.json().catch(()=>({}));
+  b.disabled=true; try{ const r=await fetch("/board",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({text})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
     if(j.ok){ save("mz.rk",key); board={text:j.text,at:j.at}; openBoard(); toast(text?"公告已更新":"公告已撤下",2600); }
-    else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":"密碼不對，公告沒有儲存",3200); }catch(e){ toast("公告沒有儲存，請稍後再試"); } b.disabled=false; };
+    else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":j.unset?"伺服器讀不到密碼設定（不是你打錯）":"密碼不對，公告沒有儲存",3200); }catch(e){ toast("公告沒有儲存，請稍後再試"); } b.disabled=false; };
 $("#boardBtn").onclick=async()=>{ ensureAudio(); if(sheetKind==="board"){ closeSheet(); return; } openBoard(); if(await fetchBoard()&&sheetKind==="board"&&!(document.activeElement&&document.activeElement.id==="boardEdit")) openBoard(); };
 
 // ---- 主委回信: whoever left a message checks their mailbox when they come back; a letter lasts one day, or until they delete it ----
@@ -2637,7 +2638,7 @@ $("#letterBtn").onclick=()=>{ ensureAudio(); if(sheetKind==="letters") closeShee
 HANDLERS.openReply=(v,b)=>{ const box=b.parentElement.querySelector(".reply-box"); if(!box) return; box.hidden=!box.hidden; if(!box.hidden) box.querySelector("textarea").focus(); };
 HANDLERS.sendReply=async(v,b)=>{ const box=b.closest(".reply-box"); const text=(box.querySelector("textarea").value||"").trim(); if(!text){ toast("先寫回覆內容"); return; } if(hasAddLine(text)){ toast("回信不能寫加賴",2800); return; }
   const key=ck(); if(!key){ toast("請先輸入留言讀取密碼"); return; }
-  b.disabled=true; try{ const r=await fetch("/reply",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({at:+v,text})}); const j=await r.json().catch(()=>({}));
+  b.disabled=true; try{ const r=await fetch("/reply",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({at:+v,text})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
     if(j.ok){ toast("回信已寄出，對方下次上線會收到",3200); HANDLERS.readMsgs(); return; }
     toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":j.noid?"這則留言無法回覆":"密碼不對，回信沒有寄出",3200); }catch(e){ toast("回信沒有寄出，請稍後再試"); } b.disabled=false; };
 renderChairBtn(); setTimeout(()=>{ fetchBoard(); checkLetters(); opFetch(); crowdFetch(); },1200); setInterval(crowdFetch,3*60*1000); setInterval(opFetch,90*1000); setInterval(fetchBoard,10*60*1000); setInterval(renderLetterBtn,10*60*1000);
@@ -3529,13 +3530,13 @@ HANDLERS.askSL=()=>{ slKeyHold=ck(); openSheet("contact","施放 50 盞天燈？
 let myMassSL=0;
 HANDLERS.sendSL=async()=>{ const key=(ck())||slKeyHold; closeSheet();
   if(!USE_CF){ const seed=(Math.random()*1e9)|0; myMassSL=[seed,Date.now()]; markDirty(); massLanterns(seed); return; } if(!key){ toast("請先輸入留言讀取密碼"); return; }
-  try{ const r=await fetch("/lanterns",{method:"POST",headers:{"content-type":"application/json","x-key":key}}); const j=await r.json().catch(()=>({}));
-    if(j.ok){ save("mz.rk",key); toast("50 盞天燈施放中！",3000); } else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.busy?"剛剛才放過，等半分鐘再放":j.locked?"嘗試次數過多，今天先鎖住了":"密碼不對，天燈沒有施放",3200); }catch(e){ toast("天燈沒有施放，請稍後再試"); } };
+  try{ const r=await fetch("/lanterns",{method:"POST",headers:{"content-type":"application/json","x-key":key}}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
+    if(j.ok){ save("mz.rk",key); toast("50 盞天燈施放中！",3000); } else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.busy?"剛剛才放過，等半分鐘再放":j.locked?"嘗試次數過多，今天先鎖住了":j.unset?"伺服器讀不到密碼設定（不是你打錯）":"密碼不對，天燈沒有施放",3200); }catch(e){ toast("天燈沒有施放，請稍後再試"); } };
 HANDLERS.askFw=()=>{ fwKeyHold=ck(); openSheet("contact","施放全服煙火？",`<p class="lead">確定要施放全服煙火嗎？每一殿的所有香客都會同時看到 3 分 36 秒的煙火秀，背景音樂也會換成煙火歌。上一場沒放完前不能再放。</p><div class="row"><button class="secondary" data-act="fwCancel">先不要</button><button class="primary" data-act="sendFw">確定施放 🎆</button></div>`); };
 HANDLERS.fwCancel=()=>openChair();
 HANDLERS.sendFw=async()=>{ const key=(ck())||fwKeyHold; if(!USE_CF){ const seed=(Math.random()*1e9)|0; myFwShow=[seed,Date.now()]; markDirty(); fwStart(seed,0); closeSheet(); return; } if(!key){ toast("請先輸入留言讀取密碼"); return; }
-  try{ const r=await fetch("/fireworks",{method:"POST",headers:{"content-type":"application/json","x-key":key}}); const j=await r.json().catch(()=>({}));
-    if(j.ok){ save("mz.rk",key); closeSheet(); toast("全服煙火施放中！",3000); } else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.busy?"上一場煙火還沒放完":j.locked?"嘗試次數過多，今天先鎖住了":"密碼不對，煙火沒有施放",3200); }catch(e){ toast("煙火沒有施放，請稍後再試"); } };
+  try{ const r=await fetch("/fireworks",{method:"POST",headers:{"content-type":"application/json","x-key":key}}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
+    if(j.ok){ save("mz.rk",key); closeSheet(); toast("全服煙火施放中！",3000); } else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.busy?"上一場煙火還沒放完":j.locked?"嘗試次數過多，今天先鎖住了":j.unset?"伺服器讀不到密碼設定（不是你打錯）":"密碼不對，煙火沒有施放",3200); }catch(e){ toast("煙火沒有施放，請稍後再試"); } };
 
 function openFountain(){ openSheet("fountain","觀音菩薩噴泉",`<p class="lead">觀音菩薩手持淨瓶，甘露常流。可以投錢許願，也可以喝一口聖水祈求身體健康。</p>
   <div class="goods"><button class="good" data-act="ftCoin" ${bag.coins<10?"disabled":""}><span class="name">投錢許願</span><span class="meta">投下錢幣，合掌許願</span><span class="price">10 平安幣</span></button>
@@ -3929,9 +3930,9 @@ function opSet(on,at){ const was=OP.on; OP.on=!!on; OP.at=at||Date.now(); if(OP.
   if(OP.on&&!was&&Date.now()-OP.at<60000) toast("🎭 主委擺出歌仔戲台了！到廟埕看戲",4200); if(sheetKind==="chair"&&me.sp) openChair(); }
 async function opFetch(){ try{ const r=await fetch("/stage",{cache:"no-store"}); if(!r.ok) return; const j=await r.json(); if(j&&(!!j.on!==OP.on||(j.on&&j.at!==OP.at))) opSet(j.on,+j.at||0); }catch(e){} }
 HANDLERS.toggleStage=async(v,b)=>{ if(!me.sp) return; const key=ck(); if(!key){ toast("請先輸入留言讀取密碼"); return; }
-  b.disabled=true; try{ const r=await fetch("/stage",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({on:!OP.on})}); const j=await r.json().catch(()=>({}));
+  b.disabled=true; try{ const r=await fetch("/stage",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({on:!OP.on})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
     if(j.ok){ save("mz.rk",key); opSet(j.on,j.at); if(sheetKind==="chair") openChair(); toast(j.on?"歌仔戲台已擺出，戲班開演":"歌仔戲台已收回",3000); }
-    else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":"密碼不對，沒有變更",3200); }catch(e){ toast("沒有變更，請稍後再試"); } b.disabled=false; };
+    else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":j.unset?"伺服器讀不到密碼設定（不是你打錯）":"密碼不對，沒有變更",3200); }catch(e){ toast("沒有變更，請稍後再試"); } b.disabled=false; };
 
 /* ---- sound: the three tracks in turn, plus synthesized Taiwanese-style singing, both fading with distance ---- */
 function opAudioNodes(){ const a=ac; if(!a) return false; if(!OP.voiceGain){ OP.voiceGain=a.createGain(); OP.voiceGain.gain.value=0; OP.voiceGain.connect(sfxBus(a)); }
