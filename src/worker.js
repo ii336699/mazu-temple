@@ -3,9 +3,9 @@
 import { DurableObject } from "cloudflare:workers";
 
 const HALLS = 10, CAP = 100, MAX_MSG = 4000;
-const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000 };
-const LOBBY_PATHS = ["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage"];
-const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage" }; // a POST here makes that cached list stale
+const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000, "/crowd": 30000 };
+const LOBBY_PATHS = ["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/crowd"];
+const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage", "/crowd": "/crowd" }; // a POST here makes that cached list stale
 
 export default {
   async fetch(req, env) {
@@ -193,6 +193,16 @@ export class Lobby extends DurableObject {
       return json({ ok: true, ...st });
     }
     if (url.pathname === "/stage") return json((await this.ctx.storage.get("stage")) || { on: false, at: 0 });
+    // 線上人數: the chair sets a target the shown count eases to over about half an hour (null = back to the time-of-day pattern).
+    // Each phone works the number out from these three values and the clock, so this is read rarely and never pushed.
+    if (url.pathname === "/crowd" && req.method === "POST") {
+      const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
+      let b = {}; try { b = await req.json(); } catch {}
+      const t = b.target == null ? null : Math.max(0, Math.min(900, Math.round(Number(b.target) || 0)));
+      const from = Math.max(0, Math.min(1000, Math.round(Number(b.from) || 0)));
+      const c = { target: t, from, at: Date.now() }; await this.ctx.storage.put("crowd", c); return json({ ok: true, ...c });
+    }
+    if (url.pathname === "/crowd") return json((await this.ctx.storage.get("crowd")) || { target: null, from: null, at: 0 });
     // 斬小人排行榜: best score per player, top 20 kept
     if (url.pathname === "/zhan" && req.method === "POST") {
       let b = {}; try { b = await req.json(); } catch {}

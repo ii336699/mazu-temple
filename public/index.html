@@ -234,6 +234,25 @@ body.hideui .joy,body.customizing .joy{display:none}
 .bank-acct{font-size:19px;font-weight:700;letter-spacing:.08em;font-variant-numeric:tabular-nums;user-select:text;-webkit-user-select:text}
 .bank-thanks{margin:0;font-family:var(--f-display);font-size:16px;color:#ffe2a0;letter-spacing:.08em}
 .real-divider{margin:10px 0 0;text-align:center;color:var(--gold);font-family:var(--f-display);font-size:16px;letter-spacing:.12em}
+/* 主委工具 */
+.chair-btn{align-self:flex-start;font-size:13px;padding:6px 12px;border:1px solid var(--gold);color:var(--gold)}
+.chair-btn[hidden]{display:none}
+.sheet.tall{max-height:88%}
+.mail-box.ck{width:100%;box-sizing:border-box;padding:10px 12px}
+.ct-group{display:flex;flex-direction:column;gap:6px}
+.ct-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ct{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:66px;padding:8px 4px;border:1px solid var(--gold-soft);border-radius:12px;background:rgba(255,255,255,.04);text-align:center}
+.ct b{font-size:22px;line-height:1}
+.ct span{font-family:var(--f-display);font-size:15px}
+.ct small{font-size:11px;color:var(--gold)}
+.ct:active{background:rgba(142,28,20,.35)}
+.crowd-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.crowd-now{display:flex;flex-direction:column;flex:1 1 90px;font-size:13px;color:var(--muted)}
+.crowd-now b{font-family:var(--f-display);font-size:20px;color:#ffe2a0}
+.crowd-now small{font-size:11px;color:var(--gold)}
+.crowd-row input{width:72px;box-sizing:border-box;text-align:center;background:rgba(255,255,255,.07);border:1px solid var(--gold-soft);border-radius:10px;padding:9px 6px;font:inherit;font-size:16px;color:var(--ink);user-select:text;-webkit-user-select:text}
+.ct-back{align-self:flex-start}
+#sheetBody .row .ct-back{flex:0 0 auto}
 /* 鐵口直斷 */
 .name-row{display:flex;gap:8px;align-items:center}.name-row input{flex:1;min-width:0}.name-row .chip{flex:none;white-space:nowrap}
 .ft-in{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:8px}
@@ -304,6 +323,7 @@ body.hideui .joy,body.customizing .joy{display:none}
     <button class="guide glass" id="guideBtn" aria-label="參拜指引"><span><b id="guideStep">參拜指引</b><span id="guideText">到服務處請香</span></span><span class="go">前往</span></button>
     <button class="pill glass contact-btn" id="contactBtn" aria-label="聯絡作者">✉️ 聯絡作者</button>
     <button class="pill glass letter-btn" id="letterBtn" hidden>💌 主委回信了</button>
+    <button class="pill glass chair-btn" id="chairBtn" hidden>🛠️ 主委工具</button>
   </div>
   <div class="tools">
     <audio id="bgm" src="music.mp3" loop preload="auto"></audio>
@@ -610,7 +630,11 @@ const NM_GOOD=["快樂","幸運","勇敢","溫柔","閃亮","元氣","開心","�
 const NM_FUNNY=["愛睡覺的","想吃宵夜的","會跳舞的","愛唱歌的","想放假的","剛睡醒的","跑很快的","愛撒嬌的","很會吃的","走路很慢的","愛拍照的","怕癢的"];
 const NM_FRUIT=["鳳梨","芒果","西瓜","草莓","香蕉","蘋果","葡萄","荔枝","芭樂","柳丁","龍眼","蓮霧","橘子","檸檬","木瓜","櫻桃","柚子","奇異果","水蜜桃","百香果"];
 const NM_ANIMAL=["貓","兔","熊","羊","鹿","虎","狐狸","熊貓","企鵝","海豚","柴犬","松鼠","水獺","小鳥","河馬","刺蝟","海獺","鸚鵡","小象","浣熊","無尾熊","長頸鹿"];
-function randomName(){ const p=a=>a[(Math.random()*a.length)|0]; for(let k=0;k<30;k++){ const r=Math.random(); const n=r<.4?p(NM_GOOD)+p(NM_FRUIT)+p(NM_ANIMAL):r<.62?p(NM_FUNNY)+p(NM_ANIMAL):r<.84?p(NM_FUNNY)+p(NM_FRUIT)+p(NM_ANIMAL):p(NM_GOOD)+"的"+p(NM_ANIMAL); if([...n].length<=10) return n; } return "快樂鳳梨貓"; }
+const NM_BEING=["恐龍","獨角獸","麒麟","小龍","鳳凰","海馬","蝴蝶","螢火蟲","瓢蟲","水母","章魚","海星","鯨魚","小蜜蜂","蝸牛","青蛙","小精靈","外星人","小天使","仙子","蘑菇","向日葵","仙人掌","蒲公英","四葉草"];
+const NM_EN=["傑克","艾咪","莉莉","湯姆","安娜","麥克","露西","凱文","艾瑪","露娜","彼得","莎莉","喬治","凱蒂","麥斯","奧利佛","艾莉絲","雷歐","蘇菲","查理","米亞","班尼","可可","丹尼"];
+function randomName(){ const p=a=>a[(Math.random()*a.length)|0], who=()=>Math.random()<.6?p(NM_ANIMAL):p(NM_BEING);
+  for(let k=0;k<30;k++){ const r=Math.random(); const n=r<.28?p(NM_GOOD)+p(NM_FRUIT)+who():r<.44?p(NM_FUNNY)+who():r<.6?p(NM_FUNNY)+p(NM_FRUIT)+who():r<.72?p(NM_GOOD)+"的"+who():r<.84?p(NM_GOOD)+p(NM_EN):r<.94?p(NM_FUNNY)+p(NM_EN):p(NM_FRUIT)+p(NM_EN);
+    if([...n].length<=10) return n; } return "快樂鳳梨貓"; }
 if(!me) me = {name:"", look:[0,1,0,0,2,0,0,0,1,0,1,0,0]};
 if(!me.sp&&!me.name){ me.name=randomName(); save("mz.me",me); } // everyone gets a random name on arrival; they can change it
 if(me.sp&&me.name===SP_OLD) me.name=SP_NAME;
@@ -2022,12 +2046,19 @@ function freeSeat(){ const taken=new Set([meAv.seat,...npcs.map(n=>n.seat)]); re
 const FAKE_CROWD=true;
 function fakeRand(i){ let h=(i*2654435761)>>>0; h^=h>>>15; h=Math.imul(h,2246822519)>>>0; h^=h>>>13; return (h>>>0)/4294967296; }
 function fakeNoise(ts,period,salt){ const k=ts/period, i=Math.floor(k), u=k-i, s=(1-Math.cos(u*Math.PI))/2; const a=fakeRand(i*7+salt), b=fakeRand((i+1)*7+salt); return a+(b-a)*s; }
-function fakeTotal(ts){ const tw=new Date(ts+8*3600e3), h=tw.getUTCHours()+tw.getUTCMinutes()/60+tw.getUTCSeconds()/3600, sm=v=>v*v*(3-2*v);
+function autoCrowd(ts){ const tw=new Date(ts+8*3600e3), h=tw.getUTCHours()+tw.getUTCMinutes()/60+tw.getUTCSeconds()/3600, sm=v=>v*v*(3-2*v);
   const night=h>=3&&h<5?1:h>=2&&h<3?sm(h-2):h>=5&&h<6?1-sm(h-5):0, slow=fakeNoise(ts,30*60e3,1), fast=fakeNoise(ts,3*60e3,2)-.5;
   const lo=120*(1-night)+50*night, hi=200*(1-night)+70*night; return Math.round(Math.max(lo,Math.min(hi,lo+(hi-lo)*slow+fast*6))); }
+let CROWD={target:null,from:null,at:0}; // set by the chair: ease from `from` to `target` (or back to automatic when target is null)
+function fakeTotal(ts){ const a=autoCrowd(ts); if(!CROWD.at) return a; const k=Math.max(0,Math.min(1,(ts-CROWD.at)/1800e3)), s=k*k*(3-2*k), from=CROWD.from==null?a:CROWD.from;
+  if(CROWD.target==null) return Math.round(from+(a-from)*s);
+  const wob=((fakeNoise(ts,8*60e3,3)-.5)*24+(fakeNoise(ts,2*60e3,4)-.5)*6)*s; return Math.max(0,Math.round(from+(CROWD.target-from)*s+wob)); }
+async function crowdFetch(){ try{ const r=await fetch("/crowd",{cache:"no-store"}); if(!r.ok) return; const j=await r.json(); if(j&&typeof j.at==="number") CROWD={target:j.target??null,from:j.from??null,at:j.at}; }catch(e){} }
 const FAKE_W=[.34,.2,.14,.1,.07,.05,.04,.03,.02,.01]; // how the crowd spreads over 正殿…十殿
+// a hall shows at most 92 extra people; anything over spills into the next hall
+function fakeSplit(T){ const out=FAKE_W.map(w=>T*w); let spill=0; for(let i=0;i<out.length;i++){ out[i]+=spill; spill=0; if(out[i]>92){ spill=out[i]-92; out[i]=92; } } return out.map(Math.round); }
 function realCounts(){ const c=(HALLS.counts||[]).slice(); const cur=HALLS.current(); c[cur]=Math.max(c[cur]||0,1+remotes.size); return c; }
-function hallShown(i,ts){ const real=realCounts()[i]||0; if(!FAKE_CROWD) return real; return Math.max(real,Math.min(Math.max(HALL_CAP,100)-4,real+Math.round(fakeTotal(ts)*FAKE_W[i]))); } // shown out of 100 per hall even in the 20-per-hall fallback
+function hallShown(i,ts){ const real=realCounts()[i]||0; if(!FAKE_CROWD) return real; return Math.max(real,Math.min(Math.max(HALL_CAP,100)-4,real+fakeSplit(fakeTotal(ts))[i])); } // shown out of 100 per hall even in the 20-per-hall fallback
 function shownTotal(){ const ts=Date.now(); let t=0; for(let i=0;i<HALL_NAMES.length;i++) t+=hallShown(i,ts); return t; }
 
 // ---- demo worshippers: they come and go a few at a time, sit and bow, visit the shrines, throw 筊, burn paper,
@@ -2306,50 +2337,68 @@ $("#sayBtn").onclick=()=>openSay();
 
 /* ================= sheets ================= */
 const sheet=$("#sheet"), sheetBody=$("#sheetBody"); let sheetKind=null;
-function openSheet(kind,title,html){ sheetKind=kind; sheet.classList.toggle("look",kind==="look"); $("#sheetTitle").textContent=title; sheetBody.innerHTML=html; sheet.classList.add("open"); sheetBody.scrollTop=0; }
+function openSheet(kind,title,html){ sheetKind=kind; sheet.classList.toggle("look",kind==="look"); sheet.classList.toggle("tall",kind==="chair"||kind==="msgs"); $("#sheetTitle").textContent=title; sheetBody.innerHTML=html; sheet.classList.add("open"); sheetBody.scrollTop=0; }
 function closeSheet(){ sheet.classList.remove("peek"); if(!sheetKind) return; const k=sheetKind; sheetKind=null; sheet.classList.remove("open"); if(k==="look") endCustomize(); }
 $("#sheetClose").onclick=closeSheet;
 sheetBody.addEventListener("click",e=>{ const b=e.target.closest("[data-act]"); if(!b) return; ensureAudio(); const a=b.dataset.act; const v=b.dataset.v; HANDLERS[a]&&HANDLERS[a](v,b); });
 const HANDLERS={};
 // ---- 聯絡作者: anyone can leave a private message; only the chair (unlocked on this device) can read them ----
 const msgName=()=>(me.name||(me.no?`香客${me.no}`:"香客")).slice(0,16);
-function openContact(){ const isChair=!!me.sp;
+function openContact(){
   openSheet("contact","聯絡作者",`<p class="lead">有建議、發現問題或想對作者說的話，都可以寫在這裡，只有作者看得到。</p><p class="lead small">請勿留下電話、地址、帳號等個人資料。</p>
   <textarea class="msg-box" id="msgText" maxlength="500" placeholder="想說的話（500 字以內）"></textarea>
   <div class="msg-meta"><span id="msgCount">0 / 500</span><span>署名：${esc(msgName())}</span></div>
-  <button class="good wide" data-act="sendMsg"><span class="name">送出留言</span></button>
-  ${isChair?`<div class="mail-row" style="margin-top:18px"><input class="mail-box" id="readKey" type="password" autocomplete="current-password" placeholder="留言讀取密碼（只需輸入一次）" value="${esc(load("mz.rk",""))}"></div><button class="good wide" data-act="readMsgs"><span class="name">📬 查看香客留言（主委）</span></button>
-  <div class="group" style="margin-top:18px"><span class="group-label">📢 全服公告（主委）</span><textarea class="msg-box" id="annText" maxlength="80" style="min-height:80px" placeholder="公告內容，80 字以內，會在所有人畫面上方跑馬"></textarea><button class="good wide" data-act="sendAnn" style="margin-top:8px"><span class="name">發佈公告</span></button><p class="note">用上面的留言讀取密碼驗證。公告會在每一殿所有人畫面上方跑一次，之後 5 分鐘內進來的人也會看到。</p></div>
-  <div class="group" style="margin-top:14px"><span class="group-label">🛠️ 主委工具</span><div class="goods">
-    <button class="good" data-act="chairHide"><span class="name">${chairHidden?"👁 解除隱形":"🫥 隱形"}</span><span class="meta">${chairHidden?"目前隱形中，其他人看不到你":"其他香客看不到你，也不算在殿內人數"}</span></button>
-    <button class="good" data-act="toggleStage"><span class="name">${OP.on?"🎭 收回歌仔戲台":"🎭 擺出歌仔戲台"}</span><span class="meta">${OP.on?"戲台正在廟埕演出，按一下收回":"放在天公爐和觀音噴泉之間，戲班會一直輪流演出，直到再按一次"}</span></button>
-    <button class="good" data-act="chairReset"><span class="name">🔄 重置今日紀錄</span><span class="meta">發財金、紅線、參拜進度、收驚等每日限制全部歸零，方便測試</span></button></div></div>
-  <div class="group" style="margin-top:14px"><span class="group-label">🎆 全服煙火（主委）</span><button class="good wide" data-act="askSL" style="margin-bottom:8px"><span class="name">施放 50 盞天燈</span><span class="meta">每一殿的廟埕同時從各處升起天燈</span></button><button class="good wide" data-act="askFw"><span class="name">施放全服煙火（3 分鐘）</span><span class="meta">每一殿的廟外廣場同時開始，大家都會拿到仙女棒</span></button></div><div id="msgList" style="margin-top:12px"></div>`:""}`);
+  <button class="good wide" data-act="sendMsg"><span class="name">送出留言</span></button>`);
   const t=$("#msgText"); t.addEventListener("input",()=>{ $("#msgCount").textContent=`${[...t.value].length} / 500`; }); }
 HANDLERS.sendMsg=async()=>{ const t=$("#msgText"); const text=(t&&t.value||"").trim(); if(!text){ toast("先寫點什麼吧"); return; } if(hasAddLine(text)){ toast("沒有送出：不能寫加賴",2800); return; } if(floodKey(text)===HANDLERS.sendMsg.last){ toast("同一段留言不能連續送出",2800); return; }
   try{ const r=await fetch("/msg",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({text:[...text].slice(0,500).join(""),name:msgName(),id:myMailId()})}); const j=await r.json().catch(()=>({}));
     if(r.status===503){ toast("伺服器今天的額度用完了，早上 8 點後恢復，請晚點再送",4000); return; }
     if(j.ok){ HANDLERS.sendMsg.last=floodKey(text); save("mz.sentMsg",Date.now()); t.value=""; $("#msgCount").textContent="0 / 500"; toast("留言已送給作者，謝謝你！",3200); } else toast(j.slow?"留言太快了，請稍等一下再送":"目前送不出去，請稍後再試"); }catch(e){ toast("目前送不出去，請稍後再試"); } };
-HANDLERS.sendAnn=async()=>{ const text=(($("#annText")||{}).value||"").trim(); const key=(($("#readKey")||{}).value||"").trim(); if(!text){ toast("先寫公告內容"); return; } if(hasAddLine(text)){ toast("公告不能寫加賴",2800); return; } if(!key){ toast("請先輸入留言讀取密碼"); return; }
+HANDLERS.sendAnn=async()=>{ const text=(($("#annText")||{}).value||"").trim(); const key=ck(); if(!text){ toast("先寫公告內容"); return; } if(hasAddLine(text)){ toast("公告不能寫加賴",2800); return; } if(!key){ toast("請先輸入留言讀取密碼"); return; }
   if(!USE_CF){ showMarquee(text); toast("預覽版沒有伺服器，只有你自己看得到",3200); return; }
   try{ const r=await fetch("/announce",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({text})}); const j=await r.json().catch(()=>({}));
-    if(j.ok){ save("mz.rk",key); $("#annText").value=""; toast("全服公告已發佈",3000); } else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":"密碼不對，公告沒有發出",3200); }catch(e){ toast("公告沒有發出，請稍後再試"); } };
+    if(j.ok){ save("mz.rk",key); $("#annText").value=""; toast("全服公告已發佈",3000); openChair(); } else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":"密碼不對，公告沒有發出",3200); }catch(e){ toast("公告沒有發出，請稍後再試"); } };
 function showMarquee(text){ const box=$("#marquee"), el=$("#marqueeText"); el.textContent="📢 全服公告：　"+String(text).slice(0,80); box.hidden=false; sfx.dingdong();
   const W=window.innerWidth, w=el.offsetWidth, dist=W+w, speed=110, dur=dist/speed*1000; if(showMarquee.anim) showMarquee.anim.cancel();
   const run=()=>{ showMarquee.anim=el.animate([{transform:`translateX(${W}px)`},{transform:`translateX(${-w}px)`}],{duration:dur,easing:"linear"}); showMarquee.anim.onfinish=()=>{ box.hidden=true; }; }; run(); }
 HANDLERS.readMsgs=async()=>{ const el=$("#msgList"); if(!el) return; el.innerHTML=`<p class="lead">讀取中…</p>`;
-  const key=(($("#readKey")||{}).value||"").trim(); if(!key){ el.innerHTML=`<p class="lead">請先輸入留言讀取密碼。</p>`; return; }
+  const key=ck(); if(!key){ el.innerHTML=`<p class="lead">請先輸入留言讀取密碼。</p>`; return; }
   try{ const r=await fetch("/msgs",{headers:{"x-key":key},cache:"no-store"}); const j=await r.json().catch(()=>({})); if(j.ok) save("mz.rk",key);
     if(!j.ok){ el.innerHTML=`<p class="lead">${r.status===503?"伺服器今天的額度用完了，早上 8 點後恢復。":j.locked?"嘗試次數過多，今天先鎖住了，明天再試。":j.unset?"伺服器還沒設定讀取密碼。":"密碼不對，或暫時無法讀取留言。"}</p>`; return; }
-    el.innerHTML=j.msgs.length?j.msgs.map(m=>`<div class="msg-item"><small>${esc(m.name||"香客")}・${fmtT(m.at)}</small>${esc(m.text)}${m.reply?`<div class="msg-reply"><b>主委回覆・${fmtT(m.reply.at)}</b>${esc(m.reply.text)}</div>`:""}${m.id?`<button class="chip reply-btn" data-act="openReply">${m.reply?"✉️ 再回一封":"✉️ 回覆"}</button><div class="reply-box" hidden><textarea class="msg-box" maxlength="500" placeholder="回給 ${esc(m.name||"香客")}，對方下次上線會收到一封信（保留一天）"></textarea><button class="good wide" data-act="sendReply" data-v="${m.at}"><span class="name">寄出回信</span></button></div>`:`<span class="note" style="display:block;margin-top:6px">（回信功能上線前的留言，無法回覆）</span>`}</div>`).join(""):`<p class="lead">目前還沒有留言。</p>`; }catch(e){ el.innerHTML=`<p class="lead">無法讀取留言。</p>`; } };
+    el.innerHTML=(j.msgs.length?`<p class="note">共 ${j.msgs.length} 則，最新的在最上面。</p>`:"")+(j.msgs.length?j.msgs.map(m=>`<div class="msg-item"><small>${esc(m.name||"香客")}・${fmtT(m.at)}</small>${esc(m.text)}${m.reply?`<div class="msg-reply"><b>主委回覆・${fmtT(m.reply.at)}</b>${esc(m.reply.text)}</div>`:""}${m.id?`<button class="chip reply-btn" data-act="openReply">${m.reply?"✉️ 再回一封":"✉️ 回覆"}</button><div class="reply-box" hidden><textarea class="msg-box" maxlength="500" placeholder="回給 ${esc(m.name||"香客")}，對方下次上線會收到一封信（保留一天）"></textarea><button class="good wide" data-act="sendReply" data-v="${m.at}"><span class="name">寄出回信</span></button></div>`:`<span class="note" style="display:block;margin-top:6px">（回信功能上線前的留言，無法回覆）</span>`}</div>`).join(""):`<p class="lead">目前還沒有留言。</p>`); }catch(e){ el.innerHTML=`<p class="lead">無法讀取留言。</p>`; } };
 $("#contactBtn").onclick=()=>{ ensureAudio(); openContact(); };
+// ---- 主委工具: everything the chair can do on one screen, grouped; each tile opens its own small page ----
+const ck=()=>((($("#readKey")||{}).value||"").trim()||load("mz.rk",""));
+function renderChairBtn(){ const b=$("#chairBtn"); if(b) b.hidden=!me.sp; }
+const ctTile=(act,icon,name,note="")=>`<button class="ct" data-act="${act}"><b>${icon}</b><span>${name}</span>${note?`<small>${note}</small>`:""}</button>`;
+function openChair(){ if(!me.sp) return;
+  openSheet("chair","主委工具",`<input class="mail-box ck" id="readKey" type="password" autocomplete="current-password" placeholder="留言讀取密碼（輸入一次就會記住）" value="${esc(load("mz.rk",""))}">
+  <div class="ct-group"><span class="group-label">訊息</span><div class="ct-grid">${ctTile("msgsOpen","📬","香客留言")}${ctTile("annOpen","📢","全服公告","跑馬燈")}${ctTile("boardOpen","📋","公告欄",board.text?"有公告":"空白")}</div></div>
+  <div class="ct-group"><span class="group-label">活動</span><div class="ct-grid">${ctTile("askFw","🎆","全服煙火","3 分鐘")}${ctTile("askSL","🏮","50 盞天燈")}${ctTile("toggleStage","🎭",OP.on?"收回戲台":"擺出戲台",OP.on?"演出中":"")}</div></div>
+  <div class="ct-group"><span class="group-label">線上人數</span><div class="crowd-row"><span class="crowd-now"><span>現在 <b>${shownTotal()}</b> 人</span><small>${CROWD.at&&CROWD.target!=null?`目標 ${CROWD.target}`:"自動"}</small></span><input id="crowdIn" type="text" inputmode="numeric" maxlength="3" placeholder="目標"><button class="chip" data-act="crowdSet">設定</button><button class="chip" data-act="crowdAuto">自動</button></div>
+    <p class="note">約半小時慢慢變到目標，之後在上下 15 人內浮動。「自動」回到依時段變化（凌晨少、白天多）。</p></div>
+  <div class="ct-group"><span class="group-label">主委自己</span><div class="ct-grid">${ctTile("chairHide",chairHidden?"👁":"🫥",chairHidden?"解除隱形":"隱形",chairHidden?"隱形中":"")}${ctTile("chairReset","🔄","重置今日","測試用")}</div></div>`);
+  const k=$("#readKey"); k.addEventListener("change",()=>{ const v=k.value.trim(); if(v) save("mz.rk",v); }); }
+$("#chairBtn").onclick=()=>{ ensureAudio(); if(sheetKind==="chair") closeSheet(); else openChair(); };
+HANDLERS.chairBack=()=>openChair();
+const backBtn=`<button class="secondary ct-back" data-act="chairBack">← 主委工具</button>`;
+HANDLERS.msgsOpen=()=>{ openSheet("msgs","香客留言",`<div class="row">${backBtn}<button class="secondary" data-act="readMsgs">🔄 重新整理</button></div><div id="msgList"></div>`); HANDLERS.readMsgs(); };
+HANDLERS.annOpen=()=>openSheet("ann","全服公告",`${backBtn}<textarea class="msg-box" id="annText" maxlength="80" style="min-height:90px" placeholder="公告內容，80 字以內，會在所有人畫面上方跑馬"></textarea><button class="good wide" data-act="sendAnn"><span class="name">發佈公告</span></button><p class="note">每一殿所有人畫面上方跑一次，之後 5 分鐘內進來的人也會看到。</p>`);
+HANDLERS.boardOpen=()=>openBoard();
+HANDLERS.crowdSet=async()=>{ const v=(($("#crowdIn")||{}).value||"").trim(); if(!/^\d{1,3}$/.test(v)||+v>900){ toast("請輸入 0 到 900 的人數"); return; } await crowdSend(+v); };
+HANDLERS.crowdAuto=()=>crowdSend(null);
+async function crowdSend(target){ const key=ck(); if(!key){ toast("請先輸入留言讀取密碼"); return; }
+  try{ const r=await fetch("/crowd",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({target,from:fakeTotal(Date.now())})}); const j=await r.json().catch(()=>({}));
+    if(j.ok){ save("mz.rk",key); CROWD={target:j.target,from:j.from,at:j.at}; toast(target==null?"人數改回自動，半小時內慢慢回到時段人數":`人數會在半小時內慢慢變成約 ${target} 人`,3400); openChair(); }
+    else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":"密碼不對，沒有變更",3200); }catch(e){ toast("沒有變更，請稍後再試"); } }
+
 // ---- 公告: the chair's notice board. The button glows yellow until this device has opened the newest version, then turns grey ----
 const fmtT=t=>new Date(t).toLocaleString("zh-TW",{hour12:false});
 let board={text:"",at:0};
 function renderBoardBtn(){ const b=$("#boardBtn"); const fresh=!!board.text&&board.at>Number(load("mz.boardSeen",0)); b.classList.toggle("fresh",fresh); b.classList.toggle("seen",!fresh); b.setAttribute("aria-label",fresh?"公告（有新公告）":"公告"); }
 async function fetchBoard(){ try{ const r=await fetch("/board",{cache:"no-store"}); if(!r.ok) return false; const j=await r.json(); if(!j||typeof j.text!=="string") return false; const changed=j.at!==board.at; board={text:j.text,at:+j.at||0}; renderBoardBtn(); return changed; }catch(e){ return false; } }
 function openBoard(){ if(board.at) save("mz.boardSeen",board.at); renderBoardBtn();
-  openSheet("board","公告",`${board.text?`<div class="board-text">${esc(board.text)}</div><p class="note">更新於 ${fmtT(board.at)}</p>`:`<p class="lead">目前沒有公告。</p>`}
+  openSheet("board","公告",`${me.sp?backBtn:""}${board.text?`<div class="board-text">${esc(board.text)}</div><p class="note">更新於 ${fmtT(board.at)}</p>`:`<p class="lead">目前沒有公告。</p>`}
   ${me.sp?`<div class="group" style="margin-top:8px"><span class="group-label">✏️ 修改公告（主委）</span><textarea class="msg-box" id="boardEdit" maxlength="1000" placeholder="公告內容，1000 字以內，可以換行">${esc(board.text)}</textarea>
   <input class="mail-box" id="boardKey" type="password" autocomplete="current-password" placeholder="留言讀取密碼" value="${esc(load("mz.rk",""))}">
   <button class="good wide" data-act="saveBoard"><span class="name">儲存公告</span><span class="meta">儲存後，每個人的公告按鈕都會亮起黃色，直到他們點開看過。清空再儲存就是撤下公告。</span></button></div>`:""}`); }
@@ -2378,11 +2427,11 @@ HANDLERS.delLetter=v=>{ const at=+v; letters=letters.filter(l=>l.at!==at); rende
 $("#letterBtn").onclick=()=>{ ensureAudio(); if(sheetKind==="letters") closeSheet(); else openLetters(); };
 HANDLERS.openReply=(v,b)=>{ const box=b.parentElement.querySelector(".reply-box"); if(!box) return; box.hidden=!box.hidden; if(!box.hidden) box.querySelector("textarea").focus(); };
 HANDLERS.sendReply=async(v,b)=>{ const box=b.closest(".reply-box"); const text=(box.querySelector("textarea").value||"").trim(); if(!text){ toast("先寫回覆內容"); return; } if(hasAddLine(text)){ toast("回信不能寫加賴",2800); return; }
-  const key=(($("#readKey")||{}).value||"").trim(); if(!key){ toast("請先輸入留言讀取密碼"); return; }
+  const key=ck(); if(!key){ toast("請先輸入留言讀取密碼"); return; }
   b.disabled=true; try{ const r=await fetch("/reply",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({at:+v,text})}); const j=await r.json().catch(()=>({}));
     if(j.ok){ toast("回信已寄出，對方下次上線會收到",3200); HANDLERS.readMsgs(); return; }
     toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":j.noid?"這則留言無法回覆":"密碼不對，回信沒有寄出",3200); }catch(e){ toast("回信沒有寄出，請稍後再試"); } b.disabled=false; };
-setTimeout(()=>{ fetchBoard(); checkLetters(); opFetch(); },1200); setInterval(opFetch,90*1000); setInterval(fetchBoard,10*60*1000); setInterval(renderLetterBtn,10*60*1000);
+renderChairBtn(); setTimeout(()=>{ fetchBoard(); checkLetters(); opFetch(); crowdFetch(); },1200); setInterval(crowdFetch,3*60*1000); setInterval(opFetch,90*1000); setInterval(fetchBoard,10*60*1000); setInterval(renderLetterBtn,10*60*1000);
 { let x0=0,y0=0; const scroller=el=>{ for(let n=el;n&&n!==document.body;n=n.parentElement){ if(n.nodeType!==1) continue; const cs=getComputedStyle(n); if((cs.overflowY==="auto"||cs.overflowY==="scroll")&&n.scrollHeight>n.clientHeight+1) return n; } return null; };
   document.addEventListener("touchstart",e=>{ if(e.touches.length){ x0=e.touches[0].clientX; y0=e.touches[0].clientY; } },{passive:true});
   document.addEventListener("touchmove",e=>{ if(e.touches.length>1) return; const t=e.touches[0], dx=t.clientX-x0, dy=t.clientY-y0;
@@ -2445,7 +2494,7 @@ HANDLERS.look=v=>{ const [i,n]=v.split(":").map(Number); if(i===3&&n===16&&!me.s
 HANDLERS.randomLook=()=>{ draftLook=randomLook(!!me.sp); meAv.setLook(draftLook); renderLook(firstVisitPending); };
 HANDLERS.saveLook=async()=>{ const raw=$("#nameInput").value.trim(); if(hasAddLine(raw)){ toast("名字不能寫加賴",2800); return; } const ok=await _chk(raw);
   if(ok){ me.sp=1; me.name=SP_NAME; } else if(raw===SP_NAME&&me.sp){ me.name=SP_NAME; } else { me.sp=0; me.name=[SP_NAME,SP_OLD].includes(cleanName(raw))?"":cleanName(raw); }
-  meAv.setSp(!!me.sp); if(ok) toast("✨ 主委駕到 ✨",3200); me.look=sanitizeLook(draftLook,!!me.sp); meAv.setLook(me.look); save("mz.me",me); meAv.setName(myLabel()); markDirty(); const first=firstVisitPending; firstVisitPending=false; closeSheet(); if(!ok) toast("歡迎來拜拜！先到大殿入口右手邊的服務處，請清香、金紙和供品",4800); };
+  meAv.setSp(!!me.sp); renderChairBtn(); if(ok) toast("✨ 主委駕到 ✨",3200); me.look=sanitizeLook(draftLook,!!me.sp); meAv.setLook(me.look); save("mz.me",me); meAv.setName(myLabel()); markDirty(); const first=firstVisitPending; firstVisitPending=false; closeSheet(); if(!ok) toast("歡迎來拜拜！先到大殿入口右手邊的服務處，請清香、金紙和供品",4800); };
 function endCustomize(){ customizing=false; markDirty(); if(window.__retrack) window.__retrack(); if(meAv.label) meAv.label.visible=true; document.body.classList.remove("customizing"); setOthersVisible(true); meAv.setLook(me.look); updateStandBtn(); }
 let firstVisitPending=firstVisit;
 
@@ -3223,20 +3272,20 @@ function sparkTick(av,dt){ if(!av.sparkler||av.hold||!av.root.visible){ if(av.sp
   if(camera.position.distanceTo(_v2.set(av.pos.x,1,av.pos.y))>28) return; av.root.updateMatrixWorld(true); av.sparkTip.getWorldPosition(_v1);
   const m=Q.low?3:6; for(let i=0;i<m;i++){ const th=Math.random()*Math.PI*2, ph=Math.random()*Math.PI, s=.6+Math.random()*1.6; fwEmit(_v1.x,_v1.y,_v1.z,Math.sin(ph)*Math.cos(th)*s,Math.cos(ph)*s,Math.sin(ph)*Math.sin(th)*s,"#ffffff","#ffb347",.22+Math.random()*.2,.07,1.5,2.5,.6); }
   if(Math.random()<.5) fwEmit(_v1.x,_v1.y,_v1.z,0,0,0,"#fff6d6","#ffd27a",.08,.22,0,0,0); }
-HANDLERS.chairHide=()=>{ if(!me.sp) return; chairHidden=!chairHidden; meAv.root.traverse(o=>{ if(o.material&&!o.isSprite){ o.material=o.material.clone(); o.material.transparent=true; o.material.opacity=chairHidden?.35:1; } }); lastSent=""; markDirty(); sendPresence(true); openContact(); toast(chairHidden?"已隱形：其他香客看不到你":"已解除隱形",2600); };
+HANDLERS.chairHide=()=>{ if(!me.sp) return; chairHidden=!chairHidden; meAv.root.traverse(o=>{ if(o.material&&!o.isSprite){ o.material=o.material.clone(); o.material.transparent=true; o.material.opacity=chairHidden?.35:1; } }); lastSent=""; markDirty(); sendPresence(true); openChair(); toast(chairHidden?"已隱形：其他香客看不到你":"已解除隱形",2600); };
 HANDLERS.chairReset=()=>{ if(!me.sp) return; delete bag.fcDay; delete bag.fcTry; delete bag.rxDay; delete bag.rxTry; bag.redThread=0; bag.planted=[]; bag.bowed={}; bag.flow={}; delete bag.zhanDay;
-  bag.coins=Math.max(bag.coins,300); saveBag(); meAv.setThread(false); myOffers=[]; try{ rebuildMyOffers(); }catch(e){} markDirty(); renderWallet(); openContact(); toast("今日紀錄已重置，可以重新測試",2600); };
+  bag.coins=Math.max(bag.coins,300); saveBag(); meAv.setThread(false); myOffers=[]; try{ rebuildMyOffers(); }catch(e){} markDirty(); renderWallet(); openChair(); toast("今日紀錄已重置，可以重新測試",2600); };
 let fwKeyHold="";
 let slKeyHold="";
-HANDLERS.askSL=()=>{ slKeyHold=(($("#readKey")||{}).value||"").trim(); openSheet("contact","施放 50 盞天燈？",`<p class="lead">確定要一次施放 50 盞天燈嗎？每一殿的廟埕都會同時從各處升起天燈。</p><div class="row"><button class="secondary" data-act="fwCancel">先不要</button><button class="primary" data-act="sendSL">確定施放 🏮</button></div>`); };
+HANDLERS.askSL=()=>{ slKeyHold=ck(); openSheet("contact","施放 50 盞天燈？",`<p class="lead">確定要一次施放 50 盞天燈嗎？每一殿的廟埕都會同時從各處升起天燈。</p><div class="row"><button class="secondary" data-act="fwCancel">先不要</button><button class="primary" data-act="sendSL">確定施放 🏮</button></div>`); };
 let myMassSL=0;
-HANDLERS.sendSL=async()=>{ const key=((($("#readKey")||{}).value||"").trim())||slKeyHold; closeSheet();
+HANDLERS.sendSL=async()=>{ const key=(ck())||slKeyHold; closeSheet();
   if(!USE_CF){ const seed=(Math.random()*1e9)|0; myMassSL=[seed,Date.now()]; markDirty(); massLanterns(seed); return; } if(!key){ toast("請先輸入留言讀取密碼"); return; }
   try{ const r=await fetch("/lanterns",{method:"POST",headers:{"content-type":"application/json","x-key":key}}); const j=await r.json().catch(()=>({}));
     if(j.ok){ save("mz.rk",key); toast("50 盞天燈施放中！",3000); } else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.busy?"剛剛才放過，等半分鐘再放":j.locked?"嘗試次數過多，今天先鎖住了":"密碼不對，天燈沒有施放",3200); }catch(e){ toast("天燈沒有施放，請稍後再試"); } };
-HANDLERS.askFw=()=>{ fwKeyHold=(($("#readKey")||{}).value||"").trim(); openSheet("contact","施放全服煙火？",`<p class="lead">確定要施放全服煙火嗎？每一殿的所有香客都會同時看到 3 分 36 秒的煙火秀，背景音樂也會換成煙火歌。上一場沒放完前不能再放。</p><div class="row"><button class="secondary" data-act="fwCancel">先不要</button><button class="primary" data-act="sendFw">確定施放 🎆</button></div>`); };
-HANDLERS.fwCancel=()=>openContact();
-HANDLERS.sendFw=async()=>{ const key=((($("#readKey")||{}).value||"").trim())||fwKeyHold; if(!USE_CF){ const seed=(Math.random()*1e9)|0; myFwShow=[seed,Date.now()]; markDirty(); fwStart(seed,0); closeSheet(); return; } if(!key){ toast("請先輸入留言讀取密碼"); return; }
+HANDLERS.askFw=()=>{ fwKeyHold=ck(); openSheet("contact","施放全服煙火？",`<p class="lead">確定要施放全服煙火嗎？每一殿的所有香客都會同時看到 3 分 36 秒的煙火秀，背景音樂也會換成煙火歌。上一場沒放完前不能再放。</p><div class="row"><button class="secondary" data-act="fwCancel">先不要</button><button class="primary" data-act="sendFw">確定施放 🎆</button></div>`); };
+HANDLERS.fwCancel=()=>openChair();
+HANDLERS.sendFw=async()=>{ const key=(ck())||fwKeyHold; if(!USE_CF){ const seed=(Math.random()*1e9)|0; myFwShow=[seed,Date.now()]; markDirty(); fwStart(seed,0); closeSheet(); return; } if(!key){ toast("請先輸入留言讀取密碼"); return; }
   try{ const r=await fetch("/fireworks",{method:"POST",headers:{"content-type":"application/json","x-key":key}}); const j=await r.json().catch(()=>({}));
     if(j.ok){ save("mz.rk",key); closeSheet(); toast("全服煙火施放中！",3000); } else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.busy?"上一場煙火還沒放完":j.locked?"嘗試次數過多，今天先鎖住了":"密碼不對，煙火沒有施放",3200); }catch(e){ toast("煙火沒有施放，請稍後再試"); } };
 
@@ -3629,11 +3678,11 @@ function opBuild(){ if(OP.built) return; OP.built=true;
   OP_ROLES.forEach(r=>{ const [x,z]=opW(r.side*.3,-.11); const av=new Avatar(r.look,{npc:true,x,z}); av.moveSpeed=0; av.sjBusy=1; av.root.scale.setScalar(1.35); /* a touch larger than life so they read on the big stage */ opDress(av,r); OP.actors.push({av,role:r}); }); }
 
 function opSet(on,at){ const was=OP.on; OP.on=!!on; OP.at=at||Date.now(); if(OP.on) opBuild(); if(OP.root) OP.root.visible=OP.on; if(!OP.on){ OP.actors.forEach(a=>a.av.root.visible=false); if(OP.aud){ OP.aud.pause(); } }
-  if(OP.on&&!was&&Date.now()-OP.at<60000) toast("🎭 主委擺出歌仔戲台了！到廟埕看戲",4200); if(sheetKind==="contact"&&me.sp) openContact(); }
+  if(OP.on&&!was&&Date.now()-OP.at<60000) toast("🎭 主委擺出歌仔戲台了！到廟埕看戲",4200); if(sheetKind==="chair"&&me.sp) openChair(); }
 async function opFetch(){ try{ const r=await fetch("/stage",{cache:"no-store"}); if(!r.ok) return; const j=await r.json(); if(j&&(!!j.on!==OP.on||(j.on&&j.at!==OP.at))) opSet(j.on,+j.at||0); }catch(e){} }
-HANDLERS.toggleStage=async(v,b)=>{ if(!me.sp) return; const key=(($("#readKey")||{}).value||"").trim(); if(!key){ toast("請先輸入留言讀取密碼"); return; }
+HANDLERS.toggleStage=async(v,b)=>{ if(!me.sp) return; const key=ck(); if(!key){ toast("請先輸入留言讀取密碼"); return; }
   b.disabled=true; try{ const r=await fetch("/stage",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({on:!OP.on})}); const j=await r.json().catch(()=>({}));
-    if(j.ok){ save("mz.rk",key); opSet(j.on,j.at); toast(j.on?"歌仔戲台已擺出，戲班開演":"歌仔戲台已收回",3000); }
+    if(j.ok){ save("mz.rk",key); opSet(j.on,j.at); if(sheetKind==="chair") openChair(); toast(j.on?"歌仔戲台已擺出，戲班開演":"歌仔戲台已收回",3000); }
     else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":"密碼不對，沒有變更",3200); }catch(e){ toast("沒有變更，請稍後再試"); } b.disabled=false; };
 
 /* ---- sound: the three tracks in turn, plus synthesized Taiwanese-style singing, both fading with distance ---- */
