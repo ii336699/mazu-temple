@@ -4039,7 +4039,7 @@ const NM_STALLS=[
   {k:"balloon",name:"射氣球",price:30,icon:"🎈",note:"全部射破得閃亮彩色爆炸頭"}];
 // wearable prizes: slot head/hand, shown in the bag under 服裝 / 頭飾 / 裝飾品
 const ACC={qqball:{name:"地瓜球頭飾",cat:"頭飾",slot:"head"},boba:{name:"珍奶頭飾",cat:"頭飾",slot:"head"},afro:{name:"閃亮彩色爆炸頭",cat:"頭飾",slot:"head"},
-  sausage:{name:"香腸",cat:"裝飾品",slot:"hand"},skewer:{name:"烤肉串",cat:"裝飾品",slot:"hand"}};
+  sausage:{name:"香腸",cat:"裝飾品",slot:"hand",note:"好濃的蒜頭味"},skewer:{name:"烤肉串",cat:"裝飾品",slot:"hand"}};
 const ACC_IDS=Object.keys(ACC);
 function accState(){ if(!bag.acc||typeof bag.acc!=="object") bag.acc={owned:{},head:0,hand:0}; bag.acc.owned=bag.acc.owned||{}; return bag.acc; }
 function nmDay(){ const d=new Date(Date.now()+8*3600e3).toISOString().slice(0,10); if(!bag.nm||bag.nm.day!==d) bag.nm={day:d,fish:0,pWin:0,pCash:0}; return bag.nm; }
@@ -4100,9 +4100,8 @@ function stinkFlies(av,on){ if(on&&!av.flies){ av.flies=[0,1,2].map(i=>{ const s
   if(av.flies){ const t=performance.now()/1000, p=av.root.position; av.flies.forEach((s,i)=>{ const a=t*(3+i)+s.userData.ph; s.position.set(p.x+Math.cos(a)*.38+Math.sin(t*13+i)*.04,1.55+Math.sin(t*2.3+i)*.25,p.z+Math.sin(a)*.38); s.visible=av.root.visible; }); } }
 function stinkReact(av){ // people nearby can't stand it
   const who=[...npcs.filter(n=>!n.classic&&!n.leaving),...remotes.values()].filter(n=>n!==av&&Math.hypot(n.pos.x-av.pos.x,n.pos.y-av.pos.y)<3.2);
-  who.slice(0,2).forEach(n=>{ const L2=["噁～好臭！","誰帶香腸來…","捏鼻子","快逃！","這味道…","嘔"]; if(!n.bubbleT||n.bubbleT<=0) n.say(L2[(Math.random()*L2.length)|0],"#c8f07a",2); showEmo(n,[3,9][(Math.random()*2)|0]);
-    if(n.isBot&&!n.sjq&&!(n.step&&n.step.watch)){ const ax=n.pos.x-av.pos.x, az=n.pos.y-av.pos.y, d=Math.hypot(ax,az)||1; let tx=n.pos.x+ax/d*3, tz=n.pos.y+az/d*3; if(!walkable(tx,tz)){ tx=n.pos.x; tz=n.pos.y; }
-      n.steps=[{go:[tx,tz]},{look:rand(2,4)}]; n.step=null; } }); }
+  who.slice(0,2).forEach(n=>{ const L2=["誰吃大蒜！？","好臭！","蒜頭怪來了！"]; if(!n.bubbleT||n.bubbleT<=0) n.say(L2[(Math.random()*L2.length)|0],"#c8f07a",2); showEmo(n,[3,9][(Math.random()*2)|0]);
+ }); }
 function accTick(av,dt){ stinkFlies(av,!!(av.accHand&&av.accHand.userData.stink&&av.root.visible)); if(!av.root.visible) return;
   const near=Math.hypot(av.pos.x-meAv.pos.x,av.pos.y-meAv.pos.y)<25;
   if(av.accHand&&av.accHand.userData.stink&&near){ av.stinkT=(av.stinkT||0)-dt; if(av.stinkT<0){ av.stinkT=.12+Math.random()*.1; const sg=av.accHand.children[1]||av.accHand; sg.getWorldPosition(_v1); spawnSmoke(_v1.x+rand(-.04,.04),_v1.y+rand(-.04,.06),_v1.z+rand(-.04,.04),{mat:stinkMat.clone(),size:.07,grow:.16,life:1.1,op:.5,vy:.22}); } // a steady thin wisp rising from the sausage itself
@@ -4118,7 +4117,7 @@ let accTab="頭飾";
 function accHTML(){ const a=accState(); const tabs=["服裝","頭飾","裝飾品"];
   const list=ACC_IDS.filter(id=>ACC[id].cat===accTab&&a.owned[id]);
   return `<div class="group"><span class="group-label">飾品</span><div class="chips">${tabs.map(t=>`<button class="chip" data-act="accTab" data-v="${t}" aria-pressed="${t===accTab}">${t}</button>`).join("")}</div>
-    ${list.length?`<div class="goods">${list.map(id=>{ const on=a[ACC[id].slot]===id; return `<button class="good" data-act="accWear" data-v="${id}" style="${on?"border-color:var(--gold);background:rgba(142,28,20,.35)":""}"><span class="name">${ACC[id].name}${on?"　✓ 穿戴中":""}</span><span class="meta">${on?"點一下脫下":"點一下穿上"}</span></button>`; }).join("")}</div>`
+    ${list.length?`<div class="goods">${list.map(id=>{ const on=a[ACC[id].slot]===id; return `<button class="good" data-act="accWear" data-v="${id}" style="${on?"border-color:var(--gold);background:rgba(142,28,20,.35)":""}"><span class="name">${ACC[id].name}${on?"　✓ 穿戴中":""}</span><span class="meta">${ACC[id].note?ACC[id].note+"・":""}${on?"點一下脫下":"點一下穿上"}</span></button>`; }).join("")}</div>`
       :`<p class="note">${accTab==="服裝"?"還沒有服裝。":accTab==="頭飾"?"還沒有頭飾。到夜市玩地瓜球、珍珠奶茶、射氣球可以得到。":"還沒有裝飾品。到夜市香腸攤擲骰子可以得到。"}</p>`}</div>`; }
 HANDLERS.accTab=v=>{ accTab=v; openBag(); };
 HANDLERS.accWear=id=>{ const a=accState(); if(!a.owned[id]) return; const sl=ACC[id].slot; a[sl]=a[sl]===id?0:id; saveBag(); meAv.setAcc(myEq()); markDirty(); toast(a[sl]?`穿上${ACC[id].name}`:`脫下${ACC[id].name}`); openBag(); };
@@ -4223,7 +4222,7 @@ function playSausage(){ const L=gameLayer("烤香腸","十八仔：先贏老闆�
     if(roll){ anim+=1/60; const settle=Math.min(1,anim/1.1); const show=(r,cy)=>{ r.d.forEach((v,i)=>{ const sv=settle<1?1+((Math.random()*6)|0):v; dieDraw(W/2+(i-1.5)*Math.min(W*.17,72),cy+(settle<1?Math.sin(anim*20+i)*10:0),Math.min(W*.13,52),sv,settle<1?Math.sin(anim*17+i*2)*.6:(i-1.5)*.08); }); if(settle>=1) nmText(x,r.t,W/2,cy+62,22,"#ffe14d"); };
       show(roll.boss,H*.37); show(roll.me,H*.63);
       if(settle>=1&&state==="rolling"){ state="shown"; const d=roll.me.s-roll.boss.s; if(d>0){ me++; msg="你贏這把！"; tone(660,.2,.1,"triangle"); fxBurst(L,L.W()/2,L.H()*.63,26,{kind:"star"}); } else if(d<0){ boss++; msg="老闆贏這把"; tone(260,.25,.1,"sawtooth"); } else msg="平手，再來";
-        setTimeout(()=>{ if(L.done) return; if(me>=3){ const had=giveAcc("sausage"); nmEnd(L,true,"贏到一支香腸！",had?"香腸已經有了，又吃了一支":"香腸放進背包飾品，已經拿在手上（會有點臭）"); } else if(boss>=3) nmEnd(L,false,"老闆贏了","再來一盤？"); else state="ready"; },900); } }
+        setTimeout(()=>{ if(L.done) return; if(me>=3){ const had=giveAcc("sausage"); nmEnd(L,true,"贏到一支香腸！",had?"香腸已經有了，又吃了一支":"好濃的蒜頭味！香腸放進背包飾品，已經拿在手上"); } else if(boss>=3) nmEnd(L,false,"老闆贏了","再來一盤？"); else state="ready"; },900); } }
     if(msg&&state!=="rolling") nmText(x,msg,W/2,H*.5,24,"#fff");
     btn.x=W/2-90; btn.y=H-130; if(!L.endMsg) nmButton(x,btn,state==="ready"?"擲！":"…",state==="ready");
     fxDraw(L,x,W,H); nmEndDraw(L,x,W,H); if(L.endMsg&&L.endMsg.win) nmDraw(x,"sg-stick",W/2,H*.25,90,.2); requestAnimationFrame(draw); };
