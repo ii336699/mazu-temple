@@ -4182,7 +4182,12 @@ function qqCard(x,cx,cy,combo,k){ const pop=k<.18?.6+k/.18*.55:k<.3?1.15-(k-.18)
 /* ===== 1. 地瓜球: call and response. The boss presses a pattern on the beat, you press the same pattern in the next bar ===== */
 function playQQ(){ const L=gameLayer("地瓜球","老闆壓一次，你照著節奏壓一次"); const {x,cv}=L; const BPM=104, B=60/BPM;
   nmPreload(["qq-pan","qq-y","qq-p","qq-c","qq-spatula","qq-basket"]);
-  const ROUNDS=[[0,1,2,3],[0,1,2],[0,2,2.5],[0,.5,1,2],[0,1,1.5,3],[0,.5,1,1.5,2],[0,1.5,2,3,3.5],[0,.75,1.5,2.5,3]];
+  // a bigger pool of one-bar patterns, from easy to tricky; each game picks 8 of them, getting harder as it goes
+  const EASY=[[0,1,2,3],[0,1,2],[0,2],[0,2,3],[1,2,3],[0,1,3],[0,3]],
+        MID=[[0,2,2.5],[0,.5,1,2],[0,1,1.5,3],[0,1,2,2.5],[.5,1.5,2.5],[0,1.5,2],[0,.5,2,2.5],[0,1,2.5,3]],
+        HARD=[[0,.5,1,1.5,2],[0,1.5,2,3,3.5],[0,.75,1.5,2.5,3],[0,.5,1.5,2,3],[.5,1,2,2.5,3.5],[0,.25,.5,2,3],[0,1,1.25,1.5,3],[0,.75,1.5,2.25,3]];
+  const pk=(a,n)=>a.slice().sort(()=>Math.random()-.5).slice(0,n);
+  const ROUNDS=[...pk(EASY,3),...pk(MID,3),...pk(HARD,2)];
   const a=ensureAudio(); let t0=null, started=false, notes=[], good=0, perfect=0, combo=0, puff=0, fb=null;
   ROUNDS.forEach((pat,r)=>{ const bar=1+r*2; pat.forEach(o=>{ notes.push({who:"boss",t:(bar*4+o)*B}); notes.push({who:"me",t:((bar+1)*4+o)*B,done:false}); }); });
   const total=notes.filter(n=>n.who==="me").length, END=(1+ROUNDS.length*2)*4*B+1;
@@ -4202,7 +4207,7 @@ function playQQ(){ const L=gameLayer("地瓜球","老闆壓一次，你照著節
     nmDraw(x,"qq-pan",cx,cy,PW);
     let bossHit=0; for(const n of notes) if(n.who==="boss"&&tn>=n.t&&tn-n.t<.15) bossHit=1-(tn-n.t)/.15;
     for(const n of notes) if(n.who==="me"&&!n.done&&tn-n.t>.16){ n.done=true; combo=0; fb={t:"沒壓到",c:"#ffb3a0",at:performance.now()}; }
-    puff*=.86; const grow=.6+.55*Math.min(1,good/total*1.4), sq=Math.max(bossHit,puff);
+    puff*=.86; const grow=.6+1.25*Math.min(1,good/total), sq=Math.max(bossHit,puff);
     balls.forEach(b=>nmDraw(x,b.k,cx+b.x*PW*.62,cy-PW*.04+b.y*PW*.22,PW*.11*b.s));
     // the big ball everyone is pressing: squashes on each press and gets fluffier as you hit the beats
     x.save(); x.translate(cx,cy-PW*.08); x.scale(1+sq*.35,1-sq*.35); nmDraw(x,"qq-y",0,0,PW*.26*grow); x.restore();
