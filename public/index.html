@@ -2100,7 +2100,11 @@ let CROWD={target:null,from:null,at:0}; // set by the chair: ease from `from` to
 const CROWD_RAMP=60e3; // how long the count takes to reach the chair's target (1 minute)
 function fakeTotal(ts){ const a=autoCrowd(ts); if(!CROWD.at) return a; const k=Math.max(0,Math.min(1,(ts-CROWD.at)/CROWD_RAMP)), s=k*k*(3-2*k), from=CROWD.from==null?a:CROWD.from;
   if(CROWD.target==null) return Math.round(from+(a-from)*s);
-  const wob=((fakeNoise(ts,8*60e3,3)-.5)*24+(fakeNoise(ts,2*60e3,4)-.5)*6)*s; return Math.max(0,Math.round(from+(CROWD.target-from)*s+wob)); }
+  return Math.max(0,Math.round(from+(CROWD.target-from)*s+crowdWobble(ts)*s)); }
+// around the chair's target the count jumps now and then, by a few people at a time and at uneven moments, never beyond ±10;
+// every phone gets the same numbers from the clock (no server traffic)
+function crowdWobble(ts){ const step=6000; let i=Math.floor(ts/step); for(let k=0;k<40&&fakeRand(i*13+5)>=.32;k++) i--;
+  const v=Math.round((fakeNoise(i*step,5*60e3,3)*2-1)*7+(fakeRand(i*29+11)-.5)*5.5); return Math.max(-10,Math.min(10,v)); }
 async function crowdFetch(){ try{ const r=await fetch("/crowd",{cache:"no-store"}); if(!r.ok) return; const j=await r.json(); if(j&&typeof j.at==="number") CROWD={target:j.target??null,from:j.from??null,at:j.at}; }catch(e){} }
 const FAKE_W=[.34,.2,.14,.1,.07,.05,.04,.03,.02,.01]; // how the crowd spreads over 正殿…十殿
 // halls fill in order: a hall takes 86–94 people before anyone shows up in the next one
@@ -2595,7 +2599,7 @@ function openChair(){ if(!me.sp) return;
   <div class="ct-group"><span class="group-label">訊息</span><div class="ct-grid">${ctTile("msgsOpen","📬","香客留言")}${ctTile("annOpen","📢","全服公告","跑馬燈")}${ctTile("boardOpen","📋","公告欄",board.text?"有公告":"空白")}</div></div>
   <div class="ct-group"><span class="group-label">活動</span><div class="ct-grid">${ctTile("askFw","🎆","全服煙火","3 分鐘")}${ctTile("askSL","🏮","50 盞天燈")}${ctTile("toggleStage","🎭",OP.on?"收回戲台":"擺出戲台",OP.on?"演出中":"")}</div></div>
   <div class="ct-group"><span class="group-label">線上人數</span><div class="crowd-row"><span class="crowd-now"><span>全廟 <b>${shownTotal()}</b> 人</span><small>這殿 ${hallShown(HALLS.current(),Date.now())} 人・${CROWD.at&&CROWD.target!=null?`目標 ${CROWD.target}`:"自動"}</small></span><input id="crowdIn" type="text" inputmode="numeric" maxlength="3" placeholder="目標"><button class="chip" data-act="crowdSet">設定</button><button class="chip" data-act="crowdAuto">自動</button></div>
-    <p class="real-count" id="realCount">真實在線：讀取中…</p><p class="note">目標是全廟人數，會依序分到各殿（前一殿快滿才開下一殿）。約 1 分鐘慢慢變到目標，之後在上下 15 人內浮動。「自動」回到依時段變化（凌晨少、白天多）。</p></div>
+    <p class="real-count" id="realCount">真實在線：讀取中…</p><p class="note">目標是全廟人數，會依序分到各殿（前一殿快滿才開下一殿）。約 1 分鐘慢慢變到目標，之後在上下 10 人內浮動。「自動」回到依時段變化（凌晨少、白天多）。</p></div>
   <div class="ct-group"><span class="group-label">主委自己</span><div class="ct-grid">${ctTile("chairHide",chairHidden?"👁":"🫥",chairHidden?"解除隱形":"隱形",chairHidden?"隱形中":"")}${ctTile("chairReset","🔄","重置今日","測試用")}</div></div>`);
   const k=$("#readKey"); const keep=()=>{ save("mz.rk",k.value.trim()); }; k.addEventListener("input",keep); k.addEventListener("change",keep); realStats(); }
 // real players only (no demo worshippers, no added numbers), straight from the server's hall counts
