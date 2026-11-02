@@ -4184,6 +4184,7 @@ function nmEndDraw(L,x,W,H){ const e=L.endMsg; if(!e) return false; x.fillStyle=
 /* ---- sprites from the stall art sheets (public/nm/*.webp) ---- */
 // inside the preview host all the stall pictures come in one bundle loaded with the page (nm-pack.js), the same way the
 // 3D models do, because files fetched later don't always arrive there; on the real site each picture is its own file
+if(IN_ARTIFACT) setTimeout(()=>["qq","sausage","bbq","fish","pachinko","boba","balloon"].forEach((k,i)=>setTimeout(()=>{ const sc=document.createElement("script"); sc.src="stall-"+k+(Q.lite?"-lite":"")+"-model.js"; document.head.appendChild(sc); },i*150)),600); // preview host: the stall models come in with the page's other models, not later
 if(IN_ARTIFACT&&!window.NM_PACK){ const sc=document.createElement("script"); sc.src="nm-pack.js"; sc.async=true; sc.onload=()=>{ for(const n in NMI){ const i=NMI[n]; if(!(i.complete&&i.naturalWidth)&&window.NM_PACK&&NM_PACK[n]) i.src=NM_PACK[n]; } }; document.head.appendChild(sc); }
 const NMI={}; function nmSrc(n,r){ return window.NM_PACK&&NM_PACK[n]?NM_PACK[n]:"nm/"+n+".webp"+(r?"?r="+r:""); }
 function nmImg(n){ let i=NMI[n]; if(!i){ i=NMI[n]=new Image(); i.tries=0; i.onerror=()=>{ if(i.tries++<5) setTimeout(()=>{ i.src=nmSrc(n,i.tries); },800*i.tries); }; if(IN_ARTIFACT&&!window.NM_PACK){ /* wait for the bundle */ } else i.src=nmSrc(n); } return i; }
@@ -4441,7 +4442,7 @@ function playPachinko(){ const L=gameLayer("打彈珠","押好彈珠按「發射
 const BB_ING=[["紅茶","bb-black"],["綠茶","bb-green"],["鮮奶","bb-milk"],["奶粉","bb-powder"],["糖","bb-sugar"],["珍珠","bb-pearl"],["黃金珍珠","bb-gold"],["檸檬","bb-lemon"],["冰塊","bb-ice"],["黑糖","bb-brownsugar"],["芋頭","bb-taro"],["芒果","bb-mango"],["煉乳","bb-condensed"],["草莓","bb-strawberry"],["冰淇淋","bb-icecream"]];
 const BB_MENU=[["珍珠奶茶","bb-d-milktea",["紅茶","鮮奶","珍珠","冰塊"]],["綠茶黃金珍珠","bb-d-green",["綠茶","奶粉","黃金珍珠","冰塊"]],["檸檬紅茶","bb-d-lemon",["紅茶","檸檬","糖","冰塊"]],
   ["黑糖珍珠鮮奶","bb-d-brownsugar",["鮮奶","黑糖","珍珠"]],["芋頭鮮奶","bb-d-taro",["鮮奶","芋頭","珍珠","冰塊"]],["芒果冰沙","bb-d-mango",["芒果","煉乳","珍珠","冰塊"]],["草莓奶昔","bb-d-strawberry",["草莓","冰淇淋","鮮奶","珍珠"]]];
-function playBoba(){ const L=gameLayer("珍珠奶茶","照配方點對配料，做完三杯"); const {x,cv}=L;
+function playBoba(){ const L=gameLayer("珍珠奶茶","照配方點對配料，再上下快速滑動搖杯"); const {x,cv}=L;
   nmPreload(BB_ING.map(i=>i[1]).concat(BB_MENU.map(m=>m[1]),["bb-shaker"]));
   const menu=BB_MENU.slice().sort(()=>Math.random()-.5).slice(0,3);
   let cup=0, drink=menu[0], added=[], phase="add", time=20, shakes=0, NEED_SHAKE=16, over=false, last=performance.now(), lastY=null, dir=0, motionOn=false, lastShakeAt=0, t0=0;
@@ -4455,9 +4456,8 @@ function playBoba(){ const L=gameLayer("珍珠奶茶","照配方點對配料，�
     else setTimeout(()=>{ drink=menu[cup]; added=[]; phase="add"; time=20; shakes=0; },1100); };
   cv.addEventListener("pointerdown",e=>{ if(L.endMsg){ L.close(); return; } if(!t0) t0=performance.now(); if(phase==="add"){ btns.forEach((b,i)=>{ if(!inBox(b,e.clientX,e.clientY)) return; const n=BB_ING[i][0];
         if(!drink[2].includes(n)||added.includes(n)){ over=true; nmEnd(L,false,`加錯了：${n}`,`${drink[0]}不用加${n}，再來一次`); return; }
-        added.push(n); tone(600+added.length*120,.08,.08,"triangle"); fxBurst(L,b.x+b.w/2,b.y,10,{speed:140}); if(drink[2].every(k=>added.includes(k))) cupDone(); }); } // all in: the cup is done (no shaking)
+        added.push(n); tone(600+added.length*120,.08,.08,"triangle"); fxBurst(L,b.x+b.w/2,b.y,10,{speed:140}); if(drink[2].every(k=>added.includes(k))) phase="shake"; }); }
     lastY=e.clientY; });
-  cv.addEventListener("click",askMotion); cv.addEventListener("touchend",askMotion,{passive:true});
   cv.addEventListener("pointermove",e=>{ if(phase!=="shake"||lastY==null||!(e.buttons||e.pointerType==="touch")) return; const dy=e.clientY-lastY; if(Math.abs(dy)>28){ const d2=Math.sign(dy); if(d2!==dir){ dir=d2; shakeOnce(); } lastY=e.clientY; } });
   const close0=L.close; L.close=()=>{ removeEventListener("devicemotion",onMotion); close0(); };
   const draw=()=>{ if(L.done) return; const now=performance.now(), dt=Math.min(.05,(now-last)/1000); last=now; const W=L.W(), H=L.H();
@@ -4495,7 +4495,7 @@ function playBoba(){ const L=gameLayer("珍珠奶茶","照配方點對配料，�
         rr(x,b.x,b.y,b.w,b.h,14); x.lineWidth=2; x.strokeStyle=on?"#4cbf6a":"#f3c58f"; x.stroke();
         nmFit(x,BB_ING[i][1],b.x+b.w/2,b.y+(b.h-16)/2+3,b.w-12,b.h-24,on?.5:1);
         nmText(x,BB_ING[i][0],b.x+b.w/2,b.y+b.h-6,12,on?"#2e8a46":"#7a3a18",undefined,800); if(on) nmText(x,"✓",b.x+b.w-11,b.y+16,15,"#2e8a46"); }); }
-    if(phase==="shake"){ nmText(x,"搖起來！",W/2,H-170,32,"#e8402a"); nmText(x,"搖手機，或在畫面上快速上下滑",W/2,H-136,15,"#8a4a20",undefined,600);
+    if(phase==="shake"){ nmText(x,"搖起來！",W/2,H-170,32,"#e8402a"); nmText(x,"手指在畫面上快速上下滑",W/2,H-136,15,"#8a4a20",undefined,600);
       rr(x,W/2-130,H-112,260,16,8); x.fillStyle="rgba(180,90,40,.18)"; x.fill(); rr(x,W/2-130,H-112,260*Math.min(1,shakes/NEED_SHAKE),16,8); x.fillStyle="#4cbf6a"; x.fill(); }
     fxDraw(L,x,W,H); nmEndDraw(L,x,W,H); requestAnimationFrame(draw); };
   requestAnimationFrame(draw); }
