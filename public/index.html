@@ -230,6 +230,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
 .camreset{position:fixed;left:calc(max(12px,env(safe-area-inset-left,0px)) + 33px);bottom:calc(env(safe-area-inset-bottom,0px) + 188px);width:30px;height:30px;border:0;padding:0;background:none;z-index:5;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .camreset::after{content:"";position:absolute;left:9px;top:9px;width:12px;height:12px;border-radius:50%;background:rgba(255,230,180,.55);box-shadow:0 0 0 1.5px rgba(255,230,180,.25),0 0 6px rgba(255,200,120,.35)}
 .camreset:active::after{background:#ffe6b4}
+#othersBtn .slash{display:none} #othersBtn.on .slash{display:inline} #othersBtn.on{background:rgba(255,200,120,.28)}
 body.hideui .joy,body.customizing .joy,body.hideui .camreset,body.customizing .camreset{display:none}
 .bank{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border:1px solid var(--gold-soft);border-radius:14px;background:rgba(255,240,210,.05)}
 .bank-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
@@ -348,6 +349,7 @@ body.hideui .joy,body.customizing .joy,body.hideui .camreset,body.customizing .c
     <button class="icon-btn glass" id="emoBtn" aria-label="表情"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"/><path d="M9 9.5h.01M15 9.5h.01" stroke-width="2.6" stroke-linecap="round"/></svg></button>
     <button class="icon-btn glass" id="lookBtn" aria-label="換造型"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></button>
     <button class="icon-btn glass" id="bagBtn" aria-label="背包"><svg viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span class="cap"><b id="coins">0</b><span id="bagText"></span></span></button>
+    <button class="icon-btn glass" id="othersBtn" aria-label="隱藏其他玩家" aria-pressed="false"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c.8-3.6 3.2-5.6 6-5.6s5.2 2 6 5.6"/><circle cx="16.5" cy="9" r="2.6"/><path d="M15.5 14.6c2.6-.3 4.6 1.4 5.5 4.6"/><path class="slash" d="M3 3l18 18"/></svg></button>
     <button class="icon-btn glass" id="uiBtn" aria-label="隱藏介面"><svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18"/></svg></button>
     <button class="icon-btn glass" id="gfxBtn" aria-label="設定"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
   </div>
@@ -2050,8 +2052,10 @@ const isIn=z=>z<HZ;
 function zoneOf(x,z){ const ax=Math.abs(x), sd=x<0?"-":"+"; if(z>=HZ+.1) return "C"; if(ax<12.2) return "M"; return (z<SHZ1?"S":"P")+sd; }
 const ZRECT={M:[-11,11,-9.5,HZ-.6],C:[-17,17,HZ+.7,HZ+YX+17.6],"S+":[12.9,16,-7,-2],"S-":[-16,-12.9,-7,-2],"P+":[SHXC-1,SHXC+1,-.7,HZ+.6],"P-":[-SHXC-1,-SHXC+1,-.7,HZ+.6]};
 const ZLINK={M:["S+","S-","C"],C:["M","P+","P-"],"S+":["P+","M"],"S-":["P-","M"],"P+":["S+","C"],"P-":["S-","C"]};
-function doorPts(a,b,fx,tx){ const key=a+">"+b, s=(a+b).includes("-")?-1:1;
-  if(key==="M>C"||key==="C>M"){ const dx=Math.max(-1.8,Math.min(1.8,(fx+tx)/2)); return a==="M"?[[dx,HZ-.9],[dx,HZ+1]]:[[dx,HZ+1],[dx,HZ-.9]]; }
+function doorPts(a,b,fx,tx,fz){ const key=a+">"+b, s=(a+b).includes("-")?-1:1;
+  if(key==="M>C"||key==="C>M"){ // main door: someone already in the doorway keeps going straight, never steps back out to a waypoint behind them
+    const inDoor=fz!=null&&Math.abs(fx)<2.2&&fz>HZ-1.2&&fz<HZ+1.3, dx=Math.max(-1.8,Math.min(1.8,inDoor?fx:(fx+tx)/2));
+    const pts=a==="M"?[[dx,HZ-.9],[dx,HZ+1]]:[[dx,HZ+1],[dx,HZ-.9]]; return fz==null?pts:pts.filter(p=>a==="M"?p[1]>fz+.05:p[1]<fz-.05); }
   if(a==="M") return [[s*11,BGZ],[s*13.2,BGZ]]; if(b==="M") return [[s*13.2,BGZ],[s*11,BGZ]];
   if(a[0]==="S") return [[s*SHXC,-2.1],[s*SHXC,-.5]]; if(b[0]==="S") return [[s*SHXC,-.5],[s*SHXC,-2.1]];
   if(a[0]==="P") return [[s*SHXC,HZ+.2],[s*SHXC,HZ+1.2]]; return [[s*SHXC,HZ+1.2],[s*SHXC,HZ+.2]]; }
@@ -2062,7 +2066,7 @@ function walkable(x,z){ if(opInside(x,z)) return false; const ax=Math.abs(x);
 function clampSpot(x,z){ if(opInside(x,z)){ const o=opRect(); z=z<OP.z?o.z0-.3:o.z1+.3; } const r=ZRECT[zoneOf(x,z)]; return [Math.max(r[0],Math.min(r[1],x)),Math.max(r[2],Math.min(r[3],z))]; }
 function planPath(fx,fz,tx,tz){ const a=zoneOf(fx,fz), b=zoneOf(tx,tz); if(a===b) return [[tx,tz]];
   const prev={[a]:null}, q=[a]; while(q.length){ const z=q.shift(); if(z===b) break; for(const n of ZLINK[z]) if(!(n in prev)){ prev[n]=z; q.push(n); } }
-  const chain=[]; for(let z=b;z;z=prev[z]) chain.unshift(z); const pts=[]; for(let k=0;k<chain.length-1;k++) pts.push(...doorPts(chain[k],chain[k+1],fx,tx)); pts.push([tx,tz]); return opDetour([fx,fz],pts); }
+  const chain=[]; for(let z=b;z;z=prev[z]) chain.unshift(z); const pts=[]; for(let k=0;k<chain.length-1;k++) pts.push(...doorPts(chain[k],chain[k+1],fx,tx,k===0?fz:null)); pts.push([tx,tz]); return opDetour([fx,fz],pts); }
 // with the opera stage out, a straight line across the courtyard that would cut through it goes round the nearer side instead
 function opDetour(start,pts){ if(!OP||!OP.on) return pts; const o=opRect(), out=[]; let p=start;
   for(const q of pts){ const zl=Math.min(p[1],q[1]), zh=Math.max(p[1],q[1]); if(zl<o.z1&&zh>o.z0){ const xm=(p[0]+q[0])/2; if(xm>o.x0-1&&xm<o.x1+1&&!(opInside(p[0],p[1])||opInside(q[0],q[1]))){ const sx=xm<OP.x?o.x0-.5:o.x1+.5; const n=p[1]<q[1]; out.push([sx,n?o.z0-.3:o.z1+.3],[sx,n?o.z1+.3:o.z0-.3]); } } out.push(q); p=q; } return out; }
@@ -2078,7 +2082,7 @@ $("#standBtn").onclick=()=>{ meAv.seat=-1; meAv.target.set(meAv.pos.x,meAv.pos.y
 function updateStandBtn(){ $("#standBtn").hidden=meAv.seat<0||customizing; }
 
 /* ================= NPC demo worshippers ================= */
-let showNpc=load("mz.npc",true); const npcs=[];
+let showNpc=true; /* the kneeling demo worshippers are always there now (the old switch is gone) */ const npcs=[];
 function randomLook(allowChair=false){ return sanitizeLook(LOOK_RANGE.map((n,i)=>(i===11||i===12)?(Math.random()<.6?0:Math.floor(Math.random()*n)):Math.floor(Math.random()*n)),allowChair); }
 function freeSeat(){ const taken=new Set([meAv.seat,...npcs.map(n=>n.seat)]); remotes.forEach(r=>taken.add(r.seat)); const free=[]; for(let i=0;i<SEATS.length;i++) if(!taken.has(i)) free.push(i); return free.length?free[Math.floor(Math.random()*free.length)]:-1; }
 /* ================= 熱鬧的廟: the online count and the demo worshippers ================= */
@@ -2213,7 +2217,7 @@ function bakeAvatar(av){ const bones=new Set([av.root,av.parts,av.hips,av.torso,
       for(let i=0;i<n;i++){ P[(vo+i)*3]=pa.getX(i); P[(vo+i)*3+1]=pa.getY(i); P[(vo+i)*3+2]=pa.getZ(i); N[(vo+i)*3]=na.getX(i); N[(vo+i)*3+1]=na.getY(i); N[(vo+i)*3+2]=na.getZ(i); C[(vo+i)*3]=g.userData.col[0]; C[(vo+i)*3+1]=g.userData.col[1]; C[(vo+i)*3+2]=g.userData.col[2]; }
       const ix=g.index.array; for(let i=0;i<ix.length;i++) I[io+i]=ix[i]+vo; vo+=n; io+=ix.length; g.dispose(); });
     const G=new T.BufferGeometry(); G.setAttribute("position",new T.BufferAttribute(P,3)); G.setAttribute("normal",new T.BufferAttribute(N,3)); G.setAttribute("color",new T.BufferAttribute(C,3)); G.setIndex(new T.BufferAttribute(I,1)); G.computeBoundingSphere();
-    const M=new T.Mesh(G,ds?BOT_VC2:BOT_VC); M.raycast=()=>{}; b.add(M); list.forEach(o=>o.parent&&o.parent.remove(o)); }); }
+    const M=new T.Mesh(G,ds?BOT_VC2:BOT_VC); M.raycast=()=>{}; b.add(M); list.forEach(o=>{ const hi=av.hands?av.hands.indexOf(o):-1; if(hi>=0&&o.parent){ const g=new T.Object3D(); g.position.copy(o.position); g.quaternion.copy(o.quaternion); g.scale.copy(o.scale); o.parent.add(g); av.hands[hi]=g; } o.parent&&o.parent.remove(o); }); }); }
 /* ---- NPC names: built on the phone from the patterns and word lists in npc-names.json (no AI, no server).
    Real players keep randomName(); this is only for the demo worshippers. To add words or patterns, edit npc-names.json only.
    Each NPC has a fixed id; its name comes from a random generator seeded by that id, so the same NPC always gets the same
@@ -2279,7 +2283,7 @@ function placeBot(){ const role=pickRole(); let a;
 function buildNpcs(){ npcs.forEach(n=>n.dispose()); npcs.length=0;
   // the original demo worshippers, exactly as before: no name, always kneeling on the mats in the hall and bowing now and then
   if(showNpc) for(let i=0;i<(Q.lite?3:Q.low?6:12);i++){ const s=freeSeat(); if(s<0) break; const a=new Avatar(randomLook(),{npc:true,x:SEATS[s].x,z:SEATS[s].y}); try{ bakeAvatar(a); }catch(e){}
-    a.classic=true; a.seat=s; a.kneel=1; a.next=rand(2,18); a.steps=[]; a.step=null; if(customizing||!othersShown) a.root.visible=false; npcs.push(a); }
+    a.classic=true; a.seat=s; a.kneel=1; a.next=rand(2,18); a.steps=[]; a.step=null; if(customizing) a.root.visible=false; npcs.push(a); }
   const want=Math.min(40,botWant()); for(let i=0;i<want;i++) placeBot();
   BOT.nextAdjust=performance.now()+rand(1500,4000); }
 function npcYield(i){ npcs.forEach(n=>{ if(n.seat===i){ const s=freeSeat(); if(s<0){ n.seat=-1; n.target.set(rand(-10,10),13); } else n.sitAt(s); } }); }
@@ -2636,8 +2640,10 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",
 let lookTab="face", draftLook=null;
 function openLook(first){ customizing=true; if(room) setTimeout(sendPresence,0); if(window.__retrack) setTimeout(window.__retrack,0); if(meAv.seat>=0){ meAv.seat=-1; } meAv.target.copy(meAv.pos); pendingStation=null; { const z=meAv.pos.y; meAv.rotY=z>HZ?0:((14.4-z)>(z+9)?0:Math.PI); meAv.faceGoal=meAv.rotY; } markDirty(); pvYaw=0; pvSpin=0; document.body.classList.add("customizing"); draftLook=me.look.slice(); setOthersVisible(false); updateStandBtn(); renderLook(first); }
 let othersShown=load("mz.others",true);
-function setOthersVisible(v){ npcs.forEach(n=>n.root.visible=v&&othersShown); remotes.forEach(r=>r.root.visible=v&&othersShown); }
-HANDLERS.toggleOthers=(v,b)=>{ othersShown=!othersShown; save("mz.others",othersShown); b.setAttribute("aria-pressed",String(othersShown)); if(!customizing) setOthersVisible(true); toast(othersShown?"已顯示其他玩家":"已隱藏其他玩家，自己一個人慢慢拜"); };
+function setOthersVisible(v){ npcs.forEach(n=>n.root.visible=v&&(othersShown||n.classic)); remotes.forEach(r=>r.root.visible=v&&othersShown); }
+function renderOthersBtn(){ const b=$("#othersBtn"); if(!b) return; b.setAttribute("aria-pressed",String(!othersShown)); b.classList.toggle("on",!othersShown); b.setAttribute("aria-label",othersShown?"隱藏其他玩家":"顯示其他玩家"); }
+$("#othersBtn").onclick=()=>{ othersShown=!othersShown; save("mz.others",othersShown); if(!customizing) setOthersVisible(true); renderOthersBtn(); toast(othersShown?"其他玩家回來了":"已隱藏其他玩家",2200); };
+renderOthersBtn();
 function syncPvSeg(){ sheetBody.querySelectorAll("[data-act=pv]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===pvMode))); }
 function chipRow(label,idx,names){ return `<div class="group"><span class="group-label">${label}</span><div class="chips">${names.map((n,i)=>idx===3&&i===16&&!me.sp?"":`<button class="chip" data-act="look" data-v="${idx}:${i}" aria-pressed="${draftLook[idx]===i}">${n}</button>`).join("")}</div></div>`; }
 function swRow(label,idx,cols){ return `<div class="group"><span class="group-label">${label}</span><div class="chips">${cols.map((c,i)=>`<button class="sw" style="background:${c}" data-act="look" data-v="${idx}:${i}" aria-pressed="${draftLook[idx]===i}" aria-label="${label} ${i+1}"></button>`).join("")}</div></div>`; }
@@ -2698,7 +2704,7 @@ document.addEventListener("input",e=>{ const k=e.target&&e.target.dataset&&e.tar
   if(k==="m"){ /* the music level follows VOL.m every frame */ } });
 document.addEventListener("change",e=>{ if(e.target&&e.target.dataset&&e.target.dataset.vol==="s") sfx.coin(); });
 function openGfx(){ const opt=(v,t,d)=>`<button class="good" data-act="quality" data-v="${v}" aria-pressed="${Q.mode===v}" style="${Q.mode===v?"border-color:var(--gold);background:rgba(142,28,20,.35)":""}"><span class="name">${t}${Q.mode===v?"　✓":""}</span><span class="meta">${d}</span></button>`;
-  openSheet("gfx","設定",`<div class="group"><span class="group-label">畫質</span><p class="lead">畫面卡頓或手機發燙時，可以改用省電畫質。</p></div><div class="goods">${opt("auto","自動","進場後自動偵測，太卡會切到省電")}${opt("high","高畫質","光束、灰塵、全部燈光，最漂亮")}${opt("low","省電","降低解析度與特效，舊手機也順")}${opt("lite","低配","最省：模型減面、小貼圖、關閉抗鋸齒，給比較舊的手機（會重新載入）")}</div><p class="note">目前：${Q.lite?"低配":Q.low?"省電畫質":"高畫質"}</p><div class="group"><span class="group-label">其他</span><div class="chips"><button class="chip" data-act="toggleOthers" aria-pressed="${othersShown}">顯示其他玩家</button><button class="chip" data-act="toggleNpc" aria-pressed="${showNpc}">顯示示範香客</button></div><p class="note">示範香客是電腦角色，不算在殿內人數裡，關掉也能讓畫面更順。</p></div>`); }
+  openSheet("gfx","設定",`<div class="group"><span class="group-label">畫質</span><p class="lead">畫面卡頓或手機發燙時，可以改用省電畫質。</p></div><div class="goods">${opt("auto","自動","進場後自動偵測，太卡會切到省電")}${opt("high","高畫質","光束、灰塵、全部燈光，最漂亮")}${opt("low","省電","降低解析度與特效，舊手機也順")}${opt("lite","低配","最省：模型減面、小貼圖、關閉抗鋸齒，給比較舊的手機（會重新載入）")}</div><p class="note">目前：${Q.lite?"低配":Q.low?"省電畫質":"高畫質"}</p>`); }
 HANDLERS.quality=v=>{ if((v==="lite")!==Q.lite){ Q.mode=v; save("mz.q",v); toast(v==="lite"?"切換為低配，重新載入中…":"離開低配，重新載入中…",2500); setTimeout(()=>location.reload(),900); return; } applyQuality(v==="auto"?(perf.done&&Q.low?"low":"high"):v,false); if(v==="auto"){ Q.mode="auto"; save("mz.q","auto"); } openGfx(); toast(v==="low"?"已切換為省電畫質":v==="high"?"已切換為高畫質":"畫質改為自動偵測"); };
 HANDLERS.toggleNpc=(v,b)=>{ showNpc=!showNpc; save("mz.npc",showNpc); b.setAttribute("aria-pressed",String(showNpc)); buildNpcs(); toast(showNpc?"已顯示示範香客":"已隱藏示範香客"); };
 HANDLERS.showPoem=v=>openPoem(+v,true);
