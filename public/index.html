@@ -155,7 +155,7 @@ body.customizing .hall,body.customizing .actions,body.customizing .rot{display:n
 .secondary{background:rgba(255,255,255,.05);border:1px solid var(--gold-soft);border-radius:12px;padding:11px 16px;font-size:15px}
 .row{display:flex;gap:10px;flex-wrap:wrap}
 .row>*{flex:1 1 140px}
-.shop-extra{display:grid;gap:10px;margin-top:18px;padding-top:16px;border-top:1px solid var(--gold-soft)}.good.wide{width:100%;box-sizing:border-box;text-decoration:none;color:inherit}.jko-qr{display:block;width:min(100%,300px);height:auto;margin:12px auto;border-radius:16px}.jko-link{margin-bottom:10px}.thanks-img{display:block;width:100%;height:auto;border-radius:12px;margin:4px 0 12px}.thanks-text{font-family:var(--f-display);font-size:19px;line-height:1.6;color:#ffe2a0;text-align:center;margin:0 0 6px}
+.shop-extra{display:grid;gap:10px;margin-top:18px;padding-top:16px;border-top:1px solid var(--gold-soft)}.good.wide{width:100%;box-sizing:border-box;text-decoration:none;color:inherit}.jko-qr{display:block;width:min(100%,300px);height:auto;margin:12px auto;border-radius:16px}.jko-link{margin-bottom:10px}.thanks-img{display:block;width:100%;height:auto;border-radius:12px;margin:4px 0 12px}.thanks-text{font-family:var(--f-display);font-size:19px;line-height:1.6;color:#ffe2a0;text-align:center;margin:0 0 6px}.pt-banner{margin:4px 0 14px;padding:14px 12px;border-radius:6px;background:linear-gradient(#c4161e,#9a0e15);border:3px solid #f5c84a;box-shadow:inset 0 0 0 2px #9a0e15,inset 0 0 0 4px #f5c84a;color:#ffd34a;font-family:var(--f-display);font-size:24px;font-weight:900;text-align:center;letter-spacing:.06em;text-shadow:0 2px 0 #5a0608}
 .inapp{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:16px;background:rgba(12,4,2,.62)}.inapp[hidden]{display:none}.inapp-card{max-width:360px;width:100%;border-radius:20px;padding:20px}.inapp-card h2{margin:0 0 8px;font-family:var(--f-display);font-size:21px;color:var(--gold)}.inapp-card p{margin:0 0 14px;font-size:15px;line-height:1.65;color:var(--ink)}.inapp-row{display:flex;gap:10px}.inapp-row button{flex:1}.inapp-arrow{position:fixed;top:6px;right:10px;display:flex;flex-direction:column;align-items:flex-end;gap:2px;color:#ffe2a0;text-align:right;font-size:15px;line-height:1.35;animation:inappBob 1s ease-in-out infinite;pointer-events:none}.inapp-arrow span{font-size:40px;line-height:1;margin-right:6px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.6))}.inapp-arrow b{background:rgba(142,28,20,.92);border:1px solid var(--gold);border-radius:12px;padding:6px 10px}.inapp-arrow[hidden]{display:none}@keyframes inappBob{50%{transform:translateY(-8px)}}@media (prefers-reduced-motion:reduce){.inapp-arrow{animation:none}}
 .inapp-help{color:var(--muted)!important;font-size:14px!important;margin-top:14px!important}
 .sj-banner{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 176px);z-index:6;border-radius:999px;padding:8px 18px;font-size:15px;color:#ffe2a0;border:1px solid var(--gold);white-space:nowrap}.sj-banner[hidden]{display:none}
@@ -2096,12 +2096,12 @@ function doorPts(a,b,fx,tx,fz){ const key=a+">"+b, s=(a+b).includes("-")?-1:1;
   if(a==="M") return [[s*11,BGZ],[s*13.2,BGZ]]; if(b==="M") return [[s*13.2,BGZ],[s*11,BGZ]];
   if(a[0]==="S") return [[s*SHXC,-2.1],[s*SHXC,-.5]]; if(b[0]==="S") return [[s*SHXC,-.5],[s*SHXC,-2.1]];
   if(a[0]==="P") return [[s*SHXC,HZ+.2],[s*SHXC,HZ+1.2]]; return [[s*SHXC,HZ+1.2],[s*SHXC,HZ+.2]]; }
-function walkable(x,z){ if(opInside(x,z)) return false; const ax=Math.abs(x);
+function walkable(x,z){ if(opInside(x,z)||ptInside(x,z)) return false; const ax=Math.abs(x);
   if(ax<=11&&z>=-9.5&&z<=HZ-.6) return true; if(ax<2.2&&z>HZ-.7&&z<HZ+.8) return true; if(ax<=17&&z>=HZ+.7&&z<=HZ+YX+18) return true; if(ax>=4.5&&ax<=17&&z>HZ+YX+18&&z<=HZ+YX+20.6) return true;
   if(ax>10.9&&ax<13&&Math.abs(z-BGZ)<1.1) return true; if(ax>=12.9&&ax<=16&&z>=-7&&z<=-2) return true;
   if(Math.abs(ax-SHXC)<=.9&&z>=-2.2&&z<=HZ+.8) return true; return false; }
 function clampSpot(x,z){ if(Math.abs(x)<4.5&&z>HZ+YX+17.8) z=HZ+YX+17.8; // in front of the fountain, not into it
-  if(opInside(x,z)){ const o=opRect(); z=z<OP.z?o.z0-.3:o.z1+.3; } const r=ZRECT[zoneOf(x,z)]; return [Math.max(r[0],Math.min(r[1],x)),Math.max(r[2],Math.min(r[3],z))]; }
+  if(opInside(x,z)){ const o=opRect(); z=z<OP.z?o.z0-.3:o.z1+.3; } if(ptInside(x,z)){ x=ptRect().x1+.3; } const r=ZRECT[zoneOf(x,z)]; return [Math.max(r[0],Math.min(r[1],x)),Math.max(r[2],Math.min(r[3],z))]; }
 function planPath(fx,fz,tx,tz){ const a=zoneOf(fx,fz), b=zoneOf(tx,tz); if(a===b) return [[tx,tz]];
   const prev={[a]:null}, q=[a]; while(q.length){ const z=q.shift(); if(z===b) break; for(const n of ZLINK[z]) if(!(n in prev)){ prev[n]=z; q.push(n); } }
   const chain=[]; for(let z=b;z;z=prev[z]) chain.unshift(z); const pts=[]; for(let k=0;k<chain.length-1;k++) pts.push(...doorPts(chain[k],chain[k+1],fx,tx,k===0?fz:null)); pts.push([tx,tz]); return opDetour([fx,fz],pts); }
@@ -2462,6 +2462,7 @@ function initCF(first){
       if(m.t==="hello"&&Array.isArray(m.peers)){ m.peers.forEach(x=>{ if(okId(x.id)&&x.p&&typeof x.p==="object") peerState.set(x.id,{p:x.p,t:Date.now()}); }); rebuild(); return; }
       if(m.t==="ann"&&typeof m.text==="string"){ if(seenOnce("a"+(m.at||m.text))) return; showMarquee(m.text); return; }
       if(m.t==="stage"){ opSet(!!m.on,+m.at||0); return; }
+      if(m.t==="puppet"){ ptSet(m); return; }
       if(m.t==="market"){ mkSet(m.open||{}); return; }
       if(m.t==="sl50"&&Number.isFinite(m.seed)){ massLanterns(m.seed); return; }
       if(m.t==="fw"&&Number.isFinite(m.seed)){ fwStart(m.seed,+m.el||0); return; }
@@ -2653,7 +2654,7 @@ const ctTile=(act,icon,name,note="")=>`<button class="ct" data-act="${act}"><b>$
 function openChair(){ if(!me.sp) return;
   openSheet("chair","主委工具",`<input class="mail-box ck" id="readKey" type="password" autocomplete="off" placeholder="留言讀取密碼（輸入一次就會記住）" value="${esc(load("mz.rk",""))}">
   <div class="ct-group"><span class="group-label">訊息</span><div class="ct-grid">${ctTile("msgsOpen","📬","香客留言")}${ctTile("annOpen","📢","全服公告","跑馬燈")}${ctTile("boardOpen","📋","公告欄",board.text?"有公告":"空白")}</div></div>
-  <div class="ct-group"><span class="group-label">活動</span><div class="ct-grid">${ctTile("askFw","🎆","全服煙火","3 分鐘")}${ctTile("askSL","🏮","50 盞天燈")}${ctTile("toggleStage","🎭",OP.on?"收回戲台":"擺出戲台",OP.on?"演出中":"")}${ctTile("marketOpen","🏮","夜市",Object.keys(MK.open).length?`${Object.keys(MK.open).length} 攤營業中`:"")}</div></div>
+  <div class="ct-group"><span class="group-label">活動</span><div class="ct-grid">${ctTile("askFw","🎆","全服煙火","3 分鐘")}${ctTile("askSL","🏮","50 盞天燈")}${ctTile("toggleStage","🎭",OP.on?"收回戲台":"擺出戲台",OP.on?"演出中":"")}${ctTile("puppetChair","🎎","布袋戲台",PT.on?"演出中":"")}${ctTile("marketOpen","🏮","夜市",Object.keys(MK.open).length?`${Object.keys(MK.open).length} 攤營業中`:"")}</div></div>
   <div class="ct-group"><span class="group-label">線上人數</span><div class="crowd-row"><span class="crowd-now"><span>全廟 <b>${shownTotal()}</b> 人</span><small>這殿 ${hallShown(HALLS.current(),Date.now())} 人・${CROWD.real?"真實人數":CROWD.at&&CROWD.target!=null?`目標 ${CROWD.target}`:"自動"}</small></span><input id="crowdIn" type="text" inputmode="numeric" maxlength="3" placeholder="目標"><button class="chip" data-act="crowdSet">設定</button><button class="chip" data-act="crowdAuto">自動</button><button class="chip" data-act="crowdReal" aria-pressed="${!!CROWD.real}">真實人數</button></div>
     <p class="real-count" id="realCount">真實在線：讀取中…</p><p class="note">目標是全廟人數，會依序分到各殿（前一殿快滿才開下一殿）。約 1 分鐘慢慢變到目標，之後在上下 10 人內浮動。「自動」回到依時段變化（凌晨少、白天多）。「真實人數」不加假人，有多少玩家就顯示多少。</p></div>
   <div class="ct-group"><span class="group-label">主委自己</span><div class="ct-grid">${ctTile("chairHide",chairHidden?"👁":"🫥",chairHidden?"解除隱形":"隱形",chairHidden?"隱形中":"")}${ctTile("chairReset","🔄","重置今日","測試用")}</div></div>`);
@@ -2715,7 +2716,7 @@ HANDLERS.sendReply=async(v,b)=>{ const box=b.closest(".reply-box"); const text=(
   b.disabled=true; try{ const r=await fetch("/reply",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({at:+v,text})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
     if(j.ok){ toast("回信已寄出，對方下次上線會收到",3200); HANDLERS.readMsgs(); return; }
     toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":j.noid?"這則留言無法回覆":"密碼不對，回信沒有寄出",3200); }catch(e){ toast("回信沒有寄出，請稍後再試"); } b.disabled=false; };
-renderChairBtn(); setTimeout(()=>{ fetchBoard(); checkLetters(); opFetch(); crowdFetch(); mkFetch(); },1200); setInterval(()=>mkFetch(),90*1000); setInterval(crowdFetch,3*60*1000); setInterval(opFetch,90*1000); setInterval(fetchBoard,10*60*1000); setInterval(renderLetterBtn,10*60*1000);
+renderChairBtn(); setTimeout(()=>{ fetchBoard(); checkLetters(); opFetch(); ptFetch(); crowdFetch(); mkFetch(); },1200); setInterval(ptFetch,90*1000); setInterval(()=>mkFetch(),90*1000); setInterval(crowdFetch,3*60*1000); setInterval(opFetch,90*1000); setInterval(fetchBoard,10*60*1000); setInterval(renderLetterBtn,10*60*1000);
 { let x0=0,y0=0; const scroller=el=>{ for(let n=el;n&&n!==document.body;n=n.parentElement){ if(n.nodeType!==1) continue; const cs=getComputedStyle(n); if((cs.overflowY==="auto"||cs.overflowY==="scroll")&&n.scrollHeight>n.clientHeight+1) return n; } return null; };
   document.addEventListener("touchstart",e=>{ if(e.touches.length){ x0=e.touches[0].clientX; y0=e.touches[0].clientY; } },{passive:true});
   document.addEventListener("touchmove",e=>{ if(e.touches.length>1) return; const t=e.touches[0], dx=t.clientX-x0, dy=t.clientY-y0;
@@ -2820,7 +2821,7 @@ HANDLERS.toggleNpc=(v,b)=>{ showNpc=!showNpc; save("mz.npc",showNpc); b.setAttri
 HANDLERS.showPoem=v=>openPoem(+v,true);
 
 /* ---- stations ---- */
-function openStation(k){ if(k.startsWith("nm:")){ openStall(k.slice(3)); return; } if(k==="fortune"){ openFortune(); return; } if(k==="cats"){ openCats(); return; } if(k==="fountain"){ openFountain(); return; } if(k==="wish"){ openWish(); return; } if(CENSER_INFO[k]){ openCenser(k); return; } if(k==="jieqian"){ openJieqian(); return; } if(k==="shop") openShop(); if(k==="altar") openAltar(); if(k==="burn") openBurn(); if(k==="donate") openDonate(); if(k==="lot") openLot("ask"); if(k==="lamp"||k==="lampR") openLamp(); if(k==="bell"){ meAv.burnT=0; ringBell(); toast("咚——鐘聲迴盪（只有你聽得到）"); } if(k==="drum"){ meAv.burnT=0; hitDrum(); toast("咚！鼓聲響起（只有你聽得到）"); } }
+function openStation(k){ if(k.startsWith("nm:")){ openStall(k.slice(3)); return; } if(k==="puppet"){ ptOpen(); return; } if(k==="fortune"){ openFortune(); return; } if(k==="cats"){ openCats(); return; } if(k==="fountain"){ openFountain(); return; } if(k==="wish"){ openWish(); return; } if(CENSER_INFO[k]){ openCenser(k); return; } if(k==="jieqian"){ openJieqian(); return; } if(k==="shop") openShop(); if(k==="altar") openAltar(); if(k==="burn") openBurn(); if(k==="donate") openDonate(); if(k==="lot") openLot("ask"); if(k==="lamp"||k==="lampR") openLamp(); if(k==="bell"){ meAv.burnT=0; ringBell(); toast("咚——鐘聲迴盪（只有你聽得到）"); } if(k==="drum"){ meAv.burnT=0; hitDrum(); toast("咚！鼓聲響起（只有你聽得到）"); } }
 function openThanks(i){ const th=THANKS[i]; if(!th) return; sfx.coin(); openSheet("thanks","感謝贊助",`<img class="thanks-img" src="${th.img}" alt="感謝看板" width="1024" height="768"><p class="thanks-text">${esc(th.text)}</p>`); }
 function openShop(){ const html=`<p class="lead">拜拜順序：先到廟埕天公爐，再拜媽祖、龍邊財神爺、虎邊月老，最後是供桌下的虎爺。五爐都插好香，再到廟埕金爐燒金紙。</p>
   <div class="goods">${GOODS.map(g=>`<button class="good" data-act="buy" data-v="${g.k}" ${bag.coins<g.price?"disabled":""}><span class="name">${g.name}</span><span class="meta">${g.meta}</span><span class="price">${g.price} 平安幣</span><span class="own">持有 ${bag.items[g.k]||0}</span></button>`).join("")}</div>
@@ -4076,6 +4077,200 @@ function opTick(dt){ if(!OP.on||!OP.root){ opMusic(dt); if(OP.voiceGain) OP.voic
   if(OP.voiceGain&&ac) OP.voiceGain.gain.setTargetAtTime(OP.prox*sVol()*(soundOn?1:0),ac.currentTime,.12);
   opMusic(dt); }
 
+/* ================= 布袋戲台 (event) ================= */
+// The chair puts a 布袋戲 stage out in the front-left corner of the courtyard, facing the middle. Six little puppets take turns
+// in pairs, forever: a pair pops in through the stage window, talks, chases, fights, flies and whirls, one wins, both leave, and
+// the next pair comes on. The 歌仔戲 tracks play; clangs, gongs, whooshes and squeaky puppet voices are synthesized. The chair's
+// line of text hangs on a red cloth over the phoenix-and-lotus panel, and tapping the stage shows it.
+// Everything runs from the time the stage went up, so every player sees the same moment of the show.
+var PT={x:-15.35,z:41.3,k:4.6,on:false,at:0,text:"",built:false,root:null,actors:[],glowMats:[],spots:[],lasers:[],fog:[],sparks:[],flash:null,banner:null,hit:null,prox:0,aud:null,musicGain:null,voiceGain:null,track:-1,lastSync:0,cues:new Set()};
+const PT_PAIR=40, PT_FLOOR=.335, PT_DEPTH=.07, PT_HALF=.155; // model units: window floor height, depth of the puppets, half the window width
+const ptW=(lx,ly,lz)=>new T.Vector3(PT.x+lz*PT.k, ly*PT.k, PT.z-lx*PT.k); // stage-local (model units) → world; the stage faces +x
+function ptRect(){ return {x0:PT.x-.15*PT.k-.25, x1:PT.x+.15*PT.k+.25, z0:PT.z-.5*PT.k-.2, z1:PT.z+.5*PT.k+.2}; }
+function ptInside(x,z){ if(!PT||!PT.on) return false; const r=ptRect(); return x>r.x0&&x<r.x1&&z>r.z0&&z<r.z1; }
+
+/* ---- the six puppets: robes, painted faces, headdresses and a weapon each ---- */
+const PT_ROLES=[
+  {name:"白衣劍俠", face:"jun",  extra:"wensheng", robe:"#f4f1ea", trim:"#2f5fa8", pitch:300, weapon:"sword", look:[0,0,0,6,4,2,0,0,1,0,0,0,0]},
+  {name:"黑面魔頭", face:"jing", extra:"demon",    robe:"#2a1838", trim:"#9b3fd0", pitch:118, weapon:"claw",  look:[0,0,0,6,0,1,0,0,1,0,0,0,0], rough:1},
+  {name:"紅衣女俠", face:"dan",  extra:"lingzi",   robe:"#e8506e", trim:"#ffd36a", pitch:560, weapon:"sword", look:[0,11,0,7,7,0,0,0,1,0,0,0,0]},
+  {name:"金甲將軍", face:"jing", extra:"kao",      robe:"#c99a2e", trim:"#b5161c", pitch:140, weapon:"spear", look:[0,0,0,6,3,0,0,0,1,0,0,0,0], rough:1},
+  {name:"白髮道長", face:"mo",   extra:"taoist",   robe:"#7c8aa0", trim:"#f2e6c4", pitch:200, weapon:"whisk", look:[0,0,0,6,3,0,0,0,1,0,0,0,0]},
+  {name:"笑面和尚", face:"chou", extra:"monk",     robe:"#e3902c", trim:"#8b1d16", pitch:340, weapon:"fan",   look:[0,0,0,0,4,2,0,0,1,0,0,0,0], quick:1}];
+function ptRobeTex(base,trim){ return cvs(256,256,(x,w,h)=>{ x.fillStyle=base; x.fillRect(0,0,w,h);
+  x.strokeStyle=trim; x.globalAlpha=.55; x.lineWidth=5; for(let i=0;i<7;i++){ const cx=(i*61)%w, cy=40+(i*97)%200; x.beginPath(); x.arc(cx,cy,16,Math.PI*.2,Math.PI*1.7); x.arc(cx+20,cy-6,10,Math.PI,Math.PI*2.2); x.stroke(); } // embroidered clouds
+  x.globalAlpha=1; x.fillStyle="#e6b84a"; x.fillRect(0,h-26,w,14); x.fillStyle=trim; x.fillRect(0,h-12,w,12); x.fillRect(0,0,w,10); }); }
+function ptDress(av,r){ const H=av.head, gold=mat("#e2b04a",{metalness:.7,roughness:.3});
+  opDress(av,{face:r.face,extra:r.extra==="demon"||r.extra==="taoist"||r.extra==="monk"?"":r.extra,sleeves:0});
+  const robe=new T.MeshStandardMaterial({map:ptRobeTex(r.robe,r.trim),roughness:.7}), skin=av.arms[0].children[0].material;
+  const skip=new Set(); H.traverse(o=>skip.add(o)); av.hands.forEach(h=>h.traverse(o=>skip.add(o)));
+  av.torso.traverse(o=>{ if(o.isMesh&&!skip.has(o)&&o.material!==skin&&o.material!==gold&&!o.userData.keep) o.material=robe; });
+  av.legs.forEach(l=>l.visible=false); av.root.children[0].visible=false; // no legs and no floor shadow: a glove puppet
+  const skirt=new T.Mesh(new T.CylinderGeometry(.17,.31,.34,20,1,true),new T.MeshStandardMaterial({map:robe.map,roughness:.7,side:T.DoubleSide})); skirt.position.y=-.14; av.hips.add(skirt);
+  mk(av.torso,new T.TorusGeometry(.2,.03,8,24),gold,0,.02,0,Math.PI/2);                     // gold belt
+  mk(av.torso,new T.CircleGeometry(.09,24),gold,0,.3,.215); mk(av.torso,new T.CircleGeometry(.055,20),mat(r.trim),0,.3,.218); // chest badge
+  for(const s of [-1,1]) mk(av.torso,new T.SphereGeometry(.1,14,10,0,Math.PI*2,0,Math.PI/2),mat(r.trim,{roughness:.5}),s*.2,.46,0,0,0,s*-.5); // shoulder pieces
+  if(r.extra==="demon"){ const black=mat("#120c14",{roughness:.4,metalness:.3});
+    mk(H,new T.SphereGeometry(.29,20,12,0,Math.PI*2,0,Math.PI*.45),black,0,.05,0); mk(H,new T.TorusGeometry(.27,.025,6,28),mat("#9b3fd0",{emissive:"#5a1890",emissiveIntensity:.8}),0,.12,0,Math.PI/2);
+    for(const s of [-1,1]) mk(H,new T.ConeGeometry(.05,.34,10),mat("#d8d0c0",{roughness:.4}),s*.2,.38,-.02,0,0,-s*.55);  // horns
+    for(let i=0;i<9;i++) mk(H,new T.BoxGeometry(.05,.6,.02),mat("#e8e6ee",{roughness:.9}),(i-4)*.06,-.22,-.24,.15,0,(i-4)*.04); } // long white hair
+  if(r.extra==="taoist"){ mk(H,new T.CylinderGeometry(.09,.13,.16,12),gold,0,.32,0); mk(H,new T.SphereGeometry(.05,10,8),mat("#e0202a"),0,.42,0); mk(H,new T.BoxGeometry(.34,.04,.04),gold,0,.32,0); // crown and hairpin
+    for(const [xo,len] of [[0,.5],[-.08,.4],[.08,.4]]) mk(H,new T.BoxGeometry(.07,len,.015),mat("#f4f2ec",{roughness:.9,side:T.DoubleSide}),xo,-.1-len/2,.24,-.12); // white beard
+    for(const s of [-1,1]) mk(H,new T.BoxGeometry(.1,.025,.02),mat("#f4f2ec"),s*.1,.12,.25,0,0,s*.3); }
+  if(r.extra==="monk"){ mk(H,new T.SphereGeometry(.282,20,12,0,Math.PI*2,0,Math.PI*.5),mat("#f0c9a0",{roughness:.5}),0,.0,0); // shaven head
+    for(let i=0;i<12;i++){ const a=i/12*Math.PI*2; mk(av.torso,new T.SphereGeometry(.035,8,6),mat("#7a3a1a",{roughness:.4}),Math.sin(a)*.17,.5+Math.cos(a)*.02,Math.cos(a)*.16); } } // prayer beads
+  const hand=av.hands[1], wg=new T.Group(); hand.add(wg); wg.rotation.x=-Math.PI/2; av.weapon=wg;
+  if(r.weapon==="sword"){ mk(wg,new T.BoxGeometry(.03,.5,.008),mat("#e8eef6",{metalness:.9,roughness:.15,emissive:"#9fc4ff",emissiveIntensity:.25}),0,.3,0); mk(wg,new T.BoxGeometry(.12,.025,.03),gold,0,.05,0); }
+  if(r.weapon==="spear"){ mk(wg,new T.CylinderGeometry(.012,.012,.9,6),mat("#6b3a1c"),0,.2,0); mk(wg,new T.ConeGeometry(.03,.14,8),mat("#e8eef6",{metalness:.9,roughness:.2}),0,.72,0); mk(wg,new T.SphereGeometry(.04,8,6),mat("#e0202a"),0,.62,0); }
+  if(r.weapon==="claw") for(let i=0;i<3;i++) mk(wg,new T.ConeGeometry(.012,.16,6),mat("#d8d0c0"),(i-1)*.03,.1,0);
+  if(r.weapon==="whisk"){ mk(wg,new T.CylinderGeometry(.01,.01,.22,6),mat("#6b3a1c"),0,.1,0); for(let i=0;i<9;i++) mk(wg,new T.BoxGeometry(.006,.26,.006),mat("#fbfbf6"),Math.sin(i)*.02,.33,Math.cos(i)*.02,0,0,(i-4)*.03); }
+  if(r.weapon==="fan"){ const g=new T.CircleGeometry(.2,16,0,Math.PI*.9); mk(wg,g,mat("#f6e7b8",{side:T.DoubleSide}),0,.05,0,Math.PI/2,0,Math.PI*.05); }
+  av.root.scale.setScalar(.4); av.root.visible=false; }
+
+/* ---- the stage: model, banner, spotlights, lasers, dry-ice fog and spark pool ---- */
+function ptBannerTex(text){ return cvs(1024,220,(x,w,h)=>{ const g=x.createLinearGradient(0,0,0,h); g.addColorStop(0,"#b3121a"); g.addColorStop(.5,"#d42027"); g.addColorStop(1,"#9a0e15"); x.fillStyle=g; x.fillRect(0,0,w,h);
+  x.strokeStyle="#f5c84a"; x.lineWidth=8; x.strokeRect(12,12,w-24,h-24); x.lineWidth=2; x.strokeRect(24,24,w-48,h-48);
+  for(let i=0;i<w;i+=34){ x.fillStyle="rgba(0,0,0,.08)"; x.fillRect(i,0,12,h); } // cloth folds
+  const t=(text||"").trim(); if(!t) return; let fs=150; x.font=`900 ${fs}px "Noto Serif TC","Songti TC","PMingLiU",${UI_FONT}`; while(x.measureText(t).width>w-110&&fs>40){ fs-=6; x.font=`900 ${fs}px "Noto Serif TC","Songti TC","PMingLiU",${UI_FONT}`; }
+  x.textAlign="center"; x.textBaseline="middle"; x.lineJoin="round"; x.lineWidth=fs*.12; x.strokeStyle="#5a0608"; x.strokeText(t,w/2,h/2+4); const gg=x.createLinearGradient(0,h/2-fs/2,0,h/2+fs/2); gg.addColorStop(0,"#fff3b0"); gg.addColorStop(.5,"#ffd34a"); gg.addColorStop(1,"#e09a1c"); x.fillStyle=gg; x.fillText(t,w/2,h/2+4); }); }
+function ptSetBanner(){ if(!PT.banner) return; const m=PT.banner.material; if(m.map) m.map.dispose(); m.map=ptBannerTex(PT.text); m.emissiveMap=m.map; m.emissive.set("#ffffff"); m.emissiveIntensity=.35; m.color.set("#d8d8d8"); m.needsUpdate=true; PT.banner.visible=!!(PT.text||"").trim(); }
+function ptBuild(){ if(PT.built) return; PT.built=true; const k=PT.k;
+  const root=new T.Group(); root.userData.noMerge=1; root.position.set(PT.x,0,PT.z); root.rotation.y=Math.PI/2; root.visible=false; scene.add(root); PT.root=root;
+  loadModel("bdx",m=>{ m.scale.setScalar(k); m.traverse(o=>{ if(o.isMesh&&o.material&&o.material.map){ const mt=o.material; mt.emissiveMap=mt.map; mt.emissive=new T.Color("#ffffff"); mt.emissiveIntensity=.3; PT.glowMats.push(mt); } }); root.add(m); });
+  // the chair's red cloth over the phoenix-and-lotus panel, sagging a little in the middle
+  const bg=new T.PlaneGeometry(.6*k,.125*k,24,4); const pa=bg.attributes.position; for(let i=0;i<pa.count;i++){ const u=pa.getX(i)/(.3*k); pa.setY(i,pa.getY(i)-(1-u*u)*.04*k*(.5-pa.getY(i)/(.125*k))); pa.setZ(i,Math.sin(u*9)*.006*k); } bg.computeVertexNormals();
+  PT.banner=new T.Mesh(bg,new T.MeshStandardMaterial({roughness:.8,side:T.DoubleSide,emissive:new T.Color("#ffffff"),emissiveIntensity:.18})); PT.banner.position.set(0,.245*k,.108*k); root.add(PT.banner);
+  ptSetBanner();
+  for(const s of [-1,1]){ mk(root,new T.CylinderGeometry(.012*k,.012*k,.02*k,8),mat("#e2b04a",{metalness:.7,roughness:.3}),s*.3*k,.305*k,.11*k); // brass rings it hangs from
+    const tas=new T.Group(); tas.position.set(s*.3*k,.3*k,.112*k); root.add(tas); for(let j=0;j<5;j++) mk(tas,new T.BoxGeometry(.006*k,.05*k,.003*k),mat("#f5c84a"),(j-2)*.006*k,-.03*k,0); }
+  // spotlights from above the roof onto the window, each with a soft visible beam
+  const beamGeo=new T.CylinderGeometry(.08,1.1,1,18,1,true); beamGeo.translate(0,-.5,0);
+  for(let i=0;i<2;i++){ const from=new T.Vector3((i?1:-1)*.35*k,.95*k,.55*k), sl=Q.low?null:new T.SpotLight(0xffffff,0,14,.4,.6,1.2), tgt=new T.Object3D(); root.add(tgt); if(sl){ sl.position.copy(from); sl.target=tgt; root.add(sl); }
+    const bm=new T.MeshBasicMaterial({color:new T.Color(),transparent:true,opacity:.12,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide,toneMapped:false}); const beam=new T.Mesh(beamGeo,bm); beam.position.copy(from); root.add(beam); PT.spots.push({sl,tgt,beam,bm,from,i}); }
+  // lasers: thin coloured beams fanning out from the roof ridge over the crowd, sweeping
+  const lg=new T.CylinderGeometry(.012,.012,1,5,1,true); lg.translate(0,.5,0); const nL=Q.lite?4:8;
+  for(let i=0;i<nL;i++){ const m=new T.MeshBasicMaterial({color:new T.Color(),transparent:true,opacity:.8,blending:T.AdditiveBlending,depthWrite:false,toneMapped:false}); const b=new T.Mesh(lg,m); b.position.set((i/(nL-1)-.5)*.6*k,.72*k,.05*k); b.scale.set(1,16,1); root.add(b);
+    const dot=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color(),transparent:true,blending:T.AdditiveBlending,depthWrite:false})); dot.scale.set(.5,.5,1); dot.position.copy(b.position); root.add(dot); PT.lasers.push({b,m,dot,i,n:nL}); }
+  // dry ice: soft white clouds rolling out of the window floor and along the ground in front
+  const fm=()=>new T.SpriteMaterial({map:softTex,color:new T.Color("#dfe9ff"),transparent:true,opacity:0,depthWrite:false});
+  for(let i=0;i<(Q.lite?10:22);i++){ const sp=new T.Sprite(fm()); root.add(sp); PT.fog.push({sp,ph:Math.random(),win:i%3===0,x:Math.random()*2-1}); }
+  // sparks for every clash, and one big flash
+  for(let i=0;i<60;i++){ const sp=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color(),transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false})); sp.visible=false; sp.userData.noMerge=1; scene.add(sp); PT.sparks.push({sp,life:9,v:new T.Vector3()}); }
+  PT.flash=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#fff3c4"),transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false})); PT.flash.userData.noMerge=1; PT.flash.visible=false; scene.add(PT.flash); PT.flashT=9;
+  PT_ROLES.forEach((r,i)=>{ const p=ptW(0,PT_FLOOR,PT_DEPTH); const av=new Avatar(r.look,{npc:true,x:p.x,z:p.z}); av.moveSpeed=0; av.sjBusy=1; ptDress(av,r); PT.actors.push({av,role:r,i,cur:null}); });
+  station("puppet",[PT.x+.15*k+1.6,PT.z],-Math.PI/2); STATION_LABEL.puppet="布袋戲台"; STATION_HINT.puppet="走向布袋戲台"; }
+function ptSet(s){ const was=PT.on; PT.on=!!s.on; PT.at=+s.at||Date.now(); PT.text=String(s.text||"").slice(0,24);
+  if(PT.on) ptBuild(); if(PT.root){ PT.root.visible=PT.on; ptSetBanner(); }
+  if(PT.on&&!PT.hit){ PT.hit=new T.Mesh(new T.BoxGeometry(.3*PT.k,.75*PT.k,1.02*PT.k),new T.MeshBasicMaterial()); PT.hit.visible=false; PT.hit.position.set(PT.x,.375*PT.k,PT.z); PT.hit.userData.act="puppet"; PT.hit.userData.noMerge=1; scene.add(PT.hit); pickables.push(PT.hit); }
+  if(!PT.on&&PT.hit){ scene.remove(PT.hit); const i=pickables.indexOf(PT.hit); if(i>=0) pickables.splice(i,1); PT.hit=null; }
+  if(!PT.on){ PT.actors.forEach(a=>a.av.root.visible=false); PT.sparks.forEach(o=>o.sp.visible=false); if(PT.flash) PT.flash.visible=false; if(PT.aud) PT.aud.pause(); delete stations.puppet; } else if(PT.built&&!stations.puppet) station("puppet",[PT.x+.15*PT.k+1.6,PT.z],-Math.PI/2);
+  if(PT.on&&!was&&Date.now()-PT.at<60000) toast("🎎 主委擺出布袋戲台了！在廟埕左前方",4200); if(sheetKind==="chair"&&me.sp) openChair(); if(sheetKind==="puppetChair") HANDLERS.puppetChair(); }
+async function ptFetch(){ try{ const r=await fetch("/puppet",{cache:"no-store"}); if(!r.ok) return; const j=await r.json(); if(j&&(!!j.on!==PT.on||(j.on&&(j.at!==PT.at||(j.text||"")!==PT.text)))) ptSet(j); }catch(e){} }
+function ptOpen(){ const t=(PT.text||"").trim(); openSheet("puppet","雲端布袋戲",`${t?`<p class="pt-banner">${esc(t)}</p>`:""}<p class="lead">六尊布袋戲偶兩兩上台，鬥法、飛天、旋轉開打，打完換下一組，一直演下去。走近一點聽鑼鼓和口白。</p>`); }
+// chair: type the line for the red cloth, then put the stage out (or change the line / pack it away)
+HANDLERS.puppetChair=()=>{ if(!me.sp) return; openSheet("puppetChair","布袋戲台",`${backBtn}<p class="lead">${PT.on?"布袋戲台演出中。可以改紅布條上的字，或收回戲台。":"擺出前先寫好紅布條上的字（掛在戲台下方鳳凰蓮花的位置，玩家點戲台也看得到）。"}</p>
+  <div class="field"><label class="group-label" for="ptText">紅布條文字（24 字內，可留空）</label><input id="ptText" maxlength="24" placeholder="例如：恭祝天上聖母聖誕千秋" value="${esc(PT.text||"")}"></div>
+  <div class="row"><button class="good wide" data-act="puppetSend" data-v="1"><span class="name">${PT.on?"更新紅布條":"🎎 擺出布袋戲台"}</span></button>${PT.on?`<button class="secondary" data-act="puppetSend" data-v="0">收回戲台</button>`:""}</div>`); };
+HANDLERS.puppetSend=async(v,b)=>{ if(!me.sp) return; const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return; } const on=v==="1", text=(($("#ptText")||{}).value||"").trim().slice(0,24);
+  if(text&&chatCheck(text)){ toast("紅布條文字有不適合的內容"); return; }
+  if(b) b.disabled=true; try{ const r=await fetch("/puppet",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({on,text})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
+    if(j.ok){ save("mz.rk",key); ptSet(j); toast(j.on?(on&&PT.on?"布袋戲台演出中":"布袋戲台已擺出"):"布袋戲台已收回",2600); HANDLERS.puppetChair(); }
+    else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":j.unset?"伺服器讀不到密碼設定（不是你打錯）":"密碼不對，沒有變更",3200); }catch(e){ toast("沒有變更，請稍後再試"); } if(b) b.disabled=false; };
+
+/* ---- sound: the 歌仔戲 tracks, synthesized gongs, clangs, whooshes and squeaky 布袋戲 voices, fading with distance ---- */
+function ptAudio(){ const a=ac; if(!a) return false; if(!PT.voiceGain){ PT.voiceGain=a.createGain(); PT.voiceGain.gain.value=0; PT.voiceGain.connect(sfxBus(a)); }
+  if(!PT.aud){ PT.aud=new Audio(); PT.aud.preload="none"; try{ const src=a.createMediaElementSource(PT.aud); PT.musicGain=a.createGain(); PT.musicGain.gain.value=0; src.connect(PT.musicGain).connect(a.destination); }catch(e){ PT.musicGain=null; } } return true; }
+function ptMusic(){ const want=PT.on&&soundOn&&audioUnlocked&&PT.prox>.01; if(!want){ if(PT.aud&&!PT.aud.paused) PT.aud.pause(); return; } if(!ptAudio()) return;
+  let t=((Date.now()-PT.at)/1000)%OP_TOTAL, ti=0; for(;ti<OP_TRACKS.length;ti++){ if(t<OP_TRACKS[ti][1]) break; t-=OP_TRACKS[ti][1]; } ti%=OP_TRACKS.length; const now=performance.now();
+  if(PT.track!==ti||PT.aud.paused||(now-PT.lastSync>4000&&Math.abs(PT.aud.currentTime-t)>2.5)){ PT.lastSync=now; if(PT.track!==ti){ PT.track=ti; PT.aud.src=OP_TRACKS[ti][0]; } try{ PT.aud.currentTime=t; }catch(e){} const p=PT.aud.play(); if(p&&p.catch) p.catch(()=>{}); }
+  const v=PT.prox*mVol()*.32*(OP.on&&OP.prox>PT.prox?.4:1); if(PT.musicGain) PT.musicGain.gain.setTargetAtTime(v,ac.currentTime,.12); else PT.aud.volume=Math.min(1,v); }
+function ptNoise(a,dur){ const n=Math.floor(a.sampleRate*dur), b=a.createBuffer(1,n,a.sampleRate), d=b.getChannelData(0); for(let i=0;i<n;i++) d[i]=Math.random()*2-1; const s=a.createBufferSource(); s.buffer=b; return s; }
+const PT_SFX={
+  clang(big){ const a=ac, at=a.currentTime+.01, g=a.createGain(); g.gain.setValueAtTime(big?.5:.32,at); g.gain.exponentialRampToValueAtTime(.001,at+(big?1.1:.45)); g.connect(PT.voiceGain); // metal on metal
+    for(const f of [1180,1730,2610,3420]){ const o=a.createOscillator(); o.type="triangle"; o.frequency.value=f*(.96+Math.random()*.08); const og=a.createGain(); og.gain.value=.25; o.connect(og).connect(g); o.start(at); o.stop(at+1.2); }
+    const n=ptNoise(a,.08), hp=a.createBiquadFilter(); hp.type="highpass"; hp.frequency.value=2500; const ng=a.createGain(); ng.gain.setValueAtTime(.6,at); ng.gain.exponentialRampToValueAtTime(.001,at+.08); n.connect(hp).connect(ng).connect(g); n.start(at); },
+  gong(){ const a=ac, at=a.currentTime+.01, g=a.createGain(); g.gain.setValueAtTime(.55,at); g.gain.exponentialRampToValueAtTime(.001,at+2.2); g.connect(PT.voiceGain); // 鑼: a falling shimmer
+    for(const [f,amp] of [[220,1],[331,.6],[467,.45],[612,.3]]){ const o=a.createOscillator(); o.type="sine"; o.frequency.setValueAtTime(f*1.06,at); o.frequency.exponentialRampToValueAtTime(f*.94,at+1.8); const og=a.createGain(); og.gain.value=amp*.4; o.connect(og).connect(g); o.start(at); o.stop(at+2.3); } },
+  cymbal(){ const a=ac, at=a.currentTime+.01, n=ptNoise(a,.7), bp=a.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=6500; bp.Q.value=.7; const g=a.createGain(); g.gain.setValueAtTime(.35,at); g.gain.exponentialRampToValueAtTime(.001,at+.65); n.connect(bp).connect(g).connect(PT.voiceGain); n.start(at); }, // 鈸
+  drum(){ const a=ac, at=a.currentTime+.01, o=a.createOscillator(); o.type="sine"; o.frequency.setValueAtTime(160,at); o.frequency.exponentialRampToValueAtTime(60,at+.18); const g=a.createGain(); g.gain.setValueAtTime(.7,at); g.gain.exponentialRampToValueAtTime(.001,at+.25); o.connect(g).connect(PT.voiceGain); o.start(at); o.stop(at+.3); },
+  whoosh(){ const a=ac, at=a.currentTime+.01, n=ptNoise(a,.6), bp=a.createBiquadFilter(); bp.type="bandpass"; bp.Q.value=2; bp.frequency.setValueAtTime(400,at); bp.frequency.exponentialRampToValueAtTime(2600,at+.25); bp.frequency.exponentialRampToValueAtTime(500,at+.55); const g=a.createGain(); g.gain.setValueAtTime(0,at); g.gain.linearRampToValueAtTime(.35,at+.2); g.gain.linearRampToValueAtTime(0,at+.58); n.connect(bp).connect(g).connect(PT.voiceGain); n.start(at); },
+  boom(){ const a=ac, at=a.currentTime+.01, n=ptNoise(a,1.2), lp=a.createBiquadFilter(); lp.type="lowpass"; lp.frequency.setValueAtTime(900,at); lp.frequency.exponentialRampToValueAtTime(80,at+1); const g=a.createGain(); g.gain.setValueAtTime(.8,at); g.gain.exponentialRampToValueAtTime(.001,at+1.1); n.connect(lp).connect(g).connect(PT.voiceGain); n.start(at); PT_SFX.gong(); } };
+// 布袋戲 口白: one 口白師 voices everyone — quick, sing-song, big swoops up and down; the villain growls, the lady squeaks
+const PT_VOW=[[800,1200],[400,2200],[300,2700],[500,900],[350,800],[600,1700]];
+function ptSyl(r,at,dur,f0,f1,v,vow){ const a=ac, o=a.createOscillator(); o.type=r.rough?"square":"sawtooth"; o.frequency.setValueAtTime(f0,at); o.frequency.linearRampToValueAtTime(f1,at+dur);
+  const out=a.createGain(), pk=(r.rough?.11:.17)*v; out.gain.setValueAtTime(0,at); out.gain.linearRampToValueAtTime(pk,at+.015); out.gain.linearRampToValueAtTime(0,at+dur); out.connect(PT.voiceGain);
+  for(const fr of vow||PT_VOW[(Math.random()*PT_VOW.length)|0]){ const bp=a.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=fr*(r.pitch>400?1.3:1.1); bp.Q.value=r.quick?8:6; o.connect(bp).connect(out); } o.start(at); o.stop(at+dur+.05); }
+function ptTalk(r,len){ const a=ac; if(!a||!PT.voiceGain) return; let t=a.currentTime+.04; const end=t+len;
+  while(t<end-.1){ const burst=2+((Math.random()*5)|0); for(let i=0;i<burst&&t<end;i++){ const d=(.07+Math.random()*.1)/(r.quick?1.4:1), f=r.pitch*(.85+Math.random()*.35), sw=Math.random(); ptSyl(r,t,d,f,f*(sw<.3?1.45:sw<.6?.72:1.05),1); t+=d+.012; }
+    if(Math.random()<.35){ const d=.35+Math.random()*.3, f=r.pitch*1.1; ptSyl(r,t,d,f,f*(Math.random()<.5?1.6:.6),1.1,PT_VOW[0]); t+=d; } t+=.08+Math.random()*.18; } } // a long swooping vowel now and then
+function ptLaugh(r){ const a=ac; if(!a||!PT.voiceGain) return; let t=a.currentTime+.04; for(let i=0;i<7;i++){ const f=r.pitch*(1.5-i*.07); ptSyl(r,t,.13,f,f*.9,1.1,[800,1200]); t+=.17; } }
+function ptCry(r){ const a=ac; if(!a||!PT.voiceGain) return; const t=a.currentTime+.04, f=r.pitch*1.6; ptSyl(r,t,.55,f,f*.45,1.2,[400,2200]); }
+
+/* ---- every frame ---- */
+function ptSpark(p,big){ const n=big?40:12; let c=0; for(const o of PT.sparks){ if(o.life<.5) continue; o.life=0; o.max=big?.9:.45; o.sp.position.copy(p); o.v.set(Math.random()*2-1,Math.random()*1.6-.3,Math.random()*2-1).normalize().multiplyScalar((big?3.2:1.6)*(.5+Math.random()*.7));
+    o.sp.material.color.setHSL(big?Math.random():.1+Math.random()*.08,1,.65); o.sp.visible=true; if(++c>=n) break; }
+  PT.flash.position.copy(p); PT.flashT=0; PT.flashBig=big; PT.flash.visible=true; }
+function ptPose(A,gi,gt){ // where one puppet is: lx (across the window), h (height above the window floor), lz, facing, spin, flip, lean, arms
+  const s=A.i%2?1:-1, other=s>0?0:1, winner=(gi%2)===0?0:1, iWin=(A.i%2)===winner; let lx=s*.09, h=0, lz=PT_DEPTH, face=0, spin=0, flip=0, lean=0, arms="rest", phase="";
+  const sm=opSmooth;
+  if(gt<3){ const u=sm(gt/2.6); lx=s*(.25-.16*u); spin=(1-u)*Math.PI*4; h=Math.abs(Math.sin(u*Math.PI*2))*.035; arms="up"; phase="enter"; }
+  else if(gt<9){ const seg=Math.floor((gt-3)/1.5), speaking=(seg%2)===(A.i%2); arms=speaking?"talk":"rest"; h=speaking?Math.abs(Math.sin(gt*9))*.008:0; face=speaking?.6:-.2; phase="talk"; }
+  else if(gt<17){ const tt=gt-9; lx=s*.1*Math.cos(tt*Math.PI/2)+.03*Math.sin(tt*Math.PI)*(A.i%2?1:-1); lz=PT_DEPTH+s*.012; h=Math.abs(Math.sin(tt*11))*.016; arms="run"; phase="run"; }
+  else if(gt<25){ const tt=gt-17, base=s*(.1-.06*sm(tt)), p=(tt%.55)/.55, att=Math.floor(tt/.55)%2===(A.i%2); lx=base+(att?-s*.028*Math.sin(p*Math.PI):s*.02*Math.max(0,Math.sin((p-.35)*Math.PI*1.5))); lean=att?-.35*Math.sin(p*Math.PI):.25*Math.max(0,Math.sin((p-.35)*Math.PI)); arms=att?"strike":"guard"; A.strikeP=p; phase="fight"; }
+  else if(gt<31){ const tt=gt-25; lx=s*.12*Math.cos(Math.PI*tt/3); h=.2*Math.abs(Math.sin(Math.PI*tt/3)); lz=PT_DEPTH+s*.02; flip=(tt/3)*Math.PI*2*(s>0?1:-1); arms="up"; phase="fly"; }
+  else if(gt<36){ const tt=gt-31; lx=s*(.06-.02*Math.min(1,tt))+.012*Math.sin(tt*7); spin=tt*14*(s>0?1:-1); h=.02*Math.abs(Math.sin(tt*10))+(tt>4.4?.0:0); arms="strike"; phase="spin"; }
+  else if(gt<38.5){ const tt=gt-36; if(iWin){ lx=s*.05; arms="up"; h=Math.abs(Math.sin(tt*6))*.01; face=.3; } else { lx=s*(.05+.09*sm(tt/.6)); h=Math.max(0,.1*Math.sin(Math.min(1,tt/.6)*Math.PI)); lean=Math.min(1.35,tt*3)*-s; arms="rest"; } phase="end"; }
+  else { const u=sm((gt-38.5)/1.3); lx=(iWin?s*.05:s*.14)+(s*.26-(iWin?s*.05:s*.14))*u; arms="run"; h=Math.abs(Math.sin(gt*11))*.014; phase="exit"; }
+  if(h>.04) lz+=.08*Math.min(1,(h-.04)/.06); // high in the air: out in front of the frame so the stage doesn't hide them
+  return {lx,h,lz,face,spin,flip,lean,arms,phase,s,other}; }
+function ptTick(dt){ if(!PT.on||!PT.root||!PT.root.visible){ ptMusic(); if(PT.voiceGain) PT.voiceGain.gain.value=0; return; }
+  const d=Math.hypot(meAv.pos.x-(PT.x+.15*PT.k),meAv.pos.y-PT.z); const want=d<4?1:d>15?0:1-(d-4)/11; PT.prox+=(want-PT.prox)*Math.min(1,dt*1.2);
+  const el=(Date.now()-PT.at)/1000, gi=Math.floor(el/PT_PAIR)%3, gt=el%PT_PAIR, k=PT.k, hear=PT.prox>.03&&soundOn&&ac&&PT.voiceGain&&!document.hidden;
+  const cue=(name,fn)=>{ const key=Math.floor(el/PT_PAIR)+":"+name; if(PT.cues.has(key)) return; PT.cues.add(key); if(PT.cues.size>200) PT.cues=new Set([key]); if(hear) try{ fn(); }catch(e){} };
+  const poses={}; PT.actors.forEach(A=>{ if(Math.floor(A.i/2)!==gi){ A.av.root.visible=false; A.cur=null; return; } poses[A.i]=ptPose(A,gi,gt); });
+  PT.actors.forEach(A=>{ const P=poses[A.i]; if(!P) return; const av=A.av;
+    const goal=new T.Vector3(P.lx,P.h,P.lz); if(!A.cur) A.cur=goal.clone(); else A.cur.lerp(goal,Math.min(1,dt*(P.phase==="fly"?18:12)));
+    const vis=Math.abs(A.cur.x)<.235; av.root.visible=vis; if(!vis) return;
+    const w=ptW(A.cur.x,PT_FLOOR+A.cur.y+.004,A.cur.z); av.root.position.copy(w);
+    const Q2=poses[A.i%2?A.i-1:A.i+1], toward=Q2&&Q2.lx>A.cur.x?1:-1; // which way the partner is along the window
+    const base=Math.PI/2+(toward>0?Math.PI/2:-Math.PI/2)*.72; let ry=base+P.face*(toward>0?-1:1);
+    av.root.rotation.set(0,ry+P.spin,0); // somersaults and lean turn the body about its middle, not its feet
+    { const e=new T.Euler(P.flip,0,P.lean*.6), c=new T.Vector3(0,.6,0); av.parts.rotation.copy(e); av.parts.position.copy(c).sub(c.clone().applyEuler(e)); }
+    const t=el, a0=av.arms[0], a1=av.arms[1];
+    if(P.arms==="up"){ a0.rotation.set(-.3,0,-2.5); a1.rotation.set(-.3,0,2.5); }
+    else if(P.arms==="talk"){ a1.rotation.set(-1.1+Math.sin(t*7)*.4,0,.5+Math.sin(t*5)*.3); a0.rotation.set(-.4,0,-.5); av.head.rotation.z=Math.sin(t*9)*.12; }
+    else if(P.arms==="run"){ const sw=Math.sin(t*14); a0.rotation.set(-.6+sw*.5,0,-.6); a1.rotation.set(-.6-sw*.5,0,.6); }
+    else if(P.arms==="strike"){ const p=P.phase==="spin"?(t*3)%1:(A.strikeP||0); a1.rotation.set(-2.6+p*2.4,0,.3); a0.rotation.set(-.7,0,-.9); }
+    else if(P.arms==="guard"){ a1.rotation.set(-1.6,0,.9); a0.rotation.set(-1.3,0,-.9); }
+    else { a0.rotation.set(-.25,0,-.35); a1.rotation.set(-.25,0,.35); }
+    av.torso.rotation.y=P.phase==="talk"?Math.sin(t*2)*.15:0; });
+  // events: sounds and sparks at fixed moments of the pair's turn
+  const pair=PT.actors.filter(A=>Math.floor(A.i/2)===gi), L=pair[0], R=pair[1];
+  const mid=()=>{ const a=L.av.root.position, b=R.av.root.position; return a.clone().add(b).multiplyScalar(.5).add(new T.Vector3(0,.32,0)); };
+  if(gt<.3) cue("gong0",()=>{ PT_SFX.gong(); setTimeout(()=>PT_SFX.cymbal(),300); });
+  if(gt>3&&gt<9){ const seg=Math.floor((gt-3)/1.5); cue("talk"+seg,()=>ptTalk((seg%2?R:L).role,1.35)); }
+  if(gt>9&&gt<17){ const n=Math.floor((gt-9)/1); cue("run"+n,()=>PT_SFX.drum()); }
+  if(gt>17&&gt<25){ const n=Math.floor((gt-17)/.55), p=((gt-17)%.55)/.55; if(p>.42) cue("hit"+n,()=>{ PT_SFX.clang(false); if(n%3===0) PT_SFX.cymbal(); }); if(p>.42&&!PT.cues.has("sp"+Math.floor(el/PT_PAIR)+":"+n)){ PT.cues.add("sp"+Math.floor(el/PT_PAIR)+":"+n); if(L.av.root.visible&&R.av.root.visible) ptSpark(mid(),false); } }
+  if(gt>25&&gt<31){ const tt=gt-25, n=Math.floor(tt/3); cue("fly"+n,()=>PT_SFX.whoosh()); if((tt%3)>1.5&&!PT.cues.has("fc"+Math.floor(el/PT_PAIR)+":"+n)){ PT.cues.add("fc"+Math.floor(el/PT_PAIR)+":"+n); if(L.av.root.visible&&R.av.root.visible) ptSpark(mid(),true); if(hear) PT_SFX.clang(true); } }
+  if(gt>31&&gt<36){ const tt=gt-31, n=Math.floor(tt/.45); if(n===0) cue("spinw",()=>PT_SFX.whoosh()); if(tt<4.4&&!PT.cues.has("ss"+Math.floor(el/PT_PAIR)+":"+n)){ PT.cues.add("ss"+Math.floor(el/PT_PAIR)+":"+n); ptSpark(mid(),false); if(hear) PT_SFX.clang(false); }
+    if(tt>4.4&&!PT.cues.has("big"+Math.floor(el/PT_PAIR))){ PT.cues.add("big"+Math.floor(el/PT_PAIR)); ptSpark(mid(),true); if(hear){ PT_SFX.boom(); } } }
+  if(gt>36.1){ const win=(gi%2)===0?L:R, lose=win===L?R:L; cue("laugh",()=>{ ptLaugh(win.role); ptCry(lose.role); }); }
+  if(gt>38.5) cue("gong1",()=>PT_SFX.cymbal());
+  // sparks and flash
+  for(const o of PT.sparks){ if(!o.sp.visible) continue; o.life+=dt; if(o.life>o.max){ o.sp.visible=false; o.life=9; continue; } o.v.y-=dt*3.5; o.sp.position.addScaledVector(o.v,dt); const f=1-o.life/o.max; o.sp.material.opacity=f; o.sp.scale.setScalar(.06+.14*f); }
+  if(PT.flash.visible){ PT.flashT+=dt; const f=Math.max(0,1-PT.flashT/(PT.flashBig?.5:.18)); PT.flash.material.opacity=f*(PT.flashBig?1:.7); PT.flash.scale.setScalar((PT.flashBig?3.2:.9)*(1+PT.flashT*2)); if(f<=0) PT.flash.visible=false; }
+  // lights, lasers, fog
+  const nt=_dn.night||0; PT.glowMats.forEach(m=>m.emissiveIntensity=.25+.4*nt);
+  PT.spots.forEach(sp=>{ const h=(el*.07+sp.i*.5)%1, aim=new T.Vector3(Math.sin(el*.9+sp.i*2)*.12*k,.4*k,.07*k); sp.tgt.position.copy(aim); if(sp.sl){ sp.sl.color.setHSL(h,1,.6); sp.sl.intensity=1.4+1.6*nt; }
+    const dir=aim.clone().sub(sp.from), Lr=dir.length(); sp.beam.scale.set(1,Lr,1); sp.beam.quaternion.setFromUnitVectors(new T.Vector3(0,-1,0),dir.normalize()); sp.bm.color.setHSL(h,1,.55); sp.bm.opacity=.06+.1*nt; });
+  const fight=gt>17&&gt<36; PT.lasers.forEach(o=>{ const u=o.i/(o.n-1)-.5, sweep=Math.sin(el*(fight?1.6:.6)+o.i*.8)*.5;
+    o.b.rotation.set(Math.PI/2-.1-.08*Math.sin(el*.7+o.i),0,0); o.b.rotation.y=0; o.b.quaternion.setFromEuler(new T.Euler(Math.PI/2-.14+.06*Math.sin(el*1.3+o.i),u*1.3+sweep,0,"YXZ"));
+    const hue=(el*.12+o.i/o.n)%1; o.m.color.setHSL(hue,1,.55); o.m.opacity=(.35+.45*nt)*(fight?1:.6); o.dot.material.color.setHSL(hue,1,.6); o.dot.material.opacity=.5+.4*Math.sin(el*8+o.i); });
+  PT.fog.forEach(o=>{ const v=(el*.06+o.ph)%1, f=Math.sin(v*Math.PI); if(o.win){ o.sp.position.set(o.x*.14*k,(PT_FLOOR+.01+v*.05)*k,(PT_DEPTH+.01+v*.05)*k); o.sp.scale.setScalar((.25+v*.5)); o.sp.material.opacity=f*.45; }
+    else { o.sp.position.set(o.x*.55*k,.15+v*.25,(.2+v*.5)*k); o.sp.scale.setScalar(1.2+v*2.2); o.sp.material.opacity=f*.32; } });
+  if(PT.voiceGain&&ac) PT.voiceGain.gain.setTargetAtTime(PT.prox*sVol()*(soundOn?1:0),ac.currentTime,.12);
+  ptMusic(); }
+
 const tmpV=new T.Vector3();
 let gameAsleep=false;
 /* ================= 夜市: seven stalls, each a small game; prizes are wearable things kept in the bag's 飾品 tab ================= */
@@ -4225,6 +4420,7 @@ function nmEndDraw(L,x,W,H){ const e=L.endMsg; if(!e) return false; x.fillStyle=
 /* ---- sprites from the stall art sheets (public/nm/*.webp) ---- */
 // inside the preview host all the stall pictures come in one bundle loaded with the page (nm-pack.js), the same way the
 // 3D models do, because files fetched later don't always arrive there; on the real site each picture is its own file
+if(IN_ARTIFACT) setTimeout(()=>{ const sc=document.createElement("script"); sc.src="bdx"+(Q.lite?"-lite":"")+"-model.js"; document.head.appendChild(sc); },1400);
 if(IN_ARTIFACT) setTimeout(()=>["qq","sausage","bbq","fish","pachinko","boba","balloon"].forEach((k,i)=>setTimeout(()=>{ const sc=document.createElement("script"); sc.src="stall-"+k+(Q.lite?"-lite":"")+"-model.js"; document.head.appendChild(sc); },i*150)),600); // preview host: the stall models come in with the page's other models, not later
 if(IN_ARTIFACT&&!window.NM_PACK){ const sc=document.createElement("script"); sc.src="nm-pack.js"; sc.async=true; sc.onload=()=>{ for(const n in NMI){ const i=NMI[n]; if(!(i.complete&&i.naturalWidth)&&window.NM_PACK&&NM_PACK[n]) i.src=NM_PACK[n]; } }; document.head.appendChild(sc); }
 const NMI={}; function nmSrc(n,r){ return window.NM_PACK&&NM_PACK[n]?NM_PACK[n]:"nm/"+n+".webp"+(r?"?r="+r:""); }
@@ -4637,7 +4833,7 @@ function tick(){ if(gameAsleep) return; { const now=performance.now(), cap=frame
     r1.scale.setScalar(k); r2.scale.setScalar(1+((tapT*1.2)%1)*.8); r2.material.opacity=.7*(1-((tapT*1.2)%1));
     if(arrived||tapT>12){ const f=Math.max(0,r1.material.opacity-dt*3); r1.material.opacity=f; dot.material.opacity=f; if(f<=0){ tapMark.visible=false; r1.material.opacity=.9; dot.material.opacity=.9; } } }
   botTick(dt);
-  lodPrep(); remotes.forEach(r=>{ lodUpdate(r,dt); if((r.eq&&(r.eq[0]||r.eq[1]))||r.flies) accTick(r,dt); }); /* r.flies: keep ticking once more so flies go away after the sausage is put down */ sjUpdate(dt); fwUpdate(dt); updateSkyLanterns(dt); renderSLBtn(); opTick(dt); ftTick(dt); mkTick(dt);
+  lodPrep(); remotes.forEach(r=>{ lodUpdate(r,dt); if((r.eq&&(r.eq[0]||r.eq[1]))||r.flies) accTick(r,dt); }); /* r.flies: keep ticking once more so flies go away after the sausage is put down */ sjUpdate(dt); fwUpdate(dt); updateSkyLanterns(dt); renderSLBtn(); opTick(dt); ptTick(dt); ftTick(dt); mkTick(dt);
   if(room&&dirty&&performance.now()-lastSend>((keys.size||joy.on)?800:SEND_GAP)) sendPresence();
   updateFlyers(dt); updateFu(dt); updateCats(dt); updateWater(dt);
   { let best=null, bd=2.6; if(!sheetKind&&!customizing&&!pendingStation&&meAv.seat<0&&!(meAv.danceT>0)) for(const k in stations){ if(k==="cats"){ const dc=Math.hypot(meAv.pos.x-CATS.c.x,meAv.pos.y-CATS.c.z); if(dc<3.6){ best=k; bd=0; } continue; } const d=meAv.pos.distanceTo(stations[k].approach); if(d<bd){ bd=d; best=k; } }

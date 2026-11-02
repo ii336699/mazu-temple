@@ -3,9 +3,9 @@
 import { DurableObject } from "cloudflare:workers";
 
 const HALLS = 10, CAP = 100, MAX_MSG = 4000;
-const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000, "/crowd": 5000, "/market": 5000 };
-const LOBBY_PATHS = ["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/crowd", "/market", "/nmrec"];
-const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage", "/crowd": "/crowd", "/market": "/market" }; // a POST here makes that cached list stale
+const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000, "/puppet": 5000, "/crowd": 5000, "/market": 5000 };
+const LOBBY_PATHS = ["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec"];
+const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage", "/puppet": "/puppet", "/crowd": "/crowd", "/market": "/market" }; // a POST here makes that cached list stale
 
 export default {
   async fetch(req, env) {
@@ -63,6 +63,11 @@ export class Hall extends DurableObject {
       let b = {}; try { b = await req.json(); } catch {}
       const out = JSON.stringify({ t: "market", open: b.open || {} }); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
     }
+    if (url.pathname === "/puppet") { // from the lobby: the chair put the 布袋戲 stage out, changed its banner, or packed it away
+      let b = {}; try { b = await req.json(); } catch {}
+      const st = { t: "puppet", on: !!b.on, at: Number(b.at) || Date.now(), text: String(b.text || "").slice(0, 24) }; await this.ctx.storage.put("puppet", st);
+      const out = JSON.stringify(st); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
+    }
     if (url.pathname === "/stage") { // from the lobby: the chair put the opera stage out or packed it away
       let b = {}; try { b = await req.json(); } catch {}
       const st = { t: "stage", on: !!b.on, at: Number(b.at) || Date.now() }; await this.ctx.storage.put("stage", st);
@@ -83,6 +88,7 @@ export class Hall extends DurableObject {
     server.send(JSON.stringify({ t: "hello", peers }));
     const ann = await this.ctx.storage.get("ann"); if (ann && Date.now() - ann.at < 5 * 60 * 1000) server.send(JSON.stringify(ann));
     const stage = await this.ctx.storage.get("stage"); if (stage && stage.on) server.send(JSON.stringify(stage));
+    const puppet = await this.ctx.storage.get("puppet"); if (puppet && puppet.on) server.send(JSON.stringify(puppet));
     const fw = await this.ctx.storage.get("fw"); if (fw && Date.now() - fw.at < 218000) server.send(JSON.stringify({ t: "fw", seed: fw.seed, el: Date.now() - fw.at }));
     this.report(h);
     return new Response(null, { status: 101, webSocket: client });
@@ -213,6 +219,16 @@ export class Lobby extends DurableObject {
       return json({ ok: true, ...st });
     }
     if (url.pathname === "/stage") return json((await this.ctx.storage.get("stage")) || { on: false, at: 0 });
+    // 布袋戲台: same idea, plus the chair's line of text for the red cloth; changing the text keeps the show running
+    if (url.pathname === "/puppet" && req.method === "POST") {
+      const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
+      let b = {}; try { b = await req.json(); } catch {}
+      const prev = (await this.ctx.storage.get("puppet")) || { on: false, at: 0 };
+      const st = { on: !!b.on, at: b.on && prev.on ? prev.at : Date.now(), text: clean(b.text, 24) }; await this.ctx.storage.put("puppet", st);
+      await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/puppet", { method: "POST", body: JSON.stringify(st) }).catch(() => {})));
+      return json({ ok: true, ...st });
+    }
+    if (url.pathname === "/puppet") return json((await this.ctx.storage.get("puppet")) || { on: false, at: 0, text: "" });
     // 夜市: which stalls are open and when each was opened (that order is the order along the wall)
     if (url.pathname === "/market" && req.method === "POST") {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
