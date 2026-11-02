@@ -1877,9 +1877,9 @@ class Avatar{
   setAmulet(v){ this.hasAmulet=!!v; if(this.amulet) this.amulet.visible=this.hasAmulet; }
   setSp(v){ v=!!v; if(v===!!this.sp) return; this.sp=v; this.setLook(this.look); this.setName(this.lastNameArg); }
   setName(n){ this.lastNameArg=n; if(this.label){ this.root.remove(this.label); if(this.label.material.map) this.label.material.map.dispose(); } if(this.glow){ this.root.remove(this.glow); this.glow=null; }
-    if(this.sp){ this.label=spLabel(); this.label.position.y=1.46; this.root.add(this.label); this.glow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffd27a"),transparent:true,blending:T.AdditiveBlending,depthWrite:false})); this.glow.scale.set(1.1,.45,1); this.glow.position.y=1.46; this.root.add(this.glow); return; }
-    if(!n){ this.label=null; return; } this.label=textSprite(n,{fs:30,h:.17,color:this.isMe?"#ffe2a0":"#fff"}); this.label.position.y=1.42; this.root.add(this.label); }
-  say(text,color,secs){ if(this.bubble){ this.root.remove(this.bubble); this.bubble.material.map.dispose(); } this.bubble=bubbleSprite(text,color||"#ffe2a0"); this.bubble.position.y=1.62+this.bubble.scale.y/2; this.root.add(this.bubble); this.bubbleT=secs||3.2; }
+    if(this.sp){ this.label=spLabel(); this.label.position.y=1.46+(this.accLift||0); this.root.add(this.label); this.glow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffd27a"),transparent:true,blending:T.AdditiveBlending,depthWrite:false})); this.glow.scale.set(1.1,.45,1); this.glow.position.y=1.46; this.root.add(this.glow); return; }
+    if(!n){ this.label=null; return; } this.label=textSprite(n,{fs:30,h:.17,color:this.isMe?"#ffe2a0":"#fff"}); this.label.position.y=1.42+(this.accLift||0); this.root.add(this.label); }
+  say(text,color,secs){ if(this.bubble){ this.root.remove(this.bubble); this.bubble.material.map.dispose(); } this.bubble=bubbleSprite(text,color||"#ffe2a0"); this.bubble.position.y=1.62+(this.accLift||0)+this.bubble.scale.y/2; this.root.add(this.bubble); this.bubbleT=secs||3.2; }
   sitAt(i){ this.seat=i; const s=SEATS[i]; this.target.copy(s); this.goalSeat=true; }
   moveTo(x,z){ this.seat=-1; this.goalSeat=false; this.target.set(x,z); this.path=[]; }
   bow(){ this.bowT=0; }
@@ -4087,7 +4087,9 @@ Avatar.prototype.setAcc=function(eq){ eq=(eq||[0,0]).map(v=>ACC[v]?v:0); this.eq
   if(this.baldHid){ this.baldHid.forEach(o=>o.visible=true); this.baldHid=null; }
   if(eq[0]&&this.head){ this.accHead=buildAccHead(eq[0]); this.head.add(this.accHead);
     if(this.accHead.userData.bald){ const all=!!this.accHead.userData.full; this.baldHid=[]; this.head.children.forEach(o=>{ if(o===this.accHead||!o.visible) return; if(!all&&o.isMesh&&o.material&&o.material.map) return; o.visible=false; this.baldHid.push(o); }); } }
-  if(eq[1]&&this.hands&&this.hands[0]){ this.accHand=buildAccHand(eq[1]); this.hands[0].add(this.accHand); } };
+  if(eq[1]&&this.hands&&this.hands[0]){ this.accHand=buildAccHand(eq[1]); this.hands[0].add(this.accHand); }
+  // tall head pieces push the name tag and speech bubble up so they stay readable
+  this.accLift={qqball:.62,boba:.5,afro:.32}[eq[0]]||0; if(this.label) this.label.position.y=(this.sp?1.46:1.42)+this.accLift; if(this.glow) this.glow.position.y=1.46+this.accLift; };
 // 你好臭: someone holding a 香腸 trails little green stink clouds, and now and then a "好臭～" pops up over them
 const stinkMat=new T.SpriteMaterial({map:softTex,color:new T.Color("#8fd43a"),transparent:true,opacity:.75,depthWrite:false});
 const aromaMat=new T.SpriteMaterial({map:softTex,color:new T.Color("#ffd27a"),transparent:true,opacity:.55,depthWrite:false,blending:T.AdditiveBlending});
@@ -4101,7 +4103,7 @@ function stinkFlies(av,on){ if(on&&!av.flies){ av.flies=[0,1,2].map(i=>{ const s
 // each person reacts once, the first time they come near someone holding the 香腸 (meeting again: nothing)
 function stinkReact(av){ av.smelled=av.smelled||new Set();
   const who=[...npcs.filter(n=>!n.classic&&!n.leaving),...remotes.values()].filter(n=>n!==av&&n.root.visible&&!av.smelled.has(n)&&Math.hypot(n.pos.x-av.pos.x,n.pos.y-av.pos.y)<2.8);
-  who.forEach(n=>{ av.smelled.add(n); const L2=["誰吃大蒜！？","好臭！","蒜頭怪來了！"]; n.say(L2[(Math.random()*L2.length)|0],"#c8f07a",2.2); showEmo(n,[3,9][(Math.random()*2)|0]); }); }
+  who.forEach(n=>{ av.smelled.add(n); const L2=["誰吃大蒜！？","好臭！","蒜頭怪來了！"]; n.say(L2[(Math.random()*L2.length)|0],"#c8f07a",2.2); }); }
 function accTick(av,dt){ stinkFlies(av,!!(av.accHand&&av.accHand.userData.stink&&av.root.visible)); if(!av.root.visible) return;
   const near=Math.hypot(av.pos.x-meAv.pos.x,av.pos.y-meAv.pos.y)<25;
   if(av.accHand&&av.accHand.userData.stink&&near){ av.stinkT=(av.stinkT||0)-dt; if(av.stinkT<0){ av.stinkT=.12+Math.random()*.1; const sg=av.accHand.children[1]||av.accHand; sg.getWorldPosition(_v1); spawnSmoke(_v1.x+rand(-.04,.04),_v1.y+rand(-.04,.06),_v1.z+rand(-.04,.04),{mat:stinkMat.clone(),size:.07,grow:.16,life:1.1,op:.5,vy:.22}); } // a steady thin wisp rising from the sausage itself
