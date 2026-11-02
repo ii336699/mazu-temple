@@ -4,7 +4,7 @@ import { DurableObject } from "cloudflare:workers";
 
 const HALLS = 10, CAP = 100, MAX_MSG = 4000;
 const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000, "/crowd": 5000, "/market": 5000 };
-const LOBBY_PATHS = ["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/crowd", "/market"];
+const LOBBY_PATHS = ["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/crowd", "/market", "/nmrec"];
 const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage", "/crowd": "/crowd", "/market": "/market" }; // a POST here makes that cached list stale
 
 export default {
@@ -209,6 +209,23 @@ export class Lobby extends DurableObject {
       return json({ ok: true, ...st });
     }
     if (url.pathname === "/market") return json((await this.ctx.storage.get("market")) || { open: {} });
+    // 夜市紀錄保持者: best results per stall since it was last put out; lower is better for times
+    if (url.pathname === "/nmrec") {
+      const LOW = { bbq: 1, boba: 1, balloon: 1 }, MAX = { qq: 60, bbq: 999, fish: 5000, pachinko: 1000000, boba: 999, balloon: 999 };
+      const st = (await this.ctx.storage.get("market")) || { open: {} }, all = (await this.ctx.storage.get("nmrec")) || {};
+      if (req.method === "POST") {
+        let b = {}; try { b = await req.json(); } catch {}
+        const k = String(b.k || ""), v = Number(b.v), id = clean(b.id, 16) || "anon", name = clean(b.name, 10) || "香客";
+        if (!(k in MAX) || !st.open[k] || !(v > 0) || v > MAX[k]) return json({ ok: false });
+        let r = all[k]; if (!r || r.s !== st.open[k]) r = all[k] = { s: st.open[k], list: [] };
+        const better = (a, c) => LOW[k] ? a < c : a > c; const cur = r.list.find(e => e.id === id);
+        if (!cur) r.list.push({ id, name, v, at: Date.now() }); else if (better(v, cur.v)) { cur.v = v; cur.name = name; cur.at = Date.now(); }
+        r.list.sort((a, c) => LOW[k] ? a.v - c.v || a.at - c.at : c.v - a.v || a.at - c.at); r.list = r.list.slice(0, 10);
+        await this.ctx.storage.put("nmrec", all); return json({ ok: true });
+      }
+      const k = url.searchParams.get("k") || "", r = all[k];
+      return json({ list: r && st.open[k] && r.s === st.open[k] ? r.list.map(e => ({ name: e.name, v: e.v })) : [] });
+    }
     // 線上人數: the chair sets a target the shown count eases to over about half an hour (null = back to the time-of-day pattern).
     // Each phone works the number out from these three values and the clock, so this is read rarely and never pushed.
     if (url.pathname === "/crowd" && req.method === "POST") {

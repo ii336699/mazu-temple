@@ -237,6 +237,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
 .camreset{position:fixed;left:calc(max(12px,env(safe-area-inset-left,0px)) + 33px);bottom:calc(env(safe-area-inset-bottom,0px) + 188px);width:30px;height:30px;border:0;padding:0;background:none;z-index:5;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .camreset::after{content:"";position:absolute;left:9px;top:9px;width:12px;height:12px;border-radius:50%;background:rgba(255,230,180,.55);box-shadow:0 0 0 1.5px rgba(255,230,180,.25),0 0 6px rgba(255,200,120,.35)}
 .camreset:active::after{background:#ffe6b4}
+.rec-row{display:flex;gap:8px;align-items:center;padding:5px 2px;border-bottom:1px solid rgba(240,199,94,.18)} .rec-row span{margin-left:auto;color:var(--gold)}
 .steps-ol{margin:6px 0 10px 1.4em;padding:0;line-height:1.9}
 #othersBtn .slash{display:none} #othersBtn.on .slash{display:inline} #othersBtn.on{background:rgba(255,200,120,.28)}
 body.hideui .joy,body.customizing .joy,body.hideui .camreset,body.customizing .camreset{display:none}
@@ -4158,6 +4159,10 @@ function fxDraw(L,x,W,H){ const now=performance.now(), dt=Math.min(.05,(now-(L.f
     if(p.k==="drop"){ x.fillStyle=`rgba(190,235,255,${k})`; x.beginPath(); x.arc(p.x,p.y,p.r,0,7); x.fill(); continue; }
     x.globalAlpha=k; x.fillStyle=p.c; x.beginPath(); if(p.k==="star"){ for(let j=0;j<8;j++){ const rr=j%2?p.r*.4:p.r*1.6, a=p.rot+j*Math.PI/4; x.lineTo(p.x+Math.cos(a)*rr,p.y+Math.sin(a)*rr); } } else x.arc(p.x,p.y,p.r*(p.k==="ember"?1:k+.3),0,7); x.fill(); }
   x.restore(); x.globalAlpha=1; }
+// 紀錄保持者: each stall keeps its best results from when it was last put out (the next time it is put out, they start over)
+const NM_REC={qq:["最多讚",1,"下"],bbq:["最快烤完",0,"秒"],fish:["撈金魚最高分",1,"幣"],pachinko:["最多彈珠",1,"顆"],boba:["最快做完三杯",0,"秒"],balloon:["最快全破",0,"秒"]};
+async function nmRecSend(k,v){ if(!NM_REC[k]||!(v>0)) return; try{ await fetch("/nmrec",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({k,v,name:(me.name||"香客").slice(0,10),id:(()=>{ let i=load("mz.id",""); if(!i){ i=Math.random().toString(36).slice(2,12); save("mz.id",i); } return i; })()})}); }catch(e){} }
+async function nmRecGet(k){ try{ const r=await fetch("/nmrec?k="+k,{cache:"no-store"}); if(!r.ok) return []; const j=await r.json(); return j.list||[]; }catch(e){ return []; } }
 function nmEnd(L,win,msg,sub){ L.endMsg={win,msg,sub,at:performance.now()}; if(win){ L.rain=performance.now()+2600; fxBurst(L,L.W()/2,L.H()*.42,50,{speed:420,kind:"star",size:5,life:1.4}); } if(win){ tone(523,.15,.12,"triangle"); tone(659,.15,.12,"triangle",.12); tone(784,.3,.12,"triangle",.24); } else { tone(300,.25,.1,"sawtooth"); tone(220,.4,.1,"sawtooth",.2); } }
 function nmEndDraw(L,x,W,H){ const e=L.endMsg; if(!e) return false; x.fillStyle="rgba(0,0,0,.6)"; x.fillRect(0,0,W,H); nmText(x,e.msg,W/2,H*.42,Math.min(40,W*.085),e.win?"#ffe08a":"#ffb3a0"); if(e.sub) nmText(x,e.sub,W/2,H*.42+46,18,"#fff",undefined,600);
   nmText(x,"點畫面離開",W/2,H*.42+92,16,"#f0e0c0",undefined,500); return true; }
@@ -4220,7 +4225,7 @@ function playQQ(){ const L=gameLayer("地瓜球","老闆壓一次，你照著節
     if(!started){ nmText(x,"點畫面開始",W/2,H*.27,30); nmText(x,"老闆壓一小節，你照同樣節奏壓下一小節",W/2,H*.27+36,16,"#fff",undefined,500); }
     if(fb&&performance.now()-fb.at<650){ if(fb.perfect&&combo>=3) qqCard(x,W/2,H*.3,combo,(performance.now()-fb.at)/650); else nmText(x,fb.t,W/2,H*.3,34,fb.c); }
     nmText(x,`${good} / ${total}`,W-20,130,18,"#fff","right",600);
-    if(started&&tn>END&&!L.endMsg){ const ok=good>=total*.75; if(ok) giveAcc("qqball"); nmEnd(L,ok,ok?"地瓜球超蓬鬆！":"地瓜球塌掉了…",ok?`壓中 ${good}/${total}（讚 ${perfect}），得到地瓜球頭飾，已戴上`:`壓中 ${good}/${total}，要 ${Math.ceil(total*.75)} 下才過關`); }
+    if(started&&tn>END&&!L.endMsg){ const ok=good>=total*.75; nmRecSend("qq",perfect); if(ok) giveAcc("qqball"); nmEnd(L,ok,ok?"地瓜球超蓬鬆！":"地瓜球塌掉了…",ok?`壓中 ${good}/${total}（讚 ${perfect}），得到地瓜球頭飾，已戴上`:`壓中 ${good}/${total}，要 ${Math.ceil(total*.75)} 下才過關`); }
     fxDraw(L,x,W,H); nmEndDraw(L,x,W,H); requestAnimationFrame(draw); };
   requestAnimationFrame(draw); }
 
@@ -4233,7 +4238,7 @@ function sbScore(d){ const c={}; d.forEach(v=>c[v]=(c[v]||0)+1); const vals=Obje
   const p=pairs[0], rest=d.filter(v=>v!==p); const s=rest.reduce((a,b)=>a+b,0); return {s,t:s===12?"十八啦！":s===3?"逼機（3 點）":`${s} 點`}; }
 function sbRoll(){ for(;;){ const d=[0,0,0,0].map(()=>1+((Math.random()*6)|0)); const r=sbScore(d); if(r) return {d,...r}; } }
 function playSausage(){ const L=gameLayer("烤香腸","十八仔：先贏老闆三把就有香腸"); const {x,cv}=L; let me=0, boss=0, state="ready", roll=null, anim=0, msg="";
-  nmPreload(["sg-grill","sg-stick","sg-stink"]); const btn={x:0,y:0,w:180,h:56};
+  nmPreload(["sg-grill","sg-stick","sg-stink","sg-bowl2"]); const btn={x:0,y:0,w:180,h:56};
   const dieDraw=(px,py,s,v,wob)=>{ x.save(); x.translate(px,py); x.rotate(wob); x.fillStyle="#fffaf0"; x.strokeStyle="#c9b48a"; x.lineWidth=2; x.beginPath(); x.roundRect?x.roundRect(-s/2,-s/2,s,s,s*.18):x.rect(-s/2,-s/2,s,s); x.fill(); x.stroke();
     const P={1:[[0,0]],2:[[-1,-1],[1,1]],3:[[-1,-1],[0,0],[1,1]],4:[[-1,-1],[1,-1],[-1,1],[1,1]],5:[[-1,-1],[1,-1],[0,0],[-1,1],[1,1]],6:[[-1,-1],[1,-1],[-1,0],[1,0],[-1,1],[1,1]]}[v];
     x.fillStyle=v===1||v===4?"#d0201a":"#222"; P.forEach(([a,b])=>{ x.beginPath(); x.arc(a*s*.26,b*s*.26,s*(v===1?.13:.09),0,7); x.fill(); }); x.restore(); };
@@ -4243,10 +4248,10 @@ function playSausage(){ const L=gameLayer("烤香腸","十八仔：先贏老闆�
     nmDraw(x,"sg-grill",W*.18,H-60,Math.min(W*.26,110)); nmDraw(x,"sg-stick",W*.86,H-70,Math.min(W*.12,52),.15);
     nmText(x,`你 ${me}　：　${boss} 老闆`,W/2,150,26);
     for(let i=0;i<3;i++){ x.fillStyle=i<me?"#ffd23a":"rgba(255,255,255,.18)"; x.beginPath(); x.arc(W/2-110+i*22,172,7,0,7); x.fill(); x.fillStyle=i<boss?"#ff6a4a":"rgba(255,255,255,.18)"; x.beginPath(); x.arc(W/2+66+i*22,172,7,0,7); x.fill(); }
-    const bowl=(cy,label)=>{ const r=Math.min(W*.42,190); x.fillStyle="#7a3a1a"; x.beginPath(); x.ellipse(W/2,cy+6,r+10,76,0,0,7); x.fill(); x.fillStyle="#c98a4a"; x.beginPath(); x.ellipse(W/2,cy,r,70,0,0,7); x.fill(); x.fillStyle="#8e1c14"; x.beginPath(); x.ellipse(W/2,cy+4,r-16,56,0,0,7); x.fill(); nmText(x,label,W/2,cy-84,18,"#f0e0c0"); };
-    bowl(H*.37,"老闆"); bowl(H*.63,"你");
-    if(roll){ anim+=1/60; const settle=Math.min(1,anim/1.1); const show=(r,cy)=>{ r.d.forEach((v,i)=>{ const sv=settle<1?1+((Math.random()*6)|0):v; dieDraw(W/2+(i-1.5)*Math.min(W*.17,72),cy+(settle<1?Math.sin(anim*20+i)*10:0),Math.min(W*.13,52),sv,settle<1?Math.sin(anim*17+i*2)*.6:(i-1.5)*.08); }); if(settle>=1) nmText(x,r.t,W/2,cy+62,22,"#ffe14d"); };
-      show(roll.boss,H*.37); show(roll.me,H*.63);
+    const BW=Math.min(W*.6,H*.26,240); const bowl=(cy,label)=>{ if(!nmDraw(x,"sg-bowl2",W/2,cy,BW)){ x.fillStyle="#e8e0d0"; x.beginPath(); x.arc(W/2,cy,BW/2,0,7); x.fill(); } nmText(x,label,W/2-BW/2-6,cy+6,18,"#f0e0c0","right"); };
+    bowl(H*.36,"老闆"); bowl(H*.64,"你");
+    if(roll){ anim+=1/60; const settle=Math.min(1,anim/1.1); const show=(r,cy)=>{ r.d.forEach((v,i)=>{ const sv=settle<1?1+((Math.random()*6)|0):v; const ds=BW*.2, ox=(i%2-.5)*ds*1.35, oy=(Math.floor(i/2)-.5)*ds*1.35; dieDraw(W/2+ox+(settle<1?Math.sin(anim*23+i)*8:0),cy+oy+(settle<1?Math.cos(anim*19+i)*8:0),ds,sv,settle<1?Math.sin(anim*17+i*2)*.8:(i-1.5)*.12); }); if(settle>=1) nmText(x,r.t,W/2+BW/2+8,cy+8,20,"#ffe14d","left"); };
+      show(roll.boss,H*.36); show(roll.me,H*.64);
       if(settle>=1&&state==="rolling"){ state="shown"; const d=roll.me.s-roll.boss.s; if(d>0){ me++; msg="你贏這把！"; tone(660,.2,.1,"triangle"); fxBurst(L,L.W()/2,L.H()*.63,26,{kind:"star"}); } else if(d<0){ boss++; msg="老闆贏這把"; tone(260,.25,.1,"sawtooth"); } else msg="平手，再來";
         setTimeout(()=>{ if(L.done) return; if(me>=3){ const had=giveAcc("sausage"); nmEnd(L,true,"贏到一支香腸！",had?"香腸已經有了，又吃了一支":"好濃的蒜頭味！香腸放進背包飾品，已經拿在手上"); } else if(boss>=3) nmEnd(L,false,"老闆贏了","再來一盤？"); else state="ready"; },900); } }
     if(msg&&state!=="rolling") nmText(x,msg,W/2,H*.5,24,"#fff");
@@ -4257,9 +4262,9 @@ function playSausage(){ const L=gameLayer("烤香腸","十八仔：先贏老闆�
 /* ===== 3. 烤肉: nine skewers; each side browns at its own pace. Tap to flip, tap again to take it off when both sides are done ===== */
 function playBBQ(){ const L=gameLayer("烤肉","點一下翻面，兩面都烤好再點一下夾起來，一串都不能焦"); const {x,cv}=L;
   const KINDS=[["牛肉","bbq-beef",.045],["雞肉","bbq-chicken",.04],["五花肉","bbq-pork",.042],["香菇","bbq-shroom",.055],["青椒","bbq-pepper",.06],["玉米","bbq-corn",.038],["豆干","bbq-tofu",.05],["魷魚","bbq-squid",.052],["綜合串","bbq-mix",.046]];
-  nmPreload(KINDS.map(k=>k[1]).concat(["bbq-grill","bbq-fire","bbq-flip","bbq-ok"]));
+  nmPreload(KINDS.map(k=>k[1]).concat(["bbq-grill2","bbq-fire","bbq-flip","bbq-ok"]));
   const sk=KINDS.map(([n,img,sp],i)=>({n,img,sp:sp*(.85+Math.random()*.3),a:0,b:0,up:"a",state:"cook",flipT:0,i,cv:document.createElement("canvas")}));
-  const DONE=.7, BURN=1.45; let over=false, taken=0;
+  const DONE=.7, BURN=1.45; let over=false, taken=0; L.t0=performance.now();
   const cell=(i,W,H)=>{ const cw=Math.min(W*.31,130), ch=Math.min(H*.2,150), gx=W/2-cw*1.5, gy=H*.24; return {x:gx+(i%3)*cw,y:gy+Math.floor(i/3)*ch,w:cw,h:ch}; };
   cv.addEventListener("pointerdown",e=>{ if(L.endMsg){ L.close(); return; } const W=L.W(), H=L.H(); sk.forEach(s=>{ if(s.state!=="cook") return; const c=cell(s.i,W,H); if(!inBox(c,e.clientX,e.clientY)) return;
       if(s.a>=DONE&&s.b>=DONE){ fxBurst(L,e.clientX,e.clientY,18,{kind:"star",cols:["#ffe14d","#ffb347","#ffffff"]}); s.state="taken"; taken++; tone(880,.08,.08,"triangle"); tone(1175,.1,.08,"triangle",.08); return; }
@@ -4272,9 +4277,8 @@ function playBBQ(){ const L=gameLayer("烤肉","點一下翻面，兩面都烤�
     g.globalCompositeOperation="source-over"; return c; };
   let last=performance.now();
   const draw=()=>{ if(L.done) return; const now=performance.now(), dt=Math.min(.05,(now-last)/1000); last=now; const W=L.W(), H=L.H(); nmBg(x,W,H,"#2a0e06","#0e0402");
-    const g0=cell(0,W,H), g8=cell(8,W,H); x.fillStyle="#1a1210"; x.fillRect(g0.x-12,g0.y-6,g8.x+g8.w-g0.x+24,g8.y+g8.h-g0.y+12);
-    for(let i=0;i<46;i++){ x.fillStyle=`rgba(255,${80+(i*37)%90},20,${.22+.18*Math.sin(now/300+i)})`; x.beginPath(); x.arc(g0.x+(i*53)%(g8.x+g8.w-g0.x),g0.y+(i*29)%(g8.y+g8.h-g0.y),7,0,7); x.fill(); }
-    x.strokeStyle="#6a625e"; x.lineWidth=3; for(let xx=g0.x-6;xx<g8.x+g8.w+8;xx+=16){ x.beginPath(); x.moveTo(xx,g0.y-4); x.lineTo(xx,g8.y+g8.h+4); x.stroke(); }
+    const g0=cell(0,W,H), g8=cell(8,W,H), gw=g8.x+g8.w-g0.x, gh=g8.y+g8.h-g0.y;
+    { const gi=nmImg("bbq-grill2"); if(gi.complete&&gi.naturalWidth){ const ww=gw*1.18, hh=Math.max(gh*1.14,ww*gi.naturalHeight/gi.naturalWidth*.9); x.drawImage(gi,g0.x+gw/2-ww/2,g0.y+gh/2-hh/2,ww,hh); x.fillStyle=`rgba(255,120,30,${.06+.04*Math.sin(now/200)})`; x.fillRect(g0.x,g0.y,gw,gh); } else { x.fillStyle="#1a1210"; x.fillRect(g0.x-12,g0.y-6,gw+24,gh+12); } }
     sk.forEach(s=>{ const c=cell(s.i,W,H), cx=c.x+c.w/2, cy=c.y+c.h/2; if(s.state==="taken"){ nmDraw(x,"bbq-ok",cx,cy-6,44); nmText(x,s.n,cx,cy+36,15,"#7dffb0"); return; }
       if(!over&&s.state==="cook"){ const bot=s.up==="a"?"b":"a"; s[bot]+=s.sp*dt; if(s[bot]>BURN){ s.state="burnt"; over=true; nmEnd(L,false,`${s.n}烤焦了！`,"每一串都要剛好，再試一次"); } }
       s.flipT=Math.max(0,s.flipT-dt*4); const show=s.up==="a"?s.a:s.b, under=s.up==="a"?s.b:s.a;
@@ -4287,7 +4291,7 @@ function playBBQ(){ const L=gameLayer("烤肉","點一下翻面，兩面都烤�
       if(under>.9){ for(let k=0;k<2;k++){ x.fillStyle="rgba(210,210,210,.22)"; x.beginPath(); x.arc(c.x+c.w*(.3+.4*Math.random()),c.y+10-Math.random()*20,6+Math.random()*7,0,7); x.fill(); } }
       [["上",show],["下",under]].forEach(([lb,v],j)=>{ const bx=c.x+c.w*.1, by=c.y+c.h-26+j*7, bw=c.w*.8; x.fillStyle="rgba(255,255,255,.15)"; x.fillRect(bx,by,bw,5);
         const gr=x.createLinearGradient(bx,0,bx+bw,0); gr.addColorStop(0,"#4ad04a"); gr.addColorStop(DONE/BURN,"#d0e040"); gr.addColorStop(1/BURN,"#ffb030"); gr.addColorStop(1,"#e8302a"); x.fillStyle=gr; x.fillRect(bx,by,bw*Math.min(1,v/BURN),5); x.fillStyle="#fff"; x.fillRect(bx+bw*DONE/BURN,by-1,1.5,7); }); });
-    if(!over&&taken===9){ over=true; const had=giveAcc("skewer"); nmEnd(L,true,"九串都烤得剛剛好！",had?"烤肉串已經有了，再吃一串":"得到香噴噴的烤肉串，已經拿在手上"); }
+    if(!over&&taken===9){ over=true; const secs=(performance.now()-L.t0)/1000; nmRecSend("bbq",+secs.toFixed(1)); const had=giveAcc("skewer"); nmEnd(L,true,"九串都烤得剛剛好！",had?"烤肉串已經有了，再吃一串":"得到香噴噴的烤肉串，已經拿在手上"); }
     nmText(x,`夾起 ${taken} / 9`,W/2,150,22);
     fxDraw(L,x,W,H); nmEndDraw(L,x,W,H); requestAnimationFrame(draw); };
   requestAnimationFrame(draw); }
@@ -4300,15 +4304,18 @@ function playFish(){ const L=gameLayer("撈金魚","按住放進水裡，移到�
   for(let i=0;i<12;i++) add("red"); for(let i=0;i<5;i++) add("black"); add("gold"); if(Math.random()<.4) add("gold"); if(Math.random()<.35) add("rainbow"); // always one gold to chase; the rainbow one shows up in about one game in three
   let paper=1, inWater=false, sx=0, sy=0, won=0, caught=[], time=40, over=false, last=performance.now(), tear=0, lifted=null;
   const pond=W=>({x:16,y:150,w:W-32,h:L.H()-270});
-  cv.addEventListener("pointerdown",e=>{ if(L.endMsg){ L.close(); return; } if(over) return; inWater=true; sx=e.clientX; sy=e.clientY; tone(200,.1,.05,"sine"); });
+  let downAt=0;
+  cv.addEventListener("pointerdown",e=>{ if(L.endMsg){ L.close(); return; } if(over) return; inWater=true; downAt=performance.now(); sx=e.clientX; sy=e.clientY; tone(200,.1,.05,"sine");
+    const W=L.W(), P=pond(W); fish.forEach(f=>{ if(f.caught) return; const fx=P.x+f.x*P.w, fy=P.y+f.y*P.h, d=Math.hypot(fx-sx,fy-sy); if(d<80){ f.scare=.7; f.a=Math.atan2(fy-sy,fx-sx)+(Math.random()-.5)*.6; } });
+    fxBurst(L,sx,sy,10,{kind:"drop",speed:150,size:3,up:120}); });
   cv.addEventListener("pointermove",e=>{ sx=e.clientX; sy=e.clientY; });
-  const lift=()=>{ if(!inWater||over) return; inWater=false; const W=L.W(), P=pond(W), r=36; let got=null, bd=1e9;
+  const lift=()=>{ if(!inWater||over) return; inWater=false; if(performance.now()-downAt<450){ tear=0; return; } const W=L.W(), P=pond(W), r=36; let got=null, bd=1e9;
     fish.forEach(f=>{ if(f.caught) return; const d=Math.hypot(P.x+f.x*P.w-sx,P.y+f.y*P.h-sy); if(d<r&&d<bd){ bd=d; got=f; } });
     if(got){ const T2=TYPES[got.t]; const slip=Math.random()<T2.w*(1.3-paper*.6); paper-=T2.w*.9+.05;
       if(slip||paper<=0){ paper=Math.max(0,paper); tear=1; noiseBurst(.2,.12,900); if(paper<=0){ over=true; finish(); } return; }
       got.caught=true; won+=T2.v; caught.push(got.t); fxBurst(L,sx,sy,16,{kind:"drop",speed:180,size:3,up:160}); fxBurst(L,sx,sy,T2.v>=500?14:5,{kind:"coin",speed:200,size:5,up:200,life:1.1}); lifted={t:got.t,at:performance.now(),x:sx,y:sy}; tone(T2.v>=500?1046:784,.12,.1,"triangle"); if(T2.v>=500) tone(1318,.2,.1,"triangle",.1); } };
   cv.addEventListener("pointerup",lift); cv.addEventListener("pointercancel",lift);
-  const finish=()=>{ bag.coins+=won; saveBag(); nmEnd(L,won>0,won?`撈到 ${caught.length} 條，換 ${won} 平安幣`:"紙網破了，一條都沒撈到",won?caught.map(t=>({red:"紅",black:"黑",gold:"金",rainbow:"彩"})[t]).join(" "):"明天再來"); };
+  const finish=()=>{ bag.coins+=won; saveBag(); nmRecSend("fish",won); nmEnd(L,won>0,won?`撈到 ${caught.length} 條，換 ${won} 平安幣`:"紙網破了，一條都沒撈到",won?caught.map(t=>({red:"紅",black:"黑",gold:"金",rainbow:"彩"})[t]).join(" "):"明天再來"); };
   const draw=()=>{ if(L.done) return; const now=performance.now(), dt=Math.min(.05,(now-last)/1000); last=now; const W=L.W(), H=L.H(); nmBg(x,W,H,"#0e2a3a","#06121a"); const P=pond(W);
     { const pi=nmImg("fish-pond"); if(pi.complete&&pi.naturalWidth) x.drawImage(pi,P.x-14,P.y-14,P.w+28,P.h+28); else { x.fillStyle="#2a90c8"; x.fillRect(P.x,P.y,P.w,P.h); } }
     for(let i=0;i<9;i++){ x.strokeStyle="rgba(255,255,255,.12)"; x.lineWidth=2; x.beginPath(); x.ellipse(P.x+P.w*((i*.37+now/9000)%1),P.y+P.h*((i*.61)%1),34,9,0,0,7); x.stroke(); }
@@ -4316,8 +4323,8 @@ function playFish(){ const L=gameLayer("撈金魚","按住放進水裡，移到�
     const scoop=()=>nmDraw(x,"fish-scoop",(sx||W/2)+110*.08,(sy||H/2)+110*.42,110,0,inWater?.8:1);
     if(!over&&inWater) scoop();
     fish.forEach(f=>{ if(f.caught) return; const T2=TYPES[f.t]; f.turn-=dt; if(f.turn<0){ f.turn=.5+Math.random()*2; f.da=(Math.random()-.5)*3; }
-      const fx0=P.x+f.x*P.w, fy0=P.y+f.y*P.h, near=inWater&&Math.hypot(fx0-sx,fy0-sy)<70, sp=T2.sp*(near?1.8:1);
-      f.a+=(f.da||0)*dt; if(near) f.a=Math.atan2(fy0-sy,fx0-sx)*.6+f.a*.4;
+      const fx0=P.x+f.x*P.w, fy0=P.y+f.y*P.h, near=inWater&&Math.hypot(fx0-sx,fy0-sy)<70; if(f.scare>0) f.scare-=dt; const sp=T2.sp*(f.scare>0?3.2:near?1.8:1);
+      f.a+=(f.da||0)*dt; if(near&&!(f.scare>0)) f.a=Math.atan2(fy0-sy,fx0-sx)*.6+f.a*.4;
       f.x+=Math.cos(f.a)*sp*dt/P.w; f.y+=Math.sin(f.a)*sp*dt/P.h; if(f.x<.04||f.x>.96){ f.a=Math.PI-f.a; f.x=Math.max(.04,Math.min(.96,f.x)); } if(f.y<.05||f.y>.95){ f.a=-f.a; f.y=Math.max(.05,Math.min(.95,f.y)); }
       nmDraw(x,T2.img,P.x+f.x*P.w,P.y+f.y*P.h,T2.sz*2.3,f.a+Math.PI/2+Math.sin(now/120+f.x*20)*.12); }); // seen from above, head first
     if(lifted&&now-lifted.at<900){ const k=(now-lifted.at)/900; nmDraw(x,TYPES[lifted.t].img,lifted.x,lifted.y-k*80,54,Math.sin(now/50)*.4,1-k); }
@@ -4331,102 +4338,103 @@ function playFish(){ const L=gameLayer("撈金魚","按住放進水裡，移到�
     fxDraw(L,x,W,H); nmEndDraw(L,x,W,H); requestAnimationFrame(draw); };
   requestAnimationFrame(draw); }
 
-/* ===== 5. 打彈珠: buy marbles at 1 幣 each and choose how many to bet. Each round the slots below get new multipliers
-   (twelve times in total spread over nine slots, ×4 at most); the marble runs up the rail to the top, then drops
-   through the pins. The slot it falls into lights up red and pays bet × its number in marbles. Two 獎 holes on the
-   board give extra marbles. Marbles change back to 平安幣 1:1, at most 1000 幣 a day ===== */
-function playPachinko(){ const L=gameLayer("打彈珠","押好彈珠按「發射」，彈珠會先到最上面再隨機落下"); const {x,cv}=L; const d=nmDay();
-  const MC=["pk-red","pk-orange","pk-yellow","pk-green","pk-blue","pk-purple"]; nmPreload(MC.concat(["pk-launcher","pk-jackpot"]));
-  let marbles=0, bet=1, ball=null, msg="", msgAt=0, lit=-1, litAt=0, jackAt=0;
+/* ===== 5. 打彈珠 on the board picture. Each round four slots get multipliers (twelve in total, ×4 at most) and glow,
+   brighter the higher they pay; the marble climbs the rail on the right to the top, then falls through the pins.
+   Bet up to 100 marbles a shot. Marbles change back to 平安幣 1:1, at most 1000 幣 a day ===== */
+function playPachinko(){ const L=gameLayer("打彈珠","押好彈珠按「發射」，彈珠先到最上面再隨機落下"); const {x,cv}=L; const d=nmDay();
+  const MC=["pk-red","pk-orange","pk-yellow","pk-green","pk-blue","pk-purple"]; nmPreload(MC.concat(["pk-board","pk-jackpot"]));
+  let marbles=0, peak=0, bet=1, ball=null, msg="", msgAt=0, jackAt=0; const BETS=[1,5,10,50,100];
   const N=9; let mult=[];
-  const deal=()=>{ const m=new Array(N).fill(0); let left=12; while(left>0){ const i=(Math.random()*N)|0; if(m[i]<4){ m[i]++; left--; } } mult=m; };
+  const deal=()=>{ const m=new Array(N).fill(0), idx=[...Array(N).keys()].sort(()=>Math.random()-.5).slice(0,4); idx.forEach(i=>m[i]=1); let left=8; while(left>0){ const i=idx[(Math.random()*4)|0]; if(m[i]<4){ m[i]++; left--; } } mult=m; };
   deal();
-  let pegs=[], pockets=[], G;
-  const layout=()=>{ const W=L.W(), H=L.H(), bw=Math.min(W-40,420), bx=(W-bw)/2, top=165, bot=H-215; pegs=[];
-    for(let r=0;r<8;r++) for(let c=0;c<(r%2?8:9);c++) pegs.push({x:bx+18+(bw-36)*((c+(r%2?.5:0))/8),y:top+70+r*(bot-top-100)/8});
-    pockets=[{x:bx+bw*.27,y:top+(bot-top)*.5,r:13,add:2},{x:bx+bw*.73,y:top+(bot-top)*.5,r:13,add:2}]; G={bx,bw,top,bot,W,H}; };
+  // board picture is 1122×1402; the pins, holes, slots and rail below are where they are drawn on it
+  const IW=1122, IH=1402; let G;
+  const PEG_Y=[278,365,452,540,625,712,798,885,972,1058], PX_A=[128,249,370,490,611,731,851,966], PX_B=[189,307,429,550,670,790,908];
+  const HOLES=[[552,388,10],[357,588,5],[739,588,5]];
+  const layout=()=>{ const W=L.W(), H=L.H(), maxH=H-300, w=Math.min(W-16,maxH*IW/IH,460), h=w*IH/IW; const bx=(W-w)/2, by=150, k=w/IW;
+    const P=(px,py)=>[bx+px*k,by+py*k]; const pegs=[];
+    PEG_Y.forEach((py,r)=>(r%2?PX_B:PX_A).forEach(px=>{ if(HOLES.some(([hx,hy])=>Math.hypot(hx-px,hy-py)<70)) return; const [X,Y]=P(px,py); pegs.push({x:X,y:Y}); }));
+    G={W,H,bx,by,w,h,k,P,pegs,left:bx+48*k,right:bx+1000*k,top:by+175*k,slotY:by+1188*k,slotB:by+1320*k,sw:(1075-48)*k/N,holes:HOLES.map(([hx,hy,add])=>{ const [X,Y]=P(hx,hy); return {x:X,y:Y,r:28*k,add}; })}; };
   layout(); const onRs=()=>layout(); window.addEventListener("resize",onRs);
-  const btns={buy10:{h:44},buy50:{h:44},bet:{h:44},cash:{h:44},fire:{h:52}};
+  const btns={buy10:{h:42},buy100:{h:42},bet:{h:42},cash:{h:42},fire:{h:50}};
   const say=t=>{ msg=t; msgAt=performance.now(); };
-  const buy=n=>{ if(bag.coins<n){ say("平安幣不夠"); return; } bag.coins-=n; marbles+=n; saveBag(); tone(900,.06,.06); };
+  const buy=n=>{ if(bag.coins<n){ say("平安幣不夠"); return; } bag.coins-=n; marbles+=n; peak=Math.max(peak,marbles); saveBag(); tone(900,.06,.06); };
   const cash=()=>{ if(!marbles){ say("沒有彈珠可換"); return; } const room=Math.max(0,1000-d.pCash), n=Math.min(marbles,room); if(!n){ say("今天已換滿 1000 幣，明天再來"); return; } marbles-=n; d.pCash+=n; bag.coins+=n; saveBag(); say(`換了 ${n} 平安幣${marbles?`，剩 ${marbles} 顆今天換不了`:""}`); sfx.coin&&sfx.coin(); };
-  const fire=()=>{ if(ball){ say("等這顆落下"); return; } if(marbles<bet){ say(marbles?`彈珠不夠押 ${bet} 顆`:"先買彈珠"); return; } marbles-=bet; lit=-1;
-    ball={phase:"rail",t:0,bet,img:MC[(Math.random()*MC.length)|0],r:8,x:0,y:0,vx:0,vy:0}; tone(520,.12,.06,"triangle"); noiseBurst(.25,.05,3000); };
+  const fire=()=>{ if(ball){ say("等這顆落下"); return; } if(marbles<bet){ say(marbles?`彈珠不夠押 ${bet} 顆`:"先買彈珠"); return; } marbles-=bet;
+    ball={phase:"rail",t:0,bet,img:MC[(Math.random()*MC.length)|0],x:0,y:0,vx:0,vy:0}; tone(520,.12,.06,"triangle"); noiseBurst(.25,.05,3000); };
   cv.addEventListener("pointerdown",e=>{ const px=e.clientX, py=e.clientY;
-    if(inBox(btns.buy10,px,py)) return buy(10); if(inBox(btns.buy50,px,py)) return buy(50); if(inBox(btns.cash,px,py)) return cash();
-    if(inBox(btns.bet,px,py)){ bet=bet===1?5:bet===5?10:1; return; } if(inBox(btns.fire,px,py)) return fire(); });
+    if(inBox(btns.buy10,px,py)) return buy(10); if(inBox(btns.buy100,px,py)) return buy(100); if(inBox(btns.cash,px,py)) return cash();
+    if(inBox(btns.bet,px,py)){ bet=BETS[(BETS.indexOf(bet)+1)%BETS.length]; return; } if(inBox(btns.fire,px,py)) return fire(); });
+  // the rail in the picture: up the right side, round the top corner, to the opening in the middle of the top
+  const railPt=t=>{ const P=G.P; if(t<.62){ const k=t/.62; return P(1040,1130-(1130-260)*k); } const k=(t-.62)/.38, a=k*Math.PI/2; return P(1040-(1040-560)*Math.sin(a),260-(260-150)*(1-Math.cos(a))); };
   let last=performance.now();
-  const railPt=t=>{ // up the right side, then over the top arch to the middle
-    const R=G.bx+G.bw-6, T=G.top+18; if(t<.6){ const k=t/.6; return [R,G.bot+30-(G.bot+30-T)*k]; } const k=(t-.6)/.4, a=k*Math.PI/2; return [R-(G.bw*.5-6)*Math.sin(a)*1.0, T-14*Math.sin(a*2)]; };
   const draw=()=>{ if(L.done) return; const now=performance.now(), dt=Math.min(.033,(now-last)/1000); last=now; const W=L.W(), H=L.H(); nmBg(x,W,H,"#1a1030","#08040e");
-    // wooden board with bulbs around it
-    const wg=x.createLinearGradient(0,G.top,0,G.bot+70); wg.addColorStop(0,"#e0a868"); wg.addColorStop(1,"#c08048"); x.fillStyle="#8a4a1e"; x.beginPath(); x.roundRect?x.roundRect(G.bx-14,G.top-10,G.bw+28,G.bot-G.top+90,22):x.rect(G.bx-14,G.top-10,G.bw+28,G.bot-G.top+90); x.fill();
-    x.fillStyle=wg; x.beginPath(); x.roundRect?x.roundRect(G.bx,G.top,G.bw,G.bot-G.top+68,16):x.rect(G.bx,G.top,G.bw,G.bot-G.top+68); x.fill();
-    for(let i=0;i<14;i++){ const on=((now/180|0)+i)%2; x.fillStyle=on?"#fff2a0":"#c08030"; x.beginPath(); x.arc(G.bx-7,G.top+i*(G.bot-G.top+70)/14,4,0,7); x.arc(G.bx+G.bw+7,G.top+i*(G.bot-G.top+70)/14,4,0,7); x.fill(); }
-    // the rail on the right
-    x.strokeStyle="rgba(90,50,20,.8)"; x.lineWidth=3; x.beginPath(); for(let t=0;t<=1;t+=.02){ const [px,py]=railPt(t); t===0?x.moveTo(px,py):x.lineTo(px,py); } x.stroke();
-    pegs.forEach(p=>{ x.fillStyle="#7a4a22"; x.beginPath(); x.arc(p.x+1,p.y+2,4.5,0,7); x.fill(); x.fillStyle="#f0c890"; x.beginPath(); x.arc(p.x,p.y,4,0,7); x.fill(); });
-    pockets.forEach(p=>{ x.fillStyle="#e0402a"; x.beginPath(); x.arc(p.x,p.y,p.r,0,7); x.fill(); nmText(x,"獎",p.x,p.y+5,12,"#fff"); });
-    const sw=G.bw/N; mult.forEach((m,i)=>{ const sx=G.bx+i*sw, glow=i===lit&&now-litAt<1600;
-      if(glow){ const r=x.createRadialGradient(sx+sw/2,G.bot+40,4,sx+sw/2,G.bot+40,sw); r.addColorStop(0,"rgba(255,40,30,.95)"); r.addColorStop(1,"rgba(255,40,30,0)"); x.fillStyle=r; x.fillRect(sx-sw/2,G.bot+5,sw*2,70); }
-      x.fillStyle=glow?"#ff3a2a":m>=4?"#e8302a":m>=3?"#e8a020":m>=2?"#3aa040":m>=1?"#3a7ad0":"#5a4a40"; x.fillRect(sx+2,G.bot+20,sw-4,40);
-      if(i) { x.fillStyle="#6a3a18"; x.fillRect(sx-2,G.bot,4,60); } nmText(x,m?`×${m}`:"✕",sx+sw/2,G.bot+47,15,"#fff"); });
-    // the marble
-    if(ball){ if(ball.phase==="rail"){ ball.t+=dt*1.1; const [px,py]=railPt(Math.min(1,ball.t)); ball.x=px; ball.y=py; if(ball.t>=1){ ball.phase="drop"; ball.x=G.bx+G.bw*(.3+Math.random()*.4); ball.vx=(Math.random()-.5)*160; ball.vy=40; } }
-      else { const b=ball; b.vy+=900*dt; b.x+=b.vx*dt; b.y+=b.vy*dt;
-        if(b.x<G.bx+b.r){ b.x=G.bx+b.r; b.vx=Math.abs(b.vx)*.6; } if(b.x>G.bx+G.bw-b.r-10){ b.x=G.bx+G.bw-b.r-10; b.vx=-Math.abs(b.vx)*.6; }
-        for(const p of pegs){ const dx=b.x-p.x, dy=b.y-p.y, dd=Math.hypot(dx,dy); if(dd<b.r+4){ const nx=dx/dd, ny=dy/dd, dot=b.vx*nx+b.vy*ny; if(dot<0){ b.vx-=1.5*dot*nx; b.vy-=1.5*dot*ny; b.vx+=(Math.random()-.5)*40; b.vy*=.8; } b.x=p.x+nx*(b.r+4); b.y=p.y+ny*(b.r+4); if(Math.random()<.3) tone(1400+Math.random()*400,.02,.02,"square"); } }
-        for(const p of pockets){ if(Math.hypot(b.x-p.x,b.y-p.y)<p.r-1&&b.vy>0){ const n=p.add*b.bet; marbles+=n+b.bet; say(`進獎洞！ 拿回 ${b.bet} 顆再送 ${n} 顆`); tone(1046,.12,.1,"triangle"); tone(1318,.15,.1,"triangle",.1); ball=null; deal(); break; } }
-        if(ball&&b.y>G.bot+24){ const k=Math.max(0,Math.min(N-1,Math.floor((b.x-G.bx)/sw))), m=mult[k]; lit=k; litAt=now;
-          fxBurst(L,G.bx+(k+.5)*sw,G.bot+30,m?10+m*6:6,{kind:m>=3?"star":"spark",cols:m?undefined:["#ff4a3a"],speed:180+m*40,up:180});
-          if(m){ marbles+=b.bet*m; say(`×${m}　得到 ${b.bet*m} 顆`); tone(784,.1,.08,"triangle"); if(m>=4){ jackAt=now; tone(1046,.15,.1,"triangle",.1); tone(1568,.25,.1,"triangle",.2); } } else say("沒中，下一局");
-          ball=null; setTimeout(()=>{ if(!L.done&&!ball) deal(); },900); } }
-      if(ball) nmDraw(x,ball.img,ball.x,ball.y,ball.r*2.6); }
-    if(now-jackAt<1400) nmDraw(x,"pk-jackpot",W/2,G.top+(G.bot-G.top)*.3,170*(1+.08*Math.sin(now/80)));
-    nmText(x,`彈珠 ${marbles} 顆　押 ${bet}`,W/2,140,20,"#fff",undefined,700);
-    const by=H-148, bw4=(W-50)/4; [["buy10","買 10 顆"],["buy50","買 50 顆"],["bet",`押 ${bet} 顆`],["cash","換平安幣"]].forEach(([k,t],i)=>{ const b=btns[k]; b.x=20+i*(bw4+3.3); b.y=by; b.w=bw4; nmButton(x,b,t); });
-    const fb=btns.fire; fb.w=Math.min(W-40,260); fb.x=(W-fb.w)/2; fb.y=H-96; nmButton(x,fb,ball?"…":"發射",!ball);
-    nmText(x,`今天已換 ${d.pCash}/1000 幣`,W/2,H-30,13,"#c8c0e0",undefined,500);
-    if(msg&&now-msgAt<1800) nmText(x,msg,W/2,G.top+40,19,"#ffe14d");
+    if(!nmDraw(x,"pk-board",G.bx+G.w/2,G.by+G.h/2,G.w)){ x.fillStyle="#3a2060"; x.fillRect(G.bx,G.by,G.w,G.h); }
+    // the slots that pay this round glow, brighter and warmer the more they pay
+    mult.forEach((m,i)=>{ const cx=G.left+(i+.5)*G.sw, cy=(G.slotY+G.slotB)/2;
+      if(m){ const pulse=.75+.25*Math.sin(now/220+i), col=["","255,220,120","255,190,70","255,140,40","255,70,40"][m];
+        const r=x.createRadialGradient(cx,cy,2,cx,cy,G.sw*(.7+m*.12)); r.addColorStop(0,`rgba(${col},${.85*pulse})`); r.addColorStop(1,`rgba(${col},0)`); x.save(); x.globalCompositeOperation="lighter"; x.fillStyle=r; x.fillRect(cx-G.sw*1.2,G.slotY-G.sw*.8,G.sw*2.4,G.slotB-G.slotY+G.sw*1.6); x.restore();
+        nmText(x,`×${m}`,cx,cy+7,Math.max(14,G.sw*.42),m>=4?"#fff27a":"#ffffff"); }
+      else nmText(x,"✕",cx,cy+6,Math.max(12,G.sw*.3),"rgba(255,255,255,.35)"); });
+    if(ball){ if(ball.phase==="rail"){ ball.t+=dt*1.15; const [px,py]=railPt(Math.min(1,ball.t)); ball.x=px; ball.y=py; if(ball.t>=1){ ball.phase="drop"; ball.vx=(Math.random()-.5)*180*G.k*2; ball.vy=30; } }
+      else { const b=ball, R=Math.max(5,15*G.k); b.vy+=900*dt; b.x+=b.vx*dt; b.y+=b.vy*dt;
+        if(b.x<G.left+R){ b.x=G.left+R; b.vx=Math.abs(b.vx)*.6; } if(b.x>G.right-R){ b.x=G.right-R; b.vx=-Math.abs(b.vx)*.6; }
+        for(const p of G.pegs){ const dx=b.x-p.x, dy=b.y-p.y, dd=Math.hypot(dx,dy), rr=R+4*G.k*2; if(dd<rr){ const nx=dx/dd, ny=dy/dd, dot=b.vx*nx+b.vy*ny; if(dot<0){ b.vx-=1.5*dot*nx; b.vy-=1.5*dot*ny; b.vx+=(Math.random()-.5)*40; b.vy*=.8; } b.x=p.x+nx*rr; b.y=p.y+ny*rr; if(Math.random()<.3) tone(1400+Math.random()*400,.02,.02,"square"); } }
+        for(const p of G.holes){ if(Math.hypot(b.x-p.x,b.y-p.y)<p.r&&b.vy>0){ const n=p.add*b.bet; marbles+=n+b.bet; peak=Math.max(peak,marbles); say(`進獎洞！ 拿回 ${b.bet} 顆再送 ${n} 顆`); fxBurst(L,p.x,p.y,24,{kind:"star"}); tone(1046,.12,.1,"triangle"); tone(1318,.15,.1,"triangle",.1); ball=null; deal(); break; } }
+        if(ball&&b.y>G.slotY+6){ const k=Math.max(0,Math.min(N-1,Math.floor((b.x-G.left)/G.sw))), m=mult[k];
+          fxBurst(L,G.left+(k+.5)*G.sw,G.slotY,m?10+m*6:6,{kind:m>=3?"star":"spark",cols:m?undefined:["#ff4a3a"],speed:180+m*40,up:180});
+          if(m){ marbles+=b.bet*m; peak=Math.max(peak,marbles); say(`×${m}　得到 ${b.bet*m} 顆`); tone(784,.1,.08,"triangle"); if(m>=4){ jackAt=now; tone(1046,.15,.1,"triangle",.1); tone(1568,.25,.1,"triangle",.2); } } else say("沒中，下一局");
+          ball=null; setTimeout(()=>{ if(!L.done&&!ball) deal(); },700); } }
+      if(ball) nmDraw(x,ball.img,ball.x,ball.y,Math.max(12,34*G.k)); }
+    if(now-jackAt<1400) nmDraw(x,"pk-jackpot",W/2,G.by+G.h*.35,170*(1+.08*Math.sin(now/80)));
+    nmText(x,`彈珠 ${marbles} 顆　押 ${bet}`,W/2,138,20,"#fff",undefined,700);
+    const by=G.by+G.h+8, bw4=(W-50)/4; [["buy10","買 10 顆"],["buy100","買 100 顆"],["bet",`押 ${bet} 顆`],["cash","換平安幣"]].forEach(([k,t],i)=>{ const b=btns[k]; b.x=20+i*(bw4+3.3); b.y=by; b.w=bw4; nmButton(x,b,t); });
+    const fb=btns.fire; fb.w=Math.min(W-40,260); fb.x=(W-fb.w)/2; fb.y=by+48; nmButton(x,fb,ball?"…":"發射",!ball);
+    nmText(x,`每天最多換 1000 幣・今天已換 ${d.pCash}`,W/2,by+116,13,"#c8c0e0",undefined,500);
+    if(msg&&now-msgAt<1800) nmText(x,msg,W/2,G.by+G.h*.08+30,19,"#ffe14d");
     fxDraw(L,x,W,H); requestAnimationFrame(draw); };
-  const close0=L.close; L.close=()=>{ window.removeEventListener("resize",onRs); if(marbles) toast(`還有 ${marbles} 顆彈珠沒換，離開後就沒了`,3000); close0(); };
+  const close0=L.close; L.close=()=>{ window.removeEventListener("resize",onRs); if(peak) nmRecSend("pachinko",peak); if(marbles) toast(`還有 ${marbles} 顆彈珠沒換，離開後就沒了`,3000); close0(); };
   requestAnimationFrame(draw); }
 
-/* ===== 6. 珍珠奶茶: add exactly what the order says before time runs out, then shake the phone (or swipe up and down fast) ===== */
-function playBoba(){ const L=gameLayer("珍珠奶茶","照訂單加料，再搖杯（搖手機，或在畫面上快速上下滑）"); const {x,cv}=L;
-  const ING=[["紅茶","bb-black"],["綠茶","bb-green"],["鮮奶","bb-milk"],["奶粉","bb-powder"],["糖","bb-sugar"],["珍珠","bb-pearl"],["黃金珍珠","bb-gold"],["檸檬","bb-lemon"],["冰塊","bb-ice"]];
-  nmPreload(ING.map(i=>i[1]).concat(["bb-cup-milk","bb-cup-green","bb-cup-lemon","bb-shaker","bb-hat"]));
-  const order=()=>{ const base=Math.random()<.5?"紅茶":"綠茶"; const pool=ING.map(i=>i[0]).filter(n=>n!=="紅茶"&&n!=="綠茶"); const pick=[base]; while(pick.length<3+((Math.random()*2)|0)){ const n=pool[(Math.random()*pool.length)|0]; if(!pick.includes(n)) pick.push(n); } return pick; };
-  const cupImg=o=>o.includes("檸檬")?"bb-cup-lemon":o[0]==="綠茶"?"bb-cup-green":"bb-cup-milk";
-  let cup=0, need=order(), added=[], phase="add", time=16, shakes=0, NEED_SHAKE=16, over=false, last=performance.now(), lastY=null, dir=0, motionOn=false, lastShakeAt=0;
-  const btns=ING.map(()=>({x:0,y:0,w:0,h:0}));
+/* ===== 6. 珍珠奶茶: three drinks off the menu; add exactly what each recipe needs before time runs out, then shake ===== */
+const BB_ING=[["紅茶","bb-black"],["綠茶","bb-green"],["鮮奶","bb-milk"],["奶粉","bb-powder"],["糖","bb-sugar"],["珍珠","bb-pearl"],["黃金珍珠","bb-gold"],["檸檬","bb-lemon"],["冰塊","bb-ice"],["黑糖","bb-brownsugar"],["芋頭","bb-taro"],["芒果","bb-mango"],["煉乳","bb-condensed"],["草莓","bb-strawberry"],["冰淇淋","bb-icecream"]];
+const BB_MENU=[["珍珠奶茶","bb-d-milktea",["紅茶","鮮奶","珍珠","冰塊"]],["綠茶黃金珍珠","bb-d-green",["綠茶","奶粉","黃金珍珠","冰塊"]],["檸檬紅茶","bb-d-lemon",["紅茶","檸檬","糖","冰塊"]],
+  ["黑糖珍珠鮮奶","bb-d-brownsugar",["鮮奶","黑糖","珍珠"]],["芋頭鮮奶","bb-d-taro",["鮮奶","芋頭","珍珠","冰塊"]],["芒果冰沙","bb-d-mango",["芒果","煉乳","珍珠","冰塊"]],["草莓奶昔","bb-d-strawberry",["草莓","冰淇淋","鮮奶","珍珠"]]];
+function playBoba(){ const L=gameLayer("珍珠奶茶","照配方加料，再搖杯（搖手機，或在畫面上快速上下滑）"); const {x,cv}=L;
+  nmPreload(BB_ING.map(i=>i[1]).concat(BB_MENU.map(m=>m[1]),["bb-shaker"]));
+  const menu=BB_MENU.slice().sort(()=>Math.random()-.5).slice(0,3);
+  let cup=0, drink=menu[0], added=[], phase="add", time=20, shakes=0, NEED_SHAKE=16, over=false, last=performance.now(), lastY=null, dir=0, motionOn=false, lastShakeAt=0, t0=0;
+  const btns=BB_ING.map(()=>({x:0,y:0,w:0,h:0}));
   const shakeOnce=()=>{ const n=performance.now(); if(n-lastShakeAt<110) return; lastShakeAt=n; shakes++; noiseBurst(.06,.06,4000+Math.random()*2000); if(shakes>=NEED_SHAKE) cupDone(); };
   const onMotion=e=>{ if(phase!=="shake") return; const a=e.accelerationIncludingGravity||e.acceleration; if(!a) return; if(Math.hypot(a.x||0,a.y||0,a.z||0)>22) shakeOnce(); };
   const askMotion=()=>{ if(motionOn) return; motionOn=true; try{ if(window.DeviceMotionEvent&&typeof DeviceMotionEvent.requestPermission==="function") DeviceMotionEvent.requestPermission().then(r=>{ if(r==="granted") addEventListener("devicemotion",onMotion); }).catch(()=>{}); else addEventListener("devicemotion",onMotion); }catch(e){} };
-  const cupDone=()=>{ phase="done"; cup++; fxBurst(L,L.W()/2,L.H()*.47,30,{kind:"star",speed:300}); tone(784,.12,.1,"triangle"); tone(1046,.2,.1,"triangle",.12); if(cup>=3){ over=true; giveAcc("boba"); nmEnd(L,true,"三杯珍奶完成！","得到珍奶頭飾，已戴上"); } else setTimeout(()=>{ need=order(); added=[]; phase="add"; time=16; shakes=0; },1100); };
-  cv.addEventListener("pointerdown",e=>{ askMotion(); if(L.endMsg){ L.close(); return; } if(phase==="add"){ btns.forEach((b,i)=>{ if(!inBox(b,e.clientX,e.clientY)) return; const n=ING[i][0];
-        if(!need.includes(n)||added.includes(n)){ over=true; nmEnd(L,false,`加錯了：${n}`,"這杯不能賣，再來一次"); return; }
-        added.push(n); tone(600+added.length*120,.08,.08,"triangle"); fxBurst(L,L.W()/2,L.H()*.47,12,{speed:160}); if(need.every(k=>added.includes(k))) phase="shake"; }); }
+  const cupDone=()=>{ phase="done"; cup++; fxBurst(L,L.W()/2,L.H()*.42,30,{kind:"star",speed:300}); tone(784,.12,.1,"triangle"); tone(1046,.2,.1,"triangle",.12);
+    if(cup>=3){ over=true; const secs=(performance.now()-t0)/1000; giveAcc("boba"); nmRecSend("boba",+secs.toFixed(1)); nmEnd(L,true,"三杯飲料完成！",`用了 ${secs.toFixed(1)} 秒・得到珍奶頭飾，已戴上`); }
+    else setTimeout(()=>{ drink=menu[cup]; added=[]; phase="add"; time=20; shakes=0; },1100); };
+  cv.addEventListener("pointerdown",e=>{ askMotion(); if(L.endMsg){ L.close(); return; } if(!t0) t0=performance.now(); if(phase==="add"){ btns.forEach((b,i)=>{ if(!inBox(b,e.clientX,e.clientY)) return; const n=BB_ING[i][0];
+        if(!drink[2].includes(n)||added.includes(n)){ over=true; nmEnd(L,false,`加錯了：${n}`,`${drink[0]}不用加${n}，再來一次`); return; }
+        added.push(n); tone(600+added.length*120,.08,.08,"triangle"); fxBurst(L,b.x+b.w/2,b.y,10,{speed:140}); if(drink[2].every(k=>added.includes(k))) phase="shake"; }); }
     lastY=e.clientY; });
   cv.addEventListener("pointermove",e=>{ if(phase!=="shake"||lastY==null||!(e.buttons||e.pointerType==="touch")) return; const dy=e.clientY-lastY; if(Math.abs(dy)>28){ const d2=Math.sign(dy); if(d2!==dir){ dir=d2; shakeOnce(); } lastY=e.clientY; } });
   const close0=L.close; L.close=()=>{ removeEventListener("devicemotion",onMotion); close0(); };
   const draw=()=>{ if(L.done) return; const now=performance.now(), dt=Math.min(.05,(now-last)/1000); last=now; const W=L.W(), H=L.H(); nmBg(x,W,H,"#3a2414","#140a04");
-    nmText(x,`第 ${Math.min(3,cup+1)} / 3 杯`,W/2,140,22);
-    // the order slip with little pictures
-    const sw=Math.min(W-40,340); x.fillStyle="#fffaf0"; x.beginPath(); x.roundRect?x.roundRect(W/2-sw/2,158,sw,70,10):x.rect(W/2-sw/2,158,sw,70); x.fill();
-    need.forEach((n,i)=>{ const px=W/2-sw/2+30+i*((sw-40)/need.length); const ing=ING.find(q=>q[0]===n); nmDraw(x,ing[1],px+8,186,34,0,added.includes(n)?.35:1); nmText(x,n,px+8,220,12,"#5a2a10",undefined,700); if(added.includes(n)) nmText(x,"✓",px+22,180,20,"#2a9a3a"); });
-    const cx=W/2, cy=H*.47;
-    if(phase==="shake"){ const sh=Math.sin(now/40)*Math.min(18,shakes*1.5); nmDraw(x,"bb-shaker",cx+sh,cy,Math.min(W*.22,96),sh/60); }
-    else nmDraw(x,cupImg(need),cx,cy,Math.min(W*.28,120),0,phase==="done"?1:.35+.65*added.length/need.length);
-    if(phase==="add"){ time-=dt; if(time<=0&&!over){ over=true; nmEnd(L,false,"太慢了，客人走了","再來一次"); }
-      nmText(x,`${Math.max(0,time).toFixed(1)} 秒`,W/2,cy-100,20,"#ffe14d");
-      const cols=3, bw=(W-48)/cols, bh=Math.min(74,(H*.36)/3);
-      btns.forEach((b,i)=>{ b.x=18+(i%cols)*(bw+6); b.y=H-28-bh*3-8+Math.floor(i/cols)*(bh+4); b.w=bw; b.h=bh; const on=added.includes(ING[i][0]);
-        x.fillStyle=on?"rgba(60,120,60,.85)":"rgba(110,60,30,.85)"; x.beginPath(); x.roundRect?x.roundRect(b.x,b.y,b.w,b.h,10):x.rect(b.x,b.y,b.w,b.h); x.fill(); x.strokeStyle="#f0c75e"; x.lineWidth=1.5; x.stroke();
-        nmDraw(x,ING[i][1],b.x+bh*.45,b.y+bh/2,bh*.72); nmText(x,ING[i][0]+(on?" ✓":""),b.x+bh*.9+(b.w-bh*.9)/2,b.y+bh/2+6,15,"#fff4d8"); }); }
+    nmText(x,`第 ${Math.min(3,cup+1)} / 3 杯`,W/2,138,20);
+    // the order: the drink's picture and name, and what goes in it
+    const sw=Math.min(W-24,380), sx=W/2-sw/2, sy=152; x.fillStyle="#fffaf0"; x.beginPath(); x.roundRect?x.roundRect(sx,sy,sw,86,12):x.rect(sx,sy,sw,86); x.fill();
+    nmDraw(x,drink[1],sx+34,sy+43,40); nmText(x,drink[0],sx+64,sy+30,17,"#8e1c14","left",900);
+    drink[2].forEach((n,i)=>{ const ing=BB_ING.find(q=>q[0]===n), px=sx+80+i*((sw-90)/drink[2].length)+((sw-90)/drink[2].length)/2-10; nmDraw(x,ing[1],px,sy+58,26,0,added.includes(n)?.35:1); nmText(x,n,px,sy+82,11,"#5a2a10",undefined,700); if(added.includes(n)) nmText(x,"✓",px+12,sy+56,18,"#2a9a3a"); });
+    const cx=W/2, cy=sy+86+Math.min(110,(H-sy-86-(H*.38))/2+40);
+    if(phase==="shake"){ const sh=Math.sin(now/40)*Math.min(18,shakes*1.5); nmDraw(x,"bb-shaker",cx+sh,cy,Math.min(W*.18,74),sh/60); }
+    else nmDraw(x,drink[1],cx,cy,Math.min(W*.2,82),0,phase==="done"?1:.3+.7*added.length/drink[2].length);
+    if(phase==="add"){ if(t0){ time-=dt; if(time<=0&&!over){ over=true; nmEnd(L,false,"太慢了，客人走了","再來一次"); } }
+      nmText(x,t0?`${Math.max(0,time).toFixed(1)} 秒`:"點一個配料開始計時",W/2,cy+82,16,"#ffe14d");
+      const cols=5, rows=3, gap=5, bw=(W-20-gap*(cols-1))/cols, bh=Math.min(84,(H-(cy+100)-20)/rows-gap);
+      btns.forEach((b,i)=>{ b.x=10+(i%cols)*(bw+gap); b.y=H-14-rows*(bh+gap)+Math.floor(i/cols)*(bh+gap); b.w=bw; b.h=bh; const on=added.includes(BB_ING[i][0]);
+        x.fillStyle=on?"rgba(60,120,60,.85)":"rgba(110,60,30,.8)"; x.beginPath(); x.roundRect?x.roundRect(b.x,b.y,b.w,b.h,10):x.rect(b.x,b.y,b.w,b.h); x.fill(); x.strokeStyle="#f0c75e"; x.lineWidth=1.2; x.stroke();
+        nmDraw(x,BB_ING[i][1],b.x+b.w/2,b.y+b.h*.42,Math.min(b.w*.62,b.h*.62)); nmText(x,BB_ING[i][0]+(on?"✓":""),b.x+b.w/2,b.y+b.h-6,12,"#fff4d8"); }); }
     if(phase==="shake"){ nmText(x,"搖起來！",W/2,H-170,30,"#7dffb0"); nmText(x,"搖手機，或在畫面上快速上下滑",W/2,H-135,15,"#fff",undefined,500);
       x.fillStyle="rgba(255,255,255,.15)"; x.fillRect(W/2-120,H-110,240,14); x.fillStyle="#7dffb0"; x.fillRect(W/2-120,H-110,240*Math.min(1,shakes/NEED_SHAKE),14); }
-    fxDraw(L,x,W,H); nmEndDraw(L,x,W,H); if(L.endMsg&&L.endMsg.win) nmDraw(x,"bb-hat",W/2,H*.25,130); requestAnimationFrame(draw); };
+    fxDraw(L,x,W,H); nmEndDraw(L,x,W,H); requestAnimationFrame(draw); };
   requestAnimationFrame(draw); }
 
 /* ===== 7. 射氣球: the sight drifts by itself; tap to shoot where it is. Break all 30 balloons with 36 darts ===== */
@@ -4434,13 +4442,13 @@ function playBalloon(){ const L=gameLayer("射氣球","準星會飄，抓準時�
   nmPreload(["bl-red","bl-yellow","bl-blue","bl-pop","bl-perfect","bl-afro"]);
   const COLS=6, ROWS=5, bl=[], IM=["bl-red","bl-yellow","bl-blue"];
   for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) bl.push({c,r,img:IM[(c+r)%3],pop:0,alive:true});
-  let darts=36, aim={x:0,y:0}, t=0, over=false, last=performance.now();
+  let darts=36, aim={x:0,y:0}, t=0, over=false, last=performance.now(); L.t0=performance.now();
   const grid=(W,H)=>{ const gw=Math.min(W-40,420), gh=Math.min(H*.46,330); return {x:(W-gw)/2,y:175,w:gw,h:gh}; };
   cv.addEventListener("pointerdown",e=>{ if(L.endMsg){ L.close(); return; } if(over||darts<=0) return;
     darts--; noiseBurst(.05,.1,2500); const W=L.W(), H=L.H(), g=grid(W,H), cw=g.w/COLS, ch=g.h/ROWS;
     const hit=bl.find(b=>b.alive&&Math.hypot(aim.x-(g.x+(b.c+.5)*cw),aim.y-(g.y+(b.r+.5)*ch))<Math.min(cw,ch)*.42);
     if(hit){ fxBurst(L,aim.x,aim.y,16,{kind:"paper",speed:260,size:4,cols:[{"bl-red":"#ff3a3a","bl-yellow":"#ffd21a","bl-blue":"#2a8aff"}[hit.img]]}); hit.alive=false; hit.pop=1; tone(1200,.05,.12,"square"); noiseBurst(.12,.2,1500); }
-    if(bl.every(b=>!b.alive)){ over=true; const had=giveAcc("afro"); nmEnd(L,true,"全部射破！",had?"爆炸頭已經有了，再閃一次":"得到閃亮彩色爆炸頭，已戴上"); }
+    if(bl.every(b=>!b.alive)){ over=true; nmRecSend("balloon",+((performance.now()-L.t0)/1000).toFixed(1)); const had=giveAcc("afro"); nmEnd(L,true,"全部射破！",had?"爆炸頭已經有了，再閃一次":"得到閃亮彩色爆炸頭，已戴上"); }
     else if(darts<=0){ over=true; nmEnd(L,false,`還剩 ${bl.filter(b=>b.alive).length} 顆`,"要全部射破才有獎品"); } });
   const draw=()=>{ if(L.done) return; const now=performance.now(), dt=Math.min(.05,(now-last)/1000); last=now; t+=dt; const W=L.W(), H=L.H(); nmBg(x,W,H,"#2a1a3a","#0a0614"); const g=grid(W,H), cw=g.w/COLS, ch=g.h/ROWS;
     x.fillStyle="#c0392b"; x.beginPath(); x.roundRect?x.roundRect(g.x-16,g.y-16,g.w+32,g.h+32,14):x.rect(g.x-16,g.y-16,g.w+32,g.h+32); x.fill(); x.fillStyle="#f6ead2"; x.fillRect(g.x-6,g.y-6,g.w+12,g.h+12);
@@ -4493,7 +4501,9 @@ function mkTick(dt){ for(const k in MK.built){ const av=MK.built[k].av; av.pos.s
 function mkSet(open){ MK.open={}; for(const k in (open||{})) if(NM_STALLS.some(s=>s.k===k)&&open[k]) MK.open[k]=+open[k]; mkLayout(); }
 async function mkFetch(){ if(!USE_CF) return; try{ const r=await fetch("/market",{cache:"no-store"}); if(!r.ok) return; const j=await r.json(); if(j&&j.open) mkSet(j.open); }catch(e){} }
 function openStall(k){ const s=NM_STALLS.find(x=>x.k===k); if(!s) return; const K=MK_KEEPER[k], d=nmDay(); const B=MK.built[k]; if(B) B.av.say(K.say[0],"#ffe2a0",2.5);
-  openSheet("stall",s.name,`<p class="lead">${K.n}：「${K.say[0]}」</p><p class="note">${s.note}</p><div class="goods"><button class="good wide" data-act="nmPlay" data-v="${k}" ${k==="fish"&&d.fish?"disabled":""}><span class="name">${s.icon} ${k==="pachinko"?"進去打彈珠":"玩一次"}</span><span class="own">${s.price?`${s.price} 平安幣`:"免費入場，彈珠一顆 1 幣"}${k==="fish"&&d.fish?"・今天玩過了":""}</span></button></div>`); }
+  const lim={fish:"每天可以玩一次，撈到的魚直接換平安幣。",pachinko:"彈珠一顆 1 幣，每天最多換回 1000 平安幣。"}[k]||"";
+  if(NM_REC[k]) nmRecGet(k).then(list=>{ const el=$("#nmRec"); if(!el) return; const [lab,,unit]=NM_REC[k]; el.innerHTML=list.length?`<span class="group-label">🏆 紀錄保持者・${lab}（這次出攤）</span>${list.slice(0,5).map((r,i)=>`<div class="rec-row"><b>${["🥇","🥈","🥉","4.","5."][i]}</b> ${esc(r.name)}<span>${r.v} ${unit}</span></div>`).join("")}`:`<span class="group-label">🏆 ${lab}</span><p class="note">這次出攤還沒有人留下紀錄，搶第一！</p>`; });
+  openSheet("stall",s.name,`<p class="lead">${K.n}：「${K.say[0]}」</p><p class="note">${s.note}${lim?"<br>"+lim:""}</p><div class="group" id="nmRec"></div><div class="goods"><button class="good wide" data-act="nmPlay" data-v="${k}" ${k==="fish"&&d.fish?"disabled":""}><span class="name">${s.icon} ${k==="pachinko"?"進去打彈珠":"玩一次"}</span><span class="own">${s.price?`${s.price} 平安幣`:"免費入場，彈珠一顆 1 幣"}${k==="fish"&&d.fish?"・今天玩過了":""}</span></button></div>`); }
 // chair: open / close each stall
 HANDLERS.marketOpen=()=>{ const row=s=>`<button class="good" data-act="mkToggle" data-v="${s.k}" style="${MK.open[s.k]?"border-color:var(--gold);background:rgba(142,28,20,.35)":""}"><span class="name">${s.icon} ${s.name}${MK.open[s.k]?"　✓ 營業中":""}</span><span class="meta">${MK.open[s.k]?"點一下收攤":"點一下擺攤"}</span></button>`;
   openSheet("market","夜市",`${backBtn}<p class="lead">擺出來的攤位會照開的順序，排在許願樹旁的圍牆邊。</p><div class="goods">${NM_STALLS.map(row).join("")}</div><div class="row"><button class="secondary" data-act="mkAll" data-v="1">全部擺出</button><button class="secondary" data-act="mkAll" data-v="0">全部收攤</button></div>`); };
