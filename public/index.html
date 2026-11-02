@@ -1485,9 +1485,11 @@ const FT={x:0,z:HZ+YX+20.2,H:4.4,k:1,mouth:new T.Vector3(),pool:new T.Vector3(0,
             const rays2=rays.clone(); rays2.material=rays.material.clone(); rays2.scale.setScalar(1.45); rays2.position.z=-.012; g.add(rays2);
             const beamTex=cvs(64,256,(c,w,h)=>{ const gr=c.createLinearGradient(0,h,0,0); gr.addColorStop(0,"rgba(255,240,190,.95)"); gr.addColorStop(1,"rgba(255,220,140,0)"); c.fillStyle=gr; c.beginPath(); c.moveTo(w*.4,h); c.lineTo(w*.6,h); c.lineTo(w,0); c.lineTo(0,0); c.fill(); });
             const beams=[-1,1].map(sd=>{ const piv=new T.Group(); piv.position.set(sd*1.1,.9,-.05); g.add(piv); const b=new T.Mesh(new T.PlaneGeometry(1.6,14),new T.MeshBasicMaterial({map:beamTex,transparent:true,opacity:.5,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide})); b.position.y=7; piv.add(b); return {piv,b,sd}; });
-            const fw=[...Array(90)].map(()=>{ const sp=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color(),transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false})); sp.position.z=.15; g.add(sp); return {sp,on:false}; });
+            // a ring of hearts round the board, turning slowly and beating
+            const heartTex=cvs(128,128,(c,w,h)=>{ c.translate(w/2,h/2+6); c.beginPath(); c.moveTo(0,40); c.bezierCurveTo(-62,-2,-36,-56,0,-24); c.bezierCurveTo(36,-56,62,-2,0,40); c.closePath(); c.shadowColor="rgba(255,120,170,.9)"; c.shadowBlur=14; c.fillStyle="#ff4f8b"; c.fill(); c.shadowBlur=0; c.fillStyle="rgba(255,255,255,.55)"; c.beginPath(); c.ellipse(-16,-14,9,6,-.6,0,Math.PI*2); c.fill(); });
+            const hearts=[...Array(16)].map((_,k)=>{ const sp=new T.Sprite(new T.SpriteMaterial({map:heartTex,transparent:true,depthWrite:false})); sp.position.z=.18; g.add(sp); return {sp,a:k/16*Math.PI*2}; });
             const gold=[...Array(40)].map((_,k)=>{ const sp=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffd75a"),transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false})); sp.position.z=.2; g.add(sp); return {sp,ph:Math.random(),x:(Math.random()*2-1)*1.9}; });
-            Object.assign(fx,{halo2,rays2,beams,fw,gold,burstAt:0}); }
+            Object.assign(fx,{halo2,rays2,beams,hearts,gold}); }
           }
         const t0=performance.now(); setInterval(()=>{ const t=(performance.now()-t0)/1000;
           nb.forEach(([m,gmN],i)=>{ const u=i/nb.length, pulse=.55+.45*Math.max(0,Math.sin((u*6-t*(tier===3?4.5:3))*Math.PI));
@@ -1497,9 +1499,7 @@ const FT={x:0,z:HZ+YX+20.2,H:4.4,k:1,mouth:new T.Vector3(),pool:new T.Vector3(0,
             fx.sparks.forEach(o=>{ const v=(t*.35+o.ph)%1, a=o.ph*40; o.sp.position.x=Math.sin(a)*1.45+Math.sin(t*2+a)*.08; o.sp.position.y=-1.1+v*2.4; const k=Math.sin(v*Math.PI); o.sp.material.opacity=k*.95; o.sp.scale.setScalar(.12+.16*k); o.sp.material.color.setHSL((o.ph+t*.3)%1,1,.65); });
             if(fx.beams){ fx.halo2.material.opacity=.3+.2*Math.sin(t*1.3+1); fx.halo2.material.color.setHSL((t*.08)%1,1,.6); fx.rays2.rotation.z=-t*.22; fx.rays2.material.opacity=.3+.15*Math.sin(t*2.1);
               fx.beams.forEach(o=>{ o.piv.rotation.z=o.sd*(.25+.3*Math.sin(t*.8+o.sd)); o.b.material.opacity=.5+.2*Math.sin(t*2+o.sd); o.b.material.color.setHSL((t*.1+(o.sd>0?.5:0))%1,.7,.75); });
-              if(t>fx.burstAt){ fx.burstAt=t+.7+Math.random()*.8; const cx=(Math.random()*2-1)*2.2, cy=1.8+Math.random()*2.2, hue=Math.random(), n=26; let k=0;
-                for(const o of fx.fw){ if(o.on) continue; const a=k/n*Math.PI*2; Object.assign(o,{on:true,t0:t,cx,cy,vx:Math.cos(a)*(1.7+Math.random()*.5),vy:Math.sin(a)*(1.7+Math.random()*.5)}); o.sp.material.color.setHSL((hue+k*.02)%1,1,.65); if(++k>=n) break; } }
-              fx.fw.forEach(o=>{ if(!o.on) return; const e=t-o.t0; if(e>1.3){ o.on=false; o.sp.material.opacity=0; return; } const d=1-Math.exp(-e*2.6); o.sp.position.x=o.cx+o.vx*d; o.sp.position.y=o.cy+o.vy*d-e*e*.5; o.sp.material.opacity=Math.max(0,1-e/1.3); o.sp.scale.setScalar(.42*(1-e/1.6)+.1); });
+              fx.hearts.forEach((o,k)=>{ const a=o.a+t*.35, beat=1+.18*Math.max(0,Math.sin(t*5.2-k*.4)); o.sp.position.x=Math.cos(a)*1.75; o.sp.position.y=Math.sin(a)*1.38; o.sp.scale.setScalar(.6*beat); o.sp.material.color.setHSL(.93+.05*Math.sin(t*2+k),1,.7); });
               fx.gold.forEach(o=>{ const v=(t*.22+o.ph)%1; o.sp.position.x=o.x+Math.sin(t*3+o.ph*20)*.12; o.sp.position.y=1.9-v*3.4; o.sp.material.opacity=Math.sin(v*Math.PI)*.9; o.sp.scale.setScalar(.14+.08*Math.sin(t*9+o.ph*30)); }); } } },60);
         } else { pts.forEach(([bx,by,ph])=>{ const b=new T.Mesh(bg,bm[ph]); b.position.set(bx,by,.04); g.add(b); const sp=new T.Sprite(gm[ph]); sp.scale.set(.2,.2,1); sp.position.set(bx,by,.06); g.add(sp); });
       let on=0; setInterval(()=>{ on^=1; bm[on].color.set("#fff6d6"); bm[1-on].color.set("#c9862e"); gm[on].opacity=.85; gm[1-on].opacity=.15; },550); } }
@@ -1973,7 +1973,7 @@ class Avatar{
     if(this.shoulderPet) this.shoulderPet.quaternion.copy(this.arms[1].quaternion).invert();
     sparkTick(this,dt); emoTick(this,dt);
     return walking; }
-  dispose(){ scene.remove(this.root); if(this.npcId) npcRelease(this.npcId); }
+  dispose(){ scene.remove(this.root); if(this.npcId) npcRelease(this.npcId); if(this.flies) stinkFlies(this,false); }
 }
 const _v1=new T.Vector3(), _v2=new T.Vector3(); let sheetOff=0;
 function camOK(x,y,z){ if(y<.35) return false; const ax=Math.abs(x);
@@ -4637,7 +4637,7 @@ function tick(){ if(gameAsleep) return; { const now=performance.now(), cap=frame
     r1.scale.setScalar(k); r2.scale.setScalar(1+((tapT*1.2)%1)*.8); r2.material.opacity=.7*(1-((tapT*1.2)%1));
     if(arrived||tapT>12){ const f=Math.max(0,r1.material.opacity-dt*3); r1.material.opacity=f; dot.material.opacity=f; if(f<=0){ tapMark.visible=false; r1.material.opacity=.9; dot.material.opacity=.9; } } }
   botTick(dt);
-  lodPrep(); remotes.forEach(r=>{ lodUpdate(r,dt); if(r.eq&&(r.eq[0]||r.eq[1])) accTick(r,dt); }); sjUpdate(dt); fwUpdate(dt); updateSkyLanterns(dt); renderSLBtn(); opTick(dt); ftTick(dt); mkTick(dt);
+  lodPrep(); remotes.forEach(r=>{ lodUpdate(r,dt); if((r.eq&&(r.eq[0]||r.eq[1]))||r.flies) accTick(r,dt); }); // r.flies: keep ticking once more so flies go away after the sausage is put down sjUpdate(dt); fwUpdate(dt); updateSkyLanterns(dt); renderSLBtn(); opTick(dt); ftTick(dt); mkTick(dt);
   if(room&&dirty&&performance.now()-lastSend>((keys.size||joy.on)?800:SEND_GAP)) sendPresence();
   updateFlyers(dt); updateFu(dt); updateCats(dt); updateWater(dt);
   { let best=null, bd=2.6; if(!sheetKind&&!customizing&&!pendingStation&&meAv.seat<0&&!(meAv.danceT>0)) for(const k in stations){ if(k==="cats"){ const dc=Math.hypot(meAv.pos.x-CATS.c.x,meAv.pos.y-CATS.c.z); if(dc<3.6){ best=k; bd=0; } continue; } const d=meAv.pos.distanceTo(stations[k].approach); if(d<bd){ bd=d; best=k; } }
