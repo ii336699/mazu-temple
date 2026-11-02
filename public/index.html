@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="線上媽祖廟">
+<meta name="apple-mobile-web-app-title" content="雲端天后宮">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
@@ -2268,6 +2268,8 @@ function botHear(av,text){ if(!DANCE_CALL.ON||!DANCE_RE.test(text)||performance.
     n.steps.push({look:rand(3,8)}); n.step=null; },delays[k])); }
 function botNear(n,r){ return Math.hypot(n.pos.x-meAv.pos.x,n.pos.y-meAv.pos.y)<r; }
 function botTick(dt){ const now=performance.now(); botFps(dt);
+  // 隱藏其他玩家: checked every frame, so nobody can pop back into view (only the nameless kneeling demo worshippers stay)
+  if(!customizing){ for(const n of npcs){ const v=othersShown||!!n.classic; if(n.root.visible!==v) n.root.visible=v; } remotes.forEach(r=>{ if(r.root.visible!==othersShown) r.root.visible=othersShown; }); }
   if(now>BOT.nextAdjust){ const live=npcs.filter(n=>!n.leaving&&!n.classic), want=botWant(); BOT.nextAdjust=now+(Math.abs(live.length-want)>4?rand(1500,4000):rand(15000,40000));
     if(live.length<want-6){ for(let k=Math.min(4,want-live.length);k>0;k--) placeBot(); BOT.nextAdjust=now+rand(800,1600); }
     else if(live.length<want){ const a=makeBot([(Math.random()<.5?-1:1)*16.5,rand(HZ+3,HZ+YX+15)]); a.role=pickRole(); }              // someone walks in from the side of the courtyard
