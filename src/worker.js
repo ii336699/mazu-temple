@@ -1,4 +1,4 @@
-// 線上媽祖廟 multiplayer: one Durable Object per hall relays player state over WebSockets.
+// 雲端天后宮 multiplayer: one Durable Object per hall relays player state over WebSockets.
 // Outgoing WebSocket messages are free; incoming ones are billed at 20:1, so the server only relays.
 import { DurableObject } from "cloudflare:workers";
 

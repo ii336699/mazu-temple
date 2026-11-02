@@ -1,4 +1,4 @@
-/* 線上媽祖廟: lets phones install the game to the home screen. It keeps nothing offline and never serves an old copy:
+/* 雲端天后宮: lets phones install the game to the home screen. It keeps nothing offline and never serves an old copy:
    opening the game always loads the newest version from the internet. */
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", e => e.waitUntil(self.clients.claim()));

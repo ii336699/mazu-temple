@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="線上媽祖廟：多人同殿參拜、擲筊求籤、點光明燈。">
+<meta name="description" content="雲端天后宮：多人同殿參拜、擲筊求籤、點光明燈。">
 <meta name="theme-color" content="#140906">
-<title>線上媽祖廟</title>
+<title>雲端天后宮</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -321,7 +321,7 @@ body.hideui .joy,body.customizing .joy,body.hideui .camreset,body.customizing .c
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
 </head>
 <body>
-<canvas id="c" tabindex="0" aria-label="媽祖廟正殿 3D 場景"></canvas>
+<canvas id="c" tabindex="0" aria-label="雲端天后宮正殿 3D 場景"></canvas>
 <div class="loading" id="loading">正在點燈</div>
 
 <div class="inapp" id="inapp" hidden role="dialog" aria-modal="true" aria-labelledby="inappT">
@@ -1078,7 +1078,7 @@ loadModel("jinlu",m=>{ const w=fitModel(m,FURN_H); w.rotation.y=Math.PI/2; furna
 setTimeout(()=>addHit("burn",FX,0,FZ,1.75,FURN_H),0);
 station("burn",[FX+FURN_FRONT+.85,FZ],-Math.PI/2);
 const furnaceGlow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ff7a30"),transparent:true,blending:T.AdditiveBlending,depthWrite:false}));
-furnaceGlow.position.set(FX+FURN_FRONT,1.43,FZ); furnaceGlow.scale.set(2,2,1); scene.add(furnaceGlow);
+furnaceGlow.position.set(FX+FURN_FRONT,1.43,FZ); furnaceGlow.scale.set(2,2,1); furnaceGlow.visible=false; scene.add(furnaceGlow); // the new 金爐 has its own glowing door; a halo in front of it only showed as a stray bright dot
 
 function setAct(o,k){ o.traverse(c=>{ if(c.isMesh) c.userData.act=k; }); }
 /* guangming lamp cabinets (two, either side of the mural) */
@@ -1959,7 +1959,7 @@ function fuMesh(){ const g=new T.Group(); const pouch=new T.Mesh(new T.BoxGeomet
   const cord=new T.Mesh(new T.TorusGeometry(.04,.004,4,12),GOLD()); cord.position.y=.08; g.add(cord); g.scale.setScalar(1.7);
   const sp=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffd27a"),transparent:true,blending:T.AdditiveBlending,depthWrite:false})); sp.scale.set(.35,.35,1); g.add(sp); return g; }
 function censerTop(key){ const C=CENSERS[key]; const g=(C&&C.g)||burner; const p=g.getWorldPosition(new T.Vector3()); const sc=g.getWorldScale(new T.Vector3()).x;
-  return key==="tiangong"?{p,top:p.y+1.15,r:.95}:{p,top:p.y+.5*sc+.16,r:.36*sc+.1}; }
+  return key==="tiangong"?{p,top:p.y+2.2,r:.8}:{p,top:p.y+.5*sc+.16,r:.36*sc+.1}; }
 function passFu(av,key){ if(av.fuAnim) return false; const c=censerTop(key); const m=fuMesh(); scene.add(m); const had=!!av.hasAmulet; av.setAmulet(false); av.fuAnim=true;
   const a0=Math.atan2(av.pos.y-c.p.z,av.pos.x-c.p.x); fuAnims.push({m,av,c,a0,t:0,dur:5.4,had,spark:0}); return true; }
 function updateFu(dt){ for(let i=fuAnims.length-1;i>=0;i--){ const f=fuAnims[i]; f.t+=dt; const k=Math.min(1,f.t/f.dur);
@@ -2666,13 +2666,13 @@ let installEvt=null; const isStandalone=()=>matchMedia("(display-mode: standalon
 window.addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); installEvt=e; });
 window.addEventListener("appinstalled",()=>{ installEvt=null; toast("已經加到桌面了，下次從桌面圖示直接進廟",3200); });
 if("serviceWorker" in navigator&&location.protocol==="https:") navigator.serviceWorker.register("sw.js").catch(()=>{});
-function installBlock(){ if(isStandalone()) return ""; return `<div class="group"><span class="group-label">加到手機桌面</span><p class="lead">把媽祖廟放到桌面，像 App 一樣一點就進廟。</p><button class="good wide" data-act="installApp"><span class="name">📲 加到桌面</span></button></div>`; }
+function installBlock(){ if(isStandalone()) return ""; return `<div class="group"><span class="group-label">加到手機桌面</span><p class="lead">把雲端天后宮放到桌面，像 App 一樣一點就進廟。</p><button class="good wide" data-act="installApp"><span class="name">📲 加到桌面</span></button></div>`; }
 HANDLERS.installApp=async()=>{ const ua=navigator.userAgent, ios=/iPhone|iPad|iPod/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
   const inApp=/Barcelona|Instagram|FBAN|FBAV|FB_IAB|Line\/|Threads|MicroMessenger|KAKAOTALK|; wv\)/i.test(ua);
   if(isStandalone()){ toast("你已經是從桌面開的了"); return; }
   if(inApp){ openSheet("install","加到桌面",`<p class="lead">LINE、Facebook 裡面打開的網頁沒辦法加到桌面。</p><p class="lead">請按右上角「⋯」或「分享」，選「用瀏覽器開啟」（iPhone 選 Safari、Android 選 Chrome），再到設定按一次「📲 加到桌面」。</p>`); return; }
   if(installEvt){ const e=installEvt; installEvt=null; try{ e.prompt(); const r=await e.userChoice; if(r&&r.outcome==="accepted") closeSheet(); }catch(err){} return; }
-  if(ios){ openSheet("install","加到桌面",`<p class="lead">iPhone 要自己按兩下：</p><ol class="steps-ol"><li>按畫面下方（或網址列旁）的 <b>分享</b> 按鈕 <span style="font-size:1.3em">⬆️</span></li><li>往下滑，選 <b>加入主畫面</b> ➕，再按右上角的 <b>新增</b></li></ol><p class="note">之後桌面就會有媽祖廟的圖示，點了直接進廟。</p>`); return; }
+  if(ios){ openSheet("install","加到桌面",`<p class="lead">iPhone 要自己按兩下：</p><ol class="steps-ol"><li>按畫面下方（或網址列旁）的 <b>分享</b> 按鈕 <span style="font-size:1.3em">⬆️</span></li><li>往下滑，選 <b>加入主畫面</b> ➕，再按右上角的 <b>新增</b></li></ol><p class="note">之後桌面就會有雲端天后宮的圖示，點了直接進廟。</p>`); return; }
   openSheet("install","加到桌面",`<p class="lead">請打開瀏覽器右上角的選單 <b>⋮</b>，選 <b>加到主畫面</b> 或 <b>安裝應用程式</b>。</p><p class="note">如果找不到，換用 Chrome 開啟本網站再試一次。</p>`); };
 function renderOthersBtn(){ const b=$("#othersBtn"); if(!b) return; b.setAttribute("aria-pressed",String(!othersShown)); b.classList.toggle("on",!othersShown); b.setAttribute("aria-label",othersShown?"隱藏其他玩家":"顯示其他玩家"); }
 $("#othersBtn").onclick=()=>{ othersShown=!othersShown; save("mz.others",othersShown); if(!customizing) setOthersVisible(true); renderOthersBtn(); toast(othersShown?"其他玩家回來了":"已隱藏其他玩家",2200); };
