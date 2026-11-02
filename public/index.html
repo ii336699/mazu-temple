@@ -618,15 +618,15 @@ const PHRASES=["媽祖保庇","平安順遂","感恩","大家好","一起拜拜"
 const SIGN_NAMES={bell:"鐘",drum:"鼓"};
 // sponsor thank-you boards on the courtyard wall behind Guanyin (x = which wall panel)
 // eight slots on the wall (x = ±3.6, ±6.6, ±9.6, ±12.6); a slot without a sponsor stays a carved gold panel; neon:true gives a rainbow chase
-// sponsor boards on the Guanyin wall: three rows of ten, five each side of the statue (the outermost column sits past the
-// lantern pole). Boards are placed by amount: the biggest gifts take the top row next to Guanyin, smaller ones go further out,
-// and once a row is full the next row down fills the same way (middle first). Equal amounts keep the order they came in.
+// sponsor boards on the Guanyin wall: three rows, six columns each side of the statue (36 boards). Boards are placed by
+// amount, column by column from Guanyin outwards: the biggest gifts fill the columns next to the statue (top, middle, bottom,
+// left side then right side), so the smallest gifts end up at the far ends of the wall. Equal amounts keep the order they came in.
 // Light by amount: 500+ everything below plus searchlight beams, fireworks over the board and falling gold · 300+ blazing
 // rainbow with halo, rays and sparks · 100+ rainbow neon · 50+ pink neon · others warm gold bulbs. Empty slots: carved gold panel.
 // To add a sponsor, just append to THANKS below; no position needed.
-const THANK_COLS=[3.25,5.2,7.15,9.1,12.75], THANK_ROWS=[4.25,2.75,1.25];
+const THANK_COLS=[2.6,3.95,5.3,6.65,8.0,9.35], THANK_ROWS=[2.95,1.95,.95], THANK_K=.5;
 // seen from the courtyard the wall faces the temple, so +x is the viewer's left: each pair fills left, then right
-const THANK_SLOTS=THANK_ROWS.flatMap(y=>THANK_COLS.flatMap(c=>[[c,y],[-c,y]]));
+const THANK_SLOTS=THANK_COLS.flatMap(c=>THANK_ROWS.flatMap(y=>[[c,y],[-c,y]]));
 const THANKS=[{img:"thanks1.jpg",amt:50,text:"謝謝阿詠贊助50元伺服器營運費用 🫶"},
   {img:"thanks2.jpg",amt:10,text:"謝謝詩方贊助10元伺服器營運費用 🫶"},
   {img:"thanks3.jpg",amt:50,text:"謝謝Chu贊助50元伺服器營運費用 🫶"},
@@ -1459,12 +1459,12 @@ function updateCats(dt){ if(Q.low&&Math.abs(meAv.pos.y-CATS.c.z)>14){ return; } 
 // 觀音菩薩噴泉 at the front of the courtyard
 const FT={x:0,z:HZ+YX+20.2,H:4.4,k:1,mouth:new T.Vector3(),pool:new T.Vector3(0,.55,HZ+YX+18.6),ready:false};
 { const redM=mat("#8a1a12",{roughness:.7}), goldP=mat("#d6a24a",{metalness:.85,roughness:.3}), stone=mat("#8a8278",{roughness:.85});
-  box(28,5.1,.6,redM,0,2.55,HZ+YX+22.9); box(28.4,.25,.9,mat("#3a1d14",{roughness:.9}),0,5.22,HZ+YX+22.9); box(28.2,.08,.66,goldP,0,5.05,HZ+YX+22.6);
+  box(28,3.6,.6,redM,0,1.8,HZ+YX+22.9); box(28.4,.25,.9,mat("#3a1d14",{roughness:.9}),0,3.72,HZ+YX+22.9); box(28.2,.08,.66,goldP,0,3.55,HZ+YX+22.6);
   box(28,.5,.7,stone,0,.25,HZ+YX+22.9);
   // each wall panel is its own object; a panel listed in THANKS shows a sponsor thank-you picture and opens it when tapped
   for(const [x,y] of THANK_SLOTS){ const th=THANKS.find(t=>t.x===x&&t.y===y);
-    if(!th){ const p=new T.Mesh(new T.PlaneGeometry(1.68,1.27),new T.MeshStandardMaterial({map:goldCarvedTex,metalness:.6,roughness:.4})); p.position.set(x,y,HZ+YX+22.58); p.rotation.y=Math.PI; scene.add(p); continue; }
-    const g=new T.Group(); g.position.set(x,y,HZ+YX+22.56); g.rotation.y=Math.PI; g.scale.setScalar(.75); g.userData.noMerge=1; scene.add(g); const tier=th.amt>=300?3:th.amt>=100?2:th.amt>=50?1:0, big=th.amt>=500;
+    if(!th){ const p=new T.Mesh(new T.PlaneGeometry(2.24*THANK_K,1.7*THANK_K),new T.MeshStandardMaterial({map:goldCarvedTex,metalness:.6,roughness:.4})); p.position.set(x,y,HZ+YX+22.58); p.rotation.y=Math.PI; scene.add(p); continue; }
+    const g=new T.Group(); g.position.set(x,y,HZ+YX+22.56); g.rotation.y=Math.PI; g.scale.setScalar(THANK_K); g.userData.noMerge=1; scene.add(g); const tier=th.amt>=300?3:th.amt>=100?2:th.amt>=50?1:0, big=th.amt>=500;
     const fr=new T.Mesh(new T.PlaneGeometry(2.24,1.7),new T.MeshStandardMaterial({map:goldCarvedTex,metalness:.6,roughness:.4})); g.add(fr);
     const pm=new T.MeshStandardMaterial({color:new T.Color("#3a1a10"),roughness:.7,emissive:new T.Color("#000")}); const pic=new T.Mesh(new T.PlaneGeometry(2.0,1.5),pm); pic.position.z=.012; g.add(pic);
     // marquee bulbs around the frame, alternating so they twinkle like a sign
@@ -3487,7 +3487,7 @@ function fwProgram(seed){ const r=fwRng(seed), ev=[]; const pick=a=>a[(r()*a.len
   const shell=(t,type,o={})=>{ const big=!!o.big; const x=o.x??(r()-.5)*40, z=o.z??backZ(); const y=o.y??(big?34+r()*10:16+r()*12); ev.push({t,kind:"shell",type,x,y,z,big,s:o.s??(big?15+r()*4:9+r()*4),n:o.n??(big?460:220),c:o.c??pick(FWC),ci:(r()*8)|0,fl:o.fl??(1.1+y/24)}); };
   // symmetric pair: same shell mirrored left/right at the same moment
   const pair=(t,type,o={})=>{ const x=o.x??(6+r()*16), y=o.y??(o.big?34+r()*8:16+r()*10), z=o.z??backZ(), c=o.c??pick(FWC); shell(t,type,{...o,x,y,z,c}); shell(t,type,{...o,x:-x,y,z,c}); };
-  const gerb=(t,x,dur,c)=>ev.push({t,kind:"gerb",x,z:HZ+YX+22.9,y:5.4,dur,c:c||pick(FWC)[0]});
+  const gerb=(t,x,dur,c)=>ev.push({t,kind:"gerb",x,z:HZ+YX+22.9,y:3.9,dur,c:c||pick(FWC)[0]});
   const mine=(t,x,c)=>ev.push({t,kind:"mine",x,z:HZ+YX+22.3,c:c||pick(FWC)});
   // fan cake: every tube fires at once in a symmetric fan
   const fan=(t,x,shots,c)=>{ const pal=c||pick(FWC); for(let k=0;k<shots;k++){ const ang=(k/(shots-1)*2-1)*1.05; const h=9+r()*2; ev.push({t,kind:"comet",sx:x,sy:3.9,sz:HZ+YX+22.9,ex:x+Math.sin(ang)*h,ey:3.9+Math.cos(ang)*h,ez:HZ+YX+23.5,c:[pal[k%2],pal[(k+1)%2]]}); } };
