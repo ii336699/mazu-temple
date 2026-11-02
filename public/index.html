@@ -4377,7 +4377,7 @@ function playPachinko(){ const L=gameLayer("打彈珠","押好彈珠按「發射
   const MC=["pk-red","pk-orange","pk-yellow","pk-green","pk-blue","pk-purple"]; nmPreload(MC.concat(["pk-board","pk-jackpot"]));
   let marbles=0, peak=0, bet=1, ball=null, msg="", msgAt=0, jackAt=0; const BETS=[1,5,10,50,100];
   const N=9; let mult=[];
-  const deal=()=>{ const c=Math.random()<.5?3:4, m=new Array(N).fill(0), idx=[...Array(N).keys()].sort(()=>Math.random()-.5).slice(0,c); idx.forEach(i=>m[i]=1); let left=12-c; while(left>0){ const i=idx[(Math.random()*c)|0]; if(m[i]<4){ m[i]++; left--; } } mult=m; }; // 3 or 4 paying slots, 12 times in all, ×4 at most
+  const deal=()=>{ const c=N-(Math.random()<.5?3:4), m=new Array(N).fill(0), idx=[...Array(N).keys()].sort(()=>Math.random()-.5).slice(0,c); idx.forEach(i=>m[i]=1); let left=12-c; while(left>0){ const i=idx[(Math.random()*c)|0]; if(m[i]<4){ m[i]++; left--; } } mult=m; }; // 3 or 4 empty slots each round; the rest pay, 12 times in all, ×4 at most
   deal();
   // board picture is 1122×1402; the pins, holes, slots and rail below are where they are drawn on it
   const IW=1122, IH=1402; let G;
