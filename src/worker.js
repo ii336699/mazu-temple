@@ -156,7 +156,9 @@ export class Lobby extends DurableObject {
       if (!secret) return { ok: false, unset: true };
       const day = new Date().toISOString().slice(0, 10); const f = (await this.ctx.storage.get("fails")) || { day, n: 0 }; if (f.day !== day) { f.day = day; f.n = 0; }
       if (f.n >= 10) return { ok: false, locked: true };
-      const given = String(req.headers.get("x-key") || "").trim().slice(0, 200);
+      // both sides tidied the same way: a stray space or line break saved with the secret, or full-width letters, no longer make a right password fail
+      const norm = v => String(v || "").normalize("NFKC").replace(/[\s\u200b-\u200f\u2060\ufeff]/g, "");
+      secret = norm(secret); const given = norm(req.headers.get("x-key")).slice(0, 200);
       const h = async t => new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t)));
       const [a, b] = await Promise.all([h(given), h(secret)]); let diff = 0; for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
       if (!given || diff !== 0) { f.n++; await this.ctx.storage.put("fails", f); return { ok: false }; }
