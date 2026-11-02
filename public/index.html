@@ -3551,8 +3551,8 @@ function sparkTick(av,dt){ if(!av.sparkler||av.hold||!av.root.visible){ if(av.sp
   const m=Q.low?3:6; for(let i=0;i<m;i++){ const th=Math.random()*Math.PI*2, ph=Math.random()*Math.PI, s=.6+Math.random()*1.6; fwEmit(_v1.x,_v1.y,_v1.z,Math.sin(ph)*Math.cos(th)*s,Math.cos(ph)*s,Math.sin(ph)*Math.sin(th)*s,"#ffffff","#ffb347",.22+Math.random()*.2,.07,1.5,2.5,.6); }
   if(Math.random()<.5) fwEmit(_v1.x,_v1.y,_v1.z,0,0,0,"#fff6d6","#ffd27a",.08,.22,0,0,0); }
 HANDLERS.chairHide=()=>{ if(!me.sp) return; chairHidden=!chairHidden; meAv.root.traverse(o=>{ if(o.material&&!o.isSprite){ o.material=o.material.clone(); o.material.transparent=true; o.material.opacity=chairHidden?.35:1; } }); lastSent=""; markDirty(); sendPresence(true); openChair(); toast(chairHidden?"已隱形：其他香客看不到你":"已解除隱形",2600); };
-HANDLERS.chairReset=()=>{ if(!me.sp) return; delete bag.fcDay; delete bag.fcTry; delete bag.rxDay; delete bag.rxTry; bag.redThread=0; bag.planted=[]; bag.bowed={}; bag.flow={}; delete bag.zhanDay;
-  bag.coins=Math.max(bag.coins,300); saveBag(); meAv.setThread(false); myOffers=[]; try{ rebuildMyOffers(); }catch(e){} markDirty(); renderWallet(); openChair(); toast("今日紀錄已重置，可以重新測試",2600); };
+HANDLERS.chairReset=()=>{ if(!me.sp) return; delete bag.nm; /* 夜市: 撈金魚 again today, pachinko exchange back to 0 */ delete bag.fcDay; delete bag.fcTry; delete bag.rxDay; delete bag.rxTry; bag.redThread=0; bag.planted=[]; bag.bowed={}; bag.flow={}; delete bag.zhanDay;
+  bag.coins=Math.max(bag.coins,300); saveBag(); meAv.setThread(false); myOffers=[]; try{ rebuildMyOffers(); }catch(e){} markDirty(); renderWallet(); openChair(); toast("今日紀錄已重置（含夜市撈魚、彈珠兌換），可以重新測試",2800); };
 let fwKeyHold="";
 let slKeyHold="";
 HANDLERS.askSL=()=>{ slKeyHold=ck(); openSheet("contact","施放 50 盞天燈？",`<p class="lead">確定要一次施放 50 盞天燈嗎？每一殿的廟埕都會同時從各處升起天燈。</p><div class="row"><button class="secondary" data-act="fwCancel">先不要</button><button class="primary" data-act="sendSL">確定施放 🏮</button></div>`); };
