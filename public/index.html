@@ -234,7 +234,14 @@ body.hideui .joy,body.customizing .joy{display:none}
 .bank-acct{font-size:19px;font-weight:700;letter-spacing:.08em;font-variant-numeric:tabular-nums;user-select:text;-webkit-user-select:text}
 .bank-thanks{margin:0;font-family:var(--f-display);font-size:16px;color:#ffe2a0;letter-spacing:.08em}
 .real-divider{margin:10px 0 0;text-align:center;color:var(--gold);font-family:var(--f-display);font-size:16px;letter-spacing:.12em}
+/* 動作 */
+.act-label{display:block;margin-top:14px}
+.act-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:6px}
+.act-pick .act-ico{font-size:26px;line-height:1.2}
+.act-pick small{font-size:10px;color:var(--gold)}
+.act-pick[aria-pressed="true"]{border-color:var(--gold);background:rgba(142,28,20,.35)}
 /* 主委工具 */
+.real-count{margin:2px 0 0;font-size:13px;color:#bfe9c8}.real-count b{font-size:16px;color:#7fe08f}
 .chair-btn{align-self:flex-start;font-size:13px;padding:6px 12px;border:1px solid var(--gold);color:var(--gold)}
 .chair-btn[hidden]{display:none}
 .sheet.tall{max-height:88%}
@@ -1797,10 +1804,38 @@ function textSprite(text,o={}){ const c=document.createElement("canvas"); const 
 const shadowMat=new T.MeshBasicMaterial({map:shadowTex,transparent:true,depthWrite:false});
 const shadowGeo=new T.PlaneGeometry(.9,.9); shadowGeo.rotateX(-Math.PI/2);
 
+/* ---- 動作: ten silly body actions in the 表情 menu; the first five play once, the last five loop until you move or stop ---- */
+const ACTS=[{n:"跌倒",i:"🤕",d:3.2},{n:"伸懶腰",i:"🥱",d:3.2},{n:"開心跳跳",i:"🙌",d:2.6},{n:"轉圈圈",i:"🌀",d:3.4},{n:"比愛心",i:"🫶",d:3.0},
+  {n:"廣場舞",i:"💃",loop:1},{n:"機器人舞",i:"🤖",loop:1},{n:"小雞舞",i:"🐔",loop:1},{n:"甩手舞",i:"🕺",loop:1},{n:"躺平耍廢",i:"😪",loop:1}];
+function startAct(av,id){ av.act=id; av.actT=0; av.danceT=0; actReset(av); }
+function stopAct(av){ av.act=-1; actReset(av); }
+function actReset(av){ if(av.parts){ av.parts.rotation.set(0,0,0); av.parts.position.set(0,0,0); } }
+function actPose(av,dt){ const a=ACTS[av.act]; av.actT+=dt; const t=av.actT; if(!a.loop&&t>a.d){ stopAct(av); return; }
+  const L=av.legs, A=av.arms, P=av.parts, B=av.torso, H=av.head, s=Math.sin, cl=v=>Math.max(0,Math.min(1,v)), ez=v=>{ v=cl(v); return v*v*(3-2*v); };
+  P.rotation.set(0,0,0); P.position.set(0,0,0); B.rotation.set(0,0,0); H.rotation.set(0,0,0); av.hips.position.y=.3; L[0].rotation.set(0,0,0); L[1].rotation.set(0,0,0);
+  switch(av.act){
+    case 0: { const e=t<.45?ez(t/.45):t<2.3?1:1-ez((t-2.3)/.8); P.rotation.x=e*1.42; A[0].rotation.set(-2.7*e,0,-.35*e); A[1].rotation.set(-2.7*e,0,.35*e);
+      if(t>.45&&t<2.3){ L[0].rotation.x=-.5+s(t*14)*.45; L[1].rotation.x=-.5-s(t*14)*.45; } break; }                       // splat, kick, get up
+    case 1: { const e=t<.8?ez(t/.8):t<2.4?1:1-ez((t-2.4)/.8); A[0].rotation.set(-3.0*e,0,-.25*e+s(t*7)*.05*e); A[1].rotation.set(-3.0*e,0,.25*e-s(t*7)*.05*e);
+      B.rotation.x=-.28*e; H.rotation.x=-.35*e; P.position.y=.03*e; break; }                                                  // big stretch and yawn
+    case 2: { const j=Math.abs(s(t*Math.PI*1.15)); P.position.y=j*.36; A[0].rotation.set(-2.9+s(t*12)*.2,0,-.5); A[1].rotation.set(-2.9-s(t*12)*.2,0,.5);
+      L[0].rotation.x=-j*.5; L[1].rotation.x=-j*.5; break; }                                                                   // three happy hops
+    case 3: { const spin=ez(t/1.6); P.rotation.y=spin*Math.PI*4; A[0].rotation.set(-.4,0,-1.3); A[1].rotation.set(-.4,0,1.3);
+      if(t>1.6){ const w=Math.max(0,1-(t-1.6)/1.8); P.rotation.z=s(t*7)*.28*w; H.rotation.z=s(t*9)*.4*w; A[0].rotation.z=-.5; A[1].rotation.z=.5; } break; } // spin, then dizzy
+    case 4: { const e=ez(t/.5)*(t>2.6?1-ez((t-2.6)/.4):1); A[0].rotation.set(-2.75*e,0,.75*e); A[1].rotation.set(-2.75*e,0,-.75*e); P.rotation.z=s(t*3.5)*.1*e; H.rotation.z=s(t*3.5)*.15*e; break; } // heart over the head
+    case 5: { const w=t*3.4; P.position.x=s(w)*.13; L[0].rotation.z=s(w)*.22; L[1].rotation.z=s(w)*.22; A[0].rotation.set(-1.6+s(w)*1.25,0,-.4); A[1].rotation.set(-1.6-s(w)*1.25,0,.4);
+      B.rotation.z=s(w)*.12; H.rotation.z=-s(w)*.12; av.hips.position.y=.3-Math.abs(s(w))*.03; break; }                       // 廣場舞
+    case 6: { const q=Math.floor(t*3.2)%4, ax=[[-1.57,0],[0,-1.57],[-1.57,-1.57],[0,0]][q], hy=[.5,-.5,0,.5][q];
+      A[0].rotation.set(ax[0],0,-.15); A[1].rotation.set(ax[1],0,.15); H.rotation.y=hy; P.rotation.y=[0,.4,0,-.4][q]; P.position.y=(t*3.2%1)<.15?.04:0; break; } // 機器人舞 (stiff, in steps)
+    case 7: { const w=t*11; A[0].rotation.set(-.35,0,-1.0-s(w)*.45); A[1].rotation.set(-.35,0,1.0+s(w)*.45); av.hips.position.y=.27-Math.abs(s(t*5.5))*.05;
+      B.rotation.x=.3+s(t*5.5)*.1; H.rotation.x=s(t*11)*.3; P.rotation.y=s(t*5.5)*.28; break; }                                // 小雞舞
+    case 8: { const w=t*6.5; A[0].rotation.set(s(w+1.57)*.6,0,s(w)*.9); A[1].rotation.set(-s(w+1.57)*.6,0,s(w)*.9); P.rotation.z=-s(w)*.14; P.position.x=-s(w)*.07; H.rotation.z=s(w)*.1; break; } // 甩手舞
+    case 9: { P.rotation.x=-1.5; P.position.y=.16; A[0].rotation.set(-3.0,0,-.5); A[1].rotation.set(-3.0,0,.5); L[0].rotation.x=-.35+s(t*1.6)*.28; L[1].rotation.x=0; H.rotation.x=.25; break; } // 躺平耍廢
+  } }
 class Avatar{
   constructor(look,o={}){ this.root=new T.Group(); this.root.userData.noMerge=1; scene.add(this.root); this.isMe=!!o.isMe; this.npc=!!o.npc; this.sp=!!o.sp;
     this.pos=new T.Vector2(o.x||0,o.z||0); this.target=this.pos.clone(); this.root.position.set(this.pos.x,0,this.pos.y); this.rotY=o.r||Math.PI; this.root.rotation.y=this.rotY;
-    this.state="stand"; this.seat=-1; this.bowT=-1; this.t=Math.random()*10; this.kneel=0; this.hold=0; this.burnT=-1; this.headYaw=0; this.headGoal=0; this.smokeT=Math.random();
+    this.state="stand"; this.act=-1; this.actT=0; this.seat=-1; this.bowT=-1; this.t=Math.random()*10; this.kneel=0; this.hold=0; this.burnT=-1; this.headYaw=0; this.headGoal=0; this.smokeT=Math.random();
     const sh=new T.Mesh(shadowGeo,shadowMat); sh.position.y=.015; this.root.add(sh);
     this.parts=new T.Group(); this.root.add(this.parts); this.setLook(look); this.label=null; this.bubble=null; this.bubbleT=0; }
   setLook(l){ l=sanitizeLook(l,!!this.sp); this.shoulderPet=null; this.look=l.slice(); const p=this.parts; while(p.children.length) p.remove(p.children[0]);
@@ -1884,6 +1919,7 @@ class Avatar{
     if(fwLook){ this.rotY=lerpAngle(this.rotY,Math.atan2(-this.pos.x*.3,HZ+YX+38-this.pos.y),Math.min(1,dt*3)); this.root.rotation.y=this.rotY; }
     this.headTilt=(this.headTilt||0)+((fwLook?-.5:0)-(this.headTilt||0))*Math.min(1,dt*3); this.head.rotation.x=this.headTilt;
     const hg=(this.bowT>=0||walking||fwLook)?0:this.headGoal; this.headYaw+=(hg-this.headYaw)*Math.min(1,dt*7); this.head.rotation.y=this.headYaw; this.head.rotation.z=-this.headYaw*.08;
+    if(this.act>=0){ if(walking||this.seat>=0||this.bowT>=0){ stopAct(this); if(this.isMe){ myAct=[-1,Math.random().toString(36).slice(2,8)]; markDirty(); } } else actPose(this,dt); }
     this.incense.visible=!!this.hold&&this.root.visible;
     if(this.incense.visible){ this.root.updateMatrixWorld(true);
       this.hands[0].getWorldPosition(_v1); this.hands[1].getWorldPosition(_v2); _v1.add(_v2).multiplyScalar(.5);
@@ -2055,50 +2091,111 @@ function fakeTotal(ts){ const a=autoCrowd(ts); if(!CROWD.at) return a; const k=M
   const wob=((fakeNoise(ts,8*60e3,3)-.5)*24+(fakeNoise(ts,2*60e3,4)-.5)*6)*s; return Math.max(0,Math.round(from+(CROWD.target-from)*s+wob)); }
 async function crowdFetch(){ try{ const r=await fetch("/crowd",{cache:"no-store"}); if(!r.ok) return; const j=await r.json(); if(j&&typeof j.at==="number") CROWD={target:j.target??null,from:j.from??null,at:j.at}; }catch(e){} }
 const FAKE_W=[.34,.2,.14,.1,.07,.05,.04,.03,.02,.01]; // how the crowd spreads over 正殿…十殿
-// a hall shows at most 92 extra people; anything over spills into the next hall
-function fakeSplit(T){ const out=FAKE_W.map(w=>T*w); let spill=0; for(let i=0;i<out.length;i++){ out[i]+=spill; spill=0; if(out[i]>92){ spill=out[i]-92; out[i]=92; } } return out.map(Math.round); }
+// halls fill in order: a hall takes 86–94 people before anyone shows up in the next one
+function fakeSplit(T){ const ts=Date.now(), out=[]; let left=Math.max(0,T); for(let i=0;i<FAKE_W.length;i++){ const cap=Math.round(86+8*fakeNoise(ts,20*60e3,10+i)), v=Math.min(left,cap); out.push(Math.round(v)); left-=v; } return out; }
 function realCounts(){ const c=(HALLS.counts||[]).slice(); const cur=HALLS.current(); c[cur]=Math.max(c[cur]||0,1+remotes.size); return c; }
 function hallShown(i,ts){ const real=realCounts()[i]||0; if(!FAKE_CROWD) return real; return Math.max(real,Math.min(Math.max(HALL_CAP,100)-4,real+fakeSplit(fakeTotal(ts))[i])); } // shown out of 100 per hall even in the 20-per-hall fallback
 function shownTotal(){ const ts=Date.now(); let t=0; for(let i=0;i<HALL_NAMES.length;i++) t+=hallShown(i,ts); return t; }
 
-// ---- demo worshippers: they come and go a few at a time, sit and bow, visit the shrines, throw 筊, burn paper,
-// toss coins, dance with the cats and greet people. How many are in view follows the online count, within what the phone can draw.
-const BOT_ACTS=["altar","lot","jieqian","burn","tiangong","caishen","yuelao","huye","xuantian","guangong","fountain","wish","lamp","lampR","cats","fortune","donate","shop"];
+// ---- demo worshippers: they behave like real visitors and take their time. The favourite is drawing a 籤 (shake the
+// tube a long while, confirm with 筊 at the altar, then read it at 解籤處); others offer incense to Mazu, sit on a cushion,
+// stroll and look around, and now and then burn paper, toss a coin, dance with the cats or visit one other god.
+// How many are in view follows this hall's shown count, within what the phone can draw (each one is merged into a few meshes).
 const BOT_EMO=[0,1,2,3,5,9]; // only the cheerful faces
+const BOT_GODS=["caishen","yuelao","huye","xuantian","guangong"];
 const BOT={nextAdjust:0};
-function botLimit(){ return !showNpc?0:Q.lite?4:Q.low?8:14; }
-function botWant(){ return Math.max(Math.min(3,botLimit()),Math.min(botLimit(),Math.round(fakeTotal(Date.now())/13))); }
+function botLimit(){ return !showNpc?0:Q.lite?3:Q.low?6:12; }          // walking about
+function sitterLimit(){ return !showNpc?0:Q.lite?3:Q.low?6:12; }       // the classic ones on the cushions
+function hereCount(){ return FAKE_CROWD?(fakeSplit(fakeTotal(Date.now()))[HALLS.current()]||0):16; }
+function botWant(){ const lim=botLimit(); if(!lim) return 0; return Math.max(Math.min(2,lim),Math.min(lim,Math.round(hereCount()/5))); }
+function sitterWant(){ const lim=sitterLimit(); if(!lim) return 0; return Math.max(Math.min(1,lim),Math.min(lim,Math.round(hereCount()/5))); }
 function botSpot(){ for(let k=0;k<30;k++){ const x=rand(-15,15), z=rand(HZ+2,HZ+YX+16); if(walkable(x,z)) return [x,z]; } return [0,HZ+6]; }
-function botWalk(n,x,z){ const p=planPath(n.pos.x,n.pos.y,x,z); n.seat=-1; n.goalSeat=false; n.faceGoal=null; n.hold=0; n.danceT=0; n.target.set(p[0][0],p[0][1]); n.path=p.slice(1); }
+function hallSpot(){ for(let k=0;k<30;k++){ const x=rand(-10,10), z=rand(-6,HZ-1.5); if(walkable(x,z)) return [x,z]; } return [0,4]; }
+const stNear=(k,j=.35)=>{ const s=stations[k]; return [s.approach.x+rand(-j,j),s.approach.y+rand(-j,j)]; };
+const stFace=k=>stations[k].face;
+// the plans: lists of small steps
+function planLot(){ return [{go:stNear("lot",.3)},{face:stFace("lot")},{shake:rand(25,50)},{look:rand(2,5)},{go:stNear("altar",.6)},{face:stFace("altar")},{jiao:1+((Math.random()*3)|0)},{look:rand(2,4)},{go:stNear("jieqian",.5)},{face:stFace("jieqian")},{read:rand(20,45)}]; }
+function planMazu(){ return [{go:stNear("shop",.4)},{face:stFace("shop")},{look:rand(4,8)},{hold:1},{go:stNear("tiangong",.6)},{face:stFace("tiangong")},{bow:1},{look:rand(2,4)},{go:stNear("altar",.6)},{face:stFace("altar")},{bow:1},{look:rand(2,4)},{jiao:1+((Math.random()*2)|0)},{hold:0}]; }
+function planSit(){ const s=freeSeat(); if(s<0) return planStroll(); return [{sit:s,dur:rand(45,120)}]; }
+function planStroll(){ const [x,z]=Math.random()<.5?botSpot():hallSpot(); return [{go:[x,z]},{look:rand(6,15)}]; }
+function planOne(k,extra){ return [{go:stNear(k,.4)},{face:stFace(k)},...extra]; }
+// 掛網: 20–40% of the walking demo worshippers just stand somewhere and don't move for 5–25 minutes, like a real player who left the game open
+function afkShare(){ const w=npcs.filter(n=>!n.classic&&!n.leaving); return w.length?w.filter(n=>n.afk||(n.step&&n.step.afk)||(n.steps||[]).some(st=>st.afk)).length/w.length:0; }
+function planAfk(){ return [{go:Math.random()<.5?hallSpot():botSpot()},{afk:rand(300,1500)}]; }
+function botPlan(n){ const r=Math.random(); let p;
+  if(afkShare()<(BOT.afkFrac||.3)&&Math.random()<.6){ n.steps=planAfk(); n.step=null; return; }
+  if(r<.22) p=planLot(); else if(r<.40) p=planMazu(); else if(r<.60) p=planSit(); else if(r<.78) p=planStroll();
+  else if(r<.84) p=planOne("burn",[{fx:"burn"},{look:rand(6,10)}]); else if(r<.89) p=planOne("fountain",[{fx:Math.random()<.6?"coin":"drink"},{look:rand(5,9)}]);
+  else if(r<.93) p=planOne("cats",[{dance:rand(15,30)}]); else if(r<.98) p=planOne(BOT_GODS[(Math.random()*BOT_GODS.length)|0],[{bow:1},{look:rand(4,8)}]);
+  else p=planOne("wish",[{look:rand(10,20)}]);
+  n.steps=p.filter(st=>!st.go||st.go[0]!=null); n.steps.push({look:rand(3,8)}); n.step=null; }
+function botWalk(n,x,z){ const p=planPath(n.pos.x,n.pos.y,x,z); n.seat=-1; n.goalSeat=false; n.faceGoal=null; n.danceT=0; n.target.set(p[0][0],p[0][1]); n.path=p.slice(1); }
 function botArrived(n){ return !(n.path&&n.path.length)&&n.pos.distanceTo(n.target)<.08; }
-function makeBot(at){ const [x,z]=at||botSpot(); const a=new Avatar(randomLook(),{npc:true,x,z}); a.isBot=true; a.name=randomName(); a.setName(a.name); a.mode="idle"; a.wait=rand(.5,4); if(customizing) a.root.visible=false; npcs.push(a); return a; }
+function botStart(n,st){ n.step=st; n.st=0; n.anim=null; n.afk=!!st.afk;
+  if(st.go){ botWalk(n,st.go[0],st.go[1]); n.limit=60; }
+  else if(st.face!=null){ n.faceGoal=st.face; n.limit=.8; }
+  else if(st.look){ n.limit=st.look; n.lookIn=0; if(Math.random()<.12){ const id=[1,2,4,5,7,8][(Math.random()*6)|0]; startAct(n,id); n.limit=Math.max(n.limit,ACTS[id].loop?rand(8,16):ACTS[id].d); } }
+  else if(st.bow){ n.bow(); n.limit=4.4; }
+  else if(st.hold!=null){ n.hold=st.hold; n.limit=.3; }
+  else if(st.jiao){ n.left=st.jiao; n.limit=1e9; n.nextThrow=1.5; }
+  else if(st.shake){ n.anim="shake"; n.limit=st.shake; }
+  else if(st.read){ n.anim="read"; n.limit=st.read; }
+  else if(st.fx){ n.limit=1; if(st.fx==="burn"){ n.burnT=0; if(botNear(n,10)) burnFx(); } else if(st.fx==="coin") fxCoin(n); else fxDrink(n); }
+  else if(st.dance){ n.danceT=1e9; n.limit=st.dance; }
+  else if(st.sit!=null){ const S=SEATS[st.sit], p=planPath(n.pos.x,n.pos.y,S.x,S.y); n.hold=0; n.faceGoal=null; n.seat=st.sit; n.goalSeat=true; n.target.set(p[0][0],p[0][1]); n.path=p.slice(1); n.limit=st.dur+60; n.bowIn=rand(6,14); }
+  else if(st.leave){ botWalk(n,st.leave[0],st.leave[1]); n.limit=80; }
+  else if(st.afk){ n.limit=st.afk; n.faceGoal=n.rotY+rand(-.6,.6); n.headGoal=0; } }
+function botStep(n,dt){ const st=n.step; n.st+=dt;
+  if(st.go||st.leave){ if(botArrived(n)||n.st>n.limit) return true; return false; }
+  if(st.sit!=null){ if(n.seat<0) return true; if(botArrived(n)){ n.sat=(n.sat||0)+dt; n.bowIn-=dt; if(n.bowIn<0){ n.bowIn=rand(15,30); n.bow(); } if(n.sat>st.dur){ n.sat=0; n.seat=-1; n.target.set(n.pos.x,n.pos.y+.9); return true; } } return n.st>n.limit; }
+  if(st.look){ n.lookIn-=dt; if(n.lookIn<0){ n.lookIn=rand(1.5,4); n.headGoal=rand(-.9,.9); if(Math.random()<.35) n.faceGoal=(n.faceGoal??n.rotY)+rand(-.8,.8); } }
+  if(st.jiao){ n.nextThrow-=dt; if(n.nextThrow<0){ if(n.left<=0) return true; n.left--; n.burnT=0; const res=["sheng","sheng","xiao","yin"][(Math.random()*4)|0]; throwJiao(n,res,()=>n.say(RESULT[res].t,RESULT[res].c)); n.nextThrow=rand(6,9); if(res==="sheng"&&Math.random()<.5) n.left=0; } return false; }
+  if(st.dance&&n.st>n.limit){ n.danceT=0; return true; }
+  return n.st>n.limit; }
+function botPose(n){ if(n.anim==="shake"){ const k=Math.sin(n.st*13)*.16, rest=(n.st%9)>7; for(const a of n.arms){ a.rotation.x=rest?-.7:-1.2+k; a.rotation.z=a===n.arms[0]?.42:-.42; } n.torso.rotation.x=.12; }
+  else if(n.anim==="read"){ for(const a of n.arms){ a.rotation.x=-1.0; a.rotation.z=a===n.arms[0]?.3:-.3; } n.head.rotation.x=.32; } }
+// draw each worshipper with a few meshes: per moving part (a leg, an arm, the torso, the head) every plain-coloured piece is merged
+// into one mesh that carries its colours per vertex (one shared material); textured pieces (the face) stay as they are
+const BOT_VC=new T.MeshStandardMaterial({vertexColors:true,roughness:.7,metalness:.05}), BOT_VC2=new T.MeshStandardMaterial({vertexColors:true,roughness:.7,metalness:.05,side:T.DoubleSide});
+function bakeAvatar(av){ const bones=new Set([av.root,av.parts,av.hips,av.torso,av.head,...av.legs,...av.arms].filter(Boolean)), keep=new Set([av.incense,av.amulet,av.thread,av.shoulderPet].filter(Boolean));
+  av.root.updateMatrixWorld(true); const buckets=new Map(), inv=new T.Matrix4(), mtx=new T.Matrix4(), c=new T.Color();
+  av.root.traverse(o=>{ if(!o.isMesh||!o.visible||Array.isArray(o.material)) return; const m=o.material; if(m.transparent||m.map||m.emissiveMap||m.alphaMap||!m.color||o.geometry.morphAttributes.position) return;
+    for(let q=o;q&&q!==av.root;q=q.parent) if(keep.has(q)) return;
+    let b=o.parent; while(b&&!bones.has(b)) b=b.parent; if(!b||!o.geometry.attributes.position) return;
+    const k=b.uuid+(m.side===T.DoubleSide?"|2":"|1"); if(!buckets.has(k)) buckets.set(k,{b,ds:m.side===T.DoubleSide,list:[]}); buckets.get(k).list.push(o); });
+  buckets.forEach(({b,ds,list})=>{ if(list.length<2) return; inv.copy(b.matrixWorld).invert(); let vc=0, ic=0;
+    const parts=list.map(o=>{ let g=o.geometry.clone(); if(!g.attributes.normal) g.computeVertexNormals(); mtx.multiplyMatrices(inv,o.matrixWorld); g.applyMatrix4(mtx);
+      if(!g.index){ const n=g.attributes.position.count, idx=new Uint32Array(n); for(let i=0;i<n;i++) idx[i]=i; g.setIndex(new T.BufferAttribute(idx,1)); }
+      const m=o.material; c.copy(m.color); if(m.emissive) c.r=Math.min(1,c.r+m.emissive.r*(m.emissiveIntensity??1)), c.g=Math.min(1,c.g+m.emissive.g*(m.emissiveIntensity??1)), c.b=Math.min(1,c.b+m.emissive.b*(m.emissiveIntensity??1));
+      g.userData.col=[c.r,c.g,c.b]; vc+=g.attributes.position.count; ic+=g.index.count; return g; });
+    const P=new Float32Array(vc*3), N=new Float32Array(vc*3), C=new Float32Array(vc*3), I=new Uint32Array(ic); let vo=0, io=0;
+    parts.forEach(g=>{ const n=g.attributes.position.count, pa=g.attributes.position, na=g.attributes.normal;
+      for(let i=0;i<n;i++){ P[(vo+i)*3]=pa.getX(i); P[(vo+i)*3+1]=pa.getY(i); P[(vo+i)*3+2]=pa.getZ(i); N[(vo+i)*3]=na.getX(i); N[(vo+i)*3+1]=na.getY(i); N[(vo+i)*3+2]=na.getZ(i); C[(vo+i)*3]=g.userData.col[0]; C[(vo+i)*3+1]=g.userData.col[1]; C[(vo+i)*3+2]=g.userData.col[2]; }
+      const ix=g.index.array; for(let i=0;i<ix.length;i++) I[io+i]=ix[i]+vo; vo+=n; io+=ix.length; g.dispose(); });
+    const G=new T.BufferGeometry(); G.setAttribute("position",new T.BufferAttribute(P,3)); G.setAttribute("normal",new T.BufferAttribute(N,3)); G.setAttribute("color",new T.BufferAttribute(C,3)); G.setIndex(new T.BufferAttribute(I,1)); G.computeBoundingSphere();
+    const M=new T.Mesh(G,ds?BOT_VC2:BOT_VC); M.raycast=()=>{}; b.add(M); list.forEach(o=>o.parent&&o.parent.remove(o)); }); }
+function makeBot(at){ const [x,z]=at||botSpot(); const a=new Avatar(randomLook(),{npc:true,x,z}); a.isBot=true; a.moveSpeed=rand(1.4,2.1); a.name=randomName(); a.setName(a.name); try{ bakeAvatar(a); }catch(e){}
+  a.steps=[{look:rand(.5,4)}]; a.step=null; if(customizing) a.root.visible=false; npcs.push(a); return a; }
 function botNear(n,r){ return Math.hypot(n.pos.x-meAv.pos.x,n.pos.y-meAv.pos.y)<r; }
-function botPlan(n){ const r=Math.random();
-  if(r<.32){ const s=freeSeat(); if(s>=0){ const S=SEATS[s], p=planPath(n.pos.x,n.pos.y,S.x,S.y); n.hold=0; n.danceT=0; n.faceGoal=null; n.seat=s; n.goalSeat=true; n.target.set(p[0][0],p[0][1]); n.path=p.slice(1); n.mode="sit"; n.wait=rand(25,70); n.bowIn=rand(2,8); return; } }
-  if(r<.78){ const ks=BOT_ACTS.filter(k=>stations[k]), k=ks[(Math.random()*ks.length)|0], st=stations[k]; botWalk(n,st.approach.x+rand(-.35,.35),st.approach.y+rand(-.35,.35)); n.mode="go"; n.goal=k; n.wait=45; return; }
-  const [x,z]=botSpot(); botWalk(n,x,z); n.mode="go"; n.goal=null; n.wait=45; }
-function botAct(n,k){ const st=stations[k]; n.faceGoal=st?st.face:null; n.mode="do"; n.wait=rand(5,12);
-  if(k==="altar"){ if(Math.random()<.5){ const res=["sheng","sheng","xiao","yin"][(Math.random()*4)|0]; throwJiao(n,res,()=>n.say(RESULT[res].t,RESULT[res].c)); } else n.bow(); }
-  else if(k==="burn"){ n.burnT=0; if(botNear(n,10)) burnFx(); }
-  else if(k==="fountain"){ if(Math.random()<.6) fxCoin(n); else fxDrink(n); }
-  else if(k==="cats"){ n.danceT=1e9; n.wait=rand(14,30); }
-  else if(["tiangong","caishen","yuelao","huye","xuantian","guangong"].includes(k)){ n.hold=1; n.bow(); }
-  else n.bow();
-  if(Math.random()<.15) showEmo(n,BOT_EMO[(Math.random()*BOT_EMO.length)|0]); }
 function botTick(dt){ const now=performance.now();
-  if(now>BOT.nextAdjust){ BOT.nextAdjust=now+rand(15000,40000); const live=npcs.filter(n=>n.mode!=="leave"), want=botWant();
-    if(live.length<want){ makeBot([(Math.random()<.5?-1:1)*16.5,rand(HZ+3,HZ+YX+15)]).wait=.2; }            // someone walks in from the side of the courtyard
-    else if(live.length>want){ const n=live[(Math.random()*live.length)|0]; botWalk(n,(n.pos.x<0?-1:1)*16.5,Math.max(HZ+3,Math.min(HZ+YX+15,n.pos.y))); n.mode="leave"; } } // someone heads home
+  if(now>BOT.nextAdjust){ BOT.nextAdjust=now+rand(15000,40000); const live=npcs.filter(n=>!n.leaving&&!n.classic), want=botWant();
+    if(live.length<want) makeBot([(Math.random()<.5?-1:1)*16.5,rand(HZ+3,HZ+YX+15)]);              // someone walks in from the side of the courtyard
+    else if(live.length>want){ const n=live[(Math.random()*live.length)|0]; n.leaving=true; n.hold=0; n.danceT=0; n.anim=null; n.steps=[]; botStart(n,{leave:[(n.pos.x<0?-1:1)*16.5,Math.max(HZ+3,Math.min(HZ+YX+15,n.pos.y))]}); } } // someone heads home
   for(let i=npcs.length-1;i>=0;i--){ const n=npcs[i]; n.update(dt);
-    if(n.mode==="leave"){ if(botArrived(n)){ n.dispose(); npcs.splice(i,1); } continue; }
-    n.wait-=dt;
-    if(n.mode==="sit"){ if(n.seat>=0&&botArrived(n)){ n.bowIn-=dt; if(n.bowIn<0){ n.bowIn=rand(8,22); n.bow(); } } if(n.wait<0){ n.mode="idle"; n.wait=0; } }
-    else if(n.mode==="go"){ if(botArrived(n)){ if(n.goal) botAct(n,n.goal); else { n.mode="do"; n.wait=rand(4,10); if(Math.random()<.3) showEmo(n,BOT_EMO[(Math.random()*BOT_EMO.length)|0]); } } else if(n.wait<0){ n.mode="idle"; n.wait=0; } }
-    else if(n.mode==="do"){ if(n.wait<0){ n.danceT=0; n.hold=0; n.mode="idle"; n.wait=rand(.5,3); } }
-    else if(n.wait<0) botPlan(n);
-    if(Math.random()<dt/90){ const ph=PHRASES[(Math.random()*PHRASES.length)|0]; n.say(ph,"#f7ecd6"); if(Math.random()<.3) logChat(n.name,ph,false); } } }
-function buildNpcs(){ npcs.forEach(n=>n.dispose()); npcs.length=0; const want=botWant();
-  for(let i=0;i<want;i++){ const a=makeBot(); if(i%2===0){ const s=freeSeat(); if(s>=0){ a.pos.set(SEATS[s].x,SEATS[s].y); a.target.copy(a.pos); a.seat=s; a.goalSeat=true; a.kneel=1; a.mode="sit"; a.wait=rand(10,60); a.bowIn=rand(2,10); } } }
+    if(n.classic){ n.next-=dt; if(n.next<0){ n.next=rand(8,24); n.bow(); } if(Math.random()<dt/400) showEmo(n,BOT_EMO[(Math.random()*BOT_EMO.length)|0]); continue; }
+    if(!n.step){ if(!n.steps||!n.steps.length){ if(n.leaving){ n.dispose(); npcs.splice(i,1); continue; } botPlan(n); } botStart(n,n.steps.shift()); }
+    else if(botStep(n,dt)){ if(n.act>=0&&ACTS[n.act].loop) stopAct(n); n.anim=null; n.step=null; if(n.leaving&&(!n.steps||!n.steps.length)){ n.dispose(); npcs.splice(i,1); continue; } }
+    botPose(n); if(n.afk) continue;
+    if(Math.random()<dt/160){ const ph=PHRASES[(Math.random()*PHRASES.length)|0]; n.say(ph,"#f7ecd6"); if(Math.random()<.25) logChat(n.name,ph,false); }
+    if(Math.random()<dt/240) showEmo(n,BOT_EMO[(Math.random()*BOT_EMO.length)|0]); } }
+function buildNpcs(){ npcs.forEach(n=>n.dispose()); npcs.length=0;
+  for(let i=0;i<sitterWant();i++){ const s=freeSeat(); if(s<0) break; const a=makeBot([SEATS[s].x,SEATS[s].y]); a.classic=true; a.seat=s; a.kneel=1; a.next=rand(2,18); a.steps=[]; a.step=null; }
+  const want=botWant(); BOT.afkFrac=rand(.2,.4); let afk=Math.round(want*BOT.afkFrac);
+  for(let i=0;i<want;i++){ const r=Math.random(); let a;
+    if(afk>0){ afk--; const [x,z]=Math.random()<.5?hallSpot():botSpot(); a=makeBot([x,z]); a.rotY=rand(-Math.PI,Math.PI); a.steps=[{afk:rand(120,1500)}]; continue; }
+    if(r<.35){ const s=freeSeat(); if(s>=0){ a=makeBot([SEATS[s].x,SEATS[s].y]); a.seat=s; a.goalSeat=true; a.kneel=1; a.steps=[{sit:s,dur:rand(20,100)}]; continue; } }
+    if(r<.55){ const [x,z]=stNear("lot",.5); a=makeBot([x,z]); a.steps=[{face:stFace("lot")},{shake:rand(8,40)},...planLot().slice(3)]; continue; }
+    const [x,z]=Math.random()<.5?hallSpot():botSpot(); a=makeBot([x,z]); }
   BOT.nextAdjust=performance.now()+rand(15000,30000); }
 function npcYield(i){ npcs.forEach(n=>{ if(n.seat===i){ const s=freeSeat(); if(s<0){ n.seat=-1; n.target.set(rand(-10,10),13); } else n.sitAt(s); } }); }
 
@@ -2108,8 +2205,9 @@ let room=null, myBow=0, myJiao=[0,""], myBurn=0, myOffers=[];
 let dirty=true, lastSend=0, lastSentHead=0;
 function markDirty(){ dirty=true; }
 let chairHidden=false;
-function presencePayload(){ return {v:1,u:(customizing||document.hidden||chairHidden)?0:1,n:(me.name||"").slice(0,10),k:me.no||0,l:me.look,x:+meAv.target.x.toFixed(2),z:+meAv.target.y.toFixed(2),r:+meAv.rotY.toFixed(1),s:meAv.seat,b:myBow,h:meAv.hold?1:0,j:myJiao,f:myBurn,o:myOffers,a:bag.items.fu?1:0,g:me.lamp??-1,m:myMsg,c:myChat,p:myPlant,gf:myGF,fx:myFx,t:bag.redThread?1:0,q:me.sp?1:0,w:myWish,y:+meAv.headGoal.toFixed(1),sq:mySj?[mySj.g+1,mySj.at]:0,sk:mySparkler?1:0,fs:myFwShow||0,e:myEmo,sl:mySL,sm:myMassSL||0}; }
+function presencePayload(){ return {v:1,u:(customizing||chairHidden)?0:1,n:(me.name||"").slice(0,10),k:me.no||0,l:me.look,x:+meAv.target.x.toFixed(2),z:+meAv.target.y.toFixed(2),r:+meAv.rotY.toFixed(1),s:meAv.seat,b:myBow,h:meAv.hold?1:0,j:myJiao,f:myBurn,o:myOffers,a:bag.items.fu?1:0,g:me.lamp??-1,m:myMsg,c:myChat,p:myPlant,gf:myGF,fx:myFx,t:bag.redThread?1:0,q:me.sp?1:0,w:myWish,y:+meAv.headGoal.toFixed(1),sq:mySj?[mySj.g+1,mySj.at]:0,sk:mySparkler?1:0,fs:myFwShow||0,e:myEmo,ac:myAct,sl:mySL,sm:myMassSL||0}; }
 let lastSent="", lastBeat=0;
+setInterval(()=>{ if(room) sendPresence(true); },50000); // heartbeat while idle
 function sendPresence(force){ if(!room) return; dirty=false; const p=presencePayload(), str=JSON.stringify(p), now=performance.now(); lastSend=now; if(str===lastSent&&force!==true&&now-lastBeat<60000) return; lastSent=str; lastBeat=now; room.presence(p).catch(()=>{}); }
 function seatTakenByPeer(i){ for(const r of remotes.values()) if(r.seat===i) return true; return false; }
 function num(v,a,b,d){ v=Number(v); return Number.isFinite(v)?Math.max(a,Math.min(b,v)):d; }
@@ -2144,13 +2242,15 @@ function syncPeers(peers){ const seen=new Set();
     if(Array.isArray(pr.sl)&&pr.sl[1]&&pr.sl[1]!==av.lastSL){ av.lastSL=pr.sl[1]; if(!quietFx()&&Date.now()-num(pr.sl[0],0,1e13,0)<20000) launchSkyLantern(av,null); }
     if(av.lastE===undefined) av.lastE=Array.isArray(pr.e)?pr.e[1]:"";
     if(Array.isArray(pr.e)&&pr.e[1]&&pr.e[1]!==av.lastE){ av.lastE=pr.e[1]; if(!quietFx()) showEmo(av,pr.e[0]|0); }
+    if(av.lastAC===undefined){ av.lastAC=Array.isArray(pr.ac)?pr.ac[1]:""; if(Array.isArray(pr.ac)&&ACTS[pr.ac[0]|0]&&ACTS[pr.ac[0]|0].loop&&pr.ac[0]>=0) startAct(av,pr.ac[0]|0); }
+    if(Array.isArray(pr.ac)&&pr.ac[1]&&pr.ac[1]!==av.lastAC){ av.lastAC=pr.ac[1]; const id=pr.ac[0]|0; if(id<0||!ACTS[id]) stopAct(av); else if(ACTS[id].loop||!quietFx()) startAct(av,id); }
     if(Array.isArray(pr.c)&&typeof pr.c[0]==="string"&&pr.c[1]&&pr.c[1]!==av.lastC){ av.lastC=pr.c[1]; const txt=cleanChat(pr.c[0]); if(txt&&!chatCheck(txt)&&!peerFlood(av,txt)){ av.say(txt,"#f7ecd6",5); logChat(av.name||"香客",txt,false); } }
     const offersKey=JSON.stringify(pr.o||[]); if(offersKey!==av.offersKey){ av.offersKey=offersKey; while(av.offerGroup.children.length) av.offerGroup.remove(av.offerGroup.children[0]);
       (Array.isArray(pr.o)?pr.o.slice(0,4):[]).forEach(o=>{ if(Array.isArray(o)&&OFFER_KINDS.includes(o[0])&&o[0]!=="xiang") offerMesh(o[0],num(o[1],0,11,0)|0,av.offerGroup); }); }
   }
   let lampGone=false; for(const [k,av] of remotes){ if(!seen.has(k)){ av.dispose(); if(av.offerGroup) scene.remove(av.offerGroup); if(av.lamp>=0) lampGone=true; remotes.delete(k); } } if(lampGone) refreshLamps();
   updateCount(); }
-function updateCount(){ const n=FAKE_CROWD?shownTotal():1+remotes.size; $("#countText").textContent=FAKE_CROWD||room?`線上 ${n} 人`:"單人模式"; $("#dot").classList.toggle("off",!room||!roomConnected); }
+function updateCount(){ const n=FAKE_CROWD?hallShown(HALLS.current(),Date.now()):1+remotes.size; $("#countText").textContent=FAKE_CROWD||room?`殿內 ${n} 人`:"單人模式"; $("#dot").classList.toggle("off",!room||!roomConnected); }
 let roomConnected=false;
 /* ---- standalone site: Supabase Realtime, halls of up to HALL_CAP people ---- */
 const SB_URL="https://zgwbthrqjrsnhqpdcona.supabase.co", SB_KEY="sb_publishable_Xl0v2Yrg0OrDw90ddpV35A_AzRta8FH";
@@ -2194,17 +2294,17 @@ function initCF(first){
     ws.onclose=()=>{ roomConnected=false; updateCount(); if(closedByUs) return; retry++; setTimeout(()=>{ if(!closedByUs&&(!ws||ws.readyState>1)) connect(hall); },Math.min(15000,1000*retry*retry)); }; }
   room={ presence(p){ if(ws&&ws.readyState===1){ try{ ws.send(JSON.stringify({t:"st",p})); }catch(e){} } return Promise.resolve(); } };
   HALLS.current=()=>hall;
-  // Idle players drop their connection (hidden 60s, or 5 min without touching anything) so halls can sleep; any touch reconnects. The 主委 account is never parked.
+  // Any touch reconnects if the connection was lost.
   let parked=false, lastInput=Date.now(), hiddenAt=document.hidden?Date.now():0;
   const wake=()=>{ lastInput=Date.now(); if(parked&&!document.hidden){ parked=false; connect(hall); } };
   ["pointerdown","keydown","touchstart","wheel"].forEach(ev=>window.addEventListener(ev,wake,{capture:true,passive:true}));
   document.addEventListener("visibilitychange",()=>{ if(document.hidden) hiddenAt=Date.now(); else wake(); });
-  setInterval(()=>{ if(parked||!ws||me.sp) return; const now=Date.now(); if(document.hidden?now-hiddenAt>60000:now-lastInput>300000){ parked=true; closedByUs=true; try{ ws.close(); }catch(e){} roomConnected=false; peerState.clear(); rebuild(); updateCount(); } },10000);
+  // players stay connected while idle or in the background (掛網); a dropped connection still reconnects on its own
   window.__mzDisconnect=()=>{ closedByUs=true; parked=true; try{ ws&&ws.close(); }catch(e){} };
   HALLS.switchTo=i=>{ if(i===hall||i<0||i>=HALL_NAMES.length) return; parked=false; closedByUs=true; try{ ws&&ws.close(); }catch(e){} connect(i); toast(`前往${HALL_NAMES[i]}`); };
   const poll=async()=>{ const j=await probeCF(); if(j){ HALLS.counts=j.counts.slice(); HALLS.counts[hall]=Math.max(HALLS.counts[hall],1+[...peerState.values()].filter(v=>v.p&&v.p.u!==0).length); if(sheetKind==="halls") renderHalls(); } };
   setInterval(()=>{ if(sheetKind==="halls") poll(); },4000);
-  setInterval(()=>{ const now=Date.now(); let ch=false; for(const [id,v] of peerState) if(now-v.t>150000){ peerState.delete(id); ch=true; } if(ch) rebuild(); },10000);
+  setInterval(()=>{ const now=Date.now(); let ch=false; for(const [id,v] of peerState) if(now-v.t>900000){ peerState.delete(id); ch=true; } if(ch) rebuild(); },10000);
   let pick=0; for(let i=0;i<HALLS.counts.length;i++){ if(HALLS.counts[i]<HALL_CAP){ pick=i; break; } } connect(pick); }
 function initSupabase(){
   let myId=load("mz.id",""); if(!myId){ myId=Math.random().toString(36).slice(2,12); save("mz.id",myId); }
@@ -2220,7 +2320,7 @@ function initSupabase(){
     for(const k in st){ const arr=st[k]||[]; const e=arr.find(x=>x&&x.u!==0); const h=e&&Number.isInteger(e.h)?e.h:-1; if(h>=0&&h<c.length) c[h]++; }
     HALLS.counts=c; if(sheetKind==="halls") renderHalls(); if(firstPick){ const f=firstPick; firstPick=null; f(); } });
   lobby.subscribe(st=>{ if(st==="SUBSCRIBED"){ lobbyReady=true; } });
-  const active=()=>!(customizing||document.hidden);
+  const active=()=>!customizing;
   const trackLobby=()=>{ if(lobbyReady) lobby.track({h:hall,u:active()?1:0}).catch(()=>{}); };
   window.__retrack=()=>{ trackLobby(); if(ch&&roomConnected) ch.track({at:Date.now(),u:active()?1:0}).catch(()=>{}); };
   document.addEventListener("visibilitychange",()=>window.__retrack());
@@ -2235,8 +2335,8 @@ function initSupabase(){
     ch.on("presence",{event:"sync"},()=>{ const st=ch.presenceState(); const ids=Object.keys(st);
       const activeN=ids.filter(k=>k!==myId&&(st[k]||[]).some(x=>x&&x.u!==0)).length;
       if(!checked){ checked=true; if(activeN>=HALL_CAP&&hall<HALL_NAMES.length-1){ const old=ch; ch=null; client.removeChannel(old).finally(()=>join(hall+1)); toast(`${HALL_NAMES[hall]}人滿了，帶你到${HALL_NAMES[hall+1]}`,3200); return; } }
-      let changed=false; const now=Date.now(); for(const [id,v] of peerState) if((!st[id]&&now-v.t>8000)||now-v.t>150000){ peerState.delete(id); changed=true; } if(changed) rebuild(); });
-    clearInterval(window.__sweep); window.__sweep=setInterval(()=>{ const now=Date.now(); let ch2=false; for(const [id,v] of peerState) if(now-v.t>150000){ peerState.delete(id); ch2=true; } if(ch2) rebuild(); },10000);
+      let changed=false; const now=Date.now(); for(const [id,v] of peerState) if((!st[id]&&now-v.t>8000)||now-v.t>900000){ peerState.delete(id); changed=true; } if(changed) rebuild(); });
+    clearInterval(window.__sweep); window.__sweep=setInterval(()=>{ const now=Date.now(); let ch2=false; for(const [id,v] of peerState) if(now-v.t>900000){ peerState.delete(id); ch2=true; } if(ch2) rebuild(); },10000);
     ch.subscribe(async status=>{ if(status==="SUBSCRIBED"){ roomConnected=true; lastSent=""; updateCount(); try{ await ch.track({at:Date.now(),u:active()?1:0}); }catch(e){} trackLobby(); ch.send({type:"broadcast",event:"hi",payload:{id:myId}}).catch(()=>{}); dirty=true; lastSend=0; }
       else if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"||status==="CLOSED"){ roomConnected=false; updateCount(); } }); }
   room={ presence(p){ if(!ch||!roomConnected) return Promise.resolve(); return Promise.resolve(ch.send({type:"broadcast",event:"st",payload:{id:myId,p}})).catch(()=>{}); } };
@@ -2375,10 +2475,14 @@ function openChair(){ if(!me.sp) return;
   openSheet("chair","主委工具",`<input class="mail-box ck" id="readKey" type="password" autocomplete="current-password" placeholder="留言讀取密碼（輸入一次就會記住）" value="${esc(load("mz.rk",""))}">
   <div class="ct-group"><span class="group-label">訊息</span><div class="ct-grid">${ctTile("msgsOpen","📬","香客留言")}${ctTile("annOpen","📢","全服公告","跑馬燈")}${ctTile("boardOpen","📋","公告欄",board.text?"有公告":"空白")}</div></div>
   <div class="ct-group"><span class="group-label">活動</span><div class="ct-grid">${ctTile("askFw","🎆","全服煙火","3 分鐘")}${ctTile("askSL","🏮","50 盞天燈")}${ctTile("toggleStage","🎭",OP.on?"收回戲台":"擺出戲台",OP.on?"演出中":"")}</div></div>
-  <div class="ct-group"><span class="group-label">線上人數</span><div class="crowd-row"><span class="crowd-now"><span>現在 <b>${shownTotal()}</b> 人</span><small>${CROWD.at&&CROWD.target!=null?`目標 ${CROWD.target}`:"自動"}</small></span><input id="crowdIn" type="text" inputmode="numeric" maxlength="3" placeholder="目標"><button class="chip" data-act="crowdSet">設定</button><button class="chip" data-act="crowdAuto">自動</button></div>
-    <p class="note">約半小時慢慢變到目標，之後在上下 15 人內浮動。「自動」回到依時段變化（凌晨少、白天多）。</p></div>
+  <div class="ct-group"><span class="group-label">線上人數</span><div class="crowd-row"><span class="crowd-now"><span>全廟 <b>${shownTotal()}</b> 人</span><small>這殿 ${hallShown(HALLS.current(),Date.now())} 人・${CROWD.at&&CROWD.target!=null?`目標 ${CROWD.target}`:"自動"}</small></span><input id="crowdIn" type="text" inputmode="numeric" maxlength="3" placeholder="目標"><button class="chip" data-act="crowdSet">設定</button><button class="chip" data-act="crowdAuto">自動</button></div>
+    <p class="real-count" id="realCount">真實在線：讀取中…</p><p class="note">目標是全廟人數，會依序分到各殿（前一殿快滿才開下一殿）。約半小時慢慢變到目標，之後在上下 15 人內浮動。「自動」回到依時段變化（凌晨少、白天多）。</p></div>
   <div class="ct-group"><span class="group-label">主委自己</span><div class="ct-grid">${ctTile("chairHide",chairHidden?"👁":"🫥",chairHidden?"解除隱形":"隱形",chairHidden?"隱形中":"")}${ctTile("chairReset","🔄","重置今日","測試用")}</div></div>`);
-  const k=$("#readKey"); k.addEventListener("change",()=>{ const v=k.value.trim(); if(v) save("mz.rk",v); }); }
+  const k=$("#readKey"); k.addEventListener("change",()=>{ const v=k.value.trim(); if(v) save("mz.rk",v); }); realStats(); }
+// real players only (no demo worshippers, no added numbers), straight from the server's hall counts
+async function realStats(){ const el=$("#realCount"); if(!el) return; let c=null; if(USE_CF){ const j=await probeCF(); if(j) c=j.counts; } else if(room) c=(HALLS.counts||[]).slice();
+  if(!c){ el.innerHTML=`真實在線：<b>1</b> 人（只有你，目前沒有連上伺服器）`; return; } c=c.slice(); const cur=HALLS.current(); c[cur]=Math.max(c[cur]||0,1+remotes.size); const tot=c.reduce((a,b)=>a+(b||0),0);
+  el.innerHTML=`真實在線：<b>${tot}</b> 人　`+c.map((n,i)=>n?`${HALL_NAMES[i]} ${n}`:"").filter(Boolean).join("・"); }
 $("#chairBtn").onclick=()=>{ ensureAudio(); if(sheetKind==="chair") closeSheet(); else openChair(); };
 HANDLERS.chairBack=()=>openChair();
 const backBtn=`<button class="secondary ct-back" data-act="chairBack">← 主委工具</button>`;
@@ -2787,17 +2891,14 @@ function cleanChat(t){ return String(t||"").replace(/[\u0000-\u001f\u007f​-‏
 const chatLog=[]; let lastChatAt=0;
 function logChat(name,text,mine){ chatLog.push({name,text,mine}); if(chatLog.length>30) chatLog.shift(); if(sheetKind==="say") renderChatLog(); }
 function renderChatLog(){ const el=$("#chatLog"); if(!el) return; el.innerHTML=chatLog.length?chatLog.slice(-20).map(m=>`<div class="msg${m.mine?" mine":""}"><b>${esc(m.name)}</b><span>${esc(m.text)}</span></div>`).join(""):`<p class="note">還沒有人說話。打個招呼吧。</p>`; el.scrollTop=el.scrollHeight; }
-// 洗頻: the same sentence twice in a row is refused, and a third line within 15 seconds pauses chat for 30 seconds
+// 洗頻: the same sentence twice in a row is refused (no limit on how many different lines, so quick talkers aren't muted)
 const FLOOD={last:"",times:[],muteUntil:0};
 const floodKey=t=>String(t||"").normalize("NFKC").toLowerCase().replace(/[\s\p{P}\p{S}]/gu,"");
-function floodCheck(text){ const now=Date.now(); if(now<FLOOD.muteUntil) return `發言太頻繁，${Math.ceil((FLOOD.muteUntil-now)/1000)} 秒後再說`;
-  if(floodKey(text)&&floodKey(text)===FLOOD.last) return "同一句話不能連續發送";
-  FLOOD.times=FLOOD.times.filter(t=>now-t<15000); if(FLOOD.times.length>=2){ FLOOD.muteUntil=now+30000; FLOOD.times=[]; return "短時間連發太多句，聊天暫停 30 秒"; }
-  return null; }
+function floodCheck(text){ if(floodKey(text)&&floodKey(text)===FLOOD.last) return "同一句話不能連續發送"; return null; }
 function floodNote(text){ FLOOD.last=floodKey(text); FLOOD.times.push(Date.now()); }
 // the same rules applied to what other players send, so a modified page can't flood everyone else's screen
-function peerFlood(av,text){ const now=Date.now(), k=floodKey(text); av.fl=av.fl||{last:"",times:[]}; if(k&&k===av.fl.last) return true; av.fl.times=av.fl.times.filter(t=>now-t<15000); if(av.fl.times.length>=2) return true; av.fl.last=k; av.fl.times.push(now); return false; }
-function sendChat(text){ text=cleanChat(text); if(!text) return false; const now=performance.now(); if(now-lastChatAt<2500){ toast("說慢一點，稍等再送出"); return false; }
+function peerFlood(av,text){ const k=floodKey(text); av.fl=av.fl||{last:""}; if(k&&k===av.fl.last) return true; av.fl.last=k; return false; }
+function sendChat(text){ text=cleanChat(text); if(!text) return false; const now=performance.now(); if(now-lastChatAt<800) return false; /* only stops an accidental double tap */
   const bad=chatCheck(text); if(bad){ toast(`沒有送出：${CHAT_REASON[bad]}`,2800); return false; }
   const fl=floodCheck(text); if(fl){ toast(fl,2800); return false; } floodNote(text);
   lastChatAt=now; myChat=[text,Math.random().toString(36).slice(2,8)]; markDirty(); meAv.say(text,"#f7ecd6",5); logChat(me.name||"你",text,true); return true; }
@@ -2817,8 +2918,10 @@ function renderHalls(){ const c=HALLS.counts||[]; const cur=HALLS.current(); con
   list.sort((a,b)=>a-b);
   const rows=list.map(i=>{ const nm=HALL_NAMES[i]; const n=hallShown(i,ts), me_=i===cur; const full=(c[i]||0)>=HALL_CAP&&!me_; const capShown=Math.max(HALL_CAP,100); const pct=Math.min(100,n/capShown*100);
     return `<button class="hall-row" data-act="hallGo" data-v="${i}" aria-current="${me_}" ${full?"disabled":""}><span class="hn">${nm}</span><span class="bar"><i style="width:${pct}%"></i></span><span class="hc">${n}/${capShown} 人</span><span class="hc">${me_?"目前":full?"已滿":"前往"}</span></button>`; }).join("");
-  const el=$("#hallList"); if(el) el.innerHTML=rows; }
-function openHalls(){ if(!HALLS.switchTo){ openSheet("halls","殿別",`<p class="lead">目前在單人或預覽模式，沒有其他殿可以切換。</p>`); return; }
+  const el=$("#hallList"); if(el) el.innerHTML=`<p class="note">全廟目前 ${shownTotal()} 人</p>`+rows; }
+function localHalls(){ if(HALLS.switchTo) return; let hall=0; HALLS.current=()=>hall;
+  HALLS.switchTo=i=>{ if(i===hall||i<0||i>=HALL_NAMES.length) return; hall=i; document.querySelector(".hall-name").textContent="天后宮 "+HALL_NAMES[i]; buildNpcs(); updateCount(); toast(`前往${HALL_NAMES[i]}`); }; }
+function openHalls(){ localHalls(); if(!HALLS.switchTo){ openSheet("halls","殿別",`<p class="lead">目前在單人或預覽模式，沒有其他殿可以切換。</p>`); return; }
   openSheet("halls","切換殿別",`<p class="lead">每殿最多 ${HALL_CAP} 人。前面的殿快滿時，下一殿才會開放。</p><div class="hall-list" id="hallList"></div>`); renderHalls(); }
 setInterval(()=>{ updateCount(); if(sheetKind==="halls") renderHalls(); },10000);
 HANDLERS.hallGo=v=>{ const i=+v; if(i===HALLS.current()){ closeSheet(); return; } if((HALLS.counts[i]||0)>=HALL_CAP){ toast("這一殿已經滿了"); return; } HALLS.switchTo(i); closeSheet(); };
@@ -2945,7 +3048,7 @@ function playDipper(){ const L=gameLayer("消災解厄","10 秒內依序畫完 3
   const up=()=>{ down=false; trail=[]; }; L.cv.addEventListener("pointerup",up); L.cv.addEventListener("pointercancel",up);
   requestAnimationFrame(draw); }
 // 斬小人: swipe across the straw figure as many times as you can in 10 seconds
-function playZhan(){ const L=gameLayer("斬小人","手指來回劃過小人，10 秒內越多下斬得越乾淨"); const {x}=L; let cuts=0, started=0, end=false, shake=0, inside=false, slashes=[], bits=[]; const LIM=10;
+function playZhan(){ const L=gameLayer("斬小人","手指來回劃過小人，10 秒內越多下斬得越乾淨"); const {x}=L; let cuts=0, started=0, end=false, shake=0, slashes=[], bits=[]; const LIM=10;
   const box=()=>{ const W=L.W(), H=L.H(), h=Math.min(H*.62,W*1.05), w=h*.55; return {cx:W/2,cy:H*.55,w,h}; };
   const swish=()=>{ noiseBurst(.12,.22,2600); tone(180,.12,.06,"sawtooth"); };
   const draw=()=>{ if(L.done) return; const W=L.W(), H=L.H(), now=performance.now(); const left=started?Math.max(0,LIM-(now-started)/1000):LIM;
@@ -2977,17 +3080,22 @@ function playZhan(){ const L=gameLayer("斬小人","手指來回劃過小人，1
     requestAnimationFrame(draw); };
   let board=null; const showBoard=list=>{ board=list; };
   const finish=()=>{ tone(196,.8,.12,"triangle"); tone(294,.8,.1,"triangle",.15); zhanSubmit(cuts).then(showBoard); setTimeout(()=>{ L.close(); const r=cuts>=30?"小人斬得乾乾淨淨，關聖帝君護佑！":cuts>=18?"小人落荒而逃，關聖帝君護佑！":"小人退散，關聖帝君護佑！"; toast(r,3600); meAv.say(cuts>=18?"小人退散":"斬小人","#ffb3a0",3); },7000); };
-  const inFig=(px,py)=>{ const b=box(); return Math.abs(px-b.cx)<b.w*.5&&py>b.cy-b.h*.5&&py<b.cy+b.h*.32; };
-  let entry=null;
-  const move=(px,py)=>{ if(end) return; const now=performance.now(); const isIn=inFig(px,py);
-    if(isIn&&!inside) entry=[px,py];
-    if(!isIn&&inside&&entry){ if(!started) started=now; if(now-started<=LIM*1000){ cuts++; shake=14; swish(); slashes.push([entry[0],entry[1],px,py,now]); if(slashes.length>60) slashes.shift();
-      for(let k=0;k<6;k++) bits.push({x:px,y:py,vx:(Math.random()-.5)*10,vy:-Math.random()*8,r:Math.random()*3,vr:(Math.random()-.5)*.4,l:0,c:Math.random()<.3?"#f0e1b4":"#d2a650"}); } entry=null; }
-    inside=isIn; };
-  let isDown=false;
-  L.cv.addEventListener("pointerdown",e=>{ isDown=true; inside=inFig(e.clientX,e.clientY); entry=inside?[e.clientX,e.clientY]:null; });
-  L.cv.addEventListener("pointermove",e=>{ if(isDown) move(e.clientX,e.clientY); });
-  const up=e=>{ if(isDown) move(e.clientX,e.clientY); isDown=false; inside=false; entry=null; }; L.cv.addEventListener("pointerup",up); L.cv.addEventListener("pointercancel",up);
+  // A cut is a stroke that goes right across the figure: from beyond one side to beyond the other (left↔right through the
+  // body, or top↔bottom through it). Each move is treated as a line from the previous point, so a fast swipe whose touch
+  // points all land outside the figure still counts. Only the first finger counts, so a second finger can't add cuts.
+  let pid=null, last=null, sx=0, sy=0, lastCut=0;
+  const zones=(px,py)=>{ const b=box(), hw=b.w*.3, top=b.cy-b.h*.5, bot=b.cy+b.h*.32; return { b, x:px<b.cx-hw?-1:px>b.cx+hw?1:0, y:py<b.cy-b.h*.36?-1:py>b.cy+b.h*.2?1:0, inX:py>top&&py<bot, inY:Math.abs(px-b.cx)<b.w*.5 }; };
+  const cut=(x0,y0,x1,y1)=>{ const now=performance.now(); if(end||now-lastCut<55) return; if(!started) started=now; if(now-started>LIM*1000) return;
+    lastCut=now; cuts++; shake=14; swish(); slashes.push([x0,y0,x1,y1,now]); if(slashes.length>60) slashes.shift();
+    for(let k=0;k<6;k++) bits.push({x:x1,y:y1,vx:(Math.random()-.5)*10,vy:-Math.random()*8,r:Math.random()*3,vr:(Math.random()-.5)*.4,l:0,c:Math.random()<.3?"#f0e1b4":"#d2a650"}); };
+  const step=(px,py)=>{ if(!last){ last=[px,py]; const z=zones(px,py); sx=z.x; sy=z.y; return; }
+    const z=zones(px,py), [lx,ly]=last;
+    if(z.x&&sx&&z.x!==sx){ const t=(z.b.cx-lx)/((px-lx)||1e-6), cy=ly+(py-ly)*Math.max(0,Math.min(1,t)); if(cy>z.b.cy-z.b.h*.5&&cy<z.b.cy+z.b.h*.32) cut(lx,ly,px,py); }
+    else if(z.y&&sy&&z.y!==sy){ const t=(z.b.cy-ly)/((py-ly)||1e-6), cx=lx+(px-lx)*Math.max(0,Math.min(1,t)); if(Math.abs(cx-z.b.cx)<z.b.w*.5) cut(lx,ly,px,py); }
+    if(z.x) sx=z.x; if(z.y) sy=z.y; last=[px,py]; };
+  L.cv.addEventListener("pointerdown",e=>{ if(pid!==null) return; pid=e.pointerId; try{ L.cv.setPointerCapture(pid); }catch(err){} last=null; step(e.clientX,e.clientY); });
+  L.cv.addEventListener("pointermove",e=>{ if(e.pointerId!==pid) return; const list=e.getCoalescedEvents?e.getCoalescedEvents():null; if(list&&list.length) list.forEach(c=>step(c.clientX,c.clientY)); else step(e.clientX,e.clientY); });
+  const up=e=>{ if(e.pointerId!==pid) return; step(e.clientX,e.clientY); pid=null; last=null; }; L.cv.addEventListener("pointerup",up); L.cv.addEventListener("pointercancel",up);
   requestAnimationFrame(draw); }
 // 斬小人排行榜: the server keeps the top scores; in the preview it lives in this browser only
 async function zhanSubmit(score){ const name=(me.name||(me.no?`香客${me.no}`:"香客")).slice(0,10), id=load("mz.id","");
@@ -3082,8 +3190,14 @@ function emoTick(av,dt){ const e=av.emo; if(!e) return; e.t+=dt; const t=e.t, sp
   sp.scale.set(s,s,1); sp.position.set(x,y+(av.bubble?.34:0),0); sp.material.rotation=rot; }
 function fxFloat(av,m,size){ const s=new T.Sprite(m.clone()); s.position.set(av.pos.x+rand(-.3,.3),2.05,av.pos.y+rand(-.2,.2)); s.scale.set(.14*size*2,.14*size*2,1); s.userData.noMerge=1; scene.add(s); parts.push({s,vx:rand(-.15,.15),vy:.55,vz:rand(-.15,.15),life:0,max:1.3,grow:.02,op:1}); }
 function fxDrop(av){ for(const k of [-1,1]){ const s=new T.Sprite(tearMat.clone()); s.position.set(av.pos.x,2.0,av.pos.y); s.scale.set(.09,.09,1); scene.add(s); const a=av.rotY+k*Math.PI/2; parts.push({s,vx:Math.sin(a)*.9+rand(-.2,.2),vy:1.1+rand(0,.4),vz:Math.cos(a)*.9+rand(-.2,.2),life:0,max:.8,grow:0,op:1,g:4}); } }
-let myEmo=[-1,""];
-function openEmo(){ openSheet("emo","表情",`<p class="lead">選一個表情，會在你頭上跳出來，其他香客也看得到。</p><div class="emo-grid">${EMO_NAMES.map((n,i)=>`<button class="emo-pick" data-act="emo" data-v="${i}" aria-label="${n}"><span class="emo-img" style="background-position:${(i%5)*25}% ${i<5?0:100}%"></span><span>${n}</span></button>`).join("")}</div>`); }
+let myEmo=[-1,""], myAct=[-1,""];
+function openEmo(){ openSheet("emo","表情",`<p class="lead">選一個表情，會在你頭上跳出來，其他香客也看得到。</p><div class="emo-grid">${EMO_NAMES.map((n,i)=>`<button class="emo-pick" data-act="emo" data-v="${i}" aria-label="${n}"><span class="emo-img" style="background-position:${(i%5)*25}% ${i<5?0:100}%"></span><span>${n}</span></button>`).join("")}</div>
+  <span class="group-label act-label">動作（持續型會做到你移動或按停止）</span><div class="act-grid">${ACTS.map((a,i)=>`<button class="emo-pick act-pick" data-act="doAct" data-v="${i}" aria-pressed="${meAv.act===i}"><span class="act-ico">${a.i}</span><span>${a.n}</span>${a.loop?"<small>持續</small>":""}</button>`).join("")}</div>
+  ${meAv.act>=0&&ACTS[meAv.act].loop?`<button class="secondary" data-act="doAct" data-v="-1" style="width:100%">停止動作</button>`:""}`); }
+HANDLERS.doAct=v=>{ const i=+v; closeSheet(); const n=Math.random().toString(36).slice(2,8);
+  if(i<0||!ACTS[i]){ stopAct(meAv); myAct=[-1,n]; markDirty(); return; }
+  if(meAv.seat>=0){ meAv.seat=-1; updateStandBtn(); } meAv.target.set(meAv.pos.x,meAv.pos.y); meAv.path=[]; pendingStation=null; meAv.bowT=-1;
+  startAct(meAv,i); myAct=[i,n]; markDirty(); if(ACTS[i].loop) toast(`${ACTS[i].i} ${ACTS[i].n}中，走動就會停`,2400); };
 HANDLERS.emo=v=>{ const i=+v; const now=performance.now(); if(now-(HANDLERS.emo.last||0)<1200){ toast("慢一點點～"); return; } HANDLERS.emo.last=now; closeSheet(); myEmo=[i,Math.random().toString(36).slice(2,8)]; markDirty(); showEmo(meAv,i); };
 $("#emoBtn").onclick=()=>{ ensureAudio(); if(sheetKind==="emo") closeSheet(); else openEmo(); };
 /* ================= 全服煙火 (3-minute show over the courtyard, same seeded program on every screen) + 仙女棒 ================= */
