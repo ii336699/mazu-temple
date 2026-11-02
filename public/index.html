@@ -3100,7 +3100,7 @@ function dayNight(dt){ const want=FW.on?{night:0,day:0}:todPhase(); const k=_dn.
 const _c1=new T.Color();
 // announcements and shows are replayed to anyone who (re)connects; each browser plays each one only once
 function seenOnce(key){ let seen=[]; try{ seen=JSON.parse(localStorage.getItem("mz.seen")||"[]"); }catch(e){} if(seen.includes(key)) return true; seen.push(key); try{ localStorage.setItem("mz.seen",JSON.stringify(seen.slice(-30))); }catch(e){} return false; }
-function fwStart(seed,elapsedMs){ const el=Math.max(0,(elapsedMs||0)/1000); if(el>FW_LEN||seed===FW.seed) return; if(seenOnce("f"+seed)) return; FW.seed=seed; sparkDismissed=false; FW.ev=fwProgram(seed); FW.i=0; FW.t0=performance.now()-el*1000; FW.on=true; FW.endAt=FW.t0+(FW_LEN+2)*1000; trackPos.fw=el; FW.rockets.length=0; FW.gerbs.length=0;
+function fwStart(seed,elapsedMs){ const el=Math.max(0,(elapsedMs||0)/1000); if(el>FW_LEN||seed===FW.seed) return; seenOnce("f"+seed); /* someone who reloads mid-show picks it up where it is now (already-launched shells are skipped, see fwUpdate) */ FW.seed=seed; sparkDismissed=false; FW.ev=fwProgram(seed); FW.i=0; FW.t0=performance.now()-el*1000; FW.on=true; FW.endAt=FW.t0+(FW_LEN+2)*1000; trackPos.fw=el; FW.rockets.length=0; FW.gerbs.length=0;
   while(FW.i<FW.ev.length&&FW.ev[FW.i].t<el-.2) FW.i++;
   showCaption("全服煙火秀開始！"); toast("主委施放全服煙火！到廟外廣場看，還可以拿仙女棒",4500); renderSparkBtn(); }
 function fwUpdate(dt){ const now=performance.now();
