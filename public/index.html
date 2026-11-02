@@ -4109,7 +4109,7 @@ function perfSample(dt){ if(perf.done||Q.mode!=="auto"||customizing||document.hi
 function applyQuality(mode,auto){ if(!auto){ Q.mode=mode; save("mz.q",mode); } Q.low=mode==="low"||Q.lite;
   renderer.setPixelRatio(Q.lite?.6:Q.low?Math.min(window.devicePixelRatio||1,1)*.8:Math.min(window.devicePixelRatio||1,1.5)); resize();
   dust.visible=!Q.low; shafts.forEach(m=>m.visible=!Q.low); extraLights.forEach(l=>l.visible=!Q.low); farDecor.forEach(o=>o.visible=!Q.low);
-  scene.traverse(o=>{ if(o.isSprite&&o.material===glowMat) o.visible=!Q.low; }); buildNpcs(); }
+  scene.traverse(o=>{ if(o.isSprite&&o.material===glowMat) o.visible=!Q.low; }); /* the same people stay: quality no longer changes how many are shown */ }
 
 /* ================= boot ================= */
 meAv.setAmulet(!!bag.items.fu); meAv.setThread(!!bag.redThread); syncLamps(); setInterval(syncLamps,300000); if(me.sp) meAv.setSp(true); if(Q.low) setTimeout(()=>applyQuality(Q.lite?"lite":"low",true),0); refreshLamps();
