@@ -1516,16 +1516,16 @@ loadModel("guanyin",m=>{ const w=fitModel(m,FT.H); const k=FT.H/0.98026; FT.k=k;
 station("fountain",[0,HZ+YX+16.9],0);
 setTimeout(()=>addHit("fountain",0,0,HZ+YX+20.2,1.9,4.6),0);
 // 投射燈: two ground spotlights washing the Guanyin statue in warm white, with a faint visible beam
-{ const base=mat("#2a2622",{metalness:.6,roughness:.4}), lens=new T.MeshBasicMaterial({color:new T.Color("#ffe2a8")});
-  const beamMat=new T.MeshBasicMaterial({color:new T.Color("#ffd99a"),transparent:true,opacity:.025,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide});
+{ const base=mat("#2a2622",{metalness:.6,roughness:.4}), lens=new T.MeshBasicMaterial({color:new T.Color("#ffd070")});
+  const beamMat=new T.MeshBasicMaterial({color:new T.Color("#ffc040"),transparent:true,opacity:.03,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide});
   for(const sx of [-2.6,2.6]){ const pos=new T.Vector3(sx,.25,HZ+YX+16.2), aim=new T.Vector3(0,3.2,FT.z);
-    const sp=new T.SpotLight("#ffd79a",1.1,16,.32,.6,1.2); sp.position.copy(pos); sp.target.position.copy(aim); scene.add(sp,sp.target);
+    const sp=new T.SpotLight("#ffbf45",1.2,16,.32,.6,1.2); sp.position.copy(pos); sp.target.position.copy(aim); scene.add(sp,sp.target);
     const g=new T.Group(); g.position.copy(pos); g.lookAt(aim); g.userData.noMerge=1; scene.add(g);
     const body=new T.Mesh(new T.CylinderGeometry(.16,.2,.32,16),base); body.rotation.x=Math.PI/2; g.add(body);
     const ln=new T.Mesh(new T.CircleGeometry(.15,16),lens); ln.position.z=.17; g.add(ln);
     box(.36,.12,.36,base,pos.x,.06,pos.z);
     const L=pos.distanceTo(aim), cone=new T.Mesh(new T.ConeGeometry(1.15,L,24,1,true),beamMat); cone.geometry.translate(0,-L/2,0); cone.rotation.x=-Math.PI/2; g.add(cone);
-    const glow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffd99a"),opacity:.7,transparent:true,blending:T.AdditiveBlending,depthWrite:false})); glow.scale.set(.9,.9,1); glow.position.z=.2; g.add(glow); } }
+    const glow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffc24a"),opacity:.7,transparent:true,blending:T.AdditiveBlending,depthWrite:false})); glow.scale.set(.9,.9,1); glow.position.z=.2; g.add(glow); } }
 function updateWater(dt){ if(!FT.ready) return; if(Math.abs(meAv.pos.y-FT.z)>26){ waterDrops.forEach(d=>d.sp.visible=false); return; }
   waterDrops.forEach(d=>{ d.t+=dt; if(d.t>1.1||!d.sp.visible){ if(d.t>1.1||!d.sp.visible){ d.t=d.t>1.1?0:d.t; d.sp.position.copy(FT.mouth); d.v.set(rand(-.05,.05),.15,-.55+rand(-.05,.05)); d.sp.visible=true; } }
     d.v.y-=9.8*dt*.55; d.sp.position.addScaledVector(d.v,dt); if(d.sp.position.y<.62){ d.sp.position.y=.62; d.t=1.2; } });
@@ -2101,7 +2101,7 @@ function walkable(x,z){ if(opInside(x,z)||ptInside(x,z)) return false; const ax=
   if(ax>10.9&&ax<13&&Math.abs(z-BGZ)<1.1) return true; if(ax>=12.9&&ax<=16&&z>=-7&&z<=-2) return true;
   if(Math.abs(ax-SHXC)<=.9&&z>=-2.2&&z<=HZ+.8) return true; return false; }
 function clampSpot(x,z){ if(Math.abs(x)<4.5&&z>HZ+YX+17.8) z=HZ+YX+17.8; // in front of the fountain, not into it
-  if(opInside(x,z)){ const o=opRect(); z=z<OP.z?o.z0-.3:o.z1+.3; } if(ptInside(x,z)){ x=ptRect().x1+.3; } const r=ZRECT[zoneOf(x,z)]; return [Math.max(r[0],Math.min(r[1],x)),Math.max(r[2],Math.min(r[3],z))]; }
+  if(opInside(x,z)){ const o=opRect(); z=z<OP.z?o.z0-.3:o.z1+.3; } if(ptInside(x,z)){ const o=ptRect(); z=z<PT.z?o.z0-.3:o.z1+.3; } const r=ZRECT[zoneOf(x,z)]; return [Math.max(r[0],Math.min(r[1],x)),Math.max(r[2],Math.min(r[3],z))]; }
 function planPath(fx,fz,tx,tz){ const a=zoneOf(fx,fz), b=zoneOf(tx,tz); if(a===b) return [[tx,tz]];
   const prev={[a]:null}, q=[a]; while(q.length){ const z=q.shift(); if(z===b) break; for(const n of ZLINK[z]) if(!(n in prev)){ prev[n]=z; q.push(n); } }
   const chain=[]; for(let z=b;z;z=prev[z]) chain.unshift(z); const pts=[]; for(let k=0;k<chain.length-1;k++) pts.push(...doorPts(chain[k],chain[k+1],fx,tx,k===0?fz:null)); pts.push([tx,tz]); return opDetour([fx,fz],pts); }
@@ -4078,15 +4078,15 @@ function opTick(dt){ if(!OP.on||!OP.root){ opMusic(dt); if(OP.voiceGain) OP.voic
   opMusic(dt); }
 
 /* ================= 布袋戲台 (event) ================= */
-// The chair puts a 布袋戲 stage out in the front-left corner of the courtyard, facing the middle. Six little puppets take turns
+// The chair puts a 布袋戲 stage out in front of the 天公爐, between the four stone lamps, facing the temple like the opera stage. Six little puppets take turns
 // in pairs, forever: a pair pops in through the stage window, talks, chases, fights, flies and whirls, one wins, both leave, and
 // the next pair comes on. The 歌仔戲 tracks play; clangs, gongs, whooshes and squeaky puppet voices are synthesized. The chair's
 // line of text hangs on a red cloth over the phoenix-and-lotus panel, and tapping the stage shows it.
 // Everything runs from the time the stage went up, so every player sees the same moment of the show.
-var PT={x:-15.35,z:41.3,k:4.6,on:false,at:0,text:"",built:false,root:null,actors:[],glowMats:[],spots:[],lasers:[],fog:[],sparks:[],flash:null,banner:null,hit:null,prox:0,aud:null,musicGain:null,voiceGain:null,track:-1,lastSync:0,cues:new Set()};
+var PT={x:0,z:HZ+15,k:5.98,rot:Math.PI,on:false,at:0,text:"",built:false,root:null,actors:[],glowMats:[],spots:[],lasers:[],fog:[],sparks:[],flash:null,banner:null,hit:null,prox:0,aud:null,musicGain:null,voiceGain:null,track:-1,lastSync:0,cues:new Set()};
 const PT_PAIR=40, PT_FLOOR=.335, PT_DEPTH=.07, PT_HALF=.155; // model units: window floor height, depth of the puppets, half the window width
-const ptW=(lx,ly,lz)=>new T.Vector3(PT.x+lz*PT.k, ly*PT.k, PT.z-lx*PT.k); // stage-local (model units) → world; the stage faces +x
-function ptRect(){ return {x0:PT.x-.15*PT.k-.25, x1:PT.x+.15*PT.k+.25, z0:PT.z-.5*PT.k-.2, z1:PT.z+.5*PT.k+.2}; }
+const ptW=(lx,ly,lz)=>new T.Vector3(PT.x-lx*PT.k, ly*PT.k, PT.z-lz*PT.k); // stage-local (model units) → world; the stage is turned round to face the temple
+function ptRect(){ return {x0:PT.x-.5*PT.k-.2, x1:PT.x+.5*PT.k+.2, z0:PT.z-.15*PT.k-.25, z1:PT.z+.15*PT.k+.25}; }
 function ptInside(x,z){ if(!PT||!PT.on) return false; const r=ptRect(); return x>r.x0&&x<r.x1&&z>r.z0&&z<r.z1; }
 
 /* ---- the six puppets: robes, painted faces, headdresses and a weapon each ---- */
@@ -4127,7 +4127,7 @@ function ptDress(av,r){ const H=av.head, gold=mat("#e2b04a",{metalness:.7,roughn
   if(r.weapon==="fan"){ const g=new T.CircleGeometry(.2,16,0,Math.PI*.9); mk(wg,g,mat("#f6e7b8",{side:T.DoubleSide}),0,.05,0,Math.PI/2,0,Math.PI*.05); }
   av.root.scale.setScalar(.4); av.root.visible=false; }
 
-/* ---- the stage: model, banner, spotlights, lasers, dry-ice fog and spark pool ---- */
+/* ---- the stage: model, banner, spotlights, colour inside the window, dry-ice fog and spark pool ---- */
 function ptBannerTex(text){ return cvs(1024,220,(x,w,h)=>{ const g=x.createLinearGradient(0,0,0,h); g.addColorStop(0,"#b3121a"); g.addColorStop(.5,"#d42027"); g.addColorStop(1,"#9a0e15"); x.fillStyle=g; x.fillRect(0,0,w,h);
   x.strokeStyle="#f5c84a"; x.lineWidth=8; x.strokeRect(12,12,w-24,h-24); x.lineWidth=2; x.strokeRect(24,24,w-48,h-48);
   for(let i=0;i<w;i+=34){ x.fillStyle="rgba(0,0,0,.08)"; x.fillRect(i,0,12,h); } // cloth folds
@@ -4135,7 +4135,7 @@ function ptBannerTex(text){ return cvs(1024,220,(x,w,h)=>{ const g=x.createLinea
   x.textAlign="center"; x.textBaseline="middle"; x.lineJoin="round"; x.lineWidth=fs*.12; x.strokeStyle="#5a0608"; x.strokeText(t,w/2,h/2+4); const gg=x.createLinearGradient(0,h/2-fs/2,0,h/2+fs/2); gg.addColorStop(0,"#fff3b0"); gg.addColorStop(.5,"#ffd34a"); gg.addColorStop(1,"#e09a1c"); x.fillStyle=gg; x.fillText(t,w/2,h/2+4); }); }
 function ptSetBanner(){ if(!PT.banner) return; const m=PT.banner.material; if(m.map) m.map.dispose(); m.map=ptBannerTex(PT.text); m.emissiveMap=m.map; m.emissive.set("#ffffff"); m.emissiveIntensity=.35; m.color.set("#d8d8d8"); m.needsUpdate=true; PT.banner.visible=!!(PT.text||"").trim(); }
 function ptBuild(){ if(PT.built) return; PT.built=true; const k=PT.k;
-  const root=new T.Group(); root.userData.noMerge=1; root.position.set(PT.x,0,PT.z); root.rotation.y=Math.PI/2; root.visible=false; scene.add(root); PT.root=root;
+  const root=new T.Group(); root.userData.noMerge=1; root.position.set(PT.x,0,PT.z); root.rotation.y=PT.rot; root.visible=false; scene.add(root); PT.root=root;
   loadModel("bdx",m=>{ m.scale.setScalar(k); m.traverse(o=>{ if(o.isMesh&&o.material&&o.material.map){ const mt=o.material; mt.emissiveMap=mt.map; mt.emissive=new T.Color("#ffffff"); mt.emissiveIntensity=.3; PT.glowMats.push(mt); } }); root.add(m); });
   // the chair's red cloth over the phoenix-and-lotus panel, sagging a little in the middle
   const bg=new T.PlaneGeometry(.6*k,.125*k,24,4); const pa=bg.attributes.position; for(let i=0;i<pa.count;i++){ const u=pa.getX(i)/(.3*k); pa.setY(i,pa.getY(i)-(1-u*u)*.04*k*(.5-pa.getY(i)/(.125*k))); pa.setZ(i,Math.sin(u*9)*.006*k); } bg.computeVertexNormals();
@@ -4147,10 +4147,11 @@ function ptBuild(){ if(PT.built) return; PT.built=true; const k=PT.k;
   const beamGeo=new T.CylinderGeometry(.08,1.1,1,18,1,true); beamGeo.translate(0,-.5,0);
   for(let i=0;i<2;i++){ const from=new T.Vector3((i?1:-1)*.35*k,.95*k,.55*k), sl=Q.low?null:new T.SpotLight(0xffffff,0,14,.4,.6,1.2), tgt=new T.Object3D(); root.add(tgt); if(sl){ sl.position.copy(from); sl.target=tgt; root.add(sl); }
     const bm=new T.MeshBasicMaterial({color:new T.Color(),transparent:true,opacity:.12,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide,toneMapped:false}); const beam=new T.Mesh(beamGeo,bm); beam.position.copy(from); root.add(beam); PT.spots.push({sl,tgt,beam,bm,from,i}); }
-  // lasers: thin coloured beams fanning out from the roof ridge over the crowd, sweeping
-  const lg=new T.CylinderGeometry(.012,.012,1,5,1,true); lg.translate(0,.5,0); const nL=Q.lite?4:8;
-  for(let i=0;i<nL;i++){ const m=new T.MeshBasicMaterial({color:new T.Color(),transparent:true,opacity:.8,blending:T.AdditiveBlending,depthWrite:false,toneMapped:false}); const b=new T.Mesh(lg,m); b.position.set((i/(nL-1)-.5)*.6*k,.72*k,.05*k); b.scale.set(1,16,1); root.add(b);
-    const dot=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color(),transparent:true,blending:T.AdditiveBlending,depthWrite:false})); dot.scale.set(.5,.5,1); dot.position.copy(b.position); root.add(dot); PT.lasers.push({b,m,dot,i,n:nL}); }
+  // colour inside the stage window: rainbow washes on the backdrop, a row of chasing footlights, floating coloured lights
+  const cs=(sc,z)=>{ const sp=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color(),transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false})); sp.scale.setScalar(sc); sp.position.z=z*k; root.add(sp); return sp; };
+  PT.wash=[-.1,0,.1].map((x,i)=>{ const sp=cs(.2*k,.053); sp.position.set(x*k,.42*k,.053*k); return {sp,i}; });
+  PT.foot=[...Array(9)].map((_,i)=>{ const sp=cs(.035*k,.088); sp.position.set((-.14+i*.035)*k,.34*k,.088*k); return {sp,i}; });
+  PT.bokeh=[...Array(Q.lite?12:26)].map(()=>({sp:cs(.02*k,.08),x:Math.random()*2-1,ph:Math.random(),hue:Math.random(),sz:.5+Math.random()}));
   // dry ice: soft white clouds rolling out of the window floor and along the ground in front
   const fm=()=>new T.SpriteMaterial({map:softTex,color:new T.Color("#dfe9ff"),transparent:true,opacity:0,depthWrite:false});
   for(let i=0;i<(Q.lite?10:22);i++){ const sp=new T.Sprite(fm()); root.add(sp); PT.fog.push({sp,ph:Math.random(),win:i%3===0,x:Math.random()*2-1}); }
@@ -4158,13 +4159,13 @@ function ptBuild(){ if(PT.built) return; PT.built=true; const k=PT.k;
   for(let i=0;i<60;i++){ const sp=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color(),transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false})); sp.visible=false; sp.userData.noMerge=1; scene.add(sp); PT.sparks.push({sp,life:9,v:new T.Vector3()}); }
   PT.flash=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#fff3c4"),transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false})); PT.flash.userData.noMerge=1; PT.flash.visible=false; scene.add(PT.flash); PT.flashT=9;
   PT_ROLES.forEach((r,i)=>{ const p=ptW(0,PT_FLOOR,PT_DEPTH); const av=new Avatar(r.look,{npc:true,x:p.x,z:p.z}); av.moveSpeed=0; av.sjBusy=1; ptDress(av,r); PT.actors.push({av,role:r,i,cur:null}); });
-  station("puppet",[PT.x+.15*k+1.6,PT.z],-Math.PI/2); STATION_LABEL.puppet="布袋戲台"; STATION_HINT.puppet="走向布袋戲台"; }
+  station("puppet",[PT.x,PT.z-.15*k-1.6],0); STATION_LABEL.puppet="布袋戲台"; STATION_HINT.puppet="走向布袋戲台"; }
 function ptSet(s){ const was=PT.on; PT.on=!!s.on; PT.at=+s.at||Date.now(); PT.text=String(s.text||"").slice(0,24);
   if(PT.on) ptBuild(); if(PT.root){ PT.root.visible=PT.on; ptSetBanner(); }
-  if(PT.on&&!PT.hit){ PT.hit=new T.Mesh(new T.BoxGeometry(.3*PT.k,.75*PT.k,1.02*PT.k),new T.MeshBasicMaterial()); PT.hit.visible=false; PT.hit.position.set(PT.x,.375*PT.k,PT.z); PT.hit.userData.act="puppet"; PT.hit.userData.noMerge=1; scene.add(PT.hit); pickables.push(PT.hit); }
+  if(PT.on&&!PT.hit){ PT.hit=new T.Mesh(new T.BoxGeometry(1.02*PT.k,.75*PT.k,.3*PT.k),new T.MeshBasicMaterial()); PT.hit.visible=false; PT.hit.position.set(PT.x,.375*PT.k,PT.z); PT.hit.userData.act="puppet"; PT.hit.userData.noMerge=1; scene.add(PT.hit); pickables.push(PT.hit); }
   if(!PT.on&&PT.hit){ scene.remove(PT.hit); const i=pickables.indexOf(PT.hit); if(i>=0) pickables.splice(i,1); PT.hit=null; }
-  if(!PT.on){ PT.actors.forEach(a=>a.av.root.visible=false); PT.sparks.forEach(o=>o.sp.visible=false); if(PT.flash) PT.flash.visible=false; if(PT.aud) PT.aud.pause(); delete stations.puppet; } else if(PT.built&&!stations.puppet) station("puppet",[PT.x+.15*PT.k+1.6,PT.z],-Math.PI/2);
-  if(PT.on&&!was&&Date.now()-PT.at<60000) toast("🎎 主委擺出布袋戲台了！在廟埕左前方",4200); if(sheetKind==="chair"&&me.sp) openChair(); if(sheetKind==="puppetChair") HANDLERS.puppetChair(); }
+  if(!PT.on){ PT.actors.forEach(a=>a.av.root.visible=false); PT.sparks.forEach(o=>o.sp.visible=false); if(PT.flash) PT.flash.visible=false; if(PT.aud) PT.aud.pause(); delete stations.puppet; } else if(PT.built&&!stations.puppet) station("puppet",[PT.x,PT.z-.15*PT.k-1.6],0);
+  if(PT.on&&!was&&Date.now()-PT.at<60000) toast("🎎 主委擺出布袋戲台了！在天公爐前面",4200); if(sheetKind==="chair"&&me.sp) openChair(); if(sheetKind==="puppetChair") HANDLERS.puppetChair(); }
 async function ptFetch(){ try{ const r=await fetch("/puppet",{cache:"no-store"}); if(!r.ok) return; const j=await r.json(); if(j&&(!!j.on!==PT.on||(j.on&&(j.at!==PT.at||(j.text||"")!==PT.text)))) ptSet(j); }catch(e){} }
 function ptOpen(){ const t=(PT.text||"").trim(); openSheet("puppet","雲端布袋戲",`${t?`<p class="pt-banner">${esc(t)}</p>`:""}<p class="lead">六尊布袋戲偶兩兩上台，鬥法、飛天、旋轉開打，打完換下一組，一直演下去。走近一點聽鑼鼓和口白。</p>`); }
 // chair: type the line for the red cloth, then put the stage out (or change the line / pack it away)
@@ -4183,7 +4184,7 @@ function ptAudio(){ const a=ac; if(!a) return false; if(!PT.voiceGain){ PT.voice
 function ptMusic(){ const want=PT.on&&soundOn&&audioUnlocked&&PT.prox>.01; if(!want){ if(PT.aud&&!PT.aud.paused) PT.aud.pause(); return; } if(!ptAudio()) return;
   let t=((Date.now()-PT.at)/1000)%OP_TOTAL, ti=0; for(;ti<OP_TRACKS.length;ti++){ if(t<OP_TRACKS[ti][1]) break; t-=OP_TRACKS[ti][1]; } ti%=OP_TRACKS.length; const now=performance.now();
   if(PT.track!==ti||PT.aud.paused||(now-PT.lastSync>4000&&Math.abs(PT.aud.currentTime-t)>2.5)){ PT.lastSync=now; if(PT.track!==ti){ PT.track=ti; PT.aud.src=OP_TRACKS[ti][0]; } try{ PT.aud.currentTime=t; }catch(e){} const p=PT.aud.play(); if(p&&p.catch) p.catch(()=>{}); }
-  const v=PT.prox*mVol()*.32*(OP.on&&OP.prox>PT.prox?.4:1); if(PT.musicGain) PT.musicGain.gain.setTargetAtTime(v,ac.currentTime,.12); else PT.aud.volume=Math.min(1,v); }
+  const v=PT.prox*mVol()*.2*(OP.on&&OP.prox>PT.prox?.4:1); if(PT.musicGain) PT.musicGain.gain.setTargetAtTime(v,ac.currentTime,.12); else PT.aud.volume=Math.min(1,v); }
 function ptNoise(a,dur){ const n=Math.floor(a.sampleRate*dur), b=a.createBuffer(1,n,a.sampleRate), d=b.getChannelData(0); for(let i=0;i<n;i++) d[i]=Math.random()*2-1; const s=a.createBufferSource(); s.buffer=b; return s; }
 const PT_SFX={
   clang(big){ const a=ac, at=a.currentTime+.01, g=a.createGain(); g.gain.setValueAtTime(big?.5:.32,at); g.gain.exponentialRampToValueAtTime(.001,at+(big?1.1:.45)); g.connect(PT.voiceGain); // metal on metal
@@ -4224,7 +4225,7 @@ function ptPose(A,gi,gt){ // where one puppet is: lx (across the window), h (hei
   if(h>.04) lz+=.08*Math.min(1,(h-.04)/.06); // high in the air: out in front of the frame so the stage doesn't hide them
   return {lx,h,lz,face,spin,flip,lean,arms,phase,s,other}; }
 function ptTick(dt){ if(!PT.on||!PT.root||!PT.root.visible){ ptMusic(); if(PT.voiceGain) PT.voiceGain.gain.value=0; return; }
-  const d=Math.hypot(meAv.pos.x-(PT.x+.15*PT.k),meAv.pos.y-PT.z); const want=d<4?1:d>15?0:1-(d-4)/11; PT.prox+=(want-PT.prox)*Math.min(1,dt*1.2);
+  const d=Math.hypot(meAv.pos.x-PT.x,meAv.pos.y-(PT.z-.15*PT.k)); const want=d<4?1:d>14?0:1-(d-4)/10; /* same as the opera stage: full within 4 m of the front, silent past 14 m */ PT.prox+=(want-PT.prox)*Math.min(1,dt*1.2);
   const el=(Date.now()-PT.at)/1000, gi=Math.floor(el/PT_PAIR)%3, gt=el%PT_PAIR, k=PT.k, hear=PT.prox>.03&&soundOn&&ac&&PT.voiceGain&&!document.hidden;
   const cue=(name,fn)=>{ const key=Math.floor(el/PT_PAIR)+":"+name; if(PT.cues.has(key)) return; PT.cues.add(key); if(PT.cues.size>200) PT.cues=new Set([key]); if(hear) try{ fn(); }catch(e){} };
   const poses={}; PT.actors.forEach(A=>{ if(Math.floor(A.i/2)!==gi){ A.av.root.visible=false; A.cur=null; return; } poses[A.i]=ptPose(A,gi,gt); });
@@ -4233,7 +4234,7 @@ function ptTick(dt){ if(!PT.on||!PT.root||!PT.root.visible){ ptMusic(); if(PT.vo
     const vis=Math.abs(A.cur.x)<.235; av.root.visible=vis; if(!vis) return;
     const w=ptW(A.cur.x,PT_FLOOR+A.cur.y+.004,A.cur.z); av.root.position.copy(w);
     const Q2=poses[A.i%2?A.i-1:A.i+1], toward=Q2&&Q2.lx>A.cur.x?1:-1; // which way the partner is along the window
-    const base=Math.PI/2+(toward>0?Math.PI/2:-Math.PI/2)*.72; let ry=base+P.face*(toward>0?-1:1);
+    const base=PT.rot+(toward>0?Math.PI/2:-Math.PI/2)*.72; let ry=base+P.face*(toward>0?-1:1);
     av.root.rotation.set(0,ry+P.spin,0); // somersaults and lean turn the body about its middle, not its feet
     { const e=new T.Euler(P.flip,0,P.lean*.6), c=new T.Vector3(0,.6,0); av.parts.rotation.copy(e); av.parts.position.copy(c).sub(c.clone().applyEuler(e)); }
     const t=el, a0=av.arms[0], a1=av.arms[1];
@@ -4259,13 +4260,14 @@ function ptTick(dt){ if(!PT.on||!PT.root||!PT.root.visible){ ptMusic(); if(PT.vo
   // sparks and flash
   for(const o of PT.sparks){ if(!o.sp.visible) continue; o.life+=dt; if(o.life>o.max){ o.sp.visible=false; o.life=9; continue; } o.v.y-=dt*3.5; o.sp.position.addScaledVector(o.v,dt); const f=1-o.life/o.max; o.sp.material.opacity=f; o.sp.scale.setScalar(.06+.14*f); }
   if(PT.flash.visible){ PT.flashT+=dt; const f=Math.max(0,1-PT.flashT/(PT.flashBig?.5:.18)); PT.flash.material.opacity=f*(PT.flashBig?1:.7); PT.flash.scale.setScalar((PT.flashBig?3.2:.9)*(1+PT.flashT*2)); if(f<=0) PT.flash.visible=false; }
-  // lights, lasers, fog
+  // colour inside the window
+  PT.wash.forEach(o=>{ const h=(el*.09+o.i/3)%1; o.sp.material.color.setHSL(h,1,.55); o.sp.material.opacity=.55+.25*Math.sin(el*1.7+o.i*2); });
+  PT.foot.forEach(o=>{ const h=(o.i/9-el*.35+9)%1; o.sp.material.color.setHSL(h,1,.6); o.sp.material.opacity=.55+.4*Math.max(0,Math.sin(el*5-o.i*.9)); });
+  PT.bokeh.forEach(o=>{ const v=(el*.08+o.ph)%1; o.sp.position.set((o.x*.145+Math.sin(el+o.ph*9)*.01)*k,(.34+v*.16)*k,(.075+o.ph*.02)*k); o.sp.material.color.setHSL((o.hue+el*.1)%1,1,.65); o.sp.material.opacity=Math.sin(v*Math.PI)*.9; o.sp.scale.setScalar(.024*k*o.sz*(.7+.3*Math.sin(el*6+o.ph*20))); });
+  // lights, fog
   const nt=_dn.night||0; PT.glowMats.forEach(m=>m.emissiveIntensity=.25+.4*nt);
   PT.spots.forEach(sp=>{ const h=(el*.07+sp.i*.5)%1, aim=new T.Vector3(Math.sin(el*.9+sp.i*2)*.12*k,.4*k,.07*k); sp.tgt.position.copy(aim); if(sp.sl){ sp.sl.color.setHSL(h,1,.6); sp.sl.intensity=1.4+1.6*nt; }
     const dir=aim.clone().sub(sp.from), Lr=dir.length(); sp.beam.scale.set(1,Lr,1); sp.beam.quaternion.setFromUnitVectors(new T.Vector3(0,-1,0),dir.normalize()); sp.bm.color.setHSL(h,1,.55); sp.bm.opacity=.06+.1*nt; });
-  const fight=gt>17&&gt<36; PT.lasers.forEach(o=>{ const u=o.i/(o.n-1)-.5, sweep=Math.sin(el*(fight?1.6:.6)+o.i*.8)*.5;
-    o.b.rotation.set(Math.PI/2-.1-.08*Math.sin(el*.7+o.i),0,0); o.b.rotation.y=0; o.b.quaternion.setFromEuler(new T.Euler(Math.PI/2-.14+.06*Math.sin(el*1.3+o.i),u*1.3+sweep,0,"YXZ"));
-    const hue=(el*.12+o.i/o.n)%1; o.m.color.setHSL(hue,1,.55); o.m.opacity=(.35+.45*nt)*(fight?1:.6); o.dot.material.color.setHSL(hue,1,.6); o.dot.material.opacity=.5+.4*Math.sin(el*8+o.i); });
   PT.fog.forEach(o=>{ const v=(el*.06+o.ph)%1, f=Math.sin(v*Math.PI); if(o.win){ o.sp.position.set(o.x*.14*k,(PT_FLOOR+.01+v*.05)*k,(PT_DEPTH+.01+v*.05)*k); o.sp.scale.setScalar((.25+v*.5)); o.sp.material.opacity=f*.45; }
     else { o.sp.position.set(o.x*.55*k,.15+v*.25,(.2+v*.5)*k); o.sp.scale.setScalar(1.2+v*2.2); o.sp.material.opacity=f*.32; } });
   if(PT.voiceGain&&ac) PT.voiceGain.gain.setTargetAtTime(PT.prox*sVol()*(soundOn?1:0),ac.currentTime,.12);
