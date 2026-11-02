@@ -2506,8 +2506,8 @@ function guideStep(){ const f=flow(), it=bag.items, planted=Array.isArray(bag.pl
   if(!f.offered) return {n:3,t:"到媽祖供桌擺上供品",go:"altar"};
   const next=CENSER_ORDER.find(k=>!planted.includes(k));
   if(next) return {n:3+CENSER_ORDER.indexOf(next),t:`${CENSER_NAME[next]}：${bowedAt(next)?"拜好了，把香插進香爐":(next==="tiangong"?"到廟埕面向天空持香參拜":"持香參拜")}`,go:next==="mazu"?"altar":next};
-  if(!f.cleared) return {n:3+CENSER_ORDER.length,t:"想求籤擲筊可以現在去，完成後回供桌收供品",go:"altar"};
-  return {n:4+CENSER_ORDER.length,t:"到廟埕金爐燒金紙，完成參拜",go:"burn"}; }
+  if(!f.cleared) return {n:3+CENSER_ORDER.length,t:"回媽祖供桌收回供品（想求籤擲筊可以先去）",go:"altar"};
+  return {n:4+CENSER_ORDER.length,t:"到廟埕金爐燒化金紙，完成參拜",go:"burn"}; }
 function renderGuide(){ const g=guideStep(); $("#guideStep").textContent=`參拜指引 ${g.n}/${4+CENSER_ORDER.length}`; $("#guideText").textContent=g.t; $("#guideBtn").dataset.go=g.go; }
 function renderWallet(){ try{ renderGuide(); }catch(e){} $("#coins").textContent=bag.coins; const n=GOODS.reduce((t,g)=>t+(bag.items[g.k]||0),0); $("#bagText").textContent=n?`${n} 件`:""; $("#coins").textContent=`${bag.coins} 幣`; }
 renderWallet();
@@ -2766,13 +2766,16 @@ function openAltar(){ const foods=["hua","guo","bing"].filter(k=>bag.items[k]>0)
   html+=`<button class="good" data-act="plant" ${hasX&&bw?"":"disabled"}><span class="name">② 插香</span><span class="meta">${bw?"插入媽祖香爐":"先持香參拜"}</span><span class="own">持有 ${bag.items.xiang||0}</span></button></div>`;
   html+=guoluHTML("mazu");
   html+=`<button class="secondary" data-act="getLantern">🏮 ${myLantern?"重寫天燈（已有一盞）":"領取天燈"}</button>`;
-  if(myOffers.length) html+=`<button class="secondary" data-act="clearOffer">收回供品（拜完再收）</button>`;
+  const fl=flow(), planted=Array.isArray(bag.planted)?bag.planted:[], allPlanted=CENSER_ORDER.every(k=>planted.includes(k));
+  if(fl.cleared&&!myOffers.length) html+=`<button class="primary wide" data-act="goBurn">🔥 供品已收回，去金爐燒化金紙</button>`;
+  else if(myOffers.length||(fl.offered&&!fl.cleared)) html+=`<button class="${allPlanted?"primary wide":"secondary"}" data-act="clearOffer">收回供品${allPlanted?"":"（拜完再收）"}</button>`;
   if(!foods.length&&!hasX&&!myOffers.length) html+=`<p class="note">背包裡沒有供品。服務處在大殿入口右手邊。</p><button class="secondary" data-act="goShop">走去服務處</button>`;
   openSheet("altar","供桌",html); }
 HANDLERS.goShop=()=>goStation("shop");
 HANDLERS.offer=k=>{ if(!(bag.items[k]>0)) return; bag.items[k]--; saveBag(); const used=new Set(myOffers.map(o=>o[1])); let slot=Math.floor(Math.random()*12); for(let i=0;i<12&&used.has(slot);i++) slot=(slot+1)%12;
   myOffers.push([k,slot]); if(myOffers.length>4){ myOffers.shift(); } rebuildMyOffers(); markDirty(); meAv.burnT=0; flow().offered=1; flow().bought=1; saveBag(); toast(`${GOOD_BY[k].name}已擺上供桌`); openAltar(); };
-HANDLERS.clearOffer=()=>{ myOffers=[]; rebuildMyOffers(); markDirty(); meAv.burnT=0; flow().cleared=1; saveBag(); toast("供品收好了，最後到廟埕金爐燒金紙",3200); openAltar(); };
+HANDLERS.clearOffer=()=>{ myOffers=[]; rebuildMyOffers(); markDirty(); meAv.burnT=0; flow().cleared=1; saveBag(); renderWallet(); toast("供品收好了，最後一步：到廟埕金爐燒化金紙",3200); openAltar(); };
+HANDLERS.goBurn=()=>{ closeSheet(); goStation("burn"); };
 function bowedAt(key){ return !!(bag.bowed&&bag.bowed[key]); }
 function bowWithIncense(key){ if(!(bag.items.xiang>0)){ toast("背包沒有清香，先到服務處請香"); return false; } meAv.hold=1; renderHold(); myBow++; meAv.bow(); sfx.bell(); markDirty(); bag.bowed=bag.bowed||{}; bag.bowed[key]=1; saveBag(); toast(`持香向${CENSER_NAME[key]}拜三拜，拜完就可以插香`,3200); return true; }
 function plantAt(key){ if(!(bag.items.xiang>0)) return false; if(!bowedAt(key)){ toast("請先持香參拜，再插香"); return false; } bag.items.xiang--; if(!bag.items.xiang) meAv.hold=0; saveBag(); renderHold(); addIncenseTo(key,1); meAv.burnT=0;
