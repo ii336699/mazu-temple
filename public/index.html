@@ -2130,15 +2130,21 @@ function shownTotal(){ const ts=Date.now(); let t=0; for(let i=0;i<HALL_NAMES.le
 // How many are in view follows this hall's shown count, within what the phone can draw (each one is merged into a few meshes).
 const BOT_EMO=[0,1,2,3,5,9]; // only the cheerful faces
 const BOT_GODS=["caishen","yuelao","huye","xuantian","guangong"];
-const BOT={nextAdjust:0, cap:null, slow:0, fast:0, ema:1/60};
+const BOT={nextAdjust:0, cap:null, slow:0, fast:0, ema:1};
 // walking about: as many as the phone handles. Starts at 36 (低配 18, 省電 8) and steps down by itself if the game gets choppy,
 // creeping back up when it runs smoothly again.
-function botMax(){ return 96; } // everyone is shown on every quality setting; players who want fewer use 隱藏其他玩家
-function botLimit(){ return botMax(); }
-function botFps(dt){ if(document.hidden||dt>.5) return; BOT.ema+=(dt-BOT.ema)*.05; const min=Q.lite?3:Q.low?6:8;
-  if(BOT.ema>1/20){ BOT.slow+=dt; BOT.fast=0; if(BOT.slow>4&&BOT.cap>min){ BOT.cap=Math.max(min,BOT.cap-3); BOT.slow=0; BOT.nextAdjust=0; } }
-  else if(BOT.ema<1/35){ BOT.fast+=dt; BOT.slow=0; if(BOT.fast>25&&BOT.cap<botMax()){ BOT.cap=Math.min(botMax(),BOT.cap+2); BOT.fast=0; } }
-  else { BOT.slow=0; BOT.fast=0; } }
+// how many walking demo people a phone draws: up to 96 on a phone that keeps up; if the game gets choppy the number comes
+// down on that phone only (the count shown at the top doesn't change), and creeps back up when it runs smoothly again
+function botMax(){ return 96; }
+function botLimit(){ if(BOT.cap==null) BOT.cap=Q.lite?24:Q.low?48:96; return Math.min(botMax(),BOT.cap); }
+function botFps(){ const now=performance.now(), dt=BOT.lastF?(now-BOT.lastF)/1000:0; BOT.lastF=now; // real time between frames (the game's own dt is capped)
+  if(document.hidden||!dt||dt>1.5||miniOpen) return; botLimit();
+  // compare each frame with the speed the game is aiming for right now (60 when you move, 30/20 when you stand still):
+  // a phone that keeps missing it is struggling, so it draws fewer walkers
+  const cap=typeof frameCap==="function"?frameCap():60, r=dt*cap; BOT.ema+=(r-BOT.ema)*.06;
+  if(BOT.ema>1.45){ BOT.slow+=dt; BOT.fast=0; if(BOT.slow>2.5&&BOT.cap>10){ BOT.cap=Math.max(10,Math.round(BOT.cap*.75)); BOT.slow=0; BOT.nextAdjust=0; } }
+  else if(cap===60&&BOT.ema<1.15){ BOT.fast+=dt; BOT.slow=0; if(BOT.fast>20&&BOT.cap<botMax()){ BOT.cap=Math.min(botMax(),BOT.cap+4); BOT.fast=0; } }
+  else { BOT.slow=0; if(cap!==60) BOT.fast=0; } }
 function sitterLimit(){ return !showNpc?0:Q.lite?3:Q.low?6:12; }       // the classic ones on the cushions
 function hereCount(){ return FAKE_CROWD?(fakeHalls(Date.now())[HALLS.current()]||0):16; }
 function botWant(){ const lim=botLimit(); if(!lim) return 0; const room=Math.max(0,lim-remotes.size), h=hereCount(); return h<=0?0:Math.min(room,Math.max(2,h)); }
