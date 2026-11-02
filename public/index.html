@@ -4160,9 +4160,21 @@ const NMI={}; function nmImg(n){ if(!NMI[n]){ const i=new Image(); i.src="nm/"+n
 function nmDraw(x,n,cx,cy,w,rot=0,alpha=1,flip=false){ const i=nmImg(n); if(!i.complete||!i.naturalWidth) return false; const h=w*i.naturalHeight/i.naturalWidth; x.save(); x.translate(cx,cy); if(rot) x.rotate(rot); if(flip) x.scale(-1,1); x.globalAlpha=alpha; x.drawImage(i,-w/2,-h/2,w,h); x.restore(); return true; }
 function nmPreload(list){ list.forEach(nmImg); }
 
+// 綜藝字卡: a variety-show caption — chunky tilted words with a thick outline and drop shadow on a starburst, popping in
+function qqCard(x,cx,cy,combo,k){ const pop=k<.18?.6+k/.18*.55:k<.3?1.15-(k-.18)/.12*.15:1, a=k>.75?(1-k)/.25:1; x.save(); x.translate(cx,cy); x.rotate(-.08); x.scale(pop,pop); x.globalAlpha=a;
+  // starburst
+  x.beginPath(); for(let i=0;i<28;i++){ const r=i%2?62:96, an=i*Math.PI/14+k*.6; x.lineTo(Math.cos(an)*r*1.35,Math.sin(an)*r*.8); } x.closePath();
+  const g=x.createRadialGradient(0,0,10,0,0,120); g.addColorStop(0,"#fff36b"); g.addColorStop(1,"#ff8a1a"); x.fillStyle=g; x.fill(); x.lineWidth=5; x.strokeStyle="#c0281a"; x.stroke();
+  const word=(t,y,size,fill,stroke)=>{ x.font=`900 ${size}px ${DISPLAY_FONT}`; x.textAlign="center"; x.lineJoin="round";
+    x.fillStyle="rgba(80,0,0,.55)"; x.fillText(t,4,y+5); x.lineWidth=size*.28; x.strokeStyle="#ffffff"; x.strokeText(t,0,y); x.lineWidth=size*.14; x.strokeStyle=stroke; x.strokeText(t,0,y); x.fillStyle=fill; x.fillText(t,0,y); };
+  const gr=x.createLinearGradient(0,-30,0,10); gr.addColorStop(0,"#ff3a7a"); gr.addColorStop(1,"#c0102a");
+  word("讚啦！",-4,52,gr,"#5a0010"); word(`${combo} 連發`,40,26,"#1a6aff","#ffffff");
+  // little sparkles round it
+  x.fillStyle="#ffffff"; for(let i=0;i<6;i++){ const an=i*1.05+k*4, r=110+Math.sin(k*20+i)*8; x.beginPath(); x.arc(Math.cos(an)*r*1.2,Math.sin(an)*r*.7,3+((i+k*10)|0)%3,0,7); x.fill(); }
+  x.restore(); x.globalAlpha=1; }
 /* ===== 1. 地瓜球: call and response. The boss presses a pattern on the beat, you press the same pattern in the next bar ===== */
 function playQQ(){ const L=gameLayer("地瓜球","老闆壓一次，你照著節奏壓一次"); const {x,cv}=L; const BPM=104, B=60/BPM;
-  nmPreload(["qq-pan","qq-y","qq-p","qq-c","qq-spatula","qq-perfect","qq-basket"]);
+  nmPreload(["qq-pan","qq-y","qq-p","qq-c","qq-spatula","qq-basket"]);
   const ROUNDS=[[0,1,2,3],[0,1,2],[0,2,2.5],[0,.5,1,2],[0,1,1.5,3],[0,.5,1,1.5,2],[0,1.5,2,3,3.5],[0,.75,1.5,2.5,3]];
   const a=ensureAudio(); let t0=null, started=false, notes=[], good=0, perfect=0, combo=0, puff=0, fb=null;
   ROUNDS.forEach((pat,r)=>{ const bar=1+r*2; pat.forEach(o=>{ notes.push({who:"boss",t:(bar*4+o)*B}); notes.push({who:"me",t:((bar+1)*4+o)*B,done:false}); }); });
@@ -4194,7 +4206,7 @@ function playQQ(){ const L=gameLayer("地瓜球","老闆壓一次，你照著節
       nmText(x,bar<1?"預備…":mine?"換你壓！":"看老闆壓",W/2,150,26,mine?"#7dffb0":"#ffe2a0");
       for(let i=0;i<4;i++){ const on=Math.floor(inBar)===i; nmDraw(x,i%2?"qq-p":"qq-y",W/2+(i-1.5)*34,182,on?26:18,0,on?1:.45); } }
     if(!started){ nmText(x,"點畫面開始",W/2,H*.27,30); nmText(x,"老闆壓一小節，你照同樣節奏壓下一小節",W/2,H*.27+36,16,"#fff",undefined,500); }
-    if(fb&&performance.now()-fb.at<650){ if(fb.perfect&&combo>=3) nmDraw(x,"qq-perfect",W/2,H*.3,Math.min(W*.6,260)); else nmText(x,fb.t,W/2,H*.3,34,fb.c); if(fb.perfect&&combo>=3) nmText(x,`COMBO ×${combo}`,W/2,H*.3+60,20,"#ffe14d"); }
+    if(fb&&performance.now()-fb.at<650){ if(fb.perfect&&combo>=3) qqCard(x,W/2,H*.3,combo,(performance.now()-fb.at)/650); else nmText(x,fb.t,W/2,H*.3,34,fb.c); }
     nmText(x,`${good} / ${total}`,W-20,130,18,"#fff","right",600);
     if(started&&tn>END&&!L.endMsg){ const ok=good>=total*.75; if(ok) giveAcc("qqball"); nmEnd(L,ok,ok?"地瓜球超蓬鬆！":"地瓜球塌掉了…",ok?`壓中 ${good}/${total}（讚 ${perfect}），得到地瓜球頭飾，已戴上`:`壓中 ${good}/${total}，要 ${Math.ceil(total*.75)} 下才過關`); }
     fxDraw(L,x,W,H); nmEndDraw(L,x,W,H); requestAnimationFrame(draw); };
