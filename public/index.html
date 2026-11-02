@@ -2112,15 +2112,15 @@ const BOT_GODS=["caishen","yuelao","huye","xuantian","guangong"];
 const BOT={nextAdjust:0, cap:null, slow:0, fast:0, ema:1/60};
 // walking about: as many as the phone handles. Starts at 36 (低配 18, 省電 8) and steps down by itself if the game gets choppy,
 // creeping back up when it runs smoothly again.
-function botMax(){ return !showNpc?0:Q.lite?8:Q.low?18:36; }
+function botMax(){ return !showNpc?0:Q.lite?15:Q.low?40:96; }
 function botLimit(){ const m=botMax(); if(BOT.cap==null||BOT.cap>m) BOT.cap=m; return Math.min(m,BOT.cap); }
 function botFps(dt){ if(document.hidden||dt>.5) return; BOT.ema+=(dt-BOT.ema)*.05; const min=Q.lite?3:Q.low?6:8;
-  if(BOT.ema>1/26){ BOT.slow+=dt; BOT.fast=0; if(BOT.slow>4&&BOT.cap>min){ BOT.cap=Math.max(min,BOT.cap-3); BOT.slow=0; BOT.nextAdjust=0; } }
-  else if(BOT.ema<1/45){ BOT.fast+=dt; BOT.slow=0; if(BOT.fast>25&&BOT.cap<botMax()){ BOT.cap=Math.min(botMax(),BOT.cap+2); BOT.fast=0; } }
+  if(BOT.ema>1/20){ BOT.slow+=dt; BOT.fast=0; if(BOT.slow>4&&BOT.cap>min){ BOT.cap=Math.max(min,BOT.cap-3); BOT.slow=0; BOT.nextAdjust=0; } }
+  else if(BOT.ema<1/35){ BOT.fast+=dt; BOT.slow=0; if(BOT.fast>25&&BOT.cap<botMax()){ BOT.cap=Math.min(botMax(),BOT.cap+2); BOT.fast=0; } }
   else { BOT.slow=0; BOT.fast=0; } }
 function sitterLimit(){ return !showNpc?0:Q.lite?3:Q.low?6:12; }       // the classic ones on the cushions
 function hereCount(){ return FAKE_CROWD?(fakeSplit(fakeTotal(Date.now()))[HALLS.current()]||0):16; }
-function botWant(){ const lim=botLimit(); if(!lim) return 0; const room=Math.max(0,lim-remotes.size); return Math.min(room,Math.max(2,Math.round(hereCount()*.45))); }
+function botWant(){ const lim=botLimit(); if(!lim) return 0; const room=Math.max(0,lim-remotes.size); return Math.min(room,Math.max(2,hereCount())); }
 function sitterWant(){ const lim=sitterLimit(); if(!lim) return 0; return Math.max(Math.min(1,lim),Math.min(lim,Math.round(hereCount()/5))); }
 function botSpot(){ for(let k=0;k<30;k++){ const x=rand(-15,15), z=rand(HZ+2,HZ+YX+16); if(walkable(x,z)) return [x,z]; } return [0,HZ+6]; }
 function hallSpot(){ for(let k=0;k<30;k++){ const x=rand(-10,10), z=rand(-6,HZ-1.5); if(walkable(x,z)) return [x,z]; } return [0,4]; }
@@ -2136,15 +2136,26 @@ function planMazu(){ return [{go:stNear("shop",.4)},{face:stFace("shop")},{look:
 function planSit(){ const s=freeSeat(); if(s<0) return planStroll(); return [{sit:s,dur:rand(45,120)}]; }
 function planStroll(){ const [x,z]=Math.random()<.5?botSpot():hallSpot(); return [{go:[x,z]},{look:rand(6,15)}]; }
 function planOne(k,extra){ return [{go:stNear(k,.4)},{face:stFace(k)},...extra]; }
-// 掛網: 20–40% of the walking demo worshippers just stand somewhere and don't move for 5–25 minutes, like a real player who left the game open
-function afkShare(){ const w=npcs.filter(n=>!n.classic&&!n.leaving); return w.length?w.filter(n=>n.afk||(n.step&&n.step.afk)||(n.steps||[]).some(st=>st.afk)).length/w.length:0; }
+// Every walking demo worshipper has a role, kept in these shares: 40% 抽籤, 30% follow the 參拜指引 route, 20% 掛網 (standing
+// still for a long time), 10% playing with faces, actions and dances. A newcomer takes whichever role is furthest below its share.
+const BOT_ROLES=[["lot",.4],["guide",.3],["afk",.2],["fun",.1]];
+function pickRole(){ const w=npcs.filter(n=>!n.classic&&!n.leaving&&n.role), tot=w.length+1; let best="lot", gap=-1e9;
+  for(const [r,f] of BOT_ROLES){ const g=f-w.filter(n=>n.role===r).length/tot+Math.random()*.02; if(g>gap){ gap=g; best=r; } } return best; }
 function planAfk(){ return [{go:Math.random()<.5?hallSpot():botSpot()},{afk:rand(300,1500)}]; }
-function botPlan(n){ const r=Math.random(); let p;
-  if(afkShare()<(BOT.afkFrac||.3)&&Math.random()<.6){ n.steps=planAfk(); n.step=null; return; }
-  if(r<.22) p=planLot(); else if(r<.40) p=planMazu(); else if(r<.60) p=planSit(); else if(r<.78) p=planStroll();
-  else if(r<.84) p=planOne("burn",[{fx:"burn"},{look:rand(6,10)}]); else if(r<.89) p=planOne("fountain",[{fx:Math.random()<.6?"coin":"drink"},{look:rand(5,9)}]);
-  else if(r<.93) p=planOne("cats",[{dance:rand(15,30)}]); else if(r<.98) p=planOne(BOT_GODS[(Math.random()*BOT_GODS.length)|0],[{bow:1},{look:rand(4,8)}]);
-  else p=planOne("wish",[{look:rand(10,20)}]);
+// the 參拜指引 route: 請香 at the shop, 天公爐, offerings and incense at Mazu's altar, then each god's censer in order, then burn paper
+function planGuide(from=0){ const gods=CENSER_ORDER.filter(k=>k!=="tiangong"&&k!=="mazu"&&stations[k]);
+  const stops=[["shop",[{look:rand(5,10)},{hold:1}]],["tiangong",[{bow:1},{look:rand(2,4)}]],["altar",[{bow:1},{look:rand(3,6)}]],...gods.map(k=>[k,[{bow:1},{look:rand(2,5)}]]),["burn",[{hold:0},{fx:"burn"},{look:rand(6,10)}]]];
+  const out=[]; stops.slice(from).forEach(([k,extra])=>{ if(!stations[k]) return; out.push({go:stNear(k,.5)},{face:stFace(k)},...extra); });
+  if(from>0) out.unshift({hold:1}); return out; }
+function planFun(){ const [x,z]=Math.random()<.4?hallSpot():botSpot(), out=[{go:[x,z]}];
+  for(let i=0,k=2+((Math.random()*3)|0);i<k;i++){ if(Math.random()<.4) out.push({emo:BOT_EMO[(Math.random()*BOT_EMO.length)|0]},{look:rand(2,5)}); out.push({act:(Math.random()*ACTS.length)|0}); }
+  if(Math.random()<.3) return [...planOne("cats",[{dance:rand(15,30)}]),...out.slice(1)];
+  return out; }
+function botPlan(n){ if(!n.role) n.role=pickRole(); let p;
+  if(n.role==="afk") p=planAfk();
+  else if(n.role==="lot") p=Math.random()<.85?planLot():planStroll();
+  else if(n.role==="guide") p=planGuide();
+  else p=planFun();
   n.steps=p.filter(st=>!st.go||st.go[0]!=null); n.steps.push({look:rand(3,8)}); n.step=null; }
 function botWalk(n,x,z){ const p=planPath(n.pos.x,n.pos.y,x,z); n.seat=-1; n.goalSeat=false; n.faceGoal=null; n.danceT=0; n.target.set(p[0][0],p[0][1]); n.path=p.slice(1); }
 function botArrived(n){ return !(n.path&&n.path.length)&&n.pos.distanceTo(n.target)<.08; }
@@ -2161,6 +2172,8 @@ function botStart(n,st){ n.step=st; n.st=0; n.anim=null; n.afk=!!st.afk;
   else if(st.dance){ n.danceT=1e9; n.limit=st.dance; }
   else if(st.sit!=null){ const S=SEATS[st.sit], p=planPath(n.pos.x,n.pos.y,S.x,S.y); n.hold=0; n.faceGoal=null; n.seat=st.sit; n.goalSeat=true; n.target.set(p[0][0],p[0][1]); n.path=p.slice(1); n.limit=st.dur+60; n.bowIn=rand(6,14); }
   else if(st.leave){ botWalk(n,st.leave[0],st.leave[1]); n.limit=80; }
+  else if(st.act!=null){ startAct(n,st.act); n.limit=ACTS[st.act].loop?rand(10,25):ACTS[st.act].d+.3; }
+  else if(st.emo!=null){ showEmo(n,st.emo); n.limit=.5; }
   else if(st.afk){ n.limit=st.afk; n.faceGoal=n.rotY+rand(-.6,.6); n.headGoal=0; } }
 function botStep(n,dt){ const st=n.step; n.st+=dt;
   if(st.go||st.leave){ if(botArrived(n)||n.st>n.limit) return true; return false; }
@@ -2196,7 +2209,8 @@ function makeBot(at){ const [x,z]=at||botSpot(); const a=new Avatar(randomLook()
 function botNear(n,r){ return Math.hypot(n.pos.x-meAv.pos.x,n.pos.y-meAv.pos.y)<r; }
 function botTick(dt){ const now=performance.now(); botFps(dt);
   if(now>BOT.nextAdjust){ const live=npcs.filter(n=>!n.leaving&&!n.classic), want=botWant(); BOT.nextAdjust=now+(Math.abs(live.length-want)>4?rand(1500,4000):rand(15000,40000));
-    if(live.length<want) makeBot([(Math.random()<.5?-1:1)*16.5,rand(HZ+3,HZ+YX+15)]);              // someone walks in from the side of the courtyard
+    if(live.length<want-6){ for(let k=Math.min(4,want-live.length);k>0;k--) placeBot(); BOT.nextAdjust=now+rand(800,1600); }
+    else if(live.length<want){ const a=makeBot([(Math.random()<.5?-1:1)*16.5,rand(HZ+3,HZ+YX+15)]); a.role=pickRole(); }              // someone walks in from the side of the courtyard
     else if(live.length>want){ const n=live[(Math.random()*live.length)|0]; n.leaving=true; n.hold=0; n.danceT=0; n.anim=null; n.steps=[]; botStart(n,{leave:[(n.pos.x<0?-1:1)*16.5,Math.max(HZ+3,Math.min(HZ+YX+15,n.pos.y))]}); } } // someone heads home
   for(let i=npcs.length-1;i>=0;i--){ const n=npcs[i]; n.update(dt);
     if(n.classic){ n.next-=dt; if(n.next<0){ n.next=rand(8,24); n.bow(); } continue; }
@@ -2205,16 +2219,20 @@ function botTick(dt){ const now=performance.now(); botFps(dt);
     botPose(n); if(n.afk) continue;
     if(Math.random()<dt/160){ const ph=PHRASES[(Math.random()*PHRASES.length)|0]; n.say(ph,"#f7ecd6"); if(Math.random()<.25) logChat(n.name,ph,false); }
     if(Math.random()<dt/240) showEmo(n,BOT_EMO[(Math.random()*BOT_EMO.length)|0]); } }
+function placeBot(){ const role=pickRole(); let a;
+  if(role==="afk"){ a=makeBot(Math.random()<.5?hallSpot():botSpot()); a.rotY=rand(-Math.PI,Math.PI); a.steps=[{afk:rand(120,1500)}]; }
+  else if(role==="lot"){ const r=Math.random();
+    if(r<.55){ a=makeBot(stNear("lot",.5)); a.steps=[{face:stFace("lot")},{shake:rand(8,45)},...planLot().slice(3)]; }
+    else if(r<.75){ a=makeBot(stNear("altar",.6)); a.steps=[{face:stFace("altar")},{jiao:1+((Math.random()*2)|0)},...planLot().slice(7)]; }
+    else { a=makeBot(stNear("jieqian",.5)); a.steps=[{face:stFace("jieqian")},{read:rand(8,40)}]; } }
+  else if(role==="guide"){ const plan=planGuide(1+((Math.random()*8)|0)), at=plan.find(st=>st.go); a=makeBot(at?at.go:botSpot()); a.steps=plan.filter(st=>st!==at); if(at) a.hold=1; }
+  else { a=makeBot(Math.random()<.4?hallSpot():botSpot()); a.steps=planFun().slice(1); }
+  a.role=role; return a; }
 function buildNpcs(){ npcs.forEach(n=>n.dispose()); npcs.length=0;
   // the original demo worshippers, exactly as before: no name, always kneeling on the mats in the hall and bowing now and then
   if(showNpc) for(let i=0;i<(Q.lite?3:Q.low?6:12);i++){ const s=freeSeat(); if(s<0) break; const a=new Avatar(randomLook(),{npc:true,x:SEATS[s].x,z:SEATS[s].y}); try{ bakeAvatar(a); }catch(e){}
     a.classic=true; a.seat=s; a.kneel=1; a.next=rand(2,18); a.steps=[]; a.step=null; if(customizing) a.root.visible=false; npcs.push(a); }
-  const want=Math.min(14,botWant()); BOT.afkFrac=rand(.2,.4); let afk=Math.round(want*BOT.afkFrac);
-  for(let i=0;i<want;i++){ const r=Math.random(); let a;
-    if(afk>0){ afk--; const [x,z]=Math.random()<.5?hallSpot():botSpot(); a=makeBot([x,z]); a.rotY=rand(-Math.PI,Math.PI); a.steps=[{afk:rand(120,1500)}]; continue; }
-    if(r<.35){ const s=freeSeat(); if(s>=0){ a=makeBot([SEATS[s].x,SEATS[s].y]); a.seat=s; a.goalSeat=true; a.kneel=1; a.steps=[{sit:s,dur:rand(20,100)}]; continue; } }
-    if(r<.55){ const [x,z]=stNear("lot",.5); a=makeBot([x,z]); a.steps=[{face:stFace("lot")},{shake:rand(8,40)},...planLot().slice(3)]; continue; }
-    const [x,z]=Math.random()<.5?hallSpot():botSpot(); a=makeBot([x,z]); }
+  const want=Math.min(40,botWant()); for(let i=0;i<want;i++) placeBot();
   BOT.nextAdjust=performance.now()+rand(1500,4000); }
 function npcYield(i){ npcs.forEach(n=>{ if(n.seat===i){ const s=freeSeat(); if(s<0){ n.seat=-1; n.target.set(rand(-10,10),13); } else n.sitAt(s); } }); }
 
