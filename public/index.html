@@ -4058,9 +4058,13 @@ function buildAccHead(id){ const g=new T.Group();
     for(let i=0;i<55;i++){ const u=Math.random()*Math.PI*2, v=Math.random()*Math.PI*.9;
       const s2=new T.Mesh(new T.SphereGeometry(.014,6,5),accMat("#fff0b8")); s2.position.set(Math.cos(u)*Math.sin(v)*.405,.04+Math.cos(v)*.405,Math.sin(u)*Math.sin(v)*.405); g.add(s2); }
     g.userData.bald=1; g.userData.full=1; }
-  else if(id==="boba"){ // 珍奶髮箍: a yellow band over the head, the smiling cup with its red bow on top (picture from the art sheet)
-    const band=new T.Mesh(new T.TorusGeometry(.27,.028,8,28,Math.PI),accMat("#f2c230",{r:.4})); band.position.set(0,.02,0); g.add(band);
-    const sp=new T.Sprite(new T.SpriteMaterial({map:nmTex("bb-hat"),transparent:true,depthWrite:false})); sp.scale.set(.46,.53,1); sp.position.set(0,.44,0); g.add(sp); }
+  else if(id==="boba"){ // 珍奶 cup with lid, straw and pearls
+    const cup=new T.Mesh(new T.CylinderGeometry(.13,.1,.28,20,1,true),new T.MeshStandardMaterial({color:new T.Color("#e9d2b0"),roughness:.3,transparent:true,opacity:.85,side:T.DoubleSide})); cup.position.y=.38; g.add(cup);
+    const tea=new T.Mesh(new T.CylinderGeometry(.122,.096,.24,20),accMat("#c89a6a",{r:.5})); tea.position.y=.36; g.add(tea);
+    const lid=new T.Mesh(new T.CylinderGeometry(.135,.135,.02,20),accMat("#ffffff",{r:.2})); lid.position.y=.53; g.add(lid);
+    const straw=new T.Mesh(new T.CylinderGeometry(.018,.018,.32,8),accMat("#e0402a",{r:.4})); straw.position.set(.04,.64,0); straw.rotation.z=-.25; g.add(straw);
+    for(let i=0;i<10;i++){ const p=new T.Mesh(new T.SphereGeometry(.022,8,6),accMat("#2a1a12",{r:.3})); p.position.set(Math.cos(i*1.9)*.07,.27+(i%2)*.03,Math.sin(i*1.9)*.07); g.add(p); }
+    const band=new T.Mesh(new T.TorusGeometry(.2,.03,8,24),accMat("#e0402a",{r:.5})); band.rotation.x=Math.PI/2; band.position.y=.2; g.add(band); g.userData.bubbles=1; }
   else if(id==="afro"){ // shiny rainbow afro: a dense cloud of glossy balls in rainbow bands, with twinkling glitter
     const cols=["#ff2d55","#ff7a1a","#ffd21a","#3ddc5a","#22b8ff","#6a5bff","#d44bff"];
     for(let i=0;i<150;i++){ const u=Math.random()*Math.PI*2, v=Math.acos(1-Math.random()*1.55), r=.33+Math.random()*.07;
@@ -4091,6 +4095,7 @@ Avatar.prototype.setAcc=function(eq){ eq=(eq||[0,0]).map(v=>ACC[v]?v:0); this.eq
   // tall head pieces push the name tag and speech bubble up so they stay readable
   this.accLift={qqball:.62,boba:.5,afro:.32}[eq[0]]||0; if(this.label) this.label.position.y=(this.sp?1.46:1.42)+this.accLift; if(this.glow) this.glow.position.y=1.46+this.accLift; };
 // 你好臭: someone holding a 香腸 trails little green stink clouds, and now and then a "好臭～" pops up over them
+let BUB_T=null; const BUB_TEX=()=>BUB_T||(BUB_T=cvs(64,64,x=>{ const g=x.createRadialGradient(32,32,18,32,32,30); g.addColorStop(0,"rgba(255,255,255,.08)"); g.addColorStop(.8,"rgba(255,255,255,.55)"); g.addColorStop(1,"rgba(255,255,255,0)"); x.fillStyle=g; x.beginPath(); x.arc(32,32,30,0,7); x.fill(); x.fillStyle="rgba(255,255,255,.95)"; x.beginPath(); x.ellipse(23,22,6,4,-.6,0,7); x.fill(); }));
 const stinkMat=new T.SpriteMaterial({map:softTex,color:new T.Color("#8fd43a"),transparent:true,opacity:.75,depthWrite:false});
 const aromaMat=new T.SpriteMaterial({map:softTex,color:new T.Color("#ffd27a"),transparent:true,opacity:.55,depthWrite:false,blending:T.AdditiveBlending});
 const STINK_WORDS=["你好臭～","好臭！","臭臭的…","噗～","誰在烤香腸…"];
@@ -4111,6 +4116,9 @@ function accTick(av,dt){ stinkFlies(av,!!(av.accHand&&av.accHand.userData.stink&
   if(av.accHand&&av.accHand.userData.aroma){ const gl=av.accHand.userData.glow; if(gl){ const k=.42+Math.sin(performance.now()/160)*.06; gl.scale.set(k,k,1); }
     if(near){ av.aromaT=(av.aromaT||0)-dt; if(av.aromaT<0){ av.aromaT=.12+Math.random()*.1; const sk=av.accHand.children[3]||av.accHand; sk.getWorldPosition(_v1); spawnSmoke(_v1.x+rand(-.04,.04),_v1.y+rand(-.02,.08),_v1.z+rand(-.04,.04),{mat:aromaMat.clone(),size:.07,grow:.16,life:1.1,op:.5,vy:.22}); } } // a steady thin warm wisp from the skewer
     av.aromaSay=(av.aromaSay??0)-dt; if(av.aromaSay<0){ av.aromaSay=.5; stinkReact(av,["噢好香！","肚子好餓！","好想吃烤肉..."],"#ffd27a"); } }
+  if(av.accHead&&av.accHead.userData.bubbles&&near){ av.bubT=(av.bubT||0)-dt; if(av.bubT<0){ av.bubT=.18+Math.random()*.2; av.accHead.getWorldPosition(_v1); // rainbow soap bubbles drifting up from the cup
+      const c=["#ff6b9a","#ffd24a","#6bdcff","#9a7bff","#7dffb0","#ffffff"][(Math.random()*6)|0]; const b=new T.Sprite(new T.SpriteMaterial({map:BUB_TEX(),color:new T.Color(c),transparent:true,depthWrite:false})); const sz=.05+Math.random()*.06;
+      b.position.set(_v1.x+rand(-.15,.15),_v1.y+.5+rand(0,.15),_v1.z+rand(-.15,.15)); b.scale.set(sz,sz,1); scene.add(b); parts.push({s:b,vx:rand(-.12,.12),vy:.35+Math.random()*.2,vz:rand(-.12,.12),life:0,max:1.8+Math.random(),grow:.03,op:.9}); } }
   if(av.accHead&&av.accHead.userData.sparkle&&near){ const t=performance.now()/1000; av.accHead.children.forEach((b,i)=>{ if(b.isSprite){ const k=Math.max(0,Math.sin(t*4+b.userData.tw*3)); b.scale.set(.04+k*.13,.04+k*.13,1); b.material.opacity=k; } else if(i%9===0) b.scale.setScalar(1+Math.sin(t*5+i)*.08); }); } }
 
 /* ---- bag: 飾品 tab ---- */
@@ -4284,7 +4292,7 @@ function playFish(){ const L=gameLayer("撈金魚","按住放進水裡，移到�
   const TYPES={red:{v:50,img:"fish-red",sp:40,sz:20,w:.10},black:{v:100,img:"fish-black",sp:55,sz:19,w:.14},gold:{v:500,img:"fish-gold",sp:120,sz:15,w:.3},rainbow:{v:1000,img:"fish-rainbow",sp:150,sz:15,w:.42}};
   nmPreload(Object.values(TYPES).map(t=>t.img).concat(["fish-scoop","fish-coin","fish-bag","fish-pond"]));
   const fish=[]; const add=t=>fish.push({t,x:Math.random(),y:Math.random(),a:Math.random()*7,turn:0,caught:false});
-  for(let i=0;i<12;i++) add("red"); for(let i=0;i<5;i++) add("black"); if(Math.random()<.45) add("gold"); if(Math.random()<.08) add("rainbow");
+  for(let i=0;i<12;i++) add("red"); for(let i=0;i<5;i++) add("black"); add("gold"); if(Math.random()<.4) add("gold"); if(Math.random()<.35) add("rainbow"); // always one gold to chase; the rainbow one shows up in about one game in three
   let paper=1, inWater=false, sx=0, sy=0, won=0, caught=[], time=40, over=false, last=performance.now(), tear=0, lifted=null;
   const pond=W=>({x:16,y:150,w:W-32,h:L.H()-270});
   cv.addEventListener("pointerdown",e=>{ if(L.endMsg){ L.close(); return; } if(over) return; inWater=true; sx=e.clientX; sy=e.clientY; tone(200,.1,.05,"sine"); });
@@ -4300,6 +4308,8 @@ function playFish(){ const L=gameLayer("撈金魚","按住放進水裡，移到�
     { const pi=nmImg("fish-pond"); if(pi.complete&&pi.naturalWidth) x.drawImage(pi,P.x-14,P.y-14,P.w+28,P.h+28); else { x.fillStyle="#2a90c8"; x.fillRect(P.x,P.y,P.w,P.h); } }
     for(let i=0;i<9;i++){ x.strokeStyle="rgba(255,255,255,.12)"; x.lineWidth=2; x.beginPath(); x.ellipse(P.x+P.w*((i*.37+now/9000)%1),P.y+P.h*((i*.61)%1),34,9,0,0,7); x.stroke(); }
     for(let i=0;i<10;i++){ x.fillStyle="rgba(255,255,255,.35)"; x.beginPath(); x.arc(P.x+P.w*((i*.29)%1),P.y+P.h-((now/18+i*70)%P.h),2+i%3,0,7); x.fill(); }
+    const scoop=()=>nmDraw(x,"fish-scoop",(sx||W/2)+110*.08,(sy||H/2)+110*.42,110,0,inWater?.8:1);
+    if(!over&&inWater) scoop();
     fish.forEach(f=>{ if(f.caught) return; const T2=TYPES[f.t]; f.turn-=dt; if(f.turn<0){ f.turn=.5+Math.random()*2; f.da=(Math.random()-.5)*3; }
       const fx0=P.x+f.x*P.w, fy0=P.y+f.y*P.h, near=inWater&&Math.hypot(fx0-sx,fy0-sy)<70, sp=T2.sp*(near?1.8:1);
       f.a+=(f.da||0)*dt; if(near) f.a=Math.atan2(fy0-sy,fx0-sx)*.6+f.a*.4;
@@ -4307,7 +4317,7 @@ function playFish(){ const L=gameLayer("撈金魚","按住放進水裡，移到�
       nmDraw(x,T2.img,P.x+f.x*P.w,P.y+f.y*P.h,T2.sz*2.3,f.a+Math.PI/2+Math.sin(now/120+f.x*20)*.12); }); // seen from above, head first
     if(lifted&&now-lifted.at<900){ const k=(now-lifted.at)/900; nmDraw(x,TYPES[lifted.t].img,lifted.x,lifted.y-k*80,54,Math.sin(now/50)*.4,1-k); }
     if(!over){ if(inWater){ paper-=dt*.035; if(paper<=0){ paper=0; over=true; inWater=false; finish(); } }
-      const sw=110; nmDraw(x,"fish-scoop",(sx||W/2)+sw*.08,(sy||H/2)+sw*.42,sw,0,inWater?.75:1); }
+      if(!inWater) scoop(); }
     tear*=.9; if(tear>.05) nmText(x,"破了一角！",W/2,P.y+40,22,"#ffb3a0");
     if(!over){ time-=dt; if(time<=0){ over=true; inWater=false; finish(); } }
     nmText(x,`紙網 ${Math.round(paper*100)}%　${Math.max(0,Math.ceil(time))} 秒`,W/2,135,18,"#fff",undefined,600);
