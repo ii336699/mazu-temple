@@ -4057,7 +4057,7 @@ function giveAcc(id){ const a=accState(); const had=!!a.owned[id]; a.owned[id]=1
 function payStall(price){ if(!price) return true; if((bag.coins||0)<price){ toast(`平安幣不夠，這攤要 ${price} 幣`); return false; } bag.coins-=price; saveBag(); sfx.coin&&sfx.coin(); return true; }
 
 /* ---- wearing them ---- */
-const NMT={}; function nmTex(n){ if(!NMT[n]){ NMT[n]=new T.TextureLoader().load("nm/"+n+".webp"); NMT[n].encoding=T.sRGBEncoding; } return NMT[n]; }
+const NMT={}; function nmTex(n){ if(!NMT[n]){ NMT[n]=new T.TextureLoader().load(nmSrc(n)); NMT[n].encoding=T.sRGBEncoding; } return NMT[n]; }
 const ACC_MAT={}; const accMat=(c,o={})=>ACC_MAT[c+JSON.stringify(o)]||(ACC_MAT[c+JSON.stringify(o)]=new T.MeshStandardMaterial({color:new T.Color(c),roughness:o.r??.6,metalness:o.m??0,emissive:new T.Color(o.e||"#000"),emissiveIntensity:o.ei??0}));
 function buildAccHead(id){ const g=new T.Group();
   if(id==="qqball"){ // 地瓜球: a big yellow ball wrapped round the whole head with an opening for the face, a purple one and a light-yellow one on top
@@ -4181,11 +4181,18 @@ function nmEndDraw(L,x,W,H){ const e=L.endMsg; if(!e) return false; x.fillStyle=
   nmText(x,"點畫面離開",W/2,H*.42+92,16,"#f0e0c0",undefined,500); return true; }
 
 /* ---- sprites from the stall art sheets (public/nm/*.webp) ---- */
-const NMI={}; function nmImg(n){ let i=NMI[n]; if(!i){ i=NMI[n]=new Image(); i.tries=0; i.onerror=()=>{ if(i.tries++<5) setTimeout(()=>{ i.src="nm/"+n+".webp?r="+i.tries; },800*i.tries); }; i.src="nm/"+n+".webp"; } return i; }
+// inside the preview host all the stall pictures come in one bundle loaded with the page (nm-pack.js), the same way the
+// 3D models do, because files fetched later don't always arrive there; on the real site each picture is its own file
+if(IN_ARTIFACT){ const sc=document.createElement("script"); sc.src="nm-pack.js"; sc.async=true; sc.onload=()=>{ for(const n in NMI){ const i=NMI[n]; if(!(i.complete&&i.naturalWidth)&&window.NM_PACK&&NM_PACK[n]) i.src=NM_PACK[n]; } }; document.head.appendChild(sc); }
+const NMI={}; function nmSrc(n,r){ return window.NM_PACK&&NM_PACK[n]?NM_PACK[n]:"nm/"+n+".webp"+(r?"?r="+r:""); }
+function nmImg(n){ let i=NMI[n]; if(!i){ i=NMI[n]=new Image(); i.tries=0; i.onerror=()=>{ if(i.tries++<5) setTimeout(()=>{ i.src=nmSrc(n,i.tries); },800*i.tries); }; if(IN_ARTIFACT&&!window.NM_PACK){ /* wait for the bundle */ } else i.src=nmSrc(n); } return i; }
 const NM_ALL={qq:["qq-pan","qq-y","qq-p","qq-c","qq-spatula","qq-basket"],sausage:["sg-grill","sg-stick","sg-stink","sg-bowl2"],bbq:["bbq-beef","bbq-chicken","bbq-pork","bbq-shroom","bbq-pepper","bbq-corn","bbq-tofu","bbq-squid","bbq-mix","bbq-grill2","bbq-fire","bbq-flip","bbq-ok"],
   fish:["fish-red","fish-black","fish-gold","fish-rainbow","fish-scoop","fish-coin","fish-pond"],pachinko:["pk-board","pk-red","pk-orange","pk-yellow","pk-green","pk-blue","pk-purple","pk-jackpot"],
   boba:["bb-black","bb-green","bb-milk","bb-powder","bb-sugar","bb-pearl","bb-gold","bb-lemon","bb-ice","bb-brownsugar","bb-taro","bb-mango","bb-condensed","bb-strawberry","bb-icecream","bb-d-milktea","bb-d-green","bb-d-lemon","bb-d-brownsugar","bb-d-taro","bb-d-mango","bb-d-strawberry"],
   balloon:["bl-red","bl-yellow","bl-blue","bl-pop","bl-perfect","bl-afro"]};
+// everyone fetches the stall pictures quietly in the background soon after entering the temple (about 1.4 MB in all),
+// one at a time, so a stall game opens straight away whenever the chair puts the market out
+setTimeout(()=>{ const all=[].concat(...Object.values(NM_ALL)); let i=0; const next=()=>{ if(i>=all.length) return; const im=nmImg(all[i++]); if(im.complete||!im.src) setTimeout(next,60); else { im.addEventListener("load",()=>setTimeout(next,60),{once:true}); im.addEventListener("error",()=>setTimeout(next,60),{once:true}); } }; next(); },12000);
 const nmReady=k=>(NM_ALL[k]||[]).every(n=>{ const i=nmImg(n); return i.complete&&i.naturalWidth>0; });
 function nmDraw(x,n,cx,cy,w,rot=0,alpha=1,flip=false){ const i=nmImg(n); if(!i.complete||!i.naturalWidth) return false; const h=w*i.naturalHeight/i.naturalWidth; x.save(); x.translate(cx,cy); if(rot) x.rotate(rot); if(flip) x.scale(-1,1); x.globalAlpha=alpha; x.drawImage(i,-w/2,-h/2,w,h); x.restore(); return true; }
 // draw a picture as large as fits inside a box, keeping its shape
