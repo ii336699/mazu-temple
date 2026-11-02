@@ -1072,13 +1072,13 @@ const lotTube=new T.Group(); lotTube.userData.noMerge=1;
 // furnace near the entrance (left)
 const FX=-10.5, FZ=27;
 const furnace=new T.Group(); furnace.position.set(FX,0,FZ); scene.add(furnace); furnace.userData.noMerge=1;
-// 金爐 model (jinlu.glb): about 3.6 m tall, its fire door turned to face the courtyard; FURN_TOP is where the chimney ends
-const FURN_H=3.6, FURN_TOP=FURN_H, FURN_FRONT=1.25;
+// 金爐 model (jinlu.glb): about 4.7 m tall, its fire door turned to face the courtyard; FURN_TOP is where the chimney ends
+const FURN_H=4.7, FURN_TOP=FURN_H, FURN_FRONT=1.62; // 30% bigger than first placed
 loadModel("jinlu",m=>{ const w=fitModel(m,FURN_H); w.rotation.y=Math.PI/2; furnace.add(w); setAct(w,"burn"); });
-setTimeout(()=>addHit("burn",FX,0,FZ,1.35,FURN_H),0);
+setTimeout(()=>addHit("burn",FX,0,FZ,1.75,FURN_H),0);
 station("burn",[FX+FURN_FRONT+.85,FZ],-Math.PI/2);
 const furnaceGlow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ff7a30"),transparent:true,blending:T.AdditiveBlending,depthWrite:false}));
-furnaceGlow.position.set(FX+FURN_FRONT,1.1,FZ); furnaceGlow.scale.set(1.6,1.6,1); scene.add(furnaceGlow);
+furnaceGlow.position.set(FX+FURN_FRONT,1.43,FZ); furnaceGlow.scale.set(2,2,1); scene.add(furnaceGlow);
 
 function setAct(o,k){ o.traverse(c=>{ if(c.isMesh) c.userData.act=k; }); }
 /* guangming lamp cabinets (two, either side of the mural) */
@@ -1309,12 +1309,12 @@ station("huye",[1.0,-9.15],Math.PI+.35);
 // 天公爐 in the courtyard
 const TG={x:0,z:21.5};
 { const g=new T.Group(); g.position.set(TG.x,0,TG.z); scene.add(g); g.userData.noMerge=1; TG.g=g;
-  // 天公爐 model (tiangong.glb), 2.6 m tall, the 天公爐 plaque turned toward the person praying; incense goes in the bowl (rim ≈ 1.27 m)
-  loadModel("tiangong",m=>{ const w=fitModel(m,2.6); w.rotation.y=Math.PI; g.add(w); setAct(w,"tiangong"); });
-  setTimeout(()=>addHit("tiangong",TG.x,0,TG.z,1.1,2.6),0);
+  // 天公爐 model (tiangong.glb), 3.4 m tall, the 天公爐 plaque turned toward the person praying; incense goes in the bowl (rim ≈ 1.65 m)
+  loadModel("tiangong",m=>{ const w=fitModel(m,3.4); w.rotation.y=Math.PI; g.add(w); setAct(w,"tiangong"); });
+  setTimeout(()=>addHit("tiangong",TG.x,0,TG.z,1.43,3.4),0);
   const cz=new T.Group(); cz.position.y=0; g.add(cz);
-  const inc=new T.Group(); inc.userData.noMerge=1; cz.add(inc); CENSERS.tiangong={inc,r:.45,y:1.22,k:1.2,g:cz}; }
-station("tiangong",[TG.x,TG.z-1.7],0);
+  const inc=new T.Group(); inc.userData.noMerge=1; cz.add(inc); CENSERS.tiangong={inc,r:.58,y:1.6,k:1.5,g:cz}; }
+station("tiangong",[TG.x,TG.z-2.05],0);
 // courtyard floor
 const yardTex=cvs(512,512,(x,w,h)=>{ const s=64; for(let i=0;i<8;i++)for(let j=0;j<8;j++){ const v=150+Math.random()*28; x.fillStyle=`rgb(${v+12},${v},${v-14})`; x.fillRect(i*s,j*s,s,s); }
   noise(x,w,h,.14,"rgba(40,30,24,A)"); x.strokeStyle="rgba(60,44,36,.8)"; x.lineWidth=2; for(let i=0;i<=8;i++){ x.beginPath(); x.moveTo(i*s,0); x.lineTo(i*s,h); x.stroke(); x.beginPath(); x.moveTo(0,i*s); x.lineTo(w,i*s); x.stroke(); } });
@@ -2969,7 +2969,7 @@ function openBurn(){ const n=bag.items.jin||0; openSheet("burn","金爐",`<p cla
   <button class="primary" data-act="burn" ${n?"":"disabled"}>焚化一份金紙</button>${n?"":`<button class="secondary" data-act="goShop">去服務處買金紙</button>`}`); }
 HANDLERS.burn=()=>{ if(!(bag.items.jin>0)) return; bag.items.jin--; myBurn++; meAv.burnT=0; markDirty(); burnFx(); sfx.fire(); const f=flow(); if(f.cleared||(Array.isArray(bag.planted)&&bag.planted.length>=5)){ bag.flow={}; bag.planted=[]; bag.bowed={}; saveBag(); toast("金紙焚化，參拜圓滿。媽祖保庇！",4200); closeSheet(); } else { saveBag(); toast("金紙焚化中"); openBurn(); } };
 let fireBoost=0;
-function burnFx(){ fireBoost=2.4; for(let i=0;i<10;i++) setTimeout(()=>{ const s=new T.Sprite(new T.SpriteMaterial({map:softTex,color:new T.Color("#f2d070"),transparent:true,opacity:.9,depthWrite:false})); s.position.set(FX+FURN_FRONT+.4+rand(-.2,.2),1.0+rand(0,.3),FZ+rand(-.25,.25)); s.scale.set(.18,.12,1); scene.add(s); parts.push({s,vx:-.8,vy:.2,vz:rand(-.1,.1),life:0,max:.7,grow:-.1,op:.9}); },i*80); }
+function burnFx(){ fireBoost=2.4; for(let i=0;i<10;i++) setTimeout(()=>{ const s=new T.Sprite(new T.SpriteMaterial({map:softTex,color:new T.Color("#f2d070"),transparent:true,opacity:.9,depthWrite:false})); s.position.set(FX+FURN_FRONT+.4+rand(-.2,.2),1.3+rand(0,.35),FZ+rand(-.3,.3)); s.scale.set(.18,.12,1); scene.add(s); parts.push({s,vx:-.8,vy:.2,vz:rand(-.1,.1),life:0,max:.7,grow:-.1,op:.9}); },i*80); }
 function openDonate(){ openSheet("donate","香油錢",`<p class="lead">隨喜添香油，護持廟務。</p>
   <div class="row">${[10,50,100].map(v=>`<button class="secondary" data-act="donate" data-v="${v}" ${bag.coins<v?"disabled":""}>${v} 平安幣</button>`).join("")}</div>
   <p class="real-divider">－－－真實香油錢－－－</p>${realSupportHTML()}`); }
@@ -4068,9 +4068,9 @@ function tick(){ if(gameAsleep) return; const dt=Math.min(.05,clock.getDelta());
   flames.forEach((f,i)=>{ const k=1+Math.sin(t*13+i*2)*.08+Math.sin(t*29+i)*.05; f.scale.set(.3*k,.45*k,1); });
   candleLight.intensity=2.1+Math.sin(t*11)*.15+Math.sin(t*23)*.1;
   fireBoost=Math.max(0,fireBoost-dt); furnaceLight.intensity=1.4+Math.sin(t*9)*.25+fireBoost*1.6; furnaceGlow.scale.setScalar(1.6+Math.sin(t*7)*.1+fireBoost*.5);
-  smokeAcc+=dt; if(smokeAcc>.35){ smokeAcc=0; spawnSmoke(rand(-.15,.15),1.5,ALTAR.z-.15+rand(-.1,.1)); if(!fwView&&Math.random()<.6) spawnSmoke(TG.x+rand(-.3,.3),2.0,TG.z+rand(-.3,.3),{size:.35,grow:.4,life:4.5,op:.2}); }
+  smokeAcc+=dt; if(smokeAcc>.35){ smokeAcc=0; spawnSmoke(rand(-.15,.15),1.5,ALTAR.z-.15+rand(-.1,.1)); if(!fwView&&Math.random()<.6) spawnSmoke(TG.x+rand(-.3,.3),2.6,TG.z+rand(-.3,.3),{size:.35,grow:.4,life:4.5,op:.2}); }
   emberAcc+=dt*(1+fireBoost*6); if(emberAcc>.25){ emberAcc=0; const s=new T.Sprite(emberMat); s.position.set(FX+rand(-.15,.15),FURN_TOP,FZ); s.scale.set(.08,.08,1); scene.add(s); parts.push({s,vx:rand(-.2,.2),vy:rand(.6,1.2),vz:rand(-.2,.2),life:0,max:rand(1.5,3),grow:0,op:1});
-    if(fireBoost>0){ spawnSmoke(FX,FURN_TOP+.2,FZ,{size:.8,life:4,grow:.8,op:.25,vy:.8}); const e2=new T.Sprite(emberMat); e2.position.set(FX+FURN_FRONT-.1,1.0,FZ+rand(-.25,.25)); e2.scale.set(.1,.1,1); scene.add(e2); parts.push({s:e2,vx:rand(.1,.5),vy:rand(.8,1.6),vz:rand(-.3,.3),life:0,max:1.2,grow:0,op:1}); } }
+    if(fireBoost>0){ spawnSmoke(FX,FURN_TOP+.2,FZ,{size:.8,life:4,grow:.8,op:.25,vy:.8}); const e2=new T.Sprite(emberMat); e2.position.set(FX+FURN_FRONT-.1,1.3,FZ+rand(-.3,.3)); e2.scale.set(.1,.1,1); scene.add(e2); parts.push({s:e2,vx:rand(.1,.5),vy:rand(.8,1.6),vz:rand(-.3,.3),life:0,max:1.2,grow:0,op:1}); } }
   for(let i=parts.length-1;i>=0;i--){ const p=parts[i]; p.life+=dt; const k=p.life/p.max; if(k>=1){ scene.remove(p.s); if(p.s.material!==emberMat&&p.s.material!==smokeMat) p.s.material.dispose(); parts.splice(i,1); continue; }
     if(p.g) p.vy-=p.g*dt; p.s.position.x+=(p.vx+Math.sin(t*1.3+i)*.04)*dt; p.s.position.y+=p.vy*dt; p.s.position.z+=p.vz*dt; const sc=p.s.scale.x+p.grow*dt; p.s.scale.set(Math.max(.02,sc),Math.max(.02,sc),1);
     p.s.material.opacity=p.op*Math.sin(Math.min(1,k)*Math.PI); }
@@ -4108,6 +4108,21 @@ function mergeStatic(){ const buckets=new Map(); scene.updateMatrixWorld(true);
     const G=new T.BufferGeometry(); G.setAttribute("position",new T.BufferAttribute(P,3)); G.setAttribute("normal",new T.BufferAttribute(N,3)); G.setAttribute("uv",new T.BufferAttribute(U,2)); G.setIndex(new T.BufferAttribute(I,1)); G.computeBoundingSphere();
     const M=new T.Mesh(G,m); M.matrixAutoUpdate=false; M.raycast=()=>{}; scene.add(M); list.forEach(o=>{ o.visible=false; }); merged+=list.length; });
   return merged; }
+/* ---- lantern light on the ground: a soft warm pool on the floor under every lantern (one draw call for all of them,
+   no real lights, so phones stay smooth). Collected before the scenery is merged, while each lantern still has its own place. */
+function lanternPools(){ scene.updateMatrixWorld(true); const spots=[], v=new T.Vector3(), M=new T.Matrix4();
+  scene.traverse(o=>{ if(!o.isMesh) return;
+    if(o.isInstancedMesh&&o.material===lanternMat){ for(let i=0;i<o.count;i++){ o.getMatrixAt(i,M); v.setFromMatrixPosition(M).applyMatrix4(o.matrixWorld); spots.push([v.x,v.z,v.y,1]); } return; }
+    if(o.material===lanternMat){ o.getWorldPosition(v); spots.push([v.x,v.z,v.y,1]); return; }
+    if(o.material&&o.material.isMeshBasicMaterial&&o.material.color&&o.material.color.getHexString()==="ffbf6a"){ o.getWorldPosition(v); if(v.y<2) spots.push([v.x,v.z,v.y,.6]); } });
+  if(!spots.length) return;
+  const tex=cvs(128,128,(x)=>{ const g=x.createRadialGradient(64,64,0,64,64,64); g.addColorStop(0,"rgba(255,255,255,1)"); g.addColorStop(.35,"rgba(255,255,255,.55)"); g.addColorStop(.7,"rgba(255,255,255,.18)"); g.addColorStop(1,"rgba(255,255,255,0)"); x.fillStyle=g; x.fillRect(0,0,128,128); });
+  const m=new T.MeshBasicMaterial({map:tex,color:new T.Color("#ff8a48"),transparent:true,opacity:.7,blending:T.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
+  const geo=new T.PlaneGeometry(1,1); geo.rotateX(-Math.PI/2);
+  const im=new T.InstancedMesh(geo,m,spots.length), Q=new T.Quaternion(), S=new T.Vector3(), P=new T.Vector3();
+  spots.forEach(([x,z,y,k],i)=>{ const r=Math.max(1.6,Math.min(4.2,y*.75))*k*2; im.setMatrixAt(i,M.compose(P.set(x,.025,z),Q,S.set(r,1,r))); });
+  im.userData.noMerge=1; im.renderOrder=1; scene.add(im); window.__pools=spots.length; }
+try{ lanternPools(); }catch(e){}
 try{ window.__merged=mergeStatic(); }catch(e){ window.__mergeErr=String(e); }
 buildNpcs();
 if(document.fonts&&document.fonts.load){ Promise.all([document.fonts.load(`700 64px "LXGW WenKai TC"`,"母聖上天邊德護千家海慈航庇萬眾香油籤詩服務處金爐"),document.fonts.load(`500 30px "Noto Sans TC"`,"你香客")]).then(()=>{ fontTextures.forEach(redraw); meAv.setName(myLabel()); }).catch(()=>{}); }
