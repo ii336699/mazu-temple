@@ -2436,7 +2436,9 @@ function initCF(first){
       if(m.t==="fw"&&Number.isFinite(m.seed)){ fwStart(m.seed,+m.el||0); return; }
       if(m.t==="st"&&okId(m.id)&&m.p&&typeof m.p==="object"){ peerState.set(m.id,{p:m.p,t:Date.now()}); rebuild(); return; }
       if(m.t==="leave"&&okId(m.id)){ if(peerState.delete(m.id)) rebuild(); } };
-    ws.onclose=()=>{ roomConnected=false; updateCount(); if(closedByUs) return; retry++; setTimeout(()=>{ if(!closedByUs&&(!ws||ws.readyState>1)) connect(hall); },Math.min(15000,1000*retry*retry)); }; }
+    ws.onclose=ev=>{ roomConnected=false; updateCount(); if(ev&&ev.code===4001){ closedByUs=true; toast("你在另一個視窗打開了遊戲，這個視窗先暫停",4000); return; } if(closedByUs) return; retry++; setTimeout(()=>{ if(!closedByUs&&(!ws||ws.readyState>1)) connect(hall); },Math.min(15000,1000*retry*retry)); }; }
+  // anyone not heard from in 3 minutes (everyone sends a heartbeat at least once a minute) left without saying goodbye
+  setInterval(()=>{ const now=Date.now(); let gone=false; peerState.forEach((v,id)=>{ if(now-v.t>180000){ peerState.delete(id); gone=true; } }); if(gone) rebuild(); },30000);
   room={ presence(p){ if(ws&&ws.readyState===1){ try{ ws.send(JSON.stringify({t:"st",p})); }catch(e){} } return Promise.resolve(); } };
   HALLS.current=()=>hall;
   // Any touch reconnects if the connection was lost.

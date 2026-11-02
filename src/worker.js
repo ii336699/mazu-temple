@@ -70,14 +70,16 @@ export class Hall extends DurableObject {
     }
     const h = Math.max(0, Math.min(HALLS - 1, parseInt(url.searchParams.get("hall") || "0", 10) || 0));
     const id = (url.searchParams.get("id") || "").replace(/[^a-z0-9]/g, "").slice(0, 16) || crypto.randomUUID().slice(0, 12);
-    const active = this.ctx.getWebSockets().filter(w => (w.deserializeAttachment() || {}).u !== 0).length;
+    // the same player reconnecting (bad signal, phone woke up) replaces their old connection, so nobody is counted twice
+    for (const old of this.ctx.getWebSockets(id)) { const a = old.deserializeAttachment() || {}; a.gone = 1; a.u = 0; try { old.serializeAttachment(a); } catch {} try { old.close(4001, "replaced"); } catch {} }
+    const active = this.liveCount();
     const pair = new WebSocketPair(); const [client, server] = Object.values(pair);
     this.ctx.acceptWebSocket(server, [id]);
-    server.serializeAttachment({ id, h, p: null, u: 1 });
+    server.serializeAttachment({ id, h, p: null, u: 1, at: Date.now() });
     if (active >= CAP) { server.send(JSON.stringify({ t: "full" })); server.close(4000, "full"); return new Response(null, { status: 101, webSocket: client }); }
     // send everyone already here to the newcomer
     const peers = [];
-    for (const w of this.ctx.getWebSockets()) { if (w === server) continue; const a = w.deserializeAttachment() || {}; if (a.p) peers.push({ id: a.id, p: a.p }); }
+    for (const w of this.ctx.getWebSockets()) { if (w === server) continue; const a = w.deserializeAttachment() || {}; if (a.p && !a.gone) peers.push({ id: a.id, p: a.p }); }
     server.send(JSON.stringify({ t: "hello", peers }));
     const ann = await this.ctx.storage.get("ann"); if (ann && Date.now() - ann.at < 5 * 60 * 1000) server.send(JSON.stringify(ann));
     const stage = await this.ctx.storage.get("stage"); if (stage && stage.on) server.send(JSON.stringify(stage));
@@ -92,26 +94,40 @@ export class Hall extends DurableObject {
     const a = ws.deserializeAttachment() || {};
     const p = m.p; const u = p.u === 0 ? 0 : 1; const was = a.u;
     const s = JSON.stringify(p);
-    a.p = s.length < 1900 ? p : null; a.u = u; ws.serializeAttachment(a);
+    if (a.gone) return;
+    a.p = s.length < 1900 ? p : null; a.u = u; a.at = Date.now(); ws.serializeAttachment(a);
     const out = JSON.stringify({ t: "st", id: a.id, p });
     for (const w of this.ctx.getWebSockets()) { if (w !== ws) { try { w.send(out); } catch {} } }
-    if (was !== u) this.report(a.h);
+    if (was !== u || Date.now() - (this.swept || 0) > 30000) this.report(a.h);
   }
   async webSocketClose(ws) { this.leave(ws); }
   async webSocketError(ws) { this.leave(ws); }
   leave(ws) {
     const a = ws.deserializeAttachment() || {};
+    if (a.gone) { try { ws.close(1000, "bye"); } catch {} this.report(a.h); return; } // replaced by a newer connection: that player is still here
     const out = JSON.stringify({ t: "leave", id: a.id });
     for (const w of this.ctx.getWebSockets()) { if (w !== ws) { try { w.send(out); } catch {} } }
     try { ws.close(1000, "bye"); } catch {}
     this.report(a.h);
+  }
+  // a phone that was locked or lost signal can leave its connection hanging open without ever saying goodbye; every
+  // player sends a heartbeat at least once a minute, so anyone silent for 3 minutes is gone — they are removed and not counted
+  sweep() {
+    const now = Date.now(); this.swept = now;
+    for (const w of this.ctx.getWebSockets()) { const a = w.deserializeAttachment() || {}; if (!a.gone && now - (a.at || now) > 180000) this.leave(w); }
+  }
+  // real people here: one per player, only connections that are open, not hidden, and heard from in the last 3 minutes
+  liveCount() {
+    const now = Date.now(), ids = new Set();
+    for (const w of this.ctx.getWebSockets()) { const a = w.deserializeAttachment() || {}; if (a.gone || a.u === 0 || w.readyState !== 1 || now - (a.at || now) > 180000) continue; ids.add(a.id); }
+    return ids.size;
   }
   // Head-count updates to the lobby are batched: at most one every 5 seconds, and only when the number changed.
   report(h) {
     this.h = h | 0; if (this.timer) return;
     this.timer = setTimeout(() => {
       this.timer = null;
-      const n = this.ctx.getWebSockets().filter(w => { const a = w.deserializeAttachment() || {}; return a.u !== 0 && w.readyState === 1; }).length;
+      this.sweep(); const n = this.liveCount();
       if (n === this.lastN) return; this.lastN = n;
       this.env.LOBBY.get(this.env.LOBBY.idFromName("lobby")).fetch("https://lobby/set?h=" + this.h + "&n=" + n).catch(() => {});
     }, 5000);
