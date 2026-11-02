@@ -2112,7 +2112,7 @@ const BOT_GODS=["caishen","yuelao","huye","xuantian","guangong"];
 const BOT={nextAdjust:0, cap:null, slow:0, fast:0, ema:1/60};
 // walking about: as many as the phone handles. Starts at 36 (低配 18, 省電 8) and steps down by itself if the game gets choppy,
 // creeping back up when it runs smoothly again.
-function botMax(){ return !showNpc?0:Q.lite?15:Q.low?40:96; }
+function botMax(){ return Q.lite?15:Q.low?40:96; }
 function botLimit(){ const m=botMax(); if(BOT.cap==null||BOT.cap>m) BOT.cap=m; return Math.min(m,BOT.cap); }
 function botFps(dt){ if(document.hidden||dt>.5) return; BOT.ema+=(dt-BOT.ema)*.05; const min=Q.lite?3:Q.low?6:8;
   if(BOT.ema>1/20){ BOT.slow+=dt; BOT.fast=0; if(BOT.slow>4&&BOT.cap>min){ BOT.cap=Math.max(min,BOT.cap-3); BOT.slow=0; BOT.nextAdjust=0; } }
@@ -2125,13 +2125,10 @@ function sitterWant(){ const lim=sitterLimit(); if(!lim) return 0; return Math.m
 function botSpot(){ for(let k=0;k<30;k++){ const x=rand(-15,15), z=rand(HZ+2,HZ+YX+16); if(walkable(x,z)) return [x,z]; } return [0,HZ+6]; }
 function hallSpot(){ for(let k=0;k<30;k++){ const x=rand(-10,10), z=rand(-6,HZ-1.5); if(walkable(x,z)) return [x,z]; } return [0,4]; }
 // a free spot near a station: people queue around it instead of standing inside each other
-function spotTaken(x,z){ for(const n of npcs){ if(n.classic) continue; const e=n.path&&n.path.length?n.path[n.path.length-1]:[n.target.x,n.target.y]; if(Math.hypot(e[0]-x,e[1]-z)<.75||Math.hypot(n.pos.x-x,n.pos.y-z)<.75) return true; } return Math.hypot(meAv.pos.x-x,meAv.pos.y-z)<.75; }
-const stNear=(k,j=.35)=>{ const s=stations[k]; let r=j;
-  for(let t=0;t<24;t++){ const a=Math.random()*Math.PI*2, d=t<4?Math.random()*j:r, x=s.approach.x+Math.cos(a)*d, z=s.approach.y+Math.sin(a)*d; if(walkable(x,z)&&!spotTaken(x,z)) return [x,z]; if(t>=4) r=Math.min(3.2,r+.18); }
-  return [s.approach.x+rand(-j,j),s.approach.y+rand(-j,j)]; };
+const stNear=k=>{ const s=stations[k]; return [s.approach.x,s.approach.y]; }; // the exact spot a player walks to when tapping it
 const stFace=k=>stations[k].face;
 // the plans: lists of small steps
-function planLot(){ return [{go:stNear("lot",.3)},{face:stFace("lot")},{shake:rand(25,50)},{look:rand(2,5)},{go:stNear("altar",.6)},{face:stFace("altar")},{jiao:1+((Math.random()*3)|0)},{look:rand(2,4)},{go:stNear("jieqian",.5)},{face:stFace("jieqian")},{read:rand(20,45)}]; }
+function planLot(){ return [{go:stNear("lot",.3)},{face:stFace("lot")},{shake:rand(25,50)},{look:rand(2,5)},{jiao:1+((Math.random()*3)|0)},{look:rand(2,4)},{go:stNear("jieqian",.5)},{face:stFace("jieqian")},{read:rand(20,45)}]; }
 function planMazu(){ return [{go:stNear("shop",.4)},{face:stFace("shop")},{look:rand(4,8)},{hold:1},{go:stNear("tiangong",.6)},{face:stFace("tiangong")},{bow:1},{look:rand(2,4)},{go:stNear("altar",.6)},{face:stFace("altar")},{bow:1},{look:rand(2,4)},{jiao:1+((Math.random()*2)|0)},{hold:0}]; }
 function planSit(){ const s=freeSeat(); if(s<0) return planStroll(); return [{sit:s,dur:rand(45,120)}]; }
 function planStroll(){ const [x,z]=Math.random()<.5?botSpot():hallSpot(); return [{go:[x,z]},{look:rand(6,15)}]; }
@@ -2146,7 +2143,7 @@ function planAfk(){ return [{go:Math.random()<.5?hallSpot():botSpot()},{afk:rand
 function planGuide(from=0){ const gods=CENSER_ORDER.filter(k=>k!=="tiangong"&&k!=="mazu"&&stations[k]);
   const stops=[["shop",[{look:rand(5,10)},{hold:1}]],["tiangong",[{bow:1},{look:rand(2,4)}]],["altar",[{bow:1},{look:rand(3,6)}]],...gods.map(k=>[k,[{bow:1},{look:rand(2,5)}]]),["burn",[{hold:0},{fx:"burn"},{look:rand(6,10)}]]];
   const out=[]; stops.slice(from).forEach(([k,extra])=>{ if(!stations[k]) return; out.push({go:stNear(k,.5)},{face:stFace(k)},...extra); });
-  if(from>0) out.unshift({hold:1}); return out; }
+  if(from>0) out.unshift({hold:1}); if(Math.random()<.35) out.push({sj:Math.random()<.5?0:1}); return out; }
 function planFun(){ const [x,z]=Math.random()<.4?hallSpot():botSpot(), out=[{go:[x,z]}];
   for(let i=0,k=2+((Math.random()*3)|0);i<k;i++){ if(Math.random()<.4) out.push({emo:BOT_EMO[(Math.random()*BOT_EMO.length)|0]},{look:rand(2,5)}); out.push({act:(Math.random()*ACTS.length)|0}); }
   if(Math.random()<.3) return [...planOne("cats",[{dance:rand(15,30)}]),...out.slice(1)];
@@ -2172,10 +2169,16 @@ function botStart(n,st){ n.step=st; n.st=0; n.anim=null; n.afk=!!st.afk;
   else if(st.dance){ n.danceT=1e9; n.limit=st.dance; }
   else if(st.sit!=null){ const S=SEATS[st.sit], p=planPath(n.pos.x,n.pos.y,S.x,S.y); n.hold=0; n.faceGoal=null; n.seat=st.sit; n.goalSeat=true; n.target.set(p[0][0],p[0][1]); n.path=p.slice(1); n.limit=st.dur+60; n.bowIn=rand(6,14); }
   else if(st.leave){ botWalk(n,st.leave[0],st.leave[1]); n.limit=80; }
+  else if(st.sj!=null){ n.bkey=n.bkey||"bot"+(BOT.seq=(BOT.seq||0)+1); n.sjq={g:st.sj,at:Date.now()}; n.limit=300; n.hold=0; }
   else if(st.act!=null){ startAct(n,st.act); n.limit=ACTS[st.act].loop?rand(10,25):ACTS[st.act].d+.3; }
   else if(st.emo!=null){ showEmo(n,st.emo); n.limit=.5; }
   else if(st.afk){ n.limit=st.afk; n.faceGoal=n.rotY+rand(-.6,.6); n.headGoal=0; } }
 function botStep(n,dt){ const st=n.step; n.st+=dt;
+  if(st.sj!=null){ const g=SJ.g[st.sj], k=g.q.findIndex(e=>e.key===n.bkey); if(!n.sjq||k<0){ n.sjq=null; return true; }
+    if(g.serving&&g.serving.key===n.bkey){ n.faceGoal=-Math.PI/2; if(performance.now()-g.t0>5600){ n.sjq=null; return true; } return false; }
+    if(n.st>n.limit){ n.sjq=null; return true; }
+    const [x,z]=sjSlot(g,k); if(!(n.path&&n.path.length)&&Math.hypot(n.target.x-x,n.target.y-z)>.05){ if(Math.hypot(n.pos.x-x,n.pos.y-z)>1.5){ const p=planPath(n.pos.x,n.pos.y,x,z); n.target.set(p[0][0],p[0][1]); n.path=p.slice(1); } else n.target.set(x,z); }
+    if(n.pos.distanceTo(n.target)<.1) n.faceGoal=-Math.PI/2; return false; }
   if(st.go||st.leave){ if(botArrived(n)||n.st>n.limit) return true; return false; }
   if(st.sit!=null){ if(n.seat<0) return true; if(botArrived(n)){ n.sat=(n.sat||0)+dt; n.bowIn-=dt; if(n.bowIn<0){ n.bowIn=rand(15,30); n.bow(); } if(n.sat>st.dur){ n.sat=0; n.seat=-1; n.target.set(n.pos.x,n.pos.y+.9); return true; } } return n.st>n.limit; }
   if(st.look){ n.lookIn-=dt; if(n.lookIn<0){ n.lookIn=rand(1.5,4); n.headGoal=rand(-.9,.9); if(Math.random()<.35) n.faceGoal=(n.faceGoal??n.rotY)+rand(-.8,.8); } }
@@ -2205,7 +2208,7 @@ function bakeAvatar(av){ const bones=new Set([av.root,av.parts,av.hips,av.torso,
     const G=new T.BufferGeometry(); G.setAttribute("position",new T.BufferAttribute(P,3)); G.setAttribute("normal",new T.BufferAttribute(N,3)); G.setAttribute("color",new T.BufferAttribute(C,3)); G.setIndex(new T.BufferAttribute(I,1)); G.computeBoundingSphere();
     const M=new T.Mesh(G,ds?BOT_VC2:BOT_VC); M.raycast=()=>{}; b.add(M); list.forEach(o=>o.parent&&o.parent.remove(o)); }); }
 function makeBot(at){ const [x,z]=at||botSpot(); const a=new Avatar(randomLook(),{npc:true,x,z}); a.isBot=true; a.moveSpeed=3.31; a.name=randomName(); a.setName(a.name); try{ bakeAvatar(a); }catch(e){}
-  a.steps=[{look:rand(.5,4)}]; a.step=null; if(customizing) a.root.visible=false; npcs.push(a); return a; }
+  a.steps=[{look:rand(.5,4)}]; a.step=null; if(customizing||!othersShown) a.root.visible=false; npcs.push(a); return a; }
 function botNear(n,r){ return Math.hypot(n.pos.x-meAv.pos.x,n.pos.y-meAv.pos.y)<r; }
 function botTick(dt){ const now=performance.now(); botFps(dt);
   if(now>BOT.nextAdjust){ const live=npcs.filter(n=>!n.leaving&&!n.classic), want=botWant(); BOT.nextAdjust=now+(Math.abs(live.length-want)>4?rand(1500,4000):rand(15000,40000));
@@ -2223,8 +2226,9 @@ function placeBot(){ const role=pickRole(); let a;
   if(role==="afk"){ a=makeBot(Math.random()<.5?hallSpot():botSpot()); a.rotY=rand(-Math.PI,Math.PI); a.steps=[{afk:rand(120,1500)}]; }
   else if(role==="lot"){ const r=Math.random();
     if(r<.55){ a=makeBot(stNear("lot",.5)); a.steps=[{face:stFace("lot")},{shake:rand(8,45)},...planLot().slice(3)]; }
-    else if(r<.75){ a=makeBot(stNear("altar",.6)); a.steps=[{face:stFace("altar")},{jiao:1+((Math.random()*2)|0)},...planLot().slice(7)]; }
+    else if(r<.75){ a=makeBot(stNear("lot")); a.steps=[{face:stFace("lot")},{jiao:1+((Math.random()*2)|0)},...planLot().slice(5)]; }
     else { a=makeBot(stNear("jieqian",.5)); a.steps=[{face:stFace("jieqian")},{read:rand(8,40)}]; } }
+  else if(role==="guide"&&Math.random()<.25){ const i=Math.random()<.5?0:1, g=SJ.g[i]; a=makeBot([g.x+3+rand(0,3),g.z+rand(-.4,.4)]); a.steps=[{sj:i}]; }
   else if(role==="guide"){ const plan=planGuide(1+((Math.random()*8)|0)), at=plan.find(st=>st.go); a=makeBot(at?at.go:botSpot()); a.steps=plan.filter(st=>st!==at); if(at) a.hold=1; }
   else { a=makeBot(Math.random()<.4?hallSpot():botSpot()); a.steps=planFun().slice(1); }
   a.role=role; return a; }
@@ -2252,7 +2256,7 @@ function cleanName(n){ const t=String(n||"").replace(/[\u0000-\u001f​-‏‪-�
 function syncPeers(peers){ const seen=new Set();
   for(const p of peers){ if(p.sameTab||p.kind!=="viewer") continue; const pr=p.presence||{}; if(pr.v!==1||pr.u===0) continue; seen.add(p.peer);
     let av=remotes.get(p.peer); const look=sanitizeLook(pr.l,pr.q===1); if(av) av.setSp(pr.q===1);
-    if(!av){ av=new Avatar(look,{sp:pr.q===1,x:num(pr.x,-19,19,0),z:num(pr.z,-10,HZ+YX+18,HZ+12)}); av.autoBake=true; try{ bakeAvatar(av); }catch(e){} av.lastBow=pr.b; av.lastJ=Array.isArray(pr.j)?pr.j[1]:""; av.lastF=pr.f; av.offerGroup=new T.Group(); scene.add(av.offerGroup); remotes.set(p.peer,av); if(customizing) av.root.visible=false; }
+    if(!av){ av=new Avatar(look,{sp:pr.q===1,x:num(pr.x,-19,19,0),z:num(pr.z,-10,HZ+YX+18,HZ+12)}); av.autoBake=true; try{ bakeAvatar(av); }catch(e){} if(!othersShown) av.root.visible=false; av.lastBow=pr.b; av.lastJ=Array.isArray(pr.j)?pr.j[1]:""; av.lastF=pr.f; av.offerGroup=new T.Group(); scene.add(av.offerGroup); remotes.set(p.peer,av); if(customizing) av.root.visible=false; }
     else if(look.join()!==av.look.join()) av.setLook(look);
     const pno=Number.isInteger(pr.k)&&pr.k>0&&pr.k<1e8?pr.k:0; let nm=cleanName(pr.n)||(pno?`香客${pno}`:"香客"); if(pr.q!==1&&[SP_NAME,SP_OLD].includes(nm)) nm=pno?`香客${pno}`:"香客"; if(nm!==av.name){ av.name=nm; av.setName(nm); }
     av.setSp(pr.q===1); if(pr.q===1) av.name=SP_NAME;
@@ -2587,7 +2591,9 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",
 /* ---- look / customization ---- */
 let lookTab="face", draftLook=null;
 function openLook(first){ customizing=true; if(room) setTimeout(sendPresence,0); if(window.__retrack) setTimeout(window.__retrack,0); if(meAv.seat>=0){ meAv.seat=-1; } meAv.target.copy(meAv.pos); pendingStation=null; { const z=meAv.pos.y; meAv.rotY=z>HZ?0:((14.4-z)>(z+9)?0:Math.PI); meAv.faceGoal=meAv.rotY; } markDirty(); pvYaw=0; pvSpin=0; document.body.classList.add("customizing"); draftLook=me.look.slice(); setOthersVisible(false); updateStandBtn(); renderLook(first); }
-function setOthersVisible(v){ npcs.forEach(n=>n.root.visible=v); remotes.forEach(r=>r.root.visible=v); }
+let othersShown=load("mz.others",true);
+function setOthersVisible(v){ npcs.forEach(n=>n.root.visible=v&&(othersShown||n.classic)); remotes.forEach(r=>r.root.visible=v&&othersShown); }
+HANDLERS.toggleOthers=(v,b)=>{ othersShown=!othersShown; save("mz.others",othersShown); b.setAttribute("aria-pressed",String(othersShown)); if(!customizing) setOthersVisible(true); toast(othersShown?"已顯示其他玩家":"已隱藏其他玩家，自己一個人慢慢拜"); };
 function syncPvSeg(){ sheetBody.querySelectorAll("[data-act=pv]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===pvMode))); }
 function chipRow(label,idx,names){ return `<div class="group"><span class="group-label">${label}</span><div class="chips">${names.map((n,i)=>idx===3&&i===16&&!me.sp?"":`<button class="chip" data-act="look" data-v="${idx}:${i}" aria-pressed="${draftLook[idx]===i}">${n}</button>`).join("")}</div></div>`; }
 function swRow(label,idx,cols){ return `<div class="group"><span class="group-label">${label}</span><div class="chips">${cols.map((c,i)=>`<button class="sw" style="background:${c}" data-act="look" data-v="${idx}:${i}" aria-pressed="${draftLook[idx]===i}" aria-label="${label} ${i+1}"></button>`).join("")}</div></div>`; }
@@ -2648,7 +2654,7 @@ document.addEventListener("input",e=>{ const k=e.target&&e.target.dataset&&e.tar
   if(k==="m"){ /* the music level follows VOL.m every frame */ } });
 document.addEventListener("change",e=>{ if(e.target&&e.target.dataset&&e.target.dataset.vol==="s") sfx.coin(); });
 function openGfx(){ const opt=(v,t,d)=>`<button class="good" data-act="quality" data-v="${v}" aria-pressed="${Q.mode===v}" style="${Q.mode===v?"border-color:var(--gold);background:rgba(142,28,20,.35)":""}"><span class="name">${t}${Q.mode===v?"　✓":""}</span><span class="meta">${d}</span></button>`;
-  openSheet("gfx","設定",`<div class="group"><span class="group-label">畫質</span><p class="lead">畫面卡頓或手機發燙時，可以改用省電畫質。</p></div><div class="goods">${opt("auto","自動","進場後自動偵測，太卡會切到省電")}${opt("high","高畫質","光束、灰塵、全部燈光，最漂亮")}${opt("low","省電","降低解析度與特效，舊手機也順")}${opt("lite","低配","最省：模型減面、小貼圖、關閉抗鋸齒，給比較舊的手機（會重新載入）")}</div><p class="note">目前：${Q.lite?"低配":Q.low?"省電畫質":"高畫質"}</p><div class="group"><span class="group-label">其他</span><div class="chips"><button class="chip" data-act="toggleNpc" aria-pressed="${showNpc}">顯示示範香客</button></div><p class="note">示範香客是電腦角色，不算在殿內人數裡，關掉也能讓畫面更順。</p></div>`); }
+  openSheet("gfx","設定",`<div class="group"><span class="group-label">畫質</span><p class="lead">畫面卡頓或手機發燙時，可以改用省電畫質。</p></div><div class="goods">${opt("auto","自動","進場後自動偵測，太卡會切到省電")}${opt("high","高畫質","光束、灰塵、全部燈光，最漂亮")}${opt("low","省電","降低解析度與特效，舊手機也順")}${opt("lite","低配","最省：模型減面、小貼圖、關閉抗鋸齒，給比較舊的手機（會重新載入）")}</div><p class="note">目前：${Q.lite?"低配":Q.low?"省電畫質":"高畫質"}</p><div class="group"><span class="group-label">其他</span><div class="chips"><button class="chip" data-act="toggleOthers" aria-pressed="${othersShown}">顯示其他玩家</button><button class="chip" data-act="toggleNpc" aria-pressed="${showNpc}">顯示示範香客</button></div><p class="note">示範香客是電腦角色，不算在殿內人數裡，關掉也能讓畫面更順。</p></div>`); }
 HANDLERS.quality=v=>{ if((v==="lite")!==Q.lite){ Q.mode=v; save("mz.q",v); toast(v==="lite"?"切換為低配，重新載入中…":"離開低配，重新載入中…",2500); setTimeout(()=>location.reload(),900); return; } applyQuality(v==="auto"?(perf.done&&Q.low?"low":"high"):v,false); if(v==="auto"){ Q.mode="auto"; save("mz.q","auto"); } openGfx(); toast(v==="low"?"已切換為省電畫質":v==="high"?"已切換為高畫質":"畫質改為自動偵測"); };
 HANDLERS.toggleNpc=(v,b)=>{ showNpc=!showNpc; save("mz.npc",showNpc); b.setAttribute("aria-pressed",String(showNpc)); buildNpcs(); toast(showNpc?"已顯示示範香客":"已隱藏示範香客"); };
 HANDLERS.showPoem=v=>openPoem(+v,true);
@@ -3150,7 +3156,7 @@ HANDLERS.xiaozai=()=>playDipper();
 HANDLERS.zhan=()=>playZhan();
 
 /* ================= 收驚阿嬤 (two grannies by the furnace; each queue is shared through presence, ordered by join time) ================= */
-const SJ={g:[{x:-13.6,z:FZ-3.6,look:[0,11,2,1,8,4,0,1,1,0,1,1,0]},{x:-13.6,z:FZ+3.6,look:[1,2,2,1,8,4,0,1,3,0,0,5,0]}].map(o=>({...o,q:[],serving:null,t0:0}))};
+const SJ={g:[{x:-13.6,z:FZ+3.2,look:[0,11,2,1,8,4,0,1,1,0,1,1,0]},{x:-13.6,z:FZ+6.2,look:[1,2,2,1,8,4,0,1,3,0,0,5,0]}].map(o=>({...o,q:[],serving:null,t0:0}))};
 const sjCam={on:false,i:0}; let mySj=null; // {g, at}
 const sjSlot=(g,k)=>[g.x+1.05+k*.85,g.z];
 SJ.g.forEach((g,i)=>{ const av=new Avatar(g.look,{npc:true,x:g.x,z:g.z,r:Math.PI/2}); av.faceGoal=Math.PI/2; av.hold=1; av.setName("收驚阿嬤"); av.sjBusy=1; g.av=av;
@@ -3158,6 +3164,7 @@ SJ.g.forEach((g,i)=>{ const av=new Avatar(g.look,{npc:true,x:g.x,z:g.z,r:Math.PI
   addHit("sj:"+i,g.x,0,g.z,.5,1.7); });
 function sjBuild(){ SJ.g.forEach((g,i)=>{ const q=[]; if(mySj&&mySj.g===i) q.push({key:"me",me:true,av:meAv,at:mySj.at});
   remotes.forEach((av,id)=>{ if(av.sq&&av.sq[0]===i) q.push({key:id,av,at:av.sq[1]}); });
+  npcs.forEach(n=>{ if(n.sjq&&n.sjq.g===i) q.push({key:n.bkey,av:n,at:n.sjq.at}); });
   q.sort((a,b)=>a.at-b.at||String(a.key).localeCompare(String(b.key))); g.q=q; }); }
 function sjFind(){ if(!mySj) return null; const g=SJ.g[mySj.g]; const k=g.q.findIndex(e=>e.me); return [mySj.g,k<0?g.q.length:k]; }
 function sjMine(){ return !!mySj; }
