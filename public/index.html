@@ -2756,7 +2756,7 @@ let firstVisitPending=firstVisit;
 function openBag(){ let html=`<p class="lead">平安幣每天補到 300。到服務處可以請香、買供品和金紙。</p>`;
   html+=`<div class="goods">${GOODS.map(g=>`<div class="good"><span class="name">${g.name}</span><span class="meta">${g.meta}</span><span class="own">持有 ${bag.items[g.k]||0}</span></div>`).join("")}</div>`;
   html+=`<div class="group"><span class="group-label">收下的籤詩</span>${bag.poems.length?`<div class="chips">${bag.poems.slice(-12).reverse().map(n=>`<button class="chip" data-act="showPoem" data-v="${n}">第${CN_NUM(n)}籤</button>`).join("")}</div>`:`<p class="note">還沒有籤詩。到右前方的籤詩櫃求籤。</p>`}</div>`;
-  html+=accHTML()+nightMarketHTML();
+  html+=accHTML();
   openSheet("bag","背包",html); }
 document.addEventListener("input",e=>{ const k=e.target&&e.target.dataset&&e.target.dataset.vol; if(!k) return; VOL[k]=+e.target.value; save("mz.vol",VOL); const lb=$("#vol"+k); if(lb) lb.textContent=VOL[k]+"%";
   if(k==="m"){ /* the music level follows VOL.m every frame */ } });
