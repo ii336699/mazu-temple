@@ -1523,7 +1523,9 @@ function ridgeTrio(y,z,parent=scene,k=1){ const plat=mat("#2b6fae",{roughness:.5
       for(let i=0;i<8;i++){ const cx=i*64+32; x.fillStyle="#2e9a4e"; x.beginPath(); x.ellipse(cx,h/2,22,13,0,0,Math.PI*2); x.fill(); x.fillStyle="#d8341e"; x.beginPath(); x.arc(cx,h/2,7,0,Math.PI*2); x.fill(); x.strokeStyle="#e8b23c"; x.lineWidth=3; x.beginPath(); x.ellipse(cx,h/2,22,13,0,0,Math.PI*2); x.stroke(); } });
     mesh(new T.PlaneGeometry(24,.5),new T.MeshStandardMaterial({map:texRep(band,6,1),roughness:.6}),0,6.98,z+.035); }
   mesh(new T.PlaneGeometry(3.4,.95),new T.MeshStandardMaterial({map:cvs(1024,280,plaqueDraw("宮后天",false,"#141210","#e7bd63","#c9973f")),roughness:.5}),0,6.25,HZ+.25);
-  for(const s of [-1,1]){ const lion=buildLion(s,stone); lion.position.set(s*2.75,0,HZ+3.3); lion.rotation.y=-s*.18; scene.add(lion); }
+  for(const s of [-1,1]){ const lion=buildLion(s,stone); lion.position.set(s*2.75,0,HZ+3.3); lion.rotation.y=-s*.18; scene.add(lion); lion.userData.noMerge=1;
+    loadShared(s>0?"shishim":"shishif",m=>{ const g=fitModel(m.clone(),2.1); g.position.set(s*2.75,0,HZ+3.3); g.rotation.y=-s*.18; g.userData.noMerge=1; scene.add(g); if(lion.parent) lion.parent.remove(lion);
+      regEdit(s>0?"lion-R":"lion-L",s>0?"門前石獅（龍邊・公）":"門前石獅（虎邊・母）",g); }); }
   for(const x of [-6.2,-2.2,2.2,6.2]){ const g=new T.Group(); g.position.set(x,5.8,HZ+2.9); scene.add(g); const b=new T.Mesh(new T.SphereGeometry(.4,18,12),lanternMat); b.scale.y=.86; g.add(b);
     for(const y of [.34,-.34]){ const c=new T.Mesh(new T.CylinderGeometry(.19,.19,.08,14),GOLD()); c.position.y=y; g.add(c); } const sp=new T.Sprite(glowMat); sp.scale.set(2.2,2.2,1); g.add(sp); }
   // hall roof: two curved slopes with swept-up corners, gables that follow the curve, a 燕尾 ridge with dragons, a pearl and 福祿壽
@@ -2063,8 +2065,23 @@ scene.add(cushions,rims); cushions.userData.seats=true;
   let placed=0; for(let i=0;i<120&&placed<18;i++){ const x=rand(30,62), z=rand(-55,55); if(Math.abs(z+.22*x)<14) continue; placed++; const t=new T.Group(); t.position.set(x,0,z); t.scale.setScalar(rand(.7,1.1)); scene.add(t); cyl(.18,.3,3.2,dark,0,1.6,0,t,6);
     for(let k=0;k<3;k++){ const c=mesh(new T.ConeGeometry(rand(1.2,1.7),rand(2.2,3),8),leaf,rand(-.4,.4),2.8+k*1.1,rand(-.4,.4),t); } }
   // low courtyard wall so the horizon reads as a temple yard
-  box(1,1.4,120,mat("#2a1611",{roughness:1}),25.6,.7,0); box(1,1.4,120,mat("#2a1611",{roughness:1}),-25.6,.7,0);
-  for(let z=-58;z<=58;z+=4) for(const xx of [-25.6,25.6]) box(1.2,.25,1.2,mat("#3a1d14",{roughness:1}),xx,1.5,z);
+  /* grounds boundary: the chair's carved stone balustrade (石欄圍牆), repeated end to end along both sides */
+  loadShared("weiqiang",m=>{ m.updateMatrixWorld(true); let src=null; m.traverse(q=>{ if(q.isMesh&&!src) src=q; }); if(!src) return; const bb=new T.Box3().setFromObject(m), sz=bb.getSize(new T.Vector3()), c=bb.getCenter(new T.Vector3());
+    const H=1.35, k=H/sz.y, L=sz.x*k, z0=-46, z1=HZ+YX+24, n=Math.ceil((z1-z0)/L);
+    const fit=new T.Matrix4().makeScale(k,k,k).multiply(new T.Matrix4().makeTranslation(-c.x,-bb.min.y,-c.z)).multiply(src.matrixWorld), M=new T.Matrix4(), R=new T.Matrix4();
+    for(const sd of [-1,1]){ const im=new T.InstancedMesh(src.geometry,src.material,n); for(let i=0;i<n;i++){ R.makeRotationY(-sd*Math.PI/2); M.makeTranslation(sd*25.6,0,z0+L*(i+.5)).multiply(R).multiply(fit); im.setMatrixAt(i,M); }
+      im.userData.noMerge=1; im.frustumCulled=false; scene.add(im); } });
+  /* 八角花窗: the chair's carved octagonal window set into the walls of every part of the temple, in pairs left and right */
+  { const spots=[ // [id, label, x(龍邊), y, z, facing (0 = +z)]
+      ["hc-main","正殿",HX-.32,5.3,.5,-Math.PI/2], /* above the middle lattice window (the 光明燈 cabinet stands against the wall lower down) */
+      ["hc-side","財神殿／月老殿",20.4,2.6,SHZ0+.32,0],
+      ["hc-garden","文昌殿／福德祠",20.3,2.4,GH.z1-.32,Math.PI],
+      ["hc-plaza","廟埕（文昌殿／福德祠外牆）",20.3,2.4,GH.z1+.32,0],
+      ["hc-yard","後埕",RS.x1-.12,2.0,-23.5,-Math.PI/2],
+      ["hc-rear","觀音殿",8.4,2.7,RH.z0+.32,0],
+      ["hc-q","斗姥殿／地藏殿",20.6,2.4,RS.z0+.32,0] ];
+    loadShared("huachuang",m=>{ spots.forEach(([id,lab,x,y,z,ry])=>{ for(const sd of [-1,1]){ const g=fitModel(m.clone(),1.3); const w=new T.Group(); w.add(g); g.position.y-=.65; w.position.set(sd*x,y,z); w.rotation.y=sd>0?ry:-ry; w.userData.noMerge=1; scene.add(w);
+        regEdit(id+(sd>0?"-R":"-L"),"八角花窗・"+lab+(sd>0?"（龍邊）":"（虎邊）"),w); } }); }); }
   for(let i=0;i<14;i++){ const x=rand(-58,-30), z=rand(-40,40); /* kept well clear of the 月老殿 (x ≥ -19.2) so no tree pokes through it */ const t=new T.Group(); t.position.set(x,0,z); scene.add(t); for(let k=0;k<3;k++) mesh(new T.SphereGeometry(rand(1.6,2.6),10,8),leaf,rand(-1,1),rand(3,5),rand(-1,1),t); }
   function hallSil(x,z,w,ry){ const g=new T.Group(); g.position.set(x,0,z); g.rotation.y=ry; scene.add(g); box(w,4,6,dark,0,2,0,g);
     for(const s of [-1,1]){ const r=box(w+1.2,.3,4.2,roof,0,5.2,s*1.6,g); r.rotation.x=s*.45; }
@@ -4883,7 +4900,7 @@ $("#hbBtn").onclick=()=>{ ensureAudio(); hbThrow(); };
 /* ================= 建築模式 (chair only): move, turn and resize the roofs and decorations, or add more of the supplied models.
    The layout is saved on the server, so every player sees it; walking and collisions don't change. ================= */
 const BUILD={on:false, items:new Map(), layout:{mods:{},adds:[]}, sel:null, helper:null, step:.5, place:false, n:0};
-const BUILD_MODELS=[["roof1","燕尾屋頂"],["roof3","華麗屋頂（無脊飾）"],["roof2","單坡屋簷"],["decor:ridge","屋脊雙龍"],["decor:fls","福祿壽"],["decor:pillar","龍柱"],["decor:win","雕花窗"],["decor:panel","石雕（人物）"],["decor:panel2","石雕（麒麟）"],["decor:lantern","黃燈籠"],["decor:door","門神門"],["decor:leafL","門神門扇（左）"],["decor:leafR","門神門扇（右）"],
+const BUILD_MODELS=[["shishim","石獅（公・踩球）"],["shishif","石獅（母・帶小獅）"],["huachuang","八角花窗"],["weiqiang","石欄圍牆"],["roof1","燕尾屋頂"],["roof3","華麗屋頂（無脊飾）"],["roof2","單坡屋簷"],["decor:ridge","屋脊雙龍"],["decor:fls","福祿壽"],["decor:pillar","龍柱"],["decor:win","雕花窗"],["decor:panel","石雕（人物）"],["decor:panel2","石雕（麒麟）"],["decor:lantern","黃燈籠"],["decor:door","門神門"],["decor:leafL","門神門扇（左）"],["decor:leafR","門神門扇（右）"],
   ["mazu","媽祖"],["qianli","千里眼"],["shunfeng","順風耳"],["xuantian","玄天上帝"],["guangong","關聖帝君"],["caishen","財神爺"],["yuelao","月下老人"],["huye","虎爺"],
   ["guanyin2","觀世音菩薩"],["guanyin","觀音（噴泉立像）"],["zhusheng","註生娘娘"],["jiutian","九天玄女"],["dizang","地藏王菩薩"],["doumu","斗姥元君"],["tudi","土地公"],["wenchang","文昌帝君"],
   ["tiangong","天公爐"],["jinlu","金爐"],["stage","歌仔戲台"],["bdx","布袋戲台"],
@@ -4922,7 +4939,7 @@ const fmt=(v,d=2)=>(+v).toFixed(d);
 function buildPanel(){ const P=$("#buildPanel"); document.body.classList.toggle("building",BUILD.on); if(BUILD.on&&BUILD.sel){ const it=BUILD.items.get(BUILD.sel); buildNoSink(it); buildMirror(it); } if(!BUILD.on){ P.hidden=true; return; } P.hidden=false; const it=BUILD.items.get(BUILD.sel);
   const list=[...BUILD.items.values()].sort((a,b)=>a.label.localeCompare(b.label,"zh-Hant"));
   let h=`<div class="bp-head"><b>🏗️ 建築模式</b><span><button class="chip" data-bp="undo">↶ 復原</button> <button class="chip" data-bp="close">完成</button></span></div>
-    <div class="bp-row"><select id="bpAddSel">${[["屋頂與裝飾",k=>/^roof|^decor/.test(k)],["神像",k=>!/^roof|^decor|^stall|^tiangong|^jinlu|^stage|^bdx/.test(k)],["香爐與戲台",k=>/^tiangong|^jinlu|^stage|^bdx/.test(k)],["夜市攤位",k=>/^stall/.test(k)]].map(([g,f])=>`<optgroup label="${g}">${BUILD_MODELS.filter(([k])=>f(k)).map(([k,n])=>`<option value="${k}">${n}</option>`).join("")}</optgroup>`).join("")}</select><button class="chip" data-bp="add">＋ 放在我前面</button></div>
+    <div class="bp-row"><select id="bpAddSel">${[["屋頂與裝飾",k=>/^roof|^decor|^shishi|^huachuang|^weiqiang/.test(k)],["神像",k=>!/^roof|^decor|^shishi|^huachuang|^weiqiang|^stall|^tiangong|^jinlu|^stage|^bdx/.test(k)],["香爐與戲台",k=>/^tiangong|^jinlu|^stage|^bdx/.test(k)],["夜市攤位",k=>/^stall/.test(k)]].map(([g,f])=>`<optgroup label="${g}">${BUILD_MODELS.filter(([k])=>f(k)).map(([k,n])=>`<option value="${k}">${n}</option>`).join("")}</optgroup>`).join("")}</select><button class="chip" data-bp="add">＋ 放在我前面</button></div>
     <div class="bp-row"><select id="bpPick"><option value="">— 點畫面上的物件，或從這裡選 —</option>${list.map(x=>`<option value="${x.id}" ${x.id===BUILD.sel?"selected":""}>${esc(x.label)}${x.add?"（新增）":""}</option>`).join("")}</select></div>`;
   if(it){ const o=it.obj, sz=[0,1,2].map(i=>it.base[i]*Math.abs(o.scale.getComponent(i)));
     const num=(k,v,d=2)=>`<button class="bp-b" data-bp="${k}" data-d="-1">－</button><input class="bp-n" data-bpn="${k}" inputmode="decimal" value="${fmt(v,d)}"><button class="bp-b" data-bp="${k}" data-d="1">＋</button>`;
