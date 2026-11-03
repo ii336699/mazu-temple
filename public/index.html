@@ -462,9 +462,10 @@ let LOWPOLY=false;
 { const opaq=t=>{ if(t._opaque) return t._opaque; const src=t.image; if(!src||!src.getContext) return t; const c=document.createElement("canvas"); c.width=src.width; c.height=src.height;
     // each pixel becomes its own light value (colour turned linear, times its alpha) on black, so the glow is exactly as bright as before
     const x=c.getContext("2d"); let d; try{ d=src.getContext("2d").getImageData(0,0,c.width,c.height); }catch(e){ return t; } const D=d.data, L=v=>{ v/=255; return v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4); };
-    for(let i=0;i<D.length;i+=4){ const al=D[i+3]/255; D[i]=Math.round(L(D[i])*al*255); D[i+1]=Math.round(L(D[i+1])*al*255); D[i+2]=Math.round(L(D[i+2])*al*255); D[i+3]=255; }
+    const E=v=>v<=.0031308?v*12.92:1.055*Math.pow(v,1/2.4)-.055; // kept in sRGB steps so the faint outer edge of a glow survives
+    for(let i=0;i<D.length;i+=4){ const al=D[i+3]/255; D[i]=Math.round(E(L(D[i])*al)*255); D[i+1]=Math.round(E(L(D[i+1])*al)*255); D[i+2]=Math.round(E(L(D[i+2])*al)*255); D[i+3]=255; }
     x.putImageData(d,0,0); const o=new T.CanvasTexture(c);
-    o.encoding=T.LinearEncoding; o.wrapS=t.wrapS; o.wrapT=t.wrapT; o.repeat.copy(t.repeat); o.offset.copy(t.offset); o.anisotropy=t.anisotropy; t._opaque=o; return o; };
+    o.encoding=T.sRGBEncoding; o.wrapS=t.wrapS; o.wrapT=t.wrapT; o.repeat.copy(t.repeat); o.offset.copy(t.offset); o.anisotropy=t.anisotropy; t._opaque=o; return o; };
   for(const name of ["SpriteMaterial","MeshBasicMaterial","PointsMaterial"]){ const C=T[name]; const W=function(p){ if(p&&p.blending===T.AdditiveBlending&&p.map&&p.map.isCanvasTexture) p=Object.assign({},p,{map:opaq(p.map)}); return new C(p); }; W.prototype=C.prototype; T[name]=W; } }
 const $ = s => document.querySelector(s);
 
@@ -810,7 +811,7 @@ const latticeTex=cvs(256,256,(x,w,h)=>{ x.clearRect(0,0,w,h); x.strokeStyle="#ff
 latticeTex.encoding=T.LinearEncoding;
 const gapTex=cvs(256,256,(x,w,h)=>{ x.fillStyle="#fff"; x.fillRect(0,0,w,h); x.globalCompositeOperation="destination-out"; x.drawImage(latticeTex.image,0,0); x.globalCompositeOperation="source-over";
   const g=x.createRadialGradient(w/2,h/2,10,w/2,h/2,w*.75); g.addColorStop(0,"rgba(0,0,0,0)"); g.addColorStop(1,"rgba(0,0,0,.9)"); x.fillStyle=g; x.globalCompositeOperation="destination-out"; x.fillRect(0,0,w,h); });
-const glowTex=cvs(128,128,(x,w,h)=>{ const g=x.createRadialGradient(64,64,0,64,64,64); g.addColorStop(0,"rgba(255,230,180,1)"); g.addColorStop(.25,"rgba(255,170,90,.55)"); g.addColorStop(1,"rgba(255,120,40,0)"); x.fillStyle=g; x.fillRect(0,0,w,h); });
+const glowTex=cvs(128,128,(x,w,h)=>{ const g=x.createRadialGradient(64,64,0,64,64,64); g.addColorStop(0,"rgba(255,240,215,1)"); g.addColorStop(.18,"rgba(255,222,175,.62)"); g.addColorStop(.45,"rgba(255,205,155,.26)"); g.addColorStop(.75,"rgba(255,198,150,.08)"); g.addColorStop(1,"rgba(255,195,150,0)"); x.fillStyle=g; x.fillRect(0,0,w,h); });
 const softTex=cvs(64,64,(x,w,h)=>{ const g=x.createRadialGradient(32,32,0,32,32,32); g.addColorStop(0,"rgba(255,255,255,1)"); g.addColorStop(1,"rgba(255,255,255,0)"); x.fillStyle=g; x.fillRect(0,0,w,h); });
 const shadowTex=cvs(64,64,(x,w,h)=>{ const g=x.createRadialGradient(32,32,0,32,32,32); g.addColorStop(0,"rgba(0,0,0,.6)"); g.addColorStop(1,"rgba(0,0,0,0)"); x.fillStyle=g; x.fillRect(0,0,w,h); });
 const curtainTex=cvs(128,256,(x,w,h)=>{ const g=x.createLinearGradient(0,0,w,0); for(let i=0;i<=8;i++) g.addColorStop(i/8, i%2?"#e8b53a":"#b98420"); x.fillStyle=g; x.fillRect(0,0,w,h);
@@ -2002,16 +2003,21 @@ scene.add(cushions,rims); cushions.userData.seats=true;
     box(w,.4,.4,roof,0,6.1,0,g); for(const s of [-1,1]) for(const k of [-1,1]){ const t=box(1.6,.22,.22,roof,s*(w/2+.6),6.5,k*.12,g); t.rotation.z=s*.6; t.rotation.y=k*s*.3; } }
   /* night silhouettes outside the walls, in three layers: village houses close by, a town further out, a city skyline at the edge.
      Each layer is one batch of boxes with a lit-window picture, so it costs three draw calls. */
-  { const winTex=(cols,rows,cool,dens)=>cvs(cols*16,rows*16,(x,w,h)=>{ x.fillStyle="#07060c"; x.fillRect(0,0,w,h); for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){ if(Math.random()>dens) continue; x.fillStyle=Math.random()<cool?"#cfe2ff":Math.random()<.5?"#ffd98a":"#ffbf6a"; x.fillRect(c*16+3,r*16+4,10,8); } }); // few, big windows: they have to read from far away
+  { const winTex=(cols,rows,cool,dens)=>{ const t=cvs(cols*16,rows*16,(x,w,h)=>{ x.fillStyle="#0a0912"; x.fillRect(0,0,w,h); for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){ if(Math.random()>dens) continue; x.fillStyle=Math.random()<cool?"#e6f0ff":Math.random()<.5?"#ffe7a8":"#ffd27a"; x.fillRect(c*16+2,r*16+2,12,11); } });
+      t.generateMipmaps=false; t.minFilter=T.LinearFilter; return t; }; // no blurring with distance, or the windows fade into the wall // few, big windows: they have to read from far away
     const layer=(n,r0,r1,h0,h1,w0,w1,tint,tex,skip)=>{ const m=new T.MeshBasicMaterial({map:tex,color:new T.Color(tint)}); const geo=new T.BoxGeometry(1,1,1); geo.translate(0,.5,0);
       const im=new T.InstancedMesh(geo,m,n), M=new T.Matrix4(), Q=new T.Quaternion(), S=new T.Vector3(), P=new T.Vector3(); let k=0;
       for(let t=0;t<n*4&&k<n;t++){ const a=Math.random()*Math.PI*2, r=rand(r0,r1), x=Math.cos(a)*r, z=Math.sin(a)*r*1.05+8; if(skip(x,z)) continue;
         const w=rand(w0,w1), h=rand(h0,h1); Q.setFromAxisAngle(S.set(0,1,0),-a+Math.PI/2+rand(-.2,.2)); im.setMatrixAt(k++,M.compose(P.set(x,-.05,z),Q,S.set(w,h,rand(w0,w1)))); }
       im.count=k; im.userData.noMerge=1; im.frustumCulled=false; scene.add(im); };
     const clear=(x,z)=>Math.abs(x)<34&&z>-62&&z<70; // keep clear of the temple grounds
-    layer(90,64,92,3,7,5,10,"#ffffff",winTex(2,2,.05,.45),clear);        // 鄉村: low houses, a few warm windows
-    layer(70,96,118,9,26,7,14,"#f2f0ff",winTex(3,5,.25,.5),clear);      // 小鎮
-    layer(60,122,142,26,62,9,18,"#e2e8ff",winTex(4,10,.45,.55),clear); }   // 城市天際線
+    layer(90,64,92,3,7,5,10,"#ffffff",winTex(2,2,.05,.6),clear);        // 鄉村: low houses, a few warm windows
+    layer(70,96,118,9,26,7,14,"#ffffff",winTex(3,5,.25,.7),clear);      // 小鎮
+    layer(60,122,142,26,62,9,18,"#ffffff",winTex(3,8,.45,.8),clear);
+    // the glow of a city at night, low on the horizon behind the skyline
+    { const gt=cvs(8,128,(x,w,h)=>{ const g=x.createLinearGradient(0,0,0,h); g.addColorStop(0,"rgba(0,0,0,1)"); g.addColorStop(.55,"rgb(70,40,30)"); g.addColorStop(1,"rgb(150,90,50)"); x.fillStyle=g; x.fillRect(0,0,w,h); });
+      const ring=new T.Mesh(new T.CylinderGeometry(146,146,55,48,1,true),new T.MeshBasicMaterial({map:gt,transparent:true,blending:T.AdditiveBlending,depthWrite:false,side:T.BackSide,fog:false}));
+      ring.position.set(0,26,8); ring.userData.noMerge=1; ring.renderOrder=-1; scene.add(ring); } }   // 城市天際線
   hallSil(0,46+YX,16,0); /* the hall behind the Guanyin wall moves back with the longer 廟埕 */ hallSil(36,-12,10,Math.PI/2); hallSil(-36,14,12,Math.PI/2);
 
  }
