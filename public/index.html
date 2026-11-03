@@ -4902,7 +4902,7 @@ function buildPanel(){ const P=$("#buildPanel"); document.body.classList.toggle(
     <div class="bp-row"><button class="chip" data-bp="all" data-d="-1">整體縮小 5%</button><button class="chip" data-bp="all" data-d="1">整體放大 5%</button></div>
     <div class="bp-row"><button class="chip ${BUILD.place?"on":""}" data-bp="place">📍 點地面放到那裡：${BUILD.place?"開":"關"}</button><button class="chip" data-bp="here">移到我前面</button></div>
     <div class="bp-row"><button class="chip bp-del" data-bp="del">🗑 刪除</button>${it.add?`<button class="chip" data-bp="dup">複製一個</button>`:`${o.visible?"":`<button class="chip" data-bp="hide">顯示回來</button>`}<button class="chip" data-bp="reset">回到原本位置</button>`}</div>`; }
-  h+=`<button class="primary wide" data-bp="save">💾 固定（存起來，所有人都看得到）</button><p class="bp-note">移動不會改變走路的範圍；固定後我也可以把它寫進遊戲裡。</p>`;
+  h+=`<button class="primary wide" data-bp="save">💾 固定（存起來，所有人都看得到）</button><button class="wide" data-bp="export">📋 複製配置碼（貼給 Claude 寫進遊戲）</button><p class="bp-note">移動不會改變走路的範圍；固定後我也可以把它寫進遊戲裡。</p>`;
   P.innerHTML=h; }
 /* keeping objects from sinking into each other: compares boxes around each item. "貼到下方物件上" sets the selected item onto the
    highest thing under it; with 防穿模 on, anything pushed down into an item below stops on its top. */
@@ -4923,6 +4923,13 @@ function buildSet(k,v){ const it=BUILD.items.get(BUILD.sel); if(!it||!Number.isF
   if(k==="px") o.position.x=v; else if(k==="py") o.position.y=v; else if(k==="pz") o.position.z=v; else if(k==="ry") o.rotation.y=v*Math.PI/180;
   else { const i={sx:0,sy:1,sz:2}[k]; if(i!=null&&v>0) o.scale.setComponent(i,(Math.sign(o.scale.getComponent(i))||1)*v/it.base[i]); } buildPanel(); }
 function buildFront(){ const d=3, x=meAv.pos.x+Math.sin(meAv.rotY)*d, z=meAv.pos.y+Math.cos(meAv.rotY)*d; return [x,z]; }
+/* the whole layout as one line of text, so it can be pasted back to be written into the game itself */
+async function buildExport(){ const L=buildCollect(); BUILD.layout=L; if(!USE_CF) save("mz.layout",L); const txt="MZLAYOUT:"+JSON.stringify(L); let ok=false;
+  try{ await navigator.clipboard.writeText(txt); ok=true; }catch(e){}
+  let box=document.getElementById("bpExport"); if(box) box.remove(); box=document.createElement("div"); box.id="bpExport";
+  box.style.cssText="position:fixed;left:12px;right:12px;bottom:12px;z-index:99999;background:#2a1410;border:1px solid #d6a24a;border-radius:12px;padding:12px;color:#f6e7c8;font-size:14px";
+  box.innerHTML=`<div style="margin-bottom:6px">${ok?"已複製！直接貼到跟 Claude 的對話裡。":"請長按下面的文字全選複製，再貼到跟 Claude 的對話裡。"}（${Object.keys(L.mods).length} 個調整、${L.adds.length} 個新增）</div><textarea readonly style="width:100%;height:90px;font-size:11px;background:#140a08;color:#f6e7c8;border:1px solid #6a3a20;border-radius:6px"></textarea><button style="margin-top:6px;width:100%;padding:8px;border-radius:8px;border:0;background:#d6a24a;color:#2a1410;font-weight:700">關閉</button>`;
+  document.body.appendChild(box); const ta=box.querySelector("textarea"); ta.value=txt; ta.onclick=()=>ta.select(); box.querySelector("button").onclick=()=>box.remove(); if(!ok) setTimeout(()=>ta.select(),50); }
 async function buildSave(){ const L=buildCollect(); BUILD.layout=L;
   if(!USE_CF){ save("mz.layout",L); toast("已固定（單機版存在這台裝置）",2600); return; }
   const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return; }
@@ -4933,7 +4940,7 @@ function buildPush(){ const it=BUILD.items.get(BUILD.sel); if(it){ it.touched=tr
 function buildUndo(){ const h=BUILD.hist||[]; const snap=h.pop(); if(!snap){ toast("沒有可以復原的步驟"); return; } const keep=BUILD.layout; BUILD.layout=snap; buildApplyAll(); BUILD.layout=keep; buildSel(BUILD.items.has(snap.sel)?snap.sel:null); toast("已復原上一步"); }
 function buildAct(a,el,rep){ const d=+(el.dataset.d||0);
   if(a==="undo"){ buildUndo(); return; }
-  if(!rep&&!["close","step","save","place","sym","snap"].includes(a)&&(a==="add"||BUILD.sel)) buildPush();
+  if(!rep&&!["close","step","save","place","sym","snap","export"].includes(a)&&(a==="add"||BUILD.sel)) buildPush();
   if(a==="close"){ BUILD.on=false; buildSel(null); buildPanel(); remerge(); toast("離開建築模式。記得按「固定」才會存起來",2600); return; }
   if(a==="add"){ const m=$("#bpAddSel").value, [x,z]=buildFront(); const id="add"+Date.now().toString(36)+(BUILD.n++); const def=m.startsWith("roof")?[6,3,4]:m.startsWith("decor:")?[2,2,2]:/^stall/.test(m)?[3,3,3]:/^stage|^bdx/.test(m)?[5,5,5]:/^tiangong|^jinlu/.test(m)?[2.6,2.6,2.6]:[1.8,1.8,1.8];
     const g=buildMakeAdd({id,m,p:[x,0,z],r:meAv.rotY+Math.PI,s:def});
@@ -4943,6 +4950,7 @@ function buildAct(a,el,rep){ const d=+(el.dataset.d||0);
   if(a==="sym"){ BUILD.sym=!BUILD.sym; buildPanel(); return; }
   if(a==="snap"){ BUILD.snap=!BUILD.snap; buildPanel(); return; }
   if(a==="save"){ buildSave(); return; }
+  if(a==="export"){ buildExport(); return; }
   const it=BUILD.items.get(BUILD.sel); if(!it) return;
   if(a==="place"){ BUILD.place=!BUILD.place; buildPanel(); return; }
   if(a==="drop"){ buildDrop(it); buildPanel(); return; }
