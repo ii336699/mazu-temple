@@ -1200,7 +1200,7 @@ function buildDeity(o){ const g=new T.Group();
 const FONT_FIX=[];
 function fontRedraw(tex,draw,text){ FONT_FIX.push([tex,draw,text]); }
 function plaqueTexH(t){ const d=plaqueDraw(t,false,"#141210","#e7bd63","#c9973f"); const tx=cvs(512,136,d); fontRedraw(tx,d,t); return tx; }
-function buildSideShrine(side,key,label,deity,at){ const SX=at?at[0]:side*8.37, SZ=at?at[1]:-HZ+.75, RY=at?-side*Math.PI/2:0; const g=new T.Group(); g.position.set(SX,0,SZ); g.rotation.y=RY; g.scale.setScalar(1.3); scene.add(g);
+function buildSideShrine(side,key,label,deity,at){ const SX=at?at[0]:side*8.37, SZ=at?at[1]:-HZ+.75, RY=at?(at.length>2?at[2]:-side*Math.PI/2):0; const g=new T.Group(); g.position.set(SX,0,SZ); g.rotation.y=RY; g.scale.setScalar(1.3); scene.add(g);
   const redM=mat("#9c1d13",{roughness:.4}), goldP=mat("#d6a24a",{metalness:.85,roughness:.3}), goldM=new T.MeshStandardMaterial({map:goldCarvedTex,metalness:.75,roughness:.35});
   const W=2.5, D=1.3;
   box(W,.75,D,redM,0,.375,0,g); box(W+.1,.06,D+.06,goldP,0,.76,0,g);
@@ -1253,7 +1253,9 @@ function sideHall(side,label){ const sx=v=>side*v, W=SHX1-SHX0, D=SHZ1-SHZ0, zc=
     box(ox0-a0,SHH,.4,wallM,sx((a0+ox0)/2),SHH/2,z); box(a1-ox1,SHH,.4,wallM,sx((ox1+a1)/2),SHH/2,z);
     box(ox1-ox0,oy0,.4,wallM,sx((ox0+ox1)/2),oy0/2,z); box(ox1-ox0,SHH-oy1,.4,wallM,sx((ox0+ox1)/2),oy1+(SHH-oy1)/2,z); };
   const win=(z,x0,x1,y0,y1)=>{ const w=mesh(new T.PlaneGeometry(x1-x0,y1-y0),latticeMat,sx((x0+x1)/2),(y0+y1)/2,z); for(const yy of [y0-.08,y1+.08]) box(x1-x0+.2,.17,.5,GOLD(),sx((x0+x1)/2),yy,z); for(const xx of [x0-.06,x1+.06]) box(.15,y1-y0+.3,.5,GOLD(),sx(xx),(y0+y1)/2,z); };
-  wallX(SHZ0,16.6,18.4,1.3,3.5); win(SHZ0,16.6,18.4,1.3,3.5);
+  { const z=SHZ0, d0=13.05, d1=14.75; box(d0-SHX0,SHH,.4,wallM,sx((SHX0+d0)/2),SHH/2,z); box(d1-d0,SHH-2.9,.4,wallM,sx((d0+d1)/2),2.9+(SHH-2.9)/2,z); box(d1-d0+.3,.2,.56,goldP,sx((d0+d1)/2),2.92,z);
+    box(16.6-d1,SHH,.4,wallM,sx((d1+16.6)/2),SHH/2,z); box(1.8,1.3,.4,wallM,sx(17.5),.65,z); box(1.8,SHH-3.5,.4,wallM,sx(17.5),3.5+(SHH-3.5)/2,z); box(SHX1+.2-18.4,SHH,.4,wallM,sx((18.4+SHX1+.2)/2),SHH/2,z); }
+  win(SHZ0,16.6,18.4,1.3,3.5); // back wall: a doorway to the passage behind (後殿) and the lattice window
   // front wall: doorway to the path, plus a lattice window on the far side of the door
   const dx0=SHXC-SHDOOR/2, dx1=SHXC+SHDOOR/2;
   box(dx0-SHX0,SHH,.4,wallM,sx((SHX0+dx0)/2),SHH/2,SHZ1);
@@ -1424,6 +1426,55 @@ function ridgeTrio(y,z,parent=scene,k=1){ const plat=mat("#2b6fae",{roughness:.5
     for(const sd of [-1,1]) ridgeDragon(sd,y0+rise+.45,0,scene,1.5);
     ridgeTrio(y0+rise+.45,0,scene,1.5); }
 }
+/* ================= 後殿: behind the main hall, reached from each 偏殿 through a back door and a covered side passage =================
+   Layout (looking at the temple from the courtyard):  文昌殿 | 臨水夫人 | 觀音佛祖 | 三官大帝 | 太歲殿, all opening onto a 迴廊
+   that runs right across behind the main hall. 龍邊 (the deities' left) is +x. */
+const REAR={x:[-19.6,-13.6,-6,6,13.6,19.6], z0:-15.4, zc:-18.8, zb:-28.8, H:6.8, CH:4.0,
+  rooms:[{key:"wenchang",label:"文昌殿",god:"文昌帝君"},{key:"linshui",label:"臨水夫人",god:"臨水夫人"},{key:"guanyin",label:"觀音佛祖",god:"觀音佛祖"},{key:"sanguan",label:"三官大帝",god:"三官大帝"},{key:"taisui",label:"太歲殿",god:"太歲星君"}]};
+function rearRoom(x){ for(let i=0;i<5;i++) if(x<REAR.x[i+1]) return i; return 4; }
+const rearCx=zn=>{ const i=+zn.slice(1); return (REAR.x[i]+REAR.x[i+1])/2; };
+setTimeout(()=>Object.assign(CENSER_INFO,{wenchang:["文昌帝君","後殿最左邊的文昌殿。主掌文運功名，考試、升學、求職都可以來拜。"],linshui:["臨水夫人","後殿虎邊。順天聖母陳靖姑，護佑婦女生產平安、孩子健康長大。"],
+  guanyin:["觀音佛祖","後殿正中。大慈大悲、救苦救難，祈求平安、消災、心願順遂。"],sanguan:["三官大帝","後殿龍邊。天官賜福、地官赦罪、水官解厄。"],taisui:["太歲星君","後殿最右邊的太歲殿。犯太歲或想求流年平安，可以來拜太歲。"]}),0);
+{ const k=Q.lite; const wallM=new T.MeshStandardMaterial({map:texRep(brickTex,4,2.4),roughness:.8}), inWall=mat("#6a1a10",{roughness:.85}), stoneB=mat("#8f897f",{roughness:.85}), redM=mat("#9c1d13",{roughness:.45}), goldP=mat("#d6a24a",{metalness:.85,roughness:.3});
+  const floorM=new T.MeshStandardMaterial({map:floorTex,roughness:.3}), ceilM=mat("#2b130c",{roughness:.9,side:T.DoubleSide});
+  const flr=(x0,x1,z0,z1)=>{ const f=mesh(new T.PlaneGeometry(x1-x0,z1-z0),floorM,(x0+x1)/2,.006,(z0+z1)/2); f.rotation.x=-Math.PI/2; f.userData.floor=true; f.userData.noMerge=1; return f; };
+  const ceil=(x0,x1,z0,z1,y)=>{ const c=mesh(new T.PlaneGeometry(x1-x0,z1-z0),ceilM,(x0+x1)/2,y,(z0+z1)/2); c.rotation.x=Math.PI/2; };
+  const W0=REAR.x[0], W1=REAR.x[5];
+  // the 迴廊: floor, ceiling, outer end walls, red columns along the room side, lanterns
+  flr(W0,W1,REAR.zc,REAR.z0); ceil(W0,W1,REAR.zc,REAR.z0,REAR.CH);
+  for(const s of [-1,1]){ box(.4,REAR.H,REAR.z0-REAR.zb+.4,inWall,s*(W1+.2),REAR.H/2,(REAR.z0+REAR.zb)/2); }
+  for(let x=-17.6;x<=17.7;x+=3.2){ cyl(.2,.2,REAR.CH,redM,x,REAR.CH/2,REAR.zc+.15,scene,12); cyl(.3,.32,.3,stoneB,x,.15,REAR.zc+.15,scene,12); }
+  for(let x=-15.2;x<=15.3;x+=7.6){ const g=new T.Group(); g.position.set(x,3.1,(REAR.z0+REAR.zc)/2); scene.add(g); const b=new T.Mesh(new T.SphereGeometry(.34,16,12),lanternMat); b.scale.y=.86; g.add(b); const sp=new T.Sprite(glowMat); sp.scale.set(1.8,1.8,1); g.add(sp); }
+  // the block between the passage and the outer wall on each side (廂房), closed, brick outside
+  for(const s of [-1,1]){ box(19.8-15.8,REAR.H,REAR.z0-SHZ0,inWall,s*(15.8+(19.8-15.8)/2),REAR.H/2,(REAR.z0+SHZ0)/2); }
+  // side passages (護龍走道) from each 偏殿 back door down to the 迴廊
+  for(const s of [-1,1]){ flr(s>0?12.2:-15.8,s>0?15.8:-12.2,REAR.z0,SHZ0); ceil(s>0?12.2:-15.8,s>0?15.8:-12.2,REAR.z0,SHZ0,REAR.CH-.2);
+    for(let z=-9;z>=-14.5;z-=2.7){ const g=new T.Group(); g.position.set(s*14,2.9,z); scene.add(g); const b=new T.Mesh(new T.SphereGeometry(.26,14,10),lanternMat); b.scale.y=.86; g.add(b); const sp=new T.Sprite(glowMat); sp.scale.set(1.3,1.3,1); g.add(sp); } }
+  // the five rooms: dividing walls, back wall, ceiling, a beam with the name plaque over each open front, a shrine with its deity
+  box(W1-W0+.8,REAR.H,.4,inWall,0,REAR.H/2,REAR.zb-.2); { const bp=mesh(new T.PlaneGeometry(W1-W0+.8,REAR.H),new T.MeshStandardMaterial({map:texRep(brickTex,21,2.4),roughness:.8}),0,REAR.H/2,REAR.zb-.41); bp.rotation.y=Math.PI; } // brick on the outside only
+  for(let i=1;i<5;i++) box(.4,REAR.H,REAR.zc-REAR.zb,inWall,REAR.x[i],REAR.H/2,(REAR.zc+REAR.zb)/2);
+  REAR.rooms.forEach((r,i)=>{ const x0=REAR.x[i], x1=REAR.x[i+1], cx=(x0+x1)/2, w=x1-x0;
+    flr(x0,x1,REAR.zb,REAR.zc); ceil(x0,x1,REAR.zb,REAR.zc,REAR.H-.05);
+    box(w,REAR.H-REAR.CH,.4,redM,cx,REAR.CH+(REAR.H-REAR.CH)/2,REAR.zc); box(w,.14,.5,goldP,cx,REAR.CH,REAR.zc);
+    mesh(new T.PlaneGeometry(Math.min(2.6,w*.5),.62),new T.MeshStandardMaterial({map:plaqueTexH(r.label),roughness:.5,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}),cx,REAR.CH+.3,REAR.zc+.22);
+    let deity;
+    if(r.key==="sanguan"){ deity=new T.Group(); [["#b3241a",-.75],["#2b5fa8",0],["#2f6b3a",.75]].forEach(([c,dx])=>{ const d=buildDeity({robe:c,brow:"#1c1512",beard:"#1c1512",long:true,hat:"wusha"}); d.scale.setScalar(.62); d.position.x=dx; deity.add(d); }); }
+    else if(r.key==="wenchang") deity=buildDeity({robe:"#2b5fa8",brow:"#1c1512",beard:"#1c1512",long:true,hat:"wusha"});
+    else if(r.key==="linshui"){ deity=buildDeity({robe:"#d14a6e",brow:"#1c1512",beard:"#e9c493",hat:"bun"}); deity.children.forEach(o=>{ if(o.geometry&&o.geometry.type==="ConeGeometry"&&Math.abs(o.position.y-1.5)<.05) o.visible=false; }); } // a lady: no beard
+    else if(r.key==="taisui") deity=buildDeity({robe:"#c99a2e",brow:"#1c1512",beard:"#1c1512",long:true,hat:"wusha",prop:"ingot"});
+    else deity=new T.Group();
+    deity.userData.noMerge=1; buildSideShrine(1,r.key,r.god,deity,[cx,REAR.zb+1.6,0]);
+    if(r.key==="guanyin") loadModel("guanyin",m=>{ const wq=fitModel(m,2.1); wq.position.set(0,.78,-.05); deity.add(wq); setAct(wq,"guanyin"); });
+    setTimeout(()=>addHit(r.key,cx,.9,REAR.zb+1.6,1.4,3.2),0);
+    setTimeout(()=>{ STATION_LABEL[r.key]=r.god; STATION_HINT[r.key]="走向"+r.god; },0);
+    if(!k) plight("#ffc080",1.8,12,cx,4.6,REAR.zb+4.6); });
+  // roofs: the rear hall's curved roof with a 燕尾 ridge, lower roofs over the passages and the 迴廊
+  const tiles=(rx,ry)=>new T.MeshStandardMaterial({map:texRep(barrelTex,rx,ry),roughness:.6,side:T.DoubleSide});
+  curvedRoof({W:W1-W0+1.4,run:(REAR.zc-REAR.zb)/2+.9,rise:2.6,y0:REAR.H,z0:(REAR.zc+REAR.zb)/2,lift:1.1,flare:.7,mat:tiles(24,3)});
+  swallowRidge({len:W1-W0-2,y:REAR.H+2.8,z:(REAR.zc+REAR.zb)/2,red:redM,gold:goldP,big:1});
+  curvedRoof({W:W1-W0+1.2,run:REAR.z0-REAR.zc+.6,rise:1.0,y0:REAR.CH+.15,z0:REAR.zc,sides:[1],lift:.4,flare:.3,mat:tiles(24,2)});
+  for(const s of [-1,1]){ const r=box(3.9,.12,SHZ0-REAR.z0+.4,new T.MeshStandardMaterial({map:texRep(barrelTex,3,5),roughness:.6}),s*14,REAR.CH+.35,(REAR.z0+SHZ0)/2); r.rotation.z=s*.12;
+    const r2=box(19.8-15.8+.4,.12,SHZ0-REAR.z0+.4,new T.MeshStandardMaterial({map:texRep(barrelTex,3,5),roughness:.6}),s*17.8,REAR.H+.1,(REAR.z0+SHZ0)/2); r2.rotation.z=-s*.1; } }
 plight("#ffb070",1.3,16,0,4.2,HZ+6);
 // extra strings of lanterns criss-crossing the courtyard (one instanced mesh, glows on every other lantern)
 { const pos=[]; const strM=mat("#2a1a10");
@@ -2043,6 +2094,9 @@ class Avatar{
 }
 const _v1=new T.Vector3(), _v2=new T.Vector3(); let sheetOff=0;
 function camOK(x,y,z){ if(y<.35) return false; const ax=Math.abs(x);
+  if(z<-15.25){ if(z>REAR.zc) return ax<19.3&&y<REAR.CH-.2; if(z<REAR.zb+.3) return false; for(let i=1;i<5;i++) if(Math.abs(x-REAR.x[i])<.35) return false; return ax<19.3&&y<REAR.H-.25; } // 迴廊 and rear rooms
+  if(ax>12.2&&z<SHZ0-.2) return ax>12.45&&ax<15.55&&y<REAR.CH-.4;           // side passage
+  if(ax>12.2&&z<SHZ0+.3) return Math.abs(ax-13.9)<.75&&y<2.7;               // 偏殿 back door
   if(z>HZ+.45) return ax<19.5&&z<HZ+YX+27&&y<16;
   if(ax<11.5){ if(z<HZ-.35) return z>-14.5&&y<HH-.35; return ax<2.7&&y<5.1; }
   if(ax<12.5) return Math.abs(z-BGZ)<1.3&&y<3.1;
@@ -2152,20 +2206,30 @@ function onTap(cx,cy){ ensureAudio(); if(customizing) return; if(sheetKind){ clo
   if(h.object.userData.floor){ if(h.object===floor&&h.point.z<-9.6&&Math.abs(h.point.x)<3){ goStation("altar"); return; } const c=clampSpot(h.point.x,h.point.z); walkTo(c[0],c[1]); } }
 const isIn=z=>z<HZ;
 // zones: M main hall, C courtyard, S± side hall, P± garden path; doors link them
-function zoneOf(x,z){ const ax=Math.abs(x), sd=x<0?"-":"+"; if(z>=HZ+.1) return "C"; if(ax<12.2) return "M"; return (z<SHZ1?"S":"P")+sd; }
-const ZRECT={M:[-11,11,-9.5,HZ-.6],C:[-17,17,HZ+.7,HZ+YX+20.4],"S+":[12.9,16,-7,-2],"S-":[-16,-12.9,-7,-2],"P+":[SHXC-1,SHXC+1,-.7,HZ+.6],"P-":[-SHXC-1,-SHXC+1,-.7,HZ+.6]};
-const ZLINK={M:["S+","S-","C"],C:["M","P+","P-"],"S+":["P+","M"],"S-":["P-","M"],"P+":["S+","C"],"P-":["S-","C"]};
+function zoneOf(x,z){ const ax=Math.abs(x), sd=x<0?"-":"+"; if(z>=HZ+.1) return "C"; if(z<REAR.zc-.05) return "R"+rearRoom(x); if(z<-15.3) return "B"; if(ax>=12.2&&z<SHZ0-.05) return "K"+sd; if(ax<12.2) return "M"; return (z<SHZ1?"S":"P")+sd; }
+const ZRECT={M:[-11,11,-9.5,HZ-.6],C:[-17,17,HZ+.7,HZ+YX+20.4],"S+":[12.9,16,-7,-2],"S-":[-16,-12.9,-7,-2],"P+":[SHXC-1,SHXC+1,-.7,HZ+.6],"P-":[-SHXC-1,-SHXC+1,-.7,HZ+.6],
+  "K+":[12.55,15.35,-15.55,-7.95],"K-":[-15.35,-12.55,-15.55,-7.95],B:[-19.15,19.15,-18.55,-15.6]};
+for(let i=0;i<5;i++) ZRECT["R"+i]=[REAR.x[i]+.5,REAR.x[i+1]-.5,-25.3,-19.0]; // the five rear rooms, up to their altar tables
+const ZLINK={M:["S+","S-","C"],C:["M","P+","P-"],"S+":["P+","M","K+"],"S-":["P-","M","K-"],"P+":["S+","C"],"P-":["S-","C"],"K+":["S+","B"],"K-":["S-","B"],B:["K+","K-","R0","R1","R2","R3","R4"],R0:["B"],R1:["B"],R2:["B"],R3:["B"],R4:["B"]};
 function doorPts(a,b,fx,tx,fz){ const key=a+">"+b, s=(a+b).includes("-")?-1:1;
   if(key==="M>C"||key==="C>M"){ // main door: someone already in the doorway keeps going straight, never steps back out to a waypoint behind them
     const inDoor=fz!=null&&Math.abs(fx)<2.2&&fz>HZ-1.2&&fz<HZ+1.3, dx=Math.max(-1.8,Math.min(1.8,inDoor?fx:(fx+tx)/2));
     const pts=a==="M"?[[dx,HZ-.9],[dx,HZ+1]]:[[dx,HZ+1],[dx,HZ-.9]]; return fz==null?pts:pts.filter(p=>a==="M"?p[1]>fz+.05:p[1]<fz-.05); }
+  if(a[0]==="S"&&b[0]==="K") return [[s*13.9,-6.8],[s*13.9,-8.6]]; if(a[0]==="K"&&b[0]==="S") return [[s*13.9,-8.6],[s*13.9,-6.8]];  // 偏殿 back door
+  if(a[0]==="K"&&b==="B") return [[s*13.9,-15.0],[s*13.9,-16.6]]; if(a==="B"&&b[0]==="K") return [[s*13.9,-16.6],[s*13.9,-15.0]];   // passage into the 迴廊
+  if(a==="B"&&b[0]==="R") return [[rearCx(b),-17.4],[rearCx(b),-19.6]]; if(a[0]==="R"&&b==="B") return [[rearCx(a),-19.6],[rearCx(a),-17.4]];
   if(a==="M") return [[s*11,BGZ],[s*13.2,BGZ]]; if(b==="M") return [[s*13.2,BGZ],[s*11,BGZ]];
   if(a[0]==="S") return [[s*SHXC,-2.1],[s*SHXC,-.5]]; if(b[0]==="S") return [[s*SHXC,-.5],[s*SHXC,-2.1]];
   if(a[0]==="P") return [[s*SHXC,HZ+.2],[s*SHXC,HZ+1.2]]; return [[s*SHXC,HZ+1.2],[s*SHXC,HZ+.2]]; }
 function walkable(x,z){ if(opInside(x,z)||ptInside(x,z)) return false; const ax=Math.abs(x);
   if(ax<=11&&z>=-9.5&&z<=HZ-.6) return true; if(ax<2.2&&z>HZ-.7&&z<HZ+.8) return true; if(ax<=17&&z>=HZ+.7&&z<=HZ+YX+18) return true; if(ax>=4.5&&ax<=17&&z>HZ+YX+18&&z<=HZ+YX+20.6) return true;
   if(ax>10.9&&ax<13&&Math.abs(z-BGZ)<1.1) return true; if(ax>=12.9&&ax<=16&&z>=-7&&z<=-2) return true;
-  if(Math.abs(ax-SHXC)<=.9&&z>=-2.2&&z<=HZ+.8) return true; return false; }
+  if(Math.abs(ax-SHXC)<=.9&&z>=-2.2&&z<=HZ+.8) return true;
+  if(ax>=13.05&&ax<=14.75&&z>-8.1&&z<-6.8) return true;                     // 偏殿 back door
+  if(ax>=12.55&&ax<=15.35&&z>=-15.6&&z<=-7.9) return true;                   // side passage
+  if(ax<=19.15&&z>=-18.6&&z<=-15.55) return true;                            // 迴廊
+  if(z<-18.5&&z>=-25.3){ const i=rearRoom(x); if(x>=REAR.x[i]+.5&&x<=REAR.x[i+1]-.5) return true; } // a rear room
+  return false; }
 function clampSpot(x,z){ if(Math.abs(x)<4.5&&z>HZ+YX+17.8) z=HZ+YX+17.8; // in front of the fountain, not into it
   if(opInside(x,z)){ const o=opRect(); z=z<OP.z?o.z0-.3:o.z1+.3; } if(ptInside(x,z)){ const o=ptRect(); z=z<PT.z?o.z0-.3:o.z1+.3; } const r=ZRECT[zoneOf(x,z)]; return [Math.max(r[0],Math.min(r[1],x)),Math.max(r[2],Math.min(r[3],z))]; }
 function planPath(fx,fz,tx,tz){ const a=zoneOf(fx,fz), b=zoneOf(tx,tz); if(a===b) return [[tx,tz]];
@@ -2455,12 +2519,12 @@ function cleanName(n){ const t=String(n||"").replace(/[\u0000-\u001f​-‏‪-�
 function syncPeers(peers){ const seen=new Set();
   for(const p of peers){ if(p.sameTab||p.kind!=="viewer") continue; const pr=p.presence||{}; if(pr.v!==1||pr.u===0) continue; seen.add(p.peer);
     let av=remotes.get(p.peer); const look=sanitizeLook(pr.l,pr.q===1); if(av) av.setSp(pr.q===1);
-    if(!av){ av=new Avatar(look,{sp:pr.q===1,x:num(pr.x,-19,19,0),z:num(pr.z,-10,HZ+YX+18,HZ+12)}); av.autoBake=true; try{ bakeAvatar(av); }catch(e){} if(!othersShown) av.root.visible=false; av.lastBow=pr.b; av.lastJ=Array.isArray(pr.j)?pr.j[1]:""; av.lastF=pr.f; av.offerGroup=new T.Group(); scene.add(av.offerGroup); remotes.set(p.peer,av); if(customizing) av.root.visible=false; }
+    if(!av){ av=new Avatar(look,{sp:pr.q===1,x:num(pr.x,-19,19,0),z:num(pr.z,-28.5,HZ+YX+18,HZ+12)}); av.autoBake=true; try{ bakeAvatar(av); }catch(e){} if(!othersShown) av.root.visible=false; av.lastBow=pr.b; av.lastJ=Array.isArray(pr.j)?pr.j[1]:""; av.lastF=pr.f; av.offerGroup=new T.Group(); scene.add(av.offerGroup); remotes.set(p.peer,av); if(customizing) av.root.visible=false; }
     else if(look.join()!==av.look.join()) av.setLook(look);
     const pno=Number.isInteger(pr.k)&&pr.k>0&&pr.k<1e8?pr.k:0; let nm=cleanName(pr.n)||(pno?`香客${pno}`:"香客"); if(pr.q!==1&&[SP_NAME,SP_OLD].includes(nm)) nm=pno?`香客${pno}`:"香客"; if(nm!==av.name){ av.name=nm; av.setName(nm); }
     av.setSp(pr.q===1); if(pr.q===1) av.name=SP_NAME;
     { const eq=Array.isArray(pr.eq)?[pr.eq[0],pr.eq[1]].map(v=>typeof v==="string"&&ACC[v]?v:0):[0,0]; if(String(eq)!==String(av.eq||[0,0])) av.setAcc(eq); }
-    { const tx=num(pr.x,-19,19,av.target.x), tz=num(pr.z,-10,HZ+YX+18,av.target.y); if(tx!==av.goalX||tz!==av.goalZ){ av.goalX=tx; av.goalZ=tz; const pth=planPath(av.pos.x,av.pos.y,tx,tz); av.target.set(pth[0][0],pth[0][1]); av.path=pth.slice(1); } } const seat=Number.isInteger(pr.s)&&pr.s>=0&&pr.s<SEATS.length?pr.s:-1; av.seat=seat; if(seat>=0) npcYield(seat);
+    { const tx=num(pr.x,-19,19,av.target.x), tz=num(pr.z,-28.5,HZ+YX+18,av.target.y); if(tx!==av.goalX||tz!==av.goalZ){ av.goalX=tx; av.goalZ=tz; const pth=planPath(av.pos.x,av.pos.y,tx,tz); av.target.set(pth[0][0],pth[0][1]); av.path=pth.slice(1); } } const seat=Number.isInteger(pr.s)&&pr.s>=0&&pr.s<SEATS.length?pr.s:-1; av.seat=seat; if(seat>=0) npcYield(seat);
     av.faceGoal=num(pr.r,-10,10,Math.PI); av.hold=pr.h===1?1:0; av.headGoal=num(pr.y,-1.2,1.2,0); av.sparkler=pr.sk===1; if(Array.isArray(pr.fs)&&Number.isFinite(pr.fs[0])&&pr.fs[0]!==FW.seed){ const el=Date.now()-num(pr.fs[1],0,1e13,0); if(el>=0&&el<FW_LEN*1000) fwStart(pr.fs[0],el); } av.sq=(Array.isArray(pr.sq)&&pr.sq[0]>=1&&pr.sq[0]<=2)?[pr.sq[0]-1,num(pr.sq[1],0,1e13,0)]:null;
     if(pr.b!==av.lastBow){ av.lastBow=pr.b; if(!quietFx()) av.bow(); }
     if(Array.isArray(pr.j)&&pr.j[1]&&pr.j[1]!==av.lastJ){ av.lastJ=pr.j[1]; const res=RESULT[pr.j[0]]?pr.j[0]:"sheng"; if(!quietFx()) throwJiao(av,res,()=>av.say(RESULT[res].t,RESULT[res].c)); }
