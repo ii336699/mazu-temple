@@ -2058,7 +2058,7 @@ scene.add(cushions,rims); cushions.userData.seats=true;
     for(let k=0;k<3;k++){ const c=mesh(new T.ConeGeometry(rand(1.2,1.7),rand(2.2,3),8),leaf,rand(-.4,.4),2.8+k*1.1,rand(-.4,.4),t); } }
   // low courtyard wall so the horizon reads as a temple yard
   /* grounds boundary: the chair's carved stone balustrade (石欄圍牆), repeated end to end along both sides */
-  loadShared("weiqiang",m=>{ m.updateMatrixWorld(true); let src=null; m.traverse(q=>{ if(q.isMesh&&!src) src=q; }); if(!src) return; const bb=new T.Box3().setFromObject(m), sz=bb.getSize(new T.Vector3()), c=bb.getCenter(new T.Vector3());
+  loadShared("weiqiangfar",m=>{ m.updateMatrixWorld(true); /* a very light copy (≈1k triangles) since it is repeated ~75 times */ let src=null; m.traverse(q=>{ if(q.isMesh&&!src) src=q; }); if(!src) return; const bb=new T.Box3().setFromObject(m), sz=bb.getSize(new T.Vector3()), c=bb.getCenter(new T.Vector3());
     const H=1.35, k=H/sz.y, L=sz.x*k, z0=-46, z1=HZ+YX+24, n=Math.ceil((z1-z0)/L);
     const fit=new T.Matrix4().makeScale(k,k,k).multiply(new T.Matrix4().makeTranslation(-c.x,-bb.min.y,-c.z)).multiply(src.matrixWorld), M=new T.Matrix4(), R=new T.Matrix4();
     for(const sd of [-1,1]){ const im=new T.InstancedMesh(src.geometry,src.material,n); for(let i=0;i<n;i++){ R.makeRotationY(-sd*Math.PI/2); M.makeTranslation(sd*25.6,0,z0+L*(i+.5)).multiply(R).multiply(fit); im.setMatrixAt(i,M); }
