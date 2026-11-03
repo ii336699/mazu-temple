@@ -3,9 +3,9 @@
 import { DurableObject } from "cloudflare:workers";
 
 const HALLS = 10, CAP = 100, MAX_MSG = 4000;
-const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000, "/puppet": 5000, "/crowd": 5000, "/market": 5000 };
-const LOBBY_PATHS = ["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim"];
-const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage", "/puppet": "/puppet", "/crowd": "/crowd", "/market": "/market" }; // a POST here makes that cached list stale
+const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000, "/puppet": 5000, "/crowd": 5000, "/market": 5000, "/layout": 5000 };
+const LOBBY_PATHS = ["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout"];
+const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage", "/puppet": "/puppet", "/crowd": "/crowd", "/market": "/market", "/layout": "/layout" }; // a POST here makes that cached list stale
 
 export default {
   async fetch(req, env) {
@@ -58,6 +58,9 @@ export class Hall extends DurableObject {
       let b = {}; try { b = await req.json(); } catch {}
       const ann = { t: "ann", text: String(b.text || "").slice(0, 80), at: Number(b.at) || Date.now() }; await this.ctx.storage.put("ann", ann);
       const out = JSON.stringify(ann); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
+    }
+    if (url.pathname === "/layout") { // from the lobby: the chair saved a new building layout; pages fetch it again
+      const out = JSON.stringify({ t: "layout", at: Date.now() }); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
     }
     if (url.pathname === "/hongbao") { // from the lobby: 財神爺 throws a handful of red envelopes; every screen drops the same ones
       let b = {}; try { b = await req.json(); } catch {}
@@ -306,6 +309,21 @@ export class Lobby extends DurableObject {
       await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/hongbao", { method: "POST", body: JSON.stringify({ id, seed, n, x, z, at }) }).catch(() => {})));
       return json({ ok: true, id, seed, n, x, z, at });
     }
+    // 建築模式: where the chair has put, moved or resized models. Only numbers and known model names are kept.
+    if (url.pathname === "/layout" && req.method === "POST") {
+      const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
+      let b = {}; try { b = await req.json(); } catch {}
+      const L = b.layout || {}, n = (v, lo, hi, d) => { v = Number(v); return Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : d; };
+      const v3 = (a, lo, hi, d) => Array.isArray(a) && a.length === 3 ? a.map(x => +n(x, lo, hi, d).toFixed(3)) : [d, d, d];
+      const okId = t => typeof t === "string" && /^[a-z0-9:_-]{1,40}$/i.test(t);
+      const out = { mods: {}, adds: [] };
+      if (L.mods && typeof L.mods === "object") for (const [id, m] of Object.entries(L.mods).slice(0, 300)) { if (!okId(id) || !m || typeof m !== "object") continue; out.mods[id] = { p: v3(m.p, -200, 200, 0), r: +n(m.r, -100, 100, 0).toFixed(4), s: v3(m.s, .001, 500, 1), hide: !!m.hide }; }
+      if (Array.isArray(L.adds)) for (const a of L.adds.slice(0, 200)) { if (!a || !okId(a.id) || !okId(a.m)) continue; out.adds.push({ id: a.id, m: a.m, p: v3(a.p, -200, 200, 0), r: +n(a.r, -100, 100, 0).toFixed(4), s: v3(a.s, .001, 500, 1) }); }
+      const st = { layout: out, at: Date.now() }; await this.ctx.storage.put("layout", st);
+      await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/layout", { method: "POST" }).catch(() => {})));
+      return json({ ok: true, at: st.at });
+    }
+    if (url.pathname === "/layout") return json((await this.ctx.storage.get("layout")) || { layout: null, at: 0 });
     if (url.pathname === "/hbclaim" && req.method === "POST") {
       let b = {}; try { b = await req.json(); } catch {}
       const hb = this.hb || (this.hb = await this.ctx.storage.get("hb")); const i = b.i | 0, uid = clean(b.uid, 40) || "";
