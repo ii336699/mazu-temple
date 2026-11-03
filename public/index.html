@@ -433,6 +433,18 @@ body.hideui .joy,body.customizing .joy,body.hideui .camreset,body.customizing .c
 (function(){
 "use strict";
 const T = window.THREE;
+/* low-poly switch: while LOWPOLY is on (building other players and the demo crowd), round shapes are made with about half the segments
+   each way, so a character costs about a quarter of the triangles. Your own character is built at full detail. */
+let LOWPOLY=false;
+{ const k=.45, sg=(n,min)=>Math.max(min,Math.round(n*k));
+  const wrap=(name,fix)=>{ const C=T[name]; if(!C) return; const W=function(...a){ if(LOWPOLY) fix(a); return new C(...a); }; W.prototype=C.prototype; T[name]=W; };
+  wrap("SphereGeometry",a=>{ a[1]=sg(a[1]??32,6); a[2]=sg(a[2]??16,4); });
+  wrap("CylinderGeometry",a=>{ a[3]=sg(a[3]??8,5); });
+  wrap("ConeGeometry",a=>{ a[2]=sg(a[2]??8,5); });
+  wrap("TorusGeometry",a=>{ a[2]=sg(a[2]??8,4); a[3]=sg(a[3]??6,6); });
+  wrap("LatheGeometry",a=>{ a[1]=sg(a[1]??12,6); });
+  wrap("TubeGeometry",a=>{ a[1]=sg(a[1]??64,6); a[3]=sg(a[3]??8,4); });
+  wrap("CircleGeometry",a=>{ a[1]=sg(a[1]??8,6); }); }
 const $ = s => document.querySelector(s);
 
 /* ================= data ================= */
@@ -1303,11 +1315,12 @@ function gardenHall(side){ const sx=v=>side*v, W=GH.x1-GH.x0, D=GH.z1-GH.z0, zc=
   const god=side>0?buildDeity({robe:"#2b5fa8",brow:"#1c1512",beard:"#1c1512",long:true,hat:"wusha"}):buildDeity({robe:"#c99a2e",brow:"#f2efe8",beard:"#f2efe8",long:true,hat:"wusha",prop:"ingot"}); god.userData.noMerge=1;
   const key=side>0?"wenchang":"tudi"; buildSideShrine(side,key,side>0?"文昌帝君":"福德正神",god,[sx(GH.x1-.95),zc]);
   swapDeity(god,key,2.25,key); setTimeout(()=>addHit(key,sx(GH.x1-.95),.9,zc,1.4,3.2),0);
-  plight("#ffcf8a",1.4,8,sx(xm),3.8,zc);
+  poolLight("#ffcf8a",1.4,8,sx(xm),3.8,zc);
   // roof: the temple roof model, a drawn roof until it arrives
   const r={x:sx(xm+.1),z:zc,W:W+1.4,D:D+2.4,H:3.4,y:GH.H-.1}; const temp=curvedRoof({W:r.W,run:r.D/2,rise:1.6,y0:r.y,z0:r.z,x0:r.x,lift:.6,flare:.4,mat:new T.MeshStandardMaterial({map:texRep(barrelTex,r.W/1.6,3),roughness:.6,side:T.DoubleSide})});
+  temp.forEach(t=>t.userData.noMerge=1);
   loadShared("roof1",m=>{ const bb=new T.Box3().setFromObject(m), sz=bb.getSize(new T.Vector3()), c=bb.getCenter(new T.Vector3()); const o=m.clone(), g=new T.Group(); o.position.set(-c.x,-bb.min.y,-c.z); g.add(o); g.scale.set(r.W/sz.x,r.H/sz.y,r.D/sz.z); g.position.set(r.x,r.y,r.z); scene.add(g);
-    o.traverse(q=>{ if(q.isMesh){ q.material=q.material.clone(); q.material.side=T.DoubleSide; q.material.envMapIntensity=1.2; } }); temp.forEach(t=>scene.remove(t)); }); }
+    o.traverse(q=>{ if(q.isMesh){ q.material=q.material.clone(); q.material.side=T.DoubleSide; q.material.envMapIntensity=1.2; } }); temp.forEach(t=>t.parent&&t.parent.remove(t)); }); }
 /* walls with round-topped doorways (拱門) and moon gates (月門): the outline goes round each doorway so it opens right down to the floor
    doors: {cx,w,spring} = straight sides up to spring, then a half circle; {cx,r,cy} = a moon gate, a circle of radius r centred cy above the floor */
 function archPts(d){ const P=[]; if(d.r){ const ph=Math.asin(Math.min(.99,d.cy/d.r)), a0=Math.PI+ph, a1=-ph; for(let i=0;i<=28;i++){ const a=a0+(a1-a0)*i/28; P.push([d.cx+d.r*Math.cos(a),d.cy+d.r*Math.sin(a)]); } return P; }
@@ -1478,7 +1491,7 @@ function ridgeTrio(y,z,parent=scene,k=1){ const plat=mat("#2b6fae",{roughness:.5
   // porch roof: one curved slope from the front wall out over the columns, corners swept up (replaced by the 燕尾 roof model once it arrives)
   const roofN0=scene.children.length;
   curvedRoof({W:26,run:4.6,rise:1.35,y0:7.05,z0:HZ+.1,sides:[1],lift:.9,flare:.5,mat:new T.MeshStandardMaterial({map:texRep(barrelTex,16,2.6),roughness:.6,side:T.DoubleSide})});
-  box(26.2,.14,.14,goldP,0,7.05+.02,HZ+4.72); const porchDrawn=scene.children.slice(roofN0);
+  box(26.2,.14,.14,goldP,0,7.05+.02,HZ+4.72); const porchDrawn=scene.children.slice(roofN0); porchDrawn.forEach(o=>o.userData.noMerge=1);
   // front wall dressed like the reference: red brick, carved granite dado, round lattice windows
   { const bm=(rx,ry)=>new T.MeshStandardMaterial({map:texRep(brickTex,rx,ry),roughness:.8}), z=HZ+.215;
     for(const sd of [-1,1]){ for(const [a,b] of [[FD.cw/2,FD.x-FD.sw/2],[FD.x+FD.sw/2,12]]){ const w=b-a; mesh(new T.PlaneGeometry(w,8.7),bm(w/1.9,4.5),sd*(a+b)/2,5.65,z); mesh(new T.PlaneGeometry(w,1.3),new T.MeshStandardMaterial({map:texRep(stonePanelTex,Math.max(1,w/1.8),1),roughness:.85}),sd*(a+b)/2,.65,z); }
@@ -1505,7 +1518,7 @@ function ridgeTrio(y,z,parent=scene,k=1){ const plat=mat("#2b6fae",{roughness:.5
     mesh(new T.SphereGeometry(.55,18,14),mat("#ffcf4a",{metalness:.5,roughness:.3,emissive:"#a86a10",emissiveIntensity:.35}),0,y0+rise+3.2,0);
     for(const sd of [-1,1]) ridgeDragon(sd,y0+rise+.45,0,scene,1.5);
     ridgeTrio(y0+rise+.45,0,scene,1.5); }
-  const hallDrawn=scene.children.slice(hallN0);
+  const hallDrawn=scene.children.slice(hallN0); hallDrawn.forEach(o=>o.userData.noMerge=1);
   // the temple roof model: a lower roof over the porch (三川 front), then the hall under a front and a back roof, each with its 燕尾 ridge and dragons
   loadShared("roof1",m=>{ const bb=new T.Box3().setFromObject(m), sz=bb.getSize(new T.Vector3()), c=bb.getCenter(new T.Vector3());
     for(const r of [{z:7.4,W:27.6,D:17.4,H:7.6,y:HH-.15},{z:-7.6,W:27.6,D:17.4,H:7.6,y:HH-.15}]){ const o=m.clone(), g=new T.Group(); o.position.set(-c.x,-bb.min.y,-c.z); g.add(o); g.scale.set(r.W/sz.x,r.H/sz.y,r.D/sz.z); g.position.set(0,r.y,r.z); scene.add(g);
@@ -1531,9 +1544,21 @@ function placeDoorLeaves(m){ for(const [cx,z,w,h] of DOOR_LEAVES) for(const sd o
 /* the middle doorway: open, but a red board across the bottom (nobody walks through the middle door) */
 function middleBoard(cx,z,w,hb=1.0){ box(w,hb,.16,mat("#a8231a",{roughness:.4}),cx,hb/2,z+.02); box(w+.06,.08,.24,mat("#d6a24a",{metalness:.85,roughness:.3}),cx,hb+.04,z+.02);
   for(const s of [-1,1]) box(.3,.42,.5,mat("#5a3420",{roughness:.8}),cx+s*(w/2+.2),.21,z+.35); }
+/* shared lights: the newer halls don't each get a real light (every light costs every surface on screen, every frame).
+   They register spots here, and a few lights move to the spots nearest the camera. The number of lights never changes, so nothing recompiles. */
+const LPOOL={spots:[],lights:[],t:0};
+function poolLight(c,i,d,x,y,z){ LPOOL.spots.push({c:new T.Color(c),i,d,p:new T.Vector3(x,y,z)}); }
+for(let k=0;k<(Q.lite?2:3);k++){ const l=new T.PointLight(0xffffff,0,8,2); scene.add(l); LPOOL.lights.push(l); }
+function poolTick(dt){ LPOOL.t-=dt; if(LPOOL.t>0) return; LPOOL.t=.3; const c=camera.position;
+  const near=LPOOL.spots.map(sp=>[sp,sp.p.distanceToSquared(c)]).filter(e=>e[1]<26*26).sort((a,b)=>a[1]-b[1]);
+  LPOOL.lights.forEach((l,k)=>{ const e=near[k]; if(!e){ l.intensity=0; return; } const sp=e[0]; l.position.copy(sp.p); l.color.copy(sp.c); l.intensity=sp.i; l.distance=sp.d; }); }
+/* the rear (後埕, 後殿, 側殿) lives in its own group: it is merged on its own and only drawn when the camera could see it */
+const REAR_G=new T.Group(); REAR_G.userData.region=1; scene.add(REAR_G);
+function rearVis(){ const c=camera.position; const v=c.z<-14.6||(Math.abs(c.x)>12.05&&c.z<SHZ1+.5)||c.y>10.5; if(REAR_G.visible!==v) REAR_G.visible=v; }
 for(const s of [-1,1]) gardenHall(s); // after the brick and roof textures exist
 for(const s of [-1,1]) DOOR_LEAVES.push([s*FD.x,HZ,FD.sw,FD.sh]); DOOR_LEAVES.push([0,HZ,FD.cw,FD.ch]); middleBoard(0,HZ,FD.cw,1.1);
 for(const s of [-1,1]) mesh(new T.PlaneGeometry(1.3,.42),new T.MeshStandardMaterial({map:plaqueTexH(s>0?"入口":"出口"),roughness:.5}),s*FD.x,FD.sh+.5,HZ+.24);
+const rearN0=scene.children.length;
 /* ================= 後殿: a separate building behind the main hall, across an open courtyard (後埕) =================
    From each 偏殿 an arched door leads out to the 後埕 (about half as deep as the front 廟埕). A wall fountain stands against
    the back of the main hall between two pines. Across the yard: the 後殿 (觀世音菩薩, with 註生娘娘 on the 龍邊 and
@@ -1587,7 +1612,7 @@ setTimeout(()=>{ Object.assign(CENSER_INFO,{guanyin:["觀世音菩薩","後殿�
     // lotus pads on the water
     for(const [x,z] of [[-1.2,-.4],[1.1,-.6],[.4,-1.4],[-.5,-1.5]]){ const p=mesh(new T.CircleGeometry(.26,14),mat("#3f8a3a",{roughness:.6}),x,.615,.95+z,g); p.rotation.x=-Math.PI/2; }
     mesh(new T.SphereGeometry(.12,10,8),mat("#ff9ab8",{roughness:.5}),-1.2,.7,.55,g).scale.y=.7;
-    if(!k){ const L=plight("#bfe6ff",.9,6,0,1.6,-1.6); L.position.add(g.position); }
+    poolLight("#bfe6ff",.9,6,RFT.x,1.6,RFT.z-1.6);
     let ft=0; REAR_TICK.push(dt=>{ ft+=dt; waterTex.offset.y-=dt*1.6; const q=(ft*.7)%1; ripple.scale.setScalar(1+q*9); ripple.material.opacity=.6*(1-q); splash.scale.set(.8+Math.sin(ft*9)*.1,.45+Math.sin(ft*7)*.06,1); });
     }
   // two pines (松柏) beside the fountain
@@ -1696,8 +1721,8 @@ setTimeout(()=>{ Object.assign(CENSER_INFO,{guanyin:["觀世音菩薩","後殿�
     let mt=0; REAR_TICK.push(dt=>{ mt+=dt; shafts.forEach((c,i)=>c.material.opacity=(i?.08:.07)+.04*Math.sin(mt*.9+i*2)); for(const m of motes){ m.y+=m.v*dt; if(m.y>6.4) m.y=.3; m.sp.position.set(m.x+Math.sin(mt*.6+m.ph)*.3,m.y,m.z+Math.cos(mt*.5+m.ph)*.2); m.sp.material.opacity=Math.min(.85,(6.4-m.y)*.5,m.y); } }); }
   // palace lanterns inside
   for(const x of [-7,-3.4,3.4,7]) lantern(x,5.6,RH.z0-2.6);
-  plight("#ffd29a",1.5,14,0,5.2,PZ+3.5); if(!k){ plight("#ffc890",1.6,10,-3.8,4.2,PZ+3.2); plight("#ffc890",1.6,10,3.8,4.2,PZ+3.2); }
-  { const sl=k?null:new T.SpotLight(0xffe2b0,1.3,13,.5,.6,1.2); if(sl){ sl.position.set(0,RH.H-.3,PZ+6); const tg=new T.Object3D(); tg.position.set(0,2.6,PZ); scene.add(tg); sl.target=tg; scene.add(sl); } }
+  poolLight("#ffd29a",2.0,14,0,4.6,PZ+3.5); poolLight("#ffc890",1.4,9,-3.8,4.0,PZ+3.0); poolLight("#ffc890",1.4,9,3.8,4.0,PZ+3.0);
+  // (no spotlight here: the pooled lights and the glow carry the shrine)
 
   // ---- 側殿 (龍邊 斗姥殿 / 虎邊 地藏殿) ----
   for(const s of [-1,1]){ const sx=v=>s*v, w=RS.x1-RS.x0, d=RS.z0-RS.z1, zm=(RS.z0+RS.z1)/2, label=s>0?"斗姥殿":"地藏殿";
@@ -1711,7 +1736,7 @@ setTimeout(()=>{ Object.assign(CENSER_INFO,{guanyin:["觀世音菩薩","後殿�
     mesh(new T.PlaneGeometry(1.9,.55),new T.MeshStandardMaterial({map:plaqueTexH(label),roughness:.5}),sx(RS.cx),3.25,RS.z0+.22);
     box(w+.8,.4,.5,redM,sx((RS.x0+RS.x1)/2),RS.H-.2,RS.z0+.12);
     for(const dx of [-2.6,2.6]) lantern(sx(RS.cx+dx),3.9,RS.z0+.75,.85);
-    plight("#ffc080",1.4,9,sx(RS.cx),4,zm-1.5); }
+    poolLight("#ffc080",1.4,9,sx(RS.cx),4,zm-1.5); }
   const dm=buildDeity({robe:"#d9a441",brow:"#1c1512",beard:"#e9c493",hat:"bun",prop:"ingot"}); dm.userData.noMerge=1; buildSideShrine(1,"doumu","斗姥元君",dm,[RS.cx,RS.z1+1.3,0]);
   dm.traverse(c=>{ if(c.isMesh&&c.geometry.type==="ConeGeometry"&&c.position.y<1.3&&c.position.y>.6) c.visible=false; });
   // 斗姥元君 in gold lacquer (金漆): her own colours kept, pushed towards gold, with a metallic sheen that catches the light
@@ -1725,14 +1750,14 @@ setTimeout(()=>{ Object.assign(CENSER_INFO,{guanyin:["觀世音菩薩","後殿�
   // ---- roofs: the 燕尾 roof model you sent, stretched over each building; a plain curved roof shows until it arrives ----
   const roofs=[{x:0,z:zc-.2,W:W+3.2,D:D+3.6,H:6.2,y:RH.H-.15},{x:RS.cx+.5,z:(RS.z0+RS.z1)/2,W:RS.x1-RS.x0+1.2,D:RS.z0-RS.z1+3,H:4.2,y:RS.H-.1},{x:-RS.cx-.5,z:(RS.z0+RS.z1)/2,W:RS.x1-RS.x0+1.2,D:RS.z0-RS.z1+3,H:4.2,y:RS.H-.1}];
   const tiles=(rx,ry)=>new T.MeshStandardMaterial({map:texRep(barrelTex,rx,ry),roughness:.6,side:T.DoubleSide});
-  const temp=roofs.map(r=>curvedRoof({W:r.W,run:r.D/2,rise:r.H*.5,y0:r.y,z0:r.z,x0:r.x,lift:.8,flare:.5,mat:tiles(r.W/1.6,3)}));
+  const temp=roofs.map(r=>curvedRoof({W:r.W,run:r.D/2,rise:r.H*.5,y0:r.y,z0:r.z,x0:r.x,lift:.8,flare:.5,mat:tiles(r.W/1.6,3)})); temp.flat().forEach(t=>t.userData.noMerge=1);
   loadShared("roof1",m=>{ const bb=new T.Box3().setFromObject(m), sz=bb.getSize(new T.Vector3()), c=bb.getCenter(new T.Vector3());
-    roofs.forEach((r,i)=>{ const o=m.clone(); const g=new T.Group(); o.position.set(-c.x,-bb.min.y,-c.z); g.add(o); g.scale.set(r.W/sz.x,r.H/sz.y,r.D/sz.z); g.position.set(r.x,r.y,r.z); scene.add(g);
-      o.traverse(q=>{ if(q.isMesh){ q.material=q.material.clone(); q.material.side=T.DoubleSide; q.material.envMapIntensity=1.2; } }); temp[i].forEach(t=>scene.remove(t)); }); });
+    roofs.forEach((r,i)=>{ const o=m.clone(); const g=new T.Group(); o.position.set(-c.x,-bb.min.y,-c.z); g.add(o); g.scale.set(r.W/sz.x,r.H/sz.y,r.D/sz.z); g.position.set(r.x,r.y,r.z); REAR_G.add(g);
+      o.traverse(q=>{ if(q.isMesh){ q.material=q.material.clone(); q.material.side=T.DoubleSide; q.material.envMapIntensity=1.2; } }); temp[i].forEach(t=>t.parent&&t.parent.remove(t)); }); });
 
   // ---- decorations from the decor set: dragon pillars, carved windows, stone reliefs, 門神 doors, lanterns ----
   loadShared("decor",m=>{ const piece=(n,h)=>{ const o=m.getObjectByName(n); if(!o) return null; const c=o.clone(); c.position.set(0,0,0); return fitModel(c,h); };
-    const put=(o,x,y,z,ry=0)=>{ if(!o) return; o.position.set(x,y,z); o.rotation.y=ry; scene.add(o); return o; };
+    const put=(o,x,y,z,ry=0)=>{ if(!o) return; o.position.set(x,y,z); o.rotation.y=ry; REAR_G.add(o); return o; };
     for(const s of [-1,1]){ { const pl=put(piece("pillar",RH.H-.55),s*2.5,0,RH.z0+1.1); if(pl){ pl.scale.set(.72*(s<0?-1:1),1,.72); if(s<0) pl.traverse(o=>{ if(o.isMesh){ o.material=o.material.clone(); o.material.side=T.DoubleSide; } }); } } // the pair mirror each other cyl(.4,.42,.3,stoneB,s*2.5,.15,RH.z0+1.1,scene,14);
       put(piece("win",1.5),s*8.3,1.75,RH.z0+.22); put(piece(s>0?"panel":"panel2",.95),s*8.3,.72,RH.z0+.23);
       put(piece("win",1.25),s*RH.x+s*-.22,1.8,RH.z0-3.2,-s*Math.PI/2);
@@ -1741,8 +1766,9 @@ setTimeout(()=>{ Object.assign(CENSER_INFO,{guanyin:["觀世音菩薩","後殿�
       put(piece("panel",.8),s*(RS.cx-2.9),.5,RS.z0+.22); put(piece("panel2",.8),s*(RS.cx+2.9),.5,RS.z0+.22); }
     placeDoorLeaves(m);
   });
-  if(!k) plight("#ffb070",1.2,16,0,4.5,-23.5);
+  poolLight("#ffb070",1.2,16,0,4.5,-23.5);
 }
+scene.children.slice(rearN0).forEach(o=>{ if(!o.isLight&&o!==REAR_G) REAR_G.add(o); });
 plight("#ffb070",1.3,16,0,4.2,HZ+6);
 // extra strings of lanterns criss-crossing the courtyard (one instanced mesh, glows on every other lantern)
 { const pos=[]; const strM=mat("#2a1a10");
@@ -1990,25 +2016,33 @@ const G={ head:new T.SphereGeometry(.26,36,24), body:new T.LatheGeometry([new T.
   hatCone:new T.ConeGeometry(.46,.2,28), band:new T.TorusGeometry(.262,.04,8,28), capDome:new T.SphereGeometry(.282,24,12,0,Math.PI*2,0,Math.PI*.4),
   brim:new T.CylinderGeometry(.2,.2,.02,20), sash:new T.BoxGeometry(.08,.48,.035), beads:new T.TorusGeometry(.17,.018,6,24),  };
 G.stick=new T.CylinderGeometry(.007,.007,.6,5); G.stick.translate(0,.22,0);
+// the same shapes at low detail, for everyone who isn't you
+const G_LO=(()=>{ LOWPOLY=true; const out={}; for(const [k,g] of Object.entries(G)){ const p=g.parameters; let n=g;
+    try{ if(p) switch(g.type){ case "SphereGeometry": n=new T.SphereGeometry(p.radius,p.widthSegments,p.heightSegments,p.phiStart,p.phiLength,p.thetaStart,p.thetaLength); break;
+      case "CylinderGeometry": if(k!=="stick") n=new T.CylinderGeometry(p.radiusTop,p.radiusBottom,p.height,p.radialSegments,p.heightSegments,p.openEnded,p.thetaStart,p.thetaLength); break;
+      case "ConeGeometry": n=new T.ConeGeometry(p.radius,p.height,p.radialSegments,p.heightSegments,p.openEnded,p.thetaStart,p.thetaLength); break;
+      case "TorusGeometry": n=new T.TorusGeometry(p.radius,p.tube,p.radialSegments,p.tubularSegments,p.arc); break;
+      case "LatheGeometry": n=new T.LatheGeometry(p.points,p.segments,p.phiStart,p.phiLength); break; } }catch(e){ n=g; }
+    out[k]=n; } LOWPOLY=false; return out; })();
 G.arm.translate(0,-.13,0); G.leg.translate(0,-.14,0); G.robe.translate(0,-.14,0);
 const faceCache=new Map();
 // ---- extra wardrobe: each builder adds simple shapes to the head (y=0 at head centre, +z forward) or torso (body spans y 0..0.42) ----
 function mk(parent,geo,m,x=0,y=0,z=0,rx=0,ry=0,rz=0,sx=1,sy=1,sz=1){ const o=new T.Mesh(geo,m); o.position.set(x,y,z); o.rotation.set(rx,ry,rz); o.scale.set(sx,sy,sz); parent.add(o); return o; }
-const GX={}; const gx=(k,f)=>GX[k]||(GX[k]=f());
+const GX={}; const gx=(k,f)=>{ const kk=(LOWPOLY?"L:":"")+k; return GX[kk]||(GX[kk]=f()); };
 
 // Avatar wardrobe v3. Continuous shells and tapered locks replace floating primitives.
 function plush(parent,color,x,y,z,sx,sy,sz,rz=0){return mk(parent,gx('soft-unit',()=>new T.SphereGeometry(1,18,12)),mat(color,{roughness:.65}),x,y,z,0,0,rz,sx,sy,sz);}
 function seam(parent,color,points,r=.007){const key='curve:'+r+':'+JSON.stringify(points);return mk(parent,gx(key,()=>new T.TubeGeometry(new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),24,r,6,false)),mat(color,{roughness:.55}));}
 function ribbon(parent,color,x,y,z,k=1){const g=new T.Group();g.position.set(x,y,z);parent.add(g);for(const side of [-1,1]){plush(g,color,side*.045*k,0,0,.05*k,.031*k,.017*k,side*.24);const sh=new T.Shape();sh.moveTo(side*.008*k,-.012*k);sh.lineTo(side*.035*k,-.085*k);sh.lineTo(side*.055*k,-.067*k);sh.lineTo(side*.065*k,-.083*k);sh.lineTo(side*.047*k,-.008*k);sh.closePath();mk(g,gx('ribbon-tail:'+side+':'+k,()=>new T.ExtrudeGeometry(sh,{depth:.009*k,bevelEnabled:true,bevelSegments:2,steps:1,bevelSize:.003*k,bevelThickness:.003*k})),mat(color),0,0,-.006*k);}plush(g,color,0,0,.012*k,.018*k,.022*k,.016*k);return g;}
 function blossom(parent,x,y,z,color,k=1){const g=new T.Group();g.position.set(x,y,z);parent.add(g);for(let i=0;i<5;i++){const a=i*Math.PI*2/5;plush(g,color,Math.sin(a)*.031*k,Math.cos(a)*.031*k,0,.022*k,.027*k,.009*k,-a);}plush(g,'#f7ce78',0,0,.011*k,.013*k,.013*k,.011*k);return g;}
-function hairLock(parent,color,pts,width=.045,depth=.026){const key='lock:'+JSON.stringify([pts,width,depth]);const geo=gx(key,()=>{const curve=new T.CatmullRomCurve3(pts.map(p=>new T.Vector3(...p))),N=22,R=8,frames=curve.computeFrenetFrames(N,false),pos=[],idx=[];for(let i=0;i<=N;i++){const u=i/N,c=curve.getPointAt(u),taper=Math.max(.035,Math.sin((.11+.89*u)*Math.PI/2)*Math.pow(1-u,.52));for(let j=0;j<=R;j++){const a=j/R*Math.PI*2,p=c.clone().addScaledVector(frames.normals[i],Math.cos(a)*width*taper).addScaledVector(frames.binormals[i],Math.sin(a)*depth*taper);pos.push(p.x,p.y,p.z);if(i<N&&j<R){const q=i*(R+1)+j;idx.push(q,q+R+1,q+1,q+1,q+R+1,q+R+2);}}}const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setIndex(idx);g.computeVertexNormals();return g;});return mk(parent,geo,mat(color,{roughness:.48}));}
+function hairLock(parent,color,pts,width=.045,depth=.026){const key='lock:'+JSON.stringify([pts,width,depth]);const geo=gx(key,()=>{const curve=new T.CatmullRomCurve3(pts.map(p=>new T.Vector3(...p))),N=LOWPOLY?10:22,R=LOWPOLY?5:8,frames=curve.computeFrenetFrames(N,false),pos=[],idx=[];for(let i=0;i<=N;i++){const u=i/N,c=curve.getPointAt(u),taper=Math.max(.035,Math.sin((.11+.89*u)*Math.PI/2)*Math.pow(1-u,.52));for(let j=0;j<=R;j++){const a=j/R*Math.PI*2,p=c.clone().addScaledVector(frames.normals[i],Math.cos(a)*width*taper).addScaledVector(frames.binormals[i],Math.sin(a)*depth*taper);pos.push(p.x,p.y,p.z);if(i<N&&j<R){const q=i*(R+1)+j;idx.push(q,q+R+1,q+1,q+1,q+R+1,q+R+2);}}}const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setIndex(idx);g.computeVertexNormals();return g;});return mk(parent,geo,mat(color,{roughness:.48}));}
 // Reference collection: IDs 1..24 follow the supplied two character sheets.
 const hairMaps=new Map(),hairMaterialCache=new Map();
 function hairMap(v){if(hairMaps.has(v))return hairMaps.get(v);const tex=cvs(512,512,(x,w,h)=>{x.fillStyle='#f0eeea';x.fillRect(0,0,w,h);const grad=x.createLinearGradient(0,0,0,h);grad.addColorStop(0,'rgba(255,255,255,.06)');grad.addColorStop(.30,'rgba(255,255,255,.30)');grad.addColorStop(1,'rgba(70,53,43,.20)');x.fillStyle=grad;x.fillRect(0,0,w,h);x.lineWidth=1.2;for(let i=0;i<36;i++){const u=i/36*w;x.strokeStyle=i%3?'rgba(70,52,39,.11)':'rgba(255,255,255,.24)';x.beginPath();x.moveTo(u,0);x.bezierCurveTo(u+23,h*.28,u-17,h*.69,u,h);x.stroke();}});hairMaps.set(v,tex);return tex;}
 function hairMaterial(col,v=1){const key=col+':'+v;if(!hairMaterialCache.has(key))hairMaterialCache.set(key,new T.MeshStandardMaterial({color:col,map:hairMap(v),roughness:.62,side:T.DoubleSide}));return hairMaterialCache.get(key);}
 // A single connected hair volume from crown to hem, not a cap with side attachments.
 function flowingHairShell(parent,col,v,covered){const geo=gx('flowing-mane-v6:'+v,()=>{
- const N=128,M=56,pos=[],uv=[],idx=[],R=.293,smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
+ const N=LOWPOLY?44:128,M=LOWPOLY?20:56,pos=[],uv=[],idx=[],R=.293,smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
  for(let j=0;j<=M;j++)for(let i=0;i<=N;i++){
   const a=i/N*Math.PI*2,u=j/M,front=smooth((Math.cos(a)-.08)/.66),rear=1-front;
   const length=v===7?-.375:v===10?-.34:-.215;
@@ -2033,7 +2067,7 @@ function flowingHairShell(parent,col,v,covered){const geo=gx('flowing-mane-v6:'+
  });const m=mk(parent,geo,hairMaterial(col,v));m.name='continuous-scalp-cover';return m;}
 
 function hairShell(parent,col,v,covered){if([7,10,14].includes(v)) return flowingHairShell(parent,col,v,covered);const short=[13,16,20,22,24].includes(v),rad=short?.281:.289;
- const geo=gx('reference-shell-v7:'+v+':'+covered,()=>{const N=96,M=32,pos=[],uv=[],idx=[],smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
+ const geo=gx('reference-shell-v7:'+v+':'+covered,()=>{const N=LOWPOLY?40:96,M=LOWPOLY?14:32,pos=[],uv=[],idx=[],smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
  const followsScalp=![5,12,18,19,23].includes(v);
  function edge(a){const f=Math.cos(a),front=smooth((f-.05)/.70);let brow=.14,rear=-.236;if([1,5,9,12].includes(v))brow=.13;if([3,4,6,15,17].includes(v))brow=.16;if([2,11,18,23].includes(v))brow=.16;if([5,18,19].includes(v))rear=-.24;if([12,23].includes(v))rear=-.29;if(v===16||v===20){brow=.17;rear=-.224;}if(v===22)brow=.17;
   const nape=.004*Math.cos(a*3+.6)+.003*Math.cos(a*7);return (rear+nape)*(1-front)+brow*front;}
@@ -2042,9 +2076,9 @@ function hairShell(parent,col,v,covered){if([7,10,14].includes(v)) return flowin
   if(followsScalp){const w=smooth((-.04-y)/.18),section=Math.sqrt(Math.max(.001,1-(y/.274)**2));x=T.MathUtils.lerp(x,Math.sin(a)*.278*section,w);z=T.MathUtils.lerp(z,Math.cos(a)*.260*section,w);}
   pos.push(x,y,z);uv.push(i/N,1-u);if(j<M&&i<N){const q=j*(N+1)+i;idx.push(q,q+N+1,q+1,q+1,q+N+1,q+N+2);}}
  const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();g.userData.scalpCover=true;return g;});const mesh=mk(parent,geo,hairMaterial(col,v));mesh.name='continuous-scalp-cover';return mesh;}
-function tailVolume(parent,col,pts,width,depth){const geo=gx('reference-tail-v5:'+JSON.stringify([pts,width,depth]),()=>{const curve=new T.CatmullRomCurve3(pts.map(p=>new T.Vector3(...p))),N=32,R=12,fr=curve.computeFrenetFrames(N,false),pos=[],uv=[],idx=[];for(let i=0;i<=N;i++){const u=i/N,p=curve.getPointAt(u),size=(.90+.18*Math.sin(u*Math.PI))*Math.pow(1-u,.48)+.012;for(let j=0;j<=R;j++){const a=j/R*Math.PI*2,q=p.clone().addScaledVector(fr.normals[i],Math.cos(a)*width*size).addScaledVector(fr.binormals[i],Math.sin(a)*depth*size);pos.push(q.x,q.y,q.z);uv.push(j/R,1-u);if(i<N&&j<R){const k=i*(R+1)+j;idx.push(k,k+R+1,k+1,k+1,k+R+1,k+R+2);}}}const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();return g;});return mk(parent,geo,hairMaterial(col,3));}
+function tailVolume(parent,col,pts,width,depth){const geo=gx('reference-tail-v5:'+JSON.stringify([pts,width,depth]),()=>{const curve=new T.CatmullRomCurve3(pts.map(p=>new T.Vector3(...p))),N=LOWPOLY?14:32,R=LOWPOLY?6:12,fr=curve.computeFrenetFrames(N,false),pos=[],uv=[],idx=[];for(let i=0;i<=N;i++){const u=i/N,p=curve.getPointAt(u),size=(.90+.18*Math.sin(u*Math.PI))*Math.pow(1-u,.48)+.012;for(let j=0;j<=R;j++){const a=j/R*Math.PI*2,q=p.clone().addScaledVector(fr.normals[i],Math.cos(a)*width*size).addScaledVector(fr.binormals[i],Math.sin(a)*depth*size);pos.push(q.x,q.y,q.z);uv.push(j/R,1-u);if(i<N&&j<R){const k=i*(R+1)+j;idx.push(k,k+R+1,k+1,k+1,k+R+1,k+R+2);}}}const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();return g;});return mk(parent,geo,hairMaterial(col,3));}
 // Low, wide relief locks sit on the scalp, with roots and edges embedded into it.
-function scalpLock(parent,col,pts,width=.05,lift=.021){const key='sculpted-lock-v5:'+JSON.stringify([pts,width,lift]);const geo=gx(key,()=>{const c=new T.CatmullRomCurve3(pts.map(p=>new T.Vector3(...p))),N=26,R=10,pos=[],uv=[],idx=[];for(let i=0;i<=N;i++){const u=i/N,center=c.getPointAt(u),normal=center.clone().normalize(),tangent=c.getTangentAt(u),lateral=new T.Vector3().crossVectors(normal,tangent).normalize();const taper=Math.pow(Math.sin(Math.PI*u),.45);for(let j=0;j<=R;j++){const side=j/R*2-1,p=center.clone().addScaledVector(lateral,side*width*taper).normalize();const radius=.286+(lift+Math.max(0,center.length()-.29))*Math.sin(Math.PI*u)*Math.pow(Math.max(0,1-side*side),.65);p.multiplyScalar(radius);pos.push(p.x,p.y,p.z);uv.push(j/R,1-u);if(i<N&&j<R){const q=i*(R+1)+j;idx.push(q,q+R+1,q+1,q+1,q+R+1,q+R+2);}}}const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();return g;});return mk(parent,geo,hairMaterial(col,1));}
+function scalpLock(parent,col,pts,width=.05,lift=.021){const key='sculpted-lock-v5:'+JSON.stringify([pts,width,lift]);const geo=gx(key,()=>{const c=new T.CatmullRomCurve3(pts.map(p=>new T.Vector3(...p))),N=LOWPOLY?12:26,R=LOWPOLY?6:10,pos=[],uv=[],idx=[];for(let i=0;i<=N;i++){const u=i/N,center=c.getPointAt(u),normal=center.clone().normalize(),tangent=c.getTangentAt(u),lateral=new T.Vector3().crossVectors(normal,tangent).normalize();const taper=Math.pow(Math.sin(Math.PI*u),.45);for(let j=0;j<=R;j++){const side=j/R*2-1,p=center.clone().addScaledVector(lateral,side*width*taper).normalize();const radius=.286+(lift+Math.max(0,center.length()-.29))*Math.sin(Math.PI*u)*Math.pow(Math.max(0,1-side*side),.65);p.multiplyScalar(radius);pos.push(p.x,p.y,p.z);uv.push(j/R,1-u);if(i<N&&j<R){const q=i*(R+1)+j;idx.push(q,q+R+1,q+1,q+1,q+R+1,q+R+2);}}}const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();return g;});return mk(parent,geo,hairMaterial(col,1));}
 function braidVolume(g,col,pts,r=.034){const core=tailVolume(g,col,pts,r*.82,r*.75),curve=new T.CatmullRomCurve3(pts.map(p=>new T.Vector3(...p))),frames=curve.computeFrenetFrames(28,false);for(let side=0;side<2;side++){const p=[];for(let i=0;i<=28;i++){const u=i/28,a=u*Math.PI*8+side*Math.PI,c=curve.getPointAt(u),taper=1-u*.35;c.addScaledVector(frames.normals[i],Math.cos(a)*r*.52*taper).addScaledVector(frames.binormals[i],Math.sin(a)*r*.52*taper);p.push(c.toArray());}tailVolume(g,col,p,r*.49,r*.42);}return core;}
 function rainbowHair(mesh){const geo=gx('rainbow-v5:'+mesh.geometry.uuid,()=>{const g=mesh.geometry.clone(),p=g.attributes.position,c=[],bounds=new T.Box3().setFromBufferAttribute(p),stops=['#a686d5','#79d2da','#e8a6c6','#efc68b'].map(x=>new T.Color(x));for(let i=0;i<p.count;i++){const u=T.MathUtils.clamp((bounds.max.y-p.getY(i))/Math.max(.001,bounds.max.y-bounds.min.y),0,.999)*3,k=Math.floor(u),color=stops[k].clone().lerp(stops[Math.min(3,k+1)],u-k);c.push(color.r,color.g,color.b);}g.setAttribute('color',new T.Float32BufferAttribute(c,3));return g;});mesh.geometry=geo;mesh.material=mat('#ffffff',{vertexColors:true,roughness:.62,side:T.DoubleSide});return mesh;}
 function buildHair(h,v,col,acc='#d9aa3d',hat=0){const g=new T.Group();g.name='hair-'+v;h.add(g);if(v===0)return;const cover=[1,3,4,5,11,12,14].includes(hat),shell=v===21?null:hairShell(g,v===16?new T.Color(col).multiplyScalar(.75).getStyle():col,v,cover);
@@ -2113,7 +2147,7 @@ function buildStyle(t,v,out,acc){const g=new T.Group();g.name='outfit-'+v;t.add(
  if(v===9){ // 夏日短褲T恤: loose tee with a sun-and-wave print, shorts below
   collar(g,acc);plush(g,acc,0,.27,frontZ(0,.27,.02),.042,.042,.008);
   panel(g,ivory,[[-.075,.215],[-.04,.235],[0,.215],[.04,.235],[.075,.215],[.075,.19],[-.075,.19]],false,.024);waist(g,dark,.015,false,.022);}
- if(v===10){collar(g,acc);const geo=gx('cape-drape-v9',()=>{const pos=[],ix=[],uv=[],N=64,M=48;for(let j=0;j<=M;j++)for(let i=0;i<=N;i++){const u=j/M,v=i/N,opening=.84+.57*(u*u*(3-2*u)),a=opening+v*(Math.PI*2-opening*2),r=.151+.105*(1-Math.exp(-u/.085))+.055*Math.pow(u,1.6),fold=.005*Math.cos(a*7)*Math.pow(Math.sin(Math.PI*u),2),y=.427-.56*u-.012*Math.sin(Math.PI*v)*Math.pow(u,3);pos.push(Math.sin(a)*(r+fold),y,Math.cos(a)*(r+fold)*.94);uv.push(v,1-u);if(j<M&&i<N){const k=j*(N+1)+i;ix.push(k,k+1,k+N+1,k+1,k+N+2,k+N+1);}}const q=new T.BufferGeometry();q.setAttribute('position',new T.Float32BufferAttribute(pos,3));q.setAttribute('uv',new T.Float32BufferAttribute(uv,2));q.setIndex(ix);q.computeVertexNormals();return q;});const cape=mk(g,geo,mat(acc,{side:T.DoubleSide,roughness:.88}));cape.name='draped-cape';for(const side of [-1,1])seam(g,acc,[[side*.117,.423,.102],[side*.075,.399,.137],[0,.385,.16]],.008);ribbon(g,acc,0,.385,.160,.55);}
+ if(v===10){collar(g,acc);const geo=gx('cape-drape-v9',()=>{const pos=[],ix=[],uv=[],N=LOWPOLY?28:64,M=LOWPOLY?20:48;for(let j=0;j<=M;j++)for(let i=0;i<=N;i++){const u=j/M,v=i/N,opening=.84+.57*(u*u*(3-2*u)),a=opening+v*(Math.PI*2-opening*2),r=.151+.105*(1-Math.exp(-u/.085))+.055*Math.pow(u,1.6),fold=.005*Math.cos(a*7)*Math.pow(Math.sin(Math.PI*u),2),y=.427-.56*u-.012*Math.sin(Math.PI*v)*Math.pow(u,3);pos.push(Math.sin(a)*(r+fold),y,Math.cos(a)*(r+fold)*.94);uv.push(v,1-u);if(j<M&&i<N){const k=j*(N+1)+i;ix.push(k,k+1,k+N+1,k+1,k+N+2,k+N+1);}}const q=new T.BufferGeometry();q.setAttribute('position',new T.Float32BufferAttribute(pos,3));q.setAttribute('uv',new T.Float32BufferAttribute(uv,2));q.setIndex(ix);q.computeVertexNormals();return q;});const cape=mk(g,geo,mat(acc,{side:T.DoubleSide,roughness:.88}));cape.name='draped-cape';for(const side of [-1,1])seam(g,acc,[[side*.117,.423,.102],[side*.075,.399,.137],[0,.385,.16]],.008);ribbon(g,acc,0,.385,.160,.55);}
  if(v===11){panel(g,ivory,[[-.09,.31],[.09,.31],[.16,.015],[-.16,.015]],false,.027);for(const side of [-1,1])trim(g,ivory,[[side*.08,.41],[side*.07,.34],[side*.075,.30]],.011);panel(g,acc,[[-.055,.14],[.055,.14],[.05,.065],[-.05,.065]],false,.041);trim(g,acc,[[-.145,.04],[0,.025],[.145,.04]],.005,false,.044);waist(g,ivory,.17,false,.016);}
  if(v===12){const steel='#aebbc6';garment(g,steel,false,1.02);for(const side of [-1,1])trim(g,acc,[[side*.12,.36],[side*.095,.27],[side*.14,.15]],.009,false,.03);waist(g,acc,.075,false,.038);button(g,acc,0,.29,false,.026);}
  if(v===13){panel(g,ivory,[[-.055,.42],[.055,.42],[.035,.10],[-.035,.10]]);for(const side of [-1,1]){trim(g,acc,[[side*.055,.42],[side*.055,.26],[side*.035,.02]],.011);panel(g,acc,[[side*.075,.17],[side*.15,.17],[side*.15,.10],[side*.075,.10]],false,.023);}for(let i=0;i<3;i++)button(g,acc,.01,.30-i*.085);}
@@ -2266,7 +2300,8 @@ class Avatar{
     this.state="stand"; this.act=-1; this.actT=0; this.seat=-1; this.bowT=-1; this.t=Math.random()*10; this.kneel=0; this.hold=0; this.burnT=-1; this.headYaw=0; this.headGoal=0; this.smokeT=Math.random();
     const sh=new T.Mesh(shadowGeo,shadowMat); sh.position.y=.015; this.root.add(sh);
     this.parts=new T.Group(); this.root.add(this.parts); this.setLook(look); this.label=null; this.bubble=null; this.bubbleT=0; }
-  setLook(l){ l=sanitizeLook(l,!!this.sp); this.shoulderPet=null; this.look=l.slice(); const p=this.parts; while(p.children.length) p.remove(p.children[0]);
+  setLook(l){ const lo=!this.isMe; if(!lo) return this._setLook(l); const keep=Object.assign({},G); LOWPOLY=true; Object.assign(G,G_LO); try{ return this._setLook(l); } finally{ Object.assign(G,keep); LOWPOLY=false; } }
+  _setLook(l){ l=sanitizeLook(l,!!this.sp); this.shoulderPet=null; this.look=l.slice(); const p=this.parts; while(p.children.length) p.remove(p.children[0]);
     const sp=!!this.sp; // Role controls the name badge and privileges, never wardrobe.
     const out=OUTFIT[l[4]], acc=ACCENT[l[5]], skinM=mat(SKIN[l[0]],{roughness:.6}), outM=mat(out,{roughness:.75});
     const pants=mat(l[3]===8?out:new T.Color(out).multiplyScalar(.6).getStyle(),{roughness:.82});
@@ -2360,7 +2395,13 @@ class Avatar{
     return walking; }
   dispose(){ scene.remove(this.root); if(this.npcId) npcRelease(this.npcId); if(this.flies) stinkFlies(this,false); }
 }
-const _v1=new T.Vector3(), _v2=new T.Vector3(); let sheetOff=0;
+const _v1=new T.Vector3(), _v2=new T.Vector3(); let sheetOff=0; const _camTry=new T.Vector3(), _camBest=new T.Vector3(); let camNear=1;
+/* a gold arrow on the floor under your own character, pointing the way you face; clearer when the camera is squeezed in close indoors */
+let dirArrow=null;
+function dirArrowTick(close){ if(!meAv) return; if(!dirArrow){ const tex=cvs(128,128,(x,w,h)=>{ x.strokeStyle="rgba(255,214,120,.95)"; x.lineWidth=6; x.beginPath(); x.arc(64,64,44,0,Math.PI*2); x.stroke();
+      x.fillStyle="rgba(255,214,120,.95)"; x.beginPath(); x.moveTo(64,2); x.lineTo(84,30); x.lineTo(64,22); x.lineTo(44,30); x.closePath(); x.fill(); });
+    dirArrow=new T.Mesh(new T.PlaneGeometry(1.1,1.1),new T.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,opacity:.3})); dirArrow.rotation.set(-Math.PI/2,0,Math.PI); dirArrow.position.y=.03; dirArrow.renderOrder=2; meAv.root.add(dirArrow); }
+  if(dirArrow.parent!==meAv.root) meAv.root.add(dirArrow); dirArrow.material.opacity=.22+.6*close; dirArrow.visible=!customizing&&!(meAv.flyCur>.3); }
 function camOK(x,y,z){ if(y<.35) return false; const ax=Math.abs(x);
   if(z<-15.25){ // 後埕 (open sky), then the 後殿 and its 側殿
     if(z>RH.z0+.25) return ax<RS.x1-.15&&y<15&&!(ax<2.6&&z>-17.9&&y<4);
@@ -2377,9 +2418,13 @@ function camOK(x,y,z){ if(y<.35) return false; const ax=Math.abs(x);
   if(z<SHZ1+.3) return Math.abs(ax-SHXC)<SHDOOR/2-.1&&y<2.7;
   if(ax>GH.x0-.1&&z>GH.z0-.3&&z<GH.z1+.3){ if(z<GH.z0+.25||z>GH.z1-.25) return Math.abs(ax-SHXC)<1.0&&y<2.8; return ax>GH.x0+.3&&ax<GH.x1-.3&&y<GH.H-.3; } // garden-path hall
   return ax<19.4&&y<16; }
-function camLimit(from,to,out){ if(myFly) return out.copy(to); let lo=0; const N=24; // inside a 偏殿 the camera stays indoors (it used to slip out the garden door and end up behind the trees)
+// which room a point is in ("O" = outdoors); indoors the camera never leaves your room through a doorway
+function camRoom(x,z){ const ax=Math.abs(x);
+  if(ax<HX&&z>-HZ&&z<HZ) return "M"; if(ax>SHX0&&ax<SHX1+.2&&z>SHZ0&&z<SHZ1) return "S"+Math.sign(x); if(ax>GH.x0&&ax<GH.x1+.2&&z>GH.z0&&z<GH.z1) return "G"+Math.sign(x);
+  if(ax<RH.x&&z<RH.z0&&z>RH.z1) return "H"; if(ax>RS.x0&&ax<RS.x1+.2&&z<RS.z0&&z>RS.z1) return "Q"+Math.sign(x); return "O"; }
+function camLimit(from,to,out){ if(myFly) return out.copy(to); let lo=0; const N=24; const room0=camRoom(from.x,from.z); // inside a 偏殿 the camera stays indoors (it used to slip out the garden door and end up behind the trees)
   const inSide=Math.abs(from.x)>12.5&&from.z<SHZ1-.3;
-  for(let i=1;i<=N;i++){ const t=i/N, pz=from.z+(to.z-from.z)*t; if(!camOK(from.x+(to.x-from.x)*t,from.y+(to.y-from.y)*t,pz)||(inSide&&pz>SHZ1-.9)) break; lo=t; } const k=Math.max(.15,lo-.04); return out.set(from.x+(to.x-from.x)*k,from.y+(to.y-from.y)*k,from.z+(to.z-from.z)*k); }
+  for(let i=1;i<=N;i++){ const t=i/N, px=from.x+(to.x-from.x)*t, pz=from.z+(to.z-from.z)*t; if(!camOK(px,from.y+(to.y-from.y)*t,pz)||(inSide&&pz>SHZ1-.9)||camRoom(px,pz)!==room0) break; lo=t; } const k=Math.max(.15,lo-.04); return out.set(from.x+(to.x-from.x)*k,from.y+(to.y-from.y)*k,from.z+(to.z-from.z)*k); }
 function wrapA(a){ return ((a+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI; }
 function lerpAngle(a,b,t){ let d=((b-a+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI; return a+d*t; }
 
@@ -5388,7 +5433,7 @@ function tick(){ if(gameAsleep) return; { const now=performance.now(), cap=frame
     r1.scale.setScalar(k); r2.scale.setScalar(1+((tapT*1.2)%1)*.8); r2.material.opacity=.7*(1-((tapT*1.2)%1));
     if(arrived||tapT>12){ const f=Math.max(0,r1.material.opacity-dt*3); r1.material.opacity=f; dot.material.opacity=f; if(f<=0){ tapMark.visible=false; r1.material.opacity=.9; dot.material.opacity=.9; } } }
   botTick(dt);
-  lodPrep(); remotes.forEach(r=>{ lodUpdate(r,dt); if((r.eq&&(r.eq[0]||r.eq[1]))||r.flies) accTick(r,dt); }); /* r.flies: keep ticking once more so flies go away after the sausage is put down */ sjUpdate(dt); fwUpdate(dt); updateSkyLanterns(dt); renderSLBtn(); opTick(dt); ptTick(dt); REAR_TICK.forEach(f=>f(dt)); csTick(dt); hbTick(dt); flyCtlTick(dt); ftTick(dt); mkTick(dt);
+  lodPrep(); remotes.forEach(r=>{ lodUpdate(r,dt); if((r.eq&&(r.eq[0]||r.eq[1]))||r.flies) accTick(r,dt); }); /* r.flies: keep ticking once more so flies go away after the sausage is put down */ sjUpdate(dt); fwUpdate(dt); updateSkyLanterns(dt); renderSLBtn(); opTick(dt); ptTick(dt); REAR_TICK.forEach(f=>f(dt)); csTick(dt); hbTick(dt); flyCtlTick(dt); poolTick(dt); rearVis(); ftTick(dt); mkTick(dt);
   if(room&&dirty&&performance.now()-lastSend>((keys.size||joy.on)?800:SEND_GAP)) sendPresence();
   updateFlyers(dt); updateFu(dt); updateCats(dt); updateWater(dt);
   { let best=null, bd=2.6; if(!sheetKind&&!customizing&&!pendingStation&&meAv.seat<0&&!(meAv.danceT>0)) for(const k in stations){ if(k==="cats"){ const dc=Math.hypot(meAv.pos.x-CATS.c.x,meAv.pos.y-CATS.c.z); if(dc<3.6){ best=k; bd=0; } continue; } const d=meAv.pos.distanceTo(stations[k].approach); if(d<bd){ bd=d; best=k; } }
@@ -5437,10 +5482,13 @@ function tick(){ if(gameAsleep) return; { const now=performance.now(), cap=frame
   } else {
     camera.clearViewOffset();
     tmpV.set(meAv.pos.x,fy+(meAv.flyCur||0),meAv.pos.y); camFocus.lerp(tmpV,Math.min(1,dt*6));
-    const cx=camFocus.x+Math.sin(yaw)*Math.cos(pitch)*dist, cz=camFocus.z+Math.cos(yaw)*Math.cos(pitch)*dist, cy=camFocus.y+Math.sin(pitch)*dist;
-    camLimit(camFocus,_v2.set(cx,cy,cz),tmpV); camera.position.lerp(tmpV,Math.min(1,dt*8));
+    // indoors a wall often stops the camera right behind your head: then try it higher up, looking down, and keep the one that stays farthest back
+    let bestS=-1e9, gotD=0; for(const dp of [0,.35,.7,1.0]){ const pp=Math.min(1.2,pitch+dp), cx=camFocus.x+Math.sin(yaw)*Math.cos(pp)*dist, cz=camFocus.z+Math.cos(yaw)*Math.cos(pp)*dist, cy=camFocus.y+Math.sin(pp)*dist;
+      camLimit(camFocus,_v2.set(cx,cy,cz),_camTry); const d=_camTry.distanceTo(camFocus), sc=d-dp*.9; if(sc>bestS){ bestS=sc; gotD=d; _camBest.copy(_camTry); } if(d>dist*.8) break; }
+    tmpV.copy(_camBest); camera.position.lerp(tmpV,Math.min(1,dt*8)); camNear+=(Math.max(0,Math.min(1,(gotD-1.3)/2.4))-camNear)*Math.min(1,dt*4);
     { const sh=(sheetKind&&!wide&&sheet.classList.contains("open")&&!sheet.classList.contains("peek"))?sheet.getBoundingClientRect().height:0; sheetOff+=(sh*.42-sheetOff)*Math.min(1,dt*6); if(sheetOff>1) camera.setViewOffset(W,H,0,sheetOff,W,H); }
-    camera.lookAt(camFocus.x-Math.sin(yaw)*3.5,camFocus.y+.9,camFocus.z-Math.cos(yaw)*3.5);
+    { const k=camNear; camera.lookAt(camFocus.x-Math.sin(yaw)*3.5*k,camFocus.y+.15+.75*k,camFocus.z-Math.cos(yaw)*3.5*k); } // close up: look at yourself, not past you
+    dirArrowTick(1-camNear);
   }
   if(window.__mzCam){ camera.clearViewOffset(); camera.position.fromArray(window.__mzCam.p); camera.lookAt(...window.__mzCam.l); }
   skyMat.uniforms.time.value=t;
@@ -5476,16 +5524,17 @@ meAv.setAmulet(!!bag.items.fu); meAv.setThread(!!bag.redThread); syncLamps(); se
 /* ---- merge static scenery by material: hundreds of draw calls become a few dozen ---- */
 function mergeStatic(){ const buckets=new Map(); scene.updateMatrixWorld(true);
   const skip=o=>{ for(let p=o;p;p=p.parent){ if(p.userData&&p.userData.noMerge) return true; if(p===scene) return false; } return false; };
+  const region=o=>{ for(let p=o.parent;p&&p!==scene;p=p.parent) if(p.userData&&p.userData.region) return p; return scene; }; // merged per region, so a region can be hidden as a whole
   scene.traverse(o=>{ if(!o.isMesh||o.isInstancedMesh||o.isSkinnedMesh||!o.visible||Array.isArray(o.material)) return; if(o===sky||o===floor||o===outsideGround) return;
     const m=o.material; if(m.transparent||m.type!=="MeshStandardMaterial") return; if(skip(o)) return;
     const g=o.geometry, a=g.attributes; const keys=Object.keys(a).sort().join(","); if(keys!=="normal,position,uv"||g.morphAttributes.position) return;
-    if(!buckets.has(m)) buckets.set(m,[]); buckets.get(m).push(o); });
+    const rg=region(o), bk=rg===scene?m:{m,rg}; const key=rg===scene?m:(rg.uuid+m.uuid); if(!buckets.has(key)) buckets.set(key,{m,rg,list:[]}); buckets.get(key).list.push(o); });
   let merged=0;
-  buckets.forEach((list,m)=>{ if(list.length<2) return; let vc=0, ic=0; const parts=list.map(o=>{ let g=o.geometry.clone(); g.applyMatrix4(o.matrixWorld); if(!g.index){ const n=g.attributes.position.count; const idx=new Uint32Array(n); for(let i=0;i<n;i++) idx[i]=i; g.setIndex(new T.BufferAttribute(idx,1)); } vc+=g.attributes.position.count; ic+=g.index.count; return g; });
+  buckets.forEach(({m,rg,list})=>{ if(list.length<2) return; let vc=0, ic=0; const parts=list.map(o=>{ let g=o.geometry.clone(); g.applyMatrix4(o.matrixWorld); if(!g.index){ const n=g.attributes.position.count; const idx=new Uint32Array(n); for(let i=0;i<n;i++) idx[i]=i; g.setIndex(new T.BufferAttribute(idx,1)); } vc+=g.attributes.position.count; ic+=g.index.count; return g; });
     const P=new Float32Array(vc*3), N=new Float32Array(vc*3), U=new Float32Array(vc*2), I=new Uint32Array(ic); let vo=0, io=0;
     parts.forEach(g=>{ P.set(g.attributes.position.array,vo*3); N.set(g.attributes.normal.array,vo*3); U.set(g.attributes.uv.array,vo*2); const ix=g.index.array; for(let i=0;i<ix.length;i++) I[io+i]=ix[i]+vo; vo+=g.attributes.position.count; io+=ix.length; g.dispose(); });
     const G=new T.BufferGeometry(); G.setAttribute("position",new T.BufferAttribute(P,3)); G.setAttribute("normal",new T.BufferAttribute(N,3)); G.setAttribute("uv",new T.BufferAttribute(U,2)); G.setIndex(new T.BufferAttribute(I,1)); G.computeBoundingSphere();
-    const M=new T.Mesh(G,m); M.matrixAutoUpdate=false; M.raycast=()=>{}; scene.add(M); list.forEach(o=>{ o.visible=false; }); merged+=list.length; });
+    const M=new T.Mesh(G,m); M.matrixAutoUpdate=false; M.raycast=()=>{}; rg.add(M); list.forEach(o=>{ o.visible=false; }); merged+=list.length; });
   return merged; }
 /* ---- lantern light on the ground: a soft warm pool on the floor under every lantern (one draw call for all of them,
    no real lights, so phones stay smooth). Collected before the scenery is merged, while each lantern still has its own place. */
