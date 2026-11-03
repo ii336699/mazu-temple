@@ -4,7 +4,7 @@ import { DurableObject } from "cloudflare:workers";
 
 const HALLS = 10, CAP = 100, MAX_MSG = 4000;
 const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000, "/puppet": 5000, "/crowd": 5000, "/market": 5000 };
-const LOBBY_PATHS = ["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec"];
+const LOBBY_PATHS = ["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim"];
 const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage", "/puppet": "/puppet", "/crowd": "/crowd", "/market": "/market" }; // a POST here makes that cached list stale
 
 export default {
@@ -58,6 +58,11 @@ export class Hall extends DurableObject {
       let b = {}; try { b = await req.json(); } catch {}
       const ann = { t: "ann", text: String(b.text || "").slice(0, 80), at: Number(b.at) || Date.now() }; await this.ctx.storage.put("ann", ann);
       const out = JSON.stringify(ann); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
+    }
+    if (url.pathname === "/hongbao") { // from the lobby: 財神爺 throws a handful of red envelopes; every screen drops the same ones
+      let b = {}; try { b = await req.json(); } catch {}
+      const out = JSON.stringify({ t: "hb", id: String(b.id || "").slice(0, 16), seed: (b.seed | 0) >>> 0, n: b.n | 0, x: Number(b.x) || 0, z: Number(b.z) || 0, at: Number(b.at) || Date.now() });
+      for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
     }
     if (url.pathname === "/market") { // from the lobby: the chair opened or closed night-market stalls
       let b = {}; try { b = await req.json(); } catch {}
@@ -287,6 +292,28 @@ export class Lobby extends DurableObject {
       await this.ctx.storage.put("slAt", Date.now()); const seed = (Math.random() * 4294967295) >>> 0;
       await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/lanterns", { method: "POST", body: JSON.stringify({ seed }) }).catch(() => {})));
       return json({ ok: true });
+    }
+    // 財神爺撒紅包: the chair throws envelopes; the lobby decides what is inside each one, so a page can't make up its own prize.
+    // Each envelope can be caught once, and each player keeps at most 3 per throw.
+    if (url.pathname === "/hongbao" && req.method === "POST") {
+      const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
+      let b = {}; try { b = await req.json(); } catch {}
+      const cur = this.hb || (await this.ctx.storage.get("hb")); if (cur && Date.now() - cur.at < 8000) return json({ ok: false, busy: true });
+      const n = 30, id = Math.random().toString(36).slice(2, 10), seed = (Math.random() * 4294967295) >>> 0, at = Date.now();
+      const pick = () => { const r = Math.random(); return r < .02 ? 500 : r < .12 ? 100 : r < .3 ? 50 : r < .6 ? 10 : 1; };
+      this.hb = { id, at, n, amt: Array.from({ length: n }, pick), taken: {}, per: {} }; await this.ctx.storage.put("hb", this.hb);
+      const x = Math.max(-40, Math.min(40, Number(b.x) || 0)), z = Math.max(-50, Math.min(60, Number(b.z) || 0));
+      await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/hongbao", { method: "POST", body: JSON.stringify({ id, seed, n, x, z, at }) }).catch(() => {})));
+      return json({ ok: true, id, seed, n, x, z, at });
+    }
+    if (url.pathname === "/hbclaim" && req.method === "POST") {
+      let b = {}; try { b = await req.json(); } catch {}
+      const hb = this.hb || (this.hb = await this.ctx.storage.get("hb")); const i = b.i | 0, uid = clean(b.uid, 40) || "";
+      if (!hb || hb.id !== b.id || Date.now() - hb.at > 60000 || i < 0 || i >= hb.n || !uid) return json({ ok: false, gone: true });
+      if ((hb.per[uid] || 0) >= 3) return json({ ok: false, max: true });
+      if (hb.taken[i]) return json({ ok: false, taken: true });
+      hb.taken[i] = uid; hb.per[uid] = (hb.per[uid] || 0) + 1; await this.ctx.storage.put("hb", hb);
+      return json({ ok: true, amt: hb.amt[i], got: hb.per[uid] });
     }
     if (url.pathname === "/fireworks" && req.method === "POST") {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
