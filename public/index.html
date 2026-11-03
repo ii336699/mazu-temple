@@ -456,6 +456,13 @@ let LOWPOLY=false;
   wrap("LatheGeometry",a=>{ a[1]=sg(a[1]??12,6); });
   wrap("TubeGeometry",a=>{ a[1]=sg(a[1]??64,6); a[3]=sg(a[3]??8,4); });
   wrap("CircleGeometry",a=>{ a[1]=sg(a[1]??8,6); }); }
+/* glows added as light (additive blending) from canvas pictures that fade to transparent: iPhone Safari stores those with
+   dither noise that turns into coloured (often green) specks once on the GPU. Added as light, a picture faded to black on an
+   opaque background gives exactly the same glow, so every such glow gets an opaque copy drawn onto black. */
+{ const opaq=t=>{ if(t._opaque) return t._opaque; const src=t.image; if(!src||!src.getContext) return t; const c=document.createElement("canvas"); c.width=src.width; c.height=src.height;
+    const x=c.getContext("2d"); x.fillStyle="#000"; x.fillRect(0,0,c.width,c.height); x.drawImage(src,0,0); const o=new T.CanvasTexture(c);
+    o.encoding=t.encoding; o.wrapS=t.wrapS; o.wrapT=t.wrapT; o.repeat.copy(t.repeat); o.offset.copy(t.offset); o.anisotropy=t.anisotropy; t._opaque=o; return o; };
+  for(const name of ["SpriteMaterial","MeshBasicMaterial","PointsMaterial"]){ const C=T[name]; const W=function(p){ if(p&&p.blending===T.AdditiveBlending&&p.map&&p.map.isCanvasTexture) p=Object.assign({},p,{map:opaq(p.map)}); return new C(p); }; W.prototype=C.prototype; T[name]=W; } }
 const $ = s => document.querySelector(s);
 
 /* ================= data ================= */
