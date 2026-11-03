@@ -92,7 +92,7 @@ body.hideui .near-chip{display:none!important}
 .bp-grid{display:grid;grid-template-columns:auto 38px 1fr 38px;gap:5px 6px;align-items:center}.bp-grid span{color:var(--muted);white-space:nowrap}
 .bp-b{height:34px;border-radius:10px;border:1px solid var(--gold-soft);background:rgba(142,28,20,.45);color:var(--gold);font-size:18px;touch-action:none;user-select:none;-webkit-user-select:none}
 .bp-n{min-width:0;height:34px;text-align:center;background:rgba(0,0,0,.35);color:var(--ink);border:1px solid var(--gold-soft);border-radius:10px;font-size:14px}
-.bp-note{margin:0;font-size:11px;color:var(--muted)}
+.bp-note{margin:0;font-size:11px;color:var(--muted)}.chip.bp-del{border-color:#d0574a;color:#ffb3a8}
 body.building .actions,body.building #hbBtn{display:none!important}
 .fly-ctl{position:fixed;right:max(14px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 170px);z-index:6;display:flex;flex-direction:column;gap:10px}.fly-ctl[hidden]{display:none}
 .fly-ctl button{width:58px;height:58px;border-radius:50%;border:1px solid var(--gold);color:var(--gold);font-size:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;touch-action:none;user-select:none;-webkit-user-select:none}.fly-ctl small{font-size:10px;margin-top:2px;color:var(--ink)}
@@ -1329,20 +1329,28 @@ function gardenHall(side){ const sx=v=>side*v, W=GH.x1-GH.x0, D=GH.z1-GH.z0, zc=
   const fl=mesh(new T.PlaneGeometry(W,D),new T.MeshStandardMaterial({map:floorTex,roughness:.3}),sx(xm),.012,zc); fl.rotation.x=-Math.PI/2; fl.userData.floor=true; fl.userData.noMerge=1;
   const ce=mesh(new T.PlaneGeometry(W,D),mat("#2b130c",{roughness:.9,side:T.DoubleSide}),sx(xm),GH.H,zc); ce.rotation.x=Math.PI/2;
   box(.4,GH.H,D+.4,brick(D/2.2,2),sx(GH.x1),GH.H/2,zc); box(.4,GH.H,D+.4,wallM,sx(GH.x0),GH.H/2,zc);
-  for(const z of [GH.z0,GH.z1]){ const a=SHXC-dw/2, b=SHXC+dw/2; box(a-GH.x0,GH.H,.4,brick(1,2),sx((GH.x0+a)/2),GH.H/2,z); box(GH.x1+.2-b,GH.H,.4,brick(1.5,2),sx((b+GH.x1+.2)/2),GH.H/2,z);
+  for(const z of [GH.z1]){ const a=SHXC-dw/2, b=SHXC+dw/2; box(a-GH.x0,GH.H,.4,brick(1,2),sx((GH.x0+a)/2),GH.H/2,z); box(GH.x1+.2-b,GH.H,.4,brick(1.5,2),sx((b+GH.x1+.2)/2),GH.H/2,z);
     box(dw,GH.H-dh,.4,brick(1,1),sx(SHXC),dh+(GH.H-dh)/2,z); box(dw+.3,.22,.56,goldP,sx(SHXC),dh,z); for(const e of [-1,1]) box(.22,dh,.5,redM,sx(SHXC+e*(dw/2+.02)),dh/2,z); box(W+.4,.4,.5,stoneB,sx(xm),.2,z+(z===GH.z1?.04:-.04)); }
   const label=side>0?"文昌殿":"福德祠";
-  for(const [z,f] of [[GH.z1+.23,0],[GH.z0-.23,Math.PI]]){ const m=mesh(new T.PlaneGeometry(1.8,.5),new T.MeshStandardMaterial({map:plaqueTexH(label),roughness:.5}),sx(SHXC),dh+.55,z); m.rotation.y=f; }
+  for(const [z,f] of [[GH.z1+.23,0]]){ const m=mesh(new T.PlaneGeometry(1.8,.5),new T.MeshStandardMaterial({map:plaqueTexH(label),roughness:.5}),sx(SHXC),dh+.55,z); m.rotation.y=f; }
   for(const dz of [-1.6,1.6]){ const g=new T.Group(); g.position.set(sx(SHXC),3.8,zc+dz); scene.add(g); const b=new T.Mesh(new T.SphereGeometry(.28,14,10),lanternMat); b.scale.y=.86; g.add(b); for(const y of [.24,-.24]){ const c=new T.Mesh(new T.CylinderGeometry(.13,.13,.06,10),GOLD()); c.position.y=y; g.add(c); } const sp=new T.Sprite(glowMat); sp.scale.set(1.5,1.5,1); g.add(sp); }
   const god=side>0?buildDeity({robe:"#2b5fa8",brow:"#1c1512",beard:"#1c1512",long:true,hat:"wusha"}):buildDeity({robe:"#c99a2e",brow:"#f2efe8",beard:"#f2efe8",long:true,hat:"wusha",prop:"ingot"}); god.userData.noMerge=1;
   const key=side>0?"wenchang":"tudi"; buildSideShrine(side,key,side>0?"文昌帝君":"福德正神",god,[sx(GH.x1-.95),zc]);
   swapDeity(god,key,2.25,key); setTimeout(()=>addHit(key,sx(GH.x1-.95),.9,zc,1.4,3.2),0);
   poolLight("#ffcf8a",1.4,8,sx(xm),3.8,zc);
+  // the joining section between the 偏殿 and this hall: floor, ceiling, outer walls, lanterns and its own roof, so you never step outdoors in between
+  { const z0=SHZ1, z1=GH.z0, zm=(z0+z1)/2, Dl=z1-z0; const f2=mesh(new T.PlaneGeometry(W,Dl+.4),new T.MeshStandardMaterial({map:floorTex,roughness:.3}),sx(xm),.014,zm); f2.rotation.x=-Math.PI/2; f2.userData.floor=true; f2.userData.noMerge=1;
+    const c2=mesh(new T.PlaneGeometry(W,Dl+.4),mat("#2b130c",{roughness:.9,side:T.DoubleSide}),sx(xm),GH.H,zm); c2.rotation.x=Math.PI/2;
+    box(.4,GH.H,Dl+.4,brick(Dl/2.2,2),sx(GH.x1),GH.H/2,zm); box(.4,GH.H,Dl+.4,wallM,sx(GH.x0),GH.H/2,zm);
+    for(const dz of [-1,1]){ const g=new T.Group(); g.position.set(sx(SHXC),3.7,zm+dz); scene.add(g); const b=new T.Mesh(new T.SphereGeometry(.26,14,10),lanternMat); b.scale.y=.86; g.add(b); for(const y of [.22,-.22]){ const c=new T.Mesh(new T.CylinderGeometry(.12,.12,.06,10),GOLD()); c.position.y=y; g.add(c); } const sp=new T.Sprite(glowMat); sp.scale.set(1.4,1.4,1); g.add(sp); }
+    const rr={x:sx(xm+.1),z:zm,W:W+1.4,D:Dl+1.4,H:2.6,y:GH.H-.1}; const temp2=curvedRoof({W:rr.W,run:rr.D/2,rise:1.2,y0:rr.y,z0:rr.z,x0:rr.x,lift:.5,flare:.3,mat:new T.MeshStandardMaterial({map:texRep(barrelTex,rr.W/1.6,2),roughness:.6,side:T.DoubleSide})}); temp2.forEach(t=>t.userData.noMerge=1);
+    loadShared("roof1",m=>{ const bb=new T.Box3().setFromObject(m), sz=bb.getSize(new T.Vector3()), c=bb.getCenter(new T.Vector3()); const o=m.clone(), g=new T.Group(); o.position.set(-c.x,-bb.min.y,-c.z); g.add(o); g.scale.set(rr.W/sz.x,rr.H/sz.y,rr.D/sz.z); g.position.set(rr.x,rr.y,rr.z); scene.add(g);
+      o.traverse(q=>{ if(q.isMesh){ q.material=q.material.clone(); q.material.side=T.DoubleSide; q.material.envMapIntensity=1.2; } }); temp2.forEach(t=>t.parent&&t.parent.remove(t)); roofClipObj(o); regEdit(side>0?"roof-link-R":"roof-link-L",side>0?"財神殿—文昌殿 連接屋頂":"月老殿—福德祠 連接屋頂",g); }); }
   // roof: the temple roof model, a drawn roof until it arrives
   const r={x:sx(xm+.1),z:zc,W:W+1.4,D:D+2.4,H:3.4,y:GH.H-.1}; const temp=curvedRoof({W:r.W,run:r.D/2,rise:1.6,y0:r.y,z0:r.z,x0:r.x,lift:.6,flare:.4,mat:new T.MeshStandardMaterial({map:texRep(barrelTex,r.W/1.6,3),roughness:.6,side:T.DoubleSide})});
   temp.forEach(t=>t.userData.noMerge=1);
   loadShared("roof1",m=>{ const bb=new T.Box3().setFromObject(m), sz=bb.getSize(new T.Vector3()), c=bb.getCenter(new T.Vector3()); const o=m.clone(), g=new T.Group(); o.position.set(-c.x,-bb.min.y,-c.z); g.add(o); g.scale.set(r.W/sz.x,r.H/sz.y,r.D/sz.z); g.position.set(r.x,r.y,r.z); scene.add(g);
-    o.traverse(q=>{ if(q.isMesh){ q.material=q.material.clone(); q.material.side=T.DoubleSide; q.material.envMapIntensity=1.2; } }); temp.forEach(t=>t.parent&&t.parent.remove(t)); regEdit(side>0?"roof-wenchang":"roof-tudi",side>0?"文昌殿屋頂":"福德祠屋頂",g); }); }
+    o.traverse(q=>{ if(q.isMesh){ q.material=q.material.clone(); q.material.side=T.DoubleSide; q.material.envMapIntensity=1.2; } }); temp.forEach(t=>t.parent&&t.parent.remove(t)); roofClipObj(o); regEdit(side>0?"roof-wenchang":"roof-tudi",side>0?"文昌殿屋頂":"福德祠屋頂",g); }); }
 /* walls with round-topped doorways (拱門) and moon gates (月門): the outline goes round each doorway so it opens right down to the floor
    doors: {cx,w,spring} = straight sides up to spring, then a half circle; {cx,r,cy} = a moon gate, a circle of radius r centred cy above the floor */
 function archPts(d){ const P=[]; if(d.r){ const ph=Math.asin(Math.min(.99,d.cy/d.r)), a0=Math.PI+ph, a1=-ph; for(let i=0;i<=28;i++){ const a=a0+(a1-a0)*i/28; P.push([d.cx+d.r*Math.cos(a),d.cy+d.r*Math.sin(a)]); } return P; }
@@ -1367,17 +1375,11 @@ function sideHall(side,label){ const sx=v=>side*v, W=SHX1-SHX0, D=SHZ1-SHZ0, zc=
   { const sh=archShape(SHX0,16.6,SHH,[{cx:13.9,w:1.7,spring:2.15}],side); const w=new T.Mesh(archGeo(sh),wallM); w.position.z=SHZ0; scene.add(w); archTrim(13.9*side,SHZ0,1.7,2.15,goldP,"z");
     box(1.8,1.3,.4,wallM,sx(17.5),.65,SHZ0); box(1.8,SHH-3.5,.4,wallM,sx(17.5),3.5+(SHH-3.5)/2,SHZ0); box(SHX1+.2-18.4,SHH,.4,wallM,sx((18.4+SHX1+.2)/2),SHH/2,SHZ0); }
   win(SHZ0,16.6,18.4,1.3,3.5);
-  // front wall: doorway to the path, plus a lattice window on the far side of the door
-  const dx0=SHXC-SHDOOR/2, dx1=SHXC+SHDOOR/2;
-  box(dx0-SHX0,SHH,.4,wallM,sx((SHX0+dx0)/2),SHH/2,SHZ1);
-  const wx0=17.0, wx1=18.6; box(wx0-dx1,SHH,.4,wallM,sx((dx1+wx0)/2),SHH/2,SHZ1); box(SHX1+.2-wx1,SHH,.4,wallM,sx((wx1+SHX1+.2)/2),SHH/2,SHZ1);
-  box(wx1-wx0,1.3,.4,wallM,sx((wx0+wx1)/2),.65,SHZ1); box(wx1-wx0,SHH-3.5,.4,wallM,sx((wx0+wx1)/2),3.5+(SHH-3.5)/2,SHZ1); win(SHZ1,wx0,wx1,1.3,3.5);
-  box(SHDOOR,SHH-2.9,.4,wallM,sx(SHXC),2.9+(SHH-2.9)/2,SHZ1); box(SHDOOR+.3,.22,.56,goldP,sx(SHXC),2.94,SHZ1);
-  for(const s of [-1,1]){ cyl(.2,.2,SHH,mat("#8a1810",{roughness:.4}),sx(SHXC+s*(SHDOOR/2+.24)),SHH/2,SHZ1+.36); cyl(.3,.32,.3,stoneB,sx(SHXC+s*(SHDOOR/2+.24)),.15,SHZ1+.36); }
-  // bagua window above the door (both faces) and the name plaque
-  for(const f of [1,-1]){ const w=mesh(new T.PlaneGeometry(1.55,1.55),new T.MeshStandardMaterial({map:BAGUA_WIN,transparent:true,alphaTest:.4,roughness:.5,metalness:.3,emissive:new T.Color("#3a1606"),emissiveMap:BAGUA_WIN}),sx(SHXC),4.05,SHZ1+f*.215); if(f<0) w.rotation.y=Math.PI; }
-  mesh(new T.PlaneGeometry(1.8,.5),new T.MeshStandardMaterial({map:plaqueTexH(label),roughness:.5}),sx(SHXC),2.62,SHZ1+.24);
-  for(const s of [-1,1]){ const g=new T.Group(); g.position.set(sx(SHXC+s*1.75),3.3,SHZ1+.8); scene.add(g); const b=new T.Mesh(new T.SphereGeometry(.3,16,12),lanternMat); b.scale.y=.86; g.add(b); for(const y of [.26,-.26]){ const c=new T.Mesh(new T.CylinderGeometry(.14,.14,.07,12),GOLD()); c.position.y=y; g.add(c); } const sp=new T.Sprite(glowMat); sp.scale.set(1.7,1.7,1); g.add(sp); }
+  // front wall: now the inside wall between this hall and the 文昌殿 / 福德祠 part, opened by a round moon gate (圓拱門)
+  { const fw=new T.Mesh(archGeo(archShape(SHX0,SHX1+.2,SHH,[{cx:SHXC,r:1.45,cy:1.2}],side)),wallM); fw.position.z=SHZ1; scene.add(fw);
+    archTrim(sx(SHXC),SHZ1,0,0,goldP,"z",{r:1.5,cy:1.2}); }
+  for(const f of [1,-1]){ const w=mesh(new T.PlaneGeometry(1.2,1.2),new T.MeshStandardMaterial({map:BAGUA_WIN,transparent:true,alphaTest:.4,roughness:.5,metalness:.3,emissive:new T.Color("#3a1606"),emissiveMap:BAGUA_WIN}),sx(SHXC),4.0,SHZ1+f*.215); if(f<0) w.rotation.y=Math.PI; }
+  for(const f of [1,-1]){ const m=mesh(new T.PlaneGeometry(1.8,.5),new T.MeshStandardMaterial({map:plaqueTexH(label),roughness:.5}),sx(SHXC),3.02,SHZ1+f*.24); if(f<0) m.rotation.y=Math.PI; }
   // gabled roof that closes over the walls: two slopes along x, filled gable triangles at both ends
   const roofM=new T.MeshStandardMaterial({map:tileTex,roughness:.55,side:T.DoubleSide}); const run=D/2+.7, rise=1.5, L=Math.hypot(run,rise)+.1, ang=Math.atan2(rise,run);
   for(const s of [-1,1]){ const r=box(W+1,.14,L,roofM,sx(SHMX+.15),SHH+rise/2-.02,zc+s*run/2); r.rotation.x=s*ang; }
@@ -1406,7 +1408,7 @@ function baguaDoor(side){ const g=new T.Group(); g.position.set(side*HX,0,BGZ); 
   for(const s of [-1,1]){ const p=mesh(new T.CircleGeometry(.42,8),new T.MeshStandardMaterial({map:bt,roughness:.5}),0,4.25,s*.22,g); if(s<0) p.rotation.y=Math.PI; }
   g.userData.noMerge=1; }
 // garden path from the side hall to the courtyard: stone path, trees and flowers on both sides
-const GH={z0:3.6, z1:10.4, x0:12.35, x1:23, H:4.8}; const inGH=z=>z>GH.z0-.6&&z<GH.z1+.6; // the hall on each garden path
+const GH={z0:3.6, z1:10.4, x0:12.35, x1:23, H:4.8}; const inGH=z=>z>SHZ1-.6&&z<GH.z1+.6; /* indoors all the way from the 偏殿 to the front of the garden hall */ // the hall on each garden path
 function gardenPath(side){ const sx=v=>side*v, z0=SHZ1+.2, z1=HZ+.6, L=z1-z0;
   const pathTex=cvs(128,512,(x,w,h)=>{ x.fillStyle="#6b5d4f"; x.fillRect(0,0,w,h); for(let j=0;j<16;j++){ const v=140+Math.random()*30; x.fillStyle=`rgb(${v},${v-8},${v-20})`; x.fillRect(8+(j%2)*10,j*32+3,w-26,26); } });
   const p=mesh(new T.PlaneGeometry(2.6,L),new T.MeshStandardMaterial({map:pathTex,roughness:.85}),sx(SHXC),.01,(z0+z1)/2); p.rotation.x=-Math.PI/2; p.userData.floor=true; p.userData.noMerge=1;
@@ -1419,7 +1421,7 @@ function gardenPath(side){ const sx=v=>side*v, z0=SHZ1+.2, z1=HZ+.6, L=z1-z0;
   for(let z=z0+1;z<z1-.5;z+=.9) for(const o of [-1,1]){ if(inGH(z)) continue; const b=new T.Group(); b.position.set(sx(SHXC+o*1.55),0,z+(Math.random()-.5)*.3); scene.add(b); mesh(new T.SphereGeometry(.24,8,6),leaves[1],0,.18,0,b).scale.y=.7;
     for(let k=0;k<4;k++) mesh(new T.SphereGeometry(.07,6,5),petals[(Math.random()*5)|0],(Math.random()-.5)*.35,.3+Math.random()*.08,(Math.random()-.5)*.35,b); }
   // small stone lanterns lighting the path
-  for(const z of [GH.z0-1.2,GH.z1+1.4]){ const g=new T.Group(); g.position.set(sx(SHXC+1.45),0,z); scene.add(g); const st=mat("#8a8278",{roughness:.85}); box(.24,.7,.24,st,0,.35,0,g); box(.42,.08,.42,st,0,.74,0,g); const lm=new T.Mesh(new T.BoxGeometry(.26,.24,.26),new T.MeshBasicMaterial({color:new T.Color("#ffd28a")})); lm.position.y=.9; g.add(lm); mesh(new T.ConeGeometry(.34,.24,4),st,0,1.14,0,g).rotation.y=Math.PI/4; const s=new T.Sprite(glowMat); s.scale.set(1.2,1.2,1); s.position.y=.9; g.add(s); } }
+  for(const z of [GH.z1+1.4]){ const g=new T.Group(); g.position.set(sx(SHXC+1.45),0,z); scene.add(g); const st=mat("#8a8278",{roughness:.85}); box(.24,.7,.24,st,0,.35,0,g); box(.42,.08,.42,st,0,.74,0,g); const lm=new T.Mesh(new T.BoxGeometry(.26,.24,.26),new T.MeshBasicMaterial({color:new T.Color("#ffd28a")})); lm.position.y=.9; g.add(lm); mesh(new T.ConeGeometry(.34,.24,4),st,0,1.14,0,g).rotation.y=Math.PI/4; const s=new T.Sprite(glowMat); s.scale.set(1.2,1.2,1); s.position.y=.9; g.add(s); } }
 for(const s of [-1,1]){ baguaDoor(s); sideHall(s,s>0?"財神殿":"月老殿"); gardenPath(s); }
  const shrineLights=[plight("#ffd9a0",2.4,7,8.37,3.6,-HZ+3.4),plight("#ffd9a0",2.4,7,-8.37,3.6,-HZ+3.4)];
 
@@ -1540,15 +1542,15 @@ function ridgeTrio(y,z,parent=scene,k=1){ const plat=mat("#2b6fae",{roughness:.5
     mesh(new T.SphereGeometry(.55,18,14),mat("#ffcf4a",{metalness:.5,roughness:.3,emissive:"#a86a10",emissiveIntensity:.35}),0,y0+rise+3.2,0);
     for(const sd of [-1,1]) ridgeDragon(sd,y0+rise+.45,0,scene,1.5);
     ridgeTrio(y0+rise+.45,0,scene,1.5); }
-  const hallDrawn=scene.children.slice(hallN0); hallDrawn.forEach(o=>o.userData.noMerge=1);
+  const hallDrawn=scene.children.slice(hallN0); hallDrawn.forEach(o=>scene.remove(o)); /* the main hall has no roof of its own now (chair's request); its walls stay */
   // the temple roof model: a lower roof over the porch (三川 front), then the hall under a front and a back roof, each with its 燕尾 ridge and dragons
   loadShared("roof1",m=>{ const bb=new T.Box3().setFromObject(m), sz=bb.getSize(new T.Vector3()), c=bb.getCenter(new T.Vector3());
-    for(const r of [{z:7.4,W:27.6,D:17.4,H:7.6,y:HH-.15,id:"roof-front",l:"前殿屋頂"},{z:-7.6,W:27.6,D:17.4,H:7.6,y:HH-.15,id:"roof-main",l:"正殿屋頂"}]){ const o=m.clone(), g=new T.Group(); o.position.set(-c.x,-bb.min.y,-c.z); g.add(o); g.scale.set(r.W/sz.x,r.H/sz.y,r.D/sz.z); g.position.set(0,r.y,r.z); scene.add(g);
-      o.traverse(q=>{ if(q.isMesh){ q.material=q.material.clone(); q.material.side=T.DoubleSide; q.material.envMapIntensity=1.2; } }); regEdit(r.id,r.l,g); }
-    hallDrawn.forEach(o=>scene.remove(o)); });
+    for(const r of []){ const o=m.clone(), g=new T.Group(); o.position.set(-c.x,-bb.min.y,-c.z); g.add(o); g.scale.set(r.W/sz.x,r.H/sz.y,r.D/sz.z); g.position.set(0,r.y,r.z); scene.add(g);
+      o.traverse(q=>{ if(q.isMesh){ q.material=q.material.clone(); q.material.side=T.DoubleSide; q.material.envMapIntensity=1.2; } }); roofClipObj(o); regEdit(r.id,r.l,g); }
+    });
   loadShared("roof2",m=>{ const bb=new T.Box3().setFromObject(m), sz=bb.getSize(new T.Vector3()), c=bb.getCenter(new T.Vector3());
     const o=m.clone(), g=new T.Group(); o.position.set(-c.x,-bb.min.y,-c.z); g.add(o); g.scale.set(22/sz.x,3.4/sz.y,5.0/sz.z); g.position.set(0,6.75,HZ+.2+2.5); scene.add(g);
-    o.traverse(q=>{ if(q.isMesh){ q.material=q.material.clone(); q.material.side=T.DoubleSide; q.material.envMapIntensity=1.2; } }); porchDrawn.forEach(o=>scene.remove(o)); regEdit("roof-porch","前簷（下層屋簷）",g); });
+    o.traverse(q=>{ if(q.isMesh){ q.material=q.material.clone(); q.material.side=T.DoubleSide; q.material.envMapIntensity=1.2; } }); porchDrawn.forEach(o=>scene.remove(o)); roofClipObj(o); regEdit("roof-porch","前簷（下層屋簷）",g); });
 }
 /* palace lanterns hung on a string, like the ones over the front 廟埕: red body, gold caps, a short tassel */
 function lanternString(list,opts={}){ const pos=[], strM=mat("#2a1a10");
@@ -1566,6 +1568,20 @@ function placeDoorLeaves(m){ for(const [cx,z,w,h] of DOOR_LEAVES) for(const sd o
 /* the middle doorway: open, but a red board across the bottom (nobody walks through the middle door) */
 function middleBoard(cx,z,w,hb=1.0){ box(w,hb,.16,mat("#a8231a",{roughness:.4}),cx,hb/2,z+.02); box(w+.06,.08,.24,mat("#d6a24a",{metalness:.85,roughness:.3}),cx,hb+.04,z+.02);
   for(const s of [-1,1]) box(.3,.42,.5,mat("#5a3420",{roughness:.8}),cx+s*(w/2+.2),.21,z+.35); }
+/* roofs are not drawn inside a hall: an eave that reaches through a wall can't be seen from inside. Each roof material discards
+   any point that falls inside one of these room boxes (main hall, 偏殿, garden halls, 後殿, 側殿). */
+const INT_N=12, INT_MIN=[], INT_MAX=[];
+{ const add=(x0,y0,z0,x1,y1,z1)=>{ INT_MIN.push(new T.Vector3(x0,y0,z0)); INT_MAX.push(new T.Vector3(x1,y1,z1)); }, m=.18;
+  add(-HX+m,-1,-HZ+m,HX-m,HH-.02,HZ-m);
+  for(const s of [-1,1]){ const xs=(a,b)=>s>0?[a,b]:[-b,-a];
+    { const [a,b]=xs(SHX0+m,SHX1-m); add(a,-1,SHZ0+m,b,SHH-.02,SHZ1-m); }
+    { const [a,b]=xs(GH.x0+m,GH.x1-m); add(a,-1,SHZ1+m,b,GH.H-.02,GH.z1-m); } } }
+function roofClip(mat){ if(!mat||mat.userData.roofClip) return; mat.userData.roofClip=1;
+  mat.onBeforeCompile=sh=>{ sh.uniforms.uIntMin={value:INT_MIN}; sh.uniforms.uIntMax={value:INT_MAX};
+    sh.vertexShader="varying vec3 vIntW;\n"+sh.vertexShader.replace("#include <project_vertex>","#include <project_vertex>\n vIntW=(modelMatrix*vec4(transformed,1.0)).xyz;");
+    sh.fragmentShader="varying vec3 vIntW; uniform vec3 uIntMin["+INT_N+"]; uniform vec3 uIntMax["+INT_N+"];\n"+sh.fragmentShader.replace("void main() {","void main() {\n for(int i=0;i<"+INT_N+";i++){ if(all(greaterThan(vIntW,uIntMin[i]))&&all(lessThan(vIntW,uIntMax[i]))) discard; }"); };
+  mat.customProgramCacheKey=()=>"roofClip"; mat.needsUpdate=true; }
+function roofClipObj(o){ o.traverse(q=>{ if(q.isMesh) (Array.isArray(q.material)?q.material:[q.material]).forEach(roofClip); }); }
 /* shared lights: the newer halls don't each get a real light (every light costs every surface on screen, every frame).
    They register spots here, and a few lights move to the spots nearest the camera. The number of lights never changes, so nothing recompiles. */
 const LPOOL={spots:[],lights:[],t:0};
@@ -1778,7 +1794,7 @@ setTimeout(()=>{ Object.assign(CENSER_INFO,{guanyin:["觀世音菩薩","後殿�
   const temp=roofs.map(r=>curvedRoof({W:r.W,run:r.D/2,rise:r.H*.5,y0:r.y,z0:r.z,x0:r.x,lift:.8,flare:.5,mat:tiles(r.W/1.6,3)})); temp.flat().forEach(t=>t.userData.noMerge=1);
   loadShared("roof1",m=>{ const bb=new T.Box3().setFromObject(m), sz=bb.getSize(new T.Vector3()), c=bb.getCenter(new T.Vector3());
     roofs.forEach((r,i)=>{ const o=m.clone(); const g=new T.Group(); o.position.set(-c.x,-bb.min.y,-c.z); g.add(o); g.scale.set(r.W/sz.x,r.H/sz.y,r.D/sz.z); g.position.set(r.x,r.y,r.z); REAR_G.add(g);
-      o.traverse(q=>{ if(q.isMesh){ q.material=q.material.clone(); q.material.side=T.DoubleSide; q.material.envMapIntensity=1.2; } }); temp[i].forEach(t=>t.parent&&t.parent.remove(t)); regEdit(["roof-houdian","roof-doumu","roof-dizang"][i],["後殿屋頂","斗姥殿屋頂","地藏殿屋頂"][i],g); }); });
+      o.traverse(q=>{ if(q.isMesh){ q.material=q.material.clone(); q.material.side=T.DoubleSide; q.material.envMapIntensity=1.2; } }); temp[i].forEach(t=>t.parent&&t.parent.remove(t)); roofClipObj(o); regEdit(["roof-houdian","roof-doumu","roof-dizang"][i],["後殿屋頂","斗姥殿屋頂","地藏殿屋頂"][i],g); }); });
 
   // ---- decorations from the decor set: dragon pillars, carved windows, stone reliefs, 門神 doors, lanterns ----
   loadShared("decor",m=>{ const piece=(n,h)=>{ const o=m.getObjectByName(n); if(!o) return null; const c=o.clone(); c.position.set(0,0,0); const w=fitModel(c,h); w.userData.pn=n; return w; }; let dn=0;
@@ -1794,6 +1810,9 @@ setTimeout(()=>{ Object.assign(CENSER_INFO,{guanyin:["觀世音菩薩","後殿�
   poolLight("#ffb070",1.2,16,0,4.5,-23.5);
 }
 scene.children.slice(rearN0).forEach(o=>{ if(!o.isLight&&o!==REAR_G) REAR_G.add(o); });
+{ const m=.18; INT_MIN.push(new T.Vector3(-RH.x+m,-1,RH.z1+m)); INT_MAX.push(new T.Vector3(RH.x-m,RH.H-.02,RH.z0-m));
+  for(const s of [-1,1]){ const a=s>0?RS.x0+m:-(RS.x1-m), b=s>0?RS.x1-m:-(RS.x0+m); INT_MIN.push(new T.Vector3(a,-1,RS.z1+m)); INT_MAX.push(new T.Vector3(b,RS.H-.02,RS.z0-m)); }
+  while(INT_MIN.length<INT_N){ INT_MIN.push(new T.Vector3(1e9,1e9,1e9)); INT_MAX.push(new T.Vector3(-1e9,-1e9,-1e9)); } }
 // the whole strip on each side, from the back of the 側殿 to the front of the 廟埕, paved under everything else (halls and paths sit on top)
 for(const s of [-1,1]){ const x0=11.9, x1=25.1, z0=RS.z1-1.5, z1=HZ+YX+23.2; const f=mesh(new T.PlaneGeometry(x1-x0,z1-z0),new T.MeshStandardMaterial({map:texRep(yardTex,(x1-x0)/4.4,(z1-z0)/4.4),roughness:.75}),s*(x0+x1)/2,.002,(z0+z1)/2); f.rotation.x=-Math.PI/2; f.userData.floor=true; f.userData.noMerge=1; }
 plight("#ffb070",1.3,16,0,4.2,HZ+6);
@@ -2005,17 +2024,17 @@ scene.add(cushions,rims); cushions.userData.seats=true;
     box(w,.4,.4,roof,0,6.1,0,g); for(const s of [-1,1]) for(const k of [-1,1]){ const t=box(1.6,.22,.22,roof,s*(w/2+.6),6.5,k*.12,g); t.rotation.z=s*.6; t.rotation.y=k*s*.3; } }
   /* night silhouettes outside the walls, in three layers: village houses close by, a town further out, a city skyline at the edge.
      Each layer is one batch of boxes with a lit-window picture, so it costs three draw calls. */
-  { const winTex=(cols,rows,cool,dens)=>{ const t=cvs(cols*16,rows*16,(x,w,h)=>{ x.fillStyle="#0a0912"; x.fillRect(0,0,w,h); for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){ if(Math.random()>dens) continue; x.fillStyle=Math.random()<cool?"#e6f0ff":Math.random()<.5?"#ffe7a8":"#ffd27a"; x.fillRect(c*16+2,r*16+2,12,11); } });
-      t.generateMipmaps=false; t.minFilter=T.LinearFilter; return t; }; // no blurring with distance, or the windows fade into the wall // few, big windows: they have to read from far away
-    const layer=(n,r0,r1,h0,h1,w0,w1,tint,tex,skip)=>{ const m=new T.MeshBasicMaterial({map:tex,color:new T.Color(tint)}); const geo=new T.BoxGeometry(1,1,1); geo.translate(0,.5,0);
+  { const winTex=(cols,rows,cool,dens)=>{ const t=cvs(cols*16,rows*16,(x,w,h)=>{ x.fillStyle="#05040a"; x.fillRect(0,0,w,h); x.fillStyle="#ffc93a"; for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){ if(Math.random()>dens) continue; x.fillRect(c*16+5,r*16+5,6,6); } });
+      t.anisotropy=8; return t; }; // small windows, all the same warm yellow // few, big windows: they have to read from far away
+    const layer=(n,r0,r1,h0,h1,w0,w1,tint,tex,skip)=>{ const m=new T.MeshBasicMaterial({map:tex,color:new T.Color(tint).multiplyScalar(1.6)}); m.toneMapped=false; /* lit windows shine instead of being toned down */ const geo=new T.BoxGeometry(1,1,1); geo.translate(0,.5,0);
       const im=new T.InstancedMesh(geo,m,n), M=new T.Matrix4(), Q=new T.Quaternion(), S=new T.Vector3(), P=new T.Vector3(); let k=0;
       for(let t=0;t<n*4&&k<n;t++){ const a=Math.random()*Math.PI*2, r=rand(r0,r1), x=Math.cos(a)*r, z=Math.sin(a)*r*1.05+8; if(skip(x,z)) continue;
         const w=rand(w0,w1), h=rand(h0,h1); Q.setFromAxisAngle(S.set(0,1,0),-a+Math.PI/2+rand(-.2,.2)); im.setMatrixAt(k++,M.compose(P.set(x,-.05,z),Q,S.set(w,h,rand(w0,w1)))); }
       im.count=k; im.userData.noMerge=1; im.frustumCulled=false; scene.add(im); };
     const clear=(x,z)=>Math.abs(x)<34&&z>-62&&z<70; // keep clear of the temple grounds
-    layer(90,64,92,3,7,5,10,"#ffffff",winTex(2,2,.05,.6),clear);        // 鄉村: low houses, a few warm windows
-    layer(70,96,118,9,26,7,14,"#ffffff",winTex(3,5,.25,.7),clear);      // 小鎮
-    layer(60,122,142,26,62,9,18,"#ffffff",winTex(3,8,.45,.8),clear);
+    layer(90,64,92,3,7,5,10,"#ffffff",winTex(4,4,0,.55),clear);        // 鄉村: low houses, a few warm windows
+    layer(70,96,118,9,26,7,14,"#ffffff",winTex(6,10,0,.65),clear);      // 小鎮
+    layer(60,122,142,26,62,9,18,"#ffffff",winTex(6,16,0,.75),clear);
     // the glow of a city at night, low on the horizon behind the skyline
     { const gt=cvs(8,128,(x,w,h)=>{ const g=x.createLinearGradient(0,0,0,h); g.addColorStop(0,"rgba(0,0,0,1)"); g.addColorStop(.55,"rgb(70,40,30)"); g.addColorStop(1,"rgb(150,90,50)"); x.fillStyle=g; x.fillRect(0,0,w,h); });
       const ring=new T.Mesh(new T.CylinderGeometry(146,146,55,48,1,true),new T.MeshBasicMaterial({map:gt,transparent:true,blending:T.AdditiveBlending,depthWrite:false,side:T.BackSide,fog:false}));
@@ -2459,12 +2478,12 @@ function camOK(x,y,z){ if(y<.35) return false; const ax=Math.abs(x);
   if(ax<11.5){ if(z<HZ-.35) return z>-14.5&&y<HH-.35; return (Math.abs(ax-FD.x)<FD.sw/2-.1&&y<FD.sh-.15)||(ax<FD.cw/2-.1&&y>1.2&&y<FD.ch-.15); }
   if(ax<12.5) return Math.abs(z-BGZ)<1.3&&y<3.1;
   if(z<SHZ1-.3) return ax<SHX1-.3&&z>SHZ0+.3&&y<SHH-.3;
-  if(z<SHZ1+.3) return Math.abs(ax-SHXC)<SHDOOR/2-.1&&y<2.7;
-  if(ax>GH.x0-.1&&z>GH.z0-.3&&z<GH.z1+.3){ if(z<GH.z0+.25||z>GH.z1-.25) return Math.abs(ax-SHXC)<1.0&&y<2.8; return ax>GH.x0+.3&&ax<GH.x1-.3&&y<GH.H-.3; } // garden-path hall
+  if(z<SHZ1+.3) return Math.abs(ax-SHXC)<1.0&&y<2.5; /* moon gate */
+  if(ax>GH.x0-.1&&z>SHZ1+.3&&z<GH.z1+.3){ if(z>GH.z1-.25) return Math.abs(ax-SHXC)<1.0&&y<2.8; return ax>GH.x0+.3&&ax<GH.x1-.3&&y<GH.H-.3; } // the joined garden-path hall
   return ax<25.5&&y<16; }
 // which room a point is in ("O" = outdoors); indoors the camera never leaves your room through a doorway
 function camRoom(x,z){ const ax=Math.abs(x);
-  if(ax<HX&&z>-HZ&&z<HZ) return "M"; if(ax>SHX0&&ax<SHX1+.2&&z>SHZ0&&z<SHZ1) return "S"+Math.sign(x); if(ax>GH.x0&&ax<GH.x1+.2&&z>GH.z0&&z<GH.z1) return "G"+Math.sign(x);
+  if(ax<HX&&z>-HZ&&z<HZ) return "M"; if(ax>SHX0&&ax<SHX1+.2&&z>SHZ0&&z<SHZ1) return "S"+Math.sign(x); if(ax>GH.x0&&ax<GH.x1+.2&&z>SHZ1&&z<GH.z1) return "G"+Math.sign(x);
   if(ax<RH.x&&z<RH.z0&&z>RH.z1) return "H"; if(ax>RS.x0&&ax<RS.x1+.2&&z<RS.z0&&z>RS.z1) return "Q"+Math.sign(x); return "O"; }
 function camLimit(from,to,out){ if(myFly) return out.copy(to); let lo=0; const N=24; const room0=camRoom(from.x,from.z); // inside a 偏殿 the camera stays indoors (it used to slip out the garden door and end up behind the trees)
   const inSide=Math.abs(from.x)>12.5&&from.z<SHZ1-.3;
@@ -2571,10 +2590,10 @@ function onTap(cx,cy){ ensureAudio(); if(customizing) return; if(sheetKind){ clo
   if(h.object.userData.floor){ if(h.object===floor&&h.point.z<-9.6&&Math.abs(h.point.x)<3){ goStation("altar"); return; } const c=myFly?flyClamp(h.point.x,h.point.z):clampSpot(h.point.x,h.point.z); walkTo(c[0],c[1]); } }
 const isIn=z=>z<HZ;
 // zones: M main hall, C courtyard, S± side hall, P± garden path; doors link them
-function zoneOf(x,z){ const ax=Math.abs(x), sd=x<0?"-":"+"; if(z>=HZ+.1) return "C"; if(z<RH.z0) return ax<RH.x?"H":"Q"+sd; if(z<RY0) return "B"; if(ax>=12.2&&z<SHZ0-.05) return "K"+sd; if(ax<12.2) return "M"; if(ax>=GH.x0&&ax<GH.x1&&z>GH.z0&&z<GH.z1&&Math.abs(ax-SHXC)>1.1) return "G"+sd; /* inside a garden-path hall, off the path */ return (z<SHZ1?"S":"P")+sd; }
+function zoneOf(x,z){ const ax=Math.abs(x), sd=x<0?"-":"+"; if(z>=HZ+.1) return "C"; if(z<RH.z0) return ax<RH.x?"H":"Q"+sd; if(z<RY0) return "B"; if(ax>=12.2&&z<SHZ0-.05) return "K"+sd; if(ax<12.2) return "M"; if(ax>=GH.x0&&ax<GH.x1&&z>SHZ1&&z<GH.z1&&Math.abs(ax-SHXC)>1.1) return "G"+sd; /* inside a garden-path hall, off the path */ return (z<SHZ1?"S":"P")+sd; }
 const ZRECT={M:[-11,11,-9.5,HZ-.6],C:[-22,22,HZ+.7,HZ+YX+20.4],"S+":[12.9,SHX1-3.2,SHZ0+.7,-2],"S-":[-(SHX1-3.2),-12.9,SHZ0+.7,-2],"P+":[SHXC-1,SHXC+1,-.7,HZ+.6],"P-":[-SHXC-1,-SHXC+1,-.7,HZ+.6],
   "K+":[12.7,RS.x1-.5,RY0+.2,SHZ0-.4],"K-":[-RS.x1+.5,-12.7,RY0+.2,SHZ0-.4],B:[-RS.x1+.5,RS.x1-.5,RH.z0+.5,RY0-.3],
-  H:[-RH.x+.5,RH.x-.5,-38.9,RH.z0-.5],"Q+":[RS.x0+.6,RS.x1-.6,-38.4,RS.z0-.5],"Q-":[-RS.x1+.6,-RS.x0-.6,-38.4,RS.z0-.5],"G+":[SHXC+1.1,GH.x1-.6,GH.z0+.5,GH.z1-.5],"G-":[-(GH.x1-.6),-(SHXC+1.1),GH.z0+.5,GH.z1-.5]};
+  H:[-RH.x+.5,RH.x-.5,-38.9,RH.z0-.5],"Q+":[RS.x0+.6,RS.x1-.6,-38.4,RS.z0-.5],"Q-":[-RS.x1+.6,-RS.x0-.6,-38.4,RS.z0-.5],"G+":[SHXC+1.1,GH.x1-.6,SHZ1+.5,GH.z1-.5],"G-":[-(GH.x1-.6),-(SHXC+1.1),SHZ1+.5,GH.z1-.5]};
 const ZLINK={M:["S+","S-","C"],C:["M","P+","P-"],"S+":["P+","M","K+"],"S-":["P-","M","K-"],"P+":["S+","C","G+"],"P-":["S-","C","G-"],"G+":["P+"],"G-":["P-"],"K+":["S+","B"],"K-":["S-","B"],B:["K+","K-","H","Q+","Q-"],H:["B","Q+","Q-"],"Q+":["B","H"],"Q-":["B","H"]};
 function doorPts(a,b,fx,tx,fz){ const key=a+">"+b, s=(a+b).includes("-")?-1:1;
   if(key==="M>C"||key==="C>M"){ // 龍邊進、虎邊出: in by the +x door, out by the -x door; someone already in a doorway keeps going straight through it
@@ -2593,7 +2612,7 @@ function walkable(x,z){ if(opInside(x,z)||ptInside(x,z)) return false; const ax=
   if(ax<=11&&z>=-9.5&&z<=HZ-.6) return true; if(Math.abs(ax-FD.x)<.8&&z>HZ-.7&&z<HZ+.8) return true; if(ax<=22&&z>=HZ+.7&&z<=HZ+YX+18) return true; if(ax>=4.5&&ax<=17&&z>HZ+YX+18&&z<=HZ+YX+20.6) return true;
   if(ax>10.9&&ax<13&&Math.abs(z-BGZ)<1.1) return true; if(ax>=12.9&&ax<=SHX1-3.2&&z>=SHZ0+.7&&z<=-2) return true;
   if(Math.abs(ax-SHXC)<=.9&&z>=-2.2&&z<=HZ+.8) return true;
-  if(ax>=GH.x0+.55&&ax<=GH.x1-.6&&z>=GH.z0+.5&&z<=GH.z1-.5&&!(ax>GH.x1-2.3&&Math.abs(z-(GH.z0+GH.z1)/2)<1.5)) return true; // inside a garden-path hall, short of its shrine
+  if(ax>=GH.x0+.55&&ax<=GH.x1-.6&&z>=SHZ1+.5&&z<=GH.z1-.5&&!(ax>GH.x1-2.3&&Math.abs(z-(GH.z0+GH.z1)/2)<1.5)) return true; // inside a garden-path hall, short of its shrine
   if(ax>=13.15&&ax<=14.65&&z>SHZ0-1&&z<SHZ0+.8) return true;                 // 偏殿 arched back door
   if(ax>=12.7&&ax<=RS.x1-.5&&z>=RY0-.1&&z<=SHZ0-.4) return true;              // strip behind the 偏殿
   if(ax<=RS.x1-.5&&z>=RH.z0+.5&&z<RY0){ if(ax<2.65&&z>-18.1) return false; for(const [px,pz] of RPINE) if(Math.hypot(x-px,z-pz)<1.05) return false; return true; } // 後埕
@@ -4847,7 +4866,7 @@ function buildApplyOne(it){ const m=BUILD.layout.mods&&BUILD.layout.mods[it.id],
 function buildMakeAdd(a){ const g=new T.Group(); g.userData.noMerge=1; scene.add(g); g.position.fromArray(a.p); g.rotation.y=a.r||0;
   const fin=w=>{ g.add(w); g.scale.set(1,1,1); const it=regEdit(a.id,BUILD_NAME[a.m]||a.m,g,true); it.m=a.m; if(a.pair){ it.pair=a.pair; const P=BUILD.items.get(a.pair); if(P) P.pair=a.id; } g.scale.fromArray(a.s||[1,1,1]); };
   if(a.m.startsWith("decor:")) loadShared("decor",m=>{ const o=m.getObjectByName(a.m.slice(6)); if(!o) return; const c=o.clone(); c.position.set(0,0,0); fin(fitModel(c,1)); });
-  else loadShared(a.m,m=>{ const c=m.clone(); c.traverse(q=>{ if(q.isMesh){ q.material=q.material.clone(); q.material.side=T.DoubleSide; } }); fin(fitModel(c,1)); });
+  else loadShared(a.m,m=>{ const c=m.clone(); c.traverse(q=>{ if(q.isMesh){ q.material=q.material.clone(); q.material.side=T.DoubleSide; } }); if(/^roof/.test(a.m)) roofClipObj(c); fin(fitModel(c,1)); });
   return g; }
 function buildApplyAll(){ BUILD.items.forEach(it=>{ if(!it.add) buildApplyOne(it); });
   // added models: drop the ones no longer listed, make the new ones, update the rest
@@ -4882,7 +4901,7 @@ function buildPanel(){ const P=$("#buildPanel"); document.body.classList.toggle(
     <div class="bp-row"><button class="chip" data-bp="drop">⬇ 貼到下方物件上</button><button class="chip ${BUILD.snap?"on":""}" data-bp="snap">🧲 防穿模：${BUILD.snap?"開":"關"}</button></div>
     <div class="bp-row"><button class="chip" data-bp="all" data-d="-1">整體縮小 5%</button><button class="chip" data-bp="all" data-d="1">整體放大 5%</button></div>
     <div class="bp-row"><button class="chip ${BUILD.place?"on":""}" data-bp="place">📍 點地面放到那裡：${BUILD.place?"開":"關"}</button><button class="chip" data-bp="here">移到我前面</button></div>
-    <div class="bp-row">${it.add?`<button class="chip" data-bp="del">🗑 刪除</button><button class="chip" data-bp="dup">複製一個</button>`:`<button class="chip" data-bp="hide">${o.visible?"隱藏":"顯示"}</button><button class="chip" data-bp="reset">回到原本位置</button>`}</div>`; }
+    <div class="bp-row"><button class="chip bp-del" data-bp="del">🗑 刪除</button>${it.add?`<button class="chip" data-bp="dup">複製一個</button>`:`${o.visible?"":`<button class="chip" data-bp="hide">顯示回來</button>`}<button class="chip" data-bp="reset">回到原本位置</button>`}</div>`; }
   h+=`<button class="primary wide" data-bp="save">💾 固定（存起來，所有人都看得到）</button><p class="bp-note">移動不會改變走路的範圍；固定後我也可以把它寫進遊戲裡。</p>`;
   P.innerHTML=h; }
 /* keeping objects from sinking into each other: compares boxes around each item. "貼到下方物件上" sets the selected item onto the
@@ -4930,7 +4949,7 @@ function buildAct(a,el,rep){ const d=+(el.dataset.d||0);
   if(a==="here"){ const [x,z]=buildFront(); it.obj.position.x=x; it.obj.position.z=z; buildPanel(); return; }
   if(a==="hide"){ it.obj.visible=!it.obj.visible; buildPanel(); return; }
   if(a==="reset"){ const df=it.def; it.obj.position.fromArray(df.p); it.obj.rotation.y=df.r; it.obj.scale.fromArray(df.s); it.obj.visible=true; buildPanel(); return; }
-  if(a==="del"){ scene.remove(it.obj); BUILD.items.delete(it.id); buildSel(null); return; }
+  if(a==="del"){ const tw=BUILD.sym&&it.pair&&BUILD.items.get(it.pair); for(const x of [it,tw]){ if(!x) continue; if(x.add){ x.obj.parent&&x.obj.parent.remove(x.obj); BUILD.items.delete(x.id); } else { x.obj.visible=false; x.touched=true; } } buildSel(null); toast(it.add?"已刪除（可以按復原）":"已刪除（可以按復原或「回到原本位置」找回來）",2600); return; }
   if(a==="dup"){ const id="add"+Date.now().toString(36)+(BUILD.n++), o=it.obj; buildMakeAdd({id,m:it.m,p:[o.position.x+1,o.position.y,o.position.z+1],r:o.rotation.y,s:o.scale.toArray()}); const wait=setInterval(()=>{ if(BUILD.items.has(id)){ clearInterval(wait); buildSel(id); } },150); setTimeout(()=>clearInterval(wait),15000); return; }
   if(["px","py","pz","ry","sx","sy","sz","all"].includes(a)) buildNudge(a,d); }
 { const P=$("#buildPanel"); let rep=null;
