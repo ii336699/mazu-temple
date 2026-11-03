@@ -1339,24 +1339,90 @@ const yardTex=cvs(512,512,(x,w,h)=>{ const s=64; for(let i=0;i<8;i++)for(let j=0
   noise(x,w,h,.14,"rgba(40,30,24,A)"); x.strokeStyle="rgba(60,44,36,.8)"; x.lineWidth=2; for(let i=0;i<=8;i++){ x.beginPath(); x.moveTo(i*s,0); x.lineTo(i*s,h); x.stroke(); x.beginPath(); x.moveTo(0,i*s); x.lineTo(w,i*s); x.stroke(); } });
 yardTex.wrapS=yardTex.wrapT=T.RepeatWrapping; yardTex.repeat.set(9,7);
 const yard=mesh(new T.PlaneGeometry(40,30+YX),new T.MeshStandardMaterial({map:yardTex,roughness:.75}),0,.012,HZ+15.2+YX/2); yard.rotation.x=-Math.PI/2; yard.userData.floor=true;
+/* ---- 外觀: real-looking materials drawn on the spot (no files to download) and a curved 燕尾 roof ---- */
+// red brick (紅磚) with pale mortar, each brick a slightly different red
+const brickTex=cvs(512,512,(x,w,h)=>{ x.fillStyle="#d9ccb4"; x.fillRect(0,0,w,h); const bw=64, bh=24;
+  for(let r=0;r*bh<h;r++) for(let c=-1;c*bw<w;c++){ const ox=(r%2)*bw/2, v=Math.random(); x.fillStyle=`rgb(${168+v*40|0},${58+v*22|0},${38+v*14|0})`; x.fillRect(c*bw+ox+2,r*bh+2,bw-4,bh-4);
+    x.fillStyle="rgba(255,220,190,.12)"; x.fillRect(c*bw+ox+2,r*bh+2,bw-4,3); x.fillStyle="rgba(60,10,0,.18)"; x.fillRect(c*bw+ox+2,r*bh+bh-5,bw-4,3); }
+  noise(x,w,h,.14,"rgba(60,15,5,A)"); noise(x,w,h,.08,"rgba(255,240,220,A)"); });
+brickTex.wrapS=brickTex.wrapT=T.RepeatWrapping;
+// carved granite dado: grey stone, a sunken panel with a flower-and-scroll relief, framed
+const stonePanelTex=cvs(512,256,(x,w,h)=>{ x.fillStyle="#a49e94"; x.fillRect(0,0,w,h); noise(x,w,h,.25,"rgba(60,55,50,A)"); noise(x,w,h,.15,"rgba(255,255,250,A)");
+  x.strokeStyle="rgba(70,64,58,.9)"; x.lineWidth=6; x.strokeRect(22,22,w-44,h-44); x.strokeStyle="rgba(235,230,220,.7)"; x.lineWidth=2; x.strokeRect(29,29,w-58,h-58);
+  x.fillStyle="#8f897f"; x.fillRect(34,34,w-68,h-68); const cx=w/2, cy=h/2;
+  const carve=(f)=>{ x.save(); x.translate(2,2); x.strokeStyle="rgba(60,55,50,.9)"; f(); x.restore(); x.strokeStyle="rgba(230,226,215,.85)"; f(); };
+  carve(()=>{ x.lineWidth=5; for(const s of [-1,1]){ x.beginPath(); x.moveTo(cx+s*30,cy); x.bezierCurveTo(cx+s*90,cy-50,cx+s*150,cy+40,cx+s*200,cy-10); x.stroke(); for(let i=0;i<4;i++){ const px=cx+s*(60+i*40), py=cy-8+(i%2?18:-18); x.beginPath(); x.arc(px,py,12,0,Math.PI*2); x.stroke(); } }
+    for(let i=0;i<8;i++){ const a=i/8*Math.PI*2; x.beginPath(); x.ellipse(cx+Math.cos(a)*18,cy+Math.sin(a)*18,14,7,a,0,Math.PI*2); x.stroke(); } x.beginPath(); x.arc(cx,cy,8,0,Math.PI*2); x.stroke(); }); });
+// round lattice window (圓窗) in a carved stone frame, with see-through gaps
+const roundWinTex=cvs(256,256,(x,w,h)=>{ const c=w/2; x.clearRect(0,0,w,h); x.fillStyle="#b3ada3"; x.fillRect(8,8,w-16,h-16); noise(x,w,h,.2,"rgba(70,64,58,A)");
+  x.strokeStyle="rgba(70,64,58,.8)"; x.lineWidth=4; x.strokeRect(16,16,w-32,h-32); for(const [px,py] of [[30,30],[w-30,30],[30,h-30],[w-30,h-30]]){ x.beginPath(); x.arc(px,py,9,0,Math.PI*2); x.stroke(); }
+  x.globalCompositeOperation="destination-out"; x.beginPath(); x.arc(c,c,92,0,Math.PI*2); x.fill(); x.globalCompositeOperation="source-over";
+  x.strokeStyle="#c9c2b6"; x.lineWidth=9; x.beginPath(); x.arc(c,c,92,0,Math.PI*2); x.stroke(); x.lineWidth=7; x.strokeStyle="#bdb6aa";
+  for(let i=0;i<8;i++){ const a=i/8*Math.PI*2; x.beginPath(); x.moveTo(c,c); x.lineTo(c+Math.cos(a)*90,c+Math.sin(a)*90); x.stroke(); } for(const r of [30,60]){ x.beginPath(); x.arc(c,c,r,0,Math.PI*2); x.stroke(); }
+  for(let i=0;i<8;i++){ const a=(i+.5)/8*Math.PI*2; x.beginPath(); x.arc(c+Math.cos(a)*75,c+Math.sin(a)*75,11,0,Math.PI*2); x.stroke(); } });
+// barrel roof tiles (筒瓦): rounded cover tiles in rows, orange-red, the way the reference roofs look
+const barrelTex=cvs(256,256,(x,w,h)=>{ const cols=8, cw=w/cols, rows=4, rh=h/rows; x.fillStyle="#7a2a12"; x.fillRect(0,0,w,h);
+  for(let i=0;i<cols;i++){ const g=x.createLinearGradient(i*cw,0,(i+1)*cw,0); g.addColorStop(0,"#8c3214"); g.addColorStop(.35,"#e2683a"); g.addColorStop(.55,"#f08a55"); g.addColorStop(1,"#9a3a18"); x.fillStyle=g; x.fillRect(i*cw+2,0,cw-4,h); }
+  for(let r=0;r<rows;r++){ const g=x.createLinearGradient(0,r*rh,0,r*rh+12); g.addColorStop(0,"rgba(50,12,4,.65)"); g.addColorStop(1,"rgba(50,12,4,0)"); x.fillStyle=g; x.fillRect(0,r*rh,w,12);
+    for(let i=0;i<cols;i++){ x.fillStyle="rgba(255,190,140,.35)"; x.fillRect(i*cw+cw*.38,r*rh+rh-8,cw*.18,5); } }
+  noise(x,w,h,.12,"rgba(40,10,0,A)"); });
+barrelTex.wrapS=barrelTex.wrapT=T.RepeatWrapping;
+const texRep=(t,rx,ry)=>{ const c=t.clone(); c.needsUpdate=true; c.wrapS=c.wrapT=T.RepeatWrapping; c.repeat.set(rx,ry); return c; };
+
+// a curved roof slope: concave from ridge to eave, the corners sweeping up and out like the reference temples
+function curvedRoof({W,run,rise,y0,z0=0,x0=0,sides=[-1,1],lift=1.1,flare=.6,seg=[48,14],mat:m,parent=scene}){ const out=[];
+  for(const s of sides){ const g=new T.PlaneGeometry(W,1,seg[0],seg[1]), p=g.attributes.position;
+    for(let i=0;i<p.count;i++){ const u=p.getX(i)/(W/2), t=.5-p.getY(i), e=Math.pow(Math.abs(u),6);
+      const y=rise*(1-t)-rise*.16*Math.sin(Math.PI*t)+lift*e*t*t, z=s*(t*run+flare*e*t*t), x=p.getX(i)*(1+.04*e*t);
+      p.setXYZ(i,x0+x,y0+y,z0+z); }
+    if(s<0){ const ix=g.index.array; for(let i=0;i<ix.length;i+=3){ const a=ix[i]; ix[i]=ix[i+1]; ix[i+1]=a; } } // keep the tiles facing outwards on both slopes
+    g.computeVertexNormals(); const r=new T.Mesh(g,m); r.userData.noMerge=0; parent.add(r); out.push(r); } return out; }
+// the 燕尾 ridge: a ridge beam whose ends rise and split into a swallow's tail
+function swallowRidge({len,y,z=0,x0=0,red,gold,parent=scene,big=1}){ box(len,.5*big,.5*big,red,x0,y,z,parent); box(len+.1,.1*big,.56*big,gold,x0,y+.27*big,z,parent);
+  for(const s of [-1,1]){ const base=new T.Vector3(x0+s*len/2,y,z), mkTail=(dz)=>{ const pts=[]; for(let i=0;i<=18;i++){ const t=i/18; pts.push(new T.Vector3(base.x+s*(t*2.2*big),base.y+t*t*2.3*big,base.z+dz*t*t)); } return new T.CatmullRomCurve3(pts); };
+    for(const dz of [-.32*big,.32*big]){ const c=mkTail(dz); const tube=new T.Mesh(new T.TubeGeometry(c,24,.17*big,8,false),red); parent.add(tube); const tip=c.getPoint(1); mesh(new T.SphereGeometry(.12*big,10,8),gold,tip.x,tip.y,tip.z,parent); } } }
+// a 剪黏-style dragon on the ridge: green-and-gold body curling up, head towards the pearl in the middle
+function ridgeDragon(s,y,z,parent=scene,k=1){ const green=mat("#2e9a4e",{roughness:.45,metalness:.1}), gold=mat("#e8b23c",{metalness:.6,roughness:.35}), red=mat("#d8341e",{roughness:.5});
+  const pts=[]; for(let i=0;i<=40;i++){ const t=i/40; pts.push(new T.Vector3(s*(5.2-t*3.6)*k,y+(.25+Math.sin(t*Math.PI*2.2)*.45+t*.6)*k,z+Math.cos(t*Math.PI*3)*.12*k)); }
+  const c=new T.CatmullRomCurve3(pts); parent.add(new T.Mesh(new T.TubeGeometry(c,60,.2*k,10,false),green));
+  for(let i=1;i<14;i++){ const p=c.getPoint(i/14); mesh(new T.ConeGeometry(.08*k,.26*k,6),gold,p.x,p.y+.2*k,p.z,parent); } // spines
+  const hp=c.getPoint(1), head=mesh(new T.SphereGeometry(.34*k,14,10),green,hp.x-s*.15*k,hp.y+.1*k,hp.z,parent); head.scale.set(1.5,1,1);
+  for(const dz of [-.18,.18]) mesh(new T.ConeGeometry(.06*k,.4*k,6),gold,hp.x-s*.05*k,hp.y+.48*k,hp.z+dz*k,parent).rotation.z=s*.5; // horns
+  mesh(new T.SphereGeometry(.08*k,8,6),red,hp.x-s*.55*k,hp.y+.05*k,hp.z,parent); }
+// 福祿壽 three small figures on a little platform in the middle of the ridge
+function ridgeTrio(y,z,parent=scene,k=1){ const plat=mat("#2b6fae",{roughness:.5}), gold=mat("#e8b23c",{metalness:.6,roughness:.35}); box(2.2*k,.35*k,.8*k,plat,0,y+.17*k,z,parent); box(2.3*k,.08*k,.86*k,gold,0,y+.38*k,z,parent);
+  [["#c0392b",-.7,1],["#2e7d4f",0,1.15],["#2b5fa8",.7,1]].forEach(([c,x,hh])=>{ const robe=mat(c,{roughness:.5}); cyl(.16*k,.28*k,.8*k*hh,robe,x*k,y+(.42+.4*hh)*k,z,parent,12); mesh(new T.SphereGeometry(.17*k,12,10),mat("#f0c9a0",{roughness:.6}),x*k,y+(.42+.8*hh+.15)*k,z,parent); mesh(new T.ConeGeometry(.15*k,.22*k,10),gold,x*k,y+(.42+.8*hh+.36)*k,z,parent); }); }
 // facade: porch columns, porch roof, door plaque, lanterns, stone lions, hall roof
 { const redM=mat("#9c1d13",{roughness:.45}), goldP=mat("#d6a24a",{metalness:.85,roughness:.3}), stone=mat("#8a8278",{roughness:.85}), roofM=new T.MeshStandardMaterial({map:tileTex,roughness:.55});
   for(const x of [-8.6,-3.9,3.9,8.6]){ cyl(.32,.32,6.8,redM,x,3.4,HZ+2.2,scene,18); cyl(.46,.5,.4,stone,x,.2,HZ+2.2,scene,18); cyl(.36,.36,.25,goldP,x,6.6,HZ+2.2,scene,18); }
   box(18.6,.6,.4,new T.MeshStandardMaterial({map:goldCarvedTex,metalness:.7,roughness:.35}),0,6.95,HZ+2.2);
-  const pr=box(26,.16,4.2,roofM,0,7.65,HZ+2.0); pr.rotation.x=.3; box(26.2,.12,.12,goldP,0,7.05,HZ+4.05);
-  box(24.4,.1,4.2,mat("#3a120b",{roughness:.9}),0,7.2,HZ+2.0).rotation.x=.3;
+  // porch roof: one curved slope from the front wall out over the columns, corners swept up
+  curvedRoof({W:26,run:4.6,rise:1.35,y0:7.05,z0:HZ+.1,sides:[1],lift:.9,flare:.5,mat:new T.MeshStandardMaterial({map:texRep(barrelTex,16,2.6),roughness:.6,side:T.DoubleSide})});
+  box(26.2,.14,.14,goldP,0,7.05+.02,HZ+4.72);
+  // front wall dressed like the reference: red brick, carved granite dado, round lattice windows
+  { const bm=(rx,ry)=>new T.MeshStandardMaterial({map:texRep(brickTex,rx,ry),roughness:.8}), z=HZ+.215;
+    for(const sd of [-1,1]){ mesh(new T.PlaneGeometry(9,8.7),bm(4.7,4.5),sd*7.5,5.65,z); mesh(new T.PlaneGeometry(9,1.3),new T.MeshStandardMaterial({map:texRep(stonePanelTex,5,1),roughness:.85}),sd*7.5,.65,z);
+      mesh(new T.PlaneGeometry(2.7,2.7),new T.MeshStandardMaterial({map:roundWinTex,transparent:true,alphaTest:.5,roughness:.8,side:T.DoubleSide}),sd*7.6,3.7,z+.01);
+      box(.5,10,.5,mat("#a49e94",{roughness:.85}),sd*11.95,5,HZ+.15); }
+    mesh(new T.PlaneGeometry(6,4.6),bm(3.1,2.4),0,7.7,z);
+    const band=cvs(512,64,(x,w,h)=>{ x.fillStyle="#1f4f9a"; x.fillRect(0,0,w,h); x.fillStyle="#e8b23c"; x.fillRect(0,0,w,6); x.fillRect(0,h-6,w,6);
+      for(let i=0;i<8;i++){ const cx=i*64+32; x.fillStyle="#2e9a4e"; x.beginPath(); x.ellipse(cx,h/2,22,13,0,0,Math.PI*2); x.fill(); x.fillStyle="#d8341e"; x.beginPath(); x.arc(cx,h/2,7,0,Math.PI*2); x.fill(); x.strokeStyle="#e8b23c"; x.lineWidth=3; x.beginPath(); x.ellipse(cx,h/2,22,13,0,0,Math.PI*2); x.stroke(); } });
+    mesh(new T.PlaneGeometry(24,.5),new T.MeshStandardMaterial({map:texRep(band,6,1),roughness:.6}),0,6.98,z+.01); }
   mesh(new T.PlaneGeometry(3.4,.95),new T.MeshStandardMaterial({map:cvs(1024,280,plaqueDraw("宮后天",false,"#141210","#e7bd63","#c9973f")),roughness:.5}),0,6.25,HZ+.22);
   for(const s of [-1,1]){ const lion=buildLion(s,stone); lion.position.set(s*5.2,0,HZ+3.0); lion.rotation.y=-s*.18; scene.add(lion); }
   for(const x of [-6.2,-2.2,2.2,6.2]){ const g=new T.Group(); g.position.set(x,5.8,HZ+2.9); scene.add(g); const b=new T.Mesh(new T.SphereGeometry(.4,18,12),lanternMat); b.scale.y=.86; g.add(b);
     for(const y of [.34,-.34]){ const c=new T.Mesh(new T.CylinderGeometry(.19,.19,.08,14),GOLD()); c.position.y=y; g.add(c); } const sp=new T.Sprite(glowMat); sp.scale.set(2.2,2.2,1); g.add(sp); }
-  // hall roof
-  const run=HZ+.8, rise=4.2, L=Math.hypot(run,rise), ang=Math.atan2(rise,run);
-  for(const s of [-1,1]){ const r=box(2*HX+1.6,.22,L,roofM,0,HH+.2+rise/2,s*run/2); r.rotation.x=s*ang; box(2*HX+1.8,.18,.18,goldP,0,HH+.22,s*run); }
-  const gt=new T.BufferGeometry(); gt.setAttribute("position",new T.Float32BufferAttribute([0,0,-run, 0,0,run, 0,rise,0],3)); gt.computeVertexNormals();
-  for(const s of [-1,1]){ const m=new T.Mesh(gt,mat("#7c1a12",{roughness:.8,side:T.DoubleSide})); m.position.set(s*(HX+.2),HH+.2,0); scene.add(m); }
-  box(2*HX+1.2,.5,.55,redM,0,HH+.2+rise+.15,0); box(2*HX+1.3,.12,.6,goldP,0,HH+.2+rise+.45,0);
-  mesh(new T.SphereGeometry(.45,18,14),goldP,0,HH+rise+1.2,0); for(const s of [-1,1]){ const pts=[]; for(let i=0;i<=16;i++){ const t=i/16; pts.push(new T.Vector3(s*(HX+.6+t*1.6),HH+rise+.35+t*t*1.8,0)); } mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts),20,.16,8,false),redM,0,0,0); }
-  for(const s of [-1,1]){ const pts=[]; for(let i=0;i<=20;i++){ const t=i/20; pts.push(new T.Vector3(s*(1.1+t*3.6),HH+rise+.55+Math.sin(t*Math.PI*2)*.35,0)); } mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts),30,.13,8,false),goldP,0,0,0); }
+  // hall roof: two curved slopes with swept-up corners, gables that follow the curve, a 燕尾 ridge with dragons, a pearl and 福祿壽
+  { const run=HZ+.8, rise=4.2, W=2*HX+1.6, y0=HH+.2, L=Math.hypot(run,rise);
+    curvedRoof({W,run,rise,y0,lift:1.6,flare:1.0,mat:new T.MeshStandardMaterial({map:texRep(barrelTex,W/1.7,L/2.2),roughness:.6,side:T.DoubleSide})});
+    const prof=t=>rise*(1-t)-rise*.16*Math.sin(Math.PI*t), sh=new T.Shape(); sh.moveTo(-run,0); for(let i=0;i<=40;i++){ const t=i/40; sh.lineTo(-run+t*run,prof(1-t)); } for(let i=1;i<=40;i++){ const t=i/40; sh.lineTo(t*run,prof(t)); } sh.lineTo(-run,0);
+    const gm=new T.MeshStandardMaterial({map:texRep(brickTex,run/1.9,rise/1.9),roughness:.8,side:T.DoubleSide});
+    for(const sd of [-1,1]){ const m=new T.Mesh(new T.ShapeGeometry(sh,1),gm); m.rotation.y=Math.PI/2; m.position.set(sd*(HX+.2),y0-.02,0); scene.add(m);
+      const tr=mat("#2b5fa8",{roughness:.5}); const b2=box(.12,.35,run*1.6,tr,sd*(HX+.27),y0+rise*.45,0); b2.visible=true; } // painted band across each gable
+    swallowRidge({len:2*HX-1,y:y0+rise+.2,red:redM,gold:goldP,big:1.25});
+    mesh(new T.SphereGeometry(.55,18,14),mat("#ffcf4a",{metalness:.5,roughness:.3,emissive:"#a86a10",emissiveIntensity:.35}),0,y0+rise+3.2,0);
+    for(const sd of [-1,1]) ridgeDragon(sd,y0+rise+.45,0,scene,1.5);
+    ridgeTrio(y0+rise+.45,0,scene,1.5); }
 }
 plight("#ffb070",1.3,16,0,4.2,HZ+6);
 // extra strings of lanterns criss-crossing the courtyard (one instanced mesh, glows on every other lantern)
