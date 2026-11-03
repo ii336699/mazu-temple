@@ -84,6 +84,9 @@ body.hideui .top,body.hideui .actions,body.hideui .rot,body.hideui .standup,body
 body.hideui .caption{display:none}
 .near-chip{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 100px);z-index:5;border-radius:999px;padding:9px 18px;font-size:15px;border:1px solid var(--gold);color:var(--gold);font-family:var(--f-display);letter-spacing:.06em}
 body.hideui .near-chip{display:none!important}
+.fly-ctl{position:fixed;right:max(14px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 170px);z-index:6;display:flex;flex-direction:column;gap:10px}.fly-ctl[hidden]{display:none}
+.fly-ctl button{width:58px;height:58px;border-radius:50%;border:1px solid var(--gold);color:var(--gold);font-size:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;touch-action:none;user-select:none;-webkit-user-select:none}.fly-ctl small{font-size:10px;margin-top:2px;color:var(--ink)}
+body.hideui .fly-ctl{display:none!important}
 .hb-btn{bottom:calc(env(safe-area-inset-bottom,0px) + 150px)!important;font-size:17px!important;padding:10px 22px!important;color:#ffe2a0;border:1px solid #ffd27a;background:linear-gradient(#c8281c,#7a0f0a)!important;box-shadow:0 0 18px rgba(255,190,80,.6);font-family:var(--f-display);letter-spacing:.08em}
 .standup{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 96px);transform:translateX(-50%);border-radius:999px;padding:8px 18px;font-size:14px;z-index:5}
 
@@ -402,6 +405,7 @@ body.hideui .joy,body.customizing .joy,body.hideui .camreset,body.customizing .c
 <button class="standup glass" id="standBtn" hidden>起身</button>
 <button class="standup glass sl-btn" id="slBtn" hidden>🏮 施放天燈</button>
 <button class="standup glass hb-btn" id="hbBtn" hidden>🧧 撒紅包</button>
+<div class="fly-ctl" id="flyCtl" hidden><button class="glass" id="flyUp" aria-label="往上飛">▲<small>上升</small></button><button class="glass" id="flyDn" aria-label="往下飛">▼<small>下降</small></button></div>
 <button class="glass ui-show" id="uiShow" hidden>顯示介面</button>
 <button class="glass near-chip" id="nearChip" hidden></button>
 <div class="caption" id="caption" data-hide></div>
@@ -888,7 +892,7 @@ box(HX*2,HH,.4,mat("#5e130c",{roughness:.8}),0,HH/2,-HZ);
 box(HX*2,1.2,.45,stoneMat,0,.6,-HZ+.02);
 // front wall with doorway
 // three doorways: the middle one is open but closed off at the bottom by a red board; people go in by the 龍邊 door (+x) and out by the 虎邊 door
-const FD={cw:3.4, ch:5.0, sw:2.2, sh:3.9, x:5.0};
+const FD={cw:3.4, ch:5.0, sw:2.2, sh:3.9, x:6.25}; // side doors centred between the porch columns at 3.9 and 8.6
 { const seg=(x0,x1)=>box(x1-x0,HH,.4,redWall,(x0+x1)/2,HH/2,HZ);
   for(const s of [-1,1]){ seg(s>0?FD.cw/2:-(FD.x-FD.sw/2),s>0?FD.x-FD.sw/2:-FD.cw/2); seg(s>0?FD.x+FD.sw/2:-HX,s>0?HX:-(FD.x+FD.sw/2));
     box(FD.sw,HH-FD.sh,.4,redWall,s*FD.x,FD.sh+(HH-FD.sh)/2,HZ); box(FD.sw+.4,.3,.6,GOLD(),s*FD.x,FD.sh,HZ); }
@@ -1284,6 +1288,26 @@ const BAGUA_WIN=cvs(256,256,(x,w,h)=>{ const oct=r=>{ x.beginPath(); for(let i=0
   x.save(); oct(104); x.clip(); x.strokeStyle="#e6b85a"; x.lineWidth=5; for(let k=-260;k<260;k+=26){ x.beginPath(); x.moveTo(128+k-130,-4); x.lineTo(128+k+130,260); x.stroke(); x.beginPath(); x.moveTo(128+k+130,-4); x.lineTo(128+k-130,260); x.stroke(); } x.restore();
   x.beginPath(); x.arc(128,128,30,0,7); x.fillStyle="#d9a441"; x.fill(); x.beginPath(); x.arc(128,128,24,0,7); x.fillStyle="#f4ecd8"; x.fill(); x.beginPath(); x.arc(128,128,24,-Math.PI/2,Math.PI/2); x.fillStyle="#141210"; x.fill();
   x.beginPath(); x.arc(128,116,12,0,7); x.fillStyle="#f4ecd8"; x.fill(); x.beginPath(); x.arc(128,140,12,0,7); x.fillStyle="#141210"; x.fill(); x.beginPath(); x.arc(128,116,4,0,7); x.fill(); x.fillStyle="#f4ecd8"; x.beginPath(); x.arc(128,140,4,0,7); x.fill(); });
+/* the hall on each garden path, between the 偏殿 and the 廟埕: 文昌殿 (龍邊, 文昌帝君) and 福德祠 (虎邊, 土地公). The path runs straight
+   through its back and front doors; the shrine stands against the outer wall, facing the path */
+function gardenHall(side){ const sx=v=>side*v, W=GH.x1-GH.x0, D=GH.z1-GH.z0, zc=(GH.z0+GH.z1)/2, xm=(GH.x0+GH.x1)/2, dw=2.3, dh=3.0;
+  const brick=(rx,ry)=>new T.MeshStandardMaterial({map:texRep(brickTex,rx,ry),roughness:.8}), wallM=mat("#6a1a10",{roughness:.85}), goldP=mat("#d6a24a",{metalness:.85,roughness:.3}), redM=mat("#9c1d13",{roughness:.45}), stoneB=mat("#8f897f",{roughness:.85});
+  const fl=mesh(new T.PlaneGeometry(W,D),new T.MeshStandardMaterial({map:floorTex,roughness:.3}),sx(xm),.012,zc); fl.rotation.x=-Math.PI/2; fl.userData.floor=true; fl.userData.noMerge=1;
+  const ce=mesh(new T.PlaneGeometry(W,D),mat("#2b130c",{roughness:.9,side:T.DoubleSide}),sx(xm),GH.H,zc); ce.rotation.x=Math.PI/2;
+  box(.4,GH.H,D+.4,brick(D/2.2,2),sx(GH.x1),GH.H/2,zc); box(.4,GH.H,D+.4,wallM,sx(GH.x0),GH.H/2,zc);
+  for(const z of [GH.z0,GH.z1]){ const a=SHXC-dw/2, b=SHXC+dw/2; box(a-GH.x0,GH.H,.4,brick(1,2),sx((GH.x0+a)/2),GH.H/2,z); box(GH.x1+.2-b,GH.H,.4,brick(1.5,2),sx((b+GH.x1+.2)/2),GH.H/2,z);
+    box(dw,GH.H-dh,.4,brick(1,1),sx(SHXC),dh+(GH.H-dh)/2,z); box(dw+.3,.22,.56,goldP,sx(SHXC),dh,z); for(const e of [-1,1]) box(.22,dh,.5,redM,sx(SHXC+e*(dw/2+.02)),dh/2,z); box(W+.4,.4,.5,stoneB,sx(xm),.2,z+(z===GH.z1?.04:-.04)); }
+  const label=side>0?"文昌殿":"福德祠";
+  for(const [z,f] of [[GH.z1+.23,0],[GH.z0-.23,Math.PI]]){ const m=mesh(new T.PlaneGeometry(1.8,.5),new T.MeshStandardMaterial({map:plaqueTexH(label),roughness:.5}),sx(SHXC),dh+.55,z); m.rotation.y=f; }
+  for(const dz of [-1.6,1.6]){ const g=new T.Group(); g.position.set(sx(SHXC),3.8,zc+dz); scene.add(g); const b=new T.Mesh(new T.SphereGeometry(.28,14,10),lanternMat); b.scale.y=.86; g.add(b); for(const y of [.24,-.24]){ const c=new T.Mesh(new T.CylinderGeometry(.13,.13,.06,10),GOLD()); c.position.y=y; g.add(c); } const sp=new T.Sprite(glowMat); sp.scale.set(1.5,1.5,1); g.add(sp); }
+  const god=side>0?buildDeity({robe:"#2b5fa8",brow:"#1c1512",beard:"#1c1512",long:true,hat:"wusha"}):buildDeity({robe:"#c99a2e",brow:"#f2efe8",beard:"#f2efe8",long:true,hat:"wusha",prop:"ingot"}); god.userData.noMerge=1;
+  const key=side>0?"wenchang":"tudi"; buildSideShrine(side,key,side>0?"文昌帝君":"福德正神",god,[sx(GH.x1-.95),zc]);
+  swapDeity(god,key,2.25,key); setTimeout(()=>addHit(key,sx(GH.x1-.95),.9,zc,1.4,3.2),0);
+  plight("#ffcf8a",1.4,8,sx(xm),3.8,zc);
+  // roof: the temple roof model, a drawn roof until it arrives
+  const r={x:sx(xm+.1),z:zc,W:W+1.4,D:D+2.4,H:3.4,y:GH.H-.1}; const temp=curvedRoof({W:r.W,run:r.D/2,rise:1.6,y0:r.y,z0:r.z,x0:r.x,lift:.6,flare:.4,mat:new T.MeshStandardMaterial({map:texRep(barrelTex,r.W/1.6,3),roughness:.6,side:T.DoubleSide})});
+  loadShared("roof1",m=>{ const bb=new T.Box3().setFromObject(m), sz=bb.getSize(new T.Vector3()), c=bb.getCenter(new T.Vector3()); const o=m.clone(), g=new T.Group(); o.position.set(-c.x,-bb.min.y,-c.z); g.add(o); g.scale.set(r.W/sz.x,r.H/sz.y,r.D/sz.z); g.position.set(r.x,r.y,r.z); scene.add(g);
+    o.traverse(q=>{ if(q.isMesh){ q.material=q.material.clone(); q.material.side=T.DoubleSide; q.material.envMapIntensity=1.2; } }); temp.forEach(t=>scene.remove(t)); }); }
 /* walls with round-topped doorways (拱門) and moon gates (月門): the outline goes round each doorway so it opens right down to the floor
    doors: {cx,w,spring} = straight sides up to spring, then a half circle; {cx,r,cy} = a moon gate, a circle of radius r centred cy above the floor */
 function archPts(d){ const P=[]; if(d.r){ const ph=Math.asin(Math.min(.99,d.cy/d.r)), a0=Math.PI+ph, a1=-ph; for(let i=0;i<=28;i++){ const a=a0+(a1-a0)*i/28; P.push([d.cx+d.r*Math.cos(a),d.cy+d.r*Math.sin(a)]); } return P; }
@@ -1347,19 +1371,20 @@ function baguaDoor(side){ const g=new T.Group(); g.position.set(side*HX,0,BGZ); 
   for(const s of [-1,1]){ const p=mesh(new T.CircleGeometry(.42,8),new T.MeshStandardMaterial({map:bt,roughness:.5}),0,4.25,s*.22,g); if(s<0) p.rotation.y=Math.PI; }
   g.userData.noMerge=1; }
 // garden path from the side hall to the courtyard: stone path, trees and flowers on both sides
+const GH={z0:3.6, z1:10.4, x0:12.35, x1:19.2, H:4.8}; const inGH=z=>z>GH.z0-.6&&z<GH.z1+.6; // the hall on each garden path
 function gardenPath(side){ const sx=v=>side*v, z0=SHZ1+.2, z1=HZ+.6, L=z1-z0;
   const pathTex=cvs(128,512,(x,w,h)=>{ x.fillStyle="#6b5d4f"; x.fillRect(0,0,w,h); for(let j=0;j<16;j++){ const v=140+Math.random()*30; x.fillStyle=`rgb(${v},${v-8},${v-20})`; x.fillRect(8+(j%2)*10,j*32+3,w-26,26); } });
   const p=mesh(new T.PlaneGeometry(2.6,L),new T.MeshStandardMaterial({map:pathTex,roughness:.85}),sx(SHXC),.01,(z0+z1)/2); p.rotation.x=-Math.PI/2; p.userData.floor=true; p.userData.noMerge=1;
   const grass=mesh(new T.PlaneGeometry(6.4,L),mat("#2c3a1e",{roughness:1}),sx(SHXC),.004,(z0+z1)/2); grass.rotation.x=-Math.PI/2; grass.userData.floor=true; grass.userData.noMerge=1;
   const trunk=mat("#4a3020",{roughness:.95}), leaves=[mat("#2f4a26",{roughness:.9}),mat("#3d5a2c",{roughness:.9}),mat("#46622f",{roughness:.9})];
   const petals=["#ff8fb3","#ffd25e","#ff6a5c","#f4f1ea","#c58bff"].map(c=>mat(c,{roughness:.7}));
-  for(let z=z0+2.2;z<z1-1;z+=3.6) for(const o of [-1,1]){ const x=SHXC+o*2.3+(Math.random()-.5)*.3; const t=new T.Group(); t.position.set(sx(x),0,z+(Math.random()-.5)*.6); scene.add(t);
+  for(let z=z0+2.2;z<z1-1;z+=3.6) for(const o of [-1,1]){ if(inGH(z)) continue; const x=SHXC+o*2.3+(Math.random()-.5)*.3; const t=new T.Group(); t.position.set(sx(x),0,z+(Math.random()-.5)*.6); scene.add(t);
     cyl(.1,.15,1.8,trunk,0,.9,0,t,7); for(let k=0;k<3;k++){ const s=mesh(new T.SphereGeometry(.55+Math.random()*.25,10,8),leaves[k%3],(Math.random()-.5)*.5,1.9+k*.35,(Math.random()-.5)*.5,t); }
     if(Math.random()<.5){ for(let k=0;k<6;k++) mesh(new T.SphereGeometry(.09,6,5),petals[(Math.random()*5)|0],(Math.random()-.5)*1.1,1.9+Math.random()*.9,(Math.random()-.5)*1.1,t); } }
-  for(let z=z0+1;z<z1-.5;z+=.9) for(const o of [-1,1]){ const b=new T.Group(); b.position.set(sx(SHXC+o*1.55),0,z+(Math.random()-.5)*.3); scene.add(b); mesh(new T.SphereGeometry(.24,8,6),leaves[1],0,.18,0,b).scale.y=.7;
+  for(let z=z0+1;z<z1-.5;z+=.9) for(const o of [-1,1]){ if(inGH(z)) continue; const b=new T.Group(); b.position.set(sx(SHXC+o*1.55),0,z+(Math.random()-.5)*.3); scene.add(b); mesh(new T.SphereGeometry(.24,8,6),leaves[1],0,.18,0,b).scale.y=.7;
     for(let k=0;k<4;k++) mesh(new T.SphereGeometry(.07,6,5),petals[(Math.random()*5)|0],(Math.random()-.5)*.35,.3+Math.random()*.08,(Math.random()-.5)*.35,b); }
   // small stone lanterns lighting the path
-  for(const z of [z0+4.5,z0+10.5]){ const g=new T.Group(); g.position.set(sx(SHXC+1.45),0,z); scene.add(g); const st=mat("#8a8278",{roughness:.85}); box(.24,.7,.24,st,0,.35,0,g); box(.42,.08,.42,st,0,.74,0,g); const lm=new T.Mesh(new T.BoxGeometry(.26,.24,.26),new T.MeshBasicMaterial({color:new T.Color("#ffd28a")})); lm.position.y=.9; g.add(lm); mesh(new T.ConeGeometry(.34,.24,4),st,0,1.14,0,g).rotation.y=Math.PI/4; const s=new T.Sprite(glowMat); s.scale.set(1.2,1.2,1); s.position.y=.9; g.add(s); } }
+  for(const z of [GH.z0-1.2,GH.z1+1.4]){ const g=new T.Group(); g.position.set(sx(SHXC+1.45),0,z); scene.add(g); const st=mat("#8a8278",{roughness:.85}); box(.24,.7,.24,st,0,.35,0,g); box(.42,.08,.42,st,0,.74,0,g); const lm=new T.Mesh(new T.BoxGeometry(.26,.24,.26),new T.MeshBasicMaterial({color:new T.Color("#ffd28a")})); lm.position.y=.9; g.add(lm); mesh(new T.ConeGeometry(.34,.24,4),st,0,1.14,0,g).rotation.y=Math.PI/4; const s=new T.Sprite(glowMat); s.scale.set(1.2,1.2,1); s.position.y=.9; g.add(s); } }
 for(const s of [-1,1]){ baguaDoor(s); sideHall(s,s>0?"財神殿":"月老殿"); gardenPath(s); }
  const shrineLights=[plight("#ffd9a0",2.4,7,8.37,3.6,-HZ+3.4),plight("#ffd9a0",2.4,7,-8.37,3.6,-HZ+3.4)];
 
@@ -1458,7 +1483,7 @@ function ridgeTrio(y,z,parent=scene,k=1){ const plat=mat("#2b6fae",{roughness:.5
   { const bm=(rx,ry)=>new T.MeshStandardMaterial({map:texRep(brickTex,rx,ry),roughness:.8}), z=HZ+.215;
     for(const sd of [-1,1]){ for(const [a,b] of [[FD.cw/2,FD.x-FD.sw/2],[FD.x+FD.sw/2,12]]){ const w=b-a; mesh(new T.PlaneGeometry(w,8.7),bm(w/1.9,4.5),sd*(a+b)/2,5.65,z); mesh(new T.PlaneGeometry(w,1.3),new T.MeshStandardMaterial({map:texRep(stonePanelTex,Math.max(1,w/1.8),1),roughness:.85}),sd*(a+b)/2,.65,z); }
       mesh(new T.PlaneGeometry(FD.sw,HH-FD.sh),bm(1.1,3.2),sd*FD.x,FD.sh+(HH-FD.sh)/2,z);
-      mesh(new T.PlaneGeometry(2.7,2.7),new T.MeshStandardMaterial({map:roundWinTex,transparent:true,alphaTest:.5,roughness:.8,side:T.DoubleSide}),sd*7.6,3.7,z+.01);
+      mesh(new T.PlaneGeometry(2.2,2.2),new T.MeshStandardMaterial({map:roundWinTex,transparent:true,alphaTest:.5,roughness:.8,side:T.DoubleSide}),sd*9.95,3.7,z+.01);
       box(.5,10,.5,mat("#a49e94",{roughness:.85}),sd*11.95,5,HZ+.15); }
     mesh(new T.PlaneGeometry(FD.cw,HH-FD.ch),bm(1.8,2.6),0,FD.ch+(HH-FD.ch)/2,z);
     const band=cvs(512,64,(x,w,h)=>{ x.fillStyle="#1f4f9a"; x.fillRect(0,0,w,h); x.fillStyle="#e8b23c"; x.fillRect(0,0,w,6); x.fillRect(0,h-6,w,6);
@@ -1483,9 +1508,12 @@ function ridgeTrio(y,z,parent=scene,k=1){ const plat=mat("#2b6fae",{roughness:.5
   const hallDrawn=scene.children.slice(hallN0);
   // the temple roof model: a lower roof over the porch (三川 front), then the hall under a front and a back roof, each with its 燕尾 ridge and dragons
   loadShared("roof1",m=>{ const bb=new T.Box3().setFromObject(m), sz=bb.getSize(new T.Vector3()), c=bb.getCenter(new T.Vector3());
-    for(const r of [{z:HZ+3.3,W:21.5,D:6.6,H:3.6,y:6.95},{z:7.4,W:27.6,D:17.4,H:7.6,y:HH-.15},{z:-7.6,W:27.6,D:17.4,H:7.6,y:HH-.15}]){ const o=m.clone(), g=new T.Group(); o.position.set(-c.x,-bb.min.y,-c.z); g.add(o); g.scale.set(r.W/sz.x,r.H/sz.y,r.D/sz.z); g.position.set(0,r.y,r.z); scene.add(g);
+    for(const r of [{z:7.4,W:27.6,D:17.4,H:7.6,y:HH-.15},{z:-7.6,W:27.6,D:17.4,H:7.6,y:HH-.15}]){ const o=m.clone(), g=new T.Group(); o.position.set(-c.x,-bb.min.y,-c.z); g.add(o); g.scale.set(r.W/sz.x,r.H/sz.y,r.D/sz.z); g.position.set(0,r.y,r.z); scene.add(g);
       o.traverse(q=>{ if(q.isMesh){ q.material=q.material.clone(); q.material.side=T.DoubleSide; q.material.envMapIntensity=1.2; } }); }
-    [...porchDrawn,...hallDrawn].forEach(o=>scene.remove(o)); });
+    hallDrawn.forEach(o=>scene.remove(o)); });
+  loadShared("roof2",m=>{ const bb=new T.Box3().setFromObject(m), sz=bb.getSize(new T.Vector3()), c=bb.getCenter(new T.Vector3());
+    const o=m.clone(), g=new T.Group(); o.position.set(-c.x,-bb.min.y,-c.z); g.add(o); g.scale.set(22/sz.x,3.4/sz.y,5.0/sz.z); g.position.set(0,6.75,HZ+.2+2.5); scene.add(g);
+    o.traverse(q=>{ if(q.isMesh){ q.material=q.material.clone(); q.material.side=T.DoubleSide; q.material.envMapIntensity=1.2; } }); porchDrawn.forEach(o=>scene.remove(o)); });
 }
 /* palace lanterns hung on a string, like the ones over the front 廟埕: red body, gold caps, a short tassel */
 function lanternString(list,opts={}){ const pos=[], strM=mat("#2a1a10");
@@ -1496,13 +1524,14 @@ function lanternString(list,opts={}){ const pos=[], strM=mat("#2a1a10");
   pos.forEach(([x,y,z],i)=>{ im.setMatrixAt(i,M.compose(new T.Vector3(x,y,z),Q,S)); cap.setMatrixAt(i*2,M.makeTranslation(x,y+.22,z)); cap.setMatrixAt(i*2+1,M.makeTranslation(x,y-.22,z)); tas.setMatrixAt(i,M.makeTranslation(x,y-.4,z));
     if(i%2===0&&!opts.noGlow){ const sp=new T.Sprite(glowMat); sp.userData.lanternGlow=1; sp.scale.set(1.3,1.3,1); sp.position.set(x,y,z); scene.add(sp); } });
   im.userData.noMerge=1; cap.userData.noMerge=1; tas.userData.noMerge=1; scene.add(im,cap,tas); }
-/* a temple doorway's two 門神 door leaves, swung open and resting against the wall either side (they arrive with the decor model) */
+/* a temple doorway's two 門神 door leaves, swung open inwards against the sides of the doorway (they arrive with the decor model) */
 const DOOR_LEAVES=[]; // [cx, wall z, opening width, opening height]
 function placeDoorLeaves(m){ for(const [cx,z,w,h] of DOOR_LEAVES) for(const sd of [-1,1]){ const o=m.getObjectByName(sd<0?"leafL":"leafR"); if(!o) continue; const c=o.clone(); c.position.set(0,0,0);
-    const f=fitModel(c,h); const bb=new T.Box3().setFromObject(f), sz=bb.getSize(new T.Vector3()); f.scale.x*=(w/2)/sz.x; f.scale.z*=.6; f.position.set(cx+sd*(w/2+w/4+.05),0,z+.26); scene.add(f); } }
+    const f=fitModel(c,h); const bb=new T.Box3().setFromObject(f), sz=bb.getSize(new T.Vector3()); f.scale.x*=(w/2)/sz.x; f.scale.z*=.6; f.rotation.y=-sd*Math.PI/2; f.position.set(cx+sd*(w/2-.05),0,z-.22-w/4); scene.add(f); } } // opened inwards, the painted side facing the doorway
 /* the middle doorway: open, but a red board across the bottom (nobody walks through the middle door) */
 function middleBoard(cx,z,w,hb=1.0){ box(w,hb,.16,mat("#a8231a",{roughness:.4}),cx,hb/2,z+.02); box(w+.06,.08,.24,mat("#d6a24a",{metalness:.85,roughness:.3}),cx,hb+.04,z+.02);
   for(const s of [-1,1]) box(.3,.42,.5,mat("#5a3420",{roughness:.8}),cx+s*(w/2+.2),.21,z+.35); }
+for(const s of [-1,1]) gardenHall(s); // after the brick and roof textures exist
 for(const s of [-1,1]) DOOR_LEAVES.push([s*FD.x,HZ,FD.sw,FD.sh]); DOOR_LEAVES.push([0,HZ,FD.cw,FD.ch]); middleBoard(0,HZ,FD.cw,1.1);
 for(const s of [-1,1]) mesh(new T.PlaneGeometry(1.3,.42),new T.MeshStandardMaterial({map:plaqueTexH(s>0?"入口":"出口"),roughness:.5}),s*FD.x,FD.sh+.5,HZ+.24);
 /* ================= 後殿: a separate building behind the main hall, across an open courtyard (後埕) =================
@@ -1516,9 +1545,9 @@ const RY0=-15.3, RFT={x:0,z:-16.4};                            // 後埕 starts 
 const RPINE=[[-4.6,-17.2],[4.6,-17.2]];
 const REAR_TICK=[];
 setTimeout(()=>{ Object.assign(CENSER_INFO,{guanyin:["觀世音菩薩","後殿主神。大慈大悲、救苦救難，祈求平安、消災、心願順遂。"],zhusheng:["註生娘娘","後殿龍邊。掌管生育，求子、安胎、保佑孩子平安長大。"],
-  jiutian:["九天玄女","後殿虎邊。傳授兵法與技藝的女神，各行各業的師傅也會來拜。"],doumu:["斗姥元君","龍邊側殿。斗姥元君是北斗眾星之母，掌管人的壽命與災厄，祈求消災延壽、流年平安。"],dizang:["地藏王菩薩","虎邊側殿。大願地藏，超度先人、祈求平安。"]});
-  Object.assign(STATION_LABEL,{guanyin:"觀世音菩薩",zhusheng:"註生娘娘",jiutian:"九天玄女",doumu:"斗姥元君",dizang:"地藏王菩薩"});
-  Object.assign(STATION_HINT,{guanyin:"走向觀世音菩薩",zhusheng:"走向註生娘娘",jiutian:"走向九天玄女",doumu:"走向斗姥元君",dizang:"走向地藏王菩薩"}); },0);
+  jiutian:["九天玄女","後殿虎邊。傳授兵法與技藝的女神，各行各業的師傅也會來拜。"],doumu:["斗姥元君","龍邊側殿。斗姥元君是北斗眾星之母，掌管人的壽命與災厄，祈求消災延壽、流年平安。"],dizang:["地藏王菩薩","虎邊側殿。大願地藏，超度先人、祈求平安。"],wenchang:["文昌帝君","龍邊花園路上的文昌殿。主掌文運功名，考試、升學、求職都可以來拜。"],tudi:["福德正神","虎邊花園路上的福德祠。土地公保佑平安、生意興隆、五穀豐收。"]});
+  Object.assign(STATION_LABEL,{guanyin:"觀世音菩薩",zhusheng:"註生娘娘",jiutian:"九天玄女",doumu:"斗姥元君",dizang:"地藏王菩薩",wenchang:"文昌帝君",tudi:"土地公"});
+  Object.assign(STATION_HINT,{guanyin:"走向觀世音菩薩",zhusheng:"走向註生娘娘",jiutian:"走向九天玄女",doumu:"走向斗姥元君",dizang:"走向地藏王菩薩",wenchang:"走向文昌帝君",tudi:"走向土地公"}); },0);
 { const k=Q.lite; const brickM=(rx,ry)=>new T.MeshStandardMaterial({map:texRep(brickTex,rx,ry),roughness:.8}), inWall=mat("#6a1a10",{roughness:.85}), stoneB=mat("#8f897f",{roughness:.85}),
     redM=mat("#9c1d13",{roughness:.45}), goldP=mat("#d6a24a",{metalness:.85,roughness:.3}), ceilM=mat("#2b130c",{roughness:.9,side:T.DoubleSide});
   const floorM=new T.MeshStandardMaterial({map:floorTex,roughness:.3});
@@ -1601,7 +1630,7 @@ setTimeout(()=>{ Object.assign(CENSER_INFO,{guanyin:["觀世音菩薩","後殿�
     for(let z=zz-2.5;z>RH.z1+3.5;z-=3.2) box(W,.45,.36,beamMat,0,RH.H-.5,z); }
   // two dragon pillars at the door and plain red pillars at the corners: only four columns
   for(const s of [-1,1]){ cyl(.22,.22,RH.H,redM,s*(RH.x-.3),RH.H/2,RH.z0+1.1,scene,14); cyl(.34,.36,.35,stoneB,s*(RH.x-.3),.17,RH.z0+1.1,scene,14); }
-  // the shrine: one golden pavilion across the back, like Mazu's: 觀音菩薩 in the middle bay, 註生娘娘 (龍邊) and 九天玄女 (虎邊) in the side bays,
+  // the shrine: one golden pavilion across the back, like Mazu's: 觀世音菩薩 in the middle bay, 註生娘娘 (龍邊) and 九天玄女 (虎邊) in the side bays,
   // curtains and couplets, the twin-dragon mural behind, a long altar table with a censer for each, and holy light
   const PK=.85, PZ=RH.z1+1.75; const pv=new T.Group(); pv.position.set(0,0,PZ); pv.scale.setScalar(PK); pv.userData.noMerge=1; scene.add(pv);
   { const g=pv, Wp=13, Dp=2.8, goldM=new T.MeshStandardMaterial({map:goldCarvedTex,metalness:.75,roughness:.35}), PH=4.4, PY=1.05;
@@ -1612,7 +1641,7 @@ setTimeout(()=>{ Object.assign(CENSER_INFO,{guanyin:["觀世音菩薩","後殿�
     const FY=PY+PH; box(Wp+.3,.8,.24,goldM,0,FY+.4,Dp/2-.05,g); box(Wp+.3,.8,.24,goldM,0,FY+.4,-Dp/2+.05,g); for(const s of [-1,1]) box(.24,.8,Dp,goldM,s*(Wp/2+.03),FY+.4,0,g);
     box(Wp+.4,.1,.3,redM,0,FY+.84,Dp/2-.05,g);
     for(let i=0;i<18;i++){ const c=new T.Mesh(new T.ConeGeometry(.07,.28,10),goldP); c.position.set(-Wp/2+.5+i*(Wp-1)/17,FY-.12,Dp/2+.02); c.rotation.x=Math.PI; g.add(c); }
-    mesh(new T.PlaneGeometry(2.9,.66),new T.MeshStandardMaterial({map:cvs(1024,280,plaqueDraw("慈航普渡",false,"#141210","#e7bd63","#c9973f")),roughness:.5,metalness:.1,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}),0,FY+.4,Dp/2+.13,g);
+    mesh(new T.PlaneGeometry(2.9,.66),new T.MeshStandardMaterial({map:cvs(1024,280,plaqueDraw("觀世音菩薩",false,"#141210","#e7bd63","#c9973f")),roughness:.5,metalness:.1,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}),0,FY+.4,Dp/2+.13,g);
     box(3.1,.82,.06,redM,0,FY+.4,Dp/2+.05,g);
     const RYp=FY+.88, rise=1.15, run=Dp/2+.55, L=Math.hypot(rise,run), ang=Math.atan2(rise,run), roofM=new T.MeshStandardMaterial({map:tileTex,roughness:.55});
     for(const s of [-1,1]){ const r=box(Wp+1.2,.1,L,roofM,0,RYp+rise/2,s*run/2,g); r.rotation.x=s*ang; box(Wp+1.3,.12,.12,goldP,0,RYp+.02,s*run,g); }
@@ -1631,18 +1660,19 @@ setTimeout(()=>{ Object.assign(CENSER_INFO,{guanyin:["觀世音菩薩","後殿�
     const burst=cvs(512,512,(x,w,h)=>{ const c=w/2; const gr=x.createRadialGradient(c,c,20,c,c,c); gr.addColorStop(0,"rgba(255,240,190,.95)"); gr.addColorStop(.35,"rgba(255,210,120,.55)"); gr.addColorStop(1,"rgba(255,190,80,0)"); x.fillStyle=gr; x.fillRect(0,0,w,h);
       x.globalCompositeOperation="lighter"; for(let i=0;i<48;i++){ const a=i/48*Math.PI*2; x.strokeStyle=`rgba(255,${200+(i%2)*40},120,${i%2?.35:.18})`; x.lineWidth=i%2?6:12; x.beginPath(); x.moveTo(c+Math.cos(a)*70,c+Math.sin(a)*70); x.lineTo(c+Math.cos(a)*c,c+Math.sin(a)*c); x.stroke(); }
       x.strokeStyle="rgba(255,236,170,.9)"; x.lineWidth=6; x.beginPath(); x.arc(c,c,118,0,Math.PI*2); x.stroke(); });
-    const halo=new T.Mesh(new T.PlaneGeometry(3.6,3.6),new T.MeshBasicMaterial({map:burst,transparent:true,blending:T.AdditiveBlending,depthWrite:false,opacity:.9})); halo.position.set(0,PY+2.75,-Dp/2+.2); g.add(halo);
-    const glow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffe0a0"),transparent:true,opacity:.55,blending:T.AdditiveBlending,depthWrite:false})); glow.position.set(0,PY+2.3,0); glow.scale.set(4.2,4.8,1); g.add(glow);
-    for(const x of [-4.45,4.45]){ const sg=new T.Sprite(glow.material.clone()); sg.material.opacity=.32; sg.position.set(x,PY+2.0,0); sg.scale.set(2.8,3.4,1); g.add(sg); }
-    let ht=0; REAR_TICK.push(dt=>{ ht+=dt; halo.rotation.z=ht*.12; halo.material.opacity=.75+.2*Math.sin(ht*1.3); glow.material.opacity=.45+.15*Math.sin(ht*1.7); });
+    const halo=new T.Mesh(new T.PlaneGeometry(3.6,3.6),new T.MeshBasicMaterial({map:burst,transparent:true,blending:T.AdditiveBlending,depthWrite:false,opacity:.45})); halo.position.set(0,PY+2.75,-Dp/2+.2); g.add(halo);
+    const glow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffe0a0"),transparent:true,opacity:.25,blending:T.AdditiveBlending,depthWrite:false})); glow.position.set(0,PY+2.3,0); glow.scale.set(4.2,4.8,1); g.add(glow);
+    for(const x of [-4.45,4.45]){ const sg=new T.Sprite(glow.material.clone()); sg.material.opacity=.22; sg.position.set(x,PY+1.7,.2); sg.scale.set(3.2,4.4,1); g.add(sg); } // soft light over the whole statue
+    let ht=0; REAR_TICK.push(dt=>{ ht+=dt; halo.rotation.z=ht*.12; halo.material.opacity=.38+.1*Math.sin(ht*1.3); glow.material.opacity=.2+.07*Math.sin(ht*1.7); });
     // the deities
     const seat=(name,key,x,h)=>loadModel(name,mm=>{ mm.traverse(o=>{ if(o.isMesh){ o.material.envMapIntensity=1.6; } }); const w=fitModel(mm,h); w.position.set(x,PY,.05); g.add(w); setAct(w,key); w.traverse(o=>{ if(o.isMesh) pickables.push(o); }); });
     seat("guanyin2","guanyin",0,2.85); seat("zhusheng","zhusheng",4.45,2.35); seat("jiutian","jiutian",-4.45,2.35); }
   // the twin-dragon mural behind it, framed in gold, as behind Mazu
   { const mw=11.6, mh=mw*1024/1536; box(mw+.36,mh+.36,.06,goldP,0,.6+mh/2,RH.z1+.23); mesh(new T.PlaneGeometry(mw,mh),muralMat,0,.6+mh/2,RH.z1+.27); }
   // gold-panelled walls inside
-  for(const s of [-1,1]){ const pn=mesh(new T.PlaneGeometry(RH.z0-RH.z1-1,1.4),new T.MeshStandardMaterial({map:texRep(goldCarvedTex,8,1),metalness:.6,roughness:.4}),s*(RH.x-.21),1.3,(RH.z0+RH.z1)/2); pn.rotation.y=-s*Math.PI/2;
-    box(.06,.12,RH.z0-RH.z1-1,goldP,s*(RH.x-.22),2.05,(RH.z0+RH.z1)/2); box(.06,.12,RH.z0-RH.z1-1,goldP,s*(RH.x-.22),.55,(RH.z0+RH.z1)/2); }
+  for(const s of [-1,1]) for(const [za,zb] of [[RH.z0-.5,-35.45],[-37.55,RH.z1+.5]]){ const L=za-zb, zm=(za+zb)/2; // stops either side of the arched door to the 側殿
+    const pn=mesh(new T.PlaneGeometry(L,1.4),new T.MeshStandardMaterial({map:texRep(goldCarvedTex,Math.max(1,L/1.3),1),metalness:.6,roughness:.4}),s*(RH.x-.21),1.3,zm); pn.rotation.y=-s*Math.PI/2;
+    box(.06,.12,L,goldP,s*(RH.x-.22),2.05,zm); box(.06,.12,L,goldP,s*(RH.x-.22),.55,zm); }
   // 藻井 over the altar: rings of gold, blue and red stepping up into the ceiling
   { const rings=[[3.2,"#5a120c"],[2.7,"#d4a04a"],[2.2,"#1f4a5c"],[1.7,"#d4a04a"],[1.2,"#7a1810"],[.75,"#d4a04a"]];
     rings.forEach(([r,c],i)=>{ const d=new T.Mesh(new T.CircleGeometry(r,8),mat(c,{metalness:c==="#d4a04a"?.7:.1,roughness:.4,side:T.DoubleSide})); d.rotation.x=Math.PI/2; d.rotation.z=Math.PI/8; d.position.set(0,RH.H-.06-i*.02,PZ+4.2); scene.add(d); });
@@ -1659,15 +1689,15 @@ setTimeout(()=>{ Object.assign(CENSER_INFO,{guanyin:["觀世音菩薩","後殿�
   setTimeout(()=>{ addHit("guanyin",0,1,PZ,1.5,3.6); addHit("zhusheng",3.8,1,PZ,1.3,3.2); addHit("jiutian",-3.8,1,PZ,1.3,3.2); },0);
   // holy light: shafts falling on the shrine, gold motes drifting up
   { const shaftTex=cvs(64,256,(x,w,h)=>{ const g=x.createLinearGradient(0,0,0,h); g.addColorStop(0,"rgba(255,236,180,0)"); g.addColorStop(.25,"rgba(255,226,160,.9)"); g.addColorStop(1,"rgba(255,210,130,0)"); x.fillStyle=g; x.fillRect(0,0,w,h); });
-    const shafts=[]; for(const [x,r] of [[0,1.9],[-3.9,1.3],[3.9,1.3]]){ const sm=new T.MeshBasicMaterial({map:shaftTex,color:new T.Color("#ffd98a"),transparent:true,opacity:.16,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide});
-      const c=new T.Mesh(new T.CylinderGeometry(r*.35,r,RH.H-.2,28,1,true),sm); c.position.set(x,(RH.H-.2)/2,PZ+.9); c.rotation.x=-.12; c.userData.noMerge=1; scene.add(c); shafts.push(c); }
+    const shafts=[]; for(const [x,r,rt] of [[0,1.9,.65],[-3.8,1.9,1.4],[3.8,1.9,1.4]]){ const sm=new T.MeshBasicMaterial({map:shaftTex,color:new T.Color("#ffd98a"),transparent:true,opacity:.16,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide});
+      const c=new T.Mesh(new T.CylinderGeometry(rt,r,RH.H-.2,28,1,true),sm); c.position.set(x,(RH.H-.2)/2,PZ+(x?.3:.9)); c.rotation.x=x?0:-.12; c.userData.noMerge=1; scene.add(c); shafts.push(c); }
     const motes=[]; if(!k) for(let i=0;i<36;i++){ const sp=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color(i%3?"#ffe6a0":"#fff6d8"),transparent:true,opacity:.8,blending:T.AdditiveBlending,depthWrite:false})); sp.scale.setScalar(.09+Math.random()*.07); scene.add(sp);
       motes.push({sp,x:(Math.random()-.5)*10,z:PZ+.5+Math.random()*3.5,y:Math.random()*6,v:.15+Math.random()*.25,ph:Math.random()*6}); }
-    let mt=0; REAR_TICK.push(dt=>{ mt+=dt; shafts.forEach((c,i)=>c.material.opacity=.12+.06*Math.sin(mt*.9+i*2)); for(const m of motes){ m.y+=m.v*dt; if(m.y>6.4) m.y=.3; m.sp.position.set(m.x+Math.sin(mt*.6+m.ph)*.3,m.y,m.z+Math.cos(mt*.5+m.ph)*.2); m.sp.material.opacity=Math.min(.85,(6.4-m.y)*.5,m.y); } }); }
+    let mt=0; REAR_TICK.push(dt=>{ mt+=dt; shafts.forEach((c,i)=>c.material.opacity=(i?.08:.07)+.04*Math.sin(mt*.9+i*2)); for(const m of motes){ m.y+=m.v*dt; if(m.y>6.4) m.y=.3; m.sp.position.set(m.x+Math.sin(mt*.6+m.ph)*.3,m.y,m.z+Math.cos(mt*.5+m.ph)*.2); m.sp.material.opacity=Math.min(.85,(6.4-m.y)*.5,m.y); } }); }
   // palace lanterns inside
   for(const x of [-7,-3.4,3.4,7]) lantern(x,5.6,RH.z0-2.6);
-  plight("#ffd29a",2.2,14,0,5.2,PZ+3.5); if(!k){ plight("#ffb070",1.3,11,-6,4.6,PZ+4); plight("#ffb070",1.3,11,6,4.6,PZ+4); }
-  { const sl=k?null:new T.SpotLight(0xffe2b0,2.6,13,.5,.6,1.2); if(sl){ sl.position.set(0,RH.H-.3,PZ+6); const tg=new T.Object3D(); tg.position.set(0,2.6,PZ); scene.add(tg); sl.target=tg; scene.add(sl); } }
+  plight("#ffd29a",1.5,14,0,5.2,PZ+3.5); if(!k){ plight("#ffc890",1.6,10,-3.8,4.2,PZ+3.2); plight("#ffc890",1.6,10,3.8,4.2,PZ+3.2); }
+  { const sl=k?null:new T.SpotLight(0xffe2b0,1.3,13,.5,.6,1.2); if(sl){ sl.position.set(0,RH.H-.3,PZ+6); const tg=new T.Object3D(); tg.position.set(0,2.6,PZ); scene.add(tg); sl.target=tg; scene.add(sl); } }
 
   // ---- 側殿 (龍邊 斗姥殿 / 虎邊 地藏殿) ----
   for(const s of [-1,1]){ const sx=v=>s*v, w=RS.x1-RS.x0, d=RS.z0-RS.z1, zm=(RS.z0+RS.z1)/2, label=s>0?"斗姥殿":"地藏殿";
@@ -1703,7 +1733,7 @@ setTimeout(()=>{ Object.assign(CENSER_INFO,{guanyin:["觀世音菩薩","後殿�
   // ---- decorations from the decor set: dragon pillars, carved windows, stone reliefs, 門神 doors, lanterns ----
   loadShared("decor",m=>{ const piece=(n,h)=>{ const o=m.getObjectByName(n); if(!o) return null; const c=o.clone(); c.position.set(0,0,0); return fitModel(c,h); };
     const put=(o,x,y,z,ry=0)=>{ if(!o) return; o.position.set(x,y,z); o.rotation.y=ry; scene.add(o); return o; };
-    for(const s of [-1,1]){ { const pl=put(piece("pillar",RH.H-.55),s*2.5,0,RH.z0+1.1); if(pl) pl.scale.set(.72,1,.72); } cyl(.4,.42,.3,stoneB,s*2.5,.15,RH.z0+1.1,scene,14);
+    for(const s of [-1,1]){ { const pl=put(piece("pillar",RH.H-.55),s*2.5,0,RH.z0+1.1); if(pl){ pl.scale.set(.72*(s<0?-1:1),1,.72); if(s<0) pl.traverse(o=>{ if(o.isMesh){ o.material=o.material.clone(); o.material.side=T.DoubleSide; } }); } } // the pair mirror each other cyl(.4,.42,.3,stoneB,s*2.5,.15,RH.z0+1.1,scene,14);
       put(piece("win",1.5),s*8.3,1.75,RH.z0+.22); put(piece(s>0?"panel":"panel2",.95),s*8.3,.72,RH.z0+.23);
       put(piece("win",1.25),s*RH.x+s*-.22,1.8,RH.z0-3.2,-s*Math.PI/2);
       for(const x of [3.7,7.2]){ const l=put(piece("lantern",.95),s*x,4.6,RH.z0+1.0); }
@@ -1718,7 +1748,7 @@ plight("#ffb070",1.3,16,0,4.2,HZ+6);
 { const pos=[]; const strM=mat("#2a1a10");
   const string=(x0,z0,x1,z1,h,n,sag)=>{ for(let i=0;i<n;i++){ const t=(i+.5)/n; pos.push([x0+(x1-x0)*t,h-Math.sin(t*Math.PI)*sag,z0+(z1-z0)*t]); } const L=Math.hypot(x1-x0,z1-z0); const w=new T.Mesh(new T.CylinderGeometry(.012,.012,L,4),strM); w.position.set((x0+x1)/2,h+.33-sag*.5,(z0+z1)/2); w.rotation.z=Math.PI/2; w.rotation.y=-Math.atan2(z1-z0,x1-x0); scene.add(w); };
   for(const x of [-18.8,18.8]){ string(x,HZ+1.5,x,HZ+YX+22.3,5.4,10,.5); for(const z of [HZ+1.5,HZ+YX+22.3]) cyl(.1,.12,5.6,mat("#4a0d09"),x,2.8,z,scene,8); }
-  for(const sd of [-1,1]){ const x=sd*(SHXC+1.45); string(x,0,x,HZ+1,4.4,8,.35); for(const z of [0,HZ+1]) cyl(.08,.1,4.7,mat("#4a0d09"),x,2.35,z,scene,8); }
+  for(const sd of [-1,1]){ const x=sd*(SHXC+1.45); string(x,GH.z1+.6,x,HZ+1,4.4,4,.25); for(const z of [GH.z1+.6,HZ+1]) cyl(.08,.1,4.7,mat("#4a0d09"),x,2.35,z,scene,8); }
   const im=new T.InstancedMesh(new T.SphereGeometry(.26,12,9),lanternMat,pos.length), cap=new T.InstancedMesh(new T.CylinderGeometry(.12,.12,.05,8),GOLD(),pos.length*2), M=new T.Matrix4(), S=new T.Vector3(1,.85,1), Q=new T.Quaternion();
   pos.forEach(([x,y,z],i)=>{ im.setMatrixAt(i,M.compose(new T.Vector3(x,y,z),Q,S)); cap.setMatrixAt(i*2,M.makeTranslation(x,y+.22,z)); cap.setMatrixAt(i*2+1,M.makeTranslation(x,y-.22,z)); if(i%2===0){ const sp=new T.Sprite(glowMat); sp.userData.lanternGlow=1; sp.scale.set(1.3,1.3,1); sp.position.set(x,y,z); scene.add(sp); } });
   im.userData.noMerge=1; cap.userData.noMerge=1; scene.add(im,cap); }
@@ -2345,6 +2375,7 @@ function camOK(x,y,z){ if(y<.35) return false; const ax=Math.abs(x);
   if(ax<12.5) return Math.abs(z-BGZ)<1.3&&y<3.1;
   if(z<SHZ1-.3) return ax<SHX1-.3&&z>SHZ0+.3&&y<SHH-.3;
   if(z<SHZ1+.3) return Math.abs(ax-SHXC)<SHDOOR/2-.1&&y<2.7;
+  if(ax>GH.x0-.1&&z>GH.z0-.3&&z<GH.z1+.3){ if(z<GH.z0+.25||z>GH.z1-.25) return Math.abs(ax-SHXC)<1.0&&y<2.8; return ax>GH.x0+.3&&ax<GH.x1-.3&&y<GH.H-.3; } // garden-path hall
   return ax<19.4&&y<16; }
 function camLimit(from,to,out){ if(myFly) return out.copy(to); let lo=0; const N=24; // inside a 偏殿 the camera stays indoors (it used to slip out the garden door and end up behind the trees)
   const inSide=Math.abs(from.x)>12.5&&from.z<SHZ1-.3;
@@ -2471,6 +2502,7 @@ function walkable(x,z){ if(opInside(x,z)||ptInside(x,z)) return false; const ax=
   if(ax<=11&&z>=-9.5&&z<=HZ-.6) return true; if(Math.abs(ax-FD.x)<.8&&z>HZ-.7&&z<HZ+.8) return true; if(ax<=17&&z>=HZ+.7&&z<=HZ+YX+18) return true; if(ax>=4.5&&ax<=17&&z>HZ+YX+18&&z<=HZ+YX+20.6) return true;
   if(ax>10.9&&ax<13&&Math.abs(z-BGZ)<1.1) return true; if(ax>=12.9&&ax<=16&&z>=SHZ0+.7&&z<=-2) return true;
   if(Math.abs(ax-SHXC)<=.9&&z>=-2.2&&z<=HZ+.8) return true;
+  if(ax>=GH.x0+.55&&ax<=GH.x1-.6&&z>=GH.z0+.5&&z<=GH.z1-.5&&!(ax>GH.x1-2.3&&Math.abs(z-(GH.z0+GH.z1)/2)<1.5)) return true; // inside a garden-path hall, short of its shrine
   if(ax>=13.15&&ax<=14.65&&z>SHZ0-1&&z<SHZ0+.8) return true;                 // 偏殿 arched back door
   if(ax>=12.7&&ax<=RS.x1-.5&&z>=RY0-.1&&z<=SHZ0-.4) return true;              // strip behind the 偏殿
   if(ax<=RS.x1-.5&&z>=RH.z0+.5&&z<RY0){ if(ax<2.65&&z>-18.1) return false; for(const [px,pz] of RPINE) if(Math.hypot(x-px,z-pz)<1.05) return false; return true; } // 後埕
@@ -2758,7 +2790,7 @@ let room=null, myBow=0, myJiao=[0,""], myBurn=0, myOffers=[];
 let dirty=true, lastSend=0, lastSentHead=0;
 function markDirty(){ dirty=true; }
 let chairHidden=false;
-function presencePayload(){ return {v:1,u:(customizing||chairHidden)?0:1,n:(me.name||"").slice(0,10),k:me.no||0,l:me.look,x:+meAv.target.x.toFixed(2),z:+meAv.target.y.toFixed(2),r:+meAv.rotY.toFixed(1),s:meAv.seat,b:myBow,h:meAv.hold?1:0,j:myJiao,f:myBurn,o:myOffers,a:bag.items.fu?1:0,g:me.lamp??-1,m:myMsg,c:myChat,p:myPlant,gf:myGF,fx:myFx,t:bag.redThread?1:0,q:me.sp?1:0,eq:myEq(),w:myWish,y:+meAv.headGoal.toFixed(1),sq:mySj?[mySj.g+1,mySj.at]:0,sk:mySparkler?1:0,fs:myFwShow||0,e:myEmo,ac:myAct,sl:mySL,sm:myMassSL||0,fl:myFly,cs:myCs}; }
+function presencePayload(){ return {v:1,u:(customizing||chairHidden)?0:1,n:(me.name||"").slice(0,10),k:me.no||0,l:me.look,x:+meAv.target.x.toFixed(2),z:+meAv.target.y.toFixed(2),r:+meAv.rotY.toFixed(1),s:meAv.seat,b:myBow,h:meAv.hold?1:0,j:myJiao,f:myBurn,o:myOffers,a:bag.items.fu?1:0,g:me.lamp??-1,m:myMsg,c:myChat,p:myPlant,gf:myGF,fx:myFx,t:bag.redThread?1:0,q:me.sp?1:0,eq:myEq(),w:myWish,y:+meAv.headGoal.toFixed(1),sq:mySj?[mySj.g+1,mySj.at]:0,sk:mySparkler?1:0,fs:myFwShow||0,e:myEmo,ac:myAct,sl:mySL,sm:myMassSL||0,fl:myFly?+(meAv.flyGoal||FLY_H).toFixed(1):0,cs:myCs}; }
 let lastSent="", lastBeat=0;
 setInterval(()=>{ if(room) sendPresence(true); },50000); // heartbeat while idle
 function sendPresence(force){ if(!room) return; dirty=false; const p=presencePayload(), str=JSON.stringify(p), now=performance.now(); lastSend=now; if(str===lastSent&&force!==true&&now-lastBeat<60000) return; lastSent=str; lastBeat=now; room.presence(p).catch(()=>{}); }
@@ -2771,7 +2803,7 @@ function syncPeers(peers){ const seen=new Set();
     if(!av){ av=new Avatar(look,{sp:pr.q===1,x:num(pr.x,-19,19,0),z:num(pr.z,-43,HZ+YX+18,HZ+12)}); av.autoBake=true; try{ bakeAvatar(av); }catch(e){} if(!othersShown) av.root.visible=false; av.lastBow=pr.b; av.lastJ=Array.isArray(pr.j)?pr.j[1]:""; av.lastF=pr.f; av.offerGroup=new T.Group(); scene.add(av.offerGroup); remotes.set(p.peer,av); if(customizing) av.root.visible=false; }
     else if(look.join()!==av.look.join()) av.setLook(look);
     const pno=Number.isInteger(pr.k)&&pr.k>0&&pr.k<1e8?pr.k:0; let nm=cleanName(pr.n)||(pno?`香客${pno}`:"香客"); if(pr.q!==1&&[SP_NAME,SP_OLD].includes(nm)) nm=pno?`香客${pno}`:"香客"; if(nm!==av.name){ av.name=nm; av.setName(nm); }
-    av.setSp(pr.q===1); if(pr.q===1) av.name=SP_NAME; av.flyGoal=pr.q===1&&pr.fl?FLY_H:0; csForm(av,pr.q===1&&pr.cs===1);
+    av.setSp(pr.q===1); if(pr.q===1) av.name=SP_NAME; av.flyGoal=pr.q===1&&pr.fl?Math.max(.6,Math.min(40,+pr.fl||FLY_H)):0; csForm(av,pr.q===1&&pr.cs===1);
     { const eq=Array.isArray(pr.eq)?[pr.eq[0],pr.eq[1]].map(v=>typeof v==="string"&&ACC[v]?v:0):[0,0]; if(String(eq)!==String(av.eq||[0,0])) av.setAcc(eq); }
     { const tx=num(pr.x,-19,19,av.target.x), tz=num(pr.z,-43,HZ+YX+18,av.target.y); if(tx!==av.goalX||tz!==av.goalZ){ av.goalX=tx; av.goalZ=tz; const pth=av.flyGoal>0?[[tx,tz]]:planPath(av.pos.x,av.pos.y,tx,tz); av.target.set(pth[0][0],pth[0][1]); av.path=pth.slice(1); } } const seat=Number.isInteger(pr.s)&&pr.s>=0&&pr.s<SEATS.length?pr.s:-1; av.seat=seat; if(seat>=0) npcYield(seat);
     av.faceGoal=num(pr.r,-10,10,Math.PI); av.hold=pr.h===1?1:0; av.headGoal=num(pr.y,-1.2,1.2,0); av.sparkler=pr.sk===1; if(Array.isArray(pr.fs)&&Number.isFinite(pr.fs[0])&&pr.fs[0]!==FW.seed){ const el=Date.now()-num(pr.fs[1],0,1e13,0); if(el>=0&&el<FW_LEN*1000) fwStart(pr.fs[0],el); } av.sq=(Array.isArray(pr.sq)&&pr.sq[0]>=1&&pr.sq[0]<=2)?[pr.sq[0]-1,num(pr.sq[1],0,1e13,0)]:null;
@@ -2991,7 +3023,7 @@ const joy={x:0,y:0,on:false,reset(){}};
   pad.addEventListener("pointermove",e=>{ if(e.pointerId===pid) set(e.clientX,e.clientY); });
   const end=e=>{ if(e.pointerId===pid) joy.reset(); }; pad.addEventListener("pointerup",end); pad.addEventListener("pointercancel",end); pad.addEventListener("lostpointercapture",end);
   window.addEventListener("blur",()=>joy.reset()); pad.addEventListener("contextmenu",e=>e.preventDefault()); }
-const keys=new Set(); const MOVE_KEYS=["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright","q","e"];
+const keys=new Set(); const MOVE_KEYS=["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright","q","e"," ","shift"]; // space / shift: fly up / down (chair, while flying)
 window.addEventListener("keydown",e=>{ if(e.target&&e.target.closest&&e.target.closest("input,textarea")) return; const k=e.key.toLowerCase(); if(MOVE_KEYS.includes(k)){ keys.add(k); e.preventDefault(); ensureAudio(); } if(k==="escape") closeSheet(); });
 window.addEventListener("keyup",e=>keys.delete(e.key.toLowerCase()));
 window.addEventListener("blur",()=>keys.clear());
@@ -4242,7 +4274,7 @@ function ftReading(y,m,d,hourIdx,now){ const H=hourIdx>=0?FT_HOURS[hourIdx][2]:1
 
 /* ---- 鐵口直斷 booth in the 廟埕: an old fortune teller behind a red table, facing the middle of the courtyard ----
    Everything is worked out on the player's own phone; the birth date is kept only in this browser and never sent anywhere. */
-const FTB={x:-13.6,z:HZ+YX+14,av:null};
+const FTB={x:-13.6,z:FZ-3.6,av:null}; // the open spot on the temple side of the 金爐, where a 收驚阿嬤 used to stand
 const FT_ELC={木:"#4fae6a",火:"#e0533a",土:"#c99a3c",金:"#cfc8b8",水:"#4a8fe0"};
 { const g=new T.Group(); g.position.set(FTB.x,0,FTB.z); g.rotation.y=Math.PI/2; scene.add(g); // local +z = the courtyard side
   const red=mat("#a3221a",{roughness:.7}), wood=mat("#4a2a18",{roughness:.8}), goldP=mat("#d6a24a",{metalness:.8,roughness:.3});
@@ -4272,7 +4304,7 @@ const FT_ELC={木:"#4fae6a",火:"#e0533a",土:"#c99a3c",金:"#cfc8b8",水:"#4a8f
       x.strokeStyle="#f6f2ea"; x.lineWidth=9; for(const s of [-1,1]){ x.beginPath(); x.moveTo(cx+s*12,ey-20); x.quadraticCurveTo(cx+s*26,ey-30,cx+s*42,ey-18); x.stroke(); } });
     if(hm) hm.material=new T.MeshStandardMaterial({map:tex,roughness:.65}); }
   mk(H,new T.SphereGeometry(.272,20,10,0,Math.PI*2,0,Math.PI*.3),mat("#1a1414",{roughness:.6}),0,.03,0); mk(H,new T.SphereGeometry(.035,10,8),mat("#b3261a",{roughness:.5}),0,.3,0); // 瓜皮帽
-  mk(H,new T.TorusGeometry(.25,.055,8,20,Math.PI*1.25),mat("#eeeae2",{roughness:.95}),0,-.02,0,Math.PI/2,0,Math.PI*1.12); // white hair round the back
+  { const hw=mat("#eeeae2",{roughness:.95}); for(const sd of [-1,1]) mk(H,new T.SphereGeometry(.085,12,10),hw,sd*.24,-.04,-.05).scale.set(.55,1,1.2); mk(H,new T.SphereGeometry(.13,14,10),hw,0,-.05,-.2).scale.set(1.6,.75,.6); } // white hair over the ears and round the back
   for(const s of [-1,1]) mk(H,new T.BoxGeometry(.11,.025,.02),white,s*.06,-.085,.25,0,0,s*.35); // drooping moustache
   for(const s of [-1,1]) mk(H,new T.TorusGeometry(.06,.011,6,18),ink,s*.085,.02,.245); mk(H,new T.BoxGeometry(.06,.012,.012),ink,0,.03,.255);
   for(const [x,len] of [[0,.36],[-.06,.26],[.06,.26]]) mk(H,new T.BoxGeometry(.07,len,.015),white,x,-.12-len/2,.22,-.15);
@@ -4600,23 +4632,45 @@ HANDLERS.puppetSend=async(v,b)=>{ if(!me.sp) return; const key=ck(); if(!key){ t
    lobby picks what is inside each envelope, every hall drops the same envelopes, and each player keeps at most 3 per throw. */
 let myFly=0, myCs=0; const HB={drops:new Map(), got:{}, list:[]};
 const CS_TEXT="財神爺現身了！財神爺來灑紅包囉！";
-let CS_SRC=null; const csWait=[];
-function csModel(cb){ if(CS_SRC){ cb(CS_SRC); return; } csWait.push(cb); if(csWait.length>1) return; loadModel("caishen",m=>{ CS_SRC=m; csWait.splice(0).forEach(f=>f(m)); }); }
+// 財神 look: the player's own character dressed as 財神爺 (official's hat with side wings, long beard, red-and-gold robe, a gold ingot), glowing gold
+let CS_ROBE=null;
+function csRobeTex(){ return CS_ROBE||(CS_ROBE=cvs(256,256,(x,w,h)=>{ x.fillStyle="#b3161a"; x.fillRect(0,0,w,h); x.strokeStyle="#e8b64a"; x.lineWidth=3;
+  for(let r=0;r<5;r++) for(let c=0;c<5;c++){ const cx=c*52+(r%2)*26+13, cy=r*52+26; x.beginPath(); x.arc(cx,cy,13,0,Math.PI*2); x.stroke(); x.strokeRect(cx-5,cy-5,10,10); }
+  x.fillStyle="#e8b64a"; x.fillRect(0,0,w,10); x.fillRect(0,h-14,w,14); x.fillStyle="#1f4f9a"; x.fillRect(0,h-22,w,8); })); }
+function csDress(av){ av.csTorso=av.torso; const H=av.head, To=av.torso, Hi=av.hips;
+  H.children.forEach(o=>{ if(o.name&&(/^hair-|^hat-/.test(o.name))) o.visible=false; }); if(av.accHead) av.accHead.visible=false;
+  const robe=new T.MeshStandardMaterial({map:csRobeTex(),roughness:.55,emissive:new T.Color("#5a2a00"),emissiveIntensity:.25}), gold=mat("#f0c050",{metalness:.85,roughness:.28,emissive:"#7a4a00",emissiveIntensity:.35}), black=mat("#141010",{roughness:.45}), jade=mat("#2f9a6a",{roughness:.35});
+  const add=(par,geo,m,x,y,z,rx=0,ry=0,rz=0)=>{ const o=new T.Mesh(geo,m); o.position.set(x,y,z); o.rotation.set(rx,ry,rz); o.userData.cs=1; par.add(o); return o; };
+  add(To,new T.CylinderGeometry(.2,.235,.5,20),robe,0,.22,0); add(To,new T.TorusGeometry(.13,.03,8,24),gold,0,.47,.02,Math.PI/2);
+  add(To,new T.TorusGeometry(.235,.035,8,28),gold,0,.03,0,Math.PI/2); add(To,new T.BoxGeometry(.12,.08,.03),jade,0,.03,.24);
+  add(Hi,new T.CylinderGeometry(.24,.34,.42,22),robe,0,-.13,0); add(Hi,new T.TorusGeometry(.34,.025,8,30),gold,0,-.33,0,Math.PI/2);
+  av.arms.forEach(a=>add(a,new T.CylinderGeometry(.075,.13,.3,14),robe,0,-.13,0));
+  // 財神帽: black dome, gold band, raised back crown, two long wings with gold tips, a red pompom
+  add(H,new T.SphereGeometry(.29,22,10,0,Math.PI*2,0,Math.PI*.42),black,0,.04,0); add(H,new T.CylinderGeometry(.285,.29,.07,24,1,true),gold,0,.08,0).material=gold;
+  add(H,new T.BoxGeometry(.38,.24,.12),black,0,.3,-.1); add(H,new T.BoxGeometry(.16,.09,.02),gold,0,.22,.26);
+  for(const sd of [-1,1]){ add(H,new T.BoxGeometry(.55,.03,.07),black,sd*.46,.28,-.1,0,0,sd*.12); add(H,new T.SphereGeometry(.045,10,8),gold,sd*.74,.31,-.1); }
+  add(H,new T.SphereGeometry(.05,10,8),mat("#d8241a",{roughness:.5}),0,.44,-.08);
+  // long black beard and moustache
+  for(const [x,len,rz] of [[0,.34,0],[-.07,.26,.12],[.07,.26,-.12]]) add(H,new T.BoxGeometry(.075,len,.02),black,x,-.17-len/2,.21,-.12,0,rz);
+  for(const sd of [-1,1]) add(H,new T.BoxGeometry(.11,.022,.02),black,sd*.06,-.09,.255,0,0,sd*.3);
+  // a gold ingot (元寶) held in front
+  const ing=new T.Group(); ing.position.set(0,.2,.28); ing.userData.cs=1; To.add(ing); add(ing,new T.CylinderGeometry(.07,.11,.07,18),gold,0,0,0).scale.set(1.7,1,1);
+  for(const sd of [-1,1]) add(ing,new T.SphereGeometry(.05,10,8),gold,sd*.13,.04,0); add(ing,new T.SphereGeometry(.055,12,10),gold,0,.05,0);
+  av.csMats=[robe,gold]; }
 function csForm(av,on){ on=!!on; if(!!av.csOn===on) return; av.csOn=on;
-  if(!on){ if(av.csG){ av.root.remove(av.csG); av.csG=null; } av.parts.visible=true; if(av.lastNameArg!==undefined) av.setName(av.lastNameArg); return; }
-  const g=new T.Group(); av.csG=g; av.root.add(g); av.parts.visible=false;
+  if(!on){ if(av.csG){ av.root.remove(av.csG); av.csG=null; } av.csTorso=null; av.setLook(av.look); if(av.lastNameArg!==undefined) av.setName(av.lastNameArg); return; }
+  av.setLook(av.look); csDress(av);
+  const g=new T.Group(); av.csG=g; av.root.add(g);
   const add=(c,o)=>{ const s=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color(c),transparent:true,opacity:o,blending:T.AdditiveBlending,depthWrite:false})); g.add(s); return s; };
   const halo=add("#ffc640",.85); halo.position.y=.95; halo.scale.set(2.6,3.0,1);
   const core=add("#fff3c0",.6); core.position.y=1.05; core.scale.set(1.2,1.5,1);
   const sparks=[]; for(let i=0;i<16;i++){ const s=add(i%2?"#fff2b0":"#ffcf4a",1); s.scale.setScalar(.16); sparks.push({s,a:Math.random()*6.28,h:Math.random()*2.4,r:.5+Math.random()*.35,v:.5+Math.random()*.5}); }
   const ring=new T.Mesh(new T.RingGeometry(.5,.85,40),new T.MeshBasicMaterial({color:new T.Color("#ffcf4a"),transparent:true,opacity:.55,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide})); ring.rotation.x=-Math.PI/2; ring.position.y=.03; g.add(ring);
-  g.userData.fx={halo,core,sparks,ring,mats:[]};
-  csModel(m=>{ if(av.csG!==g) return; const c=m.clone(true); c.traverse(o=>{ if(o.isMesh){ o.material=o.material.clone(); o.material.emissive=new T.Color("#ffb020"); if(o.material.map) o.material.emissiveMap=o.material.map; o.material.emissiveIntensity=.3; o.material.envMapIntensity=1.8; g.userData.fx.mats.push(o.material); } }); g.add(fitModel(c,1.5)); });
-}
+  g.userData.fx={halo,core,sparks,ring,mats:[]}; }
 function csTick(dt){ const all=[meAv,...remotes.values()]; for(const av of all){ const g=av.csG; if(!g) continue; const f=g.userData.fx; f.t=(f.t||0)+dt; const p=.5+.5*Math.sin(f.t*3);
     f.halo.material.opacity=.6+.3*p; f.halo.scale.set(2.5+.4*p,2.9+.4*p,1); f.core.material.opacity=.35+.3*p; f.ring.material.opacity=.3+.35*p; f.ring.scale.setScalar(1+.15*p);
     for(const s of f.sparks){ s.h+=s.v*dt; if(s.h>2.6) s.h=0; s.a+=dt*1.6; s.s.position.set(Math.cos(s.a)*s.r,s.h,Math.sin(s.a)*s.r); s.s.material.opacity=Math.min(1,(2.6-s.h)*1.2); }
-    for(const m of f.mats) m.emissiveIntensity=.22+.25*p;
+    if(av.csTorso!==av.torso) csDress(av); if(av.csMats){ av.csMats[0].emissiveIntensity=.15+.25*p; av.csMats[1].emissiveIntensity=.25+.35*p; }
     if(av.label&&av.label.position.y<1.85) av.label.position.y=1.9; } }
 // flying: a little golden cloud under the feet, the body bobbing a few metres up
 function flyTick(av,dt){ const fg=av.flyGoal||0; av.flyCur=(av.flyCur||0)+(fg-(av.flyCur||0))*Math.min(1,dt*2);
@@ -4624,11 +4678,14 @@ function flyTick(av,dt){ const fg=av.flyGoal||0; av.flyCur=(av.flyCur||0)+(fg-(a
     if(!av.cloud){ const c=new T.Group(), wm=mat("#fff8ea",{roughness:.9,emissive:"#806030",emissiveIntensity:.3}); for(let i=0;i<7;i++){ const b=mesh(new T.SphereGeometry(.22+Math.random()*.12,10,8),wm,Math.cos(i*.9)*.4,-.06+Math.random()*.06,Math.sin(i*.9)*.32,c); b.scale.y=.6; }
       const gl=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffe2a0"),transparent:true,opacity:.5,blending:T.AdditiveBlending,depthWrite:false})); gl.scale.set(1.8,.8,1); c.add(gl); av.cloud=c; av.root.add(c); } }
   else if(av.cloud){ av.root.remove(av.cloud); av.cloud=null; } }
-const FLY_H=3;
+const FLY_H=3, FLY_MAX=40; let flyDir=0, flySentAt=0;
+for(const [id,d] of [["#flyUp",1],["#flyDn",-1]]){ const b=$(id); b.addEventListener("pointerdown",e=>{ e.preventDefault(); flyDir=d; try{ b.setPointerCapture(e.pointerId); }catch(err){} }); for(const ev of ["pointerup","pointercancel","lostpointercapture"]) b.addEventListener(ev,()=>{ if(flyDir===d) flyDir=0; }); }
+function flyCtlTick(dt){ let d=flyDir; if(keys.has(" ")) d=1; else if(keys.has("shift")) d=-1; if(!myFly||!d) return; meAv.flyGoal=Math.max(.6,Math.min(FLY_MAX,(meAv.flyGoal||FLY_H)+d*dt*3.2));
+  const now=performance.now(); if(now-flySentAt>400){ flySentAt=now; markDirty(); } }
 function flyClamp(x,z){ return [Math.max(-38,Math.min(38,x)),Math.max(-48,Math.min(HZ+YX+20,z))]; }
-HANDLERS.chairFly=()=>{ if(!me.sp) return; myFly=myFly?0:1; meAv.flyGoal=myFly?FLY_H:0;
+HANDLERS.chairFly=()=>{ if(!me.sp) return; myFly=myFly?0:1; meAv.flyGoal=myFly?FLY_H:0; $("#flyCtl").hidden=!myFly; flyDir=0;
   if(!myFly){ const c=clampSpot(meAv.pos.x,meAv.pos.y); if(!walkable(c[0],c[1])){ c[0]=0; c[1]=HZ+6; } meAv.pos.set(c[0],c[1]); meAv.target.set(c[0],c[1]); meAv.path=[]; }
-  markDirty(); toast(myFly?"🕊️ 起飛！用搖桿或點地面飛到任何地方":"降落了",2600); openChair(); };
+  markDirty(); toast(myFly?"🕊️ 起飛！按住右邊 ▲▼ 上升下降，搖桿或點地面飛到任何地方":"降落了",3000); openChair(); };
 HANDLERS.chairCs=async()=>{ if(!me.sp) return; myCs=myCs?0:1; csForm(meAv,myCs); markDirty(); renderHbBtn(); openChair();
   if(!myCs){ toast("變回主委了"); return; }
   sfx.bell(); const key=ck();
@@ -5331,7 +5388,7 @@ function tick(){ if(gameAsleep) return; { const now=performance.now(), cap=frame
     r1.scale.setScalar(k); r2.scale.setScalar(1+((tapT*1.2)%1)*.8); r2.material.opacity=.7*(1-((tapT*1.2)%1));
     if(arrived||tapT>12){ const f=Math.max(0,r1.material.opacity-dt*3); r1.material.opacity=f; dot.material.opacity=f; if(f<=0){ tapMark.visible=false; r1.material.opacity=.9; dot.material.opacity=.9; } } }
   botTick(dt);
-  lodPrep(); remotes.forEach(r=>{ lodUpdate(r,dt); if((r.eq&&(r.eq[0]||r.eq[1]))||r.flies) accTick(r,dt); }); /* r.flies: keep ticking once more so flies go away after the sausage is put down */ sjUpdate(dt); fwUpdate(dt); updateSkyLanterns(dt); renderSLBtn(); opTick(dt); ptTick(dt); REAR_TICK.forEach(f=>f(dt)); csTick(dt); hbTick(dt); ftTick(dt); mkTick(dt);
+  lodPrep(); remotes.forEach(r=>{ lodUpdate(r,dt); if((r.eq&&(r.eq[0]||r.eq[1]))||r.flies) accTick(r,dt); }); /* r.flies: keep ticking once more so flies go away after the sausage is put down */ sjUpdate(dt); fwUpdate(dt); updateSkyLanterns(dt); renderSLBtn(); opTick(dt); ptTick(dt); REAR_TICK.forEach(f=>f(dt)); csTick(dt); hbTick(dt); flyCtlTick(dt); ftTick(dt); mkTick(dt);
   if(room&&dirty&&performance.now()-lastSend>((keys.size||joy.on)?800:SEND_GAP)) sendPresence();
   updateFlyers(dt); updateFu(dt); updateCats(dt); updateWater(dt);
   { let best=null, bd=2.6; if(!sheetKind&&!customizing&&!pendingStation&&meAv.seat<0&&!(meAv.danceT>0)) for(const k in stations){ if(k==="cats"){ const dc=Math.hypot(meAv.pos.x-CATS.c.x,meAv.pos.y-CATS.c.z); if(dc<3.6){ best=k; bd=0; } continue; } const d=meAv.pos.distanceTo(stations[k].approach); if(d<bd){ bd=d; best=k; } }
