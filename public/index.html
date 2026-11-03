@@ -741,6 +741,11 @@ const Q={mode:load("mz.q","auto")}; Q.lite=Q.mode==="lite"; Q.low=Q.mode==="low"
 /* ================= renderer & scene ================= */
 const canvas=$("#c");
 const renderer=new T.WebGLRenderer({canvas,antialias:!Q.lite,powerPreference:"high-performance"});
+/* cut-away: in the small halls, walls and roofs between the camera and your character are cut away so you can see in.
+   One plane shared by all scenery materials; when it isn't needed it sits far away and cuts nothing. */
+renderer.localClippingEnabled=true; const CUT=new T.Plane(new T.Vector3(0,1,0),1e5);
+function cutApply(root){ root.traverse(o=>{ if(!o.isMesh||(o.userData&&o.userData.floor)) return; for(let p=o;p;p=p.parent) if(p.userData&&p.userData.isAvatar) return;
+  (Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{ if(m&&!m.clippingPlanes&&m.type!=="ShaderMaterial"){ m.clippingPlanes=[CUT]; m.needsUpdate=true; } }); }); }
 renderer.setPixelRatio(Q.lite?.6:Q.low?Math.min(window.devicePixelRatio||1,1)*.8:Math.min(window.devicePixelRatio||1,1.5));
 renderer.outputEncoding=T.sRGBEncoding;
 renderer.toneMapping=T.ACESFilmicToneMapping;
@@ -1036,7 +1041,7 @@ const mazu=buildMazu(); mazu.userData.noMerge=1; mazu.scale.setScalar(1.5); mazu
 const IN_ARTIFACT=!!(window.claude&&window.claude.use);
 loadModel.tries={};
 function loadModel(name,cb){ if(!T.GLTFLoader) return; const gl=new T.GLTFLoader(); if(window.MeshoptDecoder) gl.setMeshoptDecoder(window.MeshoptDecoder);
-  const fix=g=>{ g.scene.traverse(o=>{ if(o.isMesh){ if(!o.geometry.attributes.normal) o.geometry.computeVertexNormals(); o.material.envMapIntensity=.9; if(o.material.map) o.material.map.anisotropy=4; } }); cb(g.scene); };
+  const fix=g=>{ g.scene.traverse(o=>{ if(o.isMesh){ if(!o.geometry.attributes.normal) o.geometry.computeVertexNormals(); o.material.envMapIntensity=.9; if(o.material.map) o.material.map.anisotropy=4; o.material.clippingPlanes=[CUT]; } }); cb(g.scene); };
   const viaScript=()=>{ { const key0="GLB_"+name.toUpperCase()+(Q.lite?"_LITE":""); if(window[key0]){ try{ const b=atob(window[key0]); const u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); gl.parse(u.buffer,"",fix,()=>{}); }catch(e){} return; } } // already on the page
     const sc=document.createElement("script"); sc.src=name+(Q.lite?"-lite":"")+"-model.js"; sc.async=true; const key="GLB_"+name.toUpperCase()+(Q.lite?"_LITE":"");
     sc.onerror=()=>{ sc.remove(); const n=(loadModel.tries[name]=(loadModel.tries[name]||0)+1); if(n<5) setTimeout(viaScript,1500*n); };
@@ -2295,7 +2300,7 @@ function actPose(av,dt){ const a=ACTS[av.act]; av.actT+=dt; const t=av.actT; if(
     case 9: { P.rotation.x=-1.5; P.position.y=.16; A[0].rotation.set(-3.0,0,-.5); A[1].rotation.set(-3.0,0,.5); L[0].rotation.x=-.35+s(t*1.6)*.28; L[1].rotation.x=0; H.rotation.x=.25; break; } // 躺平耍廢
   } }
 class Avatar{
-  constructor(look,o={}){ this.root=new T.Group(); this.root.userData.noMerge=1; scene.add(this.root); this.isMe=!!o.isMe; this.npc=!!o.npc; this.sp=!!o.sp;
+  constructor(look,o={}){ this.root=new T.Group(); this.root.userData.noMerge=1; this.root.userData.isAvatar=1; scene.add(this.root); this.isMe=!!o.isMe; this.npc=!!o.npc; this.sp=!!o.sp;
     this.pos=new T.Vector2(o.x||0,o.z||0); this.target=this.pos.clone(); this.root.position.set(this.pos.x,0,this.pos.y); this.rotY=o.r||Math.PI; this.root.rotation.y=this.rotY;
     this.state="stand"; this.act=-1; this.actT=0; this.seat=-1; this.bowT=-1; this.t=Math.random()*10; this.kneel=0; this.hold=0; this.burnT=-1; this.headYaw=0; this.headGoal=0; this.smokeT=Math.random();
     const sh=new T.Mesh(shadowGeo,shadowMat); sh.position.y=.015; this.root.add(sh);
@@ -2422,7 +2427,8 @@ function camOK(x,y,z){ if(y<.35) return false; const ax=Math.abs(x);
 function camRoom(x,z){ const ax=Math.abs(x);
   if(ax<HX&&z>-HZ&&z<HZ) return "M"; if(ax>SHX0&&ax<SHX1+.2&&z>SHZ0&&z<SHZ1) return "S"+Math.sign(x); if(ax>GH.x0&&ax<GH.x1+.2&&z>GH.z0&&z<GH.z1) return "G"+Math.sign(x);
   if(ax<RH.x&&z<RH.z0&&z>RH.z1) return "H"; if(ax>RS.x0&&ax<RS.x1+.2&&z<RS.z0&&z>RS.z1) return "Q"+Math.sign(x); return "O"; }
-function camLimit(from,to,out){ if(myFly) return out.copy(to); let lo=0; const N=24; const room0=camRoom(from.x,from.z); // inside a 偏殿 the camera stays indoors (it used to slip out the garden door and end up behind the trees)
+const CUT_ROOMS=new Set(["S","G","H","Q"]); // 偏殿, garden halls, 後殿, 側殿
+function camLimit(from,to,out){ if(myFly) return out.copy(to); let lo=0; const N=24; const room0=camRoom(from.x,from.z); if(CUT_ROOMS.has(room0[0])){ out.copy(to); if(out.y<.4) out.y=.4; return out; } // inside a 偏殿 the camera stays indoors (it used to slip out the garden door and end up behind the trees)
   const inSide=Math.abs(from.x)>12.5&&from.z<SHZ1-.3;
   for(let i=1;i<=N;i++){ const t=i/N, px=from.x+(to.x-from.x)*t, pz=from.z+(to.z-from.z)*t; if(!camOK(px,from.y+(to.y-from.y)*t,pz)||(inSide&&pz>SHZ1-.9)||camRoom(px,pz)!==room0) break; lo=t; } const k=Math.max(.15,lo-.04); return out.set(from.x+(to.x-from.x)*k,from.y+(to.y-from.y)*k,from.z+(to.z-from.z)*k); }
 function wrapA(a){ return ((a+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI; }
@@ -5489,6 +5495,8 @@ function tick(){ if(gameAsleep) return; { const now=performance.now(), cap=frame
     { const sh=(sheetKind&&!wide&&sheet.classList.contains("open")&&!sheet.classList.contains("peek"))?sheet.getBoundingClientRect().height:0; sheetOff+=(sh*.42-sheetOff)*Math.min(1,dt*6); if(sheetOff>1) camera.setViewOffset(W,H,0,sheetOff,W,H); }
     { const k=camNear; camera.lookAt(camFocus.x-Math.sin(yaw)*3.5*k,camFocus.y+.15+.75*k,camFocus.z-Math.cos(yaw)*3.5*k); } // close up: look at yourself, not past you
     dirArrowTick(1-camNear);
+    { const rm=camRoom(meAv.pos.x,meAv.pos.y); if(CUT_ROOMS.has(rm[0])&&!myFly){ _v1.set(meAv.pos.x,camFocus.y,meAv.pos.y); _v2.copy(_v1).sub(camera.position); _v2.y=0; const L=_v2.length();
+        if(L>.5){ _v2.multiplyScalar(1/L); CUT.setFromNormalAndCoplanarPoint(_v2,_v1.addScaledVector(_v2,-.9)); } } else CUT.set(_v1.set(0,1,0),1e5); }
   }
   if(window.__mzCam){ camera.clearViewOffset(); camera.position.fromArray(window.__mzCam.p); camera.lookAt(...window.__mzCam.l); }
   skyMat.uniforms.time.value=t;
@@ -5552,6 +5560,7 @@ function lanternPools(){ scene.updateMatrixWorld(true); const spots=[], v=new T.
   im.userData.noMerge=1; im.renderOrder=1; scene.add(im); window.__pools=spots.length; }
 try{ lanternPools(); }catch(e){}
 try{ window.__merged=mergeStatic(); }catch(e){ window.__mergeErr=String(e); }
+try{ cutApply(scene); }catch(e){}
 buildNpcs();
 if(document.fonts&&document.fonts.load){ Promise.all([document.fonts.load(`700 64px "LXGW WenKai TC"`,"母聖上天邊德護千家海慈航庇萬眾香油籤詩服務處金爐"),document.fonts.load(`500 30px "Noto Sans TC"`,"你香客")]).then(()=>{ fontTextures.forEach(redraw); meAv.setName(myLabel()); }).catch(()=>{}); }
 requestAnimationFrame(()=>{ tick(); setTimeout(()=>$("#loading").setAttribute("data-done",""),250); });
