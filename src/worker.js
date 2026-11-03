@@ -318,7 +318,7 @@ export class Lobby extends DurableObject {
       const okId = t => typeof t === "string" && /^[a-z0-9:_-]{1,40}$/i.test(t);
       const out = { mods: {}, adds: [] };
       if (L.mods && typeof L.mods === "object") for (const [id, m] of Object.entries(L.mods).slice(0, 300)) { if (!okId(id) || !m || typeof m !== "object") continue; out.mods[id] = { p: v3(m.p, -200, 200, 0), r: +n(m.r, -100, 100, 0).toFixed(4), s: v3(m.s, .001, 500, 1), hide: !!m.hide }; }
-      if (Array.isArray(L.adds)) for (const a of L.adds.slice(0, 200)) { if (!a || !okId(a.id) || !okId(a.m)) continue; out.adds.push({ id: a.id, m: a.m, p: v3(a.p, -200, 200, 0), r: +n(a.r, -100, 100, 0).toFixed(4), s: v3(a.s, .001, 500, 1) }); }
+      if (Array.isArray(L.adds)) for (const a of L.adds.slice(0, 200)) { if (!a || !okId(a.id) || !okId(a.m)) continue; const e = { id: a.id, m: a.m, p: v3(a.p, -200, 200, 0), r: +n(a.r, -100, 100, 0).toFixed(4), s: v3(a.s, .001, 500, 1) }; if (okId(a.pair)) e.pair = a.pair; out.adds.push(e); }
       const st = { layout: out, at: Date.now() }; await this.ctx.storage.put("layout", st);
       await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/layout", { method: "POST" }).catch(() => {})));
       return json({ ok: true, at: st.at });

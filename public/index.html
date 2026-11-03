@@ -1794,6 +1794,8 @@ setTimeout(()=>{ Object.assign(CENSER_INFO,{guanyin:["觀世音菩薩","後殿�
   poolLight("#ffb070",1.2,16,0,4.5,-23.5);
 }
 scene.children.slice(rearN0).forEach(o=>{ if(!o.isLight&&o!==REAR_G) REAR_G.add(o); });
+// the whole strip on each side, from the back of the 側殿 to the front of the 廟埕, paved under everything else (halls and paths sit on top)
+for(const s of [-1,1]){ const x0=11.9, x1=25.1, z0=RS.z1-1.5, z1=HZ+YX+23.2; const f=mesh(new T.PlaneGeometry(x1-x0,z1-z0),new T.MeshStandardMaterial({map:texRep(yardTex,(x1-x0)/4.4,(z1-z0)/4.4),roughness:.75}),s*(x0+x1)/2,.002,(z0+z1)/2); f.rotation.x=-Math.PI/2; f.userData.floor=true; f.userData.noMerge=1; }
 plight("#ffb070",1.3,16,0,4.2,HZ+6);
 // extra strings of lanterns criss-crossing the courtyard (one instanced mesh, glows on every other lantern)
 { const pos=[]; const strM=mat("#2a1a10");
@@ -4831,8 +4833,11 @@ $("#hbBtn").onclick=()=>{ ensureAudio(); hbThrow(); };
 /* ================= 建築模式 (chair only): move, turn and resize the roofs and decorations, or add more of the supplied models.
    The layout is saved on the server, so every player sees it; walking and collisions don't change. ================= */
 const BUILD={on:false, items:new Map(), layout:{mods:{},adds:[]}, sel:null, helper:null, step:.5, place:false, n:0};
-const BUILD_MODELS=[["roof1","燕尾屋頂"],["roof2","單坡屋簷"],["decor:pillar","龍柱"],["decor:win","雕花窗"],["decor:panel","石雕（人物）"],["decor:panel2","石雕（麒麟）"],["decor:lantern","黃燈籠"],["decor:door","門神門"],["decor:ridge","屋脊雙龍"],["decor:fls","福祿壽"],
-  ["guanyin2","觀世音菩薩"],["zhusheng","註生娘娘"],["jiutian","九天玄女"],["dizang","地藏王菩薩"],["doumu","斗姥元君"],["tudi","土地公"],["wenchang","文昌帝君"]];
+const BUILD_MODELS=[["roof1","燕尾屋頂"],["roof3","華麗屋頂（無脊飾）"],["roof2","單坡屋簷"],["decor:ridge","屋脊雙龍"],["decor:fls","福祿壽"],["decor:pillar","龍柱"],["decor:win","雕花窗"],["decor:panel","石雕（人物）"],["decor:panel2","石雕（麒麟）"],["decor:lantern","黃燈籠"],["decor:door","門神門"],["decor:leafL","門神門扇（左）"],["decor:leafR","門神門扇（右）"],
+  ["mazu","媽祖"],["qianli","千里眼"],["shunfeng","順風耳"],["xuantian","玄天上帝"],["guangong","關聖帝君"],["caishen","財神爺"],["yuelao","月下老人"],["huye","虎爺"],
+  ["guanyin2","觀世音菩薩"],["guanyin","觀音（噴泉立像）"],["zhusheng","註生娘娘"],["jiutian","九天玄女"],["dizang","地藏王菩薩"],["doumu","斗姥元君"],["tudi","土地公"],["wenchang","文昌帝君"],
+  ["tiangong","天公爐"],["jinlu","金爐"],["stage","歌仔戲台"],["bdx","布袋戲台"],
+  ["stall-sausage","香腸攤"],["stall-bbq","烤肉攤"],["stall-boba","珍奶攤"],["stall-qq","地瓜球攤"],["stall-fish","撈金魚攤"],["stall-pachinko","彈珠台攤"],["stall-balloon","射氣球攤"]];
 const BUILD_NAME=Object.fromEntries(BUILD_MODELS);
 function buildBase(obj){ const r=obj.rotation.y; obj.rotation.y=0; obj.updateMatrixWorld(true); const sz=new T.Box3().setFromObject(obj).getSize(new T.Vector3()); obj.rotation.y=r; obj.updateMatrixWorld(true);
   return [sz.x/Math.abs(obj.scale.x||1), sz.y/Math.abs(obj.scale.y||1), sz.z/Math.abs(obj.scale.z||1)]; }
@@ -4840,7 +4845,7 @@ function regEdit(id,label,obj,add){ if(!obj) return; const it={id,label,obj,add:
   obj.traverse(o=>{ o.userData.buildId=id; }); BUILD.items.set(id,it); if(!add) buildApplyOne(it); if(BUILD.on) buildPanel(); return it; }
 function buildApplyOne(it){ const m=BUILD.layout.mods&&BUILD.layout.mods[it.id], d=m||it.def; it.obj.position.fromArray(d.p||it.def.p); it.obj.rotation.y=d.r??it.def.r; it.obj.scale.fromArray(d.s||it.def.s); it.obj.visible=!(m&&m.hide); }
 function buildMakeAdd(a){ const g=new T.Group(); g.userData.noMerge=1; scene.add(g); g.position.fromArray(a.p); g.rotation.y=a.r||0;
-  const fin=w=>{ g.add(w); g.scale.set(1,1,1); const it=regEdit(a.id,BUILD_NAME[a.m]||a.m,g,true); it.m=a.m; g.scale.fromArray(a.s||[1,1,1]); };
+  const fin=w=>{ g.add(w); g.scale.set(1,1,1); const it=regEdit(a.id,BUILD_NAME[a.m]||a.m,g,true); it.m=a.m; if(a.pair){ it.pair=a.pair; const P=BUILD.items.get(a.pair); if(P) P.pair=a.id; } g.scale.fromArray(a.s||[1,1,1]); };
   if(a.m.startsWith("decor:")) loadShared("decor",m=>{ const o=m.getObjectByName(a.m.slice(6)); if(!o) return; const c=o.clone(); c.position.set(0,0,0); fin(fitModel(c,1)); });
   else loadShared(a.m,m=>{ const c=m.clone(); c.traverse(q=>{ if(q.isMesh){ q.material=q.material.clone(); q.material.side=T.DoubleSide; } }); fin(fitModel(c,1)); });
   return g; }
@@ -4850,9 +4855,10 @@ function buildApplyAll(){ BUILD.items.forEach(it=>{ if(!it.add) buildApplyOne(it
   [...BUILD.items.values()].filter(it=>it.add).forEach(it=>{ const a=want.get(it.id); if(!a){ scene.remove(it.obj); BUILD.items.delete(it.id); return; } it.obj.position.fromArray(a.p); it.obj.rotation.y=a.r||0; it.obj.scale.fromArray(a.s); want.delete(it.id); });
   want.forEach(a=>buildMakeAdd(a)); }
 async function buildFetch(){ let L=null; try{ if(USE_CF){ const r=await fetch("/layout",{cache:"no-store"}); const j=await r.json(); L=j&&j.layout; } else L=load("mz.layout",null); }catch(e){}
-  BUILD.layout=L&&typeof L==="object"?{mods:L.mods||{},adds:L.adds||[]}:{mods:{},adds:[]}; buildApplyAll(); }
+  BUILD.layout=L&&typeof L==="object"?{mods:L.mods||{},adds:L.adds||[]}:{mods:{},adds:[]}; buildApplyAll(); if(!BUILD.on&&Object.keys(BUILD.layout.mods).length) remerge(); }
 function buildCollect(){ const mods={}, adds=[]; BUILD.items.forEach(it=>{ const o=it.obj, p=o.position.toArray().map(v=>+v.toFixed(3)), s=o.scale.toArray().map(v=>+v.toFixed(4)), r=+o.rotation.y.toFixed(4);
-    if(it.add){ adds.push({id:it.id,m:it.m,p,r,s}); return; }
+    if(it.add){ adds.push(it.pair?{id:it.id,m:it.m,p,r,s,pair:it.pair}:{id:it.id,m:it.m,p,r,s}); return; }
+    if(!it.touched&&!(BUILD.layout.mods&&BUILD.layout.mods[it.id])) return; // things that move by themselves (dancing cats, the stage) are never saved unless you moved them
     const d=it.def, same=!o.visible?false:p.every((v,i)=>Math.abs(v-d.p[i])<.001)&&Math.abs(r-d.r)<.0005&&s.every((v,i)=>Math.abs(v-d.s[i])<.0001); if(!same) mods[it.id]={p,r,s,hide:!o.visible}; });
   return {mods,adds}; }
 // ---- the panel ----
@@ -4860,23 +4866,34 @@ function buildSel(id){ BUILD.sel=id&&BUILD.items.has(id)?id:null; if(BUILD.helpe
   const it=BUILD.items.get(BUILD.sel); if(it){ BUILD.helper=new T.BoxHelper(it.obj,0xffd040); BUILD.helper.material.depthTest=false; BUILD.helper.renderOrder=9; scene.add(BUILD.helper); } buildPanel(); }
 function buildTick(){ if(BUILD.helper){ const it=BUILD.items.get(BUILD.sel); if(it){ BUILD.helper.setFromObject(it.obj); } } }
 const fmt=(v,d=2)=>(+v).toFixed(d);
-function buildPanel(){ const P=$("#buildPanel"); document.body.classList.toggle("building",BUILD.on); if(!BUILD.on){ P.hidden=true; return; } P.hidden=false; const it=BUILD.items.get(BUILD.sel);
+function buildPanel(){ const P=$("#buildPanel"); document.body.classList.toggle("building",BUILD.on); if(BUILD.on&&BUILD.sel){ const it=BUILD.items.get(BUILD.sel); buildNoSink(it); buildMirror(it); } if(!BUILD.on){ P.hidden=true; return; } P.hidden=false; const it=BUILD.items.get(BUILD.sel);
   const list=[...BUILD.items.values()].sort((a,b)=>a.label.localeCompare(b.label,"zh-Hant"));
   let h=`<div class="bp-head"><b>🏗️ 建築模式</b><span><button class="chip" data-bp="undo">↶ 復原</button> <button class="chip" data-bp="close">完成</button></span></div>
-    <div class="bp-row"><select id="bpAddSel">${BUILD_MODELS.map(([k,n])=>`<option value="${k}">${n}</option>`).join("")}</select><button class="chip" data-bp="add">＋ 放在我前面</button></div>
+    <div class="bp-row"><select id="bpAddSel">${[["屋頂與裝飾",k=>/^roof|^decor/.test(k)],["神像",k=>!/^roof|^decor|^stall|^tiangong|^jinlu|^stage|^bdx/.test(k)],["香爐與戲台",k=>/^tiangong|^jinlu|^stage|^bdx/.test(k)],["夜市攤位",k=>/^stall/.test(k)]].map(([g,f])=>`<optgroup label="${g}">${BUILD_MODELS.filter(([k])=>f(k)).map(([k,n])=>`<option value="${k}">${n}</option>`).join("")}</optgroup>`).join("")}</select><button class="chip" data-bp="add">＋ 放在我前面</button></div>
     <div class="bp-row"><select id="bpPick"><option value="">— 點畫面上的物件，或從這裡選 —</option>${list.map(x=>`<option value="${x.id}" ${x.id===BUILD.sel?"selected":""}>${esc(x.label)}${x.add?"（新增）":""}</option>`).join("")}</select></div>`;
   if(it){ const o=it.obj, sz=[0,1,2].map(i=>it.base[i]*Math.abs(o.scale.getComponent(i)));
     const num=(k,v,d=2)=>`<button class="bp-b" data-bp="${k}" data-d="-1">－</button><input class="bp-n" data-bpn="${k}" inputmode="decimal" value="${fmt(v,d)}"><button class="bp-b" data-bp="${k}" data-d="1">＋</button>`;
-    h+=`<div class="bp-sel">選取：<b>${esc(it.label)}</b>${o.visible?"":"（已隱藏）"}</div>
+    const tw=it.pair&&BUILD.items.get(it.pair); h+=`<div class="bp-sel">選取：<b>${esc(it.label)}</b>${o.visible?"":"（已隱藏）"}</div>
+    <div class="bp-row"><button class="chip ${BUILD.sym?"on":""}" data-bp="sym">🪞 對稱：${BUILD.sym?"開":"關"}</button><span class="bp-note">${tw?"另一邊：「"+esc(tw.label)+"」會跟著左右相反地改":"這個物件沒有左右對稱的另一半"}</span></div>
     <div class="bp-row bp-step">每次移動 ${[.1,.5,1,2].map(v=>`<button class="chip ${BUILD.step===v?"on":""}" data-bp="step" data-v="${v}">${v} 公尺</button>`).join("")}</div>
     <div class="bp-grid"><span>左右 X</span>${num("px",o.position.x)}<span>高低 Y</span>${num("py",o.position.y)}<span>前後 Z</span>${num("pz",o.position.z)}
       <span>轉向（度）</span>${num("ry",((o.rotation.y*180/Math.PI)%360+360)%360,0)}
       <span>長（公尺）</span>${num("sx",sz[0])}<span>高（公尺）</span>${num("sy",sz[1])}<span>寬（公尺）</span>${num("sz",sz[2])}</div>
+    <div class="bp-row"><button class="chip" data-bp="drop">⬇ 貼到下方物件上</button><button class="chip ${BUILD.snap?"on":""}" data-bp="snap">🧲 防穿模：${BUILD.snap?"開":"關"}</button></div>
     <div class="bp-row"><button class="chip" data-bp="all" data-d="-1">整體縮小 5%</button><button class="chip" data-bp="all" data-d="1">整體放大 5%</button></div>
     <div class="bp-row"><button class="chip ${BUILD.place?"on":""}" data-bp="place">📍 點地面放到那裡：${BUILD.place?"開":"關"}</button><button class="chip" data-bp="here">移到我前面</button></div>
     <div class="bp-row">${it.add?`<button class="chip" data-bp="del">🗑 刪除</button><button class="chip" data-bp="dup">複製一個</button>`:`<button class="chip" data-bp="hide">${o.visible?"隱藏":"顯示"}</button><button class="chip" data-bp="reset">回到原本位置</button>`}</div>`; }
   h+=`<button class="primary wide" data-bp="save">💾 固定（存起來，所有人都看得到）</button><p class="bp-note">移動不會改變走路的範圍；固定後我也可以把它寫進遊戲裡。</p>`;
   P.innerHTML=h; }
+/* keeping objects from sinking into each other: compares boxes around each item. "貼到下方物件上" sets the selected item onto the
+   highest thing under it; with 防穿模 on, anything pushed down into an item below stops on its top. */
+const _bbA=new T.Box3(), _bbB=new T.Box3();
+function buildTopBelow(it){ _bbA.setFromObject(it.obj); if(_bbA.isEmpty()) return 0; let top=0; const cy=(_bbA.min.y+_bbA.max.y)/2;
+  BUILD.items.forEach(o=>{ if(o===it||o.id===it.pair||!o.obj.visible) return; _bbB.setFromObject(o.obj); if(_bbB.isEmpty()) return;
+    if(_bbB.max.x<_bbA.min.x+.05||_bbB.min.x>_bbA.max.x-.05||_bbB.max.z<_bbA.min.z+.05||_bbB.min.z>_bbA.max.z-.05) return; // not underneath
+    if(_bbB.max.y<cy+.01&&_bbB.max.y>top) top=_bbB.max.y; }); return top; }
+function buildDrop(it){ _bbA.setFromObject(it.obj); if(_bbA.isEmpty()) return; it.obj.position.y+=buildTopBelow(it)-_bbA.min.y; }
+function buildNoSink(it){ if(!BUILD.snap||!it) return; _bbA.setFromObject(it.obj); if(_bbA.isEmpty()) return; const top=buildTopBelow(it); if(_bbA.min.y<top-.001) it.obj.position.y+=top-_bbA.min.y; }
 function buildNudge(k,d){ const it=BUILD.items.get(BUILD.sel); if(!it) return; const o=it.obj, st=BUILD.step;
   if(k==="px") o.position.x+=d*st; else if(k==="py") o.position.y+=d*st; else if(k==="pz") o.position.z+=d*st;
   else if(k==="ry") o.rotation.y+=d*(st>=1?15:5)*Math.PI/180;
@@ -4892,19 +4909,24 @@ async function buildSave(){ const L=buildCollect(); BUILD.layout=L;
   const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return; }
   try{ const r=await fetch("/layout",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({layout:L})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
     toast(j.ok?"已固定，所有人都看得到了":r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":j.unset?"伺服器讀不到密碼設定（不是你打錯）":"密碼不對，沒有存起來",3000); if(j.ok) save("mz.rk",key); }catch(e){ toast("沒有存起來，請稍後再試"); } }
-function buildSnap(){ const mods={}, adds=[]; BUILD.items.forEach(it=>{ const o=it.obj, x={p:o.position.toArray(),r:o.rotation.y,s:o.scale.toArray()}; if(it.add) adds.push({id:it.id,m:it.m,...x}); else mods[it.id]={...x,hide:!o.visible}; }); return {mods,adds,sel:BUILD.sel}; }
-function buildPush(){ BUILD.hist=BUILD.hist||[]; BUILD.hist.push(buildSnap()); if(BUILD.hist.length>60) BUILD.hist.shift(); }
+function buildSnap(){ const mods={}, adds=[]; BUILD.items.forEach(it=>{ const o=it.obj, x={p:o.position.toArray(),r:o.rotation.y,s:o.scale.toArray()}; if(it.add) adds.push({id:it.id,m:it.m,pair:it.pair,...x}); else mods[it.id]={...x,hide:!o.visible}; }); return {mods,adds,sel:BUILD.sel}; }
+function buildPush(){ const it=BUILD.items.get(BUILD.sel); if(it){ it.touched=true; const tw=it.pair&&BUILD.items.get(it.pair); if(tw&&BUILD.sym) tw.touched=true; } BUILD.hist=BUILD.hist||[]; BUILD.hist.push(buildSnap()); if(BUILD.hist.length>60) BUILD.hist.shift(); }
 function buildUndo(){ const h=BUILD.hist||[]; const snap=h.pop(); if(!snap){ toast("沒有可以復原的步驟"); return; } const keep=BUILD.layout; BUILD.layout=snap; buildApplyAll(); BUILD.layout=keep; buildSel(BUILD.items.has(snap.sel)?snap.sel:null); toast("已復原上一步"); }
 function buildAct(a,el,rep){ const d=+(el.dataset.d||0);
   if(a==="undo"){ buildUndo(); return; }
-  if(!rep&&!["close","step","save","place"].includes(a)&&(a==="add"||BUILD.sel)) buildPush();
-  if(a==="close"){ BUILD.on=false; buildSel(null); buildPanel(); toast("離開建築模式。記得按「固定」才會存起來",2600); return; }
-  if(a==="add"){ const m=$("#bpAddSel").value, [x,z]=buildFront(); const id="add"+Date.now().toString(36)+(BUILD.n++); const def=m.startsWith("roof")?[6,3,4]:m.startsWith("decor:")?[2,2,2]:[1.8,1.8,1.8];
-    const g=buildMakeAdd({id,m,p:[x,0,z],r:meAv.rotY+Math.PI,s:def}); const wait=setInterval(()=>{ if(BUILD.items.has(id)){ clearInterval(wait); buildSel(id); } },150); setTimeout(()=>clearInterval(wait),15000); return; }
+  if(!rep&&!["close","step","save","place","sym","snap"].includes(a)&&(a==="add"||BUILD.sel)) buildPush();
+  if(a==="close"){ BUILD.on=false; buildSel(null); buildPanel(); remerge(); toast("離開建築模式。記得按「固定」才會存起來",2600); return; }
+  if(a==="add"){ const m=$("#bpAddSel").value, [x,z]=buildFront(); const id="add"+Date.now().toString(36)+(BUILD.n++); const def=m.startsWith("roof")?[6,3,4]:m.startsWith("decor:")?[2,2,2]:/^stall/.test(m)?[3,3,3]:/^stage|^bdx/.test(m)?[5,5,5]:/^tiangong|^jinlu/.test(m)?[2.6,2.6,2.6]:[1.8,1.8,1.8];
+    const g=buildMakeAdd({id,m,p:[x,0,z],r:meAv.rotY+Math.PI,s:def});
+    if(BUILD.sym&&Math.abs(x)>.5){ const id2=id+"m"; buildMakeAdd({id:id2,m,p:[-x,0,z],r:-(meAv.rotY+Math.PI),s:def,pair:id}); const w2=setInterval(()=>{ const A=BUILD.items.get(id), B=BUILD.items.get(id2); if(A&&B){ clearInterval(w2); A.pair=id2; B.pair=id; } },150); setTimeout(()=>clearInterval(w2),15000); }
+    const wait=setInterval(()=>{ if(BUILD.items.has(id)){ clearInterval(wait); buildSel(id); } },150); setTimeout(()=>clearInterval(wait),15000); return; }
   if(a==="step"){ BUILD.step=+el.dataset.v; buildPanel(); return; }
+  if(a==="sym"){ BUILD.sym=!BUILD.sym; buildPanel(); return; }
+  if(a==="snap"){ BUILD.snap=!BUILD.snap; buildPanel(); return; }
   if(a==="save"){ buildSave(); return; }
   const it=BUILD.items.get(BUILD.sel); if(!it) return;
   if(a==="place"){ BUILD.place=!BUILD.place; buildPanel(); return; }
+  if(a==="drop"){ buildDrop(it); buildPanel(); return; }
   if(a==="here"){ const [x,z]=buildFront(); it.obj.position.x=x; it.obj.position.z=z; buildPanel(); return; }
   if(a==="hide"){ it.obj.visible=!it.obj.visible; buildPanel(); return; }
   if(a==="reset"){ const df=it.def; it.obj.position.fromArray(df.p); it.obj.rotation.y=df.r; it.obj.scale.fromArray(df.s); it.obj.visible=true; buildPanel(); return; }
@@ -4921,7 +4943,7 @@ function buildTap(rc){ if(!BUILD.on) return false; const objs=[]; BUILD.items.fo
   const hit=rc.intersectObjects(objs,true)[0];
   if(BUILD.place&&BUILD.sel){ const f=rc.intersectObjects(pickables.filter(o=>o.userData.floor),false)[0]; if(f&&(!hit||f.distance<hit.distance||hit.object.userData.buildId===BUILD.sel)){ const it=BUILD.items.get(BUILD.sel); buildPush(); it.obj.position.x=f.point.x; it.obj.position.z=f.point.z; buildPanel(); return true; } }
   if(hit&&hit.object.userData.buildId){ buildSel(hit.object.userData.buildId); return true; } return false; }
-HANDLERS.chairBuild=()=>{ if(!me.sp) return; closeSheet(); BUILD.on=true; buildPanel(); toast("建築模式：點屋頂或裝飾選取，用下面的按鈕調整",3200); };
+HANDLERS.chairBuild=()=>{ if(!me.sp) return; closeSheet(); BUILD.on=true; unmergeAll(); buildPanel(); toast("建築模式：點屋頂或裝飾選取，用下面的按鈕調整",3200); };
 setTimeout(buildFetch,1500);
 /* ---- sound: the 歌仔戲 tracks, synthesized gongs, clangs, whooshes and squeaky 布袋戲 voices, fading with distance ---- */
 function ptAudio(){ const a=ac; if(!a) return false; if(!PT.voiceGain){ PT.voiceGain=a.createGain(); PT.voiceGain.gain.value=0; PT.voiceGain.connect(sfxBus(a)); }
@@ -5671,8 +5693,11 @@ function applyQuality(mode,auto){ if(!auto){ Q.mode=mode; save("mz.q",mode); } Q
 /* ================= boot ================= */
 meAv.setAmulet(!!bag.items.fu); meAv.setThread(!!bag.redThread); syncLamps(); setInterval(syncLamps,300000); if(me.sp) meAv.setSp(true); if(Q.low) setTimeout(()=>applyQuality(Q.lite?"lite":"low",true),0); refreshLamps();
 /* ---- merge static scenery by material: hundreds of draw calls become a few dozen ---- */
+const MERGED=[];
+function unmergeAll(){ MERGED.splice(0).forEach(M=>{ if(M.parent) M.parent.remove(M); M.geometry.dispose(); }); scene.traverse(o=>{ if(o.userData&&o.userData.mergedOff){ o.visible=true; delete o.userData.mergedOff; } }); }
+function remerge(){ try{ unmergeAll(); mergeStatic(); }catch(e){} }
 function mergeStatic(){ const buckets=new Map(); scene.updateMatrixWorld(true);
-  const skip=o=>{ for(let p=o;p;p=p.parent){ if(p.userData&&p.userData.noMerge) return true; if(p===scene) return false; } return false; };
+  const skip=o=>{ for(let p=o;p;p=p.parent){ if(p.userData&&p.userData.noMerge) return true; if(!p.visible) return true; if(p===scene) return false; } return false; };
   const region=o=>{ for(let p=o.parent;p&&p!==scene;p=p.parent) if(p.userData&&p.userData.region) return p; return scene; }; // merged per region, so a region can be hidden as a whole
   scene.traverse(o=>{ if(!o.isMesh||o.isInstancedMesh||o.isSkinnedMesh||!o.visible||Array.isArray(o.material)) return; if(o===sky||o===floor||o===outsideGround) return;
     const m=o.material; if(m.transparent||m.type!=="MeshStandardMaterial") return; if(skip(o)) return;
@@ -5683,7 +5708,7 @@ function mergeStatic(){ const buckets=new Map(); scene.updateMatrixWorld(true);
     const P=new Float32Array(vc*3), N=new Float32Array(vc*3), U=new Float32Array(vc*2), I=new Uint32Array(ic); let vo=0, io=0;
     parts.forEach(g=>{ P.set(g.attributes.position.array,vo*3); N.set(g.attributes.normal.array,vo*3); U.set(g.attributes.uv.array,vo*2); const ix=g.index.array; for(let i=0;i<ix.length;i++) I[io+i]=ix[i]+vo; vo+=g.attributes.position.count; io+=ix.length; g.dispose(); });
     const G=new T.BufferGeometry(); G.setAttribute("position",new T.BufferAttribute(P,3)); G.setAttribute("normal",new T.BufferAttribute(N,3)); G.setAttribute("uv",new T.BufferAttribute(U,2)); G.setIndex(new T.BufferAttribute(I,1)); G.computeBoundingSphere();
-    const M=new T.Mesh(G,m); M.matrixAutoUpdate=false; M.raycast=()=>{}; rg.add(M); list.forEach(o=>{ o.visible=false; }); merged+=list.length; });
+    const M=new T.Mesh(G,m); M.matrixAutoUpdate=false; M.raycast=()=>{}; rg.add(M); MERGED.push(M); list.forEach(o=>{ o.visible=false; o.userData.mergedOff=1; }); merged+=list.length; });
   return merged; }
 /* ---- lantern light on the ground: a soft warm pool on the floor under every lantern (one draw call for all of them,
    no real lights, so phones stay smooth). Collected before the scenery is merged, while each lantern still has its own place. */
@@ -5706,6 +5731,39 @@ function floorsPlain(){ const done=new Map(); scene.traverse(o=>{ if(!o.isMesh||
     if(!done.has(m)){ const k=m.envMapIntensity??1; const n=new T.MeshPhongMaterial({map:m.map,color:m.color.clone(),shininess:6,specular:new T.Color("#0c0a08"),emissive:new T.Color(1,1,1).multiplyScalar(.16*k),emissiveMap:m.map,side:m.side,transparent:m.transparent,opacity:m.opacity,polygonOffset:m.polygonOffset,polygonOffsetFactor:m.polygonOffsetFactor,polygonOffsetUnits:m.polygonOffsetUnits}); done.set(m,n); }
     o.material=done.get(m); }); }
 try{ floorsPlain(); }catch(e){}
+
+/* ---- 建築模式: everything becomes editable. Just before the scenery is merged, loose pieces are gathered into one unit per area
+   (正殿建築, 前殿立面, 廟埕, each 偏殿 …) and every object group (shrines, censers, lions, lamps, trees …) is its own item. Merging then
+   is undone while editing and redone afterwards, so units move freely and players keep the speed. Left/right twins are paired for 對稱. ---- */
+const AREA_NAME={M:"正殿建築",F:"前殿立面",C:"廟埕","S-R":"財神殿（龍邊偏殿）","S-L":"月老殿（虎邊偏殿）","G-R":"文昌殿","G-L":"福德祠","P-R":"龍邊花園步道","P-L":"虎邊花園步道",
+  H:"後殿建築","Q-R":"斗姥殿","Q-L":"地藏殿",B:"後埕",X:"園外景物"};
+function buildArea(x,z){ const r=camRoom(x,z), sd=x<0?"L":"R"; if(r==="M") return "M"; if(r[0]==="S") return "S-"+sd; if(r[0]==="G") return "G-"+sd; if(r==="H") return "H"; if(r[0]==="Q") return "Q-"+sd;
+  const ax=Math.abs(x); if(ax>26||z<-46||z>HZ+YX+26) return "X"; if(z<RY0) return "B"; if(z>=HZ&&z<HZ+6&&ax<HX+2) return "F"; if(ax>=12&&z>=SHZ1&&z<HZ) return "P-"+sd; if(z>=HZ) return "C"; return "X"; }
+function buildUnits(){ scene.updateMatrixWorld(true); const box=new T.Box3(), c=new T.Vector3(); let n=0; const groups=[];
+  const skipTop=o=>o.isLight||o===sky||o===outsideGround||o.isPoints||o.isCamera||(o.userData&&(o.userData.isAvatar||o.userData.region))||o.isInstancedMesh&&o.count>40;
+  const visit=(parent,areaPrefix)=>{ const units={};
+    [...parent.children].forEach(o=>{ if(skipTop(o)||o.userData.buildId) return; box.setFromObject(o); if(box.isEmpty()) return; box.getCenter(c); const area=buildArea(c.x,c.z);
+      const hasMesh=(()=>{ let m=false; o.traverse(q=>{ if(q.isMesh) m=true; }); return m; })();
+      if(o.isGroup&&hasMesh&&o.children.length>1){ groups.push({o,area,c:c.clone(),sz:box.getSize(new T.Vector3())}); return; }
+      if(!units[area]){ const u=new T.Group(); u.userData.unit=1; parent.add(u); units[area]=u; } units[area].attach(o); });
+    Object.entries(units).forEach(([a,u])=>{ const id="u-"+a+(areaPrefix||""); regEdit(id,AREA_NAME[a]||a,u); }); };
+  visit(scene,""); visit(REAR_G,"-rear");
+  // object groups: named by what they do, numbered within their area; each is its own merge unit
+  const cnt={}; groups.forEach(g=>{ let act=null; g.o.traverse(q=>{ if(!act&&q.userData&&q.userData.act) act=q.userData.act; });
+    const nm=(act&&(STATION_LABEL[act]||CENSER_NAME[act]))||(g.o.name&&!/^tripo|^hair|^hat/.test(g.o.name)?g.o.name:"物件"); cnt[g.area]=(cnt[g.area]||0)+1;
+    g.id="g-"+g.area+"-"+cnt[g.area]; regEdit(g.id,(AREA_NAME[g.area]||"")+"・"+nm+" "+cnt[g.area],g.o); });
+  // left/right twins: same size, mirrored position
+  groups.forEach(a=>{ if(a.pair) return; const b=groups.find(b=>b!==a&&!b.pair&&Math.abs(b.c.x+a.c.x)<.35&&Math.abs(b.c.z-a.c.z)<.35&&Math.abs(b.c.y-a.c.y)<.35&&Math.abs(a.c.x)>.3&&b.sz.distanceTo(a.sz)<.3);
+    if(b){ a.pair=b.id; b.pair=a.id; BUILD.items.get(a.id).pair=b.id; BUILD.items.get(b.id).pair=a.id; } });
+  BUILD.items.forEach(it=>{ if(it.pair) return; const m=it.id.match(/^(.*)-(L|R)(-rear)?$/); if(m){ const pid=m[1]+"-"+(m[2]==="L"?"R":"L")+(m[3]||""); if(BUILD.items.has(pid)){ it.pair=pid; BUILD.items.get(pid).pair=it.id; } } });
+  Object.entries(BUILD_PAIRS).forEach(([a,b])=>{ const A=BUILD.items.get(a), B=BUILD.items.get(b); if(A&&B){ A.pair=b; B.pair=a; } }); }
+const BUILD_PAIRS={"roof-wenchang":"roof-tudi","roof-doumu":"roof-dizang"};
+// mirror the selected item onto its twin: the twin gets the same change, mirrored left/right
+function buildMirror(it){ if(!BUILD.sym||!it||!it.pair) return; const tw=BUILD.items.get(it.pair); if(!tw) return; const o=it.obj, t=tw.obj;
+  if(it.add&&tw.add){ t.position.set(-o.position.x,o.position.y,o.position.z); t.rotation.y=-o.rotation.y; t.scale.copy(o.scale); t.visible=o.visible; return; }
+  const d=it.def, e=tw.def; t.position.set(e.p[0]-(o.position.x-d.p[0]),e.p[1]+(o.position.y-d.p[1]),e.p[2]+(o.position.z-d.p[2])); t.rotation.y=e.r-(o.rotation.y-d.r);
+  t.scale.set(e.s[0]*(o.scale.x/d.s[0]),e.s[1]*(o.scale.y/d.s[1]),e.s[2]*(o.scale.z/d.s[2])); t.visible=o.visible; }
+try{ buildUnits(); }catch(e){ window.__unitErr=String(e); }
 try{ window.__merged=mergeStatic(); }catch(e){ window.__mergeErr=String(e); }
 buildNpcs();
 if(document.fonts&&document.fonts.load){ Promise.all([document.fonts.load(`700 64px "LXGW WenKai TC"`,"母聖上天邊德護千家海慈航庇萬眾香油籤詩服務處金爐"),document.fonts.load(`500 30px "Noto Sans TC"`,"你香客")]).then(()=>{ fontTextures.forEach(redraw); meAv.setName(myLabel()); }).catch(()=>{}); }
