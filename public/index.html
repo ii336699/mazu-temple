@@ -693,7 +693,7 @@ const SIGN_NAMES={bell:"鐘",drum:"鼓"};
 // sponsor boards on the Guanyin wall: three rows, six columns each side of the statue (36 boards). Boards are placed by
 // amount, column by column from Guanyin outwards: the biggest gifts fill the columns next to the statue (top, middle, bottom,
 // left side then right side), so the smallest gifts end up at the far ends of the wall. Equal amounts keep the order they came in.
-// Light by amount: 500+ everything below plus searchlight beams, fireworks over the board and falling gold · 300+ blazing
+// Light by amount: 500+ everything below plus (no searchlights any more) fireworks over the board and falling gold · 300+ blazing
 // rainbow with halo, rays and sparks · 100+ rainbow neon · 50+ pink neon · others warm gold bulbs. Empty slots: carved gold panel.
 // To add a sponsor, just append to THANKS below; no position needed.
 const THANK_COLS=[2.7,4.25,5.8,7.35,8.9,10.45], THANK_ROWS=[3.05,2.0,.95], THANK_K=.42;
@@ -724,7 +724,9 @@ const THANKS=[{img:"thanks1.jpg",amt:50,text:"謝謝阿詠贊助50元伺服器�
   {img:"thanks23.jpg",amt:120,text:"謝謝信徒Elaine贊助120元伺服器營運費用 🫶"},
   {img:"thanks24.jpg",amt:30,text:"謝謝信徒wish贊助30元伺服器營運費用 🫶"},
   {img:"thanks25.jpg",amt:50,text:"謝謝信徒valkyrie00贊助50元伺服器營運費用 🫶"},
-  {img:"thanks26.jpg",amt:500,text:"謝謝信徒水凌贊助500元伺服器營運費用 🫶"}];
+  {img:"thanks26.jpg",amt:500,text:"謝謝信徒水凌贊助500元伺服器營運費用 🫶"},
+  {img:"thanks27.jpg",amt:666,text:"謝謝信徒雅鈞贊助666元伺服器營運費用 🫶"},
+  {img:"thanks28.jpg",amt:500,text:"謝謝信徒糖糖贊助500元伺服器營運費用 🫶"}];
 THANKS.map((t,i)=>[t,i]).sort((a,b)=>b[0].amt-a[0].amt||a[1]-b[1]).forEach(([t],k)=>{ const sl=THANK_SLOTS[k]; if(sl){ t.x=sl[0]; t.y=sl[1]; } });
 
 /* ================= persisted per-viewer state ================= */
@@ -1945,7 +1947,7 @@ const FT={x:0,z:HZ+YX+20.2,H:4.4,k:1,mouth:new T.Vector3(),pool:new T.Vector3(0,
             halo.scale.set(7,5.6,1); const halo2=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ff6ad5"),transparent:true,opacity:.45,blending:T.AdditiveBlending,depthWrite:false})); halo2.scale.set(11,8.5,1); halo2.position.z=-.03; g.add(halo2);
             const rays2=rays.clone(); rays2.material=rays.material.clone(); rays2.scale.setScalar(1.45); rays2.position.z=-.012; g.add(rays2);
             const beamTex=cvs(64,256,(c,w,h)=>{ const gr=c.createLinearGradient(0,h,0,0); gr.addColorStop(0,"rgba(255,240,190,.95)"); gr.addColorStop(1,"rgba(255,220,140,0)"); c.fillStyle=gr; c.beginPath(); c.moveTo(w*.4,h); c.lineTo(w*.6,h); c.lineTo(w,0); c.lineTo(0,0); c.fill(); });
-            const beams=[-1,1].map(sd=>{ const piv=new T.Group(); piv.position.set(sd*1.1,.9,-.05); g.add(piv); const b=new T.Mesh(new T.PlaneGeometry(1.6,14),new T.MeshBasicMaterial({map:beamTex,transparent:true,opacity:.5,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide})); b.position.y=7; piv.add(b); return {piv,b,sd}; });
+            const beams=[]; /* the searchlight beams were taken out at the chair's request */
             // a ring of hearts round the board, turning slowly and beating
             const heartTex=cvs(128,128,(c,w,h)=>{ c.translate(w/2,h/2+6); c.beginPath(); c.moveTo(0,40); c.bezierCurveTo(-62,-2,-36,-56,0,-24); c.bezierCurveTo(36,-56,62,-2,0,40); c.closePath(); c.shadowColor="rgba(255,120,170,.9)"; c.shadowBlur=14; c.fillStyle="#ff4f8b"; c.fill(); c.shadowBlur=0; c.fillStyle="rgba(255,255,255,.55)"; c.beginPath(); c.ellipse(-16,-14,9,6,-.6,0,Math.PI*2); c.fill(); });
             const hearts=[...Array(16)].map((_,k)=>{ const sp=new T.Sprite(new T.SpriteMaterial({map:heartTex,transparent:true,depthWrite:false})); sp.position.z=.18; g.add(sp); return {sp,a:k/16*Math.PI*2}; });
@@ -1976,17 +1978,7 @@ loadModel("guanyin",m=>{ const w=fitModel(m,FT.H); const k=FT.H/0.98026; FT.k=k;
   FT.mouth.set(FT.x-.02*k, .71*k, FT.z-.13*k); FT.ready=true; });
 station("fountain",[0,HZ+YX+16.9],0);
 setTimeout(()=>addHit("fountain",0,0,HZ+YX+20.2,1.9,4.6),0);
-// 投射燈: two ground spotlights washing the Guanyin statue in warm white, with a faint visible beam
-{ const base=mat("#2a2622",{metalness:.6,roughness:.4}), lens=new T.MeshBasicMaterial({color:new T.Color("#ffd070")});
-  const beamMat=new T.MeshBasicMaterial({color:new T.Color("#ffc040"),transparent:true,opacity:.03,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide});
-  for(const sx of [-2.6,2.6]){ const pos=new T.Vector3(sx,.25,HZ+YX+16.2), aim=new T.Vector3(0,3.2,FT.z);
-    const sp=new T.SpotLight("#ffbf45",1.2,16,.32,.6,1.2); sp.position.copy(pos); sp.target.position.copy(aim); scene.add(sp,sp.target);
-    const g=new T.Group(); g.position.copy(pos); g.lookAt(aim); g.userData.noMerge=1; scene.add(g);
-    const body=new T.Mesh(new T.CylinderGeometry(.16,.2,.32,16),base); body.rotation.x=Math.PI/2; g.add(body);
-    const ln=new T.Mesh(new T.CircleGeometry(.15,16),lens); ln.position.z=.17; g.add(ln);
-    box(.36,.12,.36,base,pos.x,.06,pos.z);
-    const L=pos.distanceTo(aim), cone=new T.Mesh(new T.ConeGeometry(1.15,L,24,1,true),beamMat); cone.geometry.translate(0,-L/2,0); cone.rotation.x=-Math.PI/2; g.add(cone);
-    const glow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffc24a"),opacity:.7,transparent:true,blending:T.AdditiveBlending,depthWrite:false})); glow.scale.set(.9,.9,1); glow.position.z=.2; g.add(glow); } }
+/* (the ground spotlights on the Guanyin statue were taken out at the chair's request) */
 function updateWater(dt){ if(!FT.ready) return; if(Math.abs(meAv.pos.y-FT.z)>26){ waterDrops.forEach(d=>d.sp.visible=false); return; }
   waterDrops.forEach(d=>{ d.t+=dt; if(d.t>1.1||!d.sp.visible){ if(d.t>1.1||!d.sp.visible){ d.t=d.t>1.1?0:d.t; d.sp.position.copy(FT.mouth); d.v.set(rand(-.05,.05),.15,-.55+rand(-.05,.05)); d.sp.visible=true; } }
     d.v.y-=9.8*dt*.55; d.sp.position.addScaledVector(d.v,dt); if(d.sp.position.y<.62){ d.sp.position.y=.62; d.t=1.2; } });
