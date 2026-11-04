@@ -85,6 +85,7 @@ body.hideui .caption{display:none}
 .fly-ctl{position:fixed;right:max(14px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 170px);z-index:6;display:flex;flex-direction:column;gap:10px}.fly-ctl[hidden]{display:none}
 .fly-ctl button{width:58px;height:58px;border-radius:50%;border:1px solid var(--gold);color:var(--gold);font-size:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;touch-action:none;user-select:none;-webkit-user-select:none}.fly-ctl small{font-size:10px;margin-top:2px;color:var(--ink)}
 body.hideui .fly-ctl{display:none!important}
+.hb-btn.cs-go{bottom:calc(env(safe-area-inset-bottom,0px) + 210px)!important}
 .hb-btn{bottom:calc(env(safe-area-inset-bottom,0px) + 150px)!important;font-size:17px!important;padding:10px 22px!important;color:#ffe2a0;border:1px solid #ffd27a;background:linear-gradient(#c8281c,#7a0f0a)!important;box-shadow:0 0 18px rgba(255,190,80,.6);font-family:var(--f-display);letter-spacing:.08em}
 .near-chip{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 100px);z-index:5;border-radius:999px;padding:9px 18px;font-size:15px;border:1px solid var(--gold);color:var(--gold);font-family:var(--f-display);letter-spacing:.06em}
 body.hideui .near-chip{display:none!important}
@@ -373,6 +374,7 @@ body.hideui .joy,body.customizing .joy,body.hideui .camreset,body.customizing .c
 <button class="standup glass" id="standBtn" hidden>起身</button>
 <button class="standup glass sl-btn" id="slBtn" hidden>🏮 施放天燈</button>
 <button class="standup glass hb-btn" id="hbBtn" hidden>🧧 撒紅包</button>
+<button class="standup glass hb-btn cs-go" id="csGoBtn" hidden>💰 立即前往財神爺</button>
 <div class="fly-ctl" id="flyCtl" hidden><button class="glass" id="flyUp" aria-label="往上飛">▲<small>上升</small></button><button class="glass" id="flyDn" aria-label="往下飛">▼<small>下降</small></button></div>
 <button class="glass ui-show" id="uiShow" hidden>顯示介面</button>
 <button class="glass near-chip" id="nearChip" hidden></button>
@@ -1935,8 +1937,8 @@ class Avatar{
     else if(this.seat>=0||this.faceGoal!=null){ this.rotY=lerpAngle(this.rotY,this.seat>=0?Math.PI:this.faceGoal,Math.min(1,dt*6)); }
     const kneelGoal=(!walking&&this.seat>=0)?1:0; this.kneel+= (kneelGoal-this.kneel)*Math.min(1,dt*6);
     this.root.position.set(this.pos.x,0,this.pos.y); this.root.rotation.y=this.rotY; flyTick(this,dt);
-    const k=this.kneel, w=walking?Math.sin(this.t*(this.walkCadence||11)):0;
-    this.hips.position.y=.3-.08*k+(walking?Math.abs(Math.cos(this.t*(this.walkCadence||11)))*.025:0)+(k>.5?.06:0)*k;
+    const stride=walking&&!((this.flyCur||0)>.3); /* in the air on the cloud the legs stay still */ const k=this.kneel, w=stride?Math.sin(this.t*(this.walkCadence||11)):0;
+    this.hips.position.y=.3-.08*k+(stride?Math.abs(Math.cos(this.t*(this.walkCadence||11)))*.025:0)+(k>.5?.06:0)*k;
     this.legs[0].rotation.x= w*.55*(1-k)+1.45*k; this.legs[1].rotation.x=-w*.55*(1-k)+1.45*k;
     let bowA=0, pray=0;
     if(this.bowT>=0){ this.bowT+=dt; const D=1.25, n=3; const tt=this.bowT; if(tt>D*n+.4){ this.bowT=-1; } else { pray=Math.min(1,tt*4, (D*n+.4-tt)*4); const ph=Math.min(tt/D,n)%1; bowA=tt<D*n?Math.sin(ph*Math.PI):0; } }
@@ -2469,7 +2471,7 @@ function initCF(first){
     ws.onmessage=ev=>{ let m; try{ m=JSON.parse(ev.data); }catch(e){ return; }
       if(m.t==="full"){ closedByUs=true; if(hall<HALL_NAMES.length-1){ toast(`${HALL_NAMES[hall]}人滿了，帶你到${HALL_NAMES[hall+1]}`,3200); connect(hall+1); } return; }
       if(m.t==="hello"&&Array.isArray(m.peers)){ m.peers.forEach(x=>{ if(okId(x.id)&&x.p&&typeof x.p==="object") peerState.set(x.id,{p:x.p,t:Date.now()}); }); rebuild(); return; }
-      if(m.t==="ann"&&typeof m.text==="string"){ if(seenOnce("a"+(m.at||m.text))) return; showMarquee(m.text); return; }
+      if(m.t==="ann"&&typeof m.text==="string"){ if(m.text===CS_TEXT) csGoOffer(Number.isInteger(m.h)?m.h:-1,+m.at||Date.now()); if(seenOnce("a"+(m.at||m.text))) return; showMarquee(m.text); return; }
       if(m.t==="stage"){ opSet(!!m.on,+m.at||0); return; }
       if(m.t==="puppet"){ ptSet(m); return; }
       if(m.t==="market"){ mkSet(m.open||{}); return; }
@@ -2722,10 +2724,26 @@ HANDLERS.chairFly=()=>{ if(!me.sp) return; myFly=myFly?0:1; meAv.flyGoal=myFly?F
 HANDLERS.chairCs=async()=>{ if(!me.sp) return; myCs=myCs?0:1; csForm(meAv,myCs); markDirty(); renderHbBtn(); openChair();
   if(!myCs){ toast("變回主委了"); return; }
   sfx.bell(); const key=ck();
-  if(!USE_CF){ showMarquee(CS_TEXT); return; }
+  if(!USE_CF){ showMarquee(CS_TEXT); csGoOffer(-1,Date.now(),true); return; }
   if(!key){ toast("已變身！先在主委工具輸入密碼，全服公告才會發出",3600); return; }
-  try{ const r=await fetch("/announce",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({text:CS_TEXT})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
+  try{ const r=await fetch("/announce",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({text:CS_TEXT,h:HALLS.current()})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
     if(j.ok){ save("mz.rk",key); toast("💰 財神爺現身！已發出全服公告",3000); } else toast(j.locked?"嘗試次數過多，今天先鎖住了":j.unset?"伺服器讀不到密碼設定（不是你打錯）":"密碼不對，公告沒有發出",3200); }catch(e){ toast("公告沒有發出，請稍後再試"); } };
+/* 立即前往: when the 財神爺 appears, everyone else gets a button that takes them straight to him — into his hall if they are in
+   another one, then right beside him (a free spot next to him, never inside a wall) */
+const CSGO={until:0,h:-1,pending:0};
+function csGoOffer(h,at,test){ if(me.sp&&!test) return; if(Date.now()-at>5*60000) return; CSGO.h=h; CSGO.until=Date.now()+90000; const b=$("#csGoBtn"); if(b) b.hidden=false;
+  clearTimeout(CSGO.tm); CSGO.tm=setTimeout(()=>{ const b=$("#csGoBtn"); if(b) b.hidden=true; },90000); }
+function csFind(){ for(const av of remotes.values()) if(av.csOn) return av; return null; }
+function csGoNow(){ const cs=csFind(); if(!cs){ if(CSGO.pending>0){ CSGO.pending--; setTimeout(csGoNow,500); return; } toast("財神爺已經離開這一殿了",2600); return; }
+  CSGO.pending=0; const cx=cs.pos.x, cz=cs.pos.y; let spot=null;
+  for(const r of [1.6,2.4,3.4,4.6]){ for(let k=0;k<12&&!spot;k++){ const a=k/12*Math.PI*2+Math.atan2(meAv.pos.x-cx,meAv.pos.y-cz); const x=cx+Math.sin(a)*r, z=cz+Math.cos(a)*r; if(walkable(x,z)) spot=[x,z]; } if(spot) break; }
+  if(!spot) spot=clampSpot(cx,cz); if(meAv.seat>=0) meAv.seat=-1;
+  meAv.pos.set(spot[0],spot[1]); meAv.target.set(spot[0],spot[1]); meAv.path=[]; meAv.rotY=Math.atan2(cx-spot[0],cz-spot[1]); pendingStation=null;
+  for(let k=0;k<12;k++) spawnSmoke(spot[0],.4+Math.random()*.8,spot[1],{size:.06,grow:.12,life:.9,op:.7,vy:.6});
+  markDirty(); toast("💰 來到財神爺身邊了，快接紅包！",2600); }
+$("#csGoBtn").onclick=()=>{ ensureAudio(); const b=$("#csGoBtn"); b.hidden=true; closeSheet();
+  if(CSGO.h>=0&&CSGO.h!==HALLS.current()&&HALLS.switchTo){ if((HALLS.counts[CSGO.h]||0)>=HALL_CAP){ toast("財神爺那一殿人滿了",2600); return; } HALLS.switchTo(CSGO.h); CSGO.pending=20; setTimeout(csGoNow,1200); return; }
+  CSGO.pending=4; csGoNow(); };
 function renderHbBtn(){ const b=$("#hbBtn"); if(b) b.hidden=!(me.sp&&myCs); }
 // ---- the envelopes ----
 let HB_TEX=null;
