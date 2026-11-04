@@ -56,7 +56,7 @@ export class Hall extends DurableObject {
     if (url.pathname === "/lanterns") { let b = {}; try { b = await req.json(); } catch {} const out = JSON.stringify({ t: "sl50", seed: (b.seed | 0) >>> 0 }); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok"); }
     if (url.pathname === "/announce") { // from the lobby: push the chair's announcement to everyone in this hall
       let b = {}; try { b = await req.json(); } catch {}
-      const ann = { t: "ann", text: String(b.text || "").slice(0, 80), at: Number(b.at) || Date.now() }; await this.ctx.storage.put("ann", ann);
+      const ann = { t: "ann", text: String(b.text || "").slice(0, 80), at: Number(b.at) || Date.now() }; if (Number.isInteger(b.h) && b.h >= 0 && b.h < HALLS) ann.h = b.h; await this.ctx.storage.put("ann", ann);
       const out = JSON.stringify(ann); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
     }
     if (url.pathname === "/layout") { // from the lobby: the chair saved a new building layout; pages fetch it again
@@ -189,7 +189,7 @@ export class Lobby extends DurableObject {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
       let b = {}; try { b = await req.json(); } catch {}
       const text = clean(b.text, 80); if (!text) return json({ ok: false }); const at = Date.now(); // one id for every hall, so switching halls doesn't replay it
-      await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/announce", { method: "POST", body: JSON.stringify({ text, at }) }).catch(() => {})));
+      await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/announce", { method: "POST", body: JSON.stringify({ text, at, h: Number.isInteger(b.h) ? b.h : -1 }) }).catch(() => {})));
       return json({ ok: true });
     }
     // 公告欄: one board the chair can rewrite any time; the page lights its button until each player has read the newest version
