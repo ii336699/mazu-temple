@@ -4905,7 +4905,7 @@ function hbTap(rc){ if(!HB.list.length) return false; const hit=rc.intersectObje
   if(Math.hypot(meAv.pos.x-e.x,meAv.pos.y-e.z)<1.2&&e.s.position.y<2.6){ hbClaim(e); return true; }
   const c=meAv.flyGoal?flyClamp(e.x,e.z):clampSpot(e.x,e.z); walkTo(c[0],c[1]); return true; }
 async function hbClaim(e){ const id=e.s.userData.hb[0]; if((HB.got[id]||0)>=3){ if(!HB.maxSaid){ HB.maxSaid=id; toast("每人最多拿三包紅包，留給別人吧！",2600); } return; } e.pending=true;
-  let j; if(!USE_CF){ const r=Math.random(); j={ok:true,amt:r<.02?500:r<.12?100:r<.3?50:r<.6?10:1,got:(HB.got[id]||0)+1}; }
+  let j; if(!USE_CF){ const r=Math.random(); j={ok:true,amt:50,got:(HB.got[id]||0)+1}; }
   else { try{ const r=await fetch("/hbclaim",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({id,i:e.i,uid:load("mz.id","")})}); j=await r.json(); }catch(err){ e.pending=false; return; } }
   if(j.ok){ hbRemove(e,true); HB.got[id]=j.got; bag.coins+=j.amt; bag.hongbao=(bag.hongbao||0)+1; saveBag(); sfx.coin(); meAv.say(`+${j.amt} 平安幣`,"#ffd27a",2.4);
     toast(j.amt>=500?`🧧🧧 超級大紅包！+${j.amt} 平安幣（${j.got}/3）`:`🧧 接到紅包！+${j.amt} 平安幣（${j.got}/3）`,3000); return; }
