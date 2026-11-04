@@ -1567,6 +1567,12 @@ station("tiangong",[TG.x,TG.z-2.05],0);
 const yardTex=cvs(512,512,(x,w,h)=>{ const s=64; for(let i=0;i<8;i++)for(let j=0;j<8;j++){ const v=150+Math.random()*28; x.fillStyle=`rgb(${v+12},${v},${v-14})`; x.fillRect(i*s,j*s,s,s); }
   noise(x,w,h,.14,"rgba(40,30,24,A)"); x.strokeStyle="rgba(60,44,36,.8)"; x.lineWidth=2; for(let i=0;i<=8;i++){ x.beginPath(); x.moveTo(i*s,0); x.lineTo(i*s,h); x.stroke(); x.beginPath(); x.moveTo(0,i*s); x.lineTo(w,i*s); x.stroke(); } });
 yardTex.wrapS=yardTex.wrapT=T.RepeatWrapping; yardTex.repeat.set(11.5,7);
+/* height map for the courtyard's 8×8 pavers: sunken joints, each paver tilted a touch, worn pits — bump-mapped like the hall floors */
+const yardBump=cvs(512,512,(x,w,h)=>{ const s=64; for(let i=0;i<8;i++) for(let j=0;j<8;j++){ const ax=Math.random()<.5, g=x.createLinearGradient(i*s,j*s,ax?i*s+s:i*s,ax?j*s:j*s+s), v=150+Math.random()*40, v2=150+Math.random()*40; g.addColorStop(0,`rgb(${v},${v},${v})`); g.addColorStop(1,`rgb(${v2},${v2},${v2})`); x.fillStyle=g; x.fillRect(i*s,j*s,s,s); }
+  for(let i=0;i<260;i++){ const r=.6+Math.random()*1.8; x.fillStyle=`rgba(0,0,0,${.15+Math.random()*.25})`; x.beginPath(); x.arc(Math.random()*w,Math.random()*h,r,0,7); x.fill(); }
+  for(let i=0;i<40;i++){ const r=8+Math.random()*24, cx=Math.random()*w, cy=Math.random()*h, rg=x.createRadialGradient(cx,cy,0,cx,cy,r); rg.addColorStop(0,"rgba(0,0,0,.14)"); rg.addColorStop(1,"rgba(128,128,128,0)"); x.fillStyle=rg; x.fillRect(cx-r,cy-r,r*2,r*2); }
+  for(const [lw,c] of [[9,"rgba(90,90,90,.5)"],[5,"rgba(40,40,40,.8)"],[2.5,"rgb(0,0,0)"]]){ x.strokeStyle=c; x.lineWidth=lw; for(let i=0;i<=8;i++){ x.beginPath(); x.moveTo(i*s,0); x.lineTo(i*s,h); x.stroke(); x.beginPath(); x.moveTo(0,i*s); x.lineTo(w,i*s); x.stroke(); } } });
+yardBump.encoding=T.LinearEncoding; yardBump.wrapS=yardBump.wrapT=T.RepeatWrapping;
 const yard=mesh(new T.PlaneGeometry(52,30+YX),new T.MeshStandardMaterial({map:yardTex,roughness:.75}),0,.012,HZ+15.2+YX/2); yard.rotation.x=-Math.PI/2; yard.userData.floor=true;
 /* ---- 外觀: real-looking materials drawn on the spot (no files to download) and a curved 燕尾 roof ---- */
 // red brick (紅磚) with pale mortar, each brick a slightly different red
@@ -6709,8 +6715,15 @@ function lanternPools(){ scene.updateMatrixWorld(true); const spots=[], v=new T.
 try{ lanternPools(); }catch(e){}
 /* floors: on iPhones the reflection lighting (scene.environment) left soft green blotches on floor tiles. Floors don't need reflections,
    so they use a plain lit material; a little self-light makes up for the missing reflected light so they stay as bright as before. */
+/* every floor shows its tiles at the same real size: the hall slabs repeat every 4 m (2 m slabs), the courtyard pavers every 4.4 m (55 cm pavers),
+   whatever the size of the floor piece — the UVs are rescaled per mesh instead of each piece stretching the texture over itself */
+const TILE_SPAN=new Map([[floorTex.image,4],[yardTex.image,4.4]]);
+function floorUV(o,m){ const span=m.map&&TILE_SPAN.get(m.map.image), gp=o.geometry&&o.geometry.parameters; if(!span||!gp||gp.width==null||o.userData.uvFixed) return;
+  const sc=o.getWorldScale(new T.Vector3()), W=gp.width*sc.x, H=gp.height*sc.y, rx=m.map.repeat.x||1, ry=m.map.repeat.y||1; const g0=o.geometry; o.geometry=g0.clone(); o.geometry.parameters=g0.parameters;
+  const uv=o.geometry.attributes.uv; for(let i=0;i<uv.count;i++) uv.setXY(i,uv.getX(i)*W/(span*rx),uv.getY(i)*H/(span*ry)); uv.needsUpdate=true; o.userData.uvFixed=1; }
 function floorsPlain(){ const done=new Map(); scene.traverse(o=>{ if(!o.isMesh||!o.userData||!o.userData.floor) return; const m=o.material; if(!m||!m.isMeshStandardMaterial) return;
-    if(!done.has(m)){ const k=m.envMapIntensity??1, gloss=!!(m.map&&m.map.image===floorTex.image); /* indoor stone: a polished sheen — tighter, brighter highlights from the lamps already lighting it, so no extra cost */ const n=new T.MeshPhongMaterial({map:m.map,color:m.color.clone(),shininess:gloss?28:6,specular:new T.Color(gloss?"#6e5a44":"#0c0a08"),...(gloss?{bumpMap:floorBump,bumpScale:.045}:{}),emissive:new T.Color(1,1,1).multiplyScalar(.16*k),emissiveMap:m.map,side:m.side,transparent:m.transparent,opacity:m.opacity,polygonOffset:m.polygonOffset,polygonOffsetFactor:m.polygonOffsetFactor,polygonOffsetUnits:m.polygonOffsetUnits}); done.set(m,n); }
+    try{ floorUV(o,m); }catch(e){}
+    if(!done.has(m)){ const k=m.envMapIntensity??1, gloss=!!(m.map&&m.map.image===floorTex.image), yard=!!(m.map&&m.map.image===yardTex.image); /* indoor stone: a polished sheen — tighter, brighter highlights from the lamps already lighting it, so no extra cost */ const n=new T.MeshPhongMaterial({map:m.map,color:m.color.clone(),shininess:gloss?28:yard?14:6,specular:new T.Color(gloss?"#6e5a44":yard?"#2e2820":"#0c0a08"),...(gloss?{bumpMap:floorBump,bumpScale:.045}:yard?{bumpMap:yardBump,bumpScale:.06}:{}),emissive:new T.Color(1,1,1).multiplyScalar(.16*k),emissiveMap:m.map,side:m.side,transparent:m.transparent,opacity:m.opacity,polygonOffset:m.polygonOffset,polygonOffsetFactor:m.polygonOffsetFactor,polygonOffsetUnits:m.polygonOffsetUnits}); done.set(m,n); }
     o.material=done.get(m); }); }
 try{ floorsPlain(); }catch(e){}
 
