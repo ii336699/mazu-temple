@@ -3414,6 +3414,8 @@ HANDLERS.applyCode=()=>{ const d=readCode(($("#pasteCode")||{}).value); if(!d){ 
 /* ---- 角色存檔: the server keeps a copy of your character (look, name, 平安幣, bag, recent 籤詩) under a long-lived cookie, so a
    cleared browser brings it back by itself; the 取回碼 moves it to another app or phone. Gifts from the 主委 arrive the same way. ---- */
 const PROF={last:"",code:load("mz.rc",""),busy:false,shown:load("mz.rcShown",false)};
+/* the character server is reachable on the site, or simulated inside the test page (window.MZ_SIM, set only by the test build) */
+const NET_ME=()=>USE_CF||!!window.MZ_SIM;
 function applySnap(d){ if(!d) return false; me.look=sanitizeLook(d.look,!!me.sp); const nm=cleanName(d.name); if(!me.sp) me.name=[SP_NAME,SP_OLD].includes(nm)?me.name:nm||me.name; if(d.no) me.no=d.no; save("mz.me",me);
   bag.coins=d.coins; bag.items={...bag.items,...d.items}; bag.redThread=!!d.red; if(d.poems.length){ const keep=new Map((bag.poems||[]).map((n,i)=>[n,(bag.poemT||[])[i]||0])); bag.poems=[...new Set([...(bag.poems||[]),...d.poems])].slice(-30); bag.poemT=bag.poems.map(n=>keep.get(n)||0); } (d.acc||[]).forEach(id=>{ accState().owned[id]=1; }); saveBag();
   draftLook=me.look.slice(); meAv.setLook(draftLook); meAv.setName(myLabel()); meAv.setAmulet(!!bag.items.fu); meAv.setThread(!!bag.redThread); markDirty(); return true; }
@@ -3422,8 +3424,8 @@ async function profSave(force,beacon){ if(me.sp||PROF.busy) return; const snap=l
   const body=JSON.stringify({snap,id:load("mz.id","")});
   if(beacon){ try{ fetch("/me",{method:"POST",headers:{"content-type":"application/json"},body,keepalive:true}); PROF.last=snap; }catch(e){} return; }
   PROF.busy=true; try{ const r=await fetch("/me",{method:"POST",headers:{"content-type":"application/json"},body}); const j=await r.json(); if(j.ok){ PROF.last=snap; if(j.code&&j.code!==PROF.code){ PROF.code=j.code; save("mz.rc",j.code); } if(!PROF.shown&&PROF.code) setTimeout(showCodeCard,1500); } }catch(e){} PROF.busy=false; }
-setInterval(()=>{ if(USE_CF) profSave(false); },45000);
-document.addEventListener("visibilitychange",()=>{ if(document.hidden&&USE_CF) profSave(false,true); });
+setInterval(()=>{ if(NET_ME()) profSave(false); },45000); if(window.MZ_SIM) setTimeout(()=>{ profSave(false); giftFetch(); },3000);
+document.addEventListener("visibilitychange",()=>{ if(document.hidden&&NET_ME()) profSave(false,true); });
 // first visit on this browser: ask the server whether this browser already has a character (cookie) before showing the 捏角色 screen
 async function profRestore(){ try{ const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),2500); const r=await fetch("/me",{cache:"no-store",signal:ctl.signal}); clearTimeout(t); const j=await r.json();
     if(j&&j.ok&&j.p&&j.p.snap&&applySnap(readCode(j.p.snap))){ PROF.code=j.p.code||""; save("mz.rc",PROF.code); PROF.last=j.p.snap; PROF.shown=true; save("mz.rcShown",true); return true; } }catch(e){} return false; }
@@ -3433,7 +3435,7 @@ function showCodeCard(){ if(PROF.shown||!PROF.code||me.sp) return; if(sheetKind|
   document.body.appendChild(d); d.querySelector('[data-x="copy"]').onclick=async()=>{ let ok=false; try{ await navigator.clipboard.writeText(fmtCode(PROF.code)); ok=true; }catch(e){} toast(ok?"取回碼已複製":"請長按自行複製",2400); }; d.querySelector('[data-x="ok"]').onclick=()=>d.remove(); }
 HANDLERS.copyRc=async()=>{ let ok=false; try{ await navigator.clipboard.writeText(fmtCode(PROF.code)); ok=true; }catch(e){} toast(ok?"取回碼已複製":"請長按自行複製",2400); };
 HANDLERS.claimRc=async()=>{ const v=(($("#rcIn")||{}).value||"").trim(); if(!v){ toast("請輸入取回碼"); return; }
-  if(!USE_CF){ toast("單機測試版沒有連伺服器，取回碼要在正式版才能用",3200); return; }
+  if(!NET_ME()){ toast("單機測試版沒有連伺服器，取回碼要在正式版才能用",3200); return; }
   try{ const r=await fetch("/me/claim",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({code:v})}); const j=await r.json();
     if(j.ok&&j.p&&applySnap(readCode(j.p.snap))){ PROF.code=j.p.code; save("mz.rc",PROF.code); PROF.last=j.p.snap; PROF.shown=true; save("mz.rcShown",true); renderLook(firstVisitPending); toast("✨ 已找回你的角色、平安幣和背包",3200); }
     else toast(j.locked?"今天試太多次了，明天再試":"找不到這組取回碼，請確認有沒有打錯",3200); }catch(e){ toast("連不上伺服器，請稍後再試"); } };
@@ -3447,7 +3449,7 @@ function giftNext(){ const g=GIFTQ.shift(); if(!g){ giftShowing=false; return; }
   document.body.appendChild(d); const done=()=>{ d.remove(); setTimeout(giftNext,250); }; d.querySelector('[data-x="ok"]').onclick=done; setTimeout(()=>{ if(d.parentNode) done(); },9000); }
 function giftApply(g){ if(g.kind==="acc"){ if(!ACC[g.k]) return; accState().owned[g.k]=1; saveBag(); markDirty(); giftCard(g); return; } if(g.kind==="coins") bag.coins+=g.n; else if(GOOD_BY[g.k]){ bag.items[g.k]=(bag.items[g.k]||0)+g.n; if(g.k==="fu") meAv.setAmulet(true); } else return; saveBag(); markDirty(); giftCard(g); }
 const GIFT_SEEN=new Set(load("mz.giftSeen",[]));
-async function giftFetch(){ if(!USE_CF) return; try{ const r=await fetch("/gifts",{cache:"no-store"}); const j=await r.json(); let any=false;
+async function giftFetch(){ if(!NET_ME()) return; try{ const r=await fetch("/gifts",{cache:"no-store"}); const j=await r.json(); let any=false;
     (j.gifts||[]).forEach(g=>{ if(!g||GIFT_SEEN.has(g.g)) return; GIFT_SEEN.add(g.g); any=true; giftApply({kind:g.kind,k:g.k,n:Math.max(1,g.n|0),from:g.from}); });
     if(any){ save("mz.giftSeen",[...GIFT_SEEN].slice(-60)); profSave(true); } }catch(e){} }
 let GIFT_TO=null; // [peer id, name]
@@ -3469,10 +3471,10 @@ HANDLERS.giftSend=async v=>{ if(!me.sp||!GIFT_TO) return; if(v==="acc"){ if(!GIF
   if(kind==="coins"&&n>100000){ toast("一次最多 100000"); return; } if(kind==="item"&&n>99){ toast("一次最多 99 個"); return; }
   return giftGo({kind,k:kind==="item"?GIFT_K:"",n,from:SP_NAME}); };
 async function giftGo(g){
-  if(!USE_CF||GIFT_TO[0]==="me"){ giftApply(g); toast("單機測試：送給自己預覽",2600); return; }
+  if(!NET_ME()||(GIFT_TO[0]==="me"&&!window.MZ_SIM)){ giftApply(g); toast("單機測試：送給自己預覽",2600); return; }
   const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return; }
   try{ const r=await fetch("/gift",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({to:GIFT_TO[0],...g})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
-    if(j.ok){ save("mz.rk",key); toast(`🎁 已送給 ${GIFT_TO[1]}`,2600); } else toast(j.nouser?"這位香客還沒有存檔（剛進來的話等一分鐘再送）":j.locked?"嘗試次數過多，今天先鎖住了":j.unset?"伺服器讀不到密碼設定（不是你打錯）":"密碼不對，沒有送出",3200); }catch(e){ toast("沒有送出，請稍後再試"); } };
+    if(j.ok){ save("mz.rk",key); toast(`🎁 已送給 ${GIFT_TO[1]}`,2600); if(window.MZ_SIM) setTimeout(giftFetch,900); /* no hall to ping in the test page */ } else toast(j.nouser?"這位香客還沒有存檔（剛進來的話等一分鐘再送）":j.locked?"嘗試次數過多，今天先鎖住了":j.unset?"伺服器讀不到密碼設定（不是你打錯）":"密碼不對，沒有送出",3200); }catch(e){ toast("沒有送出，請稍後再試"); } };
 HANDLERS.giftList=()=>{ if(!me.sp) return; const list=[...remotes.entries()].filter(([id,av])=>!av.sp).map(([id,av])=>[id,av.name||"香客"]);
   const rows=list.length?list.map(([id,n])=>`<button class="good" data-act="giftPick" data-v="${esc(id)}"><span class="name">${esc(n)}</span><span class="meta">點這位送禮</span></button>`).join(""):`<p class="note">這一殿現在沒有其他真人玩家（假香客不能收禮）。${USE_CF?"":"單機測試版可以送給自己預覽。"}</p>`;
   openSheet("gift","送禮",`<p class="lead">選一位這一殿的玩家，也可以直接在畫面上點他。</p><div class="goods">${rows}${USE_CF?"":`<button class="good" data-act="giftPick" data-v="me"><span class="name">送給自己（預覽字卡）</span></button>`}</div>${backBtn}`); };
@@ -3509,7 +3511,7 @@ HANDLERS.rollName=()=>{ const el=$("#nameInput"); if(el){ el.value=randomName();
 HANDLERS.tab=v=>{ me.name=$("#nameInput").value; lookTab=v; renderLook(firstVisitPending); sheetBody.scrollTop=0; };
 HANDLERS.look=v=>{ const [i,n]=v.split(":").map(Number); if(i===3&&n===16&&!me.sp){ toast("這是主委專屬背心"); return; } if(!Number.isInteger(i)||i<0||i>=LOOK_RANGE.length||!Number.isInteger(n)||n<0||n>=LOOK_RANGE[i]) return; draftLook[i]=n; if(i===1&&n>0){ draftLook[2]=HAIR_PRESET_COLOR[n]; } draftLook=sanitizeLook(draftLook,!!me.sp); meAv.setLook(draftLook); if(i===1) sheetBody.querySelectorAll(`[data-v^="2:"]`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===`2:${draftLook[2]}`))); sheetBody.querySelectorAll(`[data-v^="${i}:"]`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===v))); };
 HANDLERS.randomLook=()=>{ draftLook=randomLook(!!me.sp); meAv.setLook(draftLook); renderLook(firstVisitPending); };
-HANDLERS.saveLook=async()=>{ setTimeout(()=>{ if(USE_CF) profSave(false); },2500); const raw=$("#nameInput").value.trim(); if(hasAddLine(raw)){ toast("名字不能寫加賴",2800); return; } const ok=await _chk(raw);
+HANDLERS.saveLook=async()=>{ setTimeout(()=>{ if(NET_ME()) profSave(false); },2500); const raw=$("#nameInput").value.trim(); if(hasAddLine(raw)){ toast("名字不能寫加賴",2800); return; } const ok=await _chk(raw);
   if(ok){ me.sp=1; me.name=SP_NAME; } else if(raw===SP_NAME&&me.sp){ me.name=SP_NAME; } else { me.sp=0; me.name=[SP_NAME,SP_OLD].includes(cleanName(raw))?"":cleanName(raw); }
   meAv.setSp(!!me.sp); renderChairBtn(); if(ok) toast("✨ 主委駕到 ✨",3200); me.look=sanitizeLook(draftLook,!!me.sp); meAv.setLook(me.look); save("mz.me",me); meAv.setName(myLabel()); markDirty(); const first=firstVisitPending; firstVisitPending=false; closeSheet(); if(!ok) toast("歡迎來拜拜！先到大殿入口右手邊的服務處，請清香、金紙和供品",4800); };
 function endCustomize(){ customizing=false; markDirty(); if(window.__retrack) window.__retrack(); if(meAv.label) meAv.label.visible=true; document.body.classList.remove("customizing"); setOthersVisible(true); meAv.setLook(me.look); updateStandBtn(); }
