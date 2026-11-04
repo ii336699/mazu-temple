@@ -9,7 +9,7 @@
   var real=window.fetch.bind(window);
   window.fetch=async function(input,init){
     init=init||{}; var u; try{ u=new URL(typeof input==="string"?input:input.url,location.href); }catch(e){ return real(input,init); }
-    var p=u.pathname, isApi=/^\/(me|me\/claim|gift|gifts|halls|board|msg|msgs|reply|letters|stage|puppet|crowd|market|nmrec|announce|fireworks|lanterns|zhan|lamps|lamp|wishes|wish)$/.test(p);
+    var p=u.pathname, isApi=/^\/(lb|me|me\/claim|gift|gifts|halls|board|msg|msgs|reply|letters|stage|puppet|crowd|market|nmrec|announce|fireworks|lanterns|zhan|lamps|lamp|wishes|wish)$/.test(p);
     if(!isApi) return real(input,init);
     var method=(init.method||"GET").toUpperCase(), h=init.headers||{}, key=String(h["x-key"]||h["X-Key"]||"").trim();
     var body={}; try{ body=JSON.parse(init.body||"{}"); }catch(e){}
@@ -17,6 +17,10 @@
     /* 角色存檔：每台「手機」有一個 uid（正式版是伺服器發的 cookie）；按畫面下方的測試徽章可以模擬換手機 */
     var uid=get("uid",""); if(!uid){ uid=Math.random().toString(16).slice(2,14); put("uid",uid); }
     switch(p){
+      case "/lb": { var gg=method==="POST"?body.g:u.searchParams.get("g"); var L=get("lb:"+gg,[]);
+        if(method==="POST"){ var tt=Math.round(+body.t||0); if(tt>=1500){ var cu=null; L.forEach(function(e){ if(e.id===body.id) cu=e; }); if(!cu) L.push({id:body.id,name:body.name||"香客",t:tt,at:now}); else if(tt<cu.t){ cu.t=tt; cu.at=now; cu.name=body.name||cu.name; }
+          L.sort(function(a,c){ return a.t-c.t||a.at-c.at; }); L=L.slice(0,20); put("lb:"+gg,L); } }
+        return J({ok:true,top:L.slice(0,10)}); }
       case "/me": { var P=get("P:"+uid,null);
         if(method!=="POST") return J({ok:true,p:P?{code:P.code,snap:P.snap}:null});
         var snap=String(body.snap||""); if(!/^MZ-[A-Za-z0-9_-]{10,900}$/.test(snap)) return J({ok:false});

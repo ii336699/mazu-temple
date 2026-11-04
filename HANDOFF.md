@@ -84,3 +84,10 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - 花圃 flowerBed()：花園路兩側（文昌殿／福德祠到廟埕那段）、櫻花許願樹的石座上。
 - 遠看亮燈：HALL_GLOW 暖色光暈放在每座殿內（夜裡較亮），大殿三個正門內各一團光。
 - 已確認建築模式編號（g-S-R-1、g-M-27/28、g-G-*-3、rdec*、roof-*）都還指到同一個東西。
+
+## 11/04 晚 第 3 批：神明小遊戲共用基礎
+- 飾品多一格「嘴邊」：eq 變成 [頭, 手, 嘴]（舊手機只送兩格也能讀）；ACC_MOUTH[id](g) 畫嘴邊飾品、ACC_BUILD_HAND[id](g) 畫新的手持飾品（掛在頭的 (0,-.08,.25)、右手）。背包飾品分頁多「嘴邊」。
+- 扭蛋幣 bag.gacha：背包上方顯示（標示扭蛋機尚未開放），寫進造型代碼／取回碼（最後 8 bit，舊代碼讀成 0）。
+- gameReward(g,accId)：第一次過關給飾品並戴上；之後每天每個遊戲給 1 枚扭蛋幣（bag.gd[g]=台灣日期）。主委「重置今日」會清 bag.gd。
+- godGameWin(g,ms,accId)：過關畫面（時間、獎勵、排行榜）。伺服器 /lb：每個遊戲每人最快時間，前 20 名（GET ?g= / POST {g,t,name,id}），測試版 mock 也有。
+- 遊戲代號：wenchang、tudi、guanyin、zhusheng、doumu、jiutian、dizang（GOD_GAMES）。

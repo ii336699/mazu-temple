@@ -244,6 +244,9 @@ body.toolsfold .fold-btn.ping::after{content:"";position:absolute;top:2px;right:
 .steps span{padding:3px 9px;border-radius:999px;border:1px solid var(--gold-soft)}
 .steps span[data-on]{background:var(--lacquer);color:#fff3da;border-color:var(--gold)}
 input,textarea{-webkit-user-select:text;user-select:text}
+.lb{list-style:none;margin:6px 0 0;padding:0}.lb li{display:flex;gap:10px;align-items:center;padding:6px 10px;border-radius:10px;font-size:14px}.lb li:nth-child(odd){background:rgba(255,255,255,.04)}.lb li.me{background:rgba(240,199,94,.18);color:#ffe2a0}
+.lb .rk{width:22px;text-align:center;color:var(--gold);font-weight:700}.lb .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lb .tm{font-variant-numeric:tabular-nums}
+.gg-done{text-align:center}.gg-time{font-family:var(--f-display);font-size:40px;color:var(--gold);margin:6px 0 4px}
 .dlpack{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 30%,#3a120b,#140906 70%);color:#f5e6c8;font-family:var(--f-display);transition:opacity .7s;padding:24px}
 .dlpack[data-done]{opacity:0;pointer-events:none}.dlpack[hidden]{display:none}
 .dl-in{width:min(420px,100%);text-align:center}.dl-in h2{margin:0 0 6px;font-size:26px;letter-spacing:.2em;color:#f0c75e}.dl-in p{margin:0 0 26px;font-size:14px;line-height:1.7;opacity:.85;font-family:var(--f-ui)}
@@ -3074,7 +3077,7 @@ function syncPeers(peers){ const seen=new Set();
     else if(look.join()!==av.look.join()) av.setLook(look);
     const pno=Number.isInteger(pr.k)&&pr.k>0&&pr.k<1e8?pr.k:0; let nm=cleanName(pr.n)||(pno?`香客${pno}`:"香客"); if(pr.q!==1&&[SP_NAME,SP_OLD].includes(nm)) nm=pno?`香客${pno}`:"香客"; if(nm!==av.name){ av.name=nm; av.setName(nm); }
     av.setSp(pr.q===1); if(pr.q===1) av.name=SP_NAME; av.flyGoal=pr.q===1&&pr.fl?Math.max(.6,Math.min(40,+pr.fl||FLY_H)):0; csForm(av,pr.q===1&&pr.cs===1);
-    { const eq=Array.isArray(pr.eq)?[pr.eq[0],pr.eq[1]].map(v=>typeof v==="string"&&ACC[v]?v:0):[0,0]; if(String(eq)!==String(av.eq||[0,0])) av.setAcc(eq); }
+    { const eq=Array.isArray(pr.eq)?[pr.eq[0],pr.eq[1],pr.eq[2]].map(v=>typeof v==="string"&&ACC[v]?v:0):[0,0,0]; if(String(eq)!==String(av.eq||[0,0,0])) av.setAcc(eq); }
     { const tx=num(pr.x,-24,24,av.target.x), tz=num(pr.z,-43,HZ+YX+18,av.target.y); if(tx!==av.goalX||tz!==av.goalZ){ av.goalX=tx; av.goalZ=tz; const pth=av.flyGoal>0?[[tx,tz]]:planPath(av.pos.x,av.pos.y,tx,tz); av.target.set(pth[0][0],pth[0][1]); av.path=pth.slice(1); } } const seat=Number.isInteger(pr.s)&&pr.s>=0&&pr.s<SEATS.length?pr.s:-1; av.seat=seat; if(seat>=0) npcYield(seat);
     av.faceGoal=num(pr.r,-10,10,Math.PI); av.hold=pr.h===1?1:0; av.headGoal=num(pr.y,-1.2,1.2,0); av.sparkler=pr.sk===1; if(Array.isArray(pr.fs)&&Number.isFinite(pr.fs[0])&&pr.fs[0]!==FW.seed){ const el=Date.now()-num(pr.fs[1],0,1e13,0); if(el>=0&&el<FW_LEN*1000) fwStart(pr.fs[0],el); } av.sq=(Array.isArray(pr.sq)&&pr.sq[0]>=1&&pr.sq[0]<=2)?[pr.sq[0]-1,num(pr.sq[1],0,1e13,0)]:null;
     if(pr.b!==av.lastBow){ av.lastBow=pr.b; if(!quietFx()) av.bow(); }
@@ -3452,19 +3455,19 @@ const CODE_ITEMS=["xiang","hua","guo","bing","jin","fu"];
 function lookCode(){ const bits=[]; const put=(v,n)=>{ v=Math.max(0,Math.min((2**n)-1,v|0)); for(let i=n-1;i>=0;i--) bits.push((v/2**i|0)&1); };
   put(1,4); for(let i=0;i<13;i++) put(me.look[i]||0,5); put(bag.coins,16); CODE_ITEMS.forEach(k=>put(bag.items[k]||0,5)); put(bag.redThread?1:0,1);
   const ps=(bag.poems||[]).slice(-5); put(ps.length,3); ps.forEach(n=>put(n,6)); put(me.no||0,24);
-  const nm=[...String(me.sp?"":(me.name||""))].slice(0,10).join(""); const cu=[]; for(let i=0;i<nm.length;i++) cu.push(nm.charCodeAt(i)); put(Math.min(15,cu.length),4); cu.slice(0,15).forEach(c=>put(c,16)); { const a=accState(); put(ACC_IDS.length,4); ACC_IDS.forEach(id=>put(a.owned[id]?1:0,1)); }
+  const nm=[...String(me.sp?"":(me.name||""))].slice(0,10).join(""); const cu=[]; for(let i=0;i<nm.length;i++) cu.push(nm.charCodeAt(i)); put(Math.min(15,cu.length),4); cu.slice(0,15).forEach(c=>put(c,16)); { const a=accState(); put(ACC_IDS.length,4); ACC_IDS.forEach(id=>put(a.owned[id]?1:0,1)); } put(Math.min(255,bag.gacha||0),8); /* 扭蛋幣 (codes made before it was added simply read as 0) */
   while(bits.length%8) bits.push(0); const bytes=[]; for(let i=0;i<bits.length;i+=8){ let b=0; for(let j=0;j<8;j++) b=b*2+bits[i+j]; bytes.push(b); } bytes.push(bytes.reduce((a,b)=>(a+b)&255,0x5a));
   return "MZ-"+btoa(String.fromCharCode(...bytes)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }
 function readCode(str){ try{ str=String(str||"").trim().replace(/\s+/g,""); if(!/^MZ-[A-Za-z0-9_-]{10,}$/.test(str)) return null; const raw=atob(str.slice(3).replace(/-/g,"+").replace(/_/g,"/")); const bytes=[...raw].map(c=>c.charCodeAt(0));
   const chk=bytes.pop(); if(bytes.reduce((a,b)=>(a+b)&255,0x5a)!==chk) return null; const bits=[]; bytes.forEach(b=>{ for(let i=7;i>=0;i--) bits.push((b>>i)&1); }); let p=0; const get=n=>{ let v=0; for(let i=0;i<n;i++) v=v*2+(bits[p++]||0); return v; };
   if(get(4)!==1) return null; const look=[]; for(let i=0;i<13;i++) look.push(get(5)); const coins=get(16); const items={}; CODE_ITEMS.forEach(k=>{ const v=get(5); if(v) items[k]=v; }); const red=get(1);
   const pn=get(3), poems=[]; for(let i=0;i<pn;i++){ const n=get(6); if(n>=1&&n<=60) poems.push(n); } const no=get(24); const nl=get(4); let name=""; for(let i=0;i<nl;i++) name+=String.fromCharCode(get(16));
-  const an=get(4), acc=[]; for(let i=0;i<an;i++) if(get(1)&&ACC_IDS[i]) acc.push(ACC_IDS[i]);
-  return {look,coins,items,red,poems,no,name,acc}; }catch(e){ return null; } }
+  const an=get(4), acc=[]; for(let i=0;i<an;i++) if(get(1)&&ACC_IDS[i]) acc.push(ACC_IDS[i]); const gacha=get(8);
+  return {look,coins,items,red,poems,no,name,acc,gacha}; }catch(e){ return null; } }
 HANDLERS.copyCode=async()=>{ const c=lookCode(); let ok=false; try{ await navigator.clipboard.writeText(c); ok=true; }catch(e){ const i=$("#myCode"); if(i){ i.focus(); i.select(); try{ ok=document.execCommand("copy"); }catch(e2){} } } toast(ok?"代碼已複製，記得存在記事本":"請長按代碼自行複製",3000); };
 HANDLERS.applyCode=()=>{ const d=readCode(($("#pasteCode")||{}).value); if(!d){ toast("代碼不正確，請確認有完整貼上",3000); return; }
   me.look=sanitizeLook(d.look,!!me.sp); const nm=cleanName(d.name); if(!me.sp) me.name=[SP_NAME,SP_OLD].includes(nm)?"":nm; if(d.no) me.no=d.no; save("mz.me",me);
-  bag.coins=d.coins; bag.items={...bag.items,...d.items}; bag.redThread=!!d.red; if(d.poems.length){ const keep=new Map((bag.poems||[]).map((n,i)=>[n,(bag.poemT||[])[i]||0])); bag.poems=[...new Set([...(bag.poems||[]),...d.poems])].slice(-30); bag.poemT=bag.poems.map(n=>keep.get(n)||0); } (d.acc||[]).forEach(id=>{ accState().owned[id]=1; }); saveBag();
+  bag.coins=d.coins; bag.items={...bag.items,...d.items}; bag.redThread=!!d.red; if(d.poems.length){ const keep=new Map((bag.poems||[]).map((n,i)=>[n,(bag.poemT||[])[i]||0])); bag.poems=[...new Set([...(bag.poems||[]),...d.poems])].slice(-30); bag.poemT=bag.poems.map(n=>keep.get(n)||0); } (d.acc||[]).forEach(id=>{ accState().owned[id]=1; }); if(d.gacha) bag.gacha=Math.max(bag.gacha||0,d.gacha); saveBag();
   draftLook=me.look.slice(); meAv.setLook(draftLook); meAv.setName(myLabel()); meAv.setAmulet(!!bag.items.fu); meAv.setThread(!!bag.redThread); markDirty(); renderLook(firstVisitPending); toast("已找回你的名字、造型和背包",3000); };
 /* ---- 角色存檔: the server keeps a copy of your character (look, name, 平安幣, bag, recent 籤詩) under a long-lived cookie, so a
    cleared browser brings it back by itself; the 取回碼 moves it to another app or phone. Gifts from the 主委 arrive the same way. ---- */
@@ -3472,7 +3475,7 @@ const PROF={last:"",code:load("mz.rc",""),busy:false,shown:load("mz.rcShown",fal
 /* the character server is reachable on the site, or simulated inside the test page (window.MZ_SIM, set only by the test build) */
 const NET_ME=()=>USE_CF||!!window.MZ_SIM;
 function applySnap(d){ if(!d) return false; me.look=sanitizeLook(d.look,!!me.sp); const nm=cleanName(d.name); if(!me.sp) me.name=[SP_NAME,SP_OLD].includes(nm)?me.name:nm||me.name; if(d.no) me.no=d.no; save("mz.me",me);
-  bag.coins=d.coins; bag.items={...bag.items,...d.items}; bag.redThread=!!d.red; if(d.poems.length){ const keep=new Map((bag.poems||[]).map((n,i)=>[n,(bag.poemT||[])[i]||0])); bag.poems=[...new Set([...(bag.poems||[]),...d.poems])].slice(-30); bag.poemT=bag.poems.map(n=>keep.get(n)||0); } (d.acc||[]).forEach(id=>{ accState().owned[id]=1; }); saveBag();
+  bag.coins=d.coins; bag.items={...bag.items,...d.items}; bag.redThread=!!d.red; if(d.poems.length){ const keep=new Map((bag.poems||[]).map((n,i)=>[n,(bag.poemT||[])[i]||0])); bag.poems=[...new Set([...(bag.poems||[]),...d.poems])].slice(-30); bag.poemT=bag.poems.map(n=>keep.get(n)||0); } (d.acc||[]).forEach(id=>{ accState().owned[id]=1; }); if(d.gacha) bag.gacha=Math.max(bag.gacha||0,d.gacha); saveBag();
   draftLook=me.look.slice(); meAv.setLook(draftLook); meAv.setName(myLabel()); meAv.setAmulet(!!bag.items.fu); meAv.setThread(!!bag.redThread); markDirty(); return true; }
 const fmtCode=c=>c?c.slice(0,3)+"-"+c.slice(3):"";
 async function profSave(force,beacon){ if(me.sp||PROF.busy) return; const snap=lookCode(); if(!force&&snap===PROF.last) return;
@@ -3581,7 +3584,7 @@ let bagTab="all", bagSel=null;
 function bagEntries(){ const a=accState(), out=[];
   if(bagTab==="all"||bagTab==="goods") GOODS.forEach(g=>{ const n=bag.items[g.k]||0; if(n||bagTab==="goods") out.push({id:"g:"+g.k,ic:g.k,n,name:g.name,desc:g.meta}); });
   if(bagTab==="all"||bagTab==="goods"){ const hb=bag.hongbao||0; if(hb) out.push({id:"g:hongbao",ic:"hongbao",n:hb,name:"紅包",desc:"財神爺撒下來的紅包，裡面的平安幣已經收進錢包。留著當紀念。"}); }
-  if(bagTab==="all"||bagTab==="acc") ACC_IDS.filter(id=>a.owned[id]).forEach(id=>out.push({id:"a:"+id,ic:id,name:ACC[id].name,on:a[ACC[id].slot]===id,desc:(ACC[id].note?ACC[id].note+"。":"")+(ACC[id].cat==="頭飾"?"戴在頭上的頭飾。":"拿在手上的小東西。")}));
+  if(bagTab==="all"||bagTab==="acc") ACC_IDS.filter(id=>a.owned[id]).forEach(id=>out.push({id:"a:"+id,ic:id,name:ACC[id].name,on:a[ACC[id].slot]===id,desc:(ACC[id].note?ACC[id].note+"。":"")+(ACC[id].cat==="頭飾"?"戴在頭上的頭飾。":ACC[id].slot==="mouth"?"咬在嘴邊的小東西。":"拿在手上的小東西。")}));
   if(bagTab==="all"||bagTab==="poem"){ const L=(bag.poems||[]).length; (bag.poems||[]).slice().reverse().forEach((n,i)=>{ if(bagTab==="all"&&i>=8) return; const t=(bag.poemT||[])[L-1-i]||0, done=!!(bag.jqDone&&bag.jqDone[n+"@"+t]);
     out.push({id:"p:"+n+":"+i,poem:n,done,name:`第${CN_NUM(n)}籤`,desc:`${POEMS[n-1]?POEMS[n-1].gz+"・":""}${t?`${fmtDraw(t)} 抽到。`:"在籤詩櫃求到的籤詩。"}${done?"已經解過籤。":"想知道意思，可以到解籤處問。"}`}); }); }
   return out; }
@@ -3601,7 +3604,7 @@ function openBag(){ const list=bagEntries(); if(!list.find(e=>e.id===bagSel)) ba
     grid+=`<button class="slot${e.n===0?" zero":""}" data-act="bagSel" data-v="${e.id}" aria-pressed="${e.id===bagSel}" aria-label="${e.name}">${e.poem?`<span class="pslip">${CN_NUM(e.poem)}</span>`:bic(e.ic)}${e.n!=null?`<span class="n">${e.n}</span>`:""}${e.on?`<span class="on">穿戴中</span>`:""}${e.done?`<span class="on">已解</span>`:""}</button>`; }
   const det=sel?`<div class="inv-detail">${sel.poem?`<span class="pslip">${CN_NUM(sel.poem)}</span>`:bic(sel.ic)}<div class="tx"><span class="tt">${sel.name}${sel.n!=null?`　<small style="font-size:13px;color:var(--ink)">持有 ${sel.n}</small>`:""}</span><span class="ds">${sel.desc}</span><div class="acts">${bagActs(sel)}</div></div></div>`
     :`<div class="inv-detail">${bic("gift")}<div class="tx"><span class="tt">還是空的</span><span class="ds">${bagTab==="acc"?"到夜市玩地瓜球、珍珠奶茶、射氣球、香腸攤，可以得到飾品。":bagTab==="poem"?"到媽祖右前方的籤詩櫃求籤，收下的籤詩會放在這裡。":"到服務處請香、買供品和金紙。"}</span><div class="acts">${bagTab==="poem"?`<button class="chip" data-act="bagGo" data-v="lot">走去籤詩櫃</button>`:bagTab==="acc"?"":`<button class="chip" data-act="goShop">去服務處</button>`}</div></div></div>`;
-  const html=`<div class="inv-top"><span class="inv-coin">${bic("coin")}<b>${bag.coins}</b>平安幣</span><span class="inv-note">每天補到 300</span></div>
+  const html=`<div class="inv-top"><span class="inv-coin">${bic("coin")}<b>${bag.coins}</b>平安幣</span><span class="inv-note">每天補到 300</span></div><div class="inv-top"><span class="inv-coin">🎟️<b>${bag.gacha||0}</b>扭蛋幣</span><span class="inv-note">扭蛋機尚未開放，先存著</span></div>
     <div class="inv-tabs" role="tablist">${tab("all","全部")}${tab("goods","供品")}${tab("acc","飾品")}${tab("poem","籤詩")}</div>
     <div class="inv-grid">${grid}</div>${det}`;
   const keep=sheetKind==="bag"?sheetBody.scrollTop:0; openSheet("bag","背包",html); sheetBody.scrollTop=keep; }
@@ -4422,7 +4425,7 @@ function sparkTick(av,dt){ if(!av.sparkler||av.hold||!av.root.visible){ if(av.sp
   const m=Q.low?3:6; for(let i=0;i<m;i++){ const th=Math.random()*Math.PI*2, ph=Math.random()*Math.PI, s=.6+Math.random()*1.6; fwEmit(_v1.x,_v1.y,_v1.z,Math.sin(ph)*Math.cos(th)*s,Math.cos(ph)*s,Math.sin(ph)*Math.sin(th)*s,"#ffffff","#ffb347",.22+Math.random()*.2,.07,1.5,2.5,.6); }
   if(Math.random()<.5) fwEmit(_v1.x,_v1.y,_v1.z,0,0,0,"#fff6d6","#ffd27a",.08,.22,0,0,0); }
 HANDLERS.chairHide=()=>{ if(!me.sp) return; chairHidden=!chairHidden; meAv.root.traverse(o=>{ if(o.material&&!o.isSprite){ o.material=o.material.clone(); o.material.transparent=true; o.material.opacity=chairHidden?.35:1; } }); lastSent=""; markDirty(); sendPresence(true); openChair(); toast(chairHidden?"已隱形：其他香客看不到你":"已解除隱形",2600); };
-HANDLERS.chairReset=()=>{ if(!me.sp) return; delete bag.nm; delete bag.stuck; /* 夜市: 撈金魚 again today, pachinko exchange back to 0 */ delete bag.fcDay; delete bag.fcTry; delete bag.rxDay; delete bag.rxTry; bag.redThread=0; bag.planted=[]; bag.bowed={}; bag.flow={}; delete bag.zhanDay;
+HANDLERS.chairReset=()=>{ if(!me.sp) return; delete bag.gd; /* god games: 扭蛋幣 again today */ delete bag.nm; delete bag.stuck; /* 夜市: 撈金魚 again today, pachinko exchange back to 0 */ delete bag.fcDay; delete bag.fcTry; delete bag.rxDay; delete bag.rxTry; bag.redThread=0; bag.planted=[]; bag.bowed={}; bag.flow={}; delete bag.zhanDay;
   bag.coins=Math.max(bag.coins,300); saveBag(); meAv.setThread(false); myOffers=[]; try{ rebuildMyOffers(); }catch(e){} markDirty(); renderWallet(); openChair(); toast("今日紀錄已重置（含夜市撈魚、彈珠兌換），可以重新測試",2800); };
 let fwKeyHold="";
 let slKeyHold="";
@@ -5376,9 +5379,9 @@ const NM_STALLS=[
 const ACC={qqball:{name:"地瓜球頭飾",cat:"頭飾",slot:"head"},boba:{name:"珍奶頭飾",cat:"頭飾",slot:"head"},afro:{name:"閃亮彩色爆炸頭",cat:"頭飾",slot:"head"},
   sausage:{name:"香腸",cat:"裝飾品",slot:"hand",note:"好濃的蒜頭味"},skewer:{name:"烤肉串",cat:"裝飾品",slot:"hand"}};
 const ACC_IDS=Object.keys(ACC);
-function accState(){ if(!bag.acc||typeof bag.acc!=="object") bag.acc={owned:{},head:0,hand:0}; bag.acc.owned=bag.acc.owned||{}; return bag.acc; }
+function accState(){ if(!bag.acc||typeof bag.acc!=="object") bag.acc={owned:{},head:0,hand:0,mouth:0}; bag.acc.owned=bag.acc.owned||{}; if(bag.acc.mouth===undefined) bag.acc.mouth=0; return bag.acc; }
 function nmDay(){ const d=new Date(Date.now()+8*3600e3).toISOString().slice(0,10); if(!bag.nm||bag.nm.day!==d) bag.nm={day:d,fish:0,pWin:0,pCash:0}; return bag.nm; }
-function myEq(){ const a=accState(); return [a.head||0,a.hand||0]; }
+function myEq(){ const a=accState(); return [a.head||0,a.hand||0,a.mouth||0]; }
 function giveAcc(id){ const a=accState(); const had=!!a.owned[id]; a.owned[id]=1; if(!had){ a[ACC[id].slot]=id; } saveBag(); meAv.setAcc(myEq()); markDirty(); return had; }
 function payStall(price){ if(!price) return true; if((bag.coins||0)<price){ toast(`平安幣不夠，這攤要 ${price} 幣`); return false; } bag.coins-=price; saveBag(); sfx.coin&&sfx.coin(); return true; }
 
@@ -5410,7 +5413,10 @@ function buildAccHead(id){ const g=new T.Group();
       sp.position.set(Math.sin(v)*Math.cos(u)*.44,.12+Math.cos(v)*.42,Math.sin(v)*Math.sin(u)*.44-.05); sp.scale.set(.1,.1,1); sp.userData.tw=Math.random()*7; g.add(sp); }
     g.userData.sparkle=1; g.userData.bald=1; }
   return g; }
-function buildAccHand(id){ const g=new T.Group();
+/* 嘴邊 pieces (held in the mouth): filled in by the god games' rewards */
+const ACC_MOUTH={}; function buildAccMouth(id){ const g=new T.Group(); if(ACC_MOUTH[id]) ACC_MOUTH[id](g); return g; }
+const ACC_BUILD_HAND={};
+function buildAccHand(id){ const g=new T.Group(); if(ACC_BUILD_HAND[id]){ ACC_BUILD_HAND[id](g); return g; }
   if(id==="sausage"){ const stick=new T.Mesh(new T.CylinderGeometry(.008,.008,.34,5),accMat("#d8c09a")); stick.position.y=.1; g.add(stick);
     const s=new T.Mesh(T.CapsuleGeometry?new T.CapsuleGeometry(.045,.2,6,10):new T.CylinderGeometry(.045,.045,.28,10),accMat("#b8321e",{r:.35})); s.position.y=.24; g.add(s);
     for(let i=0;i<3;i++){ const c=new T.Mesh(new T.BoxGeometry(.07,.008,.02),accMat("#5a160c")); c.position.set(0,.18+i*.06,.04); c.rotation.z=.4; g.add(c); }
@@ -5420,13 +5426,15 @@ function buildAccHand(id){ const g=new T.Group();
     const glow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffb040"),transparent:true,opacity:.75,blending:T.AdditiveBlending,depthWrite:false})); glow.scale.set(.42,.42,1); glow.position.y=.26; g.add(glow); g.userData.glow=glow;
     g.rotation.set(Math.PI*.85,0,0); g.userData.aroma=1; }
   return g; }
-Avatar.prototype.setAcc=function(eq){ eq=(eq||[0,0]).map(v=>ACC[v]?v:0); this.eq=eq;
+Avatar.prototype.setAcc=function(eq){ eq=[...(eq||[]),0,0,0].slice(0,3).map(v=>ACC[v]?v:0); this.eq=eq;
+  if(this.accMouth){ this.accMouth.parent&&this.accMouth.parent.remove(this.accMouth); this.accMouth=null; }
   if(this.accHead){ this.accHead.parent&&this.accHead.parent.remove(this.accHead); this.accHead=null; }
   if(this.accHand){ this.accHand.parent&&this.accHand.parent.remove(this.accHand); this.accHand=null; }
   if(this.baldHid){ this.baldHid.forEach(o=>o.visible=true); this.baldHid=null; }
   if(eq[0]&&this.head){ this.accHead=buildAccHead(eq[0]); this.head.add(this.accHead);
     if(this.accHead.userData.bald){ const all=!!this.accHead.userData.full; this.baldHid=[]; this.head.children.forEach(o=>{ if(o===this.accHead||!o.visible) return; if(!all&&o.isMesh&&o.material&&o.material.map) return; o.visible=false; this.baldHid.push(o); }); } }
   if(eq[1]&&this.hands&&this.hands[0]){ this.accHand=buildAccHand(eq[1]); this.hands[0].add(this.accHand); }
+  if(eq[2]&&this.head){ this.accMouth=buildAccMouth(eq[2]); this.accMouth.position.set(0,-.08,.25); this.head.add(this.accMouth); }
   // tall head pieces push the name tag and speech bubble up so they stay readable
   this.accLift={qqball:.62,boba:.5,afro:.32}[eq[0]]||0; if(this.label) this.label.position.y=(this.sp?1.46:1.42)+this.accLift; if(this.glow) this.glow.position.y=1.46+this.accLift; };
 // 你好臭: someone holding a 香腸 trails little green stink clouds, and now and then a "好臭～" pops up over them
@@ -5456,13 +5464,35 @@ function accTick(av,dt){ stinkFlies(av,!!(av.accHand&&av.accHand.userData.stink&
       b.position.set(_v1.x+rand(-.15,.15),_v1.y+.5+rand(0,.15),_v1.z+rand(-.15,.15)); b.scale.set(sz,sz,1); scene.add(b); parts.push({s:b,vx:rand(-.12,.12),vy:.35+Math.random()*.2,vz:rand(-.12,.12),life:0,max:1.8+Math.random(),grow:.03,op:.9}); } }
   if(av.accHead&&av.accHead.userData.sparkle&&near){ const t=performance.now()/1000; av.accHead.children.forEach((b,i)=>{ if(b.isSprite){ const k=Math.max(0,Math.sin(t*4+b.userData.tw*3)); b.scale.set(.04+k*.13,.04+k*.13,1); b.material.opacity=k; } else if(i%9===0) b.scale.setScalar(1+Math.sin(t*5+i)*.08); }); } }
 
+/* ---- 神明小遊戲 (shared): the first win gives the god's accessory; after that a win gives one 扭蛋幣, once a day per game.
+   Every game keeps a fastest-time leaderboard on the server (the test page keeps it on this phone). ---- */
+const GOD_GAMES={wenchang:"文昌帝君・寫字",tudi:"土地公・尋寶",guanyin:"觀音菩薩・接福水",zhusheng:"註生娘娘・哄睡",doumu:"斗姥元君・眾星歸位",jiutian:"九天玄女・八卦迷宮",dizang:"地藏王・記憶碎片"};
+const twDay=()=>new Date(Date.now()+8*3600e3).toISOString().slice(0,10);
+function gameReward(g,accId){ bag.gd=bag.gd||{}; const a=accState();
+  if(accId&&ACC[accId]&&!a.owned[accId]){ giveAcc(accId); return {kind:"acc",id:accId,text:`獲得飾品「${ACC[accId].name}」，已經戴上了`}; }
+  if(bag.gd[g]===twDay()) return {kind:"none",text:"今天這個遊戲的扭蛋幣已經領過了，明天再來"};
+  bag.gd[g]=twDay(); bag.gacha=(bag.gacha||0)+1; saveBag(); markDirty(); return {kind:"gacha",text:"獲得扭蛋幣 1 枚（扭蛋機尚未開放，先存著）"}; }
+const fmtMs=ms=>(ms/1000).toFixed(2)+" 秒";
+async function lbSubmit(g,ms){ const name=(me.name||(me.no?`香客${me.no}`:"香客")).slice(0,10), id=load("mz.id","")||"anon";
+  try{ const r=await fetch("/lb",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({g,t:Math.round(ms),name,id})}); const j=await r.json(); if(Array.isArray(j.top)) return j.top.map(e=>({...e,me:e.id===id})); }catch(e){}
+  return []; }
+async function lbGet(g){ try{ const r=await fetch("/lb?g="+encodeURIComponent(g),{cache:"no-store"}); const j=await r.json(); const id=load("mz.id","")||"anon"; if(Array.isArray(j.top)) return j.top.map(e=>({...e,me:e.id===id})); }catch(e){} return []; }
+function lbHTML(list){ if(!list.length) return `<p class="note">排行榜還沒有人，你可以是第一名！</p>`;
+  return `<ol class="lb">${list.slice(0,10).map((r,i)=>`<li${r.me?' class="me"':""}><span class="rk">${i+1}</span><span class="nm">${esc(r.name||"香客")}</span><span class="tm">${fmtMs(r.t)}</span></li>`).join("")}</ol>`; }
+/* call when a game is won: ms = time taken; accId = that god's accessory (or null when the game gives something else) */
+async function godGameWin(g,ms,accId,extra){ const rw=extra||gameReward(g,accId); sfx.coin&&sfx.coin();
+  openSheet("godGame",GOD_GAMES[g]||"小遊戲",`<div class="gg-done"><div class="gg-time">${fmtMs(ms)}</div><p class="lead">${rw.kind==="acc"?"🎁 ":rw.kind==="gacha"?"🎟️ ":""}${esc(rw.text)}</p>
+    <div class="group"><span class="group-label">🏆 最快排行榜</span><div id="ggBoard"><p class="note">讀取中…</p></div></div></div>`);
+  const list=await lbSubmit(g,ms); const el=$("#ggBoard"); if(el) el.innerHTML=lbHTML(list); }
+HANDLERS.godBoard=async g=>{ openSheet("godGame",(GOD_GAMES[g]||"小遊戲")+" 排行榜",`<div id="ggBoard"><p class="note">讀取中…</p></div>`); const el=$("#ggBoard"); const list=await lbGet(g); if(el) el.innerHTML=lbHTML(list); };
+
 /* ---- bag: 飾品 tab ---- */
 let accTab="頭飾";
-function accHTML(){ const a=accState(); const tabs=["服裝","頭飾","裝飾品"];
+function accHTML(){ const a=accState(); const tabs=["服裝","頭飾","裝飾品","嘴邊"];
   const list=ACC_IDS.filter(id=>ACC[id].cat===accTab&&a.owned[id]);
   return `<div class="group"><span class="group-label">飾品</span><div class="chips">${tabs.map(t=>`<button class="chip" data-act="accTab" data-v="${t}" aria-pressed="${t===accTab}">${t}</button>`).join("")}</div>
     ${list.length?`<div class="goods">${list.map(id=>{ const on=a[ACC[id].slot]===id; return `<button class="good" data-act="accWear" data-v="${id}" style="${on?"border-color:var(--gold);background:rgba(142,28,20,.35)":""}"><span class="name">${ACC[id].name}${on?"　✓ 穿戴中":""}</span><span class="meta">${ACC[id].note?ACC[id].note+"・":""}${on?"點一下脫下":"點一下穿上"}</span></button>`; }).join("")}</div>`
-      :`<p class="note">${accTab==="服裝"?"還沒有服裝。":accTab==="頭飾"?"還沒有頭飾。到夜市玩地瓜球、珍珠奶茶、射氣球可以得到。":"還沒有裝飾品。到夜市香腸攤擲骰子可以得到。"}</p>`}</div>`; }
+      :`<p class="note">${accTab==="嘴邊"?"還沒有嘴邊的飾品。到觀音菩薩、註生娘娘玩小遊戲可以得到。":accTab==="服裝"?"還沒有服裝。":accTab==="頭飾"?"還沒有頭飾。到夜市玩地瓜球、珍珠奶茶、射氣球可以得到。":"還沒有裝飾品。到夜市香腸攤擲骰子可以得到。"}</p>`}</div>`; }
 HANDLERS.accTab=v=>{ accTab=v; openBag(); };
 HANDLERS.accWear=id=>{ const a=accState(); if(!a.owned[id]) return; const sl=ACC[id].slot; a[sl]=a[sl]===id?0:id; saveBag(); meAv.setAcc(myEq()); markDirty(); toast(a[sl]?`穿上${ACC[id].name}`:`脫下${ACC[id].name}`); openBag(); };
 function nightMarketHTML(){ const d=nmDay(); return `<div class="group"><span class="group-label">夜市（攤位還在搭，先從這裡玩）</span><div class="goods">${NM_STALLS.map(s=>`<button class="good" data-act="nmPlay" data-v="${s.k}"><span class="name">${s.icon} ${s.name}</span><span class="meta">${s.note}</span><span class="own">${s.price?`${s.price} 幣`:"免費入場"}${s.k==="fish"&&d.fish?"・今天玩過了":""}</span></button>`).join("")}</div></div>`; }
@@ -5938,7 +5968,7 @@ function tick(){ if(gameAsleep) return; const _ft0=performance.now(); { const no
     r1.scale.setScalar(k); r2.scale.setScalar(1+((tapT*1.2)%1)*.8); r2.material.opacity=.7*(1-((tapT*1.2)%1));
     if(arrived||tapT>12){ const f=Math.max(0,r1.material.opacity-dt*3); r1.material.opacity=f; dot.material.opacity=f; if(f<=0){ tapMark.visible=false; r1.material.opacity=.9; dot.material.opacity=.9; } } }
   botTick(dt);
-  lodPrep(); remotes.forEach(r=>{ lodUpdate(r,dt); if((r.eq&&(r.eq[0]||r.eq[1]))||r.flies) accTick(r,dt); }); /* r.flies: keep ticking once more so flies go away after the sausage is put down */ sjUpdate(dt); fwUpdate(dt); updateSkyLanterns(dt); renderSLBtn(); opTick(dt); ptTick(dt); REAR_TICK.forEach(f=>f(dt)); csTick(dt); hbTick(dt); flyCtlTick(dt); slodTick(dt); poolTick(dt); rearVis(); buildTick(); ftTick(dt); mkTick(dt);
+  lodPrep(); remotes.forEach(r=>{ lodUpdate(r,dt); if((r.eq&&(r.eq[0]||r.eq[1]||r.eq[2]))||r.flies) accTick(r,dt); }); /* r.flies: keep ticking once more so flies go away after the sausage is put down */ sjUpdate(dt); fwUpdate(dt); updateSkyLanterns(dt); renderSLBtn(); opTick(dt); ptTick(dt); REAR_TICK.forEach(f=>f(dt)); csTick(dt); hbTick(dt); flyCtlTick(dt); slodTick(dt); poolTick(dt); rearVis(); buildTick(); ftTick(dt); mkTick(dt);
   if(room&&dirty&&performance.now()-lastSend>((keys.size||joy.on)?800:SEND_GAP)) sendPresence();
   updateFlyers(dt); updateFu(dt); updateCats(dt); updateWater(dt);
   { let best=null, bd=2.6; if(!sheetKind&&!customizing&&!pendingStation&&meAv.seat<0&&!(meAv.danceT>0)) for(const k in stations){ if(k==="cats"){ if(CATS.off) continue; const dc=Math.hypot(meAv.pos.x-CATS.c.x,meAv.pos.y-CATS.c.z); if(dc<3.6){ best=k; bd=0; } continue; } const d=meAv.pos.distanceTo(stations[k].approach); if(d<bd){ bd=d; best=k; } }

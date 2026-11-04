@@ -4,7 +4,7 @@ import { DurableObject } from "cloudflare:workers";
 
 const HALLS = 10, CAP = 100, MAX_MSG = 4000;
 const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000, "/puppet": 5000, "/crowd": 5000, "/market": 5000, "/layout": 5000 };
-const LOBBY_PATHS = ["/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout"];
+const LOBBY_PATHS = ["/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout"];
 const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage", "/puppet": "/puppet", "/crowd": "/crowd", "/market": "/market", "/layout": "/layout" }; // a POST here makes that cached list stale
 
 export default {
@@ -297,6 +297,20 @@ export class Lobby extends DurableObject {
       const c = { target: real ? 0 : t, from, at: Date.now(), real }; await this.ctx.storage.put("crowd", c); return json({ ok: true, ...c });
     }
     if (url.pathname === "/crowd") return json((await this.ctx.storage.get("crowd")) || { target: null, from: null, at: 0 });
+    // 神明小遊戲排行榜: fastest time per player for each god game, top 20 kept (lower is better)
+    if (url.pathname === "/lb") {
+      const GAMES = ["wenchang", "tudi", "guanyin", "zhusheng", "doumu", "jiutian", "dizang"];
+      let b = {}; if (req.method === "POST") { try { b = await req.json(); } catch {} }
+      const g = String((req.method === "POST" ? b.g : url.searchParams.get("g")) || ""); if (!GAMES.includes(g)) return json({ ok: false });
+      let top = (await this.ctx.storage.get("lb:" + g)) || [];
+      if (req.method === "POST") {
+        const t = Math.round(Number(b.t) || 0), name = clean(b.name, 10) || "香客", id = clean(b.id, 16) || "anon";
+        this.lastLb = this.lastLb || new Map(); const now = Date.now(); const ok = t >= 1500 && t <= 600000 && now - (this.lastLb.get(id + g) || 0) > 4000; this.lastLb.set(id + g, now);
+        if (ok) { const cur = top.find(e => e.id === id); if (!cur) top.push({ id, name, t, at: now }); else { cur.name = name; if (t < cur.t) { cur.t = t; cur.at = now; } }
+          top.sort((a, c) => a.t - c.t || a.at - c.at); top = top.slice(0, 20); await this.ctx.storage.put("lb:" + g, top); }
+      }
+      return json({ ok: true, top: top.slice(0, 10) });
+    }
     // 斬小人排行榜: best score per player, top 20 kept
     if (url.pathname === "/zhan" && req.method === "POST") {
       let b = {}; try { b = await req.json(); } catch {}
