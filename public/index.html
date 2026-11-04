@@ -1813,7 +1813,7 @@ setTimeout(()=>{ Object.assign(CENSER_INFO,{guanyin:["觀世音菩薩","後殿�
   // the shrine: one golden pavilion across the back, like Mazu's: 觀世音菩薩 in the middle bay, 註生娘娘 (龍邊) and 九天玄女 (虎邊) in the side bays,
   // curtains and couplets, the twin-dragon mural behind, a long altar table with a censer for each, and holy light
   const PK=.85, PZ=RH.z1+1.75; const pv=new T.Group(); pv.position.set(0,0,PZ); pv.scale.setScalar(PK); pv.userData.noMerge=1; scene.add(pv);
-  { const g=pv, Wp=13, Dp=2.8, goldM=new T.MeshStandardMaterial({map:goldCarvedTex,metalness:.75,roughness:.35}), PH=4.4, PY=1.05;
+  { const g=pv, Wp=13, Dp=2.8, goldM=new T.MeshStandardMaterial({map:goldCarvedTex,metalness:.75,roughness:.35}), PH=5.2, PY=1.05; /* PH was 4.4: taller so 觀音 can stand larger */
     box(Wp+.2,1.0,Dp,redM,0,.5,0,g); box(Wp+.4,.12,Dp+.2,redM,0,.06,0,g); box(Wp+.3,.1,Dp+.1,goldP,0,1.02,0,g); box(Wp+.3,.06,Dp+.1,goldP,0,.2,0,g);
     for(const x of [-Wp/2+.15,-2.4,2.4,Wp/2-.15]) for(const z of [Dp/2-.15,-Dp/2+.15]){ cyl(.15,.15,PH,goldP,x,PY+PH/2,z,g,16); cyl(.21,.21,.16,redM,x,PY+.08,z,g,16); }
     box(Wp,PH,.06,new T.MeshStandardMaterial({map:texRep(goldCarvedTex,6,2),metalness:.6,roughness:.4}),0,PY+PH/2,-Dp/2+.05,g);
@@ -1839,13 +1839,15 @@ setTimeout(()=>{ Object.assign(CENSER_INFO,{guanyin:["觀世音菩薩","後殿�
     const burst=cvs(512,512,(x,w,h)=>{ const c=w/2; const gr=x.createRadialGradient(c,c,20,c,c,c); gr.addColorStop(0,"rgba(255,240,190,.95)"); gr.addColorStop(.35,"rgba(255,210,120,.55)"); gr.addColorStop(1,"rgba(255,190,80,0)"); x.fillStyle=gr; x.fillRect(0,0,w,h);
       x.globalCompositeOperation="lighter"; for(let i=0;i<48;i++){ const a=i/48*Math.PI*2; x.strokeStyle=`rgba(255,${200+(i%2)*40},120,${i%2?.35:.18})`; x.lineWidth=i%2?6:12; x.beginPath(); x.moveTo(c+Math.cos(a)*70,c+Math.sin(a)*70); x.lineTo(c+Math.cos(a)*c,c+Math.sin(a)*c); x.stroke(); }
       x.strokeStyle="rgba(255,236,170,.9)"; x.lineWidth=6; x.beginPath(); x.arc(c,c,118,0,Math.PI*2); x.stroke(); });
-    const halo=new T.Mesh(new T.PlaneGeometry(3.6,3.6),new T.MeshBasicMaterial({map:burst,transparent:true,blending:T.AdditiveBlending,depthWrite:false,opacity:.45})); halo.position.set(0,PY+2.75,-Dp/2+.2); g.add(halo);
-    const glow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffe0a0"),transparent:true,opacity:.25,blending:T.AdditiveBlending,depthWrite:false})); glow.position.set(0,PY+2.3,0); glow.scale.set(4.2,4.8,1); g.add(glow);
+    const halo=new T.Mesh(new T.PlaneGeometry(3.6,3.6),new T.MeshBasicMaterial({map:burst,transparent:true,blending:T.AdditiveBlending,depthWrite:false,opacity:.45})); halo.position.set(0,PY+3.55,-Dp/2+.2); halo.scale.setScalar(1.25); g.add(halo);
+    const glow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffe0a0"),transparent:true,opacity:.25,blending:T.AdditiveBlending,depthWrite:false})); glow.position.set(0,PY+2.9,0); glow.scale.set(5,5.8,1); g.add(glow);
     for(const x of [-4.45,4.45]){ const sg=new T.Sprite(glow.material.clone()); sg.material.opacity=.22; sg.position.set(x,PY+1.7,.2); sg.scale.set(3.2,4.4,1); g.add(sg); } // soft light over the whole statue
     let ht=0; REAR_TICK.push(dt=>{ ht+=dt; halo.rotation.z=ht*.12; halo.material.opacity=.38+.1*Math.sin(ht*1.3); glow.material.opacity=.2+.07*Math.sin(ht*1.7); });
     // the deities
     const seat=(name,key,x,h)=>loadModel(name,mm=>{ mm.traverse(o=>{ if(o.isMesh){ o.material.envMapIntensity=1.6; } }); const w=fitModel(mm,h); w.position.set(x,PY,.05); g.add(w); setAct(w,key); w.traverse(o=>{ if(o.isMesh) pickables.push(o); }); });
-    seat("guanyin2","guanyin",0,2.85); }
+    { const pl=box(2.6,.5,1.7,redM,0,PY+.25,.05,g); box(2.75,.06,1.82,goldP,0,PY+.5,.05,g); box(2.75,.06,1.82,goldP,0,PY+.04,.05,g); } /* raised plinth in the middle bay */
+    const seatG=(name,key,x,h,y)=>loadModel(name,mm=>{ mm.traverse(o=>{ if(o.isMesh){ o.material.envMapIntensity=1.6; } }); const w=fitModel(mm,h); w.position.set(x,y,.05); g.add(w); setAct(w,key); w.traverse(o=>{ if(o.isMesh) pickables.push(o); }); });
+    seatG("guanyin2","guanyin",0,3.9,PY+.53); /* was 2.85 on the shrine floor; now the largest statue in the 後殿 */ }
   for(const [sd,key,label,robe] of [[1,"zhusheng","註生娘娘","#c8406a"],[-1,"jiutian","九天玄女","#3a7a9a"]]){ const x=sd*7.9, z=RH.z1+1.4;
     const d=buildDeity({robe,brow:"#1c1512",beard:"#1c1512",long:true,hat:"bun"}); d.userData.noMerge=1; buildSideShrine(sd,key,label,d,[x,z,0]); swapDeity(d,key,2.3,key); setTimeout(()=>addHit(key,x,.9,z,1.4,3.2),0); }
   // the twin-dragon mural behind it, framed in gold, as behind Mazu
@@ -1867,7 +1869,7 @@ setTimeout(()=>{ Object.assign(CENSER_INFO,{guanyin:["觀世音菩薩","後殿�
       fruitPlate(x-1.25,-.15,t).position.y=.98; flowerVase(x+1.25,-.15,t).position.y=.98;
       station(key,[x,TZ+1.25],Math.PI); }
     t.userData.noMerge=1; }
-  setTimeout(()=>{ addHit("guanyin",0,1,PZ,1.5,3.6); },0);
+  setTimeout(()=>{ addHit("guanyin",0,1,PZ,1.6,4.6); },0);
   // holy light: shafts falling on the shrine, gold motes drifting up
   { const shaftTex=cvs(64,256,(x,w,h)=>{ const g=x.createLinearGradient(0,0,0,h); g.addColorStop(0,"rgba(255,236,180,0)"); g.addColorStop(.25,"rgba(255,226,160,.9)"); g.addColorStop(1,"rgba(255,210,130,0)"); x.fillStyle=g; x.fillRect(0,0,w,h); });
     const shafts=[]; for(const [x,r,rt] of []){ const sm=new T.MeshBasicMaterial({map:shaftTex,color:new T.Color("#ffd98a"),transparent:true,opacity:.16,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide});
@@ -5379,7 +5381,8 @@ const NM_STALLS=[
   {k:"balloon",name:"射氣球",price:30,icon:"🎈",note:"全部射破得閃亮彩色爆炸頭"}];
 // wearable prizes: slot head/hand, shown in the bag under 服裝 / 頭飾 / 裝飾品
 const ACC={qqball:{name:"地瓜球頭飾",cat:"頭飾",slot:"head"},boba:{name:"珍奶頭飾",cat:"頭飾",slot:"head"},afro:{name:"閃亮彩色爆炸頭",cat:"頭飾",slot:"head"},
-  sausage:{name:"香腸",cat:"裝飾品",slot:"hand",note:"好濃的蒜頭味"},skewer:{name:"烤肉串",cat:"裝飾品",slot:"hand"}};
+  sausage:{name:"香腸",cat:"裝飾品",slot:"hand",note:"好濃的蒜頭味"},skewer:{name:"烤肉串",cat:"裝飾品",slot:"hand"},
+  pacifier:{name:"奶嘴",cat:"嘴邊",slot:"mouth",note:"註生娘娘賜的，咬著會冒粉紅愛心"}}; /* new ones always go at the end: the order is part of saved codes (15 at most) */
 const ACC_IDS=Object.keys(ACC);
 function accState(){ if(!bag.acc||typeof bag.acc!=="object") bag.acc={owned:{},head:0,hand:0,mouth:0}; bag.acc.owned=bag.acc.owned||{}; if(bag.acc.mouth===undefined) bag.acc.mouth=0; return bag.acc; }
 function nmDay(){ const d=new Date(Date.now()+8*3600e3).toISOString().slice(0,10); if(!bag.nm||bag.nm.day!==d) bag.nm={day:d,fish:0,pWin:0,pCash:0}; return bag.nm; }
@@ -5416,7 +5419,11 @@ function buildAccHead(id){ const g=new T.Group();
     g.userData.sparkle=1; g.userData.bald=1; }
   return g; }
 /* 嘴邊 pieces (held in the mouth): filled in by the god games' rewards */
-const ACC_MOUTH={}; function buildAccMouth(id){ const g=new T.Group(); if(ACC_MOUTH[id]) ACC_MOUTH[id](g); return g; }
+const ACC_MOUTH={
+  pacifier(g){ const pink=accMat("#ff8fb8",{r:.35,e:"#ff6fa0",ei:.25}), white=accMat("#fff4f8",{r:.3});
+    const shield=new T.Mesh(new T.SphereGeometry(.075,18,10),pink); shield.scale.set(1.25,.85,.32); g.add(shield);
+    const ring=new T.Mesh(new T.TorusGeometry(.05,.012,8,20),pink); ring.position.z=.04; g.add(ring);
+    const knob=new T.Mesh(new T.SphereGeometry(.022,10,8),white); knob.position.z=.03; g.add(knob); g.userData.pink=1; } }; function buildAccMouth(id){ const g=new T.Group(); if(ACC_MOUTH[id]) ACC_MOUTH[id](g); return g; }
 const ACC_BUILD_HAND={};
 function buildAccHand(id){ const g=new T.Group(); if(ACC_BUILD_HAND[id]){ ACC_BUILD_HAND[id](g); return g; }
   if(id==="sausage"){ const stick=new T.Mesh(new T.CylinderGeometry(.008,.008,.34,5),accMat("#d8c09a")); stick.position.y=.1; g.add(stick);
@@ -5464,6 +5471,9 @@ function accTick(av,dt){ stinkFlies(av,!!(av.accHand&&av.accHand.userData.stink&
   if(av.accHead&&av.accHead.userData.bubbles&&near){ av.bubT=(av.bubT||0)-dt; if(av.bubT<0){ av.bubT=.18+Math.random()*.2; av.accHead.getWorldPosition(_v1); // rainbow soap bubbles drifting up from the cup
       const c=["#ff6b9a","#ffd24a","#6bdcff","#9a7bff","#7dffb0","#ffffff"][(Math.random()*6)|0]; const b=new T.Sprite(new T.SpriteMaterial({map:BUB_TEX(),color:new T.Color(c),transparent:true,depthWrite:false})); const sz=.05+Math.random()*.06;
       b.position.set(_v1.x+rand(-.15,.15),_v1.y+.5+rand(0,.15),_v1.z+rand(-.15,.15)); b.scale.set(sz,sz,1); scene.add(b); parts.push({s:b,vx:rand(-.12,.12),vy:.35+Math.random()*.2,vz:rand(-.12,.12),life:0,max:1.8+Math.random(),grow:.03,op:.9}); } }
+  if(av.accMouth&&av.accMouth.userData.pink&&near){ av.pinkT=(av.pinkT||0)-dt; if(av.pinkT<0){ av.pinkT=.35+Math.random()*.3; av.accMouth.getWorldPosition(_v1); /* little pink hearts and sparkles drifting up */
+      const sp=new T.Sprite(new T.SpriteMaterial({map:Math.random()<.6?heartTex:glowTex,color:new T.Color(Math.random()<.5?"#ff8fb8":"#ffd0e4"),transparent:true,depthWrite:false,blending:T.AdditiveBlending})); const sz=.07+Math.random()*.06;
+      sp.position.set(_v1.x+rand(-.3,.3),_v1.y+rand(-.1,.3),_v1.z+rand(-.3,.3)); sp.scale.set(sz,sz,1); scene.add(sp); parts.push({s:sp,vx:rand(-.08,.08),vy:.3+Math.random()*.2,vz:rand(-.08,.08),life:0,max:1.4+Math.random()*.6,grow:.02,op:.9}); } }
   if(av.accHead&&av.accHead.userData.sparkle&&near){ const t=performance.now()/1000; av.accHead.children.forEach((b,i)=>{ if(b.isSprite){ const k=Math.max(0,Math.sin(t*4+b.userData.tw*3)); b.scale.set(.04+k*.13,.04+k*.13,1); b.material.opacity=k; } else if(i%9===0) b.scale.setScalar(1+Math.sin(t*5+i)*.08); }); } }
 
 /* ---- 神明小遊戲 (shared): the first win gives the god's accessory; after that a win gives one 扭蛋幣, once a day per game.
@@ -5486,7 +5496,7 @@ async function godGameWin(g,ms,accId,extra){ const rw=extra||gameReward(g,accId)
   openSheet("godGame",GOD_GAMES[g]||"小遊戲",`<div class="gg-done"><div class="gg-time">${fmtMs(ms)}</div><p class="lead">${rw.kind==="acc"?"🎁 ":rw.kind==="gacha"?"🎟️ ":""}${esc(rw.text)}</p>
     <div class="group"><span class="group-label">🏆 最快排行榜</span><div id="ggBoard"><p class="note">讀取中…</p></div></div></div>`);
   const list=await lbSubmit(g,ms); const el=$("#ggBoard"); if(el) el.innerHTML=lbHTML(list); }
-const GOD_PLAY={tudi:"⛏️ 尋寶（找到發光的寶藏挖出來）"};
+const GOD_PLAY={tudi:"⛏️ 尋寶（找到發光的寶藏挖出來）",zhusheng:"🍼 哄寶寶睡覺"};
 const GOD_START={}; HANDLERS.godPlay=g=>{ closeSheet(); if(GOD_START[g]) GOD_START[g](); else toast("這個遊戲還在準備中"); };
 /* ================= 土地公・尋寶: a beam of light marks treasure somewhere in the grounds; walk there, tap it, dig it up ================= */
 const TH={on:false,t0:0,x:0,z:0,g:null,hit:null,digging:false};
@@ -5542,6 +5552,55 @@ function thChest(ms){ const g=new T.Group(); g.position.set(TH.x,-.6,TH.z); g.ro
     if(k<3.2) requestAnimationFrame(up); else { godGameWin("tudi",ms,null,{kind:pick[0]==="gacha"?"gacha":"none",text}); setTimeout(()=>{ scene.remove(g); },6000); thStop(); } };
   tone(523,.2,.12); tone(784,.3,.1,"sine",.15); up(); }
 GOD_START.tudi=thStart;
+/* ================= 註生娘娘・哄睡: rock the cradle — hold to push harder, let go to ease off — and keep the rocking inside the
+   band that drifts up and down. Inside it the baby gets sleepier; too hard or too soft and it starts to stir, and wakes if it goes on. ================= */
+function playLullaby(){ const L=gameLayer("註生娘娘・哄寶寶睡覺","按住搖得用力、放開變輕，讓指標停在粉紅區裡"); const {x,cv}=L; ensureAudio();
+  let f=.35, v=0, hold=false, zc=.5, zt=.5, zh=.12, nextMove=0, sleep=0, wake=0, cry=0, t0=performance.now(), last=t0, done=false, sw=0, zzz=[], msg="", msgT=0;
+  const down=e=>{ hold=true; e&&e.preventDefault&&e.preventDefault(); }, up=()=>{ hold=false; };
+  cv.addEventListener("pointerdown",down); cv.addEventListener("pointerup",up); cv.addEventListener("pointercancel",up); cv.addEventListener("pointerleave",up);
+  const key=e=>{ if(e.code==="Space"){ hold=e.type==="keydown"; e.preventDefault(); } }; window.addEventListener("keydown",key); window.addEventListener("keyup",key); const oc=L.close; L.close=()=>{ window.removeEventListener("keydown",key); window.removeEventListener("keyup",key); oc(); };
+  window.__zs=()=>({f,v,zc,zh,sleep,wake}); /* read by the automatic tests */
+  let lul=0; const hum=()=>{ if(L.done||done) return; const n=[392,440,392,330,392,440,523,440][lul++%8]; tone(n,.5,.035,"sine"); setTimeout(hum,560); }; hum();
+  const draw=now=>{ if(L.done) return; const dt=Math.min(.05,(now-last)/1000); last=now; const W=L.W(), H=L.H();
+    if(!done){
+      if(cry>0) cry-=dt; else { v+=(hold?1.9:-1.6)*dt; v*=Math.pow(.25,dt); f+=v*dt; if(f<0){ f=0; v=Math.max(0,v)*.3; } if(f>1){ f=1; v=Math.min(0,v)*.3; } }
+      const prog=sleep; if(now>nextMove){ zt=.18+Math.random()*.64; nextMove=now+(1300+Math.random()*1300)*(1-prog*.35); } zc+=(zt-zc)*Math.min(1,dt*(.9+prog*1.3)); zh=.13-prog*.04;
+      const inZ=Math.abs(f-zc)<zh;
+      if(cry<=0){ if(inZ){ sleep=Math.min(1,sleep+dt/11); wake=Math.max(0,wake-dt/3.5); } else { wake+=dt/3; sleep=Math.max(0,sleep-dt/40); if(now-msgT>1400){ msg=f>zc?"太用力了！寶寶快醒了":"搖太輕了…寶寶在扭動"; msgT=now; } } }
+      if(wake>=1){ wake=.35; sleep=Math.max(0,sleep-.3); cry=1.3; msg="哇——寶寶醒了！再哄一次"; msgT=now; tone(660,.35,.08,"triangle"); tone(740,.35,.08,"triangle",.3); }
+      if(sleep>=1){ done=true; const ms=now-t0; healSound(); msg="寶寶睡著了 💤"; msgT=now; setTimeout(()=>{ L.close(); godGameWin("zhusheng",ms,"pacifier"); },1600); }
+    }
+    // night nursery
+    const bg=x.createLinearGradient(0,0,0,H); bg.addColorStop(0,"#1d1838"); bg.addColorStop(1,"#3a2446"); x.fillStyle=bg; x.fillRect(0,0,W,H);
+    for(let i=0;i<40;i++){ const sx=(i*97)%W, sy=(i*53)%(H*.45)+60; x.fillStyle=`rgba(255,240,210,${.25+.25*Math.sin(now/600+i)})`; x.fillRect(sx,sy,2,2); }
+    x.fillStyle="#fff3c8"; x.beginPath(); x.arc(W*.8,H*.17,26,0,7); x.fill(); x.fillStyle="#1d1838"; x.beginPath(); x.arc(W*.8+10,H*.17-6,24,0,7); x.fill();
+    // cradle swinging from a frame
+    const cx=W*.42, top=H*.3, amp=.05+f*.42; sw+=dt*2.4; const ang=Math.sin(sw)*amp*(cry>0?.4:1);
+    x.strokeStyle="#c89a5a"; x.lineWidth=8; x.beginPath(); x.moveTo(cx-W*.26,H*.78); x.lineTo(cx,top-20); x.lineTo(cx+W*.26,H*.78); x.stroke();
+    x.save(); x.translate(cx,top-14); x.rotate(ang); const R=Math.min(W*.24,150), hy=H*.27;
+    x.strokeStyle="#e8d2a8"; x.lineWidth=3; x.beginPath(); x.moveTo(0,0); x.lineTo(-R*.8,hy); x.moveTo(0,0); x.lineTo(R*.8,hy); x.stroke();
+    x.fillStyle="#ffe8f0"; x.beginPath(); x.ellipse(0,hy+10,R*.78,R*.32,0,Math.PI,0,true); x.fill(); // blanket
+    const fy=hy-R*.05; x.fillStyle="#f6d2b4"; x.beginPath(); x.arc(-R*.25,fy,R*.22,0,7); x.fill(); // baby's head
+    x.fillStyle="#ff9fb5"; x.globalAlpha=.5; x.beginPath(); x.arc(-R*.37,fy+R*.07,R*.05,0,7); x.arc(-R*.13,fy+R*.07,R*.05,0,7); x.fill(); x.globalAlpha=1;
+    x.strokeStyle="#5a3a2a"; x.lineWidth=2.5; const awake=cry>0||wake>.55;
+    for(const ex of [-R*.33,-R*.17]){ x.beginPath(); if(awake){ x.arc(ex,fy-R*.02,R*.035,0,7); x.fillStyle="#3a2418"; x.fill(); } else { x.arc(ex,fy-R*.03,R*.04,.2,Math.PI-.2); x.stroke(); } }
+    if(cry>0){ x.fillStyle="#7fc8ff"; for(const ex of [-R*.36,-R*.14]){ x.beginPath(); x.ellipse(ex,fy+R*.06+((now/200)%1)*R*.1,3,6,0,0,7); x.fill(); } x.beginPath(); x.arc(-R*.25,fy+R*.1,R*.05,0,Math.PI); x.stroke(); }
+    x.fillStyle="#d8a0b8"; x.beginPath(); x.ellipse(0,hy+R*.04,R*.82,R*.36,0,0,Math.PI); x.fill(); x.strokeStyle="#b07090"; x.lineWidth=4; x.stroke(); // basket
+    x.restore();
+    if(!done&&cry<=0&&sleep>.2&&Math.random()<dt*1.5) zzz.push({x:cx-R*.3,y:top+hy-R*.4,t:0}); zzz=zzz.filter(z=>(z.t+=dt)<2.2); x.fillStyle="#d8d0ff"; zzz.forEach(z=>{ x.globalAlpha=1-z.t/2.2; x.font=`700 ${16+z.t*10}px ${DISPLAY_FONT}`; x.fillText("Z",z.x+z.t*30,z.y-z.t*50); }); x.globalAlpha=1;
+    // the meter: the pink band drifts; the gold marker is how hard you are rocking
+    const mx=W-58, my0=110, mh=H-250; x.fillStyle="rgba(255,255,255,.1)"; x.fillRect(mx,my0,26,mh); x.strokeStyle="rgba(255,255,255,.35)"; x.lineWidth=2; x.strokeRect(mx,my0,26,mh);
+    const Y=v2=>my0+mh*(1-v2); x.fillStyle="rgba(255,120,170,.55)"; x.fillRect(mx,Y(zc+zh),26,mh*zh*2);
+    x.fillStyle=Math.abs(f-zc)<zh?"#ffe066":"#ff6a5c"; x.fillRect(mx-8,Y(f)-4,42,8);
+    x.fillStyle="#ffd6e6"; x.font=`600 12px ${UI_FONT}`; x.textAlign="center"; x.fillText("用力",mx+13,my0-8); x.fillText("輕輕",mx+13,my0+mh+18);
+    // sleepiness and stirring
+    const bw=W-140; x.textAlign="left"; x.fillStyle="#ffe2a0"; x.font=`700 16px ${DISPLAY_FONT}`; x.fillText("睡意",22,H-96); x.fillText("快醒了",22,H-62);
+    x.fillStyle="rgba(255,255,255,.12)"; x.fillRect(84,H-110,bw,14); x.fillRect(84,H-76,bw,14); x.fillStyle="#b9a8ff"; x.fillRect(84,H-110,bw*sleep,14); x.fillStyle="#ff7a6a"; x.fillRect(84,H-76,bw*Math.min(1,wake),14);
+    x.fillStyle="#fff"; x.font=`600 15px ${UI_FONT}`; x.fillText(`${((now-t0)/1000).toFixed(1)} 秒`,22,104);
+    if(msg&&now-msgT<1500){ x.textAlign="center"; x.fillStyle=`rgba(255,230,240,${1-(now-msgT)/1500})`; x.font=`700 22px ${DISPLAY_FONT}`; x.fillText(msg,W*.42,H*.86); }
+    requestAnimationFrame(draw); };
+  requestAnimationFrame(draw); }
+GOD_START.zhusheng=playLullaby;
 HANDLERS.godBoard=async g=>{ openSheet("godGame",(GOD_GAMES[g]||"小遊戲")+" 排行榜",`<div id="ggBoard"><p class="note">讀取中…</p></div>`); const el=$("#ggBoard"); const list=await lbGet(g); if(el) el.innerHTML=lbHTML(list); };
 
 /* ---- bag: 飾品 tab ---- */
