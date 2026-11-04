@@ -2848,24 +2848,39 @@ function botPose(n){ if(n.anim==="shake"){ const k=Math.sin(n.st*13)*.16, rest=(
   else if(n.anim==="read"){ for(const a of n.arms){ a.rotation.x=-1.0; a.rotation.z=a===n.arms[0]?.3:-.3; } n.head.rotation.x=.32; } }
 // draw each worshipper with a few meshes: per moving part (a leg, an arm, the torso, the head) every plain-coloured piece is merged
 // into one mesh that carries its colours per vertex (one shared material); textured pieces (the face) stay as they are
+/* Each person is drawn in as few pieces as possible: every part that hangs on a joint (hips, body, head, arms, legs) is merged into
+   one skinned mesh per material, each vertex tied rigidly to its joint. The joints are the same objects the animation already
+   moves, so walking, bowing, waving and dancing look exactly as before — only the number of draw calls drops (≈16 → ≈4 per person).
+   Plain coloured parts share one vertex-colour material; textured parts (hair) are merged per texture. Things that come and go on
+   their own (incense, amulet, red thread, pets, accessories), see-through parts and the name label stay separate. The 主委 is
+   left unmerged, because the 財神 costume hides the hair piece by piece. */
 const BOT_VC=new T.MeshStandardMaterial({vertexColors:true,roughness:.7,metalness:.05}), BOT_VC2=new T.MeshStandardMaterial({vertexColors:true,roughness:.7,metalness:.05,side:T.DoubleSide});
-function bakeAvatar(av){ const bones=new Set([av.root,av.parts,av.hips,av.torso,av.head,...av.legs,...av.arms].filter(Boolean)), keep=new Set([av.incense,av.amulet,av.thread,av.shoulderPet,av.accHead,av.accHand].filter(Boolean));
-  av.root.updateMatrixWorld(true); const buckets=new Map(), inv=new T.Matrix4(), mtx=new T.Matrix4(), c=new T.Color();
-  av.root.traverse(o=>{ if(!o.isMesh||!o.visible||Array.isArray(o.material)) return; const m=o.material; if(m===BOT_VC||m===BOT_VC2||m.transparent||m.map||m.emissiveMap||m.alphaMap||!m.color||o.geometry.morphAttributes.position) return;
-    for(let q=o;q&&q!==av.root;q=q.parent) if(keep.has(q)) return;
-    let b=o.parent; while(b&&!bones.has(b)) b=b.parent; if(!b||!o.geometry.attributes.position) return;
-    const k=b.uuid+(m.side===T.DoubleSide?"|2":"|1"); if(!buckets.has(k)) buckets.set(k,{b,ds:m.side===T.DoubleSide,list:[]}); buckets.get(k).list.push(o); });
-  buckets.forEach(({b,ds,list})=>{ if(list.length<2) return; inv.copy(b.matrixWorld).invert(); let vc=0, ic=0;
-    const parts=list.map(o=>{ let g=o.geometry.clone(); if(!g.attributes.normal) g.computeVertexNormals(); mtx.multiplyMatrices(inv,o.matrixWorld); g.applyMatrix4(mtx);
+const SK_VC=BOT_VC.clone(), SK_VC2=BOT_VC2.clone(); SK_VC.skinning=true; SK_VC2.skinning=true; const SK_MAT=new Map();
+function skinMat(m){ let k=SK_MAT.get(m); if(!k){ k=m.clone(); k.skinning=true; SK_MAT.set(m,k); } return k; }
+function bakeAvatar(av){ if(av.sp||av.isMe) return; const boneList=[av.root,av.parts,av.hips,av.torso,av.head,...av.legs,...av.arms].filter(Boolean), bones=new Set(boneList), keep=new Set([av.incense,av.amulet,av.thread,av.shoulderPet,av.accHead,av.accHand].filter(Boolean));
+  // a person baked before (look changed): take the old merged pieces off first
+  av.root.traverse(o=>{ if(o.userData.skinBake) o.userData.dead=1; }); const dead=[]; av.root.traverse(o=>{ if(o.userData.dead) dead.push(o); }); dead.forEach(o=>{ o.parent&&o.parent.remove(o); o.geometry.dispose(); });
+  av.root.updateMatrixWorld(true); const rootInv=new T.Matrix4().copy(av.root.matrixWorld).invert(), mtx=new T.Matrix4(), c=new T.Color(), buckets=new Map();
+  av.root.traverse(o=>{ if(!o.isMesh||o.isSkinnedMesh||!o.visible||Array.isArray(o.material)) return; const m=o.material; if(!m||m.transparent||m.alphaMap||!o.geometry.attributes.position||o.geometry.morphAttributes.position) return;
+    for(let q=o;q&&q!==av.root;q=q.parent){ if(keep.has(q)||!q.visible) return; }
+    let b=o.parent; while(b&&!bones.has(b)) b=b.parent; if(!b) return;
+    const vc=!m.map&&!m.emissiveMap&&!!m.color&&!m.vertexColors; if(!vc&&!(m.map&&o.geometry.attributes.uv)) return;
+    const key=vc?(m.side===T.DoubleSide?"vc2":"vc1"):m; if(!buckets.has(key)) buckets.set(key,{vc,m,list:[]}); buckets.get(key).list.push([o,boneList.indexOf(b)]); });
+  buckets.forEach(({vc,m,list})=>{ if(list.length<2) return; const withCol=!vc&&list.every(([o])=>!!o.geometry.attributes.color); if(!vc&&m.vertexColors&&!withCol) return;
+    let vcN=0, icN=0; const parts=list.map(([o,bi])=>{ let g=o.geometry.clone(); if(!g.attributes.normal) g.computeVertexNormals(); mtx.multiplyMatrices(rootInv,o.matrixWorld); g.applyMatrix4(mtx);
       if(!g.index){ const n=g.attributes.position.count, idx=new Uint32Array(n); for(let i=0;i<n;i++) idx[i]=i; g.setIndex(new T.BufferAttribute(idx,1)); }
-      const m=o.material; c.copy(m.color); if(m.emissive) c.r=Math.min(1,c.r+m.emissive.r*(m.emissiveIntensity??1)), c.g=Math.min(1,c.g+m.emissive.g*(m.emissiveIntensity??1)), c.b=Math.min(1,c.b+m.emissive.b*(m.emissiveIntensity??1));
-      g.userData.col=[c.r,c.g,c.b]; vc+=g.attributes.position.count; ic+=g.index.count; return g; });
-    const P=new Float32Array(vc*3), N=new Float32Array(vc*3), C=new Float32Array(vc*3), I=new Uint32Array(ic); let vo=0, io=0;
-    parts.forEach(g=>{ const n=g.attributes.position.count, pa=g.attributes.position, na=g.attributes.normal;
-      for(let i=0;i<n;i++){ P[(vo+i)*3]=pa.getX(i); P[(vo+i)*3+1]=pa.getY(i); P[(vo+i)*3+2]=pa.getZ(i); N[(vo+i)*3]=na.getX(i); N[(vo+i)*3+1]=na.getY(i); N[(vo+i)*3+2]=na.getZ(i); C[(vo+i)*3]=g.userData.col[0]; C[(vo+i)*3+1]=g.userData.col[1]; C[(vo+i)*3+2]=g.userData.col[2]; }
+      if(vc){ const mm=o.material; c.copy(mm.color); if(mm.emissive){ const e=mm.emissiveIntensity??1; c.r=Math.min(1,c.r+mm.emissive.r*e); c.g=Math.min(1,c.g+mm.emissive.g*e); c.b=Math.min(1,c.b+mm.emissive.b*e); } g.userData.col=[c.r,c.g,c.b]; }
+      g.userData.bi=bi; vcN+=g.attributes.position.count; icN+=g.index.count; return g; });
+    const P=new Float32Array(vcN*3), N=new Float32Array(vcN*3), C=(vc||withCol)?new Float32Array(vcN*3):null, U=vc?null:new Float32Array(vcN*2), SI=new Uint16Array(vcN*4), SW=new Float32Array(vcN*4), I=new Uint32Array(icN); let vo=0, io=0;
+    parts.forEach(g=>{ const n=g.attributes.position.count, pa=g.attributes.position, na=g.attributes.normal, ua=g.attributes.uv, ca=g.attributes.color;
+      for(let i=0;i<n;i++){ const v=vo+i; P[v*3]=pa.getX(i); P[v*3+1]=pa.getY(i); P[v*3+2]=pa.getZ(i); N[v*3]=na.getX(i); N[v*3+1]=na.getY(i); N[v*3+2]=na.getZ(i);
+        if(vc){ C[v*3]=g.userData.col[0]; C[v*3+1]=g.userData.col[1]; C[v*3+2]=g.userData.col[2]; } else { U[v*2]=ua.getX(i); U[v*2+1]=ua.getY(i); if(C){ C[v*3]=ca.getX(i); C[v*3+1]=ca.getY(i); C[v*3+2]=ca.getZ(i); } }
+        SI[v*4]=g.userData.bi; SW[v*4]=1; }
       const ix=g.index.array; for(let i=0;i<ix.length;i++) I[io+i]=ix[i]+vo; vo+=n; io+=ix.length; g.dispose(); });
-    const G=new T.BufferGeometry(); G.setAttribute("position",new T.BufferAttribute(P,3)); G.setAttribute("normal",new T.BufferAttribute(N,3)); G.setAttribute("color",new T.BufferAttribute(C,3)); G.setIndex(new T.BufferAttribute(I,1)); G.computeBoundingSphere();
-    const M=new T.Mesh(G,ds?BOT_VC2:BOT_VC); M.raycast=()=>{}; b.add(M); list.forEach(o=>{ const hi=av.hands?av.hands.indexOf(o):-1; if(hi>=0&&o.parent){ const g=new T.Object3D(); g.position.copy(o.position); g.quaternion.copy(o.quaternion); g.scale.copy(o.scale); o.parent.add(g); av.hands[hi]=g; } o.parent&&o.parent.remove(o); }); }); }
+    const G=new T.BufferGeometry(); G.setAttribute("position",new T.BufferAttribute(P,3)); G.setAttribute("normal",new T.BufferAttribute(N,3)); if(C) G.setAttribute("color",new T.BufferAttribute(C,3)); if(U) G.setAttribute("uv",new T.BufferAttribute(U,2));
+    G.setAttribute("skinIndex",new T.Uint16BufferAttribute(SI,4)); G.setAttribute("skinWeight",new T.Float32BufferAttribute(SW,4)); G.setIndex(new T.BufferAttribute(I,1)); G.computeBoundingSphere(); G.boundingSphere.radius+=.6; // room for swinging arms and legs
+    const M=new T.SkinnedMesh(G,vc?(m.side===T.DoubleSide?SK_VC2:SK_VC):skinMat(m)); M.raycast=()=>{}; M.userData.skinBake=1; av.root.add(M); M.updateMatrixWorld(true); M.bind(new T.Skeleton(boneList),M.matrixWorld);
+    list.forEach(([o])=>{ const hi=av.hands?av.hands.indexOf(o):-1; if(hi>=0&&o.parent){ const h=new T.Object3D(); h.position.copy(o.position); h.quaternion.copy(o.quaternion); h.scale.copy(o.scale); o.parent.add(h); av.hands[hi]=h; } o.parent&&o.parent.remove(o); }); }); }
 /* ---- NPC names: built on the phone from the patterns and word lists in npc-names.json (no AI, no server).
    Real players keep randomName(); this is only for the demo worshippers. To add words or patterns, edit npc-names.json only.
    Each NPC has a fixed id; its name comes from a random generator seeded by that id, so the same NPC always gets the same
