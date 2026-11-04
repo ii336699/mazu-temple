@@ -91,3 +91,10 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - gameReward(g,accId)：第一次過關給飾品並戴上；之後每天每個遊戲給 1 枚扭蛋幣（bag.gd[g]=台灣日期）。主委「重置今日」會清 bag.gd。
 - godGameWin(g,ms,accId)：過關畫面（時間、獎勵、排行榜）。伺服器 /lb：每個遊戲每人最快時間，前 20 名（GET ?g= / POST {g,t,name,id}），測試版 mock 也有。
 - 遊戲代號：wenchang、tudi、guanyin、zhusheng、doumu、jiutian、dizang（GOD_GAMES）。
+
+## 11/04 晚 修正
+- 測試頁媽祖一直沒出現：模型 js 的變數名是 GLB_MAZU / GLB_MAZU_LITE，頁面卻找 MAZU_LITE_B64，已統一。媽祖下載順序最先（lqPri -1），輕量版到了立刻接著下載完整版。
+- 偏殿後門移到路線上（x=SHXC），跟往文昌殿／福德祠的圓門、文昌殿／福德祠通往廟埕的門（也改成圓拱門 MOON）三道對齊；後門旁的窗戶拿掉。路徑 doorPts、walkable、camOK 一起改。
+- 室內地板反光：floorsPlain 對 floorTex 地板用 Phong 高光（shininess 45、specular #b0906a），沒有多加燈或貼圖。
+- 後殿加深 4.5 m（RH.z1 -43.5 → -48，RH_WALK）。主委存的後殿屋頂位置（z > -39.5 的舊配置）套用時自動往後移、拉長。
+- 後殿格局比照前殿：觀音在中間神龕；註生娘娘、九天玄女改成兩側獨立神龕（±7.9，像玄天上帝／關聖帝君）；神龕兩側的空位留給之後的神尊。
