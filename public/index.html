@@ -827,9 +827,13 @@ const UI_FONT='"Noto Sans TC","PingFang TC",system-ui,sans-serif';
 /* ---------- textures ---------- */
 function noise(x,w,h,a,col){ const n=Math.floor(w*h/40); for(let i=0;i<n;i++){ x.fillStyle=col.replace("A",(Math.random()*a).toFixed(3)); x.fillRect(Math.random()*w,Math.random()*h,1+Math.random()*2,1+Math.random()*2);} }
 /* indoor floor (every hall): polished dark stone, no tile joints — the chair asked for no 磁磚 inside the buildings */
-const floorTex=cvs(512,512,(x,w,h)=>{ x.fillStyle="rgb(58,44,34)"; x.fillRect(0,0,w,h);
-  for(let i=0;i<70;i++){ const r=20+Math.random()*70, cx=Math.random()*w, cy=Math.random()*h, v=Math.random()<.5?"rgba(30,20,14,.10)":"rgba(110,84,60,.07)"; for(const dx of [-w,0,w]) for(const dy of [-h,0,h]){ x.beginPath(); x.arc(cx+dx,cy+dy,r,0,7); x.fillStyle=v; x.fill(); } } /* soft clouding that wraps round, so the repeats don't show */
-  noise(x,w,h,.14,"rgba(20,10,6,A)"); noise(x,w,h,.08,"rgba(255,235,210,A)"); });
+const floorTex=cvs(512,512,(x,w,h)=>{ const n=2, sz=w/n; /* big stone slabs (about 2 m), each a slightly different tone, soft joints, faint veins */
+  for(let i=0;i<n;i++) for(let j=0;j<n;j++){ const v=52+Math.random()*12; x.fillStyle=`rgb(${v+10},${v},${v-9})`; x.fillRect(i*sz,j*sz,sz,sz); }
+  for(let i=0;i<60;i++){ const r=20+Math.random()*60, cx=Math.random()*w, cy=Math.random()*h; x.beginPath(); x.arc(cx,cy,r,0,7); x.fillStyle=Math.random()<.5?"rgba(30,20,14,.08)":"rgba(120,92,66,.06)"; x.fill(); }
+  x.strokeStyle="rgba(150,120,90,.10)"; x.lineWidth=1.2; for(let k=0;k<10;k++){ x.beginPath(); let px=Math.random()*w, py=Math.random()*h; x.moveTo(px,py); for(let s2=0;s2<6;s2++){ px+=Math.random()*80-40; py+=Math.random()*80-40; x.lineTo(px,py); } x.stroke(); }
+  noise(x,w,h,.14,"rgba(20,10,6,A)"); noise(x,w,h,.08,"rgba(255,235,210,A)");
+  x.strokeStyle="rgba(22,14,9,.75)"; x.lineWidth=3; for(let i=0;i<=n;i++){ x.beginPath(); x.moveTo(i*sz,0); x.lineTo(i*sz,h); x.stroke(); x.beginPath(); x.moveTo(0,i*sz); x.lineTo(w,i*sz); x.stroke(); }
+  x.strokeStyle="rgba(170,140,110,.18)"; x.lineWidth=1; for(let i=0;i<=n;i++){ x.beginPath(); x.moveTo(i*sz+2.5,0); x.lineTo(i*sz+2.5,h); x.stroke(); x.beginPath(); x.moveTo(0,i*sz+2.5); x.lineTo(w,i*sz+2.5); x.stroke(); } });
 floorTex.wrapS=floorTex.wrapT=T.RepeatWrapping; floorTex.repeat.set(6,7.5);
 const carvedTex=cvs(256,256,(x,w,h)=>{ x.fillStyle="#7a1810"; x.fillRect(0,0,w,h);
   x.strokeStyle="#e0b25e"; x.lineWidth=5; x.strokeRect(8,8,w-16,h-16); x.lineWidth=2; x.strokeRect(18,18,w-36,h-36);
@@ -1148,6 +1152,10 @@ setTimeout(()=>{ /* 正殿, 偏殿, 文昌殿／福德祠, 後殿, 太歲殿／�
   for(const [x,h] of [[0,FD.ch],[FD.x,FD.sh],[-FD.x,FD.sh]]) hallGlow(x,h*.55,HZ-1.6,h*1.15,.32); /* warm light filling each front doorway */
   for(const sd of [-1,1]){ hallGlow(sd*SHMX,2.4,(SHZ0+SHZ1)/2,8,.2); hallGlow(sd*(GH.x0+GH.x1)/2,2.2,(GH.z0+GH.z1)/2,6,.2); hallGlow(sd*RS.cx,2.4,(RS.z0+RS.z1)/2,7,.2); }
   for(const x of [-5,0,5]) hallGlow(x,2.8,(RH.z0+RH.z1)/2,7,.18); },0);
+/* 崁燈: a recessed ceiling downlight — lit disc in a gold ring with a soft glow under it */
+const DL_DISC=new T.MeshBasicMaterial({color:new T.Color("#fff3d6"),toneMapped:false}), DL_DG=new T.CircleGeometry(.17,20), DL_RG=new T.RingGeometry(.17,.24,20);
+function downlight(x,y,z){ const d=new T.Mesh(DL_DG,DL_DISC); d.rotation.x=Math.PI/2; d.position.set(x,y-.04,z); scene.add(d); const r=new T.Mesh(DL_RG,mat("#c9a25a",{metalness:.7,roughness:.35})); r.rotation.x=Math.PI/2; r.position.set(x,y-.035,z); scene.add(r);
+  const sp=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffe6b0"),transparent:true,opacity:.35,blending:T.AdditiveBlending,depthWrite:false})); sp.position.set(x,y-.3,z); sp.scale.set(1.1,1.1,1); scene.add(sp); }
 function loadShared(n,cb){ const e=SHARED[n]||(SHARED[n]={m:null,q:[]}); if(e.m){ cb(e.m); return; } e.q.push(cb); if(e.q.length===1) loadModel(n,m=>{ e.m=m; e.q.splice(0).forEach(f=>f(m)); }); }
 function fitModel(m,height){ const bb=new T.Box3().setFromObject(m); const sz=bb.getSize(new T.Vector3()); const k=height/sz.y; m.scale.setScalar(k); const c=bb.getCenter(new T.Vector3()); m.position.set(-c.x*k,-bb.min.y*k,-c.z*k); const w=new T.Group(); w.add(m); return w; }
 // 千里眼 and 順風耳 guard Mazu from the two side bays of the shrine, half her height, turned a little towards her.
@@ -1422,16 +1430,18 @@ function gardenHall(side){ const sx=v=>side*v, W=GH.x1-GH.x0, D=GH.z1-GH.z0, zc=
     box(SHXC-hw-X0,.4,.5,stoneB,sx((X0+SHXC-hw)/2),.2,z+.04); box(GH.x1+.2-(SHXC+hw),.4,.5,stoneB,sx((SHXC+hw+GH.x1+.2)/2),.2,z+.04); }
   const label=side>0?"文昌殿":"福德祠";
   for(const [z,f] of [[GH.z1+.23,0]]){ const m=mesh(new T.PlaneGeometry(1.8,.5),new T.MeshStandardMaterial({map:plaqueTexH(label),roughness:.5}),sx(SHXC),MOON.cy+MOON.r+.45,z); m.rotation.y=f; }
-  for(const dz of [-1.6,1.6]){ const g=new T.Group(); g.position.set(sx(SHXC),3.8,zc+dz); scene.add(g); const b=new T.Mesh(new T.SphereGeometry(.28,14,10),lanternMat); b.scale.y=.86; g.add(b); for(const y of [.24,-.24]){ const c=new T.Mesh(new T.CylinderGeometry(.13,.13,.06,10),GOLD()); c.position.y=y; g.add(c); } const sp=new T.Sprite(glowMat); sp.scale.set(1.5,1.5,1); g.add(sp); }
+  for(const dx of [-1.2,1.6,4.4]) for(const dz of [-1.8,1.8]) downlight(sx(SHXC+dx),GH.H,zc+dz);
+  if(0) for(const dz of [-1.6,1.6]){ const g=new T.Group(); g.position.set(sx(SHXC),3.8,zc+dz); scene.add(g); const b=new T.Mesh(new T.SphereGeometry(.28,14,10),lanternMat); b.scale.y=.86; g.add(b); for(const y of [.24,-.24]){ const c=new T.Mesh(new T.CylinderGeometry(.13,.13,.06,10),GOLD()); c.position.y=y; g.add(c); } const sp=new T.Sprite(glowMat); sp.scale.set(1.5,1.5,1); g.add(sp); }
   const god=side>0?buildDeity({robe:"#2b5fa8",brow:"#1c1512",beard:"#1c1512",long:true,hat:"wusha"}):buildDeity({robe:"#c99a2e",brow:"#f2efe8",beard:"#f2efe8",long:true,hat:"wusha",prop:"ingot"}); god.userData.noMerge=1;
   const key=side>0?"wenchang":"tudi"; buildSideShrine(side,key,side>0?"文昌帝君":"福德正神",god,[sx(GH.x1-.95),zc]);
   swapDeity(god,key,2.25,key); setTimeout(()=>addHit(key,sx(GH.x1-.95),.9,zc,1.4,3.2),0);
   poolLight("#ffcf8a",1.4,8,sx(xm),3.8,zc);
   // the joining section between the 偏殿 and this hall: floor, ceiling, outer walls, lanterns and its own roof, so you never step outdoors in between
   { const z0=SHZ1, z1=GH.z0, zm=(z0+z1)/2, Dl=z1-z0; const f2=mesh(new T.PlaneGeometry(Wf,Dl),new T.MeshStandardMaterial({map:floorTex,roughness:.3}),sx(xf),.03,zm); f2.rotation.x=-Math.PI/2; f2.userData.floor=true; f2.userData.noMerge=1;
-    const c2=mesh(new T.PlaneGeometry(Wf,Dl-.4),mat("#2b130c",{roughness:.9,side:T.DoubleSide}),sx(xf),GH.H-.01,zm); c2.rotation.x=Math.PI/2;
-    box(.4,GH.H,Dl-.4,brick(Dl/2.2,2),sx(GH.x1),GH.H/2,zm);
-    for(const dz of [-1,1]){ const g=new T.Group(); g.position.set(sx(SHXC),3.7,zm+dz); scene.add(g); const b=new T.Mesh(new T.SphereGeometry(.26,14,10),lanternMat); b.scale.y=.86; g.add(b); for(const y of [.22,-.22]){ const c=new T.Mesh(new T.CylinderGeometry(.12,.12,.06,10),GOLD()); c.position.y=y; g.add(c); } const sp=new T.Sprite(glowMat); sp.scale.set(1.4,1.4,1); g.add(sp); }
+    const c2=mesh(new T.PlaneGeometry(Wf,Dl+.02),mat("#2b130c",{roughness:.9,side:T.DoubleSide}),sx(xf),GH.H-.01,zm); c2.rotation.x=Math.PI/2;
+    box(.4,GH.H,Dl,brick(Dl/2.2,2),sx(GH.x1),GH.H/2,zm);
+    for(const dx of [0,3]) downlight(sx(SHXC+dx),GH.H,zm);
+    if(0) for(const dz of [-1,1]){ const g=new T.Group(); g.position.set(sx(SHXC),3.7,zm+dz); scene.add(g); const b=new T.Mesh(new T.SphereGeometry(.26,14,10),lanternMat); b.scale.y=.86; g.add(b); for(const y of [.22,-.22]){ const c=new T.Mesh(new T.CylinderGeometry(.12,.12,.06,10),GOLD()); c.position.y=y; g.add(c); } const sp=new T.Sprite(glowMat); sp.scale.set(1.4,1.4,1); g.add(sp); }
     const rr={x:sx(xm+.1),z:zm,W:W+1.4,D:Dl+1.4,H:2.6,y:GH.H-.1}; const temp2=curvedRoof({W:rr.W,run:rr.D/2,rise:1.2,y0:rr.y,z0:rr.z,x0:rr.x,lift:.5,flare:.3,mat:new T.MeshStandardMaterial({map:texRep(barrelTex,rr.W/1.6,2),roughness:.6,side:T.DoubleSide})}); temp2.forEach(t=>t.userData.noMerge=1);
     loadShared("roof1",m=>{ const bb=new T.Box3().setFromObject(m), sz=bb.getSize(new T.Vector3()), c=bb.getCenter(new T.Vector3()); const o=m.clone(), g=new T.Group(); o.position.set(-c.x,-bb.min.y,-c.z); g.add(o); g.scale.set(rr.W/sz.x,rr.H/sz.y,rr.D/sz.z); g.position.set(rr.x,rr.y,rr.z); scene.add(g);
       o.traverse(q=>{ if(q.isMesh){ q.material=q.material.clone(); q.material.side=T.DoubleSide; q.material.envMapIntensity=1.2; } }); temp2.forEach(t=>t.parent&&t.parent.remove(t)); roofClipObj(o); regEdit(side>0?"roof-link-R":"roof-link-L",side>0?"財神殿—文昌殿 連接屋頂":"月老殿—福德祠 連接屋頂",g); }); }
@@ -1490,7 +1500,7 @@ function baguaDoor(side){ const g=new T.Group(); g.position.set(side*HX,0,BGZ); 
   for(const s of [-1,1]){ const p=mesh(new T.CircleGeometry(.42,8),new T.MeshStandardMaterial({map:bt,roughness:.5}),0,4.25,s*.22,g); if(s<0) p.rotation.y=Math.PI; }
   g.userData.noMerge=1; }
 // garden path from the side hall to the courtyard: stone path, trees and flowers on both sides
-const GH={z0:3.6, z1:10.4, x0:12.35, x1:23, H:4.8}; const inGH=z=>z>SHZ1-.6&&z<GH.z1+.6; /* indoors all the way from the 偏殿 to the front of the garden hall */ // the hall on each garden path
+const GH={z0:3.6, z1:10.4, x0:12.35, x1:23, H:5.6} /* H was 4.8: the shrine poked through the ceiling; now level with the 偏殿 (SHH) */; const inGH=z=>z>SHZ1-.6&&z<GH.z1+.6; /* indoors all the way from the 偏殿 to the front of the garden hall */ // the hall on each garden path
 const FB_COL=["#ff7aa8","#ffd25e","#ff5a4a","#fff4ea","#c58bff","#ff9a3c","#f06292"];
 function flowerBed(x,z,w,d,round,y=0){ const g=new T.Group(); g.position.set(x,y,z); g.userData.noMerge=1; scene.add(g); const st=mat("#9a9288",{roughness:.85}), soil=mat("#3a2618",{roughness:1}), leaf=mat("#3f6b34",{roughness:.9});
   let pts=[];
@@ -5158,7 +5168,7 @@ function buildBase(obj){ const r=obj.rotation.y; obj.rotation.y=0; obj.updateMat
   return [sz.x/Math.abs(obj.scale.x||1), sz.y/Math.abs(obj.scale.y||1), sz.z/Math.abs(obj.scale.z||1)]; }
 function regEdit(id,label,obj,add){ if(!obj) return; const it={id,label,obj,add:!!add,base:buildBase(obj),def:{p:obj.position.toArray(),r:obj.rotation.y,s:obj.scale.toArray()}};
   obj.traverse(o=>{ o.userData.buildId=id; }); BUILD.items.set(id,it); if(!add) buildApplyOne(it); if(BUILD.on) buildPanel(); return it; }
-function buildApplyOne(it){ let m=BUILD.layout.mods&&BUILD.layout.mods[it.id]; if(it.id==="roof-houdian"&&m&&m.p&&m.s&&m.p[2]>-39.5){ const D=RH.z0-RH.z1; m={...m,p:[m.p[0],m.p[1],m.p[2]-RH_EXT/2],s:[m.s[0],m.s[1],m.s[2]*(D+3.6)/(D-RH_EXT+3.6)]}; } const d=m||it.def; it.obj.position.fromArray(d.p||it.def.p); it.obj.rotation.y=d.r??it.def.r; it.obj.scale.fromArray(d.s||it.def.s); it.obj.visible=!(m&&m.hide); }
+function buildApplyOne(it){ let m=BUILD.layout.mods&&BUILD.layout.mods[it.id]; if((it.id==="g-G-L-3"||it.id==="g-G-R-3")&&m&&m.s&&m.s[1]>1.1){ const k=1.1/m.s[1]; m={...m,s:m.s.map(v=>v*k)}; } /* 文昌帝君／福德正神 shrines: no taller than the hall */ if(it.id==="roof-houdian"&&m&&m.p&&m.s&&m.p[2]>-39.5){ const D=RH.z0-RH.z1; m={...m,p:[m.p[0],m.p[1],m.p[2]-RH_EXT/2],s:[m.s[0],m.s[1],m.s[2]*(D+3.6)/(D-RH_EXT+3.6)]}; } const d=m||it.def; it.obj.position.fromArray(d.p||it.def.p); it.obj.rotation.y=d.r??it.def.r; it.obj.scale.fromArray(d.s||it.def.s); it.obj.visible=!(m&&m.hide); }
 function buildMakeAdd(a){ const g=new T.Group(); g.userData.noMerge=1; scene.add(g); g.position.fromArray(a.p); g.rotation.y=a.r||0;
   const fin=w=>{ g.add(w); g.scale.set(1,1,1); const it=regEdit(a.id,BUILD_NAME[a.m]||a.m,g,true); it.m=a.m; if(a.pair){ it.pair=a.pair; const P=BUILD.items.get(a.pair); if(P) P.pair=a.id; } g.scale.fromArray(a.s||[1,1,1]); };
   if(a.m==="decor:lantern") loadShared("ylantern",m=>fin(litLantern(m,1)));
@@ -6257,7 +6267,7 @@ try{ lanternPools(); }catch(e){}
 /* floors: on iPhones the reflection lighting (scene.environment) left soft green blotches on floor tiles. Floors don't need reflections,
    so they use a plain lit material; a little self-light makes up for the missing reflected light so they stay as bright as before. */
 function floorsPlain(){ const done=new Map(); scene.traverse(o=>{ if(!o.isMesh||!o.userData||!o.userData.floor) return; const m=o.material; if(!m||!m.isMeshStandardMaterial) return;
-    if(!done.has(m)){ const k=m.envMapIntensity??1, gloss=!!(m.map&&m.map.image===floorTex.image); /* indoor stone: a polished sheen — tighter, brighter highlights from the lamps already lighting it, so no extra cost */ const n=new T.MeshPhongMaterial({map:m.map,color:m.color.clone(),shininess:gloss?45:6,specular:new T.Color(gloss?"#b0906a":"#0c0a08"),emissive:new T.Color(1,1,1).multiplyScalar(.16*k),emissiveMap:m.map,side:m.side,transparent:m.transparent,opacity:m.opacity,polygonOffset:m.polygonOffset,polygonOffsetFactor:m.polygonOffsetFactor,polygonOffsetUnits:m.polygonOffsetUnits}); done.set(m,n); }
+    if(!done.has(m)){ const k=m.envMapIntensity??1, gloss=!!(m.map&&m.map.image===floorTex.image); /* indoor stone: a polished sheen — tighter, brighter highlights from the lamps already lighting it, so no extra cost */ const n=new T.MeshPhongMaterial({map:m.map,color:m.color.clone(),shininess:gloss?28:6,specular:new T.Color(gloss?"#6e5a44":"#0c0a08"),emissive:new T.Color(1,1,1).multiplyScalar(.16*k),emissiveMap:m.map,side:m.side,transparent:m.transparent,opacity:m.opacity,polygonOffset:m.polygonOffset,polygonOffsetFactor:m.polygonOffsetFactor,polygonOffsetUnits:m.polygonOffsetUnits}); done.set(m,n); }
     o.material=done.get(m); }); }
 try{ floorsPlain(); }catch(e){}
 
