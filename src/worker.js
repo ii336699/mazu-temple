@@ -298,7 +298,7 @@ export class Lobby extends DurableObject {
       let b = {}; try { b = await req.json(); } catch {}
       const cur = this.hb || (await this.ctx.storage.get("hb")); if (cur && Date.now() - cur.at < 8000) return json({ ok: false, busy: true });
       const n = 30, id = Math.random().toString(36).slice(2, 10), seed = (Math.random() * 4294967295) >>> 0, at = Date.now();
-      const pick = () => 50; // every envelope holds 50 (chair's choice, 11/04)
+      const pick = () => { const r = Math.random(); return r < .02 ? 500 : r < .12 ? 100 : 50; }; // only 50 / 100 / 500 (chair's choice, 11/04): 500 2%, 100 10%, 50 88%
       this.hb = { id, at, n, amt: Array.from({ length: n }, pick), taken: {}, per: {} }; await this.ctx.storage.put("hb", this.hb);
       const x = Math.max(-40, Math.min(40, Number(b.x) || 0)), z = Math.max(-50, Math.min(60, Number(b.z) || 0));
       await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/hongbao", { method: "POST", body: JSON.stringify({ id, seed, n, x, z, at }) }).catch(() => {})));
