@@ -97,6 +97,12 @@ body.building .actions,body.building #hbBtn{display:none!important}
 .fly-ctl{position:fixed;right:max(14px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 170px);z-index:6;display:flex;flex-direction:column;gap:10px}.fly-ctl[hidden]{display:none}
 .fly-ctl button{width:58px;height:58px;border-radius:50%;border:1px solid var(--gold);color:var(--gold);font-size:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;touch-action:none;user-select:none;-webkit-user-select:none}.fly-ctl small{font-size:10px;margin-top:2px;color:var(--ink)}
 body.hideui .fly-ctl{display:none!important}
+.gift-card{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(10,4,2,.55);padding:16px}
+.gift-card .gc-in{max-width:340px;width:100%;background:linear-gradient(#5a120c,#2a0906);border:2px solid #e8b64a;border-radius:18px;padding:22px 18px;text-align:center;color:#fff1d6;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+.gift-card .gc-in>b{display:block;font-size:18px;margin-bottom:8px}.gift-card .gc-icon{font-size:48px;line-height:1.1}
+.gift-card .gc-big{font-size:30px;font-weight:700;color:#ffd77a;margin:10px 0 14px;letter-spacing:.06em}.gift-card .gc-big b{font-size:36px}
+.gift-card p{font-size:14px;line-height:1.6;margin:0 0 8px}.gift-card .gc-sub{opacity:.75}.gift-card .row{display:flex;gap:10px;justify-content:center;margin-top:12px}
+.gc-pop{animation:gcPop .45s cubic-bezier(.2,1.4,.4,1)}@keyframes gcPop{from{transform:scale(.6)}to{transform:scale(1)}}
 .hb-btn.cs-go{bottom:calc(env(safe-area-inset-bottom,0px) + 210px)!important}
 .hb-btn{bottom:calc(env(safe-area-inset-bottom,0px) + 150px)!important;font-size:17px!important;padding:10px 22px!important;color:#ffe2a0;border:1px solid #ffd27a;background:linear-gradient(#c8281c,#7a0f0a)!important;box-shadow:0 0 18px rgba(255,190,80,.6);font-family:var(--f-display);letter-spacing:.08em}
 .standup{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 96px);transform:translateX(-50%);border-radius:999px;padding:8px 18px;font-size:14px;z-index:5}
@@ -2641,6 +2647,7 @@ document.addEventListener("contextmenu",e=>{ if(e.target===canvas) e.preventDefa
 function addHit(key,x,y,z,r,h){ const m=new T.Mesh(new T.CylinderGeometry(r,r,h,12),new T.MeshBasicMaterial()); m.visible=false; m.position.set(x,y+h/2,z); m.userData.act=key; m.userData.noMerge=1; scene.add(m); pickables.push(m); return m; }
 function onTap(cx,cy){ ensureAudio(); if(customizing) return; if(sheetKind){ closeSheet(); return; } const r=canvas.getBoundingClientRect(); ndc.set((cx-r.left)/r.width*2-1,-(cy-r.top)/r.height*2+1); raycaster.setFromCamera(ndc,camera);
   if(hbTap(raycaster)) return;
+  if(giftTap(raycaster)) return;
   if(buildTap(raycaster)) return;
   const hits=raycaster.intersectObjects(pickables,true); if(!hits.length) return; let h=hits[0];
   let o=h.object, act=null; while(o){ if(o.userData&&o.userData.act){ act=o.userData.act; break; } o=o.parent; }
@@ -3039,7 +3046,7 @@ function initCF(first){
     document.querySelector(".hall-name").textContent="天后宮 "+HALL_NAMES[i];
     const proto=location.protocol==="https:"?"wss:":"ws:"; closedByUs=false;
     try{ ws=new WebSocket(`${proto}//${location.host}/ws?hall=${i}&id=${myId}`); }catch(e){ return; }
-    ws.onopen=()=>{ retry=0; roomConnected=true; updateCount(); dirty=true; lastSend=0; lastSent=""; };
+    ws.onopen=()=>{ retry=0; roomConnected=true; updateCount(); dirty=true; lastSend=0; lastSent=""; setTimeout(()=>{ profSave(false); giftFetch(); },3000); };
     ws.onmessage=ev=>{ let m; try{ m=JSON.parse(ev.data); }catch(e){ return; }
       if(m.t==="full"){ closedByUs=true; if(hall<HALL_NAMES.length-1){ toast(`${HALL_NAMES[hall]}人滿了，帶你到${HALL_NAMES[hall+1]}`,3200); connect(hall+1); } return; }
       if(m.t==="hello"&&Array.isArray(m.peers)){ m.peers.forEach(x=>{ if(okId(x.id)&&x.p&&typeof x.p==="object") peerState.set(x.id,{p:x.p,t:Date.now()}); }); rebuild(); return; }
@@ -3049,6 +3056,7 @@ function initCF(first){
       if(m.t==="layout"){ if(!BUILD.on) buildFetch(); return; }
       if(m.t==="market"){ mkSet(m.open||{}); return; }
       if(m.t==="hb"){ hbStart(m); return; }
+      if(m.t==="gift"){ giftFetch(); return; }
       if(m.t==="sl50"&&Number.isFinite(m.seed)){ massLanterns(m.seed); return; }
       if(m.t==="fw"&&Number.isFinite(m.seed)){ fwStart(m.seed,+m.el||0); return; }
       if(m.t==="st"&&okId(m.id)&&m.p&&typeof m.p==="object"){ peerState.set(m.id,{p:m.p,t:Date.now()}); rebuild(); return; }
@@ -3249,7 +3257,7 @@ function openChair(){ if(!me.sp) return;
   <div class="ct-group"><span class="group-label">活動</span><div class="ct-grid">${ctTile("askFw","🎆","全服煙火","3 分鐘")}${ctTile("askSL","🏮","50 盞天燈")}${ctTile("toggleStage","🎭",OP.on?"收回戲台":"擺出戲台",OP.on?"演出中":"")}${ctTile("puppetChair","🎎","布袋戲台",PT.on?"演出中":"")}${ctTile("marketOpen","🏮","夜市",Object.keys(MK.open).length?`${Object.keys(MK.open).length} 攤營業中`:"")}</div></div>
   <div class="ct-group"><span class="group-label">線上人數</span><div class="crowd-row"><span class="crowd-now"><span>全廟 <b>${shownTotal()}</b> 人</span><small>這殿 ${hallShown(HALLS.current(),Date.now())} 人・${CROWD.real?"真實人數":CROWD.at&&CROWD.target!=null?`目標 ${CROWD.target}`:"自動"}</small></span><input id="crowdIn" type="text" inputmode="numeric" maxlength="3" placeholder="目標"><button class="chip" data-act="crowdSet">設定</button><button class="chip" data-act="crowdAuto">自動</button><button class="chip" data-act="crowdReal" aria-pressed="${!!CROWD.real}">真實人數</button></div>
     <p class="real-count" id="realCount">真實在線：讀取中…</p><p class="note">目標是全廟人數，會依序分到各殿（前一殿快滿才開下一殿）。約 1 分鐘慢慢變到目標，之後在上下 10 人內浮動。「自動」回到依時段變化（凌晨少、白天多）。「真實人數」不加假人，有多少玩家就顯示多少。</p></div>
-  <div class="ct-group"><span class="group-label">主委自己</span><div class="ct-grid">${ctTile("chairHide",chairHidden?"👁":"🫥",chairHidden?"解除隱形":"隱形",chairHidden?"隱形中":"")}${ctTile("chairBuild","🏗️","建築模式","移動屋頂與裝飾")}${ctTile("chairSpeed","🏃","移動速度",CHAIR_SPD+"×")}${ctTile("chairFly","🕊️",myFly?"降落":"飛行",myFly?"飛行中":"")}${ctTile("chairCs","💰",myCs?"變回主委":"變身財神爺",myCs?"發金光中":"")}${ctTile("chairReset","🔄","重置今日","測試用")}</div></div>`);
+  <div class="ct-group"><span class="group-label">主委自己</span><div class="ct-grid">${ctTile("chairHide",chairHidden?"👁":"🫥",chairHidden?"解除隱形":"隱形",chairHidden?"隱形中":"")}${ctTile("chairBuild","🏗️","建築模式","移動屋頂與裝飾")}${ctTile("chairSpeed","🏃","移動速度",CHAIR_SPD+"×")}${ctTile("chairFly","🕊️",myFly?"降落":"飛行",myFly?"飛行中":"")}${ctTile("chairCs","💰",myCs?"變回主委":"變身財神爺",myCs?"發金光中":"")}${ctTile("giftList","🎁","送禮","平安幣・道具")}${ctTile("chairReset","🔄","重置今日","測試用")}</div></div>`);
   const k=$("#readKey"); const keep=()=>{ save("mz.rk",k.value.trim()); }; k.addEventListener("input",keep); k.addEventListener("change",keep); realStats(); }
 // real players only (no demo worshippers, no added numbers), straight from the server's hall counts
 async function realStats(){ const el=$("#realCount"); if(!el) return; let c=null; if(USE_CF){ const j=await probeCF(); if(j) c=j.counts; } else if(room) c=(HALLS.counts||[]).slice();
@@ -3366,6 +3374,72 @@ HANDLERS.applyCode=()=>{ const d=readCode(($("#pasteCode")||{}).value); if(!d){ 
   me.look=sanitizeLook(d.look,!!me.sp); const nm=cleanName(d.name); if(!me.sp) me.name=[SP_NAME,SP_OLD].includes(nm)?"":nm; if(d.no) me.no=d.no; save("mz.me",me);
   bag.coins=d.coins; bag.items={...bag.items,...d.items}; bag.redThread=!!d.red; if(d.poems.length){ const keep=new Map((bag.poems||[]).map((n,i)=>[n,(bag.poemT||[])[i]||0])); bag.poems=[...new Set([...(bag.poems||[]),...d.poems])].slice(-30); bag.poemT=bag.poems.map(n=>keep.get(n)||0); } saveBag();
   draftLook=me.look.slice(); meAv.setLook(draftLook); meAv.setName(myLabel()); meAv.setAmulet(!!bag.items.fu); meAv.setThread(!!bag.redThread); markDirty(); renderLook(firstVisitPending); toast("已找回你的名字、造型和背包",3000); };
+/* ---- 角色存檔: the server keeps a copy of your character (look, name, 平安幣, bag, recent 籤詩) under a long-lived cookie, so a
+   cleared browser brings it back by itself; the 取回碼 moves it to another app or phone. Gifts from the 主委 arrive the same way. ---- */
+const PROF={last:"",code:load("mz.rc",""),busy:false,shown:load("mz.rcShown",false)};
+function applySnap(d){ if(!d) return false; me.look=sanitizeLook(d.look,!!me.sp); const nm=cleanName(d.name); if(!me.sp) me.name=[SP_NAME,SP_OLD].includes(nm)?me.name:nm||me.name; if(d.no) me.no=d.no; save("mz.me",me);
+  bag.coins=d.coins; bag.items={...bag.items,...d.items}; bag.redThread=!!d.red; if(d.poems.length){ const keep=new Map((bag.poems||[]).map((n,i)=>[n,(bag.poemT||[])[i]||0])); bag.poems=[...new Set([...(bag.poems||[]),...d.poems])].slice(-30); bag.poemT=bag.poems.map(n=>keep.get(n)||0); } saveBag();
+  draftLook=me.look.slice(); meAv.setLook(draftLook); meAv.setName(myLabel()); meAv.setAmulet(!!bag.items.fu); meAv.setThread(!!bag.redThread); markDirty(); return true; }
+const fmtCode=c=>c?c.slice(0,3)+"-"+c.slice(3):"";
+async function profSave(force,beacon){ if(me.sp||PROF.busy) return; const snap=lookCode(); if(!force&&snap===PROF.last) return;
+  const body=JSON.stringify({snap,id:load("mz.id","")});
+  if(beacon){ try{ fetch("/me",{method:"POST",headers:{"content-type":"application/json"},body,keepalive:true}); PROF.last=snap; }catch(e){} return; }
+  PROF.busy=true; try{ const r=await fetch("/me",{method:"POST",headers:{"content-type":"application/json"},body}); const j=await r.json(); if(j.ok){ PROF.last=snap; if(j.code&&j.code!==PROF.code){ PROF.code=j.code; save("mz.rc",j.code); } if(!PROF.shown&&PROF.code) setTimeout(showCodeCard,1500); } }catch(e){} PROF.busy=false; }
+setInterval(()=>{ if(USE_CF) profSave(false); },45000);
+document.addEventListener("visibilitychange",()=>{ if(document.hidden&&USE_CF) profSave(false,true); });
+// first visit on this browser: ask the server whether this browser already has a character (cookie) before showing the 捏角色 screen
+async function profRestore(){ try{ const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),2500); const r=await fetch("/me",{cache:"no-store",signal:ctl.signal}); clearTimeout(t); const j=await r.json();
+    if(j&&j.ok&&j.p&&j.p.snap&&applySnap(readCode(j.p.snap))){ PROF.code=j.p.code||""; save("mz.rc",PROF.code); PROF.last=j.p.snap; PROF.shown=true; save("mz.rcShown",true); return true; } }catch(e){} return false; }
+// the 取回碼 card: shown once, the first time a code exists; it asks for a screenshot
+function showCodeCard(){ if(PROF.shown||!PROF.code||me.sp) return; if(sheetKind||customizing){ setTimeout(showCodeCard,4000); return; } PROF.shown=true; save("mz.rcShown",true);
+  const d=document.createElement("div"); d.className="gift-card code-card"; d.innerHTML=`<div class="gc-in"><b>📸 請截圖保存你的取回碼</b><div class="gc-big">${fmtCode(PROF.code)}</div><p>換手機、或從 LINE／IG 換到瀏覽器打開時，在「造型」裡輸入這組碼，你的角色、名字、平安幣和背包都會回來。</p><p class="gc-sub">角色名字：${esc(me.name||"")}</p><div class="row"><button class="secondary" data-x="copy">複製取回碼</button><button class="primary" data-x="ok">我截好了</button></div></div>`;
+  document.body.appendChild(d); d.querySelector('[data-x="copy"]').onclick=async()=>{ let ok=false; try{ await navigator.clipboard.writeText(fmtCode(PROF.code)); ok=true; }catch(e){} toast(ok?"取回碼已複製":"請長按自行複製",2400); }; d.querySelector('[data-x="ok"]').onclick=()=>d.remove(); }
+HANDLERS.copyRc=async()=>{ let ok=false; try{ await navigator.clipboard.writeText(fmtCode(PROF.code)); ok=true; }catch(e){} toast(ok?"取回碼已複製":"請長按自行複製",2400); };
+HANDLERS.claimRc=async()=>{ const v=(($("#rcIn")||{}).value||"").trim(); if(!v){ toast("請輸入取回碼"); return; }
+  if(!USE_CF){ toast("單機測試版沒有連伺服器，取回碼要在正式版才能用",3200); return; }
+  try{ const r=await fetch("/me/claim",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({code:v})}); const j=await r.json();
+    if(j.ok&&j.p&&applySnap(readCode(j.p.snap))){ PROF.code=j.p.code; save("mz.rc",PROF.code); PROF.last=j.p.snap; PROF.shown=true; save("mz.rcShown",true); renderLook(firstVisitPending); toast("✨ 已找回你的角色、平安幣和背包",3200); }
+    else toast(j.locked?"今天試太多次了，明天再試":"找不到這組取回碼，請確認有沒有打錯",3200); }catch(e){ toast("連不上伺服器，請稍後再試"); } };
+/* ---- 主委送禮: the 主委 picks a player (tap them, or from the list in 主委工具) and sends 平安幣 or an item; it lands in their bag with a card ---- */
+const GIFT_ITEMS=GOODS.map(g=>[g.k,g.name]);
+const GIFTQ=[]; let giftShowing=false;
+function giftCard(g){ GIFTQ.push(g); if(!giftShowing) giftNext(); }
+function giftNext(){ const g=GIFTQ.shift(); if(!g){ giftShowing=false; return; } giftShowing=true; sfx.coin(); if(sheetKind) closeSheet(); /* open panels sit above everything else, so the card waits for nothing */
+  const what=g.kind==="coins"?`平安幣 <b>${g.n}</b>`:`${esc((GOOD_BY[g.k]||{}).name||g.k)} × <b>${g.n}</b>`;
+  const d=document.createElement("div"); d.className="gift-card"; d.innerHTML=`<div class="gc-in gc-pop"><div class="gc-icon">🎁</div><b>收到來自「${esc(g.from||"主委")}」的禮物！</b><div class="gc-big">${what}</div><button class="primary" data-x="ok">收下</button></div>`;
+  document.body.appendChild(d); const done=()=>{ d.remove(); setTimeout(giftNext,250); }; d.querySelector('[data-x="ok"]').onclick=done; setTimeout(()=>{ if(d.parentNode) done(); },9000); }
+function giftApply(g){ if(g.kind==="coins") bag.coins+=g.n; else if(GOOD_BY[g.k]){ bag.items[g.k]=(bag.items[g.k]||0)+g.n; if(g.k==="fu") meAv.setAmulet(true); } else return; saveBag(); markDirty(); giftCard(g); }
+const GIFT_SEEN=new Set(load("mz.giftSeen",[]));
+async function giftFetch(){ if(!USE_CF) return; try{ const r=await fetch("/gifts",{cache:"no-store"}); const j=await r.json(); let any=false;
+    (j.gifts||[]).forEach(g=>{ if(!g||GIFT_SEEN.has(g.g)) return; GIFT_SEEN.add(g.g); any=true; giftApply({kind:g.kind,k:g.k,n:Math.max(1,g.n|0),from:g.from}); });
+    if(any){ save("mz.giftSeen",[...GIFT_SEEN].slice(-60)); profSave(true); } }catch(e){} }
+let GIFT_TO=null; // [peer id, name]
+function openGift(id,name){ if(!me.sp) return; GIFT_TO=[id,name]; const it=GIFT_ITEMS.map(([k,n])=>`<button class="chip" data-act="giftItem" data-v="${k}" aria-pressed="false">${n}</button>`).join("");
+  openSheet("gift","送禮",`<p class="lead">送給：<b>${esc(name)}</b></p>
+    <div class="group"><span class="group-label">平安幣</span><div class="chips">${[50,100,500,1000].map(v=>`<button class="chip" data-act="giftAmt" data-v="${v}">${v}</button>`).join("")}</div>
+      <div class="mail-row"><input class="mail-box" id="giftCoins" type="text" inputmode="numeric" maxlength="6" placeholder="輸入金額"><button class="primary" data-act="giftSend" data-v="coins">送平安幣</button></div></div>
+    <div class="group"><span class="group-label">道具</span><div class="chips" id="giftItems">${it}</div>
+      <div class="mail-row"><input class="mail-box" id="giftQty" type="text" inputmode="numeric" maxlength="2" value="1" placeholder="數量"><button class="primary" data-act="giftSend" data-v="item">送道具</button></div></div>
+    <button class="secondary ct-back" data-act="giftList">← 選別人</button>`); }
+let GIFT_K=null;
+HANDLERS.giftAmt=v=>{ const i=$("#giftCoins"); if(i) i.value=v; };
+HANDLERS.giftItem=(v,b)=>{ GIFT_K=v; document.querySelectorAll("#giftItems .chip").forEach(c=>c.setAttribute("aria-pressed",String(c===b))); };
+HANDLERS.giftSend=async v=>{ if(!me.sp||!GIFT_TO) return; const kind=v==="item"?"item":"coins";
+  const n=Math.floor(Number(kind==="coins"?($("#giftCoins")||{}).value:($("#giftQty")||{}).value)||0); if(n<1){ toast(kind==="coins"?"請輸入金額":"請輸入數量"); return; } if(kind==="item"&&!GIFT_K){ toast("先選要送的道具"); return; }
+  if(kind==="coins"&&n>100000){ toast("一次最多 100000"); return; } if(kind==="item"&&n>99){ toast("一次最多 99 個"); return; }
+  const g={kind,k:kind==="item"?GIFT_K:"",n,from:SP_NAME};
+  if(!USE_CF||GIFT_TO[0]==="me"){ giftApply(g); toast("單機測試：送給自己預覽",2600); return; }
+  const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return; }
+  try{ const r=await fetch("/gift",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({to:GIFT_TO[0],...g})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
+    if(j.ok){ save("mz.rk",key); toast(`🎁 已送給 ${GIFT_TO[1]}`,2600); } else toast(j.nouser?"這位香客還沒有存檔（剛進來的話等一分鐘再送）":j.locked?"嘗試次數過多，今天先鎖住了":j.unset?"伺服器讀不到密碼設定（不是你打錯）":"密碼不對，沒有送出",3200); }catch(e){ toast("沒有送出，請稍後再試"); } };
+HANDLERS.giftList=()=>{ if(!me.sp) return; const list=[...remotes.entries()].filter(([id,av])=>!av.sp).map(([id,av])=>[id,av.name||"香客"]);
+  const rows=list.length?list.map(([id,n])=>`<button class="good" data-act="giftPick" data-v="${esc(id)}"><span class="name">${esc(n)}</span><span class="meta">點這位送禮</span></button>`).join(""):`<p class="note">這一殿現在沒有其他真人玩家（假香客不能收禮）。${USE_CF?"":"單機測試版可以送給自己預覽。"}</p>`;
+  openSheet("gift","送禮",`<p class="lead">選一位這一殿的玩家，也可以直接在畫面上點他。</p><div class="goods">${rows}${USE_CF?"":`<button class="good" data-act="giftPick" data-v="me"><span class="name">送給自己（預覽字卡）</span></button>`}</div>${backBtn}`); };
+HANDLERS.giftPick=v=>{ if(v==="me"){ openGift("me",me.name||"自己"); return; } const av=remotes.get(v); if(av) openGift(v,av.name||"香客"); };
+// tapping a real player opens the gift sheet for the 主委
+function giftTap(rc){ if(!me.sp||!remotes.size) return false; const roots=[...remotes.entries()].filter(([id,av])=>av.root.visible&&!av.sp); if(!roots.length) return false;
+  const hit=rc.intersectObjects(roots.map(r=>r[1].root),true)[0]; if(!hit) return false; let o=hit.object; while(o&&!roots.some(r=>r[1].root===o)) o=o.parent; const e=roots.find(r=>r[1].root===o); if(!e) return false; openGift(e[0],e[1].name||"香客"); return true; }
+
 function renderLook(first){ const tabs=[["face","臉"],["hair","髮型"],["wear","服裝"],["hat","頭飾"]];
   let body=`<div class="look-head"><div class="preview-ctl"><button class="spin" data-act="spin" data-v="-1" aria-label="向左轉">⟲</button><div class="seg"><button data-act="pv" data-v="full" aria-pressed="${pvMode==="full"}">整體總覽</button><button data-act="pv" data-v="face" aria-pressed="${pvMode==="face"}">臉部特寫</button><button data-act="pv" data-v="turn" aria-pressed="false">轉一圈</button></div><button class="spin" data-act="spin" data-v="1" aria-label="向右轉">⟳</button></div>
   <div class="tabs" role="tablist">${tabs.map(([k,n])=>`<button class="tab" role="tab" data-act="tab" data-v="${k}" aria-selected="${lookTab===k}">${n}</button>`).join("")}</div></div>`;
@@ -3380,6 +3454,10 @@ function renderLook(first){ const tabs=[["face","臉"],["hair","髮型"],["wear"
   body+=`<div class="group code-box"><span class="group-label">造型代碼</span>
     <div class="mail-row"><input class="mail-box code-in" id="myCode" readonly value="${esc(lookCode())}" aria-label="我的造型代碼"><button class="good mail-copy" data-act="copyCode"><span class="name">複製</span></button></div>
     <div class="mail-row"><input class="mail-box code-in" id="pasteCode" placeholder="貼上之前存的代碼" aria-label="貼上造型代碼" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="good mail-copy" data-act="applyCode"><span class="name">套用</span></button></div>
+    <span class="group-label" style="margin-top:10px">取回碼</span>
+    <div class="mail-row"><input class="mail-box code-in" readonly value="${PROF.code?fmtCode(PROF.code):"（第一次存檔後才會有）"}" aria-label="我的取回碼"><button class="good mail-copy" data-act="copyRc" ${PROF.code?"":"disabled"}><span class="name">複製</span></button></div>
+    <div class="mail-row"><input class="mail-box code-in" id="rcIn" placeholder="輸入取回碼（例如 7K3-M9QX）" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="9"><button class="good mail-copy" data-act="claimRc"><span class="name">取回</span></button></div>
+    <p class="note">換手機或換 App 打開時，輸入取回碼就能找回角色。同一個瀏覽器不用輸入，會自動記住。</p>
     <p class="note">代碼裡存著你的名字、造型、平安幣、背包裡的供品和最近 5 支籤詩。在 Threads、IG 等 App 裡開啟時資料可能會被清掉，先按「複製」把代碼存在記事本，下次貼上按「套用」就能全部找回。</p></div>`;
   body+=`<div class="row"><button class="secondary" data-act="randomLook">隨機一套</button><button class="primary" data-act="saveLook">${first?"進入大殿":"完成"}</button></div>`;
   if(first) body+=`<p class="note">拖曳上方角色可以轉動預覽。進殿後拖曳畫面轉視角，點拜墊入座，點供桌、籤詩櫃、光明燈、鐘鼓、服務處、金爐或香油錢箱就會走過去。</p>`;
@@ -3390,7 +3468,7 @@ HANDLERS.rollName=()=>{ const el=$("#nameInput"); if(el){ el.value=randomName();
 HANDLERS.tab=v=>{ me.name=$("#nameInput").value; lookTab=v; renderLook(firstVisitPending); sheetBody.scrollTop=0; };
 HANDLERS.look=v=>{ const [i,n]=v.split(":").map(Number); if(i===3&&n===16&&!me.sp){ toast("這是主委專屬背心"); return; } if(!Number.isInteger(i)||i<0||i>=LOOK_RANGE.length||!Number.isInteger(n)||n<0||n>=LOOK_RANGE[i]) return; draftLook[i]=n; if(i===1&&n>0){ draftLook[2]=HAIR_PRESET_COLOR[n]; } draftLook=sanitizeLook(draftLook,!!me.sp); meAv.setLook(draftLook); if(i===1) sheetBody.querySelectorAll(`[data-v^="2:"]`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===`2:${draftLook[2]}`))); sheetBody.querySelectorAll(`[data-v^="${i}:"]`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===v))); };
 HANDLERS.randomLook=()=>{ draftLook=randomLook(!!me.sp); meAv.setLook(draftLook); renderLook(firstVisitPending); };
-HANDLERS.saveLook=async()=>{ const raw=$("#nameInput").value.trim(); if(hasAddLine(raw)){ toast("名字不能寫加賴",2800); return; } const ok=await _chk(raw);
+HANDLERS.saveLook=async()=>{ setTimeout(()=>{ if(USE_CF) profSave(false); },2500); const raw=$("#nameInput").value.trim(); if(hasAddLine(raw)){ toast("名字不能寫加賴",2800); return; } const ok=await _chk(raw);
   if(ok){ me.sp=1; me.name=SP_NAME; } else if(raw===SP_NAME&&me.sp){ me.name=SP_NAME; } else { me.sp=0; me.name=[SP_NAME,SP_OLD].includes(cleanName(raw))?"":cleanName(raw); }
   meAv.setSp(!!me.sp); renderChairBtn(); if(ok) toast("✨ 主委駕到 ✨",3200); me.look=sanitizeLook(draftLook,!!me.sp); meAv.setLook(me.look); save("mz.me",me); meAv.setName(myLabel()); markDirty(); const first=firstVisitPending; firstVisitPending=false; closeSheet(); if(!ok) toast("歡迎來拜拜！先到大殿入口右手邊的服務處，請清香、金紙和供品",4800); };
 function endCustomize(){ customizing=false; markDirty(); if(window.__retrack) window.__retrack(); if(meAv.label) meAv.label.visible=true; document.body.classList.remove("customizing"); setOthersVisible(true); meAv.setLook(me.look); updateStandBtn(); }
@@ -5945,7 +6023,7 @@ try{ wallBricks(); }catch(e){} try{ unifyBricks(); }catch(e){} try{ floorLayers(
 buildNpcs();
 if(document.fonts&&document.fonts.load){ Promise.all([document.fonts.load(`700 64px "LXGW WenKai TC"`,"母聖上天邊德護千家海慈航庇萬眾香油籤詩服務處金爐"),document.fonts.load(`500 30px "Noto Sans TC"`,"你香客")]).then(()=>{ fontTextures.forEach(redraw); meAv.setName(myLabel()); }).catch(()=>{}); }
 requestAnimationFrame(()=>{ tick(); setTimeout(()=>$("#loading").setAttribute("data-done",""),250); });
-if(firstVisit) setTimeout(()=>openLook(true),600); else setTimeout(()=>toast(guideStep().n===1?"先到大殿入口右手邊的服務處，請清香、金紙和供品":(matchMedia("(pointer:fine)").matches?"WASD 走動・拖曳滑鼠轉視角":"點地板走動・拖曳畫面轉視角"),4200),900);
+if(firstVisit) setTimeout(async()=>{ if(await profRestore()){ firstVisitPending=false; toast("歡迎回來！已自動找回你的角色",3600); return; } openLook(true); },600); else setTimeout(()=>toast(guideStep().n===1?"先到大殿入口右手邊的服務處，請清香、金紙和供品":(matchMedia("(pointer:fine)").matches?"WASD 走動・拖曳滑鼠轉視角":"點地板走動・拖曳畫面轉視角"),4200),900);
 // ---- in-app browser hint (Threads / Instagram / Facebook / LINE / other app web views) ----
 { const ua=navigator.userAgent||"", SITE="https://mazu-temple.harper88888.workers.dev/";
   const ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1), android=/Android/.test(ua);

@@ -10,7 +10,7 @@ const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/s
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
-    if (url.pathname === "/ws" || url.pathname === "/halls" || LOBBY_PATHS.includes(url.pathname)) {
+    if (url.pathname === "/ws" || url.pathname === "/halls" || LOBBY_PATHS.includes(url.pathname) || PROFILE_PATHS.includes(url.pathname)) {
       try { return await api(req, env, url); }
       catch (e) { return new Response(JSON.stringify({ error: String(e && e.message || e).slice(0, 300) }), { status: 503, headers: { "content-type": "application/json", "cache-control": "no-store" } }); }
     }
@@ -18,7 +18,20 @@ export default {
   }
 };
 
+// 角色存檔 and 主委送禮. A long-lived cookie (set by this server, so Safari keeps it) names each player's saved character;
+// the lobby keeps the save, a short 取回碼 for moving to another app or phone, and any gifts waiting to be opened.
+const PROFILE_PATHS = ["/me", "/me/claim", "/gift", "/gifts"];
+async function profile(req, env, url) {
+  const m = (req.headers.get("cookie") || "").match(/(?:^|;\s*)mzu=([a-f0-9]{24,40})/); let uid = m ? m[1] : "";
+  if (!uid) uid = crypto.randomUUID().replace(/-/g, "");
+  const lobby = env.LOBBY.get(env.LOBBY.idFromName("lobby"));
+  const r = await lobby.fetch(new Request("https://lobby" + url.pathname, { method: req.method, headers: { "content-type": "application/json", "x-uid": uid, "x-key": req.headers.get("x-key") || "", "x-ip": req.headers.get("cf-connecting-ip") || "" }, body: req.method === "POST" ? await req.text() : undefined }));
+  let body = await r.text(); try { const j = JSON.parse(body); if (j && j.switchTo) { uid = j.switchTo; delete j.switchTo; body = JSON.stringify(j); } } catch {}
+  return new Response(body, { status: r.status, headers: { "content-type": "application/json", "cache-control": "no-store", "set-cookie": `mzu=${uid}; Max-Age=34560000; Path=/; HttpOnly; Secure; SameSite=Lax` } });
+}
+
 async function api(req, env, url) {
+    if (PROFILE_PATHS.includes(url.pathname)) return profile(req, env, url);
     if (url.pathname === "/ws") {
       if (req.headers.get("Upgrade") !== "websocket") return new Response("expected websocket", { status: 426 });
       const h = Math.max(0, Math.min(HALLS - 1, parseInt(url.searchParams.get("hall") || "0", 10) || 0));
@@ -58,6 +71,10 @@ export class Hall extends DurableObject {
       let b = {}; try { b = await req.json(); } catch {}
       const ann = { t: "ann", text: String(b.text || "").slice(0, 80), at: Number(b.at) || Date.now() }; if (Number.isInteger(b.h) && b.h >= 0 && b.h < HALLS) ann.h = b.h; await this.ctx.storage.put("ann", ann);
       const out = JSON.stringify(ann); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
+    }
+    if (url.pathname === "/giftping") { // from the lobby: a gift is waiting for this player; their page fetches it
+      let b = {}; try { b = await req.json(); } catch {} const to = String(b.to || "").replace(/[^a-z0-9]/g, "").slice(0, 16);
+      if (to) for (const w of this.ctx.getWebSockets(to)) { try { w.send(JSON.stringify({ t: "gift" })); } catch {} } return new Response("ok");
     }
     if (url.pathname === "/layout") { // from the lobby: the chair saved a new building layout; pages fetch it again
       const out = JSON.stringify({ t: "layout", at: Date.now() }); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
@@ -324,6 +341,39 @@ export class Lobby extends DurableObject {
       return json({ ok: true, at: st.at });
     }
     if (url.pathname === "/layout") return json((await this.ctx.storage.get("layout")) || { layout: null, at: 0 });
+    // ---- 角色存檔 / 取回碼 / 主委送禮 (reached through profile() above, which adds x-uid from the player's cookie) ----
+    if (url.pathname === "/me" || url.pathname === "/me/claim" || url.pathname === "/gift" || url.pathname === "/gifts") {
+      const uid = String(req.headers.get("x-uid") || "").replace(/[^a-f0-9]/g, "").slice(0, 40); if (!uid) return json({ ok: false });
+      if (url.pathname === "/me" && req.method === "GET") { const P = await this.ctx.storage.get("P:" + uid); return json({ ok: true, p: P ? { code: P.code, snap: P.snap } : null }); }
+      if (url.pathname === "/me" && req.method === "POST") {
+        this.lastSave = this.lastSave || new Map(); const now = Date.now(); if (now - (this.lastSave.get(uid) || 0) < 8000) return json({ ok: false, slow: true }); this.lastSave.set(uid, now);
+        let b = {}; try { b = await req.json(); } catch {} const snap = String(b.snap || ""); if (!/^MZ-[A-Za-z0-9_-]{10,900}$/.test(snap)) return json({ ok: false });
+        const P = (await this.ctx.storage.get("P:" + uid)) || {};
+        if (!P.code) { const AB = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"; for (let k = 0; k < 12 && !P.code; k++) { let c = ""; for (let i = 0; i < 7; i++) c += AB[(Math.random() * AB.length) | 0]; if (!(await this.ctx.storage.get("C:" + c))) P.code = c; } if (!P.code) return json({ ok: false }); await this.ctx.storage.put("C:" + P.code, uid); }
+        P.snap = snap; P.at = now; const id = clean(b.id, 16).replace(/[^a-z0-9]/g, ""); if (id && P.id !== id) { P.id = id; await this.ctx.storage.put("I:" + id, uid); }
+        await this.ctx.storage.put("P:" + uid, P); return json({ ok: true, code: P.code });
+      }
+      if (url.pathname === "/me/claim" && req.method === "POST") {
+        const ip = clean(req.headers.get("x-ip"), 64) || "?", day = new Date().toISOString().slice(0, 10), tk = "CL:" + ip + ":" + day, tries = (await this.ctx.storage.get(tk)) || 0;
+        if (tries >= 20) return json({ ok: false, locked: true });
+        let b = {}; try { b = await req.json(); } catch {} const code = String(b.code || "").toUpperCase().replace(/[^0-9A-Z]/g, "").slice(0, 7);
+        const owner = code.length === 7 ? await this.ctx.storage.get("C:" + code) : null; const P = owner ? await this.ctx.storage.get("P:" + owner) : null;
+        if (!P) { await this.ctx.storage.put(tk, tries + 1); return json({ ok: false }); }
+        return json({ ok: true, switchTo: owner, p: { code: P.code, snap: P.snap } });
+      }
+      if (url.pathname === "/gift" && req.method === "POST") {
+        const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
+        let b = {}; try { b = await req.json(); } catch {} const to = clean(b.to, 16).replace(/[^a-z0-9]/g, ""), kind = b.kind === "item" ? "item" : "coins";
+        const k = kind === "item" ? String(b.k || "").replace(/[^a-z]/g, "").slice(0, 12) : "", n = Math.max(1, Math.min(kind === "item" ? 99 : 100000, Math.floor(Number(b.n) || 0)));
+        if (!to || (kind === "item" && !k)) return json({ ok: false });
+        const owner = await this.ctx.storage.get("I:" + to); if (!owner) return json({ ok: false, nouser: true });
+        const G = (await this.ctx.storage.get("G:" + owner)) || []; G.push({ g: Math.random().toString(36).slice(2, 10), kind, k, n, from: clean(b.from, 16) || "主委", at: Date.now() }); await this.ctx.storage.put("G:" + owner, G.slice(-30));
+        await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/giftping", { method: "POST", body: JSON.stringify({ to }) }).catch(() => {})));
+        return json({ ok: true });
+      }
+      if (url.pathname === "/gifts") { const G = (await this.ctx.storage.get("G:" + uid)) || []; if (G.length) await this.ctx.storage.delete("G:" + uid); return json({ ok: true, gifts: G }); }
+      return json({ ok: false });
+    }
     if (url.pathname === "/hbclaim" && req.method === "POST") {
       let b = {}; try { b = await req.json(); } catch {}
       const hb = this.hb || (this.hb = await this.ctx.storage.get("hb")); const i = b.i | 0, uid = clean(b.uid, 40) || "";
