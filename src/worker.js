@@ -90,12 +90,12 @@ export class Hall extends DurableObject {
     }
     if (url.pathname === "/puppet") { // from the lobby: the chair put the 布袋戲 stage out, changed its banner, or packed it away
       let b = {}; try { b = await req.json(); } catch {}
-      const st = { t: "puppet", on: !!b.on, at: Number(b.at) || Date.now(), text: String(b.text || "").slice(0, 24) }; await this.ctx.storage.put("puppet", st);
+      const st = { t: "puppet", on: !!b.on, at: Number(b.at) || Date.now(), text: String(b.text || "").slice(0, 24), name: String(b.name || "").slice(0, 8) }; await this.ctx.storage.put("puppet", st);
       const out = JSON.stringify(st); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
     }
     if (url.pathname === "/stage") { // from the lobby: the chair put the opera stage out or packed it away
       let b = {}; try { b = await req.json(); } catch {}
-      const st = { t: "stage", on: !!b.on, at: Number(b.at) || Date.now() }; await this.ctx.storage.put("stage", st);
+      const st = { t: "stage", on: !!b.on, at: Number(b.at) || Date.now(), name: String(b.name || "").slice(0, 8), cats: b.cats !== false }; await this.ctx.storage.put("stage", st);
       const out = JSON.stringify(st); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
     }
     const h = Math.max(0, Math.min(HALLS - 1, parseInt(url.searchParams.get("hall") || "0", 10) || 0));
@@ -241,7 +241,8 @@ export class Lobby extends DurableObject {
     if (url.pathname === "/stage" && req.method === "POST") {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
       let b = {}; try { b = await req.json(); } catch {}
-      const st = { on: !!b.on, at: Date.now() }; await this.ctx.storage.put("stage", st);
+      const prev = (await this.ctx.storage.get("stage")) || { on: false, at: 0 }; /* changing only the troupe name keeps the show running */
+      const st = { on: !!b.on, at: b.on && prev.on ? prev.at : Date.now(), name: clean(b.name, 8), cats: b.cats !== false }; await this.ctx.storage.put("stage", st); /* cats: the chair can put the dancing cats away */
       await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/stage", { method: "POST", body: JSON.stringify(st) }).catch(() => {})));
       return json({ ok: true, ...st });
     }
@@ -251,7 +252,7 @@ export class Lobby extends DurableObject {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
       let b = {}; try { b = await req.json(); } catch {}
       const prev = (await this.ctx.storage.get("puppet")) || { on: false, at: 0 };
-      const st = { on: !!b.on, at: b.on && prev.on ? prev.at : Date.now(), text: clean(b.text, 24) }; await this.ctx.storage.put("puppet", st);
+      const st = { on: !!b.on, at: b.on && prev.on ? prev.at : Date.now(), text: clean(b.text, 24), name: clean(b.name, 8) }; await this.ctx.storage.put("puppet", st);
       await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/puppet", { method: "POST", body: JSON.stringify(st) }).catch(() => {})));
       return json({ ok: true, ...st });
     }

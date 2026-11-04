@@ -685,7 +685,7 @@ const EXTRA=["無","眼鏡","鬍子","美人痣","墨鏡","口罩","雀斑","OK�
 const GEAR=["無","圍巾","領結","金項鍊","佛珠","背包","天使翅膀","進香旗","小氣球","肩上小鳥"];
 const LOOK_RANGE=[SKIN.length,HAIRS.length,HAIRC.length,STYLES.length,OUTFIT.length,6,HATS.length,EYES.length,4,4,2,EXTRA.length,GEAR.length];
 const GOODS=[
-  {k:"xiang",name:"清香",price:10,meta:"一份 7 支，七個香爐各插一支"},
+  {k:"xiang",name:"清香",price:10,meta:"一份 13 支，十三個香爐各插一支"},
   {k:"hua",name:"鮮花",price:30,meta:"擺上供桌"},
   {k:"guo",name:"水果",price:40,meta:"擺上供桌"},
   {k:"bing",name:"糕餅",price:30,meta:"擺上供桌"},
@@ -1143,8 +1143,8 @@ const incenseGroup=new T.Group(); incenseGroup.userData.noMerge=1; burner.add(in
 const tipMat=new T.MeshBasicMaterial({color:new T.Color("#ff5a1a")});
 const stickMat=new T.MeshStandardMaterial({color:new T.Color("#c2412a"),emissive:new T.Color("#3a0a04"),roughness:.6});
 const CENSERS={mazu:{inc:incenseGroup,r:.22,y:.3,k:1}};
-const CENSER_ORDER=["tiangong","mazu","xuantian","guangong","caishen","yuelao","huye"];
-const CENSER_NAME={tiangong:"天公爐",mazu:"媽祖",xuantian:"玄天上帝",guangong:"關聖帝君",caishen:"財神爺",yuelao:"月老",huye:"虎爺"};
+const CENSER_ORDER=["tiangong","mazu","xuantian","caishen","wenchang","guangong","yuelao","tudi","guanyin","zhusheng","doumu","jiutian","dizang"];
+const CENSER_NAME={tiangong:"天公爐",mazu:"媽祖",xuantian:"玄天上帝",caishen:"武財神",wenchang:"文昌帝君",guangong:"關聖帝君",yuelao:"月老",tudi:"土地公",guanyin:"觀音菩薩",zhusheng:"註生娘娘",doumu:"斗姥元君",jiutian:"九天玄女",dizang:"地藏王",huye:"虎爺"};
 function addIncense(n){ addIncenseTo("mazu",n); }
 function addIncenseTo(key,n){ const C=CENSERS[key]; if(!C) return; const grp=C.inc; for(let i=0;i<n;i++){ if(grp.children.length>50) grp.remove(grp.children[0]);
   const s=new T.Group(); const a=Math.random()*7, r=Math.random()*C.r; s.position.set(Math.cos(a)*r,C.y,Math.sin(a)*r); s.rotation.set(rand(-.12,.12),0,rand(-.12,.12)); s.scale.setScalar(C.k);
@@ -1354,7 +1354,7 @@ swapDeity(caishen,"caishen",2.25,"caishen"); swapDeity(yuelao,"yuelao",2.25,"yue
 setTimeout(()=>{ addHit("xuantian",8.37,.9,-HZ+.75,1.4,3.2); addHit("guangong",-8.37,.9,-HZ+.75,1.4,3.2); addHit("caishen",SIDE_SHRINE_X,.9,SIDE_SHRINE_Z,1.4,3.2); addHit("yuelao",-SIDE_SHRINE_X,.9,SIDE_SHRINE_Z,1.4,3.2); addHit("huye",0,0,ALTAR.z+.2,.6,.8); },0);
 const extraLights=[hallL1,hallL2,furnaceLight]; const farDecor=[];
 /* ================= 偏殿: a small hall on each side, reached through the 八卦門 and opening onto a garden path to the courtyard ================= */
-const SHX0=12.2, SHX1=23, SHZ0=-11.6, SHZ1=-1.3, SHXC=15.2, SHH=5.6, SHDOOR=2.2, BGZ=-4.5; const SHMX=(SHX0+SHX1)/2;
+const SHX0=12.2, SHX1=23, SHZ0=-11.6, SHZ1=-1.3, SHXC=15.2, SHH=5.6, SHDOOR=2.2, BGZ=-4.5; const MOON={r:1.6,cy:1.05}; /* every 偏殿 doorway is the same round moon gate */ const SHMX=(SHX0+SHX1)/2;
 // octagonal lattice window with a gold frame and a little taiji in the middle
 const BAGUA_WIN=cvs(256,256,(x,w,h)=>{ const oct=r=>{ x.beginPath(); for(let i=0;i<8;i++){ const a=Math.PI/8+i*Math.PI/4; x.lineTo(128+Math.cos(a)*r,128+Math.sin(a)*r); } x.closePath(); };
   oct(126); x.fillStyle="#d9a441"; x.fill(); oct(112); x.fillStyle="#8a5a18"; x.fill(); oct(104); x.fillStyle="#2a0c06"; x.fill();
@@ -1413,28 +1413,23 @@ function sideHall(side,label){ const sx=v=>side*v, W=SHX1-SHX0, D=SHZ1-SHZ0, zc=
     box(ox1-ox0,oy0,.4,wallM,sx((ox0+ox1)/2),oy0/2,z); box(ox1-ox0,SHH-oy1,.4,wallM,sx((ox0+ox1)/2),oy1+(SHH-oy1)/2,z); };
   const win=(z,x0,x1,y0,y1)=>{ const w=mesh(new T.PlaneGeometry(x1-x0,y1-y0),latticeMat,sx((x0+x1)/2),(y0+y1)/2,z); for(const yy of [y0-.08,y1+.08]) box(x1-x0+.2,.17,.5,GOLD(),sx((x0+x1)/2),yy,z); for(const xx of [x0-.06,x1+.06]) box(.15,y1-y0+.3,.5,GOLD(),sx(xx),(y0+y1)/2,z); };
   // back wall: an arched doorway out to the rear courtyard (後埕) and a lattice window
-  { const sh=archShape(SHX0,16.6,SHH,[{cx:13.9,w:1.7,spring:2.15}],side); const w=new T.Mesh(archGeo(sh),wallM); w.position.z=SHZ0; scene.add(w); archTrim(13.9*side,SHZ0,1.7,2.15,goldP,"z");
+  { const sh=archShape(SHX0,16.6,SHH,[{cx:13.9,...MOON}],side); const w=new T.Mesh(archGeo(sh),wallM); w.position.z=SHZ0; scene.add(w); archTrim(13.9*side,SHZ0,0,0,goldP,"z",MOON);
     box(1.8,1.3,.4,wallM,sx(17.5),.65,SHZ0); box(1.8,SHH-3.5,.4,wallM,sx(17.5),3.5+(SHH-3.5)/2,SHZ0); box(SHX1+.2-18.4,SHH,.4,wallM,sx((18.4+SHX1+.2)/2),SHH/2,SHZ0); }
   win(SHZ0,16.6,18.4,1.3,3.5);
   // front wall: now the inside wall between this hall and the 文昌殿 / 福德祠 part, opened by a round moon gate (圓拱門)
-  { const wx0=17.0, wx1=18.6; const fw=new T.Mesh(archGeo(archShape(SHX0,wx0,SHH,[{cx:SHXC,r:1.45,cy:1.2}],side)),wallM); fw.position.z=SHZ1; scene.add(fw);
+  { const wx0=17.0, wx1=18.6; const fw=new T.Mesh(archGeo(archShape(SHX0,wx0,SHH,[{cx:SHXC,...MOON}],side)),wallM); fw.position.z=SHZ1; scene.add(fw);
     box(SHX1+.2-wx1,SHH,.4,wallM,sx((wx1+SHX1+.2)/2),SHH/2,SHZ1); box(wx1-wx0,1.3,.4,wallM,sx((wx0+wx1)/2),.65,SHZ1); box(wx1-wx0,SHH-3.5,.4,wallM,sx((wx0+wx1)/2),3.5+(SHH-3.5)/2,SHZ1); win(SHZ1,wx0,wx1,1.3,3.5);
-    archTrim(sx(SHXC),SHZ1,0,0,goldP,"z",{r:1.5,cy:1.2}); }
+    archTrim(sx(SHXC),SHZ1,0,0,goldP,"z",MOON); }
   for(const f of [1,-1]){ const w=mesh(new T.PlaneGeometry(1.2,1.2),new T.MeshStandardMaterial({map:BAGUA_WIN,transparent:true,alphaTest:.4,roughness:.5,metalness:.3,emissive:new T.Color("#3a1606"),emissiveMap:BAGUA_WIN}),sx(SHXC),4.0,SHZ1+f*.215); if(f<0) w.rotation.y=Math.PI; }
-  for(const f of [1,-1]){ const m=mesh(new T.PlaneGeometry(1.8,.5),new T.MeshStandardMaterial({map:plaqueTexH(label),roughness:.5}),sx(SHXC),3.02,SHZ1+f*.24); if(f<0) m.rotation.y=Math.PI; }
+  for(const f of [1,-1]){ const m=mesh(new T.PlaneGeometry(1.8,.5),new T.MeshStandardMaterial({map:plaqueTexH(f<0?(side>0?"文昌殿":"福德祠"):label),roughness:.5}),sx(SHXC),3.02,SHZ1+f*.24); if(f<0) m.rotation.y=Math.PI; } /* each side names the hall the door leads into */
   /* the 偏殿's own drawn roof was taken off at the chair's request; the walls and ceiling stay */
   // inside: two hanging lanterns
   for(const dz of [-2.3,2.3]){ const g=new T.Group(); g.position.set(sx(SHMX),4.4,zc+dz); scene.add(g); const b=new T.Mesh(new T.SphereGeometry(.34,16,12),lanternMat); b.scale.y=.86; g.add(b); const sp=new T.Sprite(glowMat); sp.scale.set(2,2,1); g.add(sp); cyl(.01,.01,1.1,mat("#2a1a10"),0,.8,0,g,4); }
   const L1=plight("#ffcf8a",1.6,9,sx(SHMX),4.2,zc); extraLights.push(L1); }
 // 八卦門: an octagonal moongate through the side wall of the main hall
 function baguaDoor(side){ const g=new T.Group(); g.position.set(side*HX,0,BGZ); g.rotation.y=Math.PI/2; scene.add(g);
-  const R=1.75, cy=R*Math.cos(Math.PI/8), oct=[]; for(let i=0;i<8;i++){ const a=Math.PI/8+i*Math.PI/4; oct.push(new T.Vector2(Math.cos(a)*R,cy+Math.sin(a)*R)); }
-  const sh=new T.Shape([new T.Vector2(-2,0),new T.Vector2(2,0),new T.Vector2(2,3.8),new T.Vector2(-2,3.8)]); sh.holes.push(new T.Path(oct.slice().reverse()));
-  const geo=new T.ExtrudeGeometry(sh,{depth:.4,bevelEnabled:false}); geo.translate(0,0,-.2);
-  const wall=new T.Mesh(geo,mat("#5c130d",{roughness:.85})); g.add(wall);
-  // gold octagon frame on both faces
-  const ring=new T.Shape(oct.map(p=>new T.Vector2(p.x*1.1,cy+(p.y-cy)*1.1))); ring.holes.push(new T.Path(oct.map(p=>new T.Vector2(p.x*.97,cy+(p.y-cy)*.97)).reverse()));
-  const rg=new T.ExtrudeGeometry(ring,{depth:.5,bevelEnabled:false}); rg.translate(0,0,-.25); g.add(new T.Mesh(rg,mat("#d6a24a",{metalness:.8,roughness:.32})));
+  const wall=new T.Mesh(archGeo(archShape(-2,2,3.8,[{cx:0,...MOON}])),mat("#5c130d",{roughness:.85})); g.add(wall);
+  archTrim(BGZ,side*HX,0,0,mat("#d6a24a",{metalness:.8,roughness:.32}),"x",MOON);
   // bagua plaque above
   const bt=cvs(256,256,(x,w,h)=>{ x.fillStyle="#141210"; x.beginPath(); for(let i=0;i<8;i++){ const a=Math.PI/8+i*Math.PI/4; x.lineTo(128+Math.cos(a)*124,128+Math.sin(a)*124); } x.fill(); x.strokeStyle="#e7bd63"; x.lineWidth=8; x.stroke();
     const tri=[[1,1,1],[0,0,0],[1,0,0],[0,1,1],[0,1,0],[1,0,1],[0,0,1],[1,1,0]]; x.fillStyle="#e7bd63";
@@ -1653,7 +1648,7 @@ const REAR_G=new T.Group(); REAR_G.userData.region=1; scene.add(REAR_G);
 function rearVis(){ const c=camera.position; const v=c.z<-14.6||(Math.abs(c.x)>12.05&&c.z<SHZ1+.5)||c.y>10.5; if(REAR_G.visible!==v) REAR_G.visible=v; }
 for(const s of [-1,1]) gardenHall(s); // after the brick and roof textures exist
 for(const s of [-1,1]) DOOR_LEAVES.push([s*FD.x,HZ,FD.sw,FD.sh]); DOOR_LEAVES.push([0,HZ,FD.cw,FD.ch]); middleBoard(0,HZ,FD.cw,1.1);
-for(const s of [-1,1]) mesh(new T.PlaneGeometry(1.3,.42),new T.MeshStandardMaterial({map:plaqueTexH(s>0?"入口":"出口"),roughness:.5}),s*FD.x,FD.sh+.5,HZ+.24);
+for(const s of [-1,1]) mesh(new T.PlaneGeometry(1.3,.42),new T.MeshStandardMaterial({map:plaqueTexH(s>0?"龍門":"虎門"),roughness:.5}),s*FD.x,FD.sh+.5,HZ+.24);
 const rearN0=scene.children.length;
 /* ================= 後殿: a separate building behind the main hall, across an open courtyard (後埕) =================
    From each 偏殿 an arched door leads out to the 後埕 (about half as deep as the front 廟埕). A wall fountain stands against
@@ -1722,7 +1717,7 @@ setTimeout(()=>{ Object.assign(CENSER_INFO,{guanyin:["觀世音菩薩","後殿�
         for(let q=0;q<4;q++){ const b=mesh(new T.SphereGeometry(r*(.55+q*.08),10,7),nd[(i+q)%3],ex+Math.cos(q*1.9)*r*.35,y+.08+q*.04,ez+Math.sin(q*1.9)*r*.3,t); b.scale.y=.32; } });
       for(let q=0;q<3;q++){ const b=mesh(new T.SphereGeometry(.55,10,7),nd[q],tr[10].x+Math.cos(q*2)*.3,5.45+q*.08,tr[10].z+Math.sin(q*2)*.3,t); b.scale.y=.4; } } }
   // red lanterns strung across the 後埕
-  lanternString([[-7.5,RY0-.4,-7.1,RH.z0+.9,5.9,8,.45],[7.5,RY0-.4,7.1,RH.z0+.9,5.9,8,.45],[-17,-24,17,-24,5.6,14,.5]],{noGlow:k});
+  lanternString([[-7.5,RY0-.4,-7.1,RH.z0+.9,5.9,8,.45],[7.5,RY0-.4,7.1,RH.z0+.9,5.9,8,.45]],{noGlow:k}); /* only the two strings running toward the 後殿; the one across was taken out */
   // potted plants along the front of the 後殿, like the photo
   { const potM=mat("#9a3a1c",{roughness:.8}), leaf=[mat("#2f5a2a",{roughness:.9}),mat("#3d6b30",{roughness:.9})], fl=["#ff5a6a","#ffd25e","#ff8fb3"].map(c=>mat(c,{roughness:.6}));
     for(const x of [-8.6,-6.4,6.4,8.6,-17.6,17.6]){ const g=new T.Group(); g.position.set(x,0,RH.z0+1.5); scene.add(g); cyl(.42,.32,.55,potM,0,.28,0,g,12);
@@ -1746,7 +1741,7 @@ setTimeout(()=>{ Object.assign(CENSER_INFO,{guanyin:["觀世音菩薩","後殿�
     box(W+.4,.5,.5,stoneB,-0,.25,zz+.04).scale.x=1;
     mesh(new T.PlaneGeometry(2.8,.8),new T.MeshStandardMaterial({map:plaqueTexH("觀音殿"),roughness:.5,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}),0,4.85,zz+.27);
     box(3.1,1.0,.12,goldP,0,4.85,zz+.16);
-    for(const s of [-1,1]) mesh(new T.PlaneGeometry(1.2,.4),new T.MeshStandardMaterial({map:plaqueTexH(s>0?"入口":"出口"),roughness:.5}),s*D0,sh+.45,zz+.22);
+    for(const s of [-1,1]) mesh(new T.PlaneGeometry(1.2,.4),new T.MeshStandardMaterial({map:plaqueTexH(s>0?"龍門":"虎門"),roughness:.5}),s*D0,sh+.45,zz+.22);
     box(W+1.2,.5,.5,redM,0,RH.H-.25,zz+.15); box(W+1.2,.12,.56,goldP,0,RH.H-.52,zz+.15);
     for(let z=zz-2.5;z>RH.z1+3.5;z-=3.2) box(W,.45,.36,beamMat,0,RH.H-.5,z); }
   // two dragon pillars at the door and plain red pillars at the corners: only four columns
@@ -1820,8 +1815,8 @@ setTimeout(()=>{ Object.assign(CENSER_INFO,{guanyin:["觀世音菩薩","後殿�
   poolLight("#ffd9a8",1.7,14,0,4.8,PZ+4.2,"H"); poolLight("#ffcf98",1.3,10,-3.8,4.0,PZ+3.2,"H"); poolLight("#ffcf98",1.3,10,3.8,4.0,PZ+3.2,"H");
   // (no spotlight here: the pooled lights and the glow carry the shrine)
 
-  // ---- 側殿 (龍邊 斗姥殿 / 虎邊 地藏殿) ----
-  for(const s of [-1,1]){ const sx=v=>s*v, w=RS.x1-RS.x0, d=RS.z0-RS.z1, zm=(RS.z0+RS.z1)/2, label=s>0?"斗姥殿":"地藏殿";
+  // ---- 側殿 (龍邊 太歲殿, where 斗姥元君 sits / 虎邊 地藏殿) ----
+  for(const s of [-1,1]){ const sx=v=>s*v, w=RS.x1-RS.x0, d=RS.z0-RS.z1, zm=(RS.z0+RS.z1)/2, label=s>0?"太歲殿":"地藏殿";
     plane(s>0?RS.x0:-RS.x1,s>0?RS.x1:-RS.x0,RS.z1,RS.z0,.008,floorM); plane(s>0?RS.x0:-RS.x1,s>0?RS.x1:-RS.x0,RS.z1,RS.z0,RS.H,ceilM,true);
     box(w,RS.H,.4,inWall,sx((RS.x0+RS.x1)/2),RS.H/2,RS.z1);
     box(.4,RS.H,d,inWall,sx(RS.x1),RS.H/2,zm); { const op=mesh(new T.PlaneGeometry(d,RS.H),brickM(3.4,2),sx(RS.x1+.21),RS.H/2,zm); op.rotation.y=s*Math.PI/2; }
@@ -1849,7 +1844,7 @@ setTimeout(()=>{ Object.assign(CENSER_INFO,{guanyin:["觀世音菩薩","後殿�
   const temp=roofs.map(r=>curvedRoof({W:r.W,run:r.D/2,rise:r.H*.5,y0:r.y,z0:r.z,x0:r.x,lift:.8,flare:.5,mat:tiles(r.W/1.6,3)})); temp.flat().forEach(t=>t.userData.noMerge=1);
   loadShared("roof1",m=>{ const bb=new T.Box3().setFromObject(m), sz=bb.getSize(new T.Vector3()), c=bb.getCenter(new T.Vector3());
     roofs.forEach((r,i)=>{ const o=m.clone(); const g=new T.Group(); o.position.set(-c.x,-bb.min.y,-c.z); g.add(o); g.scale.set(r.W/sz.x,r.H/sz.y,r.D/sz.z); g.position.set(r.x,r.y,r.z); REAR_G.add(g);
-      o.traverse(q=>{ if(q.isMesh){ q.material=q.material.clone(); q.material.side=T.DoubleSide; q.material.envMapIntensity=1.2; } }); temp[i].forEach(t=>t.parent&&t.parent.remove(t)); roofClipObj(o); regEdit(["roof-houdian","roof-doumu","roof-dizang"][i],["後殿屋頂","斗姥殿屋頂","地藏殿屋頂"][i],g); }); });
+      o.traverse(q=>{ if(q.isMesh){ q.material=q.material.clone(); q.material.side=T.DoubleSide; q.material.envMapIntensity=1.2; } }); temp[i].forEach(t=>t.parent&&t.parent.remove(t)); roofClipObj(o); regEdit(["roof-houdian","roof-doumu","roof-dizang"][i],["後殿屋頂","太歲殿屋頂","地藏殿屋頂"][i],g); }); });
 
   // ---- decorations from the decor set: dragon pillars, carved windows, stone reliefs, 門神 doors, lanterns ----
   loadShared("decor",m=>{ const piece=(n,h)=>{ const o=m.getObjectByName(n); if(!o) return null; const c=o.clone(); c.position.set(0,0,0); const w=fitModel(c,h); w.userData.pn=n; return w; }; let dn=0;
@@ -1918,7 +1913,7 @@ function buildLion(s,stone){ const g=new T.Group(); const dark=mat("#2e2a26",{ro
   return g; }
 
 // 三隻跳舞小貓 in the courtyard
-const CATS={c:new T.Vector3(9.6,0,HZ+15.6),list:[],t:0};
+const CATS={c:new T.Vector3(9.6,0,HZ+15.6),list:[],t:0,off:false}; /* off: the chair has put the dancing cats away (kept with the opera stage state on the server) */
 function catFace(){ return cvs(512,256,(x,w,h)=>{ x.clearRect(0,0,w,h);
   const cx=256, ey=118; x.fillStyle="#1b1310"; for(const s of [-1,1]){ x.beginPath(); x.ellipse(cx+s*30,ey,11,15,0,0,7); x.fill(); x.fillStyle="#fff"; x.beginPath(); x.arc(cx+s*30+4,ey-6,4.5,0,7); x.fill(); x.fillStyle="#1b1310"; }
   x.fillStyle="#f08aa0"; x.beginPath(); x.moveTo(cx-7,ey+22); x.lineTo(cx+7,ey+22); x.lineTo(cx,ey+30); x.closePath(); x.fill();
@@ -1952,7 +1947,7 @@ function buildCat(fur,belly,stripe,patch){ const g=new T.Group(); g.userData.noM
 station("cats",[CATS.c.x-2.4,CATS.c.z],Math.PI/2);
 setTimeout(()=>addHit("cats",CATS.c.x,0,CATS.c.z,1.5,1.3),0);
 const catNote=new T.Group(); catNote.userData.noMerge=1; scene.add(catNote);
-function updateCats(dt){ if(Q.low&&Math.abs(meAv.pos.y-CATS.c.z)>14){ return; } CATS.t+=dt; const T0=CATS.t, P=4, cyc=T0%(P*3), ph=Math.floor(cyc/P), u=(cyc%P)/P;
+function updateCats(dt){ if(CATS.off) return; if(Q.low&&Math.abs(meAv.pos.y-CATS.c.z)>14){ return; } CATS.t+=dt; const T0=CATS.t, P=4, cyc=T0%(P*3), ph=Math.floor(cyc/P), u=(cyc%P)/P;
   CATS.list.forEach(({g,i})=>{ const R=g.userData.rig; const base=i*Math.PI*2/3+Math.PI/2; const r=.95; let ang=base, face=Math.PI/2;
     const tt=T0*1.25+i*.2;
     if(ph===1){ ang=base+u*Math.PI*2; face=-(ang)+Math.PI; }
@@ -2120,7 +2115,7 @@ scene.add(cushions,rims); cushions.userData.seats=true;
       ["hc-plaza","廟埕（文昌殿／福德祠外牆）",20.3,2.4,GH.z1+.32,0],
       ["hc-yard","後埕",RS.x1-.12,2.0,-23.5,-Math.PI/2],
       ["hc-rear","觀音殿",8.4,2.7,RH.z0+.32,0],
-      ["hc-q","斗姥殿／地藏殿",20.6,2.4,RS.z0+.32,0] ];
+      ["hc-q","太歲殿／地藏殿",20.6,2.4,RS.z0+.32,0] ];
     loadShared("huachuang",m=>{ spots.forEach(([id,lab,x,y,z,ry])=>{ for(const sd of [-1,1]){ const g=fitModel(m.clone(),1.3); const w=new T.Group(); w.add(g); g.position.y-=.65; w.position.set(sd*x,y,z); w.rotation.y=sd>0?ry:-ry; w.userData.noMerge=1; scene.add(w);
         regEdit(id+(sd>0?"-R":"-L"),"八角花窗・"+lab+(sd>0?"（龍邊）":"（虎邊）"),w); } }); setTimeout(holesRefresh,0); }); }
   for(let i=0;i<14;i++){ const x=rand(-58,-30), z=rand(-40,40); /* kept well clear of the 月老殿 (x ≥ -19.2) so no tree pokes through it */ const t=new T.Group(); t.position.set(x,0,z); scene.add(t); for(let k=0;k<3;k++) mesh(new T.SphereGeometry(rand(1.6,2.6),10,8),leaf,rand(-1,1),rand(3,5),rand(-1,1),t); }
@@ -3087,7 +3082,7 @@ function initCF(first){
       if(m.t==="full"){ closedByUs=true; if(hall<HALL_NAMES.length-1){ toast(`${HALL_NAMES[hall]}人滿了，帶你到${HALL_NAMES[hall+1]}`,3200); connect(hall+1); } return; }
       if(m.t==="hello"&&Array.isArray(m.peers)){ m.peers.forEach(x=>{ if(okId(x.id)&&x.p&&typeof x.p==="object") peerState.set(x.id,{p:x.p,t:Date.now()}); }); rebuild(); return; }
       if(m.t==="ann"&&typeof m.text==="string"){ if(m.text===CS_TEXT) csGoOffer(Number.isInteger(m.h)?m.h:-1,+m.at||Date.now()); if(seenOnce("a"+(m.at||m.text))) return; showMarquee(m.text); return; }
-      if(m.t==="stage"){ opSet(!!m.on,+m.at||0); return; }
+      if(m.t==="stage"){ opSet(!!m.on,+m.at||0,m.name||"",m.cats); return; }
       if(m.t==="puppet"){ ptSet(m); return; }
       if(m.t==="layout"){ if(!BUILD.on) buildFetch(); return; }
       if(m.t==="market"){ mkSet(m.open||{}); return; }
@@ -3165,7 +3160,7 @@ document.addEventListener("visibilitychange",()=>{ if(room) sendPresence(); });
 /* ================= audio ================= */
 let ac=null, soundOn=load("mz.sound",true);
 const VOL=Object.assign({m:100,s:100},load("mz.vol",{})); const mVol=()=>Math.max(0,Math.min(100,+VOL.m||0))/100, sVol=()=>Math.max(0,Math.min(100,+VOL.s||0))/100;
-const bgm=$("#bgm"); bgm.volume=.38*mVol(); let audioUnlocked=false, catMode=false; const trackPos={main:0,cat:0,fw:0}; let curTrack="main";
+const bgm=$("#bgm"); bgm.volume=.38*mVol(); let audioUnlocked=false, catMode=false; const trackPos={main:0,cat:0,fw:0,rear:0}; let curTrack="main"; let rearZone=false, zoneFade=1; /* 後殿 has its own song: walking into the 後埕/後殿 fades the temple music out and the rear song in, and back */
 // Sound effects all go through one bus. Muting, hiding the page or switching away disconnects it, which silences
 // anything still ringing at once, and new sounds are refused while the page is hidden so nothing piles up for later.
 // Background music runs through a gain node because iPhones ignore an audio element's volume.
@@ -3177,10 +3172,10 @@ function cutSfx(){ if(AU.bus){ try{ AU.bus.disconnect(); }catch(e){} AU.bus=null
 function musicRoute(){ if(AU.src!==null||!ac) return; try{ AU.src=ac.createMediaElementSource(bgm); AU.music=ac.createGain(); AU.music.gain.value=Math.max(0,AU.lv); AU.src.connect(AU.music).connect(ac.destination); bgm.volume=1; }catch(e){ AU.src=false; AU.music=null; } }
 function musicLevel(v){ v=Math.max(0,Math.min(1,v)); if(AU.music&&ac){ AU.music.gain.setTargetAtTime(v,ac.currentTime,.05); if(bgm.volume!==1) bgm.volume=1; } else if(Math.abs(bgm.volume-v)>.004) bgm.volume=v; }
 function stopAllSound(){ try{ bgm.pause(); }catch(e){} if(typeof OP!=="undefined"&&OP&&OP.aud) try{ OP.aud.pause(); }catch(e){} cutSfx(); }
-function setTrack(name){ if(name===curTrack) return; trackPos[curTrack]=bgm.currentTime||0; curTrack=name; const wasPlaying=!bgm.paused; bgm.src=name==="cat"?"catsong.mp3":name==="fw"?"fwsong.mp3":"music.mp3";
+function setTrack(name){ if(name===curTrack) return; trackPos[curTrack]=bgm.currentTime||0; curTrack=name; const wasPlaying=!bgm.paused; bgm.src=name==="cat"?"catsong.mp3":name==="fw"?"fwsong.mp3":name==="rear"?"rearsong.mp3":"music.mp3";
   const seek=()=>{ try{ bgm.currentTime=trackPos[name]||0; }catch(e){} bgm.removeEventListener("loadedmetadata",seek); }; bgm.addEventListener("loadedmetadata",seek);
   if(wasPlaying&&soundOn&&!document.hidden){ const p=bgm.play(); if(p&&p.catch) p.catch(()=>{}); } }
-function playMusic(){ if(!soundOn||document.hidden) return; audioUnlocked=true; setTrack(FW.on?"fw":catMode?"cat":"main"); if(bgm.paused){ const p=bgm.play(); if(p&&p.catch) p.catch(()=>{}); } }
+function playMusic(){ if(!soundOn||document.hidden) return; audioUnlocked=true; setTrack(FW.on?"fw":catMode?"cat":rearZone?"rear":"main"); if(bgm.paused){ const p=bgm.play(); if(p&&p.catch) p.catch(()=>{}); } }
 function ensureAudio(){ if(!soundOn||document.hidden) return null; playMusic(); if(!ac){ try{ ac=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; } } if(ac.state!=="running"&&ac.state!=="closed") ac.resume(); musicRoute(); return ac; }
 function tone(f,dur,vol,type="sine",delay=0){ vol*=sVol(); if(vol<=0) return; const a=ensureAudio(); if(!a) return; const o=a.createOscillator(), g=a.createGain(); o.type=type; o.frequency.value=f; const t=a.currentTime+delay; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+dur); o.connect(g).connect(sfxBus(a)); o.start(t); o.stop(t+dur+.05); }
 function noiseBurst(dur,vol,freq,delay=0){ vol*=sVol(); if(vol<=0) return; const a=ensureAudio(); if(!a) return; const n=a.createBufferSource(); const b=a.createBuffer(1,a.sampleRate*dur,a.sampleRate); const d=b.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(1-i/d.length); n.buffer=b; const f=a.createBiquadFilter(); f.type="bandpass"; f.frequency.value=freq; const g=a.createGain(); g.gain.value=vol; n.connect(f).connect(g).connect(sfxBus(a)); n.start(a.currentTime+delay); }
@@ -3290,7 +3285,7 @@ const ctTile=(act,icon,name,note="")=>`<button class="ct" data-act="${act}"><b>$
 function openChair(){ if(!me.sp) return;
   openSheet("chair","主委工具",`<div class="ck-row"><input class="mail-box ck" id="readKey" type="password" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="留言讀取密碼（輸入一次就會記住）" value="${esc(load("mz.rk",""))}"><button class="chip ck-eye" type="button" onclick="const i=document.getElementById('readKey'); i.type=i.type==='password'?'text':'password'; this.textContent=i.type==='password'?'👁':'🙈';">👁</button></div>
   <div class="ct-group"><span class="group-label">訊息</span><div class="ct-grid">${ctTile("msgsOpen","📬","香客留言")}${ctTile("annOpen","📢","全服公告","跑馬燈")}${ctTile("boardOpen","📋","公告欄",board.text?"有公告":"空白")}</div></div>
-  <div class="ct-group"><span class="group-label">活動</span><div class="ct-grid">${ctTile("askFw","🎆","全服煙火","3 分鐘")}${ctTile("askSL","🏮","50 盞天燈")}${ctTile("toggleStage","🎭",OP.on?"收回戲台":"擺出戲台",OP.on?"演出中":"")}${ctTile("puppetChair","🎎","布袋戲台",PT.on?"演出中":"")}${ctTile("marketOpen","🏮","夜市",Object.keys(MK.open).length?`${Object.keys(MK.open).length} 攤營業中`:"")}</div></div>
+  <div class="ct-group"><span class="group-label">活動</span><div class="ct-grid">${ctTile("askFw","🎆","全服煙火","3 分鐘")}${ctTile("askSL","🏮","50 盞天燈")}${ctTile("stageChair","🎭","歌仔戲台",OP.on?"演出中":"")}${ctTile("toggleCats","🐱",CATS.off?"放出貓咪":"收起貓咪",CATS.off?"已收起":"跳舞中")}${ctTile("puppetChair","🎎","布袋戲台",PT.on?"演出中":"")}${ctTile("marketOpen","🏮","夜市",Object.keys(MK.open).length?`${Object.keys(MK.open).length} 攤營業中`:"")}</div></div>
   <div class="ct-group"><span class="group-label">線上人數</span><div class="crowd-row"><span class="crowd-now"><span>全廟 <b>${shownTotal()}</b> 人</span><small>這殿 ${hallShown(HALLS.current(),Date.now())} 人・${CROWD.real?"真實人數":CROWD.at&&CROWD.target!=null?`目標 ${CROWD.target}`:"自動"}</small></span><input id="crowdIn" type="text" inputmode="numeric" maxlength="3" placeholder="目標"><button class="chip" data-act="crowdSet">設定</button><button class="chip" data-act="crowdAuto">自動</button><button class="chip" data-act="crowdReal" aria-pressed="${!!CROWD.real}">真實人數</button></div>
     <p class="real-count" id="realCount">真實在線：讀取中…</p><p class="note">目標是全廟人數，會依序分到各殿（前一殿快滿才開下一殿）。約 1 分鐘慢慢變到目標，之後在上下 10 人內浮動。「自動」回到依時段變化（凌晨少、白天多）。「真實人數」不加假人，有多少玩家就顯示多少。</p></div>
   <div class="ct-group"><span class="group-label">主委自己</span><div class="ct-grid">${ctTile("chairHide",chairHidden?"👁":"🫥",chairHidden?"解除隱形":"隱形",chairHidden?"隱形中":"")}${ctTile("chairBuild","🏗️","建築模式","移動屋頂與裝飾")}${ctTile("chairSpeed","🏃","移動速度",CHAIR_SPD+"×")}${ctTile("chairFly","🕊️",myFly?"降落":"飛行",myFly?"飛行中":"")}${ctTile("chairCs","💰",myCs?"變回主委":"變身財神爺",myCs?"發金光中":"")}${ctTile("giftList","🎁","送禮","平安幣・道具")}${ctTile("chairReset","🔄","重置今日","測試用")}</div></div>`);
@@ -3584,7 +3579,7 @@ HANDLERS.showPoem=v=>openPoem(+v,true);
 /* ---- stations ---- */
 function openStation(k){ if(k.startsWith("nm:")){ openStall(k.slice(3)); return; } if(k==="puppet"){ ptOpen(); return; } if(k==="fortune"){ openFortune(); return; } if(k==="cats"){ openCats(); return; } if(k==="fountain"){ openFountain(); return; } if(k==="wish"){ openWish(); return; } if(CENSER_INFO[k]){ openCenser(k); return; } if(k==="jieqian"){ openJieqian(); return; } if(k==="shop") openShop(); if(k==="altar") openAltar(); if(k==="burn") openBurn(); if(k==="donate") openDonate(); if(k==="lot") openLot("ask"); if(k==="lamp"||k==="lampR") openLamp(); if(k==="bell"){ meAv.burnT=0; ringBell(); toast("咚——鐘聲迴盪（只有你聽得到）"); } if(k==="drum"){ meAv.burnT=0; hitDrum(); toast("咚！鼓聲響起（只有你聽得到）"); } }
 function openThanks(i){ const th=THANKS[i]; if(!th) return; sfx.coin(); openSheet("thanks","感謝贊助",`<img class="thanks-img" src="${th.img}" alt="感謝看板" width="1024" height="768"><p class="thanks-text">${esc(th.text)}</p>`); }
-function openShop(){ const html=`<p class="lead">拜拜順序：先到廟埕天公爐，再拜媽祖、龍邊財神爺、虎邊月老，最後是供桌下的虎爺。五爐都插好香，再到廟埕金爐燒金紙。</p>
+function openShop(){ const html=`<p class="lead">拜拜順序：天公爐 → 媽祖 → 玄天上帝 → 武財神 → 文昌帝君 → 關聖帝君 → 月老 → 土地公 → 觀音菩薩 → 註生娘娘 → 斗姥元君 → 九天玄女 → 地藏王。十三爐都插好香，再到廟埕金爐燒金紙。</p>
   <div class="goods">${GOODS.map(g=>`<button class="good" data-act="buy" data-v="${g.k}" ${bag.coins<g.price?"disabled":""}><span class="name">${g.name}</span><span class="meta">${g.meta}</span><span class="price">${g.price} 平安幣</span><span class="own">持有 ${bag.items[g.k]||0}</span></button>`).join("")}</div>
   <div class="shop-extra"><button class="good wide" data-act="shopCoffee"><span class="name">☕ 用街口買杯咖啡給我、贊助伺服器</span><span class="meta">掃 QR Code 或點連結開啟街口支付</span></button></div>`; openSheet("shop","服務處",html); }
 const JKO_URL="https://service.jkopay.com/r/transfer?j=Transfer:901627312";
@@ -3600,7 +3595,7 @@ HANDLERS.copyBank=async()=>{ let ok=false; try{ await navigator.clipboard.writeT
 HANDLERS.shopCoffee=()=>openSheet("shopx","買杯咖啡給主委",`${realSupportHTML()}
   <button class="good wide" data-act="shopBack"><span class="name">← 回服務處</span></button>`);
 HANDLERS.shopBack=()=>openShop();
-HANDLERS.buy=k=>{ const g=GOOD_BY[k]; if(!g||bag.coins<g.price){ toast("平安幣不夠了"); return; } if(k==="fu"&&bag.items.fu){ toast("已經有平安符了"); return; } bag.coins-=g.price; bag.items[k]=(bag.items[k]||0)+(k==="xiang"?7:1); saveBag(); sfx.coin(); if(k==="fu"){ meAv.setAmulet(true); markDirty(); } { const it=bag.items; if((it.xiang||0)>=7&&(it.jin||0)>=1&&((it.hua||0)+(it.guo||0)+(it.bing||0))>=1){ flow().bought=1; saveBag(); } } toast(`請到${g.name}${k==="xiang"?" 7 支":""}`); openShop(); };
+HANDLERS.buy=k=>{ const g=GOOD_BY[k]; if(!g||bag.coins<g.price){ toast("平安幣不夠了"); return; } if(k==="fu"&&bag.items.fu){ toast("已經有平安符了"); return; } bag.coins-=g.price; bag.items[k]=(bag.items[k]||0)+(k==="xiang"?13:1); saveBag(); sfx.coin(); if(k==="fu"){ meAv.setAmulet(true); markDirty(); } { const it=bag.items; if((it.xiang||0)>=13&&(it.jin||0)>=1&&((it.hua||0)+(it.guo||0)+(it.bing||0))>=1){ flow().bought=1; saveBag(); } } toast(`請到${g.name}${k==="xiang"?" 13 支":""}`); openShop(); };
 function openAltar(){ const foods=["hua","guo","bing"].filter(k=>bag.items[k]>0); const hasX=bag.items.xiang>0;
   let html=`<p class="lead">供桌上可以擺鮮花、水果和糕餅，清香插進中間媽祖的香爐。你擺的供品其他香客也看得到，離開大殿後會收回。</p>${plantProgress()}<div class="goods">`;
   html+=["hua","guo","bing"].map(k=>`<button class="good" data-act="offer" data-v="${k}" ${bag.items[k]>0?"":"disabled"}><span class="name">擺上${GOOD_BY[k].name}</span><span class="own">持有 ${bag.items[k]||0}</span></button>`).join("");
@@ -3626,7 +3621,7 @@ function stuckIn(key){ const s=bag.stuck; return !!(s&&s.d===today&&s.k&&s.k.inc
 function plantAt(key){ if(!(bag.items.xiang>0)) return false; if(stuckIn(key)){ toast(`${CENSER_NAME[key]||"這個香爐"}已經插過香了，一爐插一支就好`,2800); return false; } if(!bowedAt(key)){ toast("請先持香參拜，再插香"); return false; }
   if(!bag.stuck||bag.stuck.d!==today) bag.stuck={d:today,k:[]}; bag.stuck.k.push(key); bag.items.xiang--; if(!bag.items.xiang) meAv.hold=0; saveBag(); renderHold(); addIncenseTo(key,1); meAv.burnT=0;
   myPlant=[key,Math.random().toString(36).slice(2,8)]; markDirty(); bag.planted=Array.isArray(bag.planted)?bag.planted:[]; if(!bag.planted.includes(key)) bag.planted.push(key);
-  if(CENSER_ORDER.every(k=>bag.planted.includes(k))){ saveBag(); toast("五爐香都插好了。想求籤擲筊可以現在去，之後收供品、燒金紙",3800); } else { saveBag(); const next=CENSER_ORDER.find(k=>!bag.planted.includes(k)); toast(`${CENSER_NAME[key]}的香插好了，下一爐：${CENSER_NAME[next]}`,3000); } return true; }
+  if(CENSER_ORDER.every(k=>bag.planted.includes(k))){ saveBag(); toast("十三爐香都插好了。想求籤擲筊可以現在去，之後收供品、燒金紙",3800); } else { saveBag(); const next=CENSER_ORDER.find(k=>!bag.planted.includes(k)); toast(`${CENSER_NAME[key]}的香插好了，下一爐：${CENSER_NAME[next]}`,3000); } return true; }
 function plantProgress(){ const done=Array.isArray(bag.planted)?bag.planted:[]; return `<div class="steps">${CENSER_ORDER.map(k=>`<span ${done.includes(k)?"data-on":""}>${CENSER_NAME[k]}</span>`).join("")}</div>`; }
 HANDLERS.plant=()=>{ if(plantAt("mazu")) openAltar(); };
 const CENSER_INFO={tiangong:["天公爐","先在廟埕面向天空，向玉皇大帝稟報姓名、住址和來意，再進殿參拜。"],xuantian:["玄天上帝","位在龍邊。北極玄天上帝鎮守北方，消災解厄、驅邪保平安。"],guangong:["關聖帝君","位在虎邊。忠義神武，護佑平安、事業順利，斬除小人。"],caishen:["財神爺","在龍邊偏殿。祈求財運亨通、工作順利、生意興隆。"],yuelao:["月下老人","在虎邊偏殿。祈求良緣、感情順利、人際和合。"],huye:["虎爺","在媽祖供桌下方守護廟宇，保佑孩童平安，也有人來求事業與偏財。"]};
@@ -4328,7 +4323,7 @@ function fwUpdate(dt){ const now=performance.now();
     for(let k=FW.gerbs.length-1;k>=0;k--){ const g=FW.gerbs[k]; g.t+=dt; if(g.t>g.dur){ FW.gerbs.splice(k,1); continue; } const m=Math.round(10*LOW*Math.min(1,dt*60));
       for(let i=0;i<m;i++){ const a=Math.random()*Math.PI*2, s=Math.random()*.9; fwEmit(g.x,g.y,g.z,Math.cos(a)*s,7+Math.random()*3,Math.sin(a)*s-.4,"#fff2c2",g.c,1.0+Math.random()*.5,.32,.6,7.5,.5); } }
     if(t>FW_LEN-4.5&&!fwFinale&&FW.i>=FW.ev.length-1){ fwFinale=true; closeSheet(); if(!fwView) setFwView(true); camPitch=.72; camYaw=Math.PI; renderSparkBtn(); }
-    if(t>FW_LEN&&!FW.rockets.length){ FW.on=false; setTrack(catMode?"cat":"main"); setTimeout(fwEndMsg,3800); }
+    if(t>FW_LEN&&!FW.rockets.length){ FW.on=false; setTrack(catMode?"cat":rearZone?"rear":"main"); setTimeout(fwEndMsg,3800); }
     // everyone hears the show song, kept in step with the fireworks
     else if(soundOn){ if(curTrack!=="fw"){ trackPos.fw=t; setTrack("fw"); if(bgm.paused&&audioUnlocked){ const p=bgm.play(); if(p&&p.catch) p.catch(()=>{}); } }
       else if(!bgm.paused&&bgm.readyState>=2&&Math.abs(bgm.currentTime-t)>.35&&now-(FW.lastSync||0)>2000){ FW.lastSync=now; try{ bgm.currentTime=t; }catch(e){} } } }
@@ -4680,7 +4675,7 @@ HANDLERS.ftAgain=()=>{ try{ localStorage.removeItem("mz.bazi"); }catch(e){} open
 // take turns forever: a pair comes on, performs (亮相, 雲手, 圓場, 水袖, 對唱), goes back behind the backdrop and vanishes, and
 // the next pair comes out. The three tracks play in turn. Music and singing fade in as you walk up and fade out as you leave.
 // Everything is computed from the time the stage went up, so every player sees the same moment of the show.
-var OP={x:0,z:HZ+YX+11.6,k:9.6,on:false,at:0,built:false,root:null,actors:[],spots:[],beams:[],neon:[],glowMats:[],prox:0,cue:"",musicGain:null,voiceGain:null,aud:null,track:-1,lastSync:0};
+var OP={x:0,z:HZ+YX+11.6,k:9.6,on:false,at:0,name:"",nameCloth:null,built:false,root:null,actors:[],spots:[],beams:[],neon:[],glowMats:[],prox:0,cue:"",musicGain:null,voiceGain:null,aud:null,track:-1,lastSync:0};
 const OP_TRACKS=[["opera1.mp3",147.38],["opera2.mp3",154.04],["opera3.mp3",143.05]], OP_TOTAL=OP_TRACKS.reduce((a,t)=>a+t[1],0);
 const OP_GROUP=56, OP_ENTER=6, OP_EXIT=48, OP_GONE=53, OP_MOVE=8.4; // seconds within each pair's turn; five moves of 8.4 s
 const opW=(lx,lz)=>[OP.x-lx*OP.k, OP.z-lz*OP.k]; // stage-local → world; the stage is turned round to face the temple
@@ -4762,6 +4757,7 @@ function opBuild(){ if(OP.built) return; OP.built=true;
   tube(V(-.46,.148,.16),V(.46,.148,.16),18);                  // deck edge
   tube(V(-.415,.16,.16),V(-.415,.5,.16),8); tube(V(.415,.16,.16),V(.415,.5,.16),8); // pillars
   tube(V(-.415,.5,.16),V(.415,.5,.16),18);                    // under the 天后歌劇團 banner
+  OP.nameCloth=nameCloth(.86*k,.105*k); OP.nameCloth.position.copy(V(0,.566,.19)); root.add(OP.nameCloth); setNameCloth(OP.nameCloth,OP.name);
   for(let i=0;i<9;i++){ const sp=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffe2a0"),transparent:true,opacity:.7,blending:T.AdditiveBlending,depthWrite:false})); sp.position.copy(V(-.36+i*.09,.16,.13)); sp.scale.set(.5,.5,1); root.add(sp); } // footlights
   // three moving coloured spotlights from the truss, each with a soft visible beam
   const beamGeo=new T.CylinderGeometry(.15,2.2,1,20,1,true); beamGeo.translate(0,-.5,0);
@@ -4771,13 +4767,22 @@ function opBuild(){ if(OP.built) return; OP.built=true;
     OP.spots.push({sl,tgt,beam,bm,from,i}); }
   OP_ROLES.forEach(r=>{ const [x,z]=opW(r.side*.3,-.11); const av=new Avatar(r.look,{npc:true,x,z}); av.moveSpeed=0; av.sjBusy=1; av.root.scale.setScalar(1.35); /* a touch larger than life so they read on the big stage */ opDress(av,r); OP.actors.push({av,role:r}); }); }
 
-function opSet(on,at){ const was=OP.on; OP.on=!!on; OP.at=at||Date.now(); if(OP.on) opBuild(); if(OP.root) OP.root.visible=OP.on; if(!OP.on){ OP.actors.forEach(a=>a.av.root.visible=false); if(OP.aud){ OP.aud.pause(); } }
+function catsShow(v){ CATS.off=!v; CATS.list.forEach(c=>{ c.g.visible=!!v; }); }
+function opSet(on,at,name,cats){ if(cats!==undefined) catsShow(cats!==false); const was=OP.on; OP.on=!!on; OP.at=at||Date.now(); if(name!==undefined){ OP.name=String(name||"").slice(0,8); setNameCloth(OP.nameCloth,OP.name); } if(OP.on) opBuild(); if(OP.root) OP.root.visible=OP.on; if(!OP.on){ OP.actors.forEach(a=>a.av.root.visible=false); if(OP.aud){ OP.aud.pause(); } }
   if(OP.on&&!was&&Date.now()-OP.at<60000) toast("🎭 主委擺出歌仔戲台了！到廟埕看戲",4200); if(sheetKind==="chair"&&me.sp) openChair(); }
-async function opFetch(){ try{ const r=await fetch("/stage",{cache:"no-store"}); if(!r.ok) return; const j=await r.json(); if(j&&(!!j.on!==OP.on||(j.on&&j.at!==OP.at))) opSet(j.on,+j.at||0); }catch(e){} }
-HANDLERS.toggleStage=async(v,b)=>{ if(!me.sp) return; const key=ck(); if(!key){ toast("請先輸入留言讀取密碼"); return; }
-  b.disabled=true; try{ const r=await fetch("/stage",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({on:!OP.on})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
-    if(j.ok){ save("mz.rk",key); opSet(j.on,j.at); if(sheetKind==="chair") openChair(); toast(j.on?"歌仔戲台已擺出，戲班開演":"歌仔戲台已收回",3000); }
-    else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":j.unset?"伺服器讀不到密碼設定（不是你打錯）":"密碼不對，沒有變更",3200); }catch(e){ toast("沒有變更，請稍後再試"); } b.disabled=false; };
+async function opFetch(){ try{ const r=await fetch("/stage",{cache:"no-store"}); if(!r.ok) return; const j=await r.json(); if(j&&(!!j.on!==OP.on||(j.on&&j.at!==OP.at)||(j.name||"")!==OP.name||(j.cats===false)!==CATS.off)) opSet(j.on,+j.at||0,j.name||"",j.cats); }catch(e){} }
+HANDLERS.toggleCats=async(v,b)=>{ if(!me.sp) return; const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return; } const cats=CATS.off;
+  if(b) b.disabled=true; try{ const r=await fetch("/stage",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({on:OP.on,name:OP.name,cats})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
+    if(j.ok){ save("mz.rk",key); opSet(j.on,j.at,j.name||"",j.cats); toast(cats?"🐱 跳舞貓咪放出來了":"跳舞貓咪收起來了",2600); if(sheetKind==="chair") openChair(); }
+    else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":j.unset?"伺服器讀不到密碼設定（不是你打錯）":"密碼不對，沒有變更",3200); }catch(e){ toast("沒有變更，請稍後再試"); } if(b) b.disabled=false; };
+HANDLERS.stageChair=()=>{ if(!me.sp) return; openSheet("stageChair","歌仔戲台",`${backBtn}<p class="lead">${OP.on?"歌仔戲台演出中。可以改團名，或收回戲台。":"擺出歌仔戲台，戲班就會開演。"}</p>
+  <div class="field"><label class="group-label" for="opName">團名（8 字內，會用紅布蓋在戲台上方原本的團名；留空就維持原樣）</label><input id="opName" maxlength="8" placeholder="例如：雲端歌劇團" value="${esc(OP.name||"")}"></div>
+  <div class="row"><button class="good wide" data-act="toggleStage" data-v="1"><span class="name">${OP.on?"更新團名":"🎭 擺出歌仔戲台"}</span></button>${OP.on?`<button class="secondary" data-act="toggleStage" data-v="0">收回戲台</button>`:""}</div>`); };
+HANDLERS.toggleStage=async(v,b)=>{ if(!me.sp) return; const key=ck(); if(!key){ toast("請先輸入留言讀取密碼"); return; } const on=v==="1", name=(($("#opName")||{}).value||"").trim().slice(0,8), cats=!CATS.off;
+  if(name&&chatCheck(name)){ toast("團名有不適合的內容"); return; }
+  if(b) b.disabled=true; try{ const r=await fetch("/stage",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({on,name,cats})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
+    if(j.ok){ save("mz.rk",key); const was=OP.on; opSet(j.on,j.at,j.name||"",j.cats); toast(j.on?(was?"團名已更新":"歌仔戲台已擺出，戲班開演"):"歌仔戲台已收回",3000); if(sheetKind==="stageChair") HANDLERS.stageChair(); }
+    else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":j.unset?"伺服器讀不到密碼設定（不是你打錯）":"密碼不對，沒有變更",3200); }catch(e){ toast("沒有變更，請稍後再試"); } if(b) b.disabled=false; };
 
 /* ---- sound: the three tracks in turn, plus synthesized Taiwanese-style singing, both fading with distance ---- */
 function opAudioNodes(){ const a=ac; if(!a) return false; if(!OP.voiceGain){ OP.voiceGain=a.createGain(); OP.voiceGain.gain.value=0; OP.voiceGain.connect(sfxBus(a)); }
@@ -4892,6 +4897,10 @@ function ptDress(av,r){ const H=av.head, gold=mat("#e2b04a",{metalness:.7,roughn
   av.root.scale.setScalar(.4); av.root.visible=false; }
 
 /* ---- the stage: model, banner, spotlights, colour inside the window, dry-ice fog and spark pool ---- */
+/* 團名紅布: the chair can cover the troupe name painted on either stage with a red cloth carrying their own name; empty = the painted name shows */
+function nameCloth(w,h){ const g=new T.PlaneGeometry(w,h,16,2); const pa=g.attributes.position; for(let i=0;i<pa.count;i++){ const u=pa.getX(i)/(w/2); pa.setZ(i,Math.sin(u*7)*h*.03); } g.computeVertexNormals();
+  const m=new T.Mesh(g,new T.MeshStandardMaterial({roughness:.8,side:T.DoubleSide,emissive:new T.Color("#ffffff"),emissiveIntensity:.35,color:new T.Color("#d8d8d8"),polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2})); m.visible=false; m.userData.noMerge=1; return m; }
+function setNameCloth(m,name){ if(!m) return; const t=String(name||"").trim(); if(m.material.map) m.material.map.dispose(); m.material.map=t?ptBannerTex(t):null; m.material.emissiveMap=m.material.map; m.material.needsUpdate=true; m.visible=!!t; }
 function ptBannerTex(text){ return cvs(1024,220,(x,w,h)=>{ const g=x.createLinearGradient(0,0,0,h); g.addColorStop(0,"#b3121a"); g.addColorStop(.5,"#d42027"); g.addColorStop(1,"#9a0e15"); x.fillStyle=g; x.fillRect(0,0,w,h);
   x.strokeStyle="#f5c84a"; x.lineWidth=8; x.strokeRect(12,12,w-24,h-24); x.lineWidth=2; x.strokeRect(24,24,w-48,h-48);
   for(let i=0;i<w;i+=34){ x.fillStyle="rgba(0,0,0,.08)"; x.fillRect(i,0,12,h); } // cloth folds
@@ -4904,6 +4913,7 @@ function ptBuild(){ if(PT.built) return; PT.built=true; const k=PT.k;
   // the chair's red cloth over the phoenix-and-lotus panel, sagging a little in the middle
   const bg=new T.PlaneGeometry(.6*k,.125*k,24,4); const pa=bg.attributes.position; for(let i=0;i<pa.count;i++){ const u=pa.getX(i)/(.3*k); pa.setY(i,pa.getY(i)-(1-u*u)*.04*k*(.5-pa.getY(i)/(.125*k))); pa.setZ(i,Math.sin(u*9)*.006*k); } bg.computeVertexNormals();
   PT.banner=new T.Mesh(bg,new T.MeshStandardMaterial({roughness:.8,side:T.DoubleSide,emissive:new T.Color("#ffffff"),emissiveIntensity:.18})); PT.banner.position.set(0,.245*k,.108*k); root.add(PT.banner);
+  PT.nameCloth=nameCloth(.58*k,.12*k); PT.nameCloth.position.set(0,.585*k,.142*k); root.add(PT.nameCloth); setNameCloth(PT.nameCloth,PT.name);
   ptSetBanner();
   for(const s of [-1,1]){ mk(root,new T.CylinderGeometry(.012*k,.012*k,.02*k,8),mat("#e2b04a",{metalness:.7,roughness:.3}),s*.3*k,.305*k,.11*k); // brass rings it hangs from
     const tas=new T.Group(); tas.position.set(s*.3*k,.3*k,.112*k); root.add(tas); for(let j=0;j<5;j++) mk(tas,new T.BoxGeometry(.006*k,.05*k,.003*k),mat("#f5c84a"),(j-2)*.006*k,-.03*k,0); }
@@ -4924,7 +4934,7 @@ function ptBuild(){ if(PT.built) return; PT.built=true; const k=PT.k;
   PT.flash=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#fff3c4"),transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false})); PT.flash.userData.noMerge=1; PT.flash.visible=false; scene.add(PT.flash); PT.flashT=9;
   PT_ROLES.forEach((r,i)=>{ const p=ptW(0,PT_FLOOR,PT_DEPTH); const av=new Avatar(r.look,{npc:true,x:p.x,z:p.z}); av.moveSpeed=0; av.sjBusy=1; ptDress(av,r); PT.actors.push({av,role:r,i,cur:null}); });
   station("puppet",[PT.x,PT.z-.15*k-1.6],0); STATION_LABEL.puppet="布袋戲台"; STATION_HINT.puppet="走向布袋戲台"; }
-function ptSet(s){ const was=PT.on; PT.on=!!s.on; PT.at=+s.at||Date.now(); PT.text=String(s.text||"").slice(0,24);
+function ptSet(s){ const was=PT.on; PT.on=!!s.on; PT.at=+s.at||Date.now(); PT.text=String(s.text||"").slice(0,24); PT.name=String(s.name||"").slice(0,8); setNameCloth(PT.nameCloth,PT.name);
   if(PT.on) ptBuild(); if(PT.root){ PT.root.visible=PT.on; ptSetBanner(); }
   if(PT.on&&!PT.hit){ PT.hit=new T.Mesh(new T.BoxGeometry(1.02*PT.k,.75*PT.k,.3*PT.k),new T.MeshBasicMaterial()); PT.hit.visible=false; PT.hit.position.set(PT.x,.375*PT.k,PT.z); PT.hit.userData.act="puppet"; PT.hit.userData.noMerge=1; scene.add(PT.hit); pickables.push(PT.hit); }
   if(!PT.on&&PT.hit){ scene.remove(PT.hit); const i=pickables.indexOf(PT.hit); if(i>=0) pickables.splice(i,1); PT.hit=null; }
@@ -4934,11 +4944,12 @@ async function ptFetch(){ try{ const r=await fetch("/puppet",{cache:"no-store"})
 function ptOpen(){ const t=(PT.text||"").trim(); openSheet("puppet","雲端布袋戲",t?`<p class="pt-banner">${esc(t)}</p>`:""); }
 // chair: type the line for the red cloth, then put the stage out (or change the line / pack it away)
 HANDLERS.puppetChair=()=>{ if(!me.sp) return; openSheet("puppetChair","布袋戲台",`${backBtn}<p class="lead">${PT.on?"布袋戲台演出中。可以改紅布條上的字，或收回戲台。":"擺出前先寫好紅布條上的字（掛在戲台下方鳳凰蓮花的位置，玩家點戲台也看得到）。"}</p>
+  <div class="field"><label class="group-label" for="ptName">團名（8 字內，會用紅布蓋在戲台上方原本的「雲端布袋戲」；留空就維持原樣）</label><input id="ptName" maxlength="8" placeholder="例如：天后掌中劇團" value="${esc(PT.name||"")}"></div>
   <div class="field"><label class="group-label" for="ptText">紅布條文字（24 字內，可留空）</label><input id="ptText" maxlength="24" placeholder="例如：恭祝天上聖母聖誕千秋" value="${esc(PT.text||"")}"></div>
   <div class="row"><button class="good wide" data-act="puppetSend" data-v="1"><span class="name">${PT.on?"更新紅布條":"🎎 擺出布袋戲台"}</span></button>${PT.on?`<button class="secondary" data-act="puppetSend" data-v="0">收回戲台</button>`:""}</div>`); };
-HANDLERS.puppetSend=async(v,b)=>{ if(!me.sp) return; const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return; } const on=v==="1", text=(($("#ptText")||{}).value||"").trim().slice(0,24);
-  if(text&&chatCheck(text)){ toast("紅布條文字有不適合的內容"); return; }
-  if(b) b.disabled=true; try{ const r=await fetch("/puppet",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({on,text})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
+HANDLERS.puppetSend=async(v,b)=>{ if(!me.sp) return; const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return; } const on=v==="1", text=(($("#ptText")||{}).value||"").trim().slice(0,24), name=(($("#ptName")||{}).value||"").trim().slice(0,8);
+  if((text&&chatCheck(text))||(name&&chatCheck(name))){ toast("紅布條或團名有不適合的內容"); return; }
+  if(b) b.disabled=true; try{ const r=await fetch("/puppet",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({on,text,name})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
     if(j.ok){ save("mz.rk",key); const was=PT.on; ptSet(j); toast(j.on?(was?"紅布條已更新":"布袋戲台已擺出"):"布袋戲台已收回",2600); HANDLERS.puppetChair(); }
     else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":j.unset?"伺服器讀不到密碼設定（不是你打錯）":"密碼不對，沒有變更",3200); }catch(e){ toast("沒有變更，請稍後再試"); } if(b) b.disabled=false; };
 
@@ -5869,7 +5880,7 @@ function tick(){ if(gameAsleep) return; const _ft0=performance.now(); { const no
   lodPrep(); remotes.forEach(r=>{ lodUpdate(r,dt); if((r.eq&&(r.eq[0]||r.eq[1]))||r.flies) accTick(r,dt); }); /* r.flies: keep ticking once more so flies go away after the sausage is put down */ sjUpdate(dt); fwUpdate(dt); updateSkyLanterns(dt); renderSLBtn(); opTick(dt); ptTick(dt); REAR_TICK.forEach(f=>f(dt)); csTick(dt); hbTick(dt); flyCtlTick(dt); slodTick(dt); poolTick(dt); rearVis(); buildTick(); ftTick(dt); mkTick(dt);
   if(room&&dirty&&performance.now()-lastSend>((keys.size||joy.on)?800:SEND_GAP)) sendPresence();
   updateFlyers(dt); updateFu(dt); updateCats(dt); updateWater(dt);
-  { let best=null, bd=2.6; if(!sheetKind&&!customizing&&!pendingStation&&meAv.seat<0&&!(meAv.danceT>0)) for(const k in stations){ if(k==="cats"){ const dc=Math.hypot(meAv.pos.x-CATS.c.x,meAv.pos.y-CATS.c.z); if(dc<3.6){ best=k; bd=0; } continue; } const d=meAv.pos.distanceTo(stations[k].approach); if(d<bd){ bd=d; best=k; } }
+  { let best=null, bd=2.6; if(!sheetKind&&!customizing&&!pendingStation&&meAv.seat<0&&!(meAv.danceT>0)) for(const k in stations){ if(k==="cats"){ if(CATS.off) continue; const dc=Math.hypot(meAv.pos.x-CATS.c.x,meAv.pos.y-CATS.c.z); if(dc<3.6){ best=k; bd=0; } continue; } const d=meAv.pos.distanceTo(stations[k].approach); if(d<bd){ bd=d; best=k; } }
     const nc=$("#nearChip"); if(best!==nearKey){ nearKey=best; if(best){ nc.textContent=best==="cats"?"🐾 一起祈求":"點我："+(STATION_LABEL[best]||STATION_HINT[best]||best).replace(/^走(向|去)/,""); nc.hidden=false; } else nc.hidden=true; } }
   // camera
   if(!customizing&&(keys.size||joy.on)&&sjMine()){ keys.clear(); joy.reset(); sjGuard(()=>{}); }
@@ -5938,9 +5949,12 @@ function tick(){ if(gameAsleep) return; const _ft0=performance.now(); { const no
     if(p.g) p.vy-=p.g*dt; p.s.position.x+=(p.vx+Math.sin(t*1.3+i)*.04)*dt; p.s.position.y+=p.vy*dt; p.s.position.z+=p.vz*dt; const sc=p.s.scale.x+p.grow*dt; p.s.scale.set(Math.max(.02,sc),Math.max(.02,sc),1);
     p.s.material.opacity=p.op*Math.sin(Math.min(1,k)*Math.PI); }
   const dp=dustGeo.attributes.position.array; for(let i=0;i<dustN;i++){ dp[i*3+1]+=Math.sin(t*.5+i)*.0015; dp[i*3]+=Math.cos(t*.3+i*.7)*.001; } dustGeo.attributes.position.needsUpdate=true;
-  if(duckT>0){ duckT-=dt; } { const mv=mVol(), top=(curTrack==="cat"?.55:curTrack==="fw"?.6:.38)*mv, near=(OP&&OP.on)?OP.prox:0; const goal=(duckT>0?Math.min(.16*mv,top):top)*(1-near)*(bgmHush?0:1); if(AU.lv<0) AU.lv=goal; AU.lv+=(goal-AU.lv)*Math.min(1,dt*(goal<AU.lv?2.5:1)); musicLevel(AU.lv<.004?0:AU.lv); } // near the opera stage the temple music fades all the way out, and back in as you walk away
-  { const dc=Math.hypot(meAv.pos.x-CATS.c.x,meAv.pos.y-CATS.c.z); const want=catMode?dc<4.2:dc<3.2;
-    if(want!==catMode){ catMode=want; if(!FW.on) setTrack(catMode?"cat":"main"); } }
+  if(duckT>0){ duckT-=dt; }
+  { const z=meAv.pos.y; if(!rearZone&&z<RY0-1) rearZone=true; else if(rearZone&&z>RY0+1) rearZone=false; /* hysteresis so the doorway doesn't flip-flop */
+    const want=rearZone?"rear":"main"; if(!FW.on&&!catMode&&(curTrack==="main"||curTrack==="rear")&&want!==curTrack){ zoneFade=Math.max(0,zoneFade-dt*.7); if(zoneFade<=.02){ setTrack(want); zoneFade=0; } } else zoneFade=Math.min(1,zoneFade+dt*.5); }
+  { const mv=mVol(), top=(curTrack==="cat"?.55:curTrack==="fw"?.6:.38)*mv*zoneFade, near=(OP&&OP.on)?OP.prox:0; const goal=(duckT>0?Math.min(.16*mv,top):top)*(1-near)*(bgmHush?0:1); if(AU.lv<0) AU.lv=goal; AU.lv+=(goal-AU.lv)*Math.min(1,dt*(goal<AU.lv?2.5:1)); musicLevel(AU.lv<.004?0:AU.lv); } // near the opera stage the temple music fades all the way out, and back in as you walk away
+  { const dc=CATS.off?99:Math.hypot(meAv.pos.x-CATS.c.x,meAv.pos.y-CATS.c.z); const want=catMode?dc<4.2:dc<3.2;
+    if(want!==catMode){ catMode=want; if(!FW.on) setTrack(catMode?"cat":rearZone?"rear":"main"); } }
   bellSwing*=Math.pow(.25,dt); bell.rotation.x=Math.sin(t*4)*.22*bellSwing; drumBounce*=Math.pow(.02,dt); drum.scale.setScalar(1+Math.sin(t*40)*.03*drumBounce);
   if(shakeT>0){ shakeT-=dt; lotTube.rotation.z=Math.sin(shakeT*40)*.18; lotTube.rotation.x=Math.cos(shakeT*33)*.1; } else { lotTube.rotation.z*=.8; lotTube.rotation.x*=.8; }
   perfSample(dt);
@@ -6043,7 +6057,7 @@ try{ floorsPlain(); }catch(e){}
    (正殿建築, 前殿立面, 廟埕, each 偏殿 …) and every object group (shrines, censers, lions, lamps, trees …) is its own item. Merging then
    is undone while editing and redone afterwards, so units move freely and players keep the speed. Left/right twins are paired for 對稱. ---- */
 const AREA_NAME={M:"正殿建築",F:"前殿立面",C:"廟埕","S-R":"財神殿（龍邊偏殿）","S-L":"月老殿（虎邊偏殿）","G-R":"文昌殿","G-L":"福德祠","P-R":"龍邊花園步道","P-L":"虎邊花園步道",
-  H:"後殿建築","Q-R":"斗姥殿","Q-L":"地藏殿",B:"後埕",X:"園外景物"};
+  H:"後殿建築","Q-R":"太歲殿","Q-L":"地藏殿",B:"後埕",X:"園外景物"};
 function buildArea(x,z){ const r=camRoom(x,z), sd=x<0?"L":"R"; if(r==="M") return "M"; if(r[0]==="S") return "S-"+sd; if(r[0]==="G") return "G-"+sd; if(r==="H") return "H"; if(r[0]==="Q") return "Q-"+sd;
   const ax=Math.abs(x); if(ax>26||z<-46||z>HZ+YX+26) return "X"; if(z<RY0) return "B"; if(z>=HZ&&z<HZ+6&&ax<HX+2) return "F"; if(ax>=12&&z>=SHZ1&&z<HZ) return "P-"+sd; if(z>=HZ) return "C"; return "X"; }
 function buildUnits(){ scene.updateMatrixWorld(true); const box=new T.Box3(), c=new T.Vector3(); let n=0; const groups=[];

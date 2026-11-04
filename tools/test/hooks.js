@@ -1,4 +1,4 @@
-window.__me=()=>meAv; window.__setLook=l=>{ meAv.setLook(l); }; window.__pv=(y,m)=>{ pvYaw=y; if(m) pvMode=m; };
+window.__ev=s=>eval(s); window.__me=()=>meAv; window.__setLook=l=>{ meAv.setLook(l); }; window.__pv=(y,m)=>{ pvYaw=y; if(m) pvMode=m; };
 window.__go=k=>goStation(k); window.__h=()=>({sendChat,CATS,CENSERS,SJ,stations,syncPeers,randomLook,openDonate,HANDLERS,openFortune,FTB,AU,AUQ,quietFx,sfx,FW,fwStart,fxCoin,remotes,Avatar,bgm,get ac(){return ac;}});
 window.__op=()=>OP; window.__opSet=(on,at)=>opSet(on,at); window.__night=()=>{ todPhase=()=>({night:1,day:0}); };
 window.__norender=()=>{ window.__R0=window.__R0||renderer.render; renderer.render=()=>{}; }; window.__rerender=()=>{ if(window.__R0) renderer.render=window.__R0; };
