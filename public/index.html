@@ -1093,7 +1093,7 @@ function slodRegister(name,sceneRoot){ if(Q.lite) return; sceneRoot.userData.noM
 // the full copy takes over the look the light copy was given after loading (glow, reflections), then sits beside it, hidden until needed;
 // the light copy stays in place (hidden) so taps on the statue keep working
 function slodAdopt(e,g){ let ref=null; e.root.traverse(o=>{ if(!ref&&o.isMesh) ref=o.material; }); const kids=[...g.children];
-  kids.forEach(k=>{ k.traverse(o=>{ if(!o.isMesh) return; if(!o.geometry.attributes.normal) o.geometry.computeVertexNormals(); const m=o.material; if(m.map) m.map.anisotropy=4;
+  kids.forEach(k=>{ k.traverse(o=>{ if(!o.isMesh) return; if(!o.geometry.attributes.normal) o.geometry.computeVertexNormals(); const m=o.material; if(m.map){ m.map.anisotropy=4; try{ renderer.initTexture(m.map); }catch(e){} } /* upload the finer picture now, not on the frame it first shows */
     if(ref){ m.envMapIntensity=ref.envMapIntensity; if(ref.emissive&&m.emissive){ m.emissive.copy(ref.emissive); m.emissiveIntensity=ref.emissiveIntensity; } if(ref.emissiveMap&&ref.emissiveMap===ref.map) m.emissiveMap=m.map; } }); k.visible=false; e.root.add(k); });
   e.fullKids=kids; }
 let _slodT=0; const _slodV=new T.Vector3();
