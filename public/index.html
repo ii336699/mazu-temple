@@ -3046,6 +3046,7 @@ function initCF(first){
       if(m.t==="puppet"){ ptSet(m); return; }
       if(m.t==="layout"){ if(!BUILD.on) buildFetch(); return; }
       if(m.t==="market"){ mkSet(m.open||{}); return; }
+      if(m.t==="hb"){ hbStart(m); return; }
       if(m.t==="sl50"&&Number.isFinite(m.seed)){ massLanterns(m.seed); return; }
       if(m.t==="fw"&&Number.isFinite(m.seed)){ fwStart(m.seed,+m.el||0); return; }
       if(m.t==="st"&&okId(m.id)&&m.p&&typeof m.p==="object"){ peerState.set(m.id,{p:m.p,t:Date.now()}); rebuild(); return; }

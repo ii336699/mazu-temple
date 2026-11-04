@@ -16,7 +16,7 @@
 |---|---|
 | 倉庫 | GitHub `ii336699/mazu-temple` |
 | 開發分支 | `audio-fix`（所有新修改） |
-| 正式版 | `main`，目前停在 `d940dcb`（11/03 01:50） |
+| 正式版 | `main`，目前 `09aa703`（11/04 12:30）：d940dcb 再加上主委挑選的部分更新——飛行、移動速度、財神爺與撒紅包、贊助牆 28 塊（WebP、無探照燈）。其他測試版內容都還沒上。 |
 | 備份分支 | `backup-live-20261103`（正式版）、`backup-test-20261103` |
 | 遊戲本體 | `public/index.html`（單一檔案，three.js r128 + GLTFLoader + meshopt） |
 | 伺服器 | `src/worker.js`（Cloudflare Worker，Durable Objects：Hall／Lobby；/layout、/hongbao、/wish 等） |
@@ -24,7 +24,7 @@
 | 工具 | `tools/test`（測試版建置與自動測試）、`tools/models`（模型切割、上色、減面） |
 | 主委建築配置 | 已寫進 index.html 的 `BUILD_DEFAULT`；原始碼存 `tools/layout_u1.json` |
 
-**部署方式**（只在主委說「部署」時）：
+**部署方式**（只在主委說「部署」時）。注意：`main` 的 09aa703 是另外從舊版移植的分支，已用 `merge -s ours` 記錄進 audio-fix，所以 audio-fix 仍然包含 main，下面的指令照樣可用：
 `git fetch origin main && git merge-base --is-ancestor origin/main audio-fix && git push origin audio-fix:main`，再看 GitHub 的檢查結果（Cloudflare 會自動部署）。
 
 ## 3. 測試版怎麼做
