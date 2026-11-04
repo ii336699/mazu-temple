@@ -5392,7 +5392,8 @@ const NM_STALLS=[
 // wearable prizes: slot head/hand, shown in the bag under 服裝 / 頭飾 / 裝飾品
 const ACC={qqball:{name:"地瓜球頭飾",cat:"頭飾",slot:"head"},boba:{name:"珍奶頭飾",cat:"頭飾",slot:"head"},afro:{name:"閃亮彩色爆炸頭",cat:"頭飾",slot:"head"},
   sausage:{name:"香腸",cat:"裝飾品",slot:"hand",note:"好濃的蒜頭味"},skewer:{name:"烤肉串",cat:"裝飾品",slot:"hand"},
-  pacifier:{name:"奶嘴",cat:"嘴邊",slot:"mouth",note:"註生娘娘賜的，咬著會冒粉紅愛心"}}; /* new ones always go at the end: the order is part of saved codes (15 at most) */
+  pacifier:{name:"奶嘴",cat:"嘴邊",slot:"mouth",note:"註生娘娘賜的，咬著會冒粉紅愛心"},
+  peachsword:{name:"桃木七星劍",cat:"裝飾品",slot:"hand",note:"九天玄女賜的，身邊有仙女飄帶"}}; /* new ones always go at the end: the order is part of saved codes (15 at most) */
 const ACC_IDS=Object.keys(ACC);
 function accState(){ if(!bag.acc||typeof bag.acc!=="object") bag.acc={owned:{},head:0,hand:0,mouth:0}; bag.acc.owned=bag.acc.owned||{}; if(bag.acc.mouth===undefined) bag.acc.mouth=0; return bag.acc; }
 function nmDay(){ const d=new Date(Date.now()+8*3600e3).toISOString().slice(0,10); if(!bag.nm||bag.nm.day!==d) bag.nm={day:d,fish:0,pWin:0,pCash:0}; return bag.nm; }
@@ -5434,7 +5435,13 @@ const ACC_MOUTH={
     const shield=new T.Mesh(new T.SphereGeometry(.075,18,10),pink); shield.scale.set(1.25,.85,.32); g.add(shield);
     const ring=new T.Mesh(new T.TorusGeometry(.05,.012,8,20),pink); ring.position.z=.04; g.add(ring);
     const knob=new T.Mesh(new T.SphereGeometry(.022,10,8),white); knob.position.z=.03; g.add(knob); g.userData.pink=1; } }; function buildAccMouth(id){ const g=new T.Group(); if(ACC_MOUTH[id]) ACC_MOUTH[id](g); return g; }
-const ACC_BUILD_HAND={};
+const ACC_BUILD_HAND={
+  peachsword(g){ const wood=accMat("#b8743a",{r:.55}), gold=accMat("#f0c040",{m:.7,r:.3,e:"#a87010",ei:.3});
+    const blade=new T.Mesh(new T.BoxGeometry(.05,.62,.014),wood); blade.position.y=.4; g.add(blade); const tip=new T.Mesh(new T.ConeGeometry(.036,.08,4),wood); tip.position.y=.75; tip.rotation.y=Math.PI/4; tip.scale.z=.4; g.add(tip);
+    for(let i=0;i<7;i++){ const d=new T.Mesh(new T.SphereGeometry(.009,6,5),gold); d.position.set((i%2?.008:-.008),.18+i*.075,.009); g.add(d); } /* the seven stars */
+    const guard=new T.Mesh(new T.BoxGeometry(.16,.03,.04),gold); guard.position.y=.09; g.add(guard); const grip=new T.Mesh(new T.CylinderGeometry(.018,.018,.13,8),accMat("#6a2a14",{r:.6})); grip.position.y=.02; g.add(grip);
+    const tas=new T.Mesh(new T.ConeGeometry(.025,.12,8),accMat("#e0202a",{r:.6})); tas.position.y=-.1; g.add(tas);
+    g.rotation.set(Math.PI*.85,0,0); g.userData.fairy=1; } };
 function buildAccHand(id){ const g=new T.Group(); if(ACC_BUILD_HAND[id]){ ACC_BUILD_HAND[id](g); return g; }
   if(id==="sausage"){ const stick=new T.Mesh(new T.CylinderGeometry(.008,.008,.34,5),accMat("#d8c09a")); stick.position.y=.1; g.add(stick);
     const s=new T.Mesh(T.CapsuleGeometry?new T.CapsuleGeometry(.045,.2,6,10):new T.CylinderGeometry(.045,.045,.28,10),accMat("#b8321e",{r:.35})); s.position.y=.24; g.add(s);
@@ -5445,7 +5452,7 @@ function buildAccHand(id){ const g=new T.Group(); if(ACC_BUILD_HAND[id]){ ACC_BU
     const glow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffb040"),transparent:true,opacity:.75,blending:T.AdditiveBlending,depthWrite:false})); glow.scale.set(.42,.42,1); glow.position.y=.26; g.add(glow); g.userData.glow=glow;
     g.rotation.set(Math.PI*.85,0,0); g.userData.aroma=1; }
   return g; }
-Avatar.prototype.setAcc=function(eq){ eq=[...(eq||[]),0,0,0].slice(0,3).map(v=>ACC[v]?v:0); this.eq=eq;
+Avatar.prototype.setAcc=function(eq){ eq=[...(eq||[]),0,0,0].slice(0,3).map(v=>ACC[v]?v:0); this.eq=eq; if(this.ribbon){ this.root.remove(this.ribbon); this.ribbon=null; }
   if(this.accMouth){ this.accMouth.parent&&this.accMouth.parent.remove(this.accMouth); this.accMouth=null; }
   if(this.accHead){ this.accHead.parent&&this.accHead.parent.remove(this.accHead); this.accHead=null; }
   if(this.accHand){ this.accHand.parent&&this.accHand.parent.remove(this.accHand); this.accHand=null; }
@@ -5481,6 +5488,12 @@ function accTick(av,dt){ stinkFlies(av,!!(av.accHand&&av.accHand.userData.stink&
   if(av.accHead&&av.accHead.userData.bubbles&&near){ av.bubT=(av.bubT||0)-dt; if(av.bubT<0){ av.bubT=.18+Math.random()*.2; av.accHead.getWorldPosition(_v1); // rainbow soap bubbles drifting up from the cup
       const c=["#ff6b9a","#ffd24a","#6bdcff","#9a7bff","#7dffb0","#ffffff"][(Math.random()*6)|0]; const b=new T.Sprite(new T.SpriteMaterial({map:BUB_TEX(),color:new T.Color(c),transparent:true,depthWrite:false})); const sz=.05+Math.random()*.06;
       b.position.set(_v1.x+rand(-.15,.15),_v1.y+.5+rand(0,.15),_v1.z+rand(-.15,.15)); b.scale.set(sz,sz,1); scene.add(b); parts.push({s:b,vx:rand(-.12,.12),vy:.35+Math.random()*.2,vz:rand(-.12,.12),life:0,max:1.8+Math.random(),grow:.03,op:.9}); } }
+  if(av.accHand&&av.accHand.userData.fairy&&near){ /* 仙女飄帶: two silk ribbons drifting round the wearer */
+    if(!av.ribbon){ av.ribbon=new T.Group(); av.ribbon.userData.noMerge=1; av.root.add(av.ribbon);
+      for(const [c,ph] of [["#ff6fa8",0],["#6fc0ff",Math.PI]]){ const geo=new T.PlaneGeometry(1,1,28,1); const m=new T.Mesh(geo,new T.MeshBasicMaterial({color:new T.Color(c),transparent:true,opacity:.7,side:T.DoubleSide,depthWrite:false,toneMapped:false})); m.userData.ph=ph; m.frustumCulled=false; av.ribbon.add(m); } }
+    const t=performance.now()/1000; av.ribbon.children.forEach(m=>{ const pa=m.geometry.attributes.position, n=pa.count/2;
+      for(let i=0;i<n;i++){ const u=i/(n-1), a=t*1.1+m.userData.ph+u*3.4, r=.5+u*.12, y=.75+u*.55+Math.sin(u*5+t*2.2+m.userData.ph)*.12, w=.07*(1-u*.6);
+        pa.setXYZ(i,Math.cos(a)*r,y+w,Math.sin(a)*r); pa.setXYZ(i+n,Math.cos(a)*r,y-w,Math.sin(a)*r); } pa.needsUpdate=true; }); }
   if(av.accMouth&&av.accMouth.userData.pink&&near){ av.pinkT=(av.pinkT||0)-dt; if(av.pinkT<0){ av.pinkT=.35+Math.random()*.3; av.accMouth.getWorldPosition(_v1); /* little pink hearts and sparkles drifting up */
       const sp=new T.Sprite(new T.SpriteMaterial({map:Math.random()<.6?heartTex:glowTex,color:new T.Color(Math.random()<.5?"#ff8fb8":"#ffd0e4"),transparent:true,depthWrite:false,blending:T.AdditiveBlending})); const sz=.07+Math.random()*.06;
       sp.position.set(_v1.x+rand(-.3,.3),_v1.y+rand(-.1,.3),_v1.z+rand(-.3,.3)); sp.scale.set(sz,sz,1); scene.add(sp); parts.push({s:sp,vx:rand(-.08,.08),vy:.3+Math.random()*.2,vz:rand(-.08,.08),life:0,max:1.4+Math.random()*.6,grow:.02,op:.9}); } }
@@ -5506,7 +5519,7 @@ async function godGameWin(g,ms,accId,extra){ const rw=extra||gameReward(g,accId)
   openSheet("godGame",GOD_GAMES[g]||"小遊戲",`<div class="gg-done"><div class="gg-time">${fmtMs(ms)}</div><p class="lead">${rw.kind==="acc"?"🎁 ":rw.kind==="gacha"?"🎟️ ":""}${esc(rw.text)}</p>
     <div class="group"><span class="group-label">🏆 最快排行榜</span><div id="ggBoard"><p class="note">讀取中…</p></div></div></div>`);
   const list=await lbSubmit(g,ms); const el=$("#ggBoard"); if(el) el.innerHTML=lbHTML(list); }
-const GOD_PLAY={tudi:"⛏️ 尋寶（找到發光的寶藏挖出來）",zhusheng:"🍼 哄寶寶睡覺"};
+const GOD_PLAY={tudi:"⛏️ 尋寶（找到發光的寶藏挖出來）",zhusheng:"🍼 哄寶寶睡覺",jiutian:"☯️ 八卦迷宮（傾斜手機滾彈珠）"};
 const GOD_START={}; HANDLERS.godPlay=g=>{ closeSheet(); if(GOD_START[g]) GOD_START[g](); else toast("這個遊戲還在準備中"); };
 /* ================= 土地公・尋寶: a beam of light marks treasure somewhere in the grounds; walk there, tap it, dig it up ================= */
 const TH={on:false,t0:0,x:0,z:0,g:null,hit:null,digging:false};
@@ -5611,6 +5624,63 @@ function playLullaby(){ const L=gameLayer("註生娘娘・哄寶寶睡覺","按�
     requestAnimationFrame(draw); };
   requestAnimationFrame(draw); }
 GOD_START.zhusheng=playLullaby;
+/* ================= 九天玄女・八卦迷宮: a fresh random maze in an octagon every time; tilt the phone (or drag on the screen) to roll the
+   marble from the edge to the 太極 in the middle. Pits sit in some dead ends: fall in and the marble starts over. ================= */
+let TILT=null; function tiltListen(){ if(TILT) return; TILT={g:0,b:0,ok:false,base:null};
+  const on=e=>{ if(e.gamma==null) return; TILT.ok=true; TILT.g=e.gamma; TILT.b=e.beta; };
+  const add=()=>window.addEventListener("deviceorientation",on);
+  try{ if(window.DeviceOrientationEvent&&typeof DeviceOrientationEvent.requestPermission==="function") DeviceOrientationEvent.requestPermission().then(r=>{ if(r==="granted") add(); }).catch(()=>{}); else add(); }catch(e){} }
+function playBagua(){ tiltListen(); const L=gameLayer("九天玄女・八卦迷宮","傾斜手機讓彈珠滾到中間的太極（也可以用手指往想去的方向拖）"); const {x,cv}=L;
+  const N=9, C=4, inM=(i,j)=>Math.abs(i-C)+Math.abs(j-C)<=6&&i>=0&&j>=0&&i<N&&j<N;
+  // maze: wall flags per cell [N,E,S,W]; carve with a random depth-first walk from the centre
+  const wall={}, key=(i,j)=>i+","+j, seen=new Set(); for(let i=0;i<N;i++) for(let j=0;j<N;j++) if(inM(i,j)) wall[key(i,j)]=[1,1,1,1];
+  const D=[[0,-1,0,2],[1,0,1,3],[0,1,2,0],[-1,0,3,1]]; const st=[[C,C]]; seen.add(key(C,C));
+  while(st.length){ const [i,j]=st[st.length-1]; const nb=D.filter(([dx,dy])=>inM(i+dx,j+dy)&&!seen.has(key(i+dx,j+dy))); if(!nb.length){ st.pop(); continue; }
+    const [dx,dy,a,b]=nb[(Math.random()*nb.length)|0]; wall[key(i,j)][a]=0; wall[key(i+dx,j+dy)][b]=0; seen.add(key(i+dx,j+dy)); st.push([i+dx,j+dy]); }
+  // start: the cell farthest (by path) from the centre; pits: some dead ends off the way
+  const dist={}, prev={}; { const q=[[C,C]]; dist[key(C,C)]=0; while(q.length){ const [i,j]=q.shift(); D.forEach(([dx,dy,a])=>{ if(wall[key(i,j)][a]) return; const k2=key(i+dx,j+dy); if(dist[k2]!=null) return; dist[k2]=dist[key(i,j)]+1; prev[k2]=[i,j]; q.push([i+dx,j+dy]); }); } }
+  let start=[C,C]; for(const k in dist) if(dist[k]>dist[key(...start)]) start=k.split(",").map(Number);
+  const onPath=new Set(); { let c=start; while(c){ onPath.add(key(...c)); c=prev[key(...c)]; } }
+  const pits=Object.keys(wall).filter(k=>!onPath.has(k)&&wall[k].reduce((a,b)=>a+b,0)===3).sort(()=>Math.random()-.5).slice(0,5).map(k=>k.split(",").map(Number));
+  let geo=null; const G=()=>{ const W=L.W(), H=L.H(), size=Math.min(W-24,H-200), cs=size/N, ox=(W-size)/2, oy=110+(H-200-size)/2; return {W,H,size,cs,ox,oy}; };
+  let px=0, py=0, vx=0, vy=0, t0=performance.now(), last=t0, done=false, fall=0, falls=0, drag=null, dragV=[0,0], msg="", msgT=0;
+  const reset=()=>{ const g=G(); px=start[0]+.5; py=start[1]+.5; vx=vy=0; }; reset();
+  cv.addEventListener("pointerdown",e=>{ drag=[e.clientX,e.clientY]; dragV=[0,0]; }); cv.addEventListener("pointermove",e=>{ if(drag) dragV=[(e.clientX-drag[0])/60,(e.clientY-drag[1])/60]; });
+  const endDrag=()=>{ drag=null; dragV=[0,0]; }; cv.addEventListener("pointerup",endDrag); cv.addEventListener("pointercancel",endDrag);
+  window.__jt=()=>({px,py,vx,vy,start,done,dist:dist[key(Math.floor(px),Math.floor(py))],next:(()=>{ const k=key(Math.floor(px),Math.floor(py)); return prev[k]||[C,C]; })()}); window.__jtPush=(a,b)=>{ dragV=[a,b]; drag=[0,0]; };
+  const R=.22; // marble radius in cells
+  const step=dt=>{ let ax=dragV[0], ay=dragV[1]; if(TILT&&TILT.ok&&!drag){ if(!TILT.base) TILT.base=[TILT.g,TILT.b]; ax=(TILT.g-TILT.base[0])/18; ay=(TILT.b-TILT.base[1])/18; }
+    const m=Math.hypot(ax,ay); if(m>1){ ax/=m; ay/=m; } vx+=ax*14*dt; vy+=ay*14*dt; vx*=Math.pow(.35,dt); vy*=Math.pow(.35,dt);
+    const sp=Math.hypot(vx,vy); if(sp>6){ vx*=6/sp; vy*=6/sp; }
+    const sub=4; for(let s2=0;s2<sub;s2++){ px+=vx*dt/sub; py+=vy*dt/sub;
+      const ci=Math.floor(px), cj=Math.floor(py), wl=wall[key(ci,cj)]; if(!wl) { reset(); return; }
+      const fx=px-ci, fy=py-cj; if(wl[0]&&fy<R){ py=cj+R; vy=Math.abs(vy)*.3; } if(wl[2]&&fy>1-R){ py=cj+1-R; vy=-Math.abs(vy)*.3; } if(wl[3]&&fx<R){ px=ci+R; vx=Math.abs(vx)*.3; } if(wl[1]&&fx>1-R){ px=ci+1-R; vx=-Math.abs(vx)*.3; }
+      for(const [cx2,cy2] of [[0,0],[1,0],[0,1],[1,1]]){ const qx=ci+cx2, qy=cj+cy2, dx=px-qx, dy=py-qy, d=Math.hypot(dx,dy); if(d<R&&d>0){ px=qx+dx/d*R; py=qy+dy/d*R; } } } /* wall corners */
+    for(const [i,j] of pits) if(Math.hypot(px-i-.5,py-j-.5)<.26){ fall=.8; falls++; msg="掉進坑裡了！從頭再來"; msgT=performance.now(); tone(220,.4,.1,"triangle"); tone(150,.5,.1,"triangle",.15); return; }
+    if(Math.hypot(px-C-.5,py-C-.5)<.3){ done=true; const ms=performance.now()-t0; healSound(); msg="彈珠歸位！"; msgT=performance.now(); setTimeout(()=>{ L.close(); godGameWin("jiutian",ms,"peachsword"); },1300); } };
+  const tri=[[1,1,1],[0,0,0],[1,0,0],[0,1,1],[0,1,0],[1,0,1],[0,0,1],[1,1,0]];
+  const draw=now=>{ if(L.done) return; const dt=Math.min(.033,(now-last)/1000); last=now; const g=G();
+    if(!done){ if(fall>0){ fall-=dt; if(fall<=0) reset(); } else step(dt); }
+    const bg=x.createLinearGradient(0,0,0,g.H); bg.addColorStop(0,"#0f1a2e"); bg.addColorStop(1,"#22183a"); x.fillStyle=bg; x.fillRect(0,0,g.W,g.H);
+    const cx=g.ox+g.size/2, cy=g.oy+g.size/2, Ro=g.size*.56;
+    x.save(); x.translate(cx,cy); x.fillStyle="#3a2414"; x.beginPath(); for(let i=0;i<8;i++){ const a=Math.PI/8+i*Math.PI/4; x.lineTo(Math.cos(a)*Ro,Math.sin(a)*Ro); } x.closePath(); x.fill(); x.strokeStyle="#e0b04a"; x.lineWidth=4; x.stroke();
+    x.fillStyle="#e0b04a"; tri.forEach((t,i)=>{ x.save(); x.rotate(i*Math.PI/4); for(let k=0;k<3;k++){ const yy=-Ro+10+k*7; if(t[k]) x.fillRect(-16,yy,32,4); else { x.fillRect(-16,yy,13,4); x.fillRect(3,yy,13,4); } } x.restore(); }); x.restore();
+    for(const k in wall){ const [i,j]=k.split(",").map(Number); x.fillStyle="#e9dcc0"; x.fillRect(g.ox+i*g.cs,g.oy+j*g.cs,g.cs+.5,g.cs+.5); }
+    pits.forEach(([i,j])=>{ const gx=g.ox+(i+.5)*g.cs, gy=g.oy+(j+.5)*g.cs; const rg=x.createRadialGradient(gx,gy,2,gx,gy,g.cs*.32); rg.addColorStop(0,"#000"); rg.addColorStop(1,"#3a2a20"); x.fillStyle=rg; x.beginPath(); x.arc(gx,gy,g.cs*.3,0,7); x.fill(); });
+    { const gx=g.ox+(C+.5)*g.cs, gy=g.oy+(C+.5)*g.cs, r=g.cs*.36; x.save(); x.translate(gx,gy); x.rotate(now/900); x.fillStyle="#fff"; x.beginPath(); x.arc(0,0,r,0,7); x.fill(); x.fillStyle="#111"; x.beginPath(); x.arc(0,0,r,-Math.PI/2,Math.PI/2); x.fill(); x.beginPath(); x.arc(0,-r/2,r/2,0,7); x.fillStyle="#fff"; x.fill(); x.beginPath(); x.arc(0,r/2,r/2,0,7); x.fillStyle="#111"; x.fill(); x.restore();
+      x.globalAlpha=.35+.25*Math.sin(now/300); x.strokeStyle="#ffd25e"; x.lineWidth=3; x.beginPath(); x.arc(gx,gy,r+6,0,7); x.stroke(); x.globalAlpha=1; }
+    x.strokeStyle="#6a3a1a"; x.lineWidth=Math.max(3,g.cs*.12); x.lineCap="round"; x.beginPath();
+    for(const k in wall){ const [i,j]=k.split(",").map(Number), w=wall[k], X0=g.ox+i*g.cs, Y0=g.oy+j*g.cs, X1=X0+g.cs, Y1=Y0+g.cs;
+      if(w[0]){ x.moveTo(X0,Y0); x.lineTo(X1,Y0); } if(w[3]){ x.moveTo(X0,Y0); x.lineTo(X0,Y1); } if(w[2]&&!wall[key(i,j+1)]){ x.moveTo(X0,Y1); x.lineTo(X1,Y1); } if(w[1]&&!wall[key(i+1,j)]){ x.moveTo(X1,Y0); x.lineTo(X1,Y1); } }
+    x.stroke();
+    { const mx=g.ox+px*g.cs, my=g.oy+py*g.cs, r=g.cs*R*(fall>0?Math.max(.1,fall/.8):1); x.fillStyle="rgba(0,0,0,.3)"; x.beginPath(); x.arc(mx+3,my+4,r,0,7); x.fill();
+      const rg=x.createRadialGradient(mx-r*.35,my-r*.35,1,mx,my,r); rg.addColorStop(0,"#fff"); rg.addColorStop(.35,"#9fd8ff"); rg.addColorStop(1,"#2a6ab0"); x.fillStyle=rg; x.beginPath(); x.arc(mx,my,r,0,7); x.fill(); }
+    x.fillStyle="#fff"; x.font=`600 15px ${UI_FONT}`; x.textAlign="left"; x.fillText(`${((now-t0)/1000).toFixed(1)} 秒${falls?`・掉坑 ${falls} 次`:""}`,18,100);
+    x.textAlign="right"; x.fillStyle="rgba(255,230,180,.75)"; x.font=`500 12px ${UI_FONT}`; x.fillText(TILT&&TILT.ok?"傾斜手機控制":"手指拖曳控制",g.W-18,100);
+    if(msg&&now-msgT<1500){ x.textAlign="center"; x.fillStyle=`rgba(255,226,160,${1-(now-msgT)/1500})`; x.font=`700 24px ${DISPLAY_FONT}`; x.fillText(msg,g.W/2,g.H-40); }
+    requestAnimationFrame(draw); };
+  requestAnimationFrame(draw); }
+GOD_START.jiutian=playBagua;
 HANDLERS.godBoard=async g=>{ openSheet("godGame",(GOD_GAMES[g]||"小遊戲")+" 排行榜",`<div id="ggBoard"><p class="note">讀取中…</p></div>`); const el=$("#ggBoard"); const list=await lbGet(g); if(el) el.innerHTML=lbHTML(list); };
 
 /* ---- bag: 飾品 tab ---- */
