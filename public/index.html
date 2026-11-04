@@ -2888,7 +2888,7 @@ function bakeAvatar(av){ if(av.sp||av.isMe) return; const boneList=[av.root,av.p
     const vc=!m.map&&!m.emissiveMap&&!!m.color&&!m.vertexColors; if(!vc&&!(m.map&&o.geometry.attributes.uv)) return;
     const key=vc?(m.side===T.DoubleSide?"vc2":"vc1"):m; if(!buckets.has(key)) buckets.set(key,{vc,m,list:[]}); buckets.get(key).list.push([o,boneList.indexOf(b)]); });
   buckets.forEach(({vc,m,list})=>{ if(list.length<2) return; const withCol=!vc&&list.every(([o])=>!!o.geometry.attributes.color); if(!vc&&m.vertexColors&&!withCol) return;
-    let vcN=0, icN=0; const parts=list.map(([o,bi])=>{ let g=o.geometry.clone(); if(!g.attributes.normal) g.computeVertexNormals(); mtx.multiplyMatrices(rootInv,o.matrixWorld); g.applyMatrix4(mtx);
+    let vcN=0, icN=0; const parts=list.map(([o,bi])=>{ let g=o.geometry.clone(); g.userData={}; /* clone() shares userData with the shared source geometry: give each copy its own, or both legs/arms end up on one bone */ if(!g.attributes.normal) g.computeVertexNormals(); mtx.multiplyMatrices(rootInv,o.matrixWorld); g.applyMatrix4(mtx);
       if(!g.index){ const n=g.attributes.position.count, idx=new Uint32Array(n); for(let i=0;i<n;i++) idx[i]=i; g.setIndex(new T.BufferAttribute(idx,1)); }
       if(vc){ const mm=o.material; c.copy(mm.color); if(mm.emissive){ const e=mm.emissiveIntensity??1; c.r=Math.min(1,c.r+mm.emissive.r*e); c.g=Math.min(1,c.g+mm.emissive.g*e); c.b=Math.min(1,c.b+mm.emissive.b*e); } g.userData.col=[c.r,c.g,c.b]; }
       g.userData.bi=bi; vcN+=g.attributes.position.count; icN+=g.index.count; return g; });
