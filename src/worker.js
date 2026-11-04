@@ -363,9 +363,9 @@ export class Lobby extends DurableObject {
       }
       if (url.pathname === "/gift" && req.method === "POST") {
         const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
-        let b = {}; try { b = await req.json(); } catch {} const to = clean(b.to, 16).replace(/[^a-z0-9]/g, ""), kind = b.kind === "item" ? "item" : "coins";
-        const k = kind === "item" ? String(b.k || "").replace(/[^a-z]/g, "").slice(0, 12) : "", n = Math.max(1, Math.min(kind === "item" ? 99 : 100000, Math.floor(Number(b.n) || 0)));
-        if (!to || (kind === "item" && !k)) return json({ ok: false });
+        let b = {}; try { b = await req.json(); } catch {} const to = clean(b.to, 16).replace(/[^a-z0-9]/g, ""), kind = b.kind === "item" ? "item" : b.kind === "acc" ? "acc" : "coins";
+        const k = kind !== "coins" ? String(b.k || "").replace(/[^a-z]/g, "").slice(0, 12) : "", n = kind === "acc" ? 1 : Math.max(1, Math.min(kind === "item" ? 99 : 100000, Math.floor(Number(b.n) || 0)));
+        if (!to || (kind !== "coins" && !k)) return json({ ok: false });
         const owner = await this.ctx.storage.get("I:" + to); if (!owner) return json({ ok: false, nouser: true });
         const G = (await this.ctx.storage.get("G:" + owner)) || []; G.push({ g: Math.random().toString(36).slice(2, 10), kind, k, n, from: clean(b.from, 16) || "主委", at: Date.now() }); await this.ctx.storage.put("G:" + owner, G.slice(-30));
         await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/giftping", { method: "POST", body: JSON.stringify({ to }) }).catch(() => {})));

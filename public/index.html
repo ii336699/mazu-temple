@@ -3397,24 +3397,25 @@ const CODE_ITEMS=["xiang","hua","guo","bing","jin","fu"];
 function lookCode(){ const bits=[]; const put=(v,n)=>{ v=Math.max(0,Math.min((2**n)-1,v|0)); for(let i=n-1;i>=0;i--) bits.push((v/2**i|0)&1); };
   put(1,4); for(let i=0;i<13;i++) put(me.look[i]||0,5); put(bag.coins,16); CODE_ITEMS.forEach(k=>put(bag.items[k]||0,5)); put(bag.redThread?1:0,1);
   const ps=(bag.poems||[]).slice(-5); put(ps.length,3); ps.forEach(n=>put(n,6)); put(me.no||0,24);
-  const nm=[...String(me.sp?"":(me.name||""))].slice(0,10).join(""); const cu=[]; for(let i=0;i<nm.length;i++) cu.push(nm.charCodeAt(i)); put(Math.min(15,cu.length),4); cu.slice(0,15).forEach(c=>put(c,16));
+  const nm=[...String(me.sp?"":(me.name||""))].slice(0,10).join(""); const cu=[]; for(let i=0;i<nm.length;i++) cu.push(nm.charCodeAt(i)); put(Math.min(15,cu.length),4); cu.slice(0,15).forEach(c=>put(c,16)); { const a=accState(); put(ACC_IDS.length,4); ACC_IDS.forEach(id=>put(a.owned[id]?1:0,1)); }
   while(bits.length%8) bits.push(0); const bytes=[]; for(let i=0;i<bits.length;i+=8){ let b=0; for(let j=0;j<8;j++) b=b*2+bits[i+j]; bytes.push(b); } bytes.push(bytes.reduce((a,b)=>(a+b)&255,0x5a));
   return "MZ-"+btoa(String.fromCharCode(...bytes)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }
 function readCode(str){ try{ str=String(str||"").trim().replace(/\s+/g,""); if(!/^MZ-[A-Za-z0-9_-]{10,}$/.test(str)) return null; const raw=atob(str.slice(3).replace(/-/g,"+").replace(/_/g,"/")); const bytes=[...raw].map(c=>c.charCodeAt(0));
   const chk=bytes.pop(); if(bytes.reduce((a,b)=>(a+b)&255,0x5a)!==chk) return null; const bits=[]; bytes.forEach(b=>{ for(let i=7;i>=0;i--) bits.push((b>>i)&1); }); let p=0; const get=n=>{ let v=0; for(let i=0;i<n;i++) v=v*2+(bits[p++]||0); return v; };
   if(get(4)!==1) return null; const look=[]; for(let i=0;i<13;i++) look.push(get(5)); const coins=get(16); const items={}; CODE_ITEMS.forEach(k=>{ const v=get(5); if(v) items[k]=v; }); const red=get(1);
   const pn=get(3), poems=[]; for(let i=0;i<pn;i++){ const n=get(6); if(n>=1&&n<=60) poems.push(n); } const no=get(24); const nl=get(4); let name=""; for(let i=0;i<nl;i++) name+=String.fromCharCode(get(16));
-  return {look,coins,items,red,poems,no,name}; }catch(e){ return null; } }
+  const an=get(4), acc=[]; for(let i=0;i<an;i++) if(get(1)&&ACC_IDS[i]) acc.push(ACC_IDS[i]);
+  return {look,coins,items,red,poems,no,name,acc}; }catch(e){ return null; } }
 HANDLERS.copyCode=async()=>{ const c=lookCode(); let ok=false; try{ await navigator.clipboard.writeText(c); ok=true; }catch(e){ const i=$("#myCode"); if(i){ i.focus(); i.select(); try{ ok=document.execCommand("copy"); }catch(e2){} } } toast(ok?"代碼已複製，記得存在記事本":"請長按代碼自行複製",3000); };
 HANDLERS.applyCode=()=>{ const d=readCode(($("#pasteCode")||{}).value); if(!d){ toast("代碼不正確，請確認有完整貼上",3000); return; }
   me.look=sanitizeLook(d.look,!!me.sp); const nm=cleanName(d.name); if(!me.sp) me.name=[SP_NAME,SP_OLD].includes(nm)?"":nm; if(d.no) me.no=d.no; save("mz.me",me);
-  bag.coins=d.coins; bag.items={...bag.items,...d.items}; bag.redThread=!!d.red; if(d.poems.length){ const keep=new Map((bag.poems||[]).map((n,i)=>[n,(bag.poemT||[])[i]||0])); bag.poems=[...new Set([...(bag.poems||[]),...d.poems])].slice(-30); bag.poemT=bag.poems.map(n=>keep.get(n)||0); } saveBag();
+  bag.coins=d.coins; bag.items={...bag.items,...d.items}; bag.redThread=!!d.red; if(d.poems.length){ const keep=new Map((bag.poems||[]).map((n,i)=>[n,(bag.poemT||[])[i]||0])); bag.poems=[...new Set([...(bag.poems||[]),...d.poems])].slice(-30); bag.poemT=bag.poems.map(n=>keep.get(n)||0); } (d.acc||[]).forEach(id=>{ accState().owned[id]=1; }); saveBag();
   draftLook=me.look.slice(); meAv.setLook(draftLook); meAv.setName(myLabel()); meAv.setAmulet(!!bag.items.fu); meAv.setThread(!!bag.redThread); markDirty(); renderLook(firstVisitPending); toast("已找回你的名字、造型和背包",3000); };
 /* ---- 角色存檔: the server keeps a copy of your character (look, name, 平安幣, bag, recent 籤詩) under a long-lived cookie, so a
    cleared browser brings it back by itself; the 取回碼 moves it to another app or phone. Gifts from the 主委 arrive the same way. ---- */
 const PROF={last:"",code:load("mz.rc",""),busy:false,shown:load("mz.rcShown",false)};
 function applySnap(d){ if(!d) return false; me.look=sanitizeLook(d.look,!!me.sp); const nm=cleanName(d.name); if(!me.sp) me.name=[SP_NAME,SP_OLD].includes(nm)?me.name:nm||me.name; if(d.no) me.no=d.no; save("mz.me",me);
-  bag.coins=d.coins; bag.items={...bag.items,...d.items}; bag.redThread=!!d.red; if(d.poems.length){ const keep=new Map((bag.poems||[]).map((n,i)=>[n,(bag.poemT||[])[i]||0])); bag.poems=[...new Set([...(bag.poems||[]),...d.poems])].slice(-30); bag.poemT=bag.poems.map(n=>keep.get(n)||0); } saveBag();
+  bag.coins=d.coins; bag.items={...bag.items,...d.items}; bag.redThread=!!d.red; if(d.poems.length){ const keep=new Map((bag.poems||[]).map((n,i)=>[n,(bag.poemT||[])[i]||0])); bag.poems=[...new Set([...(bag.poems||[]),...d.poems])].slice(-30); bag.poemT=bag.poems.map(n=>keep.get(n)||0); } (d.acc||[]).forEach(id=>{ accState().owned[id]=1; }); saveBag();
   draftLook=me.look.slice(); meAv.setLook(draftLook); meAv.setName(myLabel()); meAv.setAmulet(!!bag.items.fu); meAv.setThread(!!bag.redThread); markDirty(); return true; }
 const fmtCode=c=>c?c.slice(0,3)+"-"+c.slice(3):"";
 async function profSave(force,beacon){ if(me.sp||PROF.busy) return; const snap=lookCode(); if(!force&&snap===PROF.last) return;
@@ -3441,10 +3442,10 @@ const GIFT_ITEMS=GOODS.map(g=>[g.k,g.name]);
 const GIFTQ=[]; let giftShowing=false;
 function giftCard(g){ GIFTQ.push(g); if(!giftShowing) giftNext(); }
 function giftNext(){ const g=GIFTQ.shift(); if(!g){ giftShowing=false; return; } giftShowing=true; sfx.coin(); if(sheetKind) closeSheet(); /* open panels sit above everything else, so the card waits for nothing */
-  const what=g.kind==="coins"?`平安幣 <b>${g.n}</b>`:`${esc((GOOD_BY[g.k]||{}).name||g.k)} × <b>${g.n}</b>`;
+  const what=g.kind==="acc"?`${esc((ACC[g.k]||{}).name||g.k)}`:g.kind==="coins"?`平安幣 <b>${g.n}</b>`:`${esc((GOOD_BY[g.k]||{}).name||g.k)} × <b>${g.n}</b>`;
   const d=document.createElement("div"); d.className="gift-card"; d.innerHTML=`<div class="gc-in gc-pop"><div class="gc-icon">🎁</div><b>收到來自「${esc(g.from||"主委")}」的禮物！</b><div class="gc-big">${what}</div><button class="primary" data-x="ok">收下</button></div>`;
   document.body.appendChild(d); const done=()=>{ d.remove(); setTimeout(giftNext,250); }; d.querySelector('[data-x="ok"]').onclick=done; setTimeout(()=>{ if(d.parentNode) done(); },9000); }
-function giftApply(g){ if(g.kind==="coins") bag.coins+=g.n; else if(GOOD_BY[g.k]){ bag.items[g.k]=(bag.items[g.k]||0)+g.n; if(g.k==="fu") meAv.setAmulet(true); } else return; saveBag(); markDirty(); giftCard(g); }
+function giftApply(g){ if(g.kind==="acc"){ if(!ACC[g.k]) return; accState().owned[g.k]=1; saveBag(); markDirty(); giftCard(g); return; } if(g.kind==="coins") bag.coins+=g.n; else if(GOOD_BY[g.k]){ bag.items[g.k]=(bag.items[g.k]||0)+g.n; if(g.k==="fu") meAv.setAmulet(true); } else return; saveBag(); markDirty(); giftCard(g); }
 const GIFT_SEEN=new Set(load("mz.giftSeen",[]));
 async function giftFetch(){ if(!USE_CF) return; try{ const r=await fetch("/gifts",{cache:"no-store"}); const j=await r.json(); let any=false;
     (j.gifts||[]).forEach(g=>{ if(!g||GIFT_SEEN.has(g.g)) return; GIFT_SEEN.add(g.g); any=true; giftApply({kind:g.kind,k:g.k,n:Math.max(1,g.n|0),from:g.from}); });
@@ -3456,14 +3457,18 @@ function openGift(id,name){ if(!me.sp) return; GIFT_TO=[id,name]; const it=GIFT_
       <div class="mail-row"><input class="mail-box" id="giftCoins" type="text" inputmode="numeric" maxlength="6" placeholder="輸入金額"><button class="primary" data-act="giftSend" data-v="coins">送平安幣</button></div></div>
     <div class="group"><span class="group-label">道具</span><div class="chips" id="giftItems">${it}</div>
       <div class="mail-row"><input class="mail-box" id="giftQty" type="text" inputmode="numeric" maxlength="2" value="1" placeholder="數量"><button class="primary" data-act="giftSend" data-v="item">送道具</button></div></div>
+    <div class="group"><span class="group-label">飾品（頭飾・髮型・手持）</span><div class="chips" id="giftAccs">${ACC_IDS.map(k=>`<button class="chip" data-act="giftAcc" data-v="${k}" aria-pressed="false">${esc(ACC[k].name)}</button>`).join("")}</div>
+      <button class="primary" data-act="giftSend" data-v="acc">送飾品</button><p class="note">飾品每種一件，收到後在背包「飾品」裡戴上。</p></div>
     <button class="secondary ct-back" data-act="giftList">← 選別人</button>`); }
 let GIFT_K=null;
+let GIFT_ACC=null; HANDLERS.giftAcc=(v,b)=>{ GIFT_ACC=v; document.querySelectorAll("#giftAccs .chip").forEach(c=>c.setAttribute("aria-pressed",String(c===b))); };
 HANDLERS.giftAmt=v=>{ const i=$("#giftCoins"); if(i) i.value=v; };
 HANDLERS.giftItem=(v,b)=>{ GIFT_K=v; document.querySelectorAll("#giftItems .chip").forEach(c=>c.setAttribute("aria-pressed",String(c===b))); };
-HANDLERS.giftSend=async v=>{ if(!me.sp||!GIFT_TO) return; const kind=v==="item"?"item":"coins";
+HANDLERS.giftSend=async v=>{ if(!me.sp||!GIFT_TO) return; if(v==="acc"){ if(!GIFT_ACC){ toast("先選要送的飾品"); return; } return giftGo({kind:"acc",k:GIFT_ACC,n:1,from:SP_NAME}); } const kind=v==="item"?"item":"coins";
   const n=Math.floor(Number(kind==="coins"?($("#giftCoins")||{}).value:($("#giftQty")||{}).value)||0); if(n<1){ toast(kind==="coins"?"請輸入金額":"請輸入數量"); return; } if(kind==="item"&&!GIFT_K){ toast("先選要送的道具"); return; }
   if(kind==="coins"&&n>100000){ toast("一次最多 100000"); return; } if(kind==="item"&&n>99){ toast("一次最多 99 個"); return; }
-  const g={kind,k:kind==="item"?GIFT_K:"",n,from:SP_NAME};
+  return giftGo({kind,k:kind==="item"?GIFT_K:"",n,from:SP_NAME}); };
+async function giftGo(g){
   if(!USE_CF||GIFT_TO[0]==="me"){ giftApply(g); toast("單機測試：送給自己預覽",2600); return; }
   const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return; }
   try{ const r=await fetch("/gift",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({to:GIFT_TO[0],...g})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
