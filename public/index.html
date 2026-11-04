@@ -765,7 +765,13 @@ const Q={mode:load("mz.q","auto")}; Q.lite=Q.mode==="lite"; Q.low=Q.mode==="low"
 /* ================= renderer & scene ================= */
 const canvas=$("#c");
 const renderer=new T.WebGLRenderer({canvas,antialias:!Q.lite,powerPreference:"high-performance"});
-renderer.setPixelRatio(Q.lite?.6:Q.low?Math.min(window.devicePixelRatio||1,1)*.8:Math.min(window.devicePixelRatio||1,1.5));
+/* 解析度 (DPR): never the phone's full native density. Each setting has a ladder of steps; 自動 / 高畫質 step down when frames keep
+   coming late and back up when it is smooth again (see dresTick). 省電 and 低配 stay fixed. */
+const DRES={lvl:0,ema:1,slow:0,fast:0,cool:0,last:0,fw:false};
+function dprLadder(){ const nd=window.devicePixelRatio||1; const cap=m=>Math.min(nd,m); return Q.lite?[.6]:Q.mode==="low"?[cap(1)*.8]:Q.mode==="high"?[cap(2),cap(1.75),cap(1.5),cap(1.25),1]:[cap(1.5),cap(1.25),1,.85]; }
+function applyDPR(){ const L=dprLadder(); DRES.lvl=Math.min(DRES.lvl,L.length-1); const v=DRES.fw?Math.min(window.devicePixelRatio||1,2):L[DRES.lvl]; if(Math.abs(renderer.getPixelRatio()-v)>.01){ renderer.setPixelRatio(v); if(typeof resize==="function") resize(); } }
+renderer.setPixelRatio(dprLadder()[0]);
+
 renderer.outputEncoding=T.sRGBEncoding;
 renderer.toneMapping=T.ACESFilmicToneMapping;
 renderer.toneMappingExposure=.82;
@@ -2748,7 +2754,7 @@ function botFps(){ const now=performance.now(), dt=BOT.lastF?(now-BOT.lastF)/100
   // compare each frame with the speed the game is aiming for right now (60 when you move, 30/20 when you stand still):
   // a phone that keeps missing it is struggling, so it draws fewer walkers
   const cap=typeof frameCap==="function"?frameCap():60, r=dt*cap; BOT.ema+=(r-BOT.ema)*.06;
-  if(BOT.ema>1.45){ BOT.slow+=dt; BOT.fast=0; if(BOT.slow>2.5&&BOT.cap>10){ BOT.cap=Math.max(10,Math.round(BOT.cap*.75)); BOT.slow=0; BOT.nextAdjust=0; } }
+  if(BOT.ema>1.45&&(dresFloor()||BOT.ema>1.9)){ BOT.slow+=dt; BOT.fast=0; if(BOT.slow>2.5&&BOT.cap>10){ BOT.cap=Math.max(10,Math.round(BOT.cap*.75)); BOT.slow=0; BOT.nextAdjust=0; } }
   else if(cap===60&&BOT.ema<1.15){ BOT.fast+=dt; BOT.slow=0; if(BOT.fast>20&&BOT.cap<botMax()){ BOT.cap=Math.min(botMax(),BOT.cap+4); BOT.fast=0; } }
   else { BOT.slow=0; if(cap!==60) BOT.fast=0; } }
 function sitterLimit(){ return !showNpc?0:Q.lite?3:Q.low?6:12; }       // the classic ones on the cushions
@@ -3429,13 +3435,14 @@ document.addEventListener("input",e=>{ const k=e.target&&e.target.dataset&&e.tar
 document.addEventListener("change",e=>{ if(e.target&&e.target.dataset&&e.target.dataset.vol==="s") sfx.coin(); });
 function dbgHTML(){ const t=(k,n)=>`<button class="chip" data-act="dbg" data-v="${k}" aria-pressed="${!!DBG[k]}">${n}</button>`; return `<div class="group"><span class="group-label">綠點測試（只影響這台手機，重新整理就恢復）</span><p class="note">一次關一個，看哪一個關掉後綠點不見，告訴我是哪一個。</p><div class="chips">${t("point","① 關掉點光源")}${t("spot","② 關掉聚光燈")}${t("tone","③ 關掉色調映射")}${t("env","④ 關掉環境反光")}</div></div>`; }
 function openGfx(){ const opt=(v,t,d)=>`<button class="good" data-act="quality" data-v="${v}" aria-pressed="${Q.mode===v}" style="${Q.mode===v?"border-color:var(--gold);background:rgba(142,28,20,.35)":""}"><span class="name">${t}${Q.mode===v?"　✓":""}</span><span class="meta">${d}</span></button>`;
-  openSheet("gfx","設定",`${installBlock()}${dbgHTML()}<div class="group"><span class="group-label">流暢度</span><div class="chips"><button class="chip" data-act="fps60" aria-pressed="${PACE.smooth}">流暢模式（一直 60 格，較耗電）</button></div><p class="note">關閉時：操作和走路時 60 格，站著看時 30 格，半分鐘沒碰螢幕 20 格，比較省電。</p></div><div class="group"><span class="group-label">畫質</span><p class="lead">畫面卡頓或手機發燙時，可以改用省電畫質。</p></div><div class="goods">${opt("auto","自動","進場後自動偵測，太卡會切到省電")}${opt("high","高畫質","光束、灰塵、全部燈光，最漂亮")}${opt("low","省電","降低解析度與特效，舊手機也順")}${opt("lite","低配","最省：模型減面、小貼圖、關閉抗鋸齒，給比較舊的手機（會重新載入）")}</div><p class="note">目前：${Q.lite?"低配":Q.low?"省電畫質":"高畫質"}</p>`); }
+  openSheet("gfx","設定",`${installBlock()}${dbgHTML()}<div class="group"><span class="group-label">流暢度</span><div class="chips"><button class="chip" data-act="fps60" aria-pressed="${PACE.smooth}">流暢模式（一直 60 格，較耗電）</button><button class="chip" data-act="perfPanel" aria-pressed="${PERF.on}">效能面板</button></div><p class="note">關閉時：操作和走路時 60 格，站著看時 30 格，半分鐘沒碰螢幕 20 格，比較省電。</p></div><div class="group"><span class="group-label">畫質</span><p class="lead">畫面卡頓或手機發燙時，可以改用省電畫質。</p></div><div class="goods">${opt("auto","自動","進場後自動偵測，太卡會切到省電")}${opt("high","高畫質","光束、灰塵、全部燈光，最漂亮")}${opt("low","省電","降低解析度與特效，舊手機也順")}${opt("lite","低配","最省：模型減面、小貼圖、關閉抗鋸齒，給比較舊的手機（會重新載入）")}</div><p class="note">目前：${Q.lite?"低配":Q.low?"省電畫質":"高畫質"}</p>`); }
 /* 綠點測試: switches to find which part of the lighting makes the green/dark speckles some phones show. They only change this screen. */
 const DBG={point:0,spot:0,tone:0,env:0}; let DBG_ENV=null;
 function dbgApply(){ scene.traverse(o=>{ if(o.isPointLight) o.visible=!DBG.point; else if(o.isSpotLight) o.visible=!DBG.spot; });
   renderer.toneMapping=DBG.tone?T.NoToneMapping:T.ACESFilmicToneMapping; if(DBG_ENV===null) DBG_ENV=scene.environment; scene.environment=DBG.env?null:DBG_ENV;
   scene.traverse(o=>{ if(o.material) (Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{ m.needsUpdate=true; }); }); }
 HANDLERS.dbg=(v,b)=>{ DBG[v]=DBG[v]?0:1; b.setAttribute("aria-pressed",String(!!DBG[v])); dbgApply(); toast(DBG[v]?"已關閉，看看綠點有沒有消失":"已恢復"); };
+HANDLERS.perfPanel=(v,b)=>{ perfPanel(!PERF.on); b.setAttribute("aria-pressed",String(PERF.on)); };
 HANDLERS.fps60=(v,b)=>{ PACE.smooth=!PACE.smooth; save("mz.fps60",PACE.smooth); b.setAttribute("aria-pressed",String(PACE.smooth)); toast(PACE.smooth?"流暢模式開啟：一直 60 格":"省電：沒在操作時降低格數"); };
 HANDLERS.quality=v=>{ if((v==="lite")!==Q.lite){ Q.mode=v; save("mz.q",v); toast(v==="lite"?"切換為低配，重新載入中…":"離開低配，重新載入中…",2500); setTimeout(()=>location.reload(),900); return; } applyQuality(v==="auto"?(perf.done&&Q.low?"low":"high"):v,false); if(v==="auto"){ Q.mode="auto"; save("mz.q","auto"); } openGfx(); toast(v==="low"?"已切換為省電畫質":v==="high"?"已切換為高畫質":"畫質改為自動偵測"); };
 HANDLERS.toggleNpc=(v,b)=>{ showNpc=!showNpc; save("mz.npc",showNpc); b.setAttribute("aria-pressed",String(showNpc)); buildNpcs(); toast(showNpc?"已顯示示範香客":"已隱藏示範香客"); };
@@ -4211,7 +4218,7 @@ let mySparkler=false, fwView=false;
 function fwFov(){ const asp=Math.max(.3,window.innerWidth/Math.max(1,window.innerHeight)); return Math.max(70,Math.min(112,2*Math.atan(Math.tan(52*Math.PI/180)/asp)*180/Math.PI)); }
 // the fireworks view always renders sharp, even when the phone dropped to 省電 quality (only resolution is raised, other savings stay)
 function setFwView(v){ fwView=v; document.body.classList.toggle("fwview",v); camera.fov=v?fwFov():55; camera.updateProjectionMatrix();
-  renderer.setPixelRatio(v?Math.min(window.devicePixelRatio||1,2):Q.low?Math.min(window.devicePixelRatio||1,1)*.8:Math.min(window.devicePixelRatio||1,1.5)); resize(); if(TG.g) TG.g.visible=!v; if(v){ camYaw=Math.PI; camPitch=.35; toast("拖曳畫面可以左右上下看煙火",2600); } renderSparkBtn(); }
+  DRES.fw=!!v; applyDPR(); resize(); if(TG.g) TG.g.visible=!v; if(v){ camYaw=Math.PI; camPitch=.35; toast("拖曳畫面可以左右上下看煙火",2600); } renderSparkBtn(); }
 $("#fwViewBtn").onclick=()=>{ if(!fwFinale) setFwView(!fwView); };
 $("#fwCloseBtn").onclick=()=>{ sparkDismissed=true; if(mySparkler){ mySparkler=false; meAv.sparkler=false; markDirty(); } renderSparkBtn(); };
 let sparkDismissed=false; const sparkAvail=()=>FW.on||(FW.endAt>0&&!sparkDismissed); let sparkLitAt=0;
@@ -5682,11 +5689,27 @@ meAv.setAcc(myEq());
    walking, the camera is turning, fireworks), 30 while you just stand and watch, 20 after half a minute without touching.
    Turning on 流暢模式 in settings keeps 60 all the time. The automatic quality check at the start always runs at full speed. */
 const PACE={last:0, touch:performance.now(), smooth:load("mz.fps60",false)};
+/* frames that keep coming in later than the pace the game is aiming for (60 moving / 30 standing / 20 idle) → lower the resolution
+   one step; at least 5 s apart, and only after 4 s of steady lateness. Smooth again for 15 s at 60 → one step back up. */
+function dresTick(){ const now=performance.now(), dt=DRES.last?(now-DRES.last)/1000:0; DRES.last=now; if(document.hidden||!dt||dt>1.5||DRES.fw) return;
+  const cap=frameCap(), r=dt*cap; DRES.ema+=(r-DRES.ema)*.05; DRES.cool-=dt; const L=dprLadder();
+  if(DRES.ema>1.3){ DRES.slow+=dt; DRES.fast=0; if(DRES.slow>4&&DRES.cool<=0&&DRES.lvl<L.length-1){ DRES.lvl++; DRES.slow=0; DRES.cool=5; applyDPR(); } }
+  else if(cap===60&&DRES.ema<1.08){ DRES.fast+=dt; DRES.slow=0; if(DRES.fast>15&&DRES.cool<=0&&DRES.lvl>0){ DRES.lvl--; DRES.fast=0; DRES.cool=5; applyDPR(); } }
+  else { DRES.slow=Math.max(0,DRES.slow-dt); if(cap!==60) DRES.fast=0; } }
+const dresFloor=()=>DRES.lvl>=dprLadder().length-1;
+/* 效能面板: frames per second, frame time, what one frame draws, lights, resolution and people (this device only) */
+const PERF={on:false,el:null,fr:0,ms:0,t0:0};
+function perfPanel(on){ PERF.on=on; if(on&&!PERF.el){ PERF.el=document.createElement("div"); PERF.el.style.cssText="position:fixed;left:6px;top:calc(env(safe-area-inset-top) + 92px);z-index:9999;background:rgba(0,0,0,.72);color:#bff5c6;font:11px/1.35 ui-monospace,Menlo,monospace;padding:6px 8px;border-radius:8px;pointer-events:none;white-space:pre"; document.body.appendChild(PERF.el); } if(PERF.el) PERF.el.hidden=!on; PERF.t0=performance.now(); PERF.fr=0; PERF.ms=0; }
+function perfTick(ms){ if(!PERF.on) return; PERF.fr++; PERF.ms+=ms; const now=performance.now(); if(now-PERF.t0<500) return; const sec=(now-PERF.t0)/1000, ri=renderer.info.render;
+  let L=0; scene.traverse(o=>{ if((o.isPointLight||o.isSpotLight)&&o.visible) L++; });
+  PERF.el.textContent="FPS "+(PERF.fr/sec).toFixed(0)+"（目標 "+frameCap()+"）\n每格 "+(PERF.ms/PERF.fr).toFixed(1)+" ms\n繪製 "+ri.calls+" 次・"+(ri.triangles/1000).toFixed(0)+"k 面\n燈光 "+L+"・解析度 "+renderer.getPixelRatio().toFixed(2)+"\n人物 "+(typeof npcs!=="undefined"?npcs.length:0)+"+"+remotes.size+"・貼圖 "+renderer.info.memory.textures+(performance.memory?"\n記憶體 "+(performance.memory.usedJSHeapSize/1e6).toFixed(0)+" MB":"");
+  PERF.t0=now; PERF.fr=0; PERF.ms=0; }
+
 ["pointerdown","pointermove","touchstart","wheel","keydown"].forEach(ev=>addEventListener(ev,()=>{ PACE.touch=performance.now(); },{passive:true,capture:true}));
 function frameCap(){ if(PACE.smooth||(!perf.done&&Q.mode==="auto")) return 60; const now=performance.now();
   const busy=now-PACE.touch<2500||joy.on||keys.size||rotAnim||FW.on||fwView||(meAv.path&&meAv.path.length)||meAv.pos.distanceTo(meAv.target)>.05;
   if(busy) return 60; return now-PACE.touch>30000?20:30; }
-function tick(){ if(gameAsleep) return; { const now=performance.now(), cap=frameCap(); if(cap<60&&now-PACE.last<1000/cap-4){ requestAnimationFrame(tick); return; } PACE.last=now; }
+function tick(){ if(gameAsleep) return; const _ft0=performance.now(); { const now=performance.now(), cap=frameCap(); if(cap<60&&now-PACE.last<1000/cap-4){ requestAnimationFrame(tick); return; } PACE.last=now; } dresTick();
   const dt=Math.min(.07,clock.getDelta()); const t=clock.elapsedTime;
   { const nowP=performance.now(); if(AUQ.frame&&nowP-AUQ.frame>800){ AUQ.until=nowP+1500; remotes.forEach(av=>{ if(av.goalX!=null){ av.pos.set(av.goalX,av.goalZ); av.target.set(av.goalX,av.goalZ); av.path=[]; } }); } AUQ.frame=nowP; }
   meAv.update(dt); accTick(meAv,dt); arrivedCheck();
@@ -5772,13 +5795,13 @@ function tick(){ if(gameAsleep) return; { const now=performance.now(), cap=frame
   bellSwing*=Math.pow(.25,dt); bell.rotation.x=Math.sin(t*4)*.22*bellSwing; drumBounce*=Math.pow(.02,dt); drum.scale.setScalar(1+Math.sin(t*40)*.03*drumBounce);
   if(shakeT>0){ shakeT-=dt; lotTube.rotation.z=Math.sin(shakeT*40)*.18; lotTube.rotation.x=Math.cos(shakeT*33)*.1; } else { lotTube.rotation.z*=.8; lotTube.rotation.x*=.8; }
   perfSample(dt);
-  if(!miniOpen) renderer.render(scene,camera); requestAnimationFrame(tick); }
+  if(!miniOpen) renderer.render(scene,camera); perfTick(performance.now()-_ft0); requestAnimationFrame(tick); }
 // auto: watch the first seconds in the hall and step down on slow devices
 const perf={t:0,n:0,done:false,warm:0};
 function perfSample(dt){ if(perf.done||Q.mode!=="auto"||customizing||document.hidden) return; perf.warm+=dt; if(perf.warm<3) return; perf.t+=dt; perf.n++;
   if(perf.t>=4){ perf.done=true; const fps=perf.n/perf.t; if(fps<32){ applyQuality("low",true); toast("偵測到裝置較吃力，已切換為省電畫質，可在背包設定調整",4200); } } }
 function applyQuality(mode,auto){ if(!auto){ Q.mode=mode; save("mz.q",mode); } Q.low=mode==="low"||Q.lite; try{ poolResize(); }catch(e){}
-  renderer.setPixelRatio(Q.lite?.6:Q.low?Math.min(window.devicePixelRatio||1,1)*.8:Math.min(window.devicePixelRatio||1,1.5)); resize();
+  DRES.lvl=0; applyDPR(); resize();
   dust.visible=!Q.low; shafts.forEach(m=>m.visible=!Q.low); extraLights.forEach(l=>l.visible=!Q.low); farDecor.forEach(o=>o.visible=!Q.low);
   scene.traverse(o=>{ if(o.isSprite&&o.material===glowMat) o.visible=!Q.low; }); /* the same people stay: quality no longer changes how many are shown */ }
 
