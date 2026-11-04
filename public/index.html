@@ -5449,11 +5449,12 @@ function buildGhostPet(av){ const g=new T.Group(); g.userData.noMerge=1; const w
   const glow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#cfefff"),transparent:true,opacity:.7,blending:T.AdditiveBlending,depthWrite:false})); glow.scale.set(.9,.9,1); g.add(glow);
   g.position.set(.5,1.45,.1); av.root.add(g); g.userData.glow=glow; return g; }
 const ACC_MOUTH={
-  bamboo(g){ /* one long blade of leaf held in the corner of the mouth, sticking out to the side (like the grass leaf in RO) */
-    const sh=new T.Shape(); sh.moveTo(0,0); sh.quadraticCurveTo(.1,.042,.3,0); sh.quadraticCurveTo(.1,-.036,0,0);
+  bamboo(g){ /* one small ordinary leaf held in the corner of the mouth, hanging down and out to the side (like the grass leaf in RO) */
+    const sh=new T.Shape(); sh.moveTo(0,0); sh.quadraticCurveTo(.05,.05,.15,0); sh.quadraticCurveTo(.05,-.05,0,0);
     const leaf=new T.Mesh(new T.ShapeGeometry(sh,8),new T.MeshStandardMaterial({color:new T.Color("#3fae4a"),emissive:new T.Color("#1f6a26"),emissiveIntensity:.3,roughness:.5,side:T.DoubleSide}));
-    const rib=new T.Mesh(new T.PlaneGeometry(.26,.005),new T.MeshBasicMaterial({color:new T.Color("#a8e08a"),side:T.DoubleSide})); rib.position.set(.13,0,.001);
-    const blade=new T.Group(); blade.add(leaf,rib); blade.position.set(.035,0,.01); blade.rotation.set(-.35,-.55,.32); g.add(blade);
+    const rib=new T.Mesh(new T.PlaneGeometry(.13,.004),new T.MeshBasicMaterial({color:new T.Color("#a8e08a"),side:T.DoubleSide})); rib.position.set(.07,0,.001);
+    const stem=new T.Mesh(new T.PlaneGeometry(.03,.006),new T.MeshBasicMaterial({color:new T.Color("#5a8a30"),side:T.DoubleSide})); stem.position.set(-.012,0,0);
+    const blade=new T.Group(); blade.add(leaf,rib,stem); blade.position.set(.035,0,.01); blade.rotation.set(-.35,-.55,-.75); g.add(blade);
     g.userData.fresh=1; },
   pacifier(g){ const pink=accMat("#ff8fb8",{r:.35,e:"#ff6fa0",ei:.25}), white=accMat("#fff4f8",{r:.3});
     const shield=new T.Mesh(new T.SphereGeometry(.075,18,10),pink); shield.scale.set(1.25,.85,.32); g.add(shield);
@@ -5515,13 +5516,13 @@ function accTick(av,dt){ stinkFlies(av,!!(av.accHand&&av.accHand.userData.stink&
   if(av.pet){ const t=performance.now()/1000; av.pet.position.set(.5+Math.sin(t*.8)*.08,1.45+Math.sin(t*2)*.08,.1+Math.cos(t*.8)*.08); av.pet.rotation.y=Math.sin(t*.6)*.4; av.pet.rotation.z=Math.sin(t*1.7)*.1; av.pet.userData.glow.material.opacity=.55+.2*Math.sin(t*3); }
   if(av.accHand&&av.accHand.userData.fairy&&near&&av.torso){ /* 仙女披帛: two thin silk scarves draped over the shoulders, round the back and under the arms, ends fluttering */
     if(!av.ribbon||av.ribbon.parent!==av.torso){ if(av.ribbon&&av.ribbon.parent) av.ribbon.parent.remove(av.ribbon); av.ribbon=new T.Group(); av.ribbon.userData.noMerge=1; av.torso.add(av.ribbon);
-      for(const [c,k] of [["#ffffff",0],["#ffffff",1]]){ const geo=new T.BufferGeometry(), n=48; geo.setAttribute("position",new T.BufferAttribute(new Float32Array(n*2*3),3));
+      for(const [c,k] of [["#ffffff",0],["#ffffff",1]]){ const geo=new T.BufferGeometry(), n=72; geo.setAttribute("position",new T.BufferAttribute(new Float32Array(n*2*3),3));
         { const col=new Float32Array(n*2*3), A=new T.Color(k?"#a35cff":"#ff6fae").convertSRGBToLinear(), B=new T.Color(k?"#ff8fc8":"#8f5cff").convertSRGBToLinear(), cc=new T.Color(); for(let i=0;i<n;i++){ const u=Math.abs(i/(n-1)-.5)*2; cc.copy(A).lerp(B,u); for(const q of [0,1]) col.set([cc.r,cc.g,cc.b],(i*2+q)*3); } geo.setAttribute("color",new T.BufferAttribute(col,3)); } /* pink to purple along each scarf */ const idx=[]; for(let i=0;i<n-1;i++){ const a2=i*2; idx.push(a2,a2+1,a2+2,a2+1,a2+3,a2+2); } geo.setIndex(idx);
         const m=new T.Mesh(geo,new T.MeshBasicMaterial({vertexColors:true,transparent:true,opacity:.95,side:T.DoubleSide,depthWrite:false,toneMapped:false})); m.userData.k=k; m.userData.n=n; m.frustumCulled=false; av.ribbon.add(m); } }
     const t=performance.now()/1000, V=(a2,b2,c2)=>new T.Vector3(a2,b2,c2), _p=new T.Vector3(), _tg=new T.Vector3(), _o=new T.Vector3(), _sd=new T.Vector3();
     av.ribbon.children.forEach(m=>{ const k=m.userData.k, n=m.userData.n, ph=k*1.7, w1=Math.sin(t*2.3+ph), w2=Math.sin(t*2.3+ph+1.2), w3=Math.cos(t*1.9+ph);
-      const top=k?.72:.8, tz=k?-.3:-.34, tl=k?-.1:.02; /* the loop rises behind the neck; the tails stream out behind */
-      const pts=[V(-.4+w1*.05,tl+w2*.08,-.62+w3*.07),V(-.33,.02+w1*.03,-.32),V(-.28,.08,.04),V(-.21,.3,.11),V(-.16,.46,.02),V(-.15,.62,tz*.6),V(0,top,tz),V(.15,.62,tz*.6),V(.16,.46,.02),V(.21,.3,.11),V(.28,.08,.04),V(.33,.02-w1*.03,-.32),V(.4-w2*.05,tl+w1*.08,-.62-w3*.07)];
+      const R=k?.9:1, tz=k?-.24:-.3, tl=k?-.1:.02, h=(x2,y2,z2,s2)=>V(s2*x2*R,.44+(y2-.44)*R,z2), half=s2=>[h(.19,.44,0,s2),h(.36+w1*.01,.6,tz*.7,s2),h(.43,.8+w2*.015,tz,s2),h(.33,1.0,tz,s2)]; /* behind the shoulders the scarf opens wide and arcs right round the head like a halo; the tails stream out behind */
+      const pts=[V(-.4+w1*.05,tl+w2*.08,-.62+w3*.07),V(-.33,.02+w1*.03,-.32),V(-.28,.08,.04),V(-.21,.3,.11),...half(-1),V(0,.44+(1.08-.44)*R+w3*.01,tz),...half(1).reverse(),V(.21,.3,.11),V(.28,.08,.04),V(.33,.02-w1*.03,-.32),V(.4-w2*.05,tl+w1*.08,-.62-w3*.07)];
       const cv2=new T.CatmullRomCurve3(pts), pa=m.geometry.attributes.position, wd=.04;
       for(let i=0;i<n;i++){ const u=i/(n-1); cv2.getPointAt(u,_p); cv2.getTangentAt(u,_tg); _o.set(_p.x,0,_p.z); if(_o.lengthSq()<1e-6) _o.set(0,0,1); _o.normalize(); _sd.crossVectors(_tg,_o).normalize().multiplyScalar(wd*(1-Math.abs(u-.5)*.5));
         pa.setXYZ(i*2,_p.x+_sd.x,_p.y+_sd.y,_p.z+_sd.z); pa.setXYZ(i*2+1,_p.x-_sd.x,_p.y-_sd.y,_p.z-_sd.z); } pa.needsUpdate=true; }); }
@@ -5664,54 +5665,85 @@ let TILT=null; function tiltListen(){ if(TILT) return; TILT={g:0,b:0,ok:false,ba
   const on=e=>{ if(e.gamma==null) return; TILT.ok=true; TILT.g=e.gamma; TILT.b=e.beta; };
   const add=()=>window.addEventListener("deviceorientation",on);
   try{ if(window.DeviceOrientationEvent&&typeof DeviceOrientationEvent.requestPermission==="function") DeviceOrientationEvent.requestPermission().then(r=>{ if(r==="granted") add(); }).catch(()=>{}); else add(); }catch(e){} }
-function playBagua(){ tiltListen(); const L=gameLayer("九天玄女・八卦迷宮","傾斜手機讓彈珠滾到中間的太極（也可以用手指往想去的方向拖）"); const {x,cv}=L;
-  const N=9, C=4, inM=(i,j)=>Math.abs(i-C)+Math.abs(j-C)<=6&&i>=0&&j>=0&&i<N&&j<N;
-  // maze: wall flags per cell [N,E,S,W]; carve with a random depth-first walk from the centre
-  const wall={}, key=(i,j)=>i+","+j, seen=new Set(); for(let i=0;i<N;i++) for(let j=0;j<N;j++) if(inM(i,j)) wall[key(i,j)]=[1,1,1,1];
-  const D=[[0,-1,0,2],[1,0,1,3],[0,1,2,0],[-1,0,3,1]]; const st=[[C,C]]; seen.add(key(C,C));
-  while(st.length){ const [i,j]=st[st.length-1]; const nb=D.filter(([dx,dy])=>inM(i+dx,j+dy)&&!seen.has(key(i+dx,j+dy))); if(!nb.length){ st.pop(); continue; }
-    const [dx,dy,a,b]=nb[(Math.random()*nb.length)|0]; wall[key(i,j)][a]=0; wall[key(i+dx,j+dy)][b]=0; seen.add(key(i+dx,j+dy)); st.push([i+dx,j+dy]); }
-  // start: the cell farthest (by path) from the centre; pits: some dead ends off the way
-  const dist={}, prev={}; { const q=[[C,C]]; dist[key(C,C)]=0; while(q.length){ const [i,j]=q.shift(); D.forEach(([dx,dy,a])=>{ if(wall[key(i,j)][a]) return; const k2=key(i+dx,j+dy); if(dist[k2]!=null) return; dist[k2]=dist[key(i,j)]+1; prev[k2]=[i,j]; q.push([i+dx,j+dy]); }); } }
-  let start=[C,C]; for(const k in dist) if(dist[k]>dist[key(...start)]) start=k.split(",").map(Number);
-  const onPath=new Set(); { let c=start; while(c){ onPath.add(key(...c)); c=prev[key(...c)]; } }
-  const pits=Object.keys(wall).filter(k=>!onPath.has(k)&&wall[k].reduce((a,b)=>a+b,0)===3).sort(()=>Math.random()-.5).slice(0,5).map(k=>k.split(",").map(Number));
-  let geo=null; const G=()=>{ const W=L.W(), H=L.H(), size=Math.min(W-24,H-200), cs=size/N, ox=(W-size)/2, oy=110+(H-200-size)/2; return {W,H,size,cs,ox,oy}; };
-  let px=0, py=0, vx=0, vy=0, t0=performance.now(), last=t0, done=false, fall=0, falls=0, drag=null, dragV=[0,0], msg="", msgT=0;
-  const reset=()=>{ const g=G(); px=start[0]+.5; py=start[1]+.5; vx=vy=0; }; reset();
-  cv.addEventListener("pointerdown",e=>{ drag=[e.clientX,e.clientY]; dragV=[0,0]; }); cv.addEventListener("pointermove",e=>{ if(drag) dragV=[(e.clientX-drag[0])/60,(e.clientY-drag[1])/60]; });
-  const endDrag=()=>{ drag=null; dragV=[0,0]; }; cv.addEventListener("pointerup",endDrag); cv.addEventListener("pointercancel",endDrag);
-  window.__jt=()=>({px,py,vx,vy,start,done,dist:dist[key(Math.floor(px),Math.floor(py))],next:(()=>{ const k=key(Math.floor(px),Math.floor(py)); return prev[k]||[C,C]; })()}); window.__jtPush=(a,b)=>{ dragV=[a,b]; drag=[0,0]; };
-  const R=.22; // marble radius in cells
-  const step=dt=>{ let ax=dragV[0], ay=dragV[1]; if(TILT&&TILT.ok&&!drag){ if(!TILT.base) TILT.base=[TILT.g,TILT.b]; ax=(TILT.g-TILT.base[0])/18; ay=(TILT.b-TILT.base[1])/18; }
-    const m=Math.hypot(ax,ay); if(m>1){ ax/=m; ay/=m; } vx+=ax*14*dt; vy+=ay*14*dt; vx*=Math.pow(.35,dt); vy*=Math.pow(.35,dt);
-    const sp=Math.hypot(vx,vy); if(sp>6){ vx*=6/sp; vy*=6/sp; }
-    const sub=4; for(let s2=0;s2<sub;s2++){ px+=vx*dt/sub; py+=vy*dt/sub;
-      const ci=Math.floor(px), cj=Math.floor(py), wl=wall[key(ci,cj)]; if(!wl) { reset(); return; }
-      const fx=px-ci, fy=py-cj; if(wl[0]&&fy<R){ py=cj+R; vy=Math.abs(vy)*.3; } if(wl[2]&&fy>1-R){ py=cj+1-R; vy=-Math.abs(vy)*.3; } if(wl[3]&&fx<R){ px=ci+R; vx=Math.abs(vx)*.3; } if(wl[1]&&fx>1-R){ px=ci+1-R; vx=-Math.abs(vx)*.3; }
-      for(const [cx2,cy2] of [[0,0],[1,0],[0,1],[1,1]]){ const qx=ci+cx2, qy=cj+cy2, dx=px-qx, dy=py-qy, d=Math.hypot(dx,dy); if(d<R&&d>0){ px=qx+dx/d*R; py=qy+dy/d*R; } } } /* wall corners */
-    for(const [i,j] of pits) if(Math.hypot(px-i-.5,py-j-.5)<.26){ fall=.8; falls++; msg="掉進坑裡了！從頭再來"; msgT=performance.now(); tone(220,.4,.1,"triangle"); tone(150,.5,.1,"triangle",.15); return; }
-    if(Math.hypot(px-C-.5,py-C-.5)<.3){ done=true; const ms=performance.now()-t0; healSound(); msg="彈珠歸位！"; msgT=performance.now(); setTimeout(()=>{ L.close(); godGameWin("jiutian",ms,"peachsword"); },1300); } };
-  const tri=[[1,1,1],[0,0,0],[1,0,0],[0,1,1],[0,1,0],[1,0,1],[0,0,1],[1,1,0]];
-  const draw=now=>{ if(L.done) return; const dt=Math.min(.033,(now-last)/1000); last=now; const g=G();
-    if(!done){ if(fall>0){ fall-=dt; if(fall<=0) reset(); } else step(dt); }
-    const bg=x.createLinearGradient(0,0,0,g.H); bg.addColorStop(0,"#0f1a2e"); bg.addColorStop(1,"#22183a"); x.fillStyle=bg; x.fillRect(0,0,g.W,g.H);
-    const cx=g.ox+g.size/2, cy=g.oy+g.size/2, Ro=g.size*.56;
-    x.save(); x.translate(cx,cy); x.fillStyle="#3a2414"; x.beginPath(); for(let i=0;i<8;i++){ const a=Math.PI/8+i*Math.PI/4; x.lineTo(Math.cos(a)*Ro,Math.sin(a)*Ro); } x.closePath(); x.fill(); x.strokeStyle="#e0b04a"; x.lineWidth=4; x.stroke();
-    x.fillStyle="#e0b04a"; tri.forEach((t,i)=>{ x.save(); x.rotate(i*Math.PI/4); for(let k=0;k<3;k++){ const yy=-Ro+10+k*7; if(t[k]) x.fillRect(-16,yy,32,4); else { x.fillRect(-16,yy,13,4); x.fillRect(3,yy,13,4); } } x.restore(); }); x.restore();
-    for(const k in wall){ const [i,j]=k.split(",").map(Number); x.fillStyle="#e9dcc0"; x.fillRect(g.ox+i*g.cs,g.oy+j*g.cs,g.cs+.5,g.cs+.5); }
-    pits.forEach(([i,j])=>{ const gx=g.ox+(i+.5)*g.cs, gy=g.oy+(j+.5)*g.cs; const rg=x.createRadialGradient(gx,gy,2,gx,gy,g.cs*.32); rg.addColorStop(0,"#000"); rg.addColorStop(1,"#3a2a20"); x.fillStyle=rg; x.beginPath(); x.arc(gx,gy,g.cs*.3,0,7); x.fill(); });
-    { const gx=g.ox+(C+.5)*g.cs, gy=g.oy+(C+.5)*g.cs, r=g.cs*.36; x.save(); x.translate(gx,gy); x.rotate(now/900); x.fillStyle="#fff"; x.beginPath(); x.arc(0,0,r,0,7); x.fill(); x.fillStyle="#111"; x.beginPath(); x.arc(0,0,r,-Math.PI/2,Math.PI/2); x.fill(); x.beginPath(); x.arc(0,-r/2,r/2,0,7); x.fillStyle="#fff"; x.fill(); x.beginPath(); x.arc(0,r/2,r/2,0,7); x.fillStyle="#111"; x.fill(); x.restore();
-      x.globalAlpha=.35+.25*Math.sin(now/300); x.strokeStyle="#ffd25e"; x.lineWidth=3; x.beginPath(); x.arc(gx,gy,r+6,0,7); x.stroke(); x.globalAlpha=1; }
-    x.strokeStyle="#6a3a1a"; x.lineWidth=Math.max(3,g.cs*.12); x.lineCap="round"; x.beginPath();
-    for(const k in wall){ const [i,j]=k.split(",").map(Number), w=wall[k], X0=g.ox+i*g.cs, Y0=g.oy+j*g.cs, X1=X0+g.cs, Y1=Y0+g.cs;
-      if(w[0]){ x.moveTo(X0,Y0); x.lineTo(X1,Y0); } if(w[3]){ x.moveTo(X0,Y0); x.lineTo(X0,Y1); } if(w[2]&&!wall[key(i,j+1)]){ x.moveTo(X0,Y1); x.lineTo(X1,Y1); } if(w[1]&&!wall[key(i+1,j)]){ x.moveTo(X1,Y0); x.lineTo(X1,Y1); } }
-    x.stroke();
-    { const mx=g.ox+px*g.cs, my=g.oy+py*g.cs, r=g.cs*R*(fall>0?Math.max(.1,fall/.8):1); x.fillStyle="rgba(0,0,0,.3)"; x.beginPath(); x.arc(mx+3,my+4,r,0,7); x.fill();
-      const rg=x.createRadialGradient(mx-r*.35,my-r*.35,1,mx,my,r); rg.addColorStop(0,"#fff"); rg.addColorStop(.35,"#9fd8ff"); rg.addColorStop(1,"#2a6ab0"); x.fillStyle=rg; x.beginPath(); x.arc(mx,my,r,0,7); x.fill(); }
-    x.fillStyle="#fff"; x.font=`600 15px ${UI_FONT}`; x.textAlign="left"; x.fillText(`${((now-t0)/1000).toFixed(1)} 秒${falls?`・掉坑 ${falls} 次`:""}`,18,100);
-    x.textAlign="right"; x.fillStyle="rgba(255,230,180,.75)"; x.font=`500 12px ${UI_FONT}`; x.fillText(TILT&&TILT.ok?"傾斜手機控制":"手指拖曳控制",g.W-18,100);
-    if(msg&&now-msgT<1500){ x.textAlign="center"; x.fillStyle=`rgba(255,226,160,${1-(now-msgT)/1500})`; x.font=`700 24px ${DISPLAY_FONT}`; x.fillText(msg,g.W/2,g.H-40); }
+function playBagua(){ const LC=h=>new T.Color(h).convertSRGBToLinear(); /* r128 takes hex colours as linear; convert so the sRGB output keeps the real wood colours */ tiltListen(); const L=gameLayer("九天玄女・八卦迷宮","傾斜手機（或用手指往想去的方向拖）讓彈珠滾到中間的太極"); const {x}=L; L.cv.style.display="none";
+  /* ---- the maze: rings of an octagon around the 太極, each side of a ring split into equal cells, so every wall is straight ---- */
+  const K=4, PS=[0,1,2,2,4], R0=1.05, RW=1.05, Rr=r=>R0+r*RW, NS=r=>8*PS[r]; /* cells per octagon side double outward, so every doorway between rings is a full gap */
+  const oct=(R,u)=>{ u=((u%1)+1)%1; const i=Math.floor(u*8), f=u*8-i, a0=Math.PI/8+i*Math.PI/4-Math.PI/2, a1=a0+Math.PI/4; return [R*((1-f)*Math.cos(a0)+f*Math.cos(a1)), R*((1-f)*Math.sin(a0)+f*Math.sin(a1))]; };
+  const id=(r,s2)=>r+":"+s2, open=new Set(); const link=(a2,b2)=>{ open.add(a2+"|"+b2); open.add(b2+"|"+a2); }, isOpen=(a2,b2)=>open.has(a2+"|"+b2);
+  const nbs=(r,s2)=>{ const out=[], n=NS(r); out.push([r,(s2+1)%n],[r,(s2+n-1)%n]);
+    if(r<K){ const m=NS(r+1); for(let t=0;t<m;t++) if(Math.floor(((t+.5)/m)*n)===s2) out.push([r+1,t]); } /* the outer cells whose doorway lands on this cell */
+    if(r>1){ const m=NS(r-1); out.push([r-1,Math.floor(((s2+.5)/n)*m)]); } return out; };
+  const hubDoor=(Math.random()*8)|0; link("hub",id(1,hubDoor));
+  { const seen=new Set([id(1,hubDoor)]), st=[[1,hubDoor]]; while(st.length){ const [r,s2]=st[st.length-1]; const c=nbs(r,s2).filter(([r2,t])=>!seen.has(id(r2,t)));
+      if(!c.length){ st.pop(); continue; } const [r2,t]=c[(Math.random()*c.length)|0]; link(id(r,s2),id(r2,t)); seen.add(id(r2,t)); st.push([r2,t]); } }
+  // path lengths from the hub; start = farthest cell of the outer ring; pits = dead ends off the solution
+  const dist={hub:0}, prev={}; { const q=[["hub"]]; const cellsOf=k=>k==="hub"?[...Array(8)].map((_,s2)=>[1,s2]):(()=>{ const [r,s2]=k.split(":").map(Number); return nbs(r,s2).concat(r===1?[["hub"]]:[]); })();
+    const qq=["hub"]; while(qq.length){ const k=qq.shift(); for(const c of cellsOf(k)){ const k2=c.length===1?"hub":id(c[0],c[1]); if(dist[k2]!=null||!isOpen(k,k2)) continue; dist[k2]=dist[k]+1; prev[k2]=k; qq.push(k2); } } }
+  let start=id(K,0); for(let s2=0;s2<NS(K);s2++) if(dist[id(K,s2)]>dist[start]) start=id(K,s2);
+  const onPath=new Set(); for(let k=start;k;k=prev[k]) onPath.add(k);
+  const cen=k=>{ if(k==="hub") return [0,0]; const [r,s2]=k.split(":").map(Number); return oct((Rr(r-1)+Rr(r))/2,(s2+.5)/NS(r)); };
+  const deg=k=>{ const [r,s2]=k.split(":").map(Number); return nbs(r,s2).concat(r===1?[["hub"]]:[]).filter(c=>isOpen(k,c.length===1?"hub":id(c[0],c[1]))).length; };
+  const pits=[]; for(let r=2;r<=K;r++) for(let s2=0;s2<NS(r);s2++){ const k=id(r,s2); if(!onPath.has(k)&&deg(k)===1) pits.push(k); } pits.sort(()=>Math.random()-.5); pits.length=Math.min(6,pits.length);
+  // walls as straight segments
+  const segs=[]; const addSeg=(p,q)=>segs.push([p[0],p[1],q[0],q[1]]);
+  for(let r=1;r<=K;r++){ const n=NS(r); for(let s2=0;s2<n;s2++){ const k=id(r,s2);
+      if(!isOpen(k,id(r,(s2+1)%n))){ const u=(s2+1)/n; addSeg(oct(Rr(r-1),u),oct(Rr(r),u)); }        // radial wall
+      const inner=r===1?"hub":id(r-1,Math.floor(((s2+.5)/n)*NS(r-1)));                                   // wall on its inner side
+      if(!isOpen(k,inner)) addSeg(oct(Rr(r-1),s2/n),oct(Rr(r-1),(s2+1)/n)); } }
+  for(let i=0;i<8;i++) addSeg(oct(Rr(K),i/8),oct(Rr(K),(i+1)/8));                                         // outer wall
+  // way points for the self-test: cell centres and the openings between them
+  const door=(k,nx)=>{ if(nx==="hub"){ const [r,s2]=k.split(":").map(Number); return oct(Rr(0),(s2+.5)/NS(1)); } const [r,s2]=k.split(":").map(Number), [r2,t]=nx.split(":").map(Number);
+    if(r===r2){ const n=NS(r), b2=((s2+1)%n===t)?(s2+1)/n:s2/n; return oct((Rr(r-1)+Rr(r))/2,b2); } const [ro,so]=r>r2?[r,s2]:[r2,t]; return oct(Rr(ro-1),(so+.5)/NS(ro)); };
+  const way=[]; { let k=start; while(k){ way.push(cen(k)); const nx=prev[k]; if(!nx) break; way.push(door(k,nx)); k=nx; } }
+  /* ---- 3D: a carved board seen from the front, tilting with your input ---- */
+  const cvs3=document.createElement("canvas"); cvs3.style.cssText="position:absolute;inset:0;width:100%;height:100%;touch-action:none"; L.el.insertBefore(cvs3,L.el.firstChild.nextSibling);
+  const r3=new T.WebGLRenderer({canvas:cvs3,antialias:true}); r3.setPixelRatio(Math.min(2,devicePixelRatio||1)); r3.outputEncoding=T.sRGBEncoding;
+  const sc3=new T.Scene(); sc3.background=LC("#141a30"); sc3.add(new T.HemisphereLight(0xfff4e0,0x302040,.55)); const dl=new T.DirectionalLight(0xffffff,.75); dl.position.set(3,9,6); sc3.add(dl); const pl=new T.PointLight(0xffd890,.5,10); pl.position.set(0,3,0); sc3.add(pl);
+  const cam3=new T.PerspectiveCamera(42,1,.1,100); const board=new T.Group(); sc3.add(board);
+  const octShape=R=>{ const sh=new T.Shape(); for(let i=0;i<=8;i++){ const [px2,py2]=oct(R,i/8); i?sh.lineTo(px2,-py2):sh.moveTo(px2,-py2); } return sh; };
+  const base=new T.Mesh(new T.ExtrudeGeometry(octShape(Rr(K)+.75),{depth:.5,bevelEnabled:true,bevelSize:.12,bevelThickness:.12,bevelSegments:3}),new T.MeshStandardMaterial({color:LC("#5a2e16"),roughness:.55,metalness:.1})); base.rotation.x=-Math.PI/2; base.position.y=-.5; board.add(base);
+  const floorT=cvs(512,512,(c,w,h)=>{ const g2=c.createRadialGradient(w/2,h/2,10,w/2,h/2,w/2); g2.addColorStop(0,"#ecd9b0"); g2.addColorStop(1,"#c4a370"); c.fillStyle=g2; c.fillRect(0,0,w,h); for(let i=0;i<900;i++){ c.fillStyle=`rgba(120,90,50,${Math.random()*.06})`; c.fillRect(Math.random()*w,Math.random()*h,2,2); } });
+  const fl=new T.Mesh(new T.ShapeGeometry(octShape(Rr(K)+.02)),new T.MeshStandardMaterial({map:floorT,roughness:.75})); fl.rotation.x=-Math.PI/2; fl.position.y=.13; board.add(fl);
+  { const uv=fl.geometry.attributes.uv, pa=fl.geometry.attributes.position; for(let i=0;i<uv.count;i++) uv.setXY(i,pa.getX(i)/(2*Rr(K))+.5,pa.getY(i)/(2*Rr(K))+.5); uv.needsUpdate=true; }
+  // the eight trigrams round the rim, in gold
+  const tri=[[1,1,1],[0,0,0],[1,0,0],[0,1,1],[0,1,0],[1,0,1],[0,0,1],[1,1,0]], gold=new T.MeshStandardMaterial({color:LC("#e8b84a"),metalness:.8,roughness:.3,emissive:LC("#5a3a08"),emissiveIntensity:.4});
+  tri.forEach((t,i)=>{ const [mx,mz]=oct(Rr(K)+.42,(i+.5)/8); const g2=new T.Group(); g2.position.set(mx,.16,mz); g2.rotation.y=-Math.atan2(mz,mx)+Math.PI/2; board.add(g2);
+    for(let k2=0;k2<3;k2++){ const zz=(k2-1)*.16; if(t[k2]){ const b2=new T.Mesh(new T.BoxGeometry(.8,.07,.1),gold); b2.position.z=zz; g2.add(b2); } else for(const sx of [-.24,.24]){ const b2=new T.Mesh(new T.BoxGeometry(.32,.07,.1),gold); b2.position.set(sx,0,zz); g2.add(b2); } } });
+  // walls: one instanced batch of carved wooden bars
+  const WT=.14, WH=.34, wm2=new T.MeshStandardMaterial({color:LC("#7a3a18"),roughness:.5,metalness:.05}), cap=new T.MeshStandardMaterial({color:LC("#c9963c"),metalness:.6,roughness:.35});
+  const wallI=new T.InstancedMesh(new T.BoxGeometry(1,WH,WT),wm2,segs.length), capI=new T.InstancedMesh(new T.BoxGeometry(1,.04,WT+.03),cap,segs.length), M4=new T.Matrix4(), Qn=new T.Quaternion(), Ey=new T.Vector3(0,1,0);
+  segs.forEach(([ax,ay,bx,by],i)=>{ const len=Math.hypot(bx-ax,by-ay); Qn.setFromAxisAngle(Ey,-Math.atan2(by-ay,bx-ax)); M4.compose(new T.Vector3((ax+bx)/2,.13+WH/2,(ay+by)/2),Qn,new T.Vector3(len+WT,1,1)); wallI.setMatrixAt(i,M4); M4.compose(new T.Vector3((ax+bx)/2,.13+WH+.02,(ay+by)/2),Qn,new T.Vector3(len+WT,1,1)); capI.setMatrixAt(i,M4); });
+  board.add(wallI,capI);
+  // pits and the 太極
+  const pitM=new T.MeshBasicMaterial({color:LC("#050308")}), rimM=new T.MeshStandardMaterial({color:LC("#3a2414"),roughness:.8});
+  const pitPos=pits.map(k=>{ const [px2,pz2]=cen(k); const h=new T.Mesh(new T.CircleGeometry(.3,24),pitM); h.rotation.x=-Math.PI/2; h.position.set(px2,.14,pz2); board.add(h); const rg=new T.Mesh(new T.RingGeometry(.3,.38,24),rimM); rg.rotation.x=-Math.PI/2; rg.position.set(px2,.141,pz2); board.add(rg); return [px2,pz2]; });
+  const tjT=cvs(256,256,(c,w)=>{ const r=w/2; c.translate(r,r); c.fillStyle="#fff"; c.beginPath(); c.arc(0,0,r-4,0,7); c.fill(); c.fillStyle="#111"; c.beginPath(); c.arc(0,0,r-4,-Math.PI/2,Math.PI/2); c.fill(); c.beginPath(); c.arc(0,-(r-4)/2,(r-4)/2,0,7); c.fillStyle="#fff"; c.fill(); c.beginPath(); c.arc(0,(r-4)/2,(r-4)/2,0,7); c.fillStyle="#111"; c.fill(); c.beginPath(); c.arc(0,-(r-4)/2,(r-4)/7,0,7); c.fill(); c.fillStyle="#fff"; c.beginPath(); c.arc(0,(r-4)/2,(r-4)/7,0,7); c.fill(); c.strokeStyle="#e8b84a"; c.lineWidth=6; c.beginPath(); c.arc(0,0,r-4,0,7); c.stroke(); });
+  const tj=new T.Mesh(new T.CircleGeometry(.62,40),new T.MeshStandardMaterial({map:tjT,roughness:.4,emissive:LC("#ffffff"),emissiveMap:tjT,emissiveIntensity:.25})); tj.rotation.x=-Math.PI/2; tj.position.y=.15; board.add(tj);
+  const tjG=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:LC("#ffd870"),transparent:true,opacity:.5,blending:T.AdditiveBlending,depthWrite:false})); tjG.position.y=.4; tjG.scale.set(2.4,2.4,1); board.add(tjG);
+  const MR=.2, ball=new T.Mesh(new T.SphereGeometry(MR,32,24),new T.MeshPhongMaterial({color:LC("#2f8ee8"),specular:LC("#ffffff"),shininess:140,emissive:LC("#06203e")})); board.add(ball);
+  const shadow=new T.Mesh(new T.CircleGeometry(MR*1.05,24),new T.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.35,depthWrite:false})); shadow.rotation.x=-Math.PI/2; board.add(shadow);
+  const fit=()=>{ const W=L.W(), H=L.H(); r3.setSize(W,H,false); cam3.aspect=W/H; const span=Rr(K)+1.05, tv=Math.tan(cam3.fov*Math.PI/360), th=tv*cam3.aspect, d=Math.max(span/th*1.08,span/tv*.95); cam3.position.set(0,d*.9,d*.5); cam3.lookAt(0,0,.35); cam3.updateProjectionMatrix(); }; fit(); window.addEventListener("resize",fit);
+  /* ---- play ---- */
+  let [px,py]=cen(start), vx=0, vy=0, t0=performance.now(), last=t0, done=false, fall=0, falls=0, drag=null, dragV=[0,0], msg="", msgT=0, tiltSeen=false; const sx0=px, sy0=py;
+  cvs3.addEventListener("pointerdown",e=>{ drag=[e.clientX,e.clientY]; dragV=[0,0]; }); cvs3.addEventListener("pointermove",e=>{ if(drag) dragV=[(e.clientX-drag[0])/55,(e.clientY-drag[1])/55]; });
+  const endDrag=()=>{ drag=null; dragV=[0,0]; }; cvs3.addEventListener("pointerup",endDrag); cvs3.addEventListener("pointercancel",endDrag);
+  const tb=document.createElement("div"); tb.className="dz-zoom"; tb.innerHTML=`<button class="chip">📱 用手機傾斜</button>`; L.el.appendChild(tb);
+  tb.querySelector("button").onclick=()=>{ TILT=null; tiltListen(); if(TILT) TILT.base=null; setTimeout(()=>{ if(!(TILT&&TILT.ok)){ msg="這裡收不到手機傾斜訊號（測試頁可能不支援），請用手指拖曳"; msgT=performance.now(); } else { msg="已開啟傾斜控制"; msgT=performance.now(); } },1500); };
+  window.__jt=()=>({px,py,vx,vy,way,done,segs}); window.__jtPush=(a2,b2)=>{ dragV=[a2,b2]; drag=[0,0]; };
+  const step=dt=>{ let ax=dragV[0], ay=dragV[1]; if(TILT&&TILT.ok&&!drag){ tiltSeen=true; if(!TILT.base) TILT.base=[TILT.g,TILT.b]; ax=(TILT.g-TILT.base[0])/16; ay=(TILT.b-TILT.base[1])/16; }
+    const m=Math.hypot(ax,ay); if(m>1){ ax/=m; ay/=m; } board.rotation.z+=((-ax*.1)-board.rotation.z)*.15; board.rotation.x+=((ay*.1)-board.rotation.x)*.15;
+    vx+=ax*13*dt; vy+=ay*13*dt; vx*=Math.pow(.4,dt); vy*=Math.pow(.4,dt); const sp=Math.hypot(vx,vy); if(sp>5.5){ vx*=5.5/sp; vy*=5.5/sp; }
+    for(let k2=0;k2<4;k2++){ px+=vx*dt/4; py+=vy*dt/4;
+      for(const [ax2,ay2,bx,by] of segs){ const dx=bx-ax2, dy=by-ay2, l2=dx*dx+dy*dy; let t=((px-ax2)*dx+(py-ay2)*dy)/l2; t=Math.max(0,Math.min(1,t)); const qx=ax2+dx*t, qy=ay2+dy*t, ex=px-qx, ey=py-qy, d=Math.hypot(ex,ey), lim=MR+WT/2;
+        if(d<lim&&d>1e-6){ const nx=ex/d, ny=ey/d; px=qx+nx*lim; py=qy+ny*lim; const vn=vx*nx+vy*ny; if(vn<0){ vx-=1.35*vn*nx; vy-=1.35*vn*ny; if(vn<-1.2) tone(300+Math.random()*80,.05,.04,"triangle"); } } } }
+    for(const [qx,qy] of pitPos) if(Math.hypot(px-qx,py-qy)<.24){ fall=.9; falls++; msg="掉進坑裡了！從頭再來"; msgT=performance.now(); tone(220,.4,.1,"triangle"); tone(150,.5,.1,"triangle",.15); return; }
+    if(Math.hypot(px,py)<.45&&!done){ done=true; const ms=performance.now()-t0; healSound(); msg="彈珠歸位！"; msgT=performance.now(); setTimeout(()=>{ L.close(); godGameWin("jiutian",ms,"peachsword"); },1500); } };
+  const hud=x; const draw=now=>{ if(L.done){ window.removeEventListener("resize",fit); try{ r3.dispose(); r3.forceContextLoss(); }catch(e){} return; } const dt=Math.min(.033,(now-last)/1000); last=now;
+    if(!done){ if(fall>0){ fall-=dt; if(fall<=0){ px=sx0; py=sy0; vx=vy=0; } } else step(dt); }
+    const sk=fall>0?Math.max(.05,fall/.9):1; ball.scale.setScalar(sk); ball.position.set(px,.13+MR*sk-(fall>0?(1-sk)*.4:0),py); ball.rotation.z-=vx*dt/MR; ball.rotation.x+=vy*dt/MR; shadow.position.set(px+.06,.135,py+.06); shadow.visible=fall<=0;
+    tj.rotation.z=now/1400; tjG.material.opacity=.4+.2*Math.sin(now/300); r3.render(sc3,cam3);
+    const lab=document.getElementById("jtHud")||(()=>{ const d=document.createElement("div"); d.id="jtHud"; d.style.cssText="position:absolute;left:16px;top:92px;color:#fff;font:600 15px var(--f-ui);text-shadow:0 1px 3px #000;pointer-events:none"; L.el.appendChild(d); const m2=document.createElement("div"); m2.id="jtMsg"; m2.style.cssText="position:absolute;left:0;right:0;bottom:80px;text-align:center;color:#ffe2a0;font:700 20px var(--f-display);text-shadow:0 2px 6px #000;pointer-events:none;padding:0 16px"; L.el.appendChild(m2); return d; })();
+    lab.textContent=`${((now-t0)/1000).toFixed(1)} 秒${falls?`・掉坑 ${falls} 次`:""}・${tiltSeen?"傾斜控制":"手指拖曳"}`; const m2=document.getElementById("jtMsg"); m2.textContent=msg&&now-msgT<2200?msg:""; m2.style.opacity=msg?Math.max(0,1-(now-msgT)/2200):0;
     requestAnimationFrame(draw); };
   requestAnimationFrame(draw); }
 GOD_START.jiutian=playBagua;
