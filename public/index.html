@@ -836,6 +836,15 @@ const floorTex=cvs(512,512,(x,w,h)=>{ const n=2, sz=w/n; /* big stone slabs (abo
   x.strokeStyle="rgba(22,14,9,.75)"; x.lineWidth=3; for(let i=0;i<=n;i++){ x.beginPath(); x.moveTo(i*sz,0); x.lineTo(i*sz,h); x.stroke(); x.beginPath(); x.moveTo(0,i*sz); x.lineTo(w,i*sz); x.stroke(); }
   x.strokeStyle="rgba(170,140,110,.18)"; x.lineWidth=1; for(let i=0;i<=n;i++){ x.beginPath(); x.moveTo(i*sz+2.5,0); x.lineTo(i*sz+2.5,h); x.stroke(); x.beginPath(); x.moveTo(0,i*sz+2.5); x.lineTo(w,i*sz+2.5); x.stroke(); } });
 floorTex.wrapS=floorTex.wrapT=T.RepeatWrapping; floorTex.repeat.set(6,7.5);
+/* height map for the same slabs: sunken bevelled joints, a little unevenness on each slab, tiny pits and wear — used as a bump map so the
+   lamp reflections break up over the stone instead of sliding across one flat sheet (no extra lights or passes) */
+const floorBump=cvs(512,512,(x,w,h)=>{ const n=2, sz=w/n; x.fillStyle="rgb(170,170,170)"; x.fillRect(0,0,w,h);
+  for(let i=0;i<n;i++) for(let j=0;j<n;j++){ const ax=Math.random()<.5, g=x.createLinearGradient(i*sz,j*sz,ax?i*sz+sz:i*sz,ax?j*sz:j*sz+sz), v=150+Math.random()*30, v2=150+Math.random()*30; g.addColorStop(0,`rgb(${v},${v},${v})`); g.addColorStop(1,`rgb(${v2},${v2},${v2})`); x.fillStyle=g; x.fillRect(i*sz,j*sz,sz,sz); } /* each slab sits at a slightly different tilt */
+  for(let i=0;i<90;i++){ const r=15+Math.random()*70, cx=Math.random()*w, cy=Math.random()*h, rg=x.createRadialGradient(cx,cy,0,cx,cy,r), d=Math.random()<.5; rg.addColorStop(0,d?"rgba(0,0,0,.16)":"rgba(255,255,255,.16)"); rg.addColorStop(1,"rgba(128,128,128,0)"); x.fillStyle=rg; x.fillRect(cx-r,cy-r,r*2,r*2); } /* soft dips and swells */
+  for(let i=0;i<220;i++){ const r=.6+Math.random()*1.6; x.fillStyle=`rgba(0,0,0,${.12+Math.random()*.2})`; x.beginPath(); x.arc(Math.random()*w,Math.random()*h,r,0,7); x.fill(); } /* small pits */
+  x.strokeStyle="rgba(60,60,60,.35)"; x.lineWidth=.8; for(let k=0;k<14;k++){ x.beginPath(); let px=Math.random()*w, py=Math.random()*h; x.moveTo(px,py); for(let s2=0;s2<5;s2++){ px+=Math.random()*60-30; py+=Math.random()*60-30; x.lineTo(px,py); } x.stroke(); } /* hairline scratches */
+  for(const [lw,c] of [[14,"rgba(90,90,90,.5)"],[8,"rgba(40,40,40,.8)"],[4,"rgb(0,0,0)"]]){ x.strokeStyle=c; x.lineWidth=lw; for(let i=0;i<=n;i++){ x.beginPath(); x.moveTo(i*sz,0); x.lineTo(i*sz,h); x.stroke(); x.beginPath(); x.moveTo(0,i*sz); x.lineTo(w,i*sz); x.stroke(); } } }); /* bevelled, sunken joints */
+floorBump.encoding=T.LinearEncoding; floorBump.wrapS=floorBump.wrapT=T.RepeatWrapping; floorBump.repeat.copy(floorTex.repeat);
 const carvedTex=cvs(256,256,(x,w,h)=>{ x.fillStyle="#7a1810"; x.fillRect(0,0,w,h);
   x.strokeStyle="#e0b25e"; x.lineWidth=5; x.strokeRect(8,8,w-16,h-16); x.lineWidth=2; x.strokeRect(18,18,w-36,h-36);
   x.lineWidth=3; for(let i=0;i<9;i++){ const cx=40+((i%3)*88), cy=40+Math.floor(i/3)*88; x.beginPath(); x.arc(cx,cy,22,0,Math.PI*1.6); x.stroke(); x.beginPath(); x.arc(cx+6,cy-4,10,Math.PI,Math.PI*2.6); x.stroke(); }
@@ -5403,7 +5412,7 @@ const ACC={qqball:{name:"地瓜球頭飾",cat:"頭飾",slot:"head"},boba:{name:"
   peachsword:{name:"桃木七星劍",cat:"裝飾品",slot:"hand",note:"九天玄女賜的，身邊有仙女飄帶"},
   bamboo:{name:"受祝福的竹葉",cat:"嘴邊",slot:"mouth",note:"觀音菩薩賜的，全身閃閃發亮、神清氣爽"},
   ghost:{name:"小幽靈",cat:"夥伴",slot:"pet",note:"幫地藏王找回 10 段記憶的小幽靈，會飄在你身邊發光"},
-  wenbi:{name:"文昌筆",cat:"裝飾品",slot:"hand",note:"文昌帝君賜的毛筆，綁著紅緞帶，身邊會冒出 ✓ 和 100 分"},
+  wenbi:{name:"文昌筆",cat:"裝飾品",slot:"hand",note:"文昌帝君賜的毛筆，綁著紅緞帶，身邊飄著紅色圈圈"},
   starwand:{name:"星星法杖",cat:"裝飾品",slot:"hand",note:"斗姥元君賜的法杖，身邊有星星繞著轉"}}; /* new ones always go at the end: the order is part of saved codes (15 at most) */
 const ACC_IDS=Object.keys(ACC);
 function accState(){ if(!bag.acc||typeof bag.acc!=="object") bag.acc={owned:{},head:0,hand:0,mouth:0,pet:0}; bag.acc.owned=bag.acc.owned||{}; if(bag.acc.mouth===undefined) bag.acc.mouth=0; if(bag.acc.pet===undefined) bag.acc.pet=0; return bag.acc; }
@@ -5474,8 +5483,7 @@ const ACC_BUILD_HAND={
     for(const y of [.02,.4]){ const b=new T.Mesh(new T.TorusGeometry(.018,.006,6,14),accMat("#f0c040",{m:.7,r:.3})); b.position.y=y; b.rotation.x=Math.PI/2; g.add(b); }
     const sh=new T.Shape(); for(let i=0;i<10;i++){ const a=Math.PI/2+i*Math.PI/5, r=i%2?.04:.095; i?sh.lineTo(Math.cos(a)*r,Math.sin(a)*r):sh.moveTo(Math.cos(a)*r,Math.sin(a)*r); } sh.closePath();
     const star=new T.Mesh(new T.ExtrudeGeometry(sh,{depth:.025,bevelEnabled:true,bevelSize:.008,bevelThickness:.008,bevelSegments:2}),accMat("#ffd84a",{m:.5,r:.25,e:"#ffb020",ei:.8})); star.position.set(0,.52,-.012); g.add(star);
-    const glow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#fff0a0"),transparent:true,depthWrite:false,blending:T.AdditiveBlending})); glow.position.y=.52; glow.scale.set(.32,.32,1); g.add(glow);
-    g.userData.star=star; g.userData.sglow=glow; g.rotation.set(.75,0,-.55); g.userData.stars=1; },
+    g.userData.star=star; g.rotation.set(.75,0,-.55); g.userData.stars=1; },
   wenbi(g){ /* 文昌筆: a calligraphy brush with a red silk ribbon tied below the hand, its two tails fluttering */
     const shaft=new T.Mesh(new T.CylinderGeometry(.014,.016,.42,10),accMat("#c89a52",{r:.45})); shaft.position.y=.2; g.add(shaft);
     for(const y of [.06,.2,.34]){ const n=new T.Mesh(new T.CylinderGeometry(.0165,.0165,.008,10),accMat("#8a6a30",{r:.5})); n.position.y=y; g.add(n); } /* bamboo nodes */
@@ -5534,12 +5542,16 @@ function accTick(av,dt){ stinkFlies(av,!!(av.accHand&&av.accHand.userData.stink&
       b.position.set(_v1.x+rand(-.15,.15),_v1.y+.5+rand(0,.15),_v1.z+rand(-.15,.15)); b.scale.set(sz,sz,1); scene.add(b); parts.push({s:b,vx:rand(-.12,.12),vy:.35+Math.random()*.2,vz:rand(-.12,.12),life:0,max:1.8+Math.random(),grow:.03,op:.9}); } }
   if(av.accHand&&av.accHand.userData.wenbi&&near){ const t=performance.now()/1000;
     av.accHand.userData.ribT.forEach(m=>{ const pa=m.geometry.attributes.position, b0=m.userData.base, sd=m.userData.sd; for(let i=0;i<pa.count;i++){ const y=b0[i*3+1], u=-y/.24; pa.setX(i,b0[i*3]+sd*u*.05+Math.sin(t*6+u*4+sd)*.02*u); pa.setZ(i,Math.sin(t*5+u*5+sd*1.3)*.035*u); } pa.needsUpdate=true; });
-    av.wbT=(av.wbT||0)-dt; if(av.wbT<0){ av.wbT=1.1+Math.random()*.9; const p0=av.root.position, tx=Math.random()<.5?WB_TEX("✓"):WB_TEX("100分");
-      const sp=new T.Sprite(new T.SpriteMaterial({map:tx,transparent:true,depthWrite:false})); const sz=tx.image.width>200?.13:.17; sp.scale.set(sz*tx.image.width/tx.image.height,sz,1);
-      const a=Math.random()*6.283; sp.position.set(p0.x+Math.cos(a)*.45,1.25+Math.random()*.5,p0.z+Math.sin(a)*.45); scene.add(sp); parts.push({s:sp,vx:0,vy:.28,vz:0,life:0,max:1.6,grow:.01,op:1}); } }
-  if(av.accHand&&av.accHand.userData.stars&&near){ const t=performance.now()/1000, u=av.accHand.userData; u.star.rotation.z=t*1.5; const k=.3+.05*Math.sin(t*4); u.sglow.scale.set(k,k,1);
-    if(!av.orbit||av.orbit.parent!==av.root){ av.orbit=new T.Group(); av.orbit.userData.noMerge=1; av.root.add(av.orbit); ["#ffe680","#ffb0d8","#a8d8ff","#ffe680","#d0b0ff"].forEach((c,i)=>{ const sp=new T.Sprite(new T.SpriteMaterial({map:STAR_TEX(),color:new T.Color(c),transparent:true,depthWrite:false,blending:T.AdditiveBlending})); sp.userData.i=i; av.orbit.add(sp); }); }
-    av.orbit.children.forEach(sp=>{ const i=sp.userData.i, a=t*1.4+i*Math.PI*2/5; sp.position.set(Math.cos(a)*.55,.95+Math.sin(a*2+i)*.18+i*.06,Math.sin(a)*.55); const z=.1+.03*Math.sin(t*5+i); sp.scale.set(z,z,1); }); }
+    av.wbT=(av.wbT||0)-dt; if(av.wbT<0){ av.wbT=.09+Math.random()*.08; const p0=av.root.position; /* red ink circles of all sizes drifting up round the wearer */
+      const sp=new T.Sprite(new T.SpriteMaterial({map:RING_TEX(),color:new T.Color(Math.random()<.7?"#ff2a2a":"#ff6a5a"),transparent:true,depthWrite:false,toneMapped:false})); const sz=.04+Math.random()*.12;
+      const a2=Math.random()*6.283, r=.3+Math.random()*.25; sp.position.set(p0.x+Math.cos(a2)*r,.3+Math.random()*1.3,p0.z+Math.sin(a2)*r); sp.scale.set(sz,sz,1); scene.add(sp); parts.push({s:sp,vx:0,vy:.22+Math.random()*.2,vz:0,life:0,max:1.1+Math.random()*.8,grow:.03,op:.95}); } }
+  if(av.accHand&&av.accHand.userData.stars&&near){ const t=performance.now()/1000, u=av.accHand.userData; u.star.rotation.z=t*1.5; /* 星星法杖: shining stars of all sizes circling the wearer, shedding a glitter of tiny stars */
+    if(!av.orbit||av.orbit.parent!==av.root){ av.orbit=new T.Group(); av.orbit.userData.noMerge=1; av.root.add(av.orbit);
+      [[.15,"#ffe27a",0],[.07,"#ffffff",1],[.11,"#ffb8dc",0],[.05,"#bfe0ff",1],[.13,"#fff2a8",0],[.06,"#d8c0ff",1],[.09,"#ffe27a",0]].forEach(([sz,c,k],i)=>{ const sp=new T.Sprite(new T.SpriteMaterial({map:STAR_CRISP(k),color:new T.Color(c),transparent:true,depthWrite:false,toneMapped:false})); sp.userData.i=i; sp.userData.sz=sz; av.orbit.add(sp); }); }
+    av.orbit.children.forEach(sp=>{ const i=sp.userData.i, sp2=.9+(i%3)*.25, a=t*sp2+i*Math.PI*2/7, r=.42+(i%2)*.16; sp.position.set(Math.cos(a)*r,.55+i*.13+Math.sin(t*1.7+i)*.08,Math.sin(a)*r); const z=sp.userData.sz*(.75+.25*Math.sin(t*6+i*1.3)); sp.scale.set(z,z,1); sp.material.rotation=t*(i%2?-1.2:1.2); });
+    av.glitT=(av.glitT||0)-dt; if(av.glitT<0){ av.glitT=.05; const src=av.orbit.children[(Math.random()*av.orbit.children.length)|0]; src.getWorldPosition(_v1);
+      const sp=new T.Sprite(new T.SpriteMaterial({map:STAR_CRISP(Math.random()<.5?0:1),color:new T.Color(["#fff6c0","#ffd0ea","#cfe6ff","#ffffff","#ffe27a"][(Math.random()*5)|0]),transparent:true,depthWrite:false,toneMapped:false})); const sz=.025+Math.random()*.05;
+      sp.position.set(_v1.x+rand(-.04,.04),_v1.y+rand(-.04,.04),_v1.z+rand(-.04,.04)); sp.scale.set(sz,sz,1); sp.material.rotation=Math.random()*6; scene.add(sp); parts.push({s:sp,vx:rand(-.05,.05),vy:-.12-Math.random()*.15,vz:rand(-.05,.05),life:0,max:.8+Math.random()*.7,grow:-.02,op:1}); } }
   else if(av.orbit){ av.orbit.parent&&av.orbit.parent.remove(av.orbit); av.orbit=null; }
   if(av.pet){ const t=performance.now()/1000; av.pet.position.set(.5+Math.sin(t*.8)*.08,1.45+Math.sin(t*2)*.08,.1+Math.cos(t*.8)*.08); av.pet.rotation.y=Math.sin(t*.6)*.4; av.pet.rotation.z=Math.sin(t*1.7)*.1; av.pet.userData.glow.material.opacity=.55+.2*Math.sin(t*3); }
   if(av.accHand&&av.accHand.userData.fairy&&near&&av.torso){ /* 仙女披帛: two thin silk scarves draped over the shoulders, round the back and under the arms, ends fluttering */
@@ -5640,6 +5652,7 @@ function thChest(ms){ const g=new T.Group(); g.position.set(TH.x,-.6,TH.z); g.ro
 GOD_START.tudi=thStart;
 /* ================= 註生娘娘・哄睡: rock the cradle — hold to push harder, let go to ease off — and keep the rocking inside the
    band that drifts up and down. Inside it the baby gets sleepier; too hard or too soft and it starts to stir, and wakes if it goes on. ================= */
+const ZS=(()=>{ const o={}; let made=false; return new Proxy(o,{get:(t,k)=>{ if(!made){ made=true; for(const n of ["frame","cradle","hanger","zzz","watch","cloud","meter","barP","barR"]){ const im=new Image(); im.src="zs-"+n+".webp"; o[n]=im; } } return t[k]; }}); })(); /* 註生娘娘 game art, loaded the first time the game opens */
 function playLullaby(){ const L=gameLayer("註生娘娘・哄寶寶睡覺","按住搖得用力、放開變輕，讓指標停在粉紅區裡"); const {x,cv}=L; ensureAudio();
   let f=.35, v=0, hold=false, zc=.5, zt=.5, zh=.12, nextMove=0, sleep=0, wake=0, cry=0, t0=performance.now(), last=t0, done=false, sw=0, zzz=[], msg="", msgT=0;
   const down=e=>{ hold=true; e&&e.preventDefault&&e.preventDefault(); }, up=()=>{ hold=false; };
@@ -5660,30 +5673,40 @@ function playLullaby(){ const L=gameLayer("註生娘娘・哄寶寶睡覺","按�
     const bg=x.createLinearGradient(0,0,0,H); bg.addColorStop(0,"#1d1838"); bg.addColorStop(1,"#3a2446"); x.fillStyle=bg; x.fillRect(0,0,W,H);
     for(let i=0;i<40;i++){ const sx=(i*97)%W, sy=(i*53)%(H*.45)+60; x.fillStyle=`rgba(255,240,210,${.25+.25*Math.sin(now/600+i)})`; x.fillRect(sx,sy,2,2); }
     x.fillStyle="#fff3c8"; x.beginPath(); x.arc(W*.8,H*.17,26,0,7); x.fill(); x.fillStyle="#1d1838"; x.beginPath(); x.arc(W*.8+10,H*.17-6,24,0,7); x.fill();
-    // cradle swinging from a frame
-    const cx=W*.42, top=H*.3, amp=.05+f*.42; sw+=dt*2.4; const ang=Math.sin(sw)*amp*(cry>0?.4:1);
-    x.strokeStyle="#c89a5a"; x.lineWidth=8; x.beginPath(); x.moveTo(cx-W*.26,H*.78); x.lineTo(cx,top-20); x.lineTo(cx+W*.26,H*.78); x.stroke();
-    x.save(); x.translate(cx,top-14); x.rotate(ang); const R=Math.min(W*.24,150), hy=H*.27;
-    x.strokeStyle="#e8d2a8"; x.lineWidth=3; x.beginPath(); x.moveTo(0,0); x.lineTo(-R*.8,hy); x.moveTo(0,0); x.lineTo(R*.8,hy); x.stroke();
-    x.fillStyle="#ffe8f0"; x.beginPath(); x.ellipse(0,hy+10,R*.78,R*.32,0,Math.PI,0,true); x.fill(); // blanket
-    const fy=hy-R*.05; x.fillStyle="#f6d2b4"; x.beginPath(); x.arc(-R*.25,fy,R*.22,0,7); x.fill(); // baby's head
-    x.fillStyle="#ff9fb5"; x.globalAlpha=.5; x.beginPath(); x.arc(-R*.37,fy+R*.07,R*.05,0,7); x.arc(-R*.13,fy+R*.07,R*.05,0,7); x.fill(); x.globalAlpha=1;
-    x.strokeStyle="#5a3a2a"; x.lineWidth=2.5; const awake=cry>0||wake>.55;
-    for(const ex of [-R*.33,-R*.17]){ x.beginPath(); if(awake){ x.arc(ex,fy-R*.02,R*.035,0,7); x.fillStyle="#3a2418"; x.fill(); } else { x.arc(ex,fy-R*.03,R*.04,.2,Math.PI-.2); x.stroke(); } }
-    if(cry>0){ x.fillStyle="#7fc8ff"; for(const ex of [-R*.36,-R*.14]){ x.beginPath(); x.ellipse(ex,fy+R*.06+((now/200)%1)*R*.1,3,6,0,0,7); x.fill(); } x.beginPath(); x.arc(-R*.25,fy+R*.1,R*.05,0,Math.PI); x.stroke(); }
-    x.fillStyle="#d8a0b8"; x.beginPath(); x.ellipse(0,hy+R*.04,R*.82,R*.36,0,0,Math.PI); x.fill(); x.strokeStyle="#b07090"; x.lineWidth=4; x.stroke(); // basket
+    const ok=k=>ZS[k].complete&&ZS[k].naturalWidth>0;
+    // the bamboo frame, with the cradle hanging from its top on the rope hanger and swinging
+    const fw=Math.min(W-90,(H*.52)*760/656), fh=fw*656/760, fx=(W-70-fw)/2, fy=H*.72-fh, apx=fx+fw*.49, apy=fy+fh*.08;
+    x.fillStyle="rgba(0,0,0,.25)"; x.beginPath(); x.ellipse(fx+fw/2,H*.72,fw*.5,14,0,0,7); x.fill();
+    if(ok("frame")) x.drawImage(ZS.frame,fx,fy,fw,fh);
+    const amp=.05+f*.42; sw+=dt*2.4; const ang=Math.sin(sw)*amp*(cry>0?.4:1)+(cry>0?Math.sin(now/40)*.03:0);
+    const cw=fw*.5, ch=cw*365/420, hw=cw*.94, hh=Math.max(40,Math.min(hw*451/400,(fy+fh*.97-ch*.8)-apy)); /* rope hanger at its own shape where it fits; the cradle hangs low */
+    x.save(); x.translate(apx,apy); x.rotate(ang);
+    if(ok("hanger")) x.drawImage(ZS.hanger,-hw/2,-hw*.03,hw,hh+hw*.03);
+    const cy0=hh-ch*.2; if(ok("cradle")) x.drawImage(ZS.cradle,-cw/2,cy0,cw,ch);
+    const awake=cry>0||wake>.55, hx=-cw/2+cw*.345, hy=cy0+ch*.2;
+    if(awake){ x.fillStyle="#3a2418"; for(const ex of [-cw*.035,cw*.035]){ x.beginPath(); x.ellipse(hx+ex,hy,cw*.012,cw*.016,0,0,7); x.fill(); } } /* eyes open */
+    if(cry>0){ x.fillStyle="#7fc8ff"; for(const ex of [-cw*.05,cw*.05]){ x.beginPath(); x.ellipse(hx+ex,hy+cw*.03+((now/200)%1)*cw*.06,3,6,0,0,7); x.fill(); }
+      x.fillStyle="#fff"; x.font=`900 ${Math.round(cw*.12)}px ${DISPLAY_FONT}`; x.textAlign="center"; x.fillText("哇——",hx-cw*.12,hy-cw*.22); }
     x.restore();
-    if(!done&&cry<=0&&sleep>.2&&Math.random()<dt*1.5) zzz.push({x:cx-R*.3,y:top+hy-R*.4,t:0}); zzz=zzz.filter(z=>(z.t+=dt)<2.2); x.fillStyle="#d8d0ff"; zzz.forEach(z=>{ x.globalAlpha=1-z.t/2.2; x.font=`700 ${16+z.t*10}px ${DISPLAY_FONT}`; x.fillText("Z",z.x+z.t*30,z.y-z.t*50); }); x.globalAlpha=1;
-    // the meter: the pink band drifts; the gold marker is how hard you are rocking
-    const mx=W-58, my0=110, mh=H-250; x.fillStyle="rgba(255,255,255,.1)"; x.fillRect(mx,my0,26,mh); x.strokeStyle="rgba(255,255,255,.35)"; x.lineWidth=2; x.strokeRect(mx,my0,26,mh);
-    const Y=v2=>my0+mh*(1-v2); x.fillStyle="rgba(255,120,170,.55)"; x.fillRect(mx,Y(zc+zh),26,mh*zh*2);
-    x.fillStyle=Math.abs(f-zc)<zh?"#ffe066":"#ff6a5c"; x.fillRect(mx-8,Y(f)-4,42,8);
-    x.fillStyle="#ffd6e6"; x.font=`600 12px ${UI_FONT}`; x.textAlign="center"; x.fillText("用力",mx+13,my0-8); x.fillText("輕輕",mx+13,my0+mh+18);
-    // sleepiness and stirring
-    const bw=W-140; x.textAlign="left"; x.fillStyle="#ffe2a0"; x.font=`700 16px ${DISPLAY_FONT}`; x.fillText("睡意",22,H-96); x.fillText("快醒了",22,H-62);
-    x.fillStyle="rgba(255,255,255,.12)"; x.fillRect(84,H-110,bw,14); x.fillRect(84,H-76,bw,14); x.fillStyle="#b9a8ff"; x.fillRect(84,H-110,bw*sleep,14); x.fillStyle="#ff7a6a"; x.fillRect(84,H-76,bw*Math.min(1,wake),14);
-    x.fillStyle="#fff"; x.font=`600 15px ${UI_FONT}`; x.fillText(`${((now-t0)/1000).toFixed(1)} 秒`,22,104);
-    if(msg&&now-msgT<1500){ x.textAlign="center"; x.fillStyle=`rgba(255,230,240,${1-(now-msgT)/1500})`; x.font=`700 22px ${DISPLAY_FONT}`; x.fillText(msg,W*.42,H*.86); }
+    // ZZZ drifting up from the baby while it gets sleepy
+    if(!done&&cry<=0&&sleep>.2&&Math.random()<dt*1.2) zzz.push({x:apx+Math.sin(ang)*(hh+ch*.1)-cw*.1,y:apy+Math.cos(ang)*(hh)+ch*.05,t:0}); zzz=zzz.filter(z=>(z.t+=dt)<2.4);
+    if(ok("zzz")) zzz.forEach(z=>{ x.globalAlpha=Math.min(1,z.t*3)*(1-z.t/2.4); const zs2=cw*(.18+z.t*.08); x.drawImage(ZS.zzz,z.x+z.t*26,z.y-z.t*60-zs2,zs2,zs2); }); x.globalAlpha=1;
+    // the meter: the pink band drifts; the golden cloud is how hard you are rocking
+    const mw=Math.min(52,W*.12), mh=H-280, mx=W-mw-14, my0=118, cap=mw*1.1;
+    if(ok("meter")){ const iw=ZS.meter.naturalWidth, ih=ZS.meter.naturalHeight, sc=iw/mw, cs=cap*sc; x.drawImage(ZS.meter,0,0,iw,cs,mx,my0,mw,cap); x.drawImage(ZS.meter,0,cs,iw,ih-cs*2,mx,my0+cap,mw,mh-cap*2); x.drawImage(ZS.meter,0,ih-cs,iw,cs,mx,my0+mh-cap,mw,cap); }
+    const ty0=my0+cap*.8, th=mh-cap*1.6, Y=v2=>ty0+th*(1-v2), inZ2=Math.abs(f-zc)<zh;
+    x.fillStyle="rgba(255,130,180,.55)"; x.fillRect(mx+mw*.3,Y(Math.min(1,zc+zh)),mw*.4,th*zh*2); x.strokeStyle="rgba(255,200,225,.8)"; x.lineWidth=1.5; x.strokeRect(mx+mw*.3,Y(Math.min(1,zc+zh)),mw*.4,th*zh*2);
+    { const cy=Y(f), cs2=mw*1.25; if(ok("cloud")){ x.save(); if(!inZ2){ x.filter="hue-rotate(-40deg) saturate(1.6)"; } x.drawImage(ZS.cloud,mx-cs2*.9,cy-cs2/2,cs2,cs2*114/110); x.restore(); }
+      x.fillStyle=inZ2?"#ffd94a":"#ff6a5c"; x.beginPath(); x.moveTo(mx-cs2*.05,cy-6); x.lineTo(mx+mw*.42,cy); x.lineTo(mx-cs2*.05,cy+6); x.closePath(); x.fill(); }
+    x.fillStyle="#ffd6e6"; x.font=`600 12px ${UI_FONT}`; x.textAlign="center"; x.fillText("用力",mx+mw/2,my0-6); x.fillText("輕輕",mx+mw/2,my0+mh+16);
+    // sleepiness and stirring, in the framed bars
+    const bx0=82, bw=W-bx0-16, bh=Math.min(30,bw*73/1000*1.4), bar=(img,y,v2,c1,c2)=>{ const iw=ZS[img].naturalWidth, ih=ZS[img].naturalHeight, ce=bh*1.25, cs=ce*ih/bh;
+        const ix=bx0+bh*.55, iy=y+bh*.28, iW=bw-bh*1.1, iH=bh*.44; const g2=x.createLinearGradient(ix,0,ix+iW,0); g2.addColorStop(0,c1); g2.addColorStop(1,c2); x.fillStyle="rgba(0,0,0,.35)"; x.fillRect(ix,iy,iW,iH); x.fillStyle=g2; x.fillRect(ix,iy,iW*Math.max(0,Math.min(1,v2)),iH);
+        if(ok(img)){ /* frame on top, the ends kept unstretched */ x.save(); x.beginPath(); x.rect(0,0,W,H); x.rect(ix,iy,iW,iH); x.clip("evenodd"); x.drawImage(ZS[img],0,0,cs,ih,bx0,y,ce,bh); x.drawImage(ZS[img],cs,0,iw-cs*2,ih,bx0+ce,y,bw-ce*2,bh); x.drawImage(ZS[img],iw-cs,0,cs,ih,bx0+bw-ce,y,ce,bh); x.restore(); } };
+    bar("barP",H-118,sleep,"#8f7cff","#d8c8ff"); bar("barR",H-80,Math.min(1,wake),"#ff5a4a","#ffb08a");
+    x.textAlign="left"; x.fillStyle="#ffe2a0"; x.font=`700 16px ${DISPLAY_FONT}`; x.fillText("睡意",22,H-118+bh*.7); x.fillText("快醒了",14,H-80+bh*.7);
+    if(ok("watch")) x.drawImage(ZS.watch,16,84,22,28); x.fillStyle="#fff"; x.font=`600 15px ${UI_FONT}`; x.fillText(`${((now-t0)/1000).toFixed(1)} 秒`,44,104);
+    if(msg&&now-msgT<1500){ x.textAlign="center"; x.fillStyle=`rgba(255,230,240,${1-(now-msgT)/1500})`; x.font=`700 22px ${DISPLAY_FONT}`; x.fillText(msg,(W-70)/2,H*.79); }
     requestAnimationFrame(draw); };
   requestAnimationFrame(draw); }
 GOD_START.zhusheng=playLullaby;
@@ -5869,10 +5892,11 @@ function playMemory(){ bag.dz=bag.dz||{done:[]}; const done0=new Set(bag.dz.done
 GOD_START.dizang=playMemory;
 /* ================= 文昌帝君・寫字: three random characters a round, traced with the finger over red guide strokes (描紅) within the
    time limit. Each character is checked by how much of it the ink covers and how little ink lands outside it. ================= */
+const RING_TEX=(()=>{ let t=null; return ()=>t||(t=cvs(64,64,(x)=>{ x.strokeStyle="#fff"; x.lineWidth=7; x.beginPath(); x.arc(32,32,24,0,7); x.stroke(); })); })();
 const WB_TEX=(()=>{ const c={}; return k=>c[k]||(c[k]=(()=>{ const w=k.length>1?256:128, h=128; return cvs(w,h,(x)=>{ x.font=`900 ${k.length>1?78:104}px ${DISPLAY_FONT}`; x.textAlign="center"; x.textBaseline="middle";
   x.lineWidth=10; x.strokeStyle="rgba(255,255,255,.95)"; x.strokeText(k,w/2,h/2+4); x.fillStyle="#e01818"; x.fillText(k,w/2,h/2+4); if(k.length>1){ x.strokeStyle="#e01818"; x.lineWidth=5; x.beginPath(); x.moveTo(30,h-14); x.quadraticCurveTo(w/2,h-2,w-30,h-16); x.stroke(); } }); })()); })();
 const WC_POOL="福文昌學天中心光平安喜春明吉永正和金玉山水月日火木土生年好愛家神佛書筆言仁義禮智信德善美興旺財壽樂";
-function playWenchang(){ const L=gameLayer("文昌帝君・寫字","照著紅字描一遍，限時 60 秒寫完 3 個字"); const {x,cv}=L, LIMIT=60;
+function playWenchang(){ const L=gameLayer("文昌帝君・寫字","把紅字每一筆都描滿（描到 8 成以上、每個部位都要寫到），限時 90 秒寫完 3 個字"); const {x,cv}=L, LIMIT=90;
   const pool=[...WC_POOL], chars=[]; while(chars.length<3){ const c=pool.splice((Math.random()*pool.length)|0,1)[0]; chars.push(c); }
   const M=72; let idx=0, glyph=null, gCount=0, ink=document.createElement("canvas"), mk=document.createElement("canvas"); mk.width=mk.height=M; const mx=mk.getContext("2d");
   const big=document.createElement("canvas"), bx=big.getContext("2d"); let strokes=[], cur=null, t0=performance.now(), last=t0, done=false, passT=0, msg="", msgT=0, fail=false;
@@ -5883,13 +5907,15 @@ function playWenchang(){ const L=gameLayer("文昌帝君・寫字","照著紅字
   (document.fonts&&document.fonts.load?document.fonts.load(`700 40px "LXGW WenKai TC"`,chars.join("")):Promise.resolve()).catch(()=>{}).then(()=>next());
   next();
   /* score: ink is rasterised at mask size, slightly fattened so a fair trace counts */
-  const score=()=>{ mx.clearRect(0,0,M,M); mx.strokeStyle="#000"; mx.lineCap=mx.lineJoin="round"; mx.lineWidth=M*.1; const g=G(), k=M/g.size;
+  const score=()=>{ mx.clearRect(0,0,M,M); mx.strokeStyle="#000"; mx.lineCap=mx.lineJoin="round"; mx.lineWidth=M*.075; const g=G(), k=M/g.size;
     for(const st of strokes){ mx.beginPath(); st.forEach((p,i)=>i?mx.lineTo(p[0]*k,p[1]*k):mx.moveTo(p[0]*k,p[1]*k)); if(st.length===1) mx.lineTo(st[0][0]*k+.1,st[0][1]*k); mx.stroke(); }
     const d=mx.getImageData(0,0,M,M).data; let hit=0, inkN=0, out=0; const near=i=>{ const X=i%M, Y=(i/M)|0; for(let dy=-2;dy<=2;dy++) for(let dx=-2;dx<=2;dx++){ const xx=X+dx, yy=Y+dy; if(xx>=0&&yy>=0&&xx<M&&yy<M&&glyph.a[yy*M+xx]) return true; } return false; };
-    for(let i=0;i<M*M;i++){ const on=d[i*4+3]>100; if(glyph.a[i]&&on) hit++; if(on){ inkN++; if(!near(i)) out++; } }
-    return {cov:hit/Math.max(1,gCount), out:out/Math.max(1,inkN)}; };
-  const check=()=>{ const r=score(); if(r.cov>=.62&&r.out<=.3){ passT=performance.now(); tone(880,.12,.08,"triangle"); tone(1320,.2,.08,"triangle",.1); setTimeout(()=>{ idx++; if(idx>=chars.length){ done=true; const ms=performance.now()-t0; healSound(); msg="寫完了！"; msgT=performance.now(); setTimeout(()=>{ L.close(); godGameWin("wenchang",ms,"wenbi"); },1200); } else { passT=0; next(); } },1100); }
-    else if(r.out>.3&&strokes.length>2){ msg="寫到格子外面太多了，按「重寫」再來"; msgT=performance.now(); } return r; };
+    const B=4, bs=M/B, bg2=new Array(B*B).fill(0), bh=new Array(B*B).fill(0);
+    for(let i=0;i<M*M;i++){ const on=d[i*4+3]>100, bi=Math.min(B-1,((i/M)|0)/bs|0)*B+Math.min(B-1,(i%M)/bs|0); if(glyph.a[i]){ bg2[bi]++; if(on){ hit++; bh[bi]++; } } if(on){ inkN++; if(!near(i)) out++; } }
+    let part=1; for(let b2=0;b2<B*B;b2++) if(bg2[b2]>=12) part=Math.min(part,bh[b2]/bg2[b2]); /* the weakest part of the character */
+    return {cov:hit/Math.max(1,gCount), part, out:out/Math.max(1,inkN)}; };
+  const check=()=>{ const r=score(); if(r.cov>=.8&&r.part>=.6&&r.out<=.25){ passT=performance.now(); tone(880,.12,.08,"triangle"); tone(1320,.2,.08,"triangle",.1); setTimeout(()=>{ idx++; if(idx>=chars.length){ done=true; const ms=performance.now()-t0; healSound(); msg="寫完了！"; msgT=performance.now(); setTimeout(()=>{ L.close(); godGameWin("wenchang",ms,"wenbi"); },1200); } else { passT=0; next(); } },1100); }
+    else if(r.out>.25&&strokes.length>2){ msg="寫到格子外面太多了，按「重寫」再來"; msgT=performance.now(); } return r; };
   const local=e=>{ const g=G(), rc=cv.getBoundingClientRect(); return [e.clientX-rc.left-g.ox,e.clientY-rc.top-g.oy]; };
   cv.addEventListener("pointerdown",e=>{ if(done||fail||passT) return; const p=local(e), g=G(); if(p[0]<0||p[1]<0||p[0]>g.size||p[1]>g.size) return; cur=[p]; strokes.push(cur); cur.t=performance.now(); cur.w=g.size*.05; cv.setPointerCapture&&cv.setPointerCapture(e.pointerId); });
   cv.addEventListener("pointermove",e=>{ if(!cur) return; const p=local(e), q=cur[cur.length-1], d=Math.hypot(p[0]-q[0],p[1]-q[1]); if(d<1.5) return; const g=G(), now=performance.now(), sp=d/Math.max(1,now-cur.t); cur.t=now;
@@ -5899,7 +5925,7 @@ function playWenchang(){ const L=gameLayer("文昌帝君・寫字","照著紅字
   cv.addEventListener("pointerup",up); cv.addEventListener("pointercancel",up);
   const bar=document.createElement("div"); bar.className="dz-zoom"; bar.innerHTML=`<button class="chip">↺ 重寫</button>`; L.el.appendChild(bar); bar.querySelector("button").onclick=()=>{ if(!done&&!passT){ strokes=[]; bx.clearRect(0,0,big.width,big.height); } };
   window.__wc=()=>({idx,chars,done,fail,score:glyph?score():null});
-  window.__wcAuto=()=>{ const g=G(), k=g.size/M; for(let y=0;y<M;y++){ let run=null; for(let xx=0;xx<=M;xx++){ const on=xx<M&&glyph.a[y*M+xx]; if(on&&run==null) run=xx; if(!on&&run!=null){ strokes.push([[(run+.5)*k,(y+.5)*k],[(xx-.5)*k,(y+.5)*k]]); bx.fillStyle="#141210"; bx.fillRect(run*k,y*k,(xx-run)*k,k); run=null; } } } return check(); };
+  window.__wcAuto=(frac=1)=>{ const g=G(), k=g.size/M; for(let y=0;y<M*frac;y++){ let run=null; for(let xx=0;xx<=M;xx++){ const on=xx<M&&glyph.a[y*M+xx]; if(on&&run==null) run=xx; if(!on&&run!=null){ strokes.push([[(run+.5)*k,(y+.5)*k],[(xx-.5)*k,(y+.5)*k]]); bx.fillStyle="#141210"; bx.fillRect(run*k,y*k,(xx-run)*k,k); run=null; } } } return check(); };
   const draw=now=>{ if(L.done) return; last=now; const g=G(), el=(now-t0)/1000;
     if(!done&&!fail&&el>LIMIT){ fail=true; tone(220,.4,.1,"triangle"); const b=document.createElement("div"); b.className="gg-fail"; b.innerHTML=`<p>時間到了！</p><button class="btn primary">再寫一次</button>`; b.style.cssText="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(30,16,10,.92);border:1px solid #e0b04a;border-radius:14px;padding:20px 26px;text-align:center;color:#ffe2a0;font:700 20px var(--f-display);z-index:3"; L.el.appendChild(b); b.querySelector("button").onclick=()=>{ L.close(); playWenchang(); }; }
     const bg=x.createLinearGradient(0,0,0,g.H); bg.addColorStop(0,"#3a1a10"); bg.addColorStop(1,"#1a0c08"); x.fillStyle=bg; x.fillRect(0,0,g.W,g.H);
@@ -5922,6 +5948,10 @@ GOD_START.wenchang=playWenchang;
 /* ================= 斗姥元君・眾星歸位: 60 s for 8 stars. Part 1: shapes drift down the night sky; drag the ones the chart needs into the
    basket (meteors knock them out of your hand, clouds drift over, thunder makes you drop them). Part 2: put each shape into its hole in the
    北斗 star chart; every one lights a star. All 8 lit: the sky brightens and 斗姥元君 gives her blessing. ================= */
+const STAR_CRISP=(()=>{ const c={}; return k=>c[k]||(c[k]=cvs(64,64,(x)=>{ x.translate(32,32); /* k=0: five-point star, k=1: four-point twinkle — bright white core, no halo */
+  const g=x.createRadialGradient(0,0,0,0,0,30); g.addColorStop(0,"#ffffff"); g.addColorStop(.45,"#fffbe8"); g.addColorStop(1,"#ffffff"); x.fillStyle=g; x.beginPath();
+  if(k){ for(let i=0;i<8;i++){ const a=-Math.PI/2+i*Math.PI/4, r=i%2?6:30; x.lineTo(Math.cos(a)*r,Math.sin(a)*r); } } else { for(let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5, r=i%2?11:29; x.lineTo(Math.cos(a)*r,Math.sin(a)*r); } }
+  x.closePath(); x.fill(); x.strokeStyle="rgba(255,255,255,.9)"; x.lineWidth=1.5; x.stroke(); })); })();
 const STAR_TEX=(()=>{ let t=null; return ()=>t||(t=cvs(64,64,(x)=>{ const g=x.createRadialGradient(32,32,0,32,32,32); g.addColorStop(0,"rgba(255,255,255,1)"); g.addColorStop(.3,"rgba(255,255,255,.6)"); g.addColorStop(1,"rgba(255,255,255,0)"); x.fillStyle=g; x.fillRect(0,0,64,64);
   x.fillStyle="#fff"; x.beginPath(); for(let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5, r=i%2?7:18; x.lineTo(32+Math.cos(a)*r,32+Math.sin(a)*r); } x.closePath(); x.fill(); })); })();
 const DM_KIND={heart:{c:"#ff8fbf",n:"愛心"},star:{c:"#ffd86b",n:"星星"},square:{c:"#7fe6c4",n:"方塊"},tri:{c:"#8fc8ff",n:"三角"},circle:{c:"#c9a6ff",n:"圓圈"}};
@@ -6673,7 +6703,7 @@ try{ lanternPools(); }catch(e){}
 /* floors: on iPhones the reflection lighting (scene.environment) left soft green blotches on floor tiles. Floors don't need reflections,
    so they use a plain lit material; a little self-light makes up for the missing reflected light so they stay as bright as before. */
 function floorsPlain(){ const done=new Map(); scene.traverse(o=>{ if(!o.isMesh||!o.userData||!o.userData.floor) return; const m=o.material; if(!m||!m.isMeshStandardMaterial) return;
-    if(!done.has(m)){ const k=m.envMapIntensity??1, gloss=!!(m.map&&m.map.image===floorTex.image); /* indoor stone: a polished sheen — tighter, brighter highlights from the lamps already lighting it, so no extra cost */ const n=new T.MeshPhongMaterial({map:m.map,color:m.color.clone(),shininess:gloss?28:6,specular:new T.Color(gloss?"#6e5a44":"#0c0a08"),emissive:new T.Color(1,1,1).multiplyScalar(.16*k),emissiveMap:m.map,side:m.side,transparent:m.transparent,opacity:m.opacity,polygonOffset:m.polygonOffset,polygonOffsetFactor:m.polygonOffsetFactor,polygonOffsetUnits:m.polygonOffsetUnits}); done.set(m,n); }
+    if(!done.has(m)){ const k=m.envMapIntensity??1, gloss=!!(m.map&&m.map.image===floorTex.image); /* indoor stone: a polished sheen — tighter, brighter highlights from the lamps already lighting it, so no extra cost */ const n=new T.MeshPhongMaterial({map:m.map,color:m.color.clone(),shininess:gloss?28:6,specular:new T.Color(gloss?"#6e5a44":"#0c0a08"),...(gloss?{bumpMap:floorBump,bumpScale:.045}:{}),emissive:new T.Color(1,1,1).multiplyScalar(.16*k),emissiveMap:m.map,side:m.side,transparent:m.transparent,opacity:m.opacity,polygonOffset:m.polygonOffset,polygonOffsetFactor:m.polygonOffsetFactor,polygonOffsetUnits:m.polygonOffsetUnits}); done.set(m,n); }
     o.material=done.get(m); }); }
 try{ floorsPlain(); }catch(e){}
 
