@@ -5209,7 +5209,14 @@ function buildCollect(){ const mods={}, adds=[]; BUILD.items.forEach(it=>{ const
 // ---- the panel ----
 function buildSel(id){ BUILD.sel=id&&BUILD.items.has(id)?id:null; if(BUILD.helper){ scene.remove(BUILD.helper); BUILD.helper=null; }
   const it=BUILD.items.get(BUILD.sel); if(it){ BUILD.helper=new T.BoxHelper(it.obj,0xffd040); BUILD.helper.material.depthTest=false; BUILD.helper.renderOrder=9; scene.add(BUILD.helper); } buildPanel(); }
-let _holeT=0; function buildTick(){ if(BUILD.on&&performance.now()-_holeT>600){ _holeT=performance.now(); try{ holesRefresh(); }catch(e){} } if(BUILD.helper){ const it=BUILD.items.get(BUILD.sel); if(it){ BUILD.helper.setFromObject(it.obj); } } }
+/* each god's talk point stands just in front of its censer on the altar table, wherever build mode has moved that table */
+let _gsT=0; const GOD_GAP={xuantian:.86,guangong:.86};
+function fixGodStations(){ const P=new T.Vector3(), Q=new T.Quaternion(), V=new T.Vector3();
+  for(const k in CENSERS){ if(k==="mazu"||k==="tiangong"||k==="huye"||!stations[k]) continue; const C=CENSERS[k]; if(!C.g||!C.g.parent) continue;
+    C.g.getWorldPosition(P); C.g.parent.getWorldQuaternion(Q); V.set(0,0,1).applyQuaternion(Q); V.y=0; if(V.lengthSq()<1e-6) continue; V.normalize();
+    const d=GOD_GAP[k]||1.2, x=P.x+V.x*d, z=P.z+V.z*d;
+    const st=stations[k]; st.approach.set(x,z); st.face=Math.atan2(V.x,V.z)+Math.PI; } }
+let _holeT=0; function buildTick(){ if(performance.now()-_gsT>1500){ _gsT=performance.now(); try{ fixGodStations(); }catch(e){} } if(BUILD.on&&performance.now()-_holeT>600){ _holeT=performance.now(); try{ holesRefresh(); }catch(e){} } if(BUILD.helper){ const it=BUILD.items.get(BUILD.sel); if(it){ BUILD.helper.setFromObject(it.obj); } } }
 const fmt=(v,d=2)=>(+v).toFixed(d);
 function buildPanel(){ const P=$("#buildPanel"); document.body.classList.toggle("building",BUILD.on); if(BUILD.on&&BUILD.sel){ const it=BUILD.items.get(BUILD.sel); buildNoSink(it); buildMirror(it); } if(!BUILD.on){ P.hidden=true; return; } P.hidden=false; const it=BUILD.items.get(BUILD.sel);
   const list=[...BUILD.items.values()].sort((a,b)=>a.label.localeCompare(b.label,"zh-Hant"));
