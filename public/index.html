@@ -5402,7 +5402,9 @@ const ACC={qqball:{name:"地瓜球頭飾",cat:"頭飾",slot:"head"},boba:{name:"
   pacifier:{name:"奶嘴",cat:"嘴邊",slot:"mouth",note:"註生娘娘賜的，咬著會冒粉紅愛心"},
   peachsword:{name:"桃木七星劍",cat:"裝飾品",slot:"hand",note:"九天玄女賜的，身邊有仙女飄帶"},
   bamboo:{name:"受祝福的竹葉",cat:"嘴邊",slot:"mouth",note:"觀音菩薩賜的，全身閃閃發亮、神清氣爽"},
-  ghost:{name:"小幽靈",cat:"夥伴",slot:"pet",note:"幫地藏王找回 10 段記憶的小幽靈，會飄在你身邊發光"}}; /* new ones always go at the end: the order is part of saved codes (15 at most) */
+  ghost:{name:"小幽靈",cat:"夥伴",slot:"pet",note:"幫地藏王找回 10 段記憶的小幽靈，會飄在你身邊發光"},
+  wenbi:{name:"文昌筆",cat:"裝飾品",slot:"hand",note:"文昌帝君賜的毛筆，綁著紅緞帶，身邊會冒出 ✓ 和 100 分"},
+  starwand:{name:"星星法杖",cat:"裝飾品",slot:"hand",note:"斗姥元君賜的法杖，身邊有星星繞著轉"}}; /* new ones always go at the end: the order is part of saved codes (15 at most) */
 const ACC_IDS=Object.keys(ACC);
 function accState(){ if(!bag.acc||typeof bag.acc!=="object") bag.acc={owned:{},head:0,hand:0,mouth:0,pet:0}; bag.acc.owned=bag.acc.owned||{}; if(bag.acc.mouth===undefined) bag.acc.mouth=0; if(bag.acc.pet===undefined) bag.acc.pet=0; return bag.acc; }
 function nmDay(){ const d=new Date(Date.now()+8*3600e3).toISOString().slice(0,10); if(!bag.nm||bag.nm.day!==d) bag.nm={day:d,fish:0,pWin:0,pCash:0}; return bag.nm; }
@@ -5454,7 +5456,7 @@ const ACC_MOUTH={
     const leaf=new T.Mesh(new T.ShapeGeometry(sh,8),new T.MeshStandardMaterial({color:new T.Color("#3fae4a"),emissive:new T.Color("#1f6a26"),emissiveIntensity:.3,roughness:.5,side:T.DoubleSide}));
     const rib=new T.Mesh(new T.PlaneGeometry(.13,.004),new T.MeshBasicMaterial({color:new T.Color("#a8e08a"),side:T.DoubleSide})); rib.position.set(.07,0,.001);
     const stem=new T.Mesh(new T.PlaneGeometry(.03,.006),new T.MeshBasicMaterial({color:new T.Color("#5a8a30"),side:T.DoubleSide})); stem.position.set(-.012,0,0);
-    const blade=new T.Group(); blade.add(leaf,rib,stem); blade.position.set(.035,0,.01); blade.rotation.set(-.35,-.55,-.75); g.add(blade);
+    leaf.position.x=-.05; rib.position.x-=.05; stem.position.x-=.05; /* a third of the leaf sits inside the mouth */ const blade=new T.Group(); blade.add(leaf,rib,stem); blade.position.set(.035,0,.01); blade.rotation.set(-.35,-.55,-.75); g.add(blade);
     g.userData.fresh=1; },
   pacifier(g){ const pink=accMat("#ff8fb8",{r:.35,e:"#ff6fa0",ei:.25}), white=accMat("#fff4f8",{r:.3});
     const shield=new T.Mesh(new T.SphereGeometry(.075,18,10),pink); shield.scale.set(1.25,.85,.32); g.add(shield);
@@ -5466,7 +5468,24 @@ const ACC_BUILD_HAND={
     for(let i=0;i<7;i++){ const d=new T.Mesh(new T.SphereGeometry(.009,6,5),gold); d.position.set((i%2?.008:-.008),.18+i*.075,.009); g.add(d); } /* the seven stars */
     const guard=new T.Mesh(new T.BoxGeometry(.16,.03,.04),gold); guard.position.y=.09; g.add(guard); const grip=new T.Mesh(new T.CylinderGeometry(.018,.018,.13,8),accMat("#6a2a14",{r:.6})); grip.position.y=.02; g.add(grip);
     const tas=new T.Mesh(new T.ConeGeometry(.025,.12,8),accMat("#e0202a",{r:.6})); tas.position.y=-.1; g.add(tas);
-    g.rotation.set(Math.PI*.85,0,0); g.userData.fairy=1; } };
+    g.rotation.set(Math.PI*.85,0,0); g.userData.fairy=1; },
+  starwand(g){ /* 星星法杖: a slim silver-gold staff topped with a glowing five-point star */
+    const rod=new T.Mesh(new T.CylinderGeometry(.012,.015,.5,10),accMat("#e8e0f8",{m:.6,r:.3})); rod.position.y=.2; g.add(rod);
+    for(const y of [.02,.4]){ const b=new T.Mesh(new T.TorusGeometry(.018,.006,6,14),accMat("#f0c040",{m:.7,r:.3})); b.position.y=y; b.rotation.x=Math.PI/2; g.add(b); }
+    const sh=new T.Shape(); for(let i=0;i<10;i++){ const a=Math.PI/2+i*Math.PI/5, r=i%2?.04:.095; i?sh.lineTo(Math.cos(a)*r,Math.sin(a)*r):sh.moveTo(Math.cos(a)*r,Math.sin(a)*r); } sh.closePath();
+    const star=new T.Mesh(new T.ExtrudeGeometry(sh,{depth:.025,bevelEnabled:true,bevelSize:.008,bevelThickness:.008,bevelSegments:2}),accMat("#ffd84a",{m:.5,r:.25,e:"#ffb020",ei:.8})); star.position.set(0,.52,-.012); g.add(star);
+    const glow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#fff0a0"),transparent:true,depthWrite:false,blending:T.AdditiveBlending})); glow.position.y=.52; glow.scale.set(.32,.32,1); g.add(glow);
+    g.userData.star=star; g.userData.sglow=glow; g.rotation.set(.75,0,-.55); g.userData.stars=1; },
+  wenbi(g){ /* 文昌筆: a calligraphy brush with a red silk ribbon tied below the hand, its two tails fluttering */
+    const shaft=new T.Mesh(new T.CylinderGeometry(.014,.016,.42,10),accMat("#c89a52",{r:.45})); shaft.position.y=.2; g.add(shaft);
+    for(const y of [.06,.2,.34]){ const n=new T.Mesh(new T.CylinderGeometry(.0165,.0165,.008,10),accMat("#8a6a30",{r:.5})); n.position.y=y; g.add(n); } /* bamboo nodes */
+    const fer=new T.Mesh(new T.CylinderGeometry(.022,.017,.04,10),accMat("#2a2a2a",{r:.4})); fer.position.y=.43; g.add(fer);
+    const tip=new T.Mesh(new T.ConeGeometry(.022,.1,10),accMat("#151515",{r:.8})); tip.position.y=.5; g.add(tip); /* the tip points outward, ink-black */
+    const cap=new T.Mesh(new T.SphereGeometry(.017,8,6),accMat("#e0202a",{r:.5})); cap.position.y=-.015; g.add(cap);
+    const red=new T.MeshStandardMaterial({color:new T.Color("#e0202a"),emissive:new T.Color("#701010"),emissiveIntensity:.35,roughness:.55,side:T.DoubleSide});
+    const knot=new T.Mesh(new T.TorusGeometry(.02,.008,6,12),red); knot.position.y=.02; knot.rotation.x=Math.PI/2; g.add(knot);
+    const tails=[-1,1].map(sd=>{ const geo=new T.PlaneGeometry(.045,.24,1,8); geo.translate(0,-.12,0); const m=new T.Mesh(geo,red); m.position.set(sd*.012,.02,0); m.userData.sd=sd; m.userData.base=geo.attributes.position.array.slice(); g.add(m); return m; });
+    g.userData.ribT=tails; g.scale.setScalar(1.25); g.rotation.set(1.25,0,-.2); /* held upright, tip up, like a brush ready to write */ g.userData.wenbi=1; } };
 function buildAccHand(id){ const g=new T.Group(); if(ACC_BUILD_HAND[id]){ ACC_BUILD_HAND[id](g); return g; }
   if(id==="sausage"){ const stick=new T.Mesh(new T.CylinderGeometry(.008,.008,.34,5),accMat("#d8c09a")); stick.position.y=.1; g.add(stick);
     const s=new T.Mesh(T.CapsuleGeometry?new T.CapsuleGeometry(.045,.2,6,10):new T.CylinderGeometry(.045,.045,.28,10),accMat("#b8321e",{r:.35})); s.position.y=.24; g.add(s);
@@ -5513,6 +5532,15 @@ function accTick(av,dt){ stinkFlies(av,!!(av.accHand&&av.accHand.userData.stink&
   if(av.accHead&&av.accHead.userData.bubbles&&near){ av.bubT=(av.bubT||0)-dt; if(av.bubT<0){ av.bubT=.18+Math.random()*.2; av.accHead.getWorldPosition(_v1); // rainbow soap bubbles drifting up from the cup
       const c=["#ff6b9a","#ffd24a","#6bdcff","#9a7bff","#7dffb0","#ffffff"][(Math.random()*6)|0]; const b=new T.Sprite(new T.SpriteMaterial({map:BUB_TEX(),color:new T.Color(c),transparent:true,depthWrite:false})); const sz=.05+Math.random()*.06;
       b.position.set(_v1.x+rand(-.15,.15),_v1.y+.5+rand(0,.15),_v1.z+rand(-.15,.15)); b.scale.set(sz,sz,1); scene.add(b); parts.push({s:b,vx:rand(-.12,.12),vy:.35+Math.random()*.2,vz:rand(-.12,.12),life:0,max:1.8+Math.random(),grow:.03,op:.9}); } }
+  if(av.accHand&&av.accHand.userData.wenbi&&near){ const t=performance.now()/1000;
+    av.accHand.userData.ribT.forEach(m=>{ const pa=m.geometry.attributes.position, b0=m.userData.base, sd=m.userData.sd; for(let i=0;i<pa.count;i++){ const y=b0[i*3+1], u=-y/.24; pa.setX(i,b0[i*3]+sd*u*.05+Math.sin(t*6+u*4+sd)*.02*u); pa.setZ(i,Math.sin(t*5+u*5+sd*1.3)*.035*u); } pa.needsUpdate=true; });
+    av.wbT=(av.wbT||0)-dt; if(av.wbT<0){ av.wbT=1.1+Math.random()*.9; const p0=av.root.position, tx=Math.random()<.5?WB_TEX("✓"):WB_TEX("100分");
+      const sp=new T.Sprite(new T.SpriteMaterial({map:tx,transparent:true,depthWrite:false})); const sz=tx.image.width>200?.13:.17; sp.scale.set(sz*tx.image.width/tx.image.height,sz,1);
+      const a=Math.random()*6.283; sp.position.set(p0.x+Math.cos(a)*.45,1.25+Math.random()*.5,p0.z+Math.sin(a)*.45); scene.add(sp); parts.push({s:sp,vx:0,vy:.28,vz:0,life:0,max:1.6,grow:.01,op:1}); } }
+  if(av.accHand&&av.accHand.userData.stars&&near){ const t=performance.now()/1000, u=av.accHand.userData; u.star.rotation.z=t*1.5; const k=.3+.05*Math.sin(t*4); u.sglow.scale.set(k,k,1);
+    if(!av.orbit||av.orbit.parent!==av.root){ av.orbit=new T.Group(); av.orbit.userData.noMerge=1; av.root.add(av.orbit); ["#ffe680","#ffb0d8","#a8d8ff","#ffe680","#d0b0ff"].forEach((c,i)=>{ const sp=new T.Sprite(new T.SpriteMaterial({map:STAR_TEX(),color:new T.Color(c),transparent:true,depthWrite:false,blending:T.AdditiveBlending})); sp.userData.i=i; av.orbit.add(sp); }); }
+    av.orbit.children.forEach(sp=>{ const i=sp.userData.i, a=t*1.4+i*Math.PI*2/5; sp.position.set(Math.cos(a)*.55,.95+Math.sin(a*2+i)*.18+i*.06,Math.sin(a)*.55); const z=.1+.03*Math.sin(t*5+i); sp.scale.set(z,z,1); }); }
+  else if(av.orbit){ av.orbit.parent&&av.orbit.parent.remove(av.orbit); av.orbit=null; }
   if(av.pet){ const t=performance.now()/1000; av.pet.position.set(.5+Math.sin(t*.8)*.08,1.45+Math.sin(t*2)*.08,.1+Math.cos(t*.8)*.08); av.pet.rotation.y=Math.sin(t*.6)*.4; av.pet.rotation.z=Math.sin(t*1.7)*.1; av.pet.userData.glow.material.opacity=.55+.2*Math.sin(t*3); }
   if(av.accHand&&av.accHand.userData.fairy&&near&&av.torso){ /* 仙女披帛: two thin silk scarves draped over the shoulders, round the back and under the arms, ends fluttering */
     if(!av.ribbon||av.ribbon.parent!==av.torso){ if(av.ribbon&&av.ribbon.parent) av.ribbon.parent.remove(av.ribbon); av.ribbon=new T.Group(); av.ribbon.userData.noMerge=1; av.torso.add(av.ribbon);
@@ -5554,7 +5582,7 @@ async function godGameWin(g,ms,accId,extra){ const rw=extra||gameReward(g,accId)
   openSheet("godGame",GOD_GAMES[g]||"小遊戲",`<div class="gg-done"><div class="gg-time">${fmtMs(ms)}</div><p class="lead">${rw.kind==="acc"?"🎁 ":rw.kind==="gacha"?"🎟️ ":""}${esc(rw.text)}</p>
     <div class="group"><span class="group-label">🏆 最快排行榜</span><div id="ggBoard"><p class="note">讀取中…</p></div></div></div>`);
   const list=await lbSubmit(g,ms); const el=$("#ggBoard"); if(el) el.innerHTML=lbHTML(list); }
-const GOD_PLAY={tudi:"⛏️ 尋寶（找到發光的寶藏挖出來）",zhusheng:"🍼 哄寶寶睡覺",jiutian:"☯️ 八卦迷宮（傾斜手機滾彈珠）",guanyin:"💧 接福水（轉動木水道）",dizang:"🧩 記憶碎片（幫小幽靈拼回記憶）"};
+const GOD_PLAY={doumu:"⭐ 眾星歸位（60 秒點亮 8 顆星）",wenchang:"🖌️ 寫字（照紅字描 3 個字）",tudi:"⛏️ 尋寶（找到發光的寶藏挖出來）",zhusheng:"🍼 哄寶寶睡覺",jiutian:"☯️ 八卦迷宮（傾斜手機滾彈珠）",guanyin:"💧 接福水（轉動木水道）",dizang:"🧩 記憶碎片（幫小幽靈拼回記憶）"};
 const GOD_START={}; HANDLERS.godPlay=g=>{ closeSheet(); if(GOD_START[g]) GOD_START[g](); else toast("這個遊戲還在準備中"); };
 /* ================= 土地公・尋寶: a beam of light marks treasure somewhere in the grounds; walk there, tap it, dig it up ================= */
 const TH={on:false,t0:0,x:0,z:0,g:null,hit:null,digging:false};
@@ -5839,6 +5867,156 @@ function playMemory(){ bag.dz=bag.dz||{done:[]}; const done0=new Set(bag.dz.done
     requestAnimationFrame(draw); };
   requestAnimationFrame(draw); }
 GOD_START.dizang=playMemory;
+/* ================= 文昌帝君・寫字: three random characters a round, traced with the finger over red guide strokes (描紅) within the
+   time limit. Each character is checked by how much of it the ink covers and how little ink lands outside it. ================= */
+const WB_TEX=(()=>{ const c={}; return k=>c[k]||(c[k]=(()=>{ const w=k.length>1?256:128, h=128; return cvs(w,h,(x)=>{ x.font=`900 ${k.length>1?78:104}px ${DISPLAY_FONT}`; x.textAlign="center"; x.textBaseline="middle";
+  x.lineWidth=10; x.strokeStyle="rgba(255,255,255,.95)"; x.strokeText(k,w/2,h/2+4); x.fillStyle="#e01818"; x.fillText(k,w/2,h/2+4); if(k.length>1){ x.strokeStyle="#e01818"; x.lineWidth=5; x.beginPath(); x.moveTo(30,h-14); x.quadraticCurveTo(w/2,h-2,w-30,h-16); x.stroke(); } }); })()); })();
+const WC_POOL="福文昌學天中心光平安喜春明吉永正和金玉山水月日火木土生年好愛家神佛書筆言仁義禮智信德善美興旺財壽樂";
+function playWenchang(){ const L=gameLayer("文昌帝君・寫字","照著紅字描一遍，限時 60 秒寫完 3 個字"); const {x,cv}=L, LIMIT=60;
+  const pool=[...WC_POOL], chars=[]; while(chars.length<3){ const c=pool.splice((Math.random()*pool.length)|0,1)[0]; chars.push(c); }
+  const M=72; let idx=0, glyph=null, gCount=0, ink=document.createElement("canvas"), mk=document.createElement("canvas"); mk.width=mk.height=M; const mx=mk.getContext("2d");
+  const big=document.createElement("canvas"), bx=big.getContext("2d"); let strokes=[], cur=null, t0=performance.now(), last=t0, done=false, passT=0, msg="", msgT=0, fail=false;
+  const G=()=>{ const W=L.W(), H=L.H(), size=Math.min(W-36,H-250,520); return {W,H,size,ox:(W-size)/2,oy:Math.max(112,(H-size)/2-10)}; };
+  const glyphMask=c=>{ mx.clearRect(0,0,M,M); mx.fillStyle="#000"; mx.font=`700 ${M*.82}px ${DISPLAY_FONT}`; mx.textAlign="center"; mx.textBaseline="middle"; mx.fillText(c,M/2,M/2+M*.04); const d=mx.getImageData(0,0,M,M).data, a=new Uint8Array(M*M); let n=0; for(let i=0;i<M*M;i++) if(d[i*4+3]>110){ a[i]=1; n++; } return {a,n}; };
+  const fitBig=()=>{ const g=G(), dpr=Math.min(2,devicePixelRatio||1); big.width=big.height=Math.round(g.size*dpr); bx.setTransform(dpr,0,0,dpr,0,0); };
+  const next=()=>{ glyph=glyphMask(chars[idx]); gCount=glyph.n; strokes=[]; cur=null; fitBig(); bx.clearRect(0,0,big.width,big.height); };
+  (document.fonts&&document.fonts.load?document.fonts.load(`700 40px "LXGW WenKai TC"`,chars.join("")):Promise.resolve()).catch(()=>{}).then(()=>next());
+  next();
+  /* score: ink is rasterised at mask size, slightly fattened so a fair trace counts */
+  const score=()=>{ mx.clearRect(0,0,M,M); mx.strokeStyle="#000"; mx.lineCap=mx.lineJoin="round"; mx.lineWidth=M*.1; const g=G(), k=M/g.size;
+    for(const st of strokes){ mx.beginPath(); st.forEach((p,i)=>i?mx.lineTo(p[0]*k,p[1]*k):mx.moveTo(p[0]*k,p[1]*k)); if(st.length===1) mx.lineTo(st[0][0]*k+.1,st[0][1]*k); mx.stroke(); }
+    const d=mx.getImageData(0,0,M,M).data; let hit=0, inkN=0, out=0; const near=i=>{ const X=i%M, Y=(i/M)|0; for(let dy=-2;dy<=2;dy++) for(let dx=-2;dx<=2;dx++){ const xx=X+dx, yy=Y+dy; if(xx>=0&&yy>=0&&xx<M&&yy<M&&glyph.a[yy*M+xx]) return true; } return false; };
+    for(let i=0;i<M*M;i++){ const on=d[i*4+3]>100; if(glyph.a[i]&&on) hit++; if(on){ inkN++; if(!near(i)) out++; } }
+    return {cov:hit/Math.max(1,gCount), out:out/Math.max(1,inkN)}; };
+  const check=()=>{ const r=score(); if(r.cov>=.62&&r.out<=.3){ passT=performance.now(); tone(880,.12,.08,"triangle"); tone(1320,.2,.08,"triangle",.1); setTimeout(()=>{ idx++; if(idx>=chars.length){ done=true; const ms=performance.now()-t0; healSound(); msg="寫完了！"; msgT=performance.now(); setTimeout(()=>{ L.close(); godGameWin("wenchang",ms,"wenbi"); },1200); } else { passT=0; next(); } },1100); }
+    else if(r.out>.3&&strokes.length>2){ msg="寫到格子外面太多了，按「重寫」再來"; msgT=performance.now(); } return r; };
+  const local=e=>{ const g=G(), rc=cv.getBoundingClientRect(); return [e.clientX-rc.left-g.ox,e.clientY-rc.top-g.oy]; };
+  cv.addEventListener("pointerdown",e=>{ if(done||fail||passT) return; const p=local(e), g=G(); if(p[0]<0||p[1]<0||p[0]>g.size||p[1]>g.size) return; cur=[p]; strokes.push(cur); cur.t=performance.now(); cur.w=g.size*.05; cv.setPointerCapture&&cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener("pointermove",e=>{ if(!cur) return; const p=local(e), q=cur[cur.length-1], d=Math.hypot(p[0]-q[0],p[1]-q[1]); if(d<1.5) return; const g=G(), now=performance.now(), sp=d/Math.max(1,now-cur.t); cur.t=now;
+    const w=Math.max(g.size*.028,Math.min(g.size*.07,g.size*.065-sp*g.size*.012)); /* slow = fat stroke, fast = thin, like a brush */
+    bx.strokeStyle="#141210"; bx.lineCap="round"; bx.lineWidth=(cur.w+w)/2; bx.beginPath(); bx.moveTo(q[0],q[1]); bx.lineTo(p[0],p[1]); bx.stroke(); cur.w=(cur.w*2+w)/3; cur.push(p); });
+  const up=()=>{ if(!cur) return; if(cur.length===1){ bx.fillStyle="#141210"; bx.beginPath(); bx.arc(cur[0][0],cur[0][1],G().size*.03,0,7); bx.fill(); } cur=null; check(); };
+  cv.addEventListener("pointerup",up); cv.addEventListener("pointercancel",up);
+  const bar=document.createElement("div"); bar.className="dz-zoom"; bar.innerHTML=`<button class="chip">↺ 重寫</button>`; L.el.appendChild(bar); bar.querySelector("button").onclick=()=>{ if(!done&&!passT){ strokes=[]; bx.clearRect(0,0,big.width,big.height); } };
+  window.__wc=()=>({idx,chars,done,fail,score:glyph?score():null});
+  window.__wcAuto=()=>{ const g=G(), k=g.size/M; for(let y=0;y<M;y++){ let run=null; for(let xx=0;xx<=M;xx++){ const on=xx<M&&glyph.a[y*M+xx]; if(on&&run==null) run=xx; if(!on&&run!=null){ strokes.push([[(run+.5)*k,(y+.5)*k],[(xx-.5)*k,(y+.5)*k]]); bx.fillStyle="#141210"; bx.fillRect(run*k,y*k,(xx-run)*k,k); run=null; } } } return check(); };
+  const draw=now=>{ if(L.done) return; last=now; const g=G(), el=(now-t0)/1000;
+    if(!done&&!fail&&el>LIMIT){ fail=true; tone(220,.4,.1,"triangle"); const b=document.createElement("div"); b.className="gg-fail"; b.innerHTML=`<p>時間到了！</p><button class="btn primary">再寫一次</button>`; b.style.cssText="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(30,16,10,.92);border:1px solid #e0b04a;border-radius:14px;padding:20px 26px;text-align:center;color:#ffe2a0;font:700 20px var(--f-display);z-index:3"; L.el.appendChild(b); b.querySelector("button").onclick=()=>{ L.close(); playWenchang(); }; }
+    const bg=x.createLinearGradient(0,0,0,g.H); bg.addColorStop(0,"#3a1a10"); bg.addColorStop(1,"#1a0c08"); x.fillStyle=bg; x.fillRect(0,0,g.W,g.H);
+    // rice paper with a red 米字格
+    x.save(); x.shadowColor="rgba(0,0,0,.5)"; x.shadowBlur=18; x.fillStyle="#f4ead2"; x.fillRect(g.ox,g.oy,g.size,g.size); x.restore();
+    x.strokeStyle="#c8322a"; x.lineWidth=3; x.strokeRect(g.ox+3,g.oy+3,g.size-6,g.size-6); x.setLineDash([7,7]); x.lineWidth=1.2; x.strokeStyle="rgba(200,50,42,.55)"; x.beginPath();
+    x.moveTo(g.ox+g.size/2,g.oy); x.lineTo(g.ox+g.size/2,g.oy+g.size); x.moveTo(g.ox,g.oy+g.size/2); x.lineTo(g.ox+g.size,g.oy+g.size/2); x.moveTo(g.ox,g.oy); x.lineTo(g.ox+g.size,g.oy+g.size); x.moveTo(g.ox+g.size,g.oy); x.lineTo(g.ox,g.oy+g.size); x.stroke(); x.setLineDash([]);
+    if(idx<chars.length){ x.fillStyle="rgba(222,70,60,.38)"; x.font=`700 ${g.size*.82}px ${DISPLAY_FONT}`; x.textAlign="center"; x.textBaseline="middle"; x.fillText(chars[idx],g.ox+g.size/2,g.oy+g.size/2+g.size*.04); }
+    x.drawImage(big,g.ox,g.oy,g.size,g.size);
+    if(passT){ const k=Math.min(1,(now-passT)/250); x.save(); x.translate(g.ox+g.size*.78,g.oy+g.size*.22); x.scale(.6+.4*k,.6+.4*k); x.globalAlpha=k; x.strokeStyle="#e01818"; x.lineWidth=7; x.beginPath(); x.arc(0,0,g.size*.15,0,7); x.stroke();
+      x.lineWidth=9; x.lineCap="round"; x.beginPath(); x.moveTo(-g.size*.07,0); x.lineTo(-g.size*.015,g.size*.06); x.lineTo(g.size*.08,-g.size*.07); x.stroke(); x.fillStyle="#e01818"; x.font=`900 ${g.size*.09}px ${DISPLAY_FONT}`; x.textAlign="center"; x.fillText("100分",0,g.size*.25); x.restore(); }
+    // which characters: done ones in red ink
+    x.textAlign="center"; x.textBaseline="middle"; chars.forEach((c,i)=>{ const cx=g.W/2+(i-1)*58, cy=g.oy+g.size+46; x.fillStyle=i<idx?"#e8b84a":i===idx?"#fff":"rgba(255,255,255,.35)"; x.font=`700 34px ${DISPLAY_FONT}`; x.fillText(c,cx,cy); if(i<idx){ x.strokeStyle="#e01818"; x.lineWidth=3; x.beginPath(); x.arc(cx,cy,22,0,7); x.stroke(); } });
+    x.textAlign="left"; x.fillStyle=el>LIMIT-10&&!done?"#ff8a7a":"#fff"; x.font=`600 15px ${UI_FONT}`; x.fillText(`剩 ${Math.max(0,LIMIT-el).toFixed(1)} 秒・第 ${Math.min(idx+1,3)}/3 字`,18,96);
+    if(msg&&now-msgT<2200){ x.textAlign="center"; x.fillStyle=`rgba(255,226,160,${1-(now-msgT)/2200})`; x.font=`700 18px ${DISPLAY_FONT}`; x.fillText(msg,g.W/2,g.H-90); }
+    requestAnimationFrame(draw); };
+  window.addEventListener("resize",()=>{ if(!L.done){ fitBig(); strokes=[]; } });
+  requestAnimationFrame(draw); }
+GOD_START.wenchang=playWenchang;
+/* ================= 斗姥元君・眾星歸位: 60 s for 8 stars. Part 1: shapes drift down the night sky; drag the ones the chart needs into the
+   basket (meteors knock them out of your hand, clouds drift over, thunder makes you drop them). Part 2: put each shape into its hole in the
+   北斗 star chart; every one lights a star. All 8 lit: the sky brightens and 斗姥元君 gives her blessing. ================= */
+const STAR_TEX=(()=>{ let t=null; return ()=>t||(t=cvs(64,64,(x)=>{ const g=x.createRadialGradient(32,32,0,32,32,32); g.addColorStop(0,"rgba(255,255,255,1)"); g.addColorStop(.3,"rgba(255,255,255,.6)"); g.addColorStop(1,"rgba(255,255,255,0)"); x.fillStyle=g; x.fillRect(0,0,64,64);
+  x.fillStyle="#fff"; x.beginPath(); for(let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5, r=i%2?7:18; x.lineTo(32+Math.cos(a)*r,32+Math.sin(a)*r); } x.closePath(); x.fill(); })); })();
+const DM_KIND={heart:{c:"#ff8fbf",n:"愛心"},star:{c:"#ffd86b",n:"星星"},square:{c:"#7fe6c4",n:"方塊"},tri:{c:"#8fc8ff",n:"三角"},circle:{c:"#c9a6ff",n:"圓圈"}};
+function dmPath(x,k,r){ x.beginPath(); if(k==="circle") x.arc(0,0,r,0,7);
+  else if(k==="square"){ const a=r*.82; x.moveTo(-a,-a); x.lineTo(a,-a); x.lineTo(a,a); x.lineTo(-a,a); x.closePath(); }
+  else if(k==="tri"){ x.moveTo(0,-r); x.lineTo(r*.95,r*.7); x.lineTo(-r*.95,r*.7); x.closePath(); }
+  else if(k==="star"){ for(let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5, q=i%2?r*.45:r*1.05; x.lineTo(Math.cos(a)*q,Math.sin(a)*q); } x.closePath(); }
+  else { x.moveTo(0,r*.85); x.bezierCurveTo(-r*1.3,-r*.05,-r*.6,-r*1.05,0,-r*.4); x.bezierCurveTo(r*.6,-r*1.05,r*1.3,-r*.05,0,r*.85); x.closePath(); } }
+function dmShape(x,k,px,py,r,rot=0,a=1,glow=1){ x.save(); x.translate(px,py); x.rotate(rot); x.globalAlpha=a; x.shadowColor=DM_KIND[k].c; x.shadowBlur=14*glow;
+  const g=x.createRadialGradient(-r*.3,-r*.35,1,0,0,r*1.1); g.addColorStop(0,"#fff"); g.addColorStop(.35,DM_KIND[k].c); g.addColorStop(1,DM_KIND[k].c); x.fillStyle=g; dmPath(x,k,r); x.fill();
+  x.shadowBlur=0; x.strokeStyle="rgba(255,255,255,.75)"; x.lineWidth=2; x.stroke(); x.restore(); }
+function playDoumu(){ const L=gameLayer("斗姥元君・眾星歸位","把星圖要的形狀拖進左下角的籃子，再放回星圖，60 秒點亮 8 顆星"); const {x,cv}=L, LIMIT=60, KINDS=Object.keys(DM_KIND);
+  const need=[]; for(let i=0;i<8;i++) need.push(i<5?KINDS[i]:KINDS[(Math.random()*5)|0]); need.sort(()=>Math.random()-.5);
+  const CH=[[.06,.62],[.22,.5],[.38,.56],[.54,.5],[.62,.74],[.84,.8],[.86,.5],[.9,.08]]; /* 搖光 開陽 玉衡 天權 天璣 天旋 天樞 + 北極星 */
+  const LINES=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,3]];
+  let phase=1, t0=performance.now(), last=t0, items=[], held=null, basket=[], lit=need.map(()=>0), meteors=[], clouds=[], flash=0, bolt=null, nextSpawn=0, nextMet=4, nextCloud=2, nextBolt=11, msg="把需要的形狀拖進籃子！", msgT=t0, fin=0, fail=false, done=false, sparks=[];
+  const sky=[...Array(110)].map(()=>[Math.random(),Math.random(),Math.random()*1.4+.3,Math.random()*6]);
+  const G=()=>{ const W=L.W(), H=L.H(); const cw=Math.min(W-40,520), chH=Math.min(H*.42,cw*.7); return {W,H,bx:62,by:H-74,br:50,cx:(W-cw)/2,cy:118,cw,chH}; };
+  const left=()=>{ const m={}; need.forEach(k=>m[k]=(m[k]||0)+1); basket.forEach(b=>m[b.k]--); return m; };
+  const holeXY=(i,g)=>[g.cx+CH[i][0]*g.cw,g.cy+CH[i][1]*g.chH];
+  const say=s2=>{ msg=s2; msgT=performance.now(); };
+  const note=i=>{ const sc=[523,587,659,784,880,1047,1175,1319]; tone(sc[i%8],.6,.06,"sine"); tone(sc[i%8]*2,.4,.025,"sine",.05); };
+  const pt=e=>{ const rc=cv.getBoundingClientRect(); return [e.clientX-rc.left,e.clientY-rc.top]; };
+  cv.addEventListener("pointerdown",e=>{ if(done||fail) return; const [px,py]=pt(e); let best=null, bd=48;
+    const pool=phase===1?items:basket.filter(b=>!b.placed); for(const it of pool){ const d=Math.hypot(it.x-px,it.y-py); if(d<bd){ bd=d; best=it; } }
+    if(best){ held=best; best.held=true; best.ox=best.x-px; best.oy=best.y-py; tone(660,.08,.04,"triangle"); } });
+  cv.addEventListener("pointermove",e=>{ if(!held) return; const [px,py]=pt(e); held.x=px+held.ox; held.y=py+held.oy; });
+  const drop=()=>{ if(!held) return; const it=held, g=G(); held=null; it.held=false;
+    if(phase===1){ if(Math.hypot(it.x-g.bx,it.y-g.by)<g.br+22){ const m=left(); if(m[it.k]>0){ items.splice(items.indexOf(it),1); basket.push({k:it.k,x:0,y:0,placed:false}); note(basket.length-1); burst(g.bx,g.by,DM_KIND[it.k].c,10);
+          if(basket.length===need.length){ phase=2; say("星圖出現了！把形狀放回對應的洞"); layoutBasket(); } } else { it.vy=-120; it.vx=60; say(`星圖不需要更多${DM_KIND[it.k].n}了`); tone(260,.15,.05,"triangle"); } } }
+    else { let ok=false; need.forEach((k,i)=>{ if(ok||lit[i]||k!==it.k) return; const [hx,hy]=holeXY(i,g); if(Math.hypot(it.x-hx,it.y-hy)<38){ ok=true; lit[i]=performance.now(); it.placed=true; note(i); burst(hx,hy,"#fff6c0",22);
+          if(lit.every(v=>v)){ done=true; fin=performance.now(); const ms=fin-t0; healSound(); setTimeout(()=>{ L.close(); godGameWin("doumu",ms,"starwand"); },4200); } } });
+      if(!ok){ layoutBasket(); tone(260,.15,.05,"triangle"); } } };
+  cv.addEventListener("pointerup",drop); cv.addEventListener("pointercancel",drop);
+  const layoutBasket=()=>{ const g=G(), rest=basket.filter(b=>!b.placed); rest.forEach((b,i)=>{ b.x=g.W/2+(i-(rest.length-1)/2)*Math.min(46,(g.W-40)/Math.max(1,rest.length)); b.y=g.H-80; }); };
+  const burst=(px,py,c,n)=>{ for(let i=0;i<n;i++){ const a=Math.random()*6.283, v=60+Math.random()*160; sparks.push({x:px,y:py,vx:Math.cos(a)*v,vy:Math.sin(a)*v,l:0,m:.6+Math.random()*.6,c}); } };
+  window.__dm=()=>({phase,need,basket:basket.map(b=>b.k),lit:lit.map(v=>!!v),done,fail,items:items.length});
+  window.__dmAuto=(n=99)=>{ const g=G(); if(phase===1){ for(const k of Object.entries(left()).flatMap(([k,c])=>Array(Math.max(0,c)).fill(k)).slice(0,n)){ const it={k,x:g.bx,y:g.by,vx:0,vy:0,rot:0}; items.push(it); held=it; drop(); } return; }
+    need.forEach((k,i)=>{ if(n<=0||lit[i]) return; const b=basket.find(b2=>!b2.placed&&b2.k===k); if(!b) return; const [hx,hy]=holeXY(i,g); b.x=hx; b.y=hy; held=b; n--; drop(); }); };
+  const draw=now=>{ if(L.done) return; const dt=Math.min(.033,(now-last)/1000); last=now; const g=G(), el=(now-t0)/1000;
+    if(!done&&!fail&&el>LIMIT){ fail=true; held=null; tone(220,.4,.1,"triangle"); const b=document.createElement("div"); b.innerHTML=`<p>時間到了，星星還沒全部歸位</p><button class="btn primary">再試一次</button>`; b.style.cssText="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(16,14,40,.94);border:1px solid #c9a6ff;border-radius:14px;padding:20px 26px;text-align:center;color:#ffe9b0;font:700 19px var(--f-display);z-index:3"; L.el.appendChild(b); b.querySelector("button").onclick=()=>{ L.close(); playDoumu(); }; }
+    const fk=done?Math.min(1,(now-fin)/1800):0;
+    // sky: deep night, brightening into dawn gold at the finale
+    const bg=x.createLinearGradient(0,0,0,g.H); bg.addColorStop(0,`rgb(${12+fk*60|0},${14+fk*40|0},${46+fk*70|0})`); bg.addColorStop(.6,`rgb(${36+fk*150|0},${22+fk*90|0},${74+fk*60|0})`); bg.addColorStop(1,`rgb(${70+fk*180|0},${40+fk*130|0},${90+fk*20|0})`); x.fillStyle=bg; x.fillRect(0,0,g.W,g.H);
+    sky.forEach(([sx,sy,sr,ph])=>{ x.globalAlpha=.35+.35*Math.sin(now/600+ph); x.fillStyle="#fff"; x.beginPath(); x.arc(sx*g.W,sy*g.H,sr,0,7); x.fill(); }); x.globalAlpha=1;
+    if(!done&&!fail){
+      if(phase===1){ nextSpawn-=dt; if(nextSpawn<=0){ nextSpawn=.55+Math.random()*.35; const m=left(), want=KINDS.filter(k=>m[k]>0); const k=want.length&&Math.random()<.6?want[(Math.random()*want.length)|0]:KINDS[(Math.random()*5)|0];
+          items.push({k,x:40+Math.random()*(g.W-80),y:-30,vx:(Math.random()-.5)*20,vy:55+Math.random()*45,rot:Math.random()*6,vr:(Math.random()-.5)*1.2,ph:Math.random()*6}); }
+        for(const it of items) if(!it.held){ it.vy=Math.min(it.vy+40*dt,110); it.x+=(it.vx+Math.sin(now/700+it.ph)*18)*dt; it.y+=it.vy*dt; it.vx*=.98; it.rot+=it.vr*dt; }
+        items=items.filter(it=>it.held||it.y<g.H+40);
+        nextCloud-=dt; if(nextCloud<=0){ nextCloud=6+Math.random()*4; const dir=Math.random()<.5?1:-1; clouds.push({x:dir>0?-160:g.W+160,y:g.H*(.25+Math.random()*.4),v:dir*(26+Math.random()*16),s:.9+Math.random()*.6}); }
+        nextBolt-=dt; if(nextBolt<=0){ nextBolt=10+Math.random()*5; flash=1; const bx0=g.W*(.2+Math.random()*.6); const pts=[[bx0,0]]; let yy=0; while(yy<g.H*.7){ yy+=30+Math.random()*40; pts.push([pts[pts.length-1][0]+(Math.random()-.5)*60,yy]); } bolt={pts,t:now};
+          tone(70,.7,.14,"sawtooth"); tone(50,.9,.1,"square",.05); if(held){ held.held=false; held.vy=40; held=null; } for(const it of items){ it.vx+=(Math.random()-.5)*160; } say("打雷了！手上的形狀掉了"); }
+      }
+      nextMet-=dt; if(nextMet<=0){ nextMet=3.5+Math.random()*3; const fromR=Math.random()<.5; meteors.push({x:fromR?g.W+40:-40,y:Math.random()*g.H*.35+80,vx:(fromR?-1:1)*(320+Math.random()*120),vy:180+Math.random()*80}); }
+      for(const m of meteors){ m.x+=m.vx*dt; m.y+=m.vy*dt; if(held&&Math.hypot(held.x-m.x,held.y-m.y)<34){ const h=held; h.held=false; held=null; if(phase===1){ h.vx=m.vx*.4; h.vy=m.vy*.3; } else layoutBasket(); say("被流星撞掉了！"); tone(180,.25,.08,"triangle"); burst(m.x,m.y,"#ffd0a0",8); }
+        if(phase===1) for(const it of items) if(!it.held&&Math.hypot(it.x-m.x,it.y-m.y)<26){ it.vx+=m.vx*.3; it.vy=-30; } }
+      meteors=meteors.filter(m=>m.y<g.H+60&&m.x>-80&&m.x<g.W+80);
+    }
+    // star chart
+    const ca=phase===2?1:.22; x.save(); x.globalAlpha=ca; x.strokeStyle="rgba(200,190,255,.5)"; x.lineWidth=2; x.setLineDash([4,6]); x.beginPath(); for(const [a2,b2] of LINES){ const p=holeXY(a2,g), q=holeXY(b2,g); x.moveTo(p[0],p[1]); x.lineTo(q[0],q[1]); } { const p=holeXY(6,g), q=holeXY(7,g); x.moveTo(p[0],p[1]); x.lineTo(q[0],q[1]); } x.stroke(); x.setLineDash([]);
+    need.forEach((k,i)=>{ const [hx,hy]=holeXY(i,g); if(lit[i]){ const lk=Math.min(1,(now-lit[i])/400); x.globalAlpha=1; x.save(); x.translate(hx,hy); x.globalCompositeOperation="lighter"; const r=26+6*Math.sin(now/300+i); const rg=x.createRadialGradient(0,0,0,0,0,r*2.2); rg.addColorStop(0,"rgba(255,250,210,.95)"); rg.addColorStop(.3,"rgba(255,220,140,.5)"); rg.addColorStop(1,"rgba(255,200,120,0)"); x.fillStyle=rg; x.beginPath(); x.arc(0,0,r*2.2*lk,0,7); x.fill(); x.restore(); dmShape(x,k,hx,hy,17,0,1,2); }
+      else { x.save(); x.translate(hx,hy); x.globalAlpha=ca; x.fillStyle="rgba(10,8,30,.6)"; dmPath(x,k,19); x.fill(); x.setLineDash([3,3]); x.strokeStyle=DM_KIND[k].c; x.lineWidth=2; x.stroke(); x.setLineDash([]); x.restore(); } });
+    if(lit.some(v=>v)){ x.globalAlpha=1; x.strokeStyle="rgba(255,236,170,.75)"; x.lineWidth=2.5; x.shadowColor="#ffe08a"; x.shadowBlur=10; x.beginPath(); for(const [a2,b2] of LINES) if(lit[a2]&&lit[b2]){ const p=holeXY(a2,g), q=holeXY(b2,g); x.moveTo(p[0],p[1]); x.lineTo(q[0],q[1]); } if(lit[6]&&lit[7]){ const p=holeXY(6,g), q=holeXY(7,g); x.moveTo(p[0],p[1]); x.lineTo(q[0],q[1]); } x.stroke(); x.shadowBlur=0; }
+    x.restore();
+    // clouds
+    for(const c of clouds){ c.x+=c.v*dt; if(phase===2) c.a=Math.max(0,(c.a??.82)-dt*.8); /* clouds clear away once the chart appears */ x.save(); x.globalAlpha=c.a??.82; x.fillStyle="#cfd2ea"; x.shadowColor="rgba(0,0,0,.3)"; x.shadowBlur=20; x.beginPath(); for(const [ox,oy,r] of [[0,0,46],[44,8,38],[-44,10,36],[20,-26,34],[-18,-22,30]]) { x.moveTo(c.x+ox*c.s+r*c.s,c.y+oy*c.s); x.arc(c.x+ox*c.s,c.y+oy*c.s,r*c.s,0,7); } x.fill(); x.restore(); }
+    clouds=clouds.filter(c=>c.x>-260&&c.x<g.W+260);
+    // falling shapes / basket shapes
+    if(phase===1) for(const it of items) dmShape(x,it.k,it.x,it.y,it.held?24:20,it.rot,1,it.held?2:1);
+    // basket
+    if(phase===1){ x.save(); x.translate(g.bx,g.by); const bg2=x.createLinearGradient(0,-30,0,40); bg2.addColorStop(0,"#d8a860"); bg2.addColorStop(1,"#8a5a26"); x.fillStyle=bg2; x.beginPath(); x.moveTo(-g.br,-12); x.lineTo(g.br,-12); x.lineTo(g.br*.75,38); x.lineTo(-g.br*.75,38); x.closePath(); x.fill();
+      x.strokeStyle="rgba(90,50,20,.6)"; x.lineWidth=2; for(let i=-3;i<=3;i++){ x.beginPath(); x.moveTo(i*14,-12); x.lineTo(i*10.5,38); x.stroke(); } x.strokeStyle="#f0d090"; x.lineWidth=5; x.beginPath(); x.ellipse(0,-12,g.br,10,0,0,7); x.stroke();
+      if(held){ x.globalAlpha=.4+.3*Math.sin(now/120); x.strokeStyle="#fff6a0"; x.lineWidth=3; x.beginPath(); x.arc(0,0,g.br+18,0,7); x.stroke(); } x.restore();
+      basket.forEach((b,i)=>dmShape(x,b.k,g.bx-30+(i%4)*20,g.by-20-((i/4)|0)*10,9,0,1,.5)); }
+    else for(const b of basket) if(!b.placed) dmShape(x,b.k,b.x,b.y,b.held?24:19,0,1,b.held?2:1);
+    // meteors
+    for(const m of meteors){ const tl=x.createLinearGradient(m.x,m.y,m.x-m.vx*.28,m.y-m.vy*.28); tl.addColorStop(0,"rgba(255,240,200,1)"); tl.addColorStop(1,"rgba(255,160,90,0)"); x.strokeStyle=tl; x.lineWidth=5; x.lineCap="round"; x.beginPath(); x.moveTo(m.x,m.y); x.lineTo(m.x-m.vx*.28,m.y-m.vy*.28); x.stroke(); x.fillStyle="#fff"; x.beginPath(); x.arc(m.x,m.y,5,0,7); x.fill(); }
+    // thunder
+    if(bolt&&now-bolt.t<260){ x.strokeStyle="#fffbe0"; x.lineWidth=4; x.shadowColor="#bfd0ff"; x.shadowBlur=20; x.beginPath(); bolt.pts.forEach((p,i)=>i?x.lineTo(p[0],p[1]):x.moveTo(p[0],p[1])); x.stroke(); x.shadowBlur=0; }
+    if(flash>0){ x.fillStyle=`rgba(230,235,255,${flash*.55})`; x.fillRect(0,0,g.W,g.H); flash=Math.max(0,flash-dt*2.5); }
+    // sparks
+    x.globalCompositeOperation="lighter"; for(const p of sparks){ p.l+=dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.vx*=.96; p.vy=p.vy*.96+30*dt; const a=1-p.l/p.m; if(a<=0) continue; x.globalAlpha=a; x.fillStyle=p.c; x.beginPath(); x.arc(p.x,p.y,2.4,0,7); x.fill(); } x.globalCompositeOperation="source-over"; x.globalAlpha=1; sparks=sparks.filter(p=>p.l<p.m);
+    // finale: rays, 斗姥元君's blessing
+    if(done){ const t=(now-fin)/1000; x.save(); x.globalCompositeOperation="lighter"; x.translate(g.W/2,g.H*.36); for(let i=0;i<18;i++){ x.rotate(Math.PI/9); x.globalAlpha=fk*.18*(1+.4*Math.sin(t*3+i)); const rg=x.createLinearGradient(0,0,0,-g.H); rg.addColorStop(0,"#fff4c0"); rg.addColorStop(1,"rgba(255,220,140,0)"); x.fillStyle=rg; x.beginPath(); x.moveTo(-14,0); x.lineTo(14,0); x.lineTo(70,-g.H); x.lineTo(-70,-g.H); x.closePath(); x.fill(); }
+      for(let r=0;r<3;r++){ x.globalAlpha=fk*.5*(1-((t*.5+r/3)%1)); x.strokeStyle="#ffe8a8"; x.lineWidth=3; x.beginPath(); x.arc(0,0,40+((t*.5+r/3)%1)*g.W*.5,0,7); x.stroke(); } x.restore();
+      if(Math.random()<.5) sparks.push({x:Math.random()*g.W,y:-10,vx:(Math.random()-.5)*30,vy:80+Math.random()*80,l:0,m:2.5,c:["#fff6c0","#ffc8e8","#c8e0ff"][(Math.random()*3)|0]});
+      x.globalAlpha=Math.min(1,Math.max(0,t-.6)); x.textAlign="center"; x.textBaseline="middle"; x.font=`900 ${Math.min(46,g.W*.11)}px ${DISPLAY_FONT}`; x.shadowColor="#fff0b0"; x.shadowBlur=24; x.fillStyle="#fff8dc"; x.fillText("眾星歸位",g.W/2,g.H*.6); x.font=`700 ${Math.min(24,g.W*.06)}px ${DISPLAY_FONT}`; x.fillStyle="#ffe0a0"; x.fillText("斗姥元君 賜福",g.W/2,g.H*.6+50); x.shadowBlur=0; x.globalAlpha=1; }
+    // HUD
+    x.textAlign="left"; x.textBaseline="alphabetic"; x.fillStyle=el>LIMIT-10&&!done?"#ff9a8a":"#fff"; x.font=`600 15px ${UI_FONT}`; x.fillText(`剩 ${Math.max(0,LIMIT-el).toFixed(1)} 秒・星星 ${lit.filter(v=>v).length}/8`,18,96);
+    if(phase===1){ const m=left(); let xx=g.W-18; x.textAlign="right"; x.font=`600 13px ${UI_FONT}`; x.fillStyle="rgba(255,255,255,.8)"; KINDS.slice().reverse().forEach(k=>{ if(!(m[k]>0)) return; x.fillText(`×${m[k]}`,xx,96); xx-=x.measureText(`×${m[k]}`).width+4; dmShape(x,k,xx-9,91,8,0,1,.5); xx-=24; }); x.fillText("還要：",xx,96); }
+    if(msg&&now-msgT<2000&&!done){ x.textAlign="center"; x.fillStyle=`rgba(255,236,180,${1-(now-msgT)/2000})`; x.font=`700 18px ${DISPLAY_FONT}`; x.fillText(msg,g.W/2,phase===1?g.H*.82:g.H-130); }
+    requestAnimationFrame(draw); };
+  requestAnimationFrame(draw); }
+GOD_START.doumu=playDoumu;
 HANDLERS.godBoard=async g=>{ openSheet("godGame",(GOD_GAMES[g]||"小遊戲")+" 排行榜",`<div id="ggBoard"><p class="note">讀取中…</p></div>`); const el=$("#ggBoard"); const list=await lbGet(g); if(el) el.innerHTML=lbHTML(list); };
 
 /* ---- bag: 飾品 tab ---- */
