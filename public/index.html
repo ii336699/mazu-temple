@@ -5393,7 +5393,8 @@ const NM_STALLS=[
 const ACC={qqball:{name:"地瓜球頭飾",cat:"頭飾",slot:"head"},boba:{name:"珍奶頭飾",cat:"頭飾",slot:"head"},afro:{name:"閃亮彩色爆炸頭",cat:"頭飾",slot:"head"},
   sausage:{name:"香腸",cat:"裝飾品",slot:"hand",note:"好濃的蒜頭味"},skewer:{name:"烤肉串",cat:"裝飾品",slot:"hand"},
   pacifier:{name:"奶嘴",cat:"嘴邊",slot:"mouth",note:"註生娘娘賜的，咬著會冒粉紅愛心"},
-  peachsword:{name:"桃木七星劍",cat:"裝飾品",slot:"hand",note:"九天玄女賜的，身邊有仙女飄帶"}}; /* new ones always go at the end: the order is part of saved codes (15 at most) */
+  peachsword:{name:"桃木七星劍",cat:"裝飾品",slot:"hand",note:"九天玄女賜的，身邊有仙女飄帶"},
+  bamboo:{name:"受祝福的竹葉",cat:"嘴邊",slot:"mouth",note:"觀音菩薩賜的，全身閃閃發亮、神清氣爽"}}; /* new ones always go at the end: the order is part of saved codes (15 at most) */
 const ACC_IDS=Object.keys(ACC);
 function accState(){ if(!bag.acc||typeof bag.acc!=="object") bag.acc={owned:{},head:0,hand:0,mouth:0}; bag.acc.owned=bag.acc.owned||{}; if(bag.acc.mouth===undefined) bag.acc.mouth=0; return bag.acc; }
 function nmDay(){ const d=new Date(Date.now()+8*3600e3).toISOString().slice(0,10); if(!bag.nm||bag.nm.day!==d) bag.nm={day:d,fish:0,pWin:0,pCash:0}; return bag.nm; }
@@ -5431,6 +5432,10 @@ function buildAccHead(id){ const g=new T.Group();
   return g; }
 /* 嘴邊 pieces (held in the mouth): filled in by the god games' rewards */
 const ACC_MOUTH={
+  bamboo(g){ const leaf=accMat("#4caf50",{r:.5,e:"#2a7a30",ei:.25}), stem=accMat("#7a9a3a",{r:.6});
+    const st=new T.Mesh(new T.CylinderGeometry(.006,.006,.22,5),stem); st.rotation.z=Math.PI/2; st.position.x=.08; g.add(st);
+    for(const [x,a,sc] of [[.16,.5,1],[.2,-.4,.85],[.12,-.9,.7]]){ const l=new T.Mesh(new T.SphereGeometry(.05,10,6),leaf); l.scale.set(2.2,.35,.7); l.position.set(x,.02,0); l.rotation.z=a; g.add(l); }
+    g.userData.fresh=1; },
   pacifier(g){ const pink=accMat("#ff8fb8",{r:.35,e:"#ff6fa0",ei:.25}), white=accMat("#fff4f8",{r:.3});
     const shield=new T.Mesh(new T.SphereGeometry(.075,18,10),pink); shield.scale.set(1.25,.85,.32); g.add(shield);
     const ring=new T.Mesh(new T.TorusGeometry(.05,.012,8,20),pink); ring.position.z=.04; g.add(ring);
@@ -5494,6 +5499,9 @@ function accTick(av,dt){ stinkFlies(av,!!(av.accHand&&av.accHand.userData.stink&
     const t=performance.now()/1000; av.ribbon.children.forEach(m=>{ const pa=m.geometry.attributes.position, n=pa.count/2;
       for(let i=0;i<n;i++){ const u=i/(n-1), a=t*1.1+m.userData.ph+u*3.4, r=.5+u*.12, y=.75+u*.55+Math.sin(u*5+t*2.2+m.userData.ph)*.12, w=.07*(1-u*.6);
         pa.setXYZ(i,Math.cos(a)*r,y+w,Math.sin(a)*r); pa.setXYZ(i+n,Math.cos(a)*r,y-w,Math.sin(a)*r); } pa.needsUpdate=true; }); }
+  if(av.accMouth&&av.accMouth.userData.fresh&&near){ av.freshT=(av.freshT||0)-dt; if(av.freshT<0){ av.freshT=.07+Math.random()*.08; const p0=av.root.position; /* 神清氣爽: bright sparkles all over the body */
+      const sp=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color(["#ffffff","#bff6ff","#d8ffcf","#fff6b0"][(Math.random()*4)|0]),transparent:true,depthWrite:false,blending:T.AdditiveBlending})); const sz=.05+Math.random()*.07;
+      const a=Math.random()*6.283, r=.25+Math.random()*.2; sp.position.set(p0.x+Math.cos(a)*r,.1+Math.random()*1.5,p0.z+Math.sin(a)*r); sp.scale.set(sz,sz,1); scene.add(sp); parts.push({s:sp,vx:0,vy:.25+Math.random()*.25,vz:0,life:0,max:.9+Math.random()*.5,grow:.02,op:1}); } }
   if(av.accMouth&&av.accMouth.userData.pink&&near){ av.pinkT=(av.pinkT||0)-dt; if(av.pinkT<0){ av.pinkT=.35+Math.random()*.3; av.accMouth.getWorldPosition(_v1); /* little pink hearts and sparkles drifting up */
       const sp=new T.Sprite(new T.SpriteMaterial({map:Math.random()<.6?heartTex:glowTex,color:new T.Color(Math.random()<.5?"#ff8fb8":"#ffd0e4"),transparent:true,depthWrite:false,blending:T.AdditiveBlending})); const sz=.07+Math.random()*.06;
       sp.position.set(_v1.x+rand(-.3,.3),_v1.y+rand(-.1,.3),_v1.z+rand(-.3,.3)); sp.scale.set(sz,sz,1); scene.add(sp); parts.push({s:sp,vx:rand(-.08,.08),vy:.3+Math.random()*.2,vz:rand(-.08,.08),life:0,max:1.4+Math.random()*.6,grow:.02,op:.9}); } }
@@ -5519,7 +5527,7 @@ async function godGameWin(g,ms,accId,extra){ const rw=extra||gameReward(g,accId)
   openSheet("godGame",GOD_GAMES[g]||"小遊戲",`<div class="gg-done"><div class="gg-time">${fmtMs(ms)}</div><p class="lead">${rw.kind==="acc"?"🎁 ":rw.kind==="gacha"?"🎟️ ":""}${esc(rw.text)}</p>
     <div class="group"><span class="group-label">🏆 最快排行榜</span><div id="ggBoard"><p class="note">讀取中…</p></div></div></div>`);
   const list=await lbSubmit(g,ms); const el=$("#ggBoard"); if(el) el.innerHTML=lbHTML(list); }
-const GOD_PLAY={tudi:"⛏️ 尋寶（找到發光的寶藏挖出來）",zhusheng:"🍼 哄寶寶睡覺",jiutian:"☯️ 八卦迷宮（傾斜手機滾彈珠）"};
+const GOD_PLAY={tudi:"⛏️ 尋寶（找到發光的寶藏挖出來）",zhusheng:"🍼 哄寶寶睡覺",jiutian:"☯️ 八卦迷宮（傾斜手機滾彈珠）",guanyin:"💧 接福水（轉動木水道）"};
 const GOD_START={}; HANDLERS.godPlay=g=>{ closeSheet(); if(GOD_START[g]) GOD_START[g](); else toast("這個遊戲還在準備中"); };
 /* ================= 土地公・尋寶: a beam of light marks treasure somewhere in the grounds; walk there, tap it, dig it up ================= */
 const TH={on:false,t0:0,x:0,z:0,g:null,hit:null,digging:false};
@@ -5681,6 +5689,54 @@ function playBagua(){ tiltListen(); const L=gameLayer("九天玄女・八卦迷�
     requestAnimationFrame(draw); };
   requestAnimationFrame(draw); }
 GOD_START.jiutian=playBagua;
+/* ================= 觀音菩薩・接福水: 觀音's vase pours at the top left; tap the wooden channels to turn them until the blessed water
+   runs all the way to the cupped hands at the bottom right. A fresh, always-solvable board each time. ================= */
+function playFushui(){ const L=gameLayer("觀音菩薩・接福水","點木水道轉動，把寶瓶的水接到右下角的雙手"); const {x,cv}=L;
+  const R=5, C=6, OP=[[0,-1],[1,0],[0,1],[-1,0]]; /* directions: 0 up 1 right 2 down 3 left */
+  const cells=[]; for(let j=0;j<R;j++){ cells.push([]); for(let i=0;i<C;i++) cells[j].push({k:"S",r:0,a:0}); }
+  // a random path from the vase (enters (0,0) from the left) to the hands (leaves (C-1,R-1) to the right)
+  let path=null; for(let tries=0;tries<200&&!path;tries++){ const seen=new Set(["0,0"]), P=[[0,0]];
+    const go=()=>{ const [i,j]=P[P.length-1]; if(i===C-1&&j===R-1) return P.length>=12; const ds=[0,1,2,3].sort(()=>Math.random()-.5);
+      for(const d of ds){ const ni=i+OP[d][0], nj=j+OP[d][1]; if(ni<0||nj<0||ni>=C||nj>=R||seen.has(ni+","+nj)) continue; seen.add(ni+","+nj); P.push([ni,nj]); if(go()) return true; P.pop(); seen.delete(ni+","+nj); } return false; };
+    if(go()) path=P.slice(); }
+  const dirTo=(a,b)=>OP.findIndex(([dx,dy])=>a[0]+dx===b[0]&&a[1]+dy===b[1]);
+  path.forEach((c,n)=>{ const din=n?(dirTo(c,path[n-1])):3, dout=n<path.length-1?dirTo(c,path[n+1]):1; cells[c[1]][c[0]].k=(din+2)%4===dout?"S":"E"; cells[c[1]][c[0]].sol=1; });
+  for(let j=0;j<R;j++) for(let i=0;i<C;i++){ const c=cells[j][i]; if(!c.sol) c.k=Math.random()<.5?"S":"E"; c.r=(Math.random()*4)|0; c.a=c.r*Math.PI/2; }
+  const opens=c=>(c.k==="S"?[0,2]:[0,1]).map(d=>(d+c.r)%4);
+  let wet=new Set(), won=false, t0=performance.now(), done=false, flow=0;
+  const fill=()=>{ wet=new Set(); won=false; const q=[]; if(opens(cells[0][0]).includes(3)){ wet.add("0,0"); q.push([0,0]); }
+    while(q.length){ const [i,j]=q.shift(); for(const d of opens(cells[j][i])){ const ni=i+OP[d][0], nj=j+OP[d][1]; if(i===C-1&&j===R-1&&d===1) won=true; if(ni<0||nj<0||ni>=C||nj>=R) continue; const k2=ni+","+nj; if(wet.has(k2)) continue; if(!opens(cells[nj][ni]).includes((d+2)%4)) continue; wet.add(k2); q.push([ni,nj]); } } };
+  fill();
+  const G=()=>{ const W=L.W(), H=L.H(), cs=Math.min((W-130)/C,(H-280)/R), bw=cs*C, bh=cs*R, ox=(W-bw)/2+6, oy=150+(H-280-bh)/2; return {W,H,cs,ox,oy,bw,bh}; };
+  cv.addEventListener("pointerdown",e=>{ if(done) return; const g=G(), i=Math.floor((e.clientX-g.ox)/g.cs), j=Math.floor((e.clientY-g.oy)/g.cs); if(i<0||j<0||i>=C||j>=R) return;
+    const c=cells[j][i]; c.r=(c.r+1)%4; tone(380+Math.random()*60,.08,.08,"triangle"); fill();
+    if(won&&!done){ done=true; const ms=performance.now()-t0; healSound(); setTimeout(()=>{ L.close(); godGameWin("guanyin",ms,"bamboo"); },1900); } });
+  window.__gy=()=>({cells:cells.map(r=>r.map(c=>[c.k,c.r,!!c.sol])),path,won,done}); window.__gyTap=(i,j)=>{ const g=G(); cv.dispatchEvent(new PointerEvent("pointerdown",{clientX:g.ox+(i+.5)*g.cs,clientY:g.oy+(j+.5)*g.cs})); };
+  const wood="#9a6a3a", woodD="#6a4424", water="#5fc8ff";
+  const draw=now=>{ if(L.done) return; const g=G(), t=(now-t0)/1000; flow+=.016;
+    const bg=x.createLinearGradient(0,0,0,g.H); bg.addColorStop(0,"#e8f4ff"); bg.addColorStop(1,"#bfe0d0"); x.fillStyle=bg; x.fillRect(0,0,g.W,g.H);
+    for(let i=0;i<14;i++){ x.fillStyle=`rgba(255,255,255,${.35+.2*Math.sin(t+i)})`; x.beginPath(); x.arc((i*131)%g.W,(i*71)%140+60,18+(i%3)*8,0,7); x.fill(); }
+    { const tg=x.createLinearGradient(0,0,0,120); tg.addColorStop(0,"rgba(20,40,50,.85)"); tg.addColorStop(1,"rgba(20,40,50,0)"); x.fillStyle=tg; x.fillRect(0,0,g.W,120); } /* keeps the title readable */
+    x.fillStyle="#6bb6a0"; x.fillRect(g.ox-8,g.oy-8,g.bw+16,g.bh+16); x.fillStyle="#9ad6c8"; x.fillRect(g.ox,g.oy,g.bw,g.bh);
+    // the vase (top left) pouring into the first channel
+    { const vx=g.ox-30, vy=g.oy-62; x.save(); x.translate(vx,vy); x.rotate(.7); x.fillStyle="#fbfbf6"; x.beginPath(); x.ellipse(0,0,16,24,0,0,7); x.fill(); x.fillRect(-5,-34,10,14); x.strokeStyle="#7ab0d8"; x.lineWidth=2; x.beginPath(); x.ellipse(0,2,11,6,0,0,7); x.stroke();
+      x.fillStyle="#4caf50"; x.beginPath(); x.ellipse(-3,-40,4,12,-.4,0,7); x.fill(); x.restore();
+      x.strokeStyle=water; x.lineWidth=7; x.lineCap="round"; x.beginPath(); x.moveTo(vx+22,vy+14); x.quadraticCurveTo(g.ox-20,g.oy,g.ox-4,g.oy+g.cs/2); x.stroke(); }
+    for(let j=0;j<R;j++) for(let i=0;i<C;i++){ const c=cells[j][i]; c.a+=((c.r*Math.PI/2)-c.a+ (c.r===0&&c.a>Math.PI?2*Math.PI:0))*.3; if(c.r===0&&c.a>6.2) c.a=0;
+      const cx=g.ox+(i+.5)*g.cs, cy=g.oy+(j+.5)*g.cs, w=g.cs*.36, wetC=wet.has(i+","+j);
+      x.save(); x.translate(cx,cy); x.rotate(c.a); const arms=c.k==="S"?[0,2]:[0,1];
+      for(const [lw,col] of [[w,woodD],[w*.78,wood],[w*.42,wetC?water:"#5a3a20"]]){ x.strokeStyle=col; x.lineWidth=lw; x.lineCap="butt"; x.beginPath();
+        if(c.k==="S"){ x.moveTo(0,-g.cs/2); x.lineTo(0,g.cs/2); } else { x.moveTo(0,-g.cs/2); x.lineTo(0,0); x.lineTo(g.cs/2,0); } x.stroke(); }
+      if(wetC){ x.strokeStyle="rgba(255,255,255,.7)"; x.lineWidth=2; x.setLineDash([4,8]); x.lineDashOffset=-flow*60; x.beginPath(); if(c.k==="S"){ x.moveTo(0,-g.cs/2); x.lineTo(0,g.cs/2); } else { x.moveTo(0,-g.cs/2); x.lineTo(0,0); x.lineTo(g.cs/2,0); } x.stroke(); x.setLineDash([]); }
+      x.restore(); x.strokeStyle="rgba(0,60,50,.12)"; x.lineWidth=1; x.strokeRect(g.ox+i*g.cs,g.oy+j*g.cs,g.cs,g.cs); }
+    // the cupped hands (bottom right)
+    { const hx=g.ox+g.bw+18, hy=g.oy+g.bh-g.cs/2; x.fillStyle="#f6d2b4"; x.beginPath(); x.ellipse(hx,hy+6,22,12,0,0,Math.PI); x.fill(); x.beginPath(); x.ellipse(hx-12,hy+2,10,16,.5,0,7); x.ellipse(hx+12,hy+2,10,16,-.5,0,7); x.fill();
+      if(won){ x.fillStyle=water; x.beginPath(); x.ellipse(hx,hy+2,16,6,0,0,7); x.fill(); for(let k=0;k<6;k++){ const a=t*3+k; x.fillStyle="rgba(255,255,220,.9)"; x.beginPath(); x.arc(hx+Math.cos(a)*30,hy-10+Math.sin(a*1.3)*20,3,0,7); x.fill(); } } }
+    x.fillStyle="#fff"; x.font=`600 15px ${UI_FONT}`; x.textAlign="left"; x.fillText(`${t.toFixed(1)} 秒`,18,104);
+    if(won){ x.textAlign="center"; x.fillStyle="#2a6a5a"; x.font=`700 26px ${DISPLAY_FONT}`; x.fillText("福水流進雙手了！",g.W/2,g.H-50); }
+    requestAnimationFrame(draw); };
+  requestAnimationFrame(draw); }
+GOD_START.guanyin=playFushui;
 HANDLERS.godBoard=async g=>{ openSheet("godGame",(GOD_GAMES[g]||"小遊戲")+" 排行榜",`<div id="ggBoard"><p class="note">讀取中…</p></div>`); const el=$("#ggBoard"); const list=await lbGet(g); if(el) el.innerHTML=lbHTML(list); };
 
 /* ---- bag: 飾品 tab ---- */
