@@ -1075,13 +1075,33 @@ function buildMazu(){
 const mazu=buildMazu(); mazu.userData.noMerge=1; mazu.scale.setScalar(1.5); mazu.position.set(0,1.55,PAV.z-.1); scene.add(mazu);
 const IN_ARTIFACT=!!(window.claude&&window.claude.use);
 loadModel.tries={};
-function loadModel(name,cb){ if(!T.GLTFLoader) return; const gl=new T.GLTFLoader(); if(window.MeshoptDecoder) gl.setMeshoptDecoder(window.MeshoptDecoder);
+function loadRaw(name,lite,cb){ if(!T.GLTFLoader) return; const gl=new T.GLTFLoader(); if(window.MeshoptDecoder) gl.setMeshoptDecoder(window.MeshoptDecoder);
   const fix=g=>{ g.scene.traverse(o=>{ if(o.isMesh){ if(!o.geometry.attributes.normal) o.geometry.computeVertexNormals(); o.material.envMapIntensity=.9; if(o.material.map) o.material.map.anisotropy=4; } }); cb(g.scene); };
-  const viaScript=()=>{ { const key0="GLB_"+name.toUpperCase()+(Q.lite?"_LITE":""); if(window[key0]){ try{ const b=atob(window[key0]); const u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); gl.parse(u.buffer,"",fix,()=>{}); }catch(e){} return; } } // already on the page
-    const sc=document.createElement("script"); sc.src=name+(Q.lite?"-lite":"")+"-model.js"; sc.async=true; const key="GLB_"+name.toUpperCase()+(Q.lite?"_LITE":"");
-    sc.onerror=()=>{ sc.remove(); const n=(loadModel.tries[name]=(loadModel.tries[name]||0)+1); if(n<5) setTimeout(viaScript,1500*n); };
+  const viaScript=()=>{ { const key0=name==="mazu"?(lite?"MAZU_LITE_B64":"MAZU_GLB_B64"):"GLB_"+name.toUpperCase()+(lite?"_LITE":""); if(window[key0]){ try{ const b=atob(window[key0]); const u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); gl.parse(u.buffer,"",fix,()=>{}); }catch(e){} return; } } // already on the page
+    const sc=document.createElement("script"); sc.src=name+(lite?"-lite":"")+"-model.js"; sc.async=true; const key=name==="mazu"?(lite?"MAZU_LITE_B64":"MAZU_GLB_B64"):"GLB_"+name.toUpperCase()+(lite?"_LITE":"");
+    sc.onerror=()=>{ sc.remove(); const n=(loadRaw.tries[name]=(loadRaw.tries[name]||0)+1); if(n<5) setTimeout(viaScript,1500*n); };
     sc.onload=()=>{ if(!window[key]){ sc.onerror(); return; } try{ const b=atob(window[key]||""); const u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); window[key]=null; gl.parse(u.buffer,"",fix,()=>{}); }catch(e){} }; document.head.appendChild(sc); };
-  if(IN_ARTIFACT) setTimeout(viaScript,300); else gl.load(name+(Q.lite?"-lite":"")+".glb",fix,undefined,()=>setTimeout(viaScript,100)); }
+  if(IN_ARTIFACT) setTimeout(viaScript,300); else gl.load(name+(lite?"-lite":"")+".glb",fix,undefined,()=>setTimeout(viaScript,100)); }
+loadRaw.tries={};
+/* 神像遠近分級: statues arrive as their light copy first (quick to download, few triangles); when you come within ~15 m the full
+   copy is fetched once and swapped in — same mesh objects, same position and materials, only the shape and picture get finer —
+   and beyond ~24 m it goes back to the light one. 低配 always stays light. */
+const STATUE_LOD=new Set(["mazu","qianli","shunfeng","guanyin","xuantian","guangong","caishen","yuelao","huye","tiangong","jinlu","guanyin2","zhusheng","jiutian","dizang","doumu","wenchang","tudi"]);
+const SLOD=[];
+function slodSwap(e,to){ const full=to==="full"; e.liteKids.forEach(o=>o.visible=!full); (e.fullKids||[]).forEach(o=>o.visible=full); e.state=to; }
+function slodRegister(name,sceneRoot){ if(Q.lite) return; sceneRoot.userData.noMerge=1; SLOD.push({name,root:sceneRoot,liteKids:[...sceneRoot.children],fullKids:null,state:"lite",loading:false}); }
+// the full copy takes over the look the light copy was given after loading (glow, reflections), then sits beside it, hidden until needed;
+// the light copy stays in place (hidden) so taps on the statue keep working
+function slodAdopt(e,g){ let ref=null; e.root.traverse(o=>{ if(!ref&&o.isMesh) ref=o.material; }); const kids=[...g.children];
+  kids.forEach(k=>{ k.traverse(o=>{ if(!o.isMesh) return; if(!o.geometry.attributes.normal) o.geometry.computeVertexNormals(); const m=o.material; if(m.map) m.map.anisotropy=4;
+    if(ref){ m.envMapIntensity=ref.envMapIntensity; if(ref.emissive&&m.emissive){ m.emissive.copy(ref.emissive); m.emissiveIntensity=ref.emissiveIntensity; } if(ref.emissiveMap&&ref.emissiveMap===ref.map) m.emissiveMap=m.map; } }); k.visible=false; e.root.add(k); });
+  e.fullKids=kids; }
+let _slodT=0; const _slodV=new T.Vector3();
+function slodTick(dt){ _slodT-=dt; if(_slodT>0||!SLOD.length) return; _slodT=.5; const c=camera.position;
+  for(const e of SLOD){ if(!e.root.parent) continue; e.root.getWorldPosition(_slodV); const d=_slodV.distanceTo(c);
+    if(d<15&&e.state==="lite"){ if(e.fullKids) slodSwap(e,"full"); else if(!e.loading){ e.loading=true; loadRaw(e.name,false,g=>{ slodAdopt(e,g); if(e.root.getWorldPosition(_slodV).distanceTo(camera.position)<24) slodSwap(e,"full"); }); } }
+    else if(d>24&&e.state==="full") slodSwap(e,"lite"); } }
+function loadModel(name,cb){ if(Q.lite||!STATUE_LOD.has(name)) return loadRaw(name,Q.lite,cb); loadRaw(name,true,m=>{ cb(m); slodRegister(name,m); }); }
 const SHARED={}; function loadShared(n,cb){ const e=SHARED[n]||(SHARED[n]={m:null,q:[]}); if(e.m){ cb(e.m); return; } e.q.push(cb); if(e.q.length===1) loadModel(n,m=>{ e.m=m; e.q.splice(0).forEach(f=>f(m)); }); }
 function fitModel(m,height){ const bb=new T.Box3().setFromObject(m); const sz=bb.getSize(new T.Vector3()); const k=height/sz.y; m.scale.setScalar(k); const c=bb.getCenter(new T.Vector3()); m.position.set(-c.x*k,-bb.min.y*k,-c.z*k); const w=new T.Group(); w.add(m); return w; }
 // 千里眼 and 順風耳 guard Mazu from the two side bays of the shrine, half her height, turned a little towards her.
@@ -1096,9 +1116,10 @@ if(T.GLTFLoader){ const gl=new T.GLTFLoader(); if(window.MeshoptDecoder) gl.setM
     const c=bb.getCenter(new T.Vector3()); m.position.set(-c.x*k,1.55-bb.min.y*k,PAV.z-.1-c.z*k);
     m.traverse(o=>{ if(o.isMesh){ o.material.envMapIntensity=.9; if(o.material.map) o.material.map.anisotropy=4; } });
     scene.add(m); scene.remove(mazu); window.__mazuModel=m; };
-  const sc=document.createElement("script"); sc.src=Q.lite?"mazu-lite-model.js":"mazu-model.js"; sc.async=true; const MK=Q.lite?"MAZU_LITE_B64":"MAZU_GLB_B64";
+  if(!Q.lite){ loadRaw("mazu",true,m=>{ onModel({scene:m}); slodRegister("mazu",m); }); }
+  else { const sc=document.createElement("script"); sc.src="mazu-lite-model.js"; sc.async=true; const MK="MAZU_LITE_B64";
   sc.onload=()=>{ try{ const b=atob(window[MK]||""); const u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); window[MK]=null; gl.parse(u.buffer,"",onModel,()=>{}); }catch(e){} };
-  if(window.claude&&window.claude.use) setTimeout(()=>document.head.appendChild(sc),300); else gl.load(Q.lite?"mazu-lite.glb":"mazu.glb",onModel,undefined,()=>setTimeout(()=>document.head.appendChild(sc),100)); }
+  if(window.claude&&window.claude.use) setTimeout(()=>document.head.appendChild(sc),300); else gl.load("mazu-lite.glb",onModel,undefined,()=>setTimeout(()=>document.head.appendChild(sc),100)); } }
 
 // offering table
 const ALTAR={z:-10.55};
@@ -5829,7 +5850,7 @@ function tick(){ if(gameAsleep) return; const _ft0=performance.now(); { const no
     r1.scale.setScalar(k); r2.scale.setScalar(1+((tapT*1.2)%1)*.8); r2.material.opacity=.7*(1-((tapT*1.2)%1));
     if(arrived||tapT>12){ const f=Math.max(0,r1.material.opacity-dt*3); r1.material.opacity=f; dot.material.opacity=f; if(f<=0){ tapMark.visible=false; r1.material.opacity=.9; dot.material.opacity=.9; } } }
   botTick(dt);
-  lodPrep(); remotes.forEach(r=>{ lodUpdate(r,dt); if((r.eq&&(r.eq[0]||r.eq[1]))||r.flies) accTick(r,dt); }); /* r.flies: keep ticking once more so flies go away after the sausage is put down */ sjUpdate(dt); fwUpdate(dt); updateSkyLanterns(dt); renderSLBtn(); opTick(dt); ptTick(dt); REAR_TICK.forEach(f=>f(dt)); csTick(dt); hbTick(dt); flyCtlTick(dt); poolTick(dt); rearVis(); buildTick(); ftTick(dt); mkTick(dt);
+  lodPrep(); remotes.forEach(r=>{ lodUpdate(r,dt); if((r.eq&&(r.eq[0]||r.eq[1]))||r.flies) accTick(r,dt); }); /* r.flies: keep ticking once more so flies go away after the sausage is put down */ sjUpdate(dt); fwUpdate(dt); updateSkyLanterns(dt); renderSLBtn(); opTick(dt); ptTick(dt); REAR_TICK.forEach(f=>f(dt)); csTick(dt); hbTick(dt); flyCtlTick(dt); slodTick(dt); poolTick(dt); rearVis(); buildTick(); ftTick(dt); mkTick(dt);
   if(room&&dirty&&performance.now()-lastSend>((keys.size||joy.on)?800:SEND_GAP)) sendPresence();
   updateFlyers(dt); updateFu(dt); updateCats(dt); updateWater(dt);
   { let best=null, bd=2.6; if(!sheetKind&&!customizing&&!pendingStation&&meAv.seat<0&&!(meAv.danceT>0)) for(const k in stations){ if(k==="cats"){ const dc=Math.hypot(meAv.pos.x-CATS.c.x,meAv.pos.y-CATS.c.z); if(dc<3.6){ best=k; bd=0; } continue; } const d=meAv.pos.distanceTo(stations[k].approach); if(d<bd){ bd=d; best=k; } }
