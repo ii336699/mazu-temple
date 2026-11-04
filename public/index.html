@@ -2176,7 +2176,7 @@ const G_LO=(()=>{ LOWPOLY=true; const out={}; for(const [k,g] of Object.entries(
       case "TorusGeometry": n=new T.TorusGeometry(p.radius,p.tube,p.radialSegments,p.tubularSegments,p.arc); break;
       case "LatheGeometry": n=new T.LatheGeometry(p.points,p.segments,p.phiStart,p.phiLength); break; } }catch(e){ n=g; }
     out[k]=n; } LOWPOLY=false; return out; })();
-G.arm.translate(0,-.13,0); G.leg.translate(0,-.14,0); G.robe.translate(0,-.14,0);
+G.arm.translate(0,-.13,0); G.leg.translate(0,-.14,0); G.robe.translate(0,-.14,0); /* the light copies above were made before this shift: move them the same way, or arms/legs hang from the wrong spot */ [["arm",-.13],["leg",-.14],["robe",-.14]].forEach(([k,y])=>{ if(G_LO[k]&&G_LO[k]!==G[k]) G_LO[k].translate(0,y,0); });
 const faceCache=new Map();
 // ---- extra wardrobe: each builder adds simple shapes to the head (y=0 at head centre, +z forward) or torso (body spans y 0..0.42) ----
 function mk(parent,geo,m,x=0,y=0,z=0,rx=0,ry=0,rz=0,sx=1,sy=1,sz=1){ const o=new T.Mesh(geo,m); o.position.set(x,y,z); o.rotation.set(rx,ry,rz); o.scale.set(sx,sy,sz); parent.add(o); return o; }
