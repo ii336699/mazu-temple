@@ -74,3 +74,4 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - 後殿音樂：走進後埕（z < RY0-1）原本的廟音樂淡出、rearsong.mp3 淡入，走回去再換回（rearZone、zoneFade）。
 - 測試版：mock.js 模擬角色伺服器（/me、/me/claim、/gift、/gifts），測試徽章可以「換手機」；頁面用 window.MZ_SIM 判斷。
 - 本機自動測試注意：mock 的 /stage、/puppet 狀態會被定時抓回來覆蓋，測戲台要先 POST 到 mock；swiftshader 載入戲台模型要 30 秒以上。
+- 下載排隊與第一次進廟的下載畫面（11/04 晚）：loadRaw 改成排隊，最多同時 3 個；順序是建築（roof/shishi/weiqiang/huachuang/decor、天公爐/金爐/媽祖輕量版）→ 神像輕量版 → 神像完整版 → 戲台和夜市攤位（等建築和神像都到了才開始，測試頁的 bdx／攤位預載也一樣，whenEssential）。#dlPack 下載畫面：超過 1.2 秒還沒載完才出現，顯示件數百分比和跑步小人，20 秒後出現「先進廟逛逛」，最多 120 秒自動關。

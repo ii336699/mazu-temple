@@ -244,6 +244,19 @@ body.toolsfold .fold-btn.ping::after{content:"";position:absolute;top:2px;right:
 .steps span{padding:3px 9px;border-radius:999px;border:1px solid var(--gold-soft)}
 .steps span[data-on]{background:var(--lacquer);color:#fff3da;border-color:var(--gold)}
 input,textarea{-webkit-user-select:text;user-select:text}
+.dlpack{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 30%,#3a120b,#140906 70%);color:#f5e6c8;font-family:var(--f-display);transition:opacity .7s;padding:24px}
+.dlpack[data-done]{opacity:0;pointer-events:none}.dlpack[hidden]{display:none}
+.dl-in{width:min(420px,100%);text-align:center}.dl-in h2{margin:0 0 6px;font-size:26px;letter-spacing:.2em;color:#f0c75e}.dl-in p{margin:0 0 26px;font-size:14px;line-height:1.7;opacity:.85;font-family:var(--f-ui)}
+.dl-track{position:relative;height:14px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(240,199,94,.45);margin-top:46px}
+.dl-fill{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#b8141a,#f0c75e);box-shadow:0 0 12px rgba(240,199,94,.6)}
+.dl-pct{margin-top:12px;font-size:22px;color:#f0c75e;font-variant-numeric:tabular-nums}.dl-what{margin-top:4px;font-size:12px;opacity:.6;font-family:var(--f-ui)}
+.dl-run{position:absolute;bottom:14px;left:0;width:28px;height:44px;margin-left:-14px;animation:dlBob .32s ease-in-out infinite alternate}
+.dl-run i{position:absolute;display:block}.dl-run .hd{left:6px;top:0;width:16px;height:16px;border-radius:50%;background:#f4d4b6;box-shadow:inset 0 5px 0 #2a1712}
+.dl-run .bd{left:8px;top:15px;width:12px;height:15px;border-radius:5px 5px 3px 3px;background:#c4161c}
+.dl-run .lg{left:12px;top:28px;width:4px;height:13px;border-radius:2px;background:#2a1712;transform-origin:2px 1px;animation:dlLeg .32s ease-in-out infinite alternate}.dl-run .lg.b{animation-direction:alternate-reverse}
+.dl-run .ar{left:12px;top:17px;width:4px;height:11px;border-radius:2px;background:#f4d4b6;transform-origin:2px 1px;animation:dlLeg .32s ease-in-out infinite alternate-reverse}.dl-run .ar.b{animation-direction:alternate}
+@keyframes dlLeg{from{transform:rotate(38deg)}to{transform:rotate(-38deg)}}@keyframes dlBob{from{transform:translateY(0)}to{transform:translateY(-3px)}}
+.dl-skip{margin-top:22px}.dl-skip[hidden]{display:none}
 .loading{position:fixed;inset:0;display:grid;place-items:center;background:#140906;z-index:20;font-family:var(--f-display);font-size:20px;letter-spacing:.2em;color:var(--gold);transition:opacity .6s}
 .loading[data-done]{opacity:0;pointer-events:none}
 @media (prefers-reduced-motion:reduce){.sheet,.toast{transition:none}}
@@ -377,6 +390,9 @@ body.hideui .joy,body.customizing .joy,body.hideui .camreset,body.customizing .c
 <body>
 <canvas id="c" tabindex="0" aria-label="雲端天后宮正殿 3D 場景"></canvas>
 <div class="loading" id="loading">正在點燈</div>
+<div class="dlpack" id="dlPack" hidden role="dialog" aria-label="下載廟宇中"><div class="dl-in"><h2>雲端天后宮</h2><p>正在下載廟宇建築和神尊，第一次進廟會比較久。<br>下載過的會存在手機裡，下次就很快。</p>
+  <div class="dl-track"><div class="dl-fill" id="dlFill"></div><div class="dl-run" id="dlRun"><i class="lg"></i><i class="lg b"></i><i class="bd"></i><i class="ar"></i><i class="ar b"></i><i class="hd"></i></div></div>
+  <div class="dl-pct" id="dlPct">0%</div><div class="dl-what" id="dlWhat">準備中…</div><button class="secondary dl-skip" id="dlSkip" hidden>先進廟逛逛（其他會陸續出現）</button></div></div>
 
 <div class="inapp" id="inapp" hidden role="dialog" aria-modal="true" aria-labelledby="inappT">
   <div class="inapp-card glass">
@@ -1075,12 +1091,19 @@ function buildMazu(){
 const mazu=buildMazu(); mazu.userData.noMerge=1; mazu.scale.setScalar(1.5); mazu.position.set(0,1.55,PAV.z-.1); scene.add(mazu);
 const IN_ARTIFACT=!!(window.claude&&window.claude.use);
 loadModel.tries={};
-function loadRaw(name,lite,cb){ if(!T.GLTFLoader) return; const gl=new T.GLTFLoader(); if(window.MeshoptDecoder) gl.setMeshoptDecoder(window.MeshoptDecoder);
-  const fix=g=>{ g.scene.traverse(o=>{ if(o.isMesh){ if(!o.geometry.attributes.normal) o.geometry.computeVertexNormals(); o.material.envMapIntensity=.9; if(o.material.map) o.material.map.anisotropy=4; } }); cb(g.scene); };
-  const viaScript=()=>{ { const key0=name==="mazu"?(lite?"MAZU_LITE_B64":"MAZU_GLB_B64"):"GLB_"+name.toUpperCase()+(lite?"_LITE":""); if(window[key0]){ try{ const b=atob(window[key0]); const u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); gl.parse(u.buffer,"",fix,()=>{}); }catch(e){} return; } } // already on the page
+/* 模型下載排隊: at most three models download at once, buildings first (roofs, lions, walls, windows, censers), then the statues,
+   then everything for events (stages, night-market stalls). All at once they shared the bandwidth and the roofs arrived last. */
+const LQ={act:0,q:[],essT:0,essD:0,essAt:0,ready:false,wait:[]}; function whenEssential(f){ if(LQ.ready) f(); else LQ.wait.push(f); }
+function lqPri(name,lite){ if(/^(roof|shishi|weiqiang|huachuang|decor)/.test(name)||(/^(tiangong|jinlu|mazu)$/.test(name)&&lite)) return 0; if(/^(tiangong|jinlu)$/.test(name)) return 2; if(/^(stall-|stage|bdx)/.test(name)) return 3; return lite?1:2; }
+function lqRun(){ while(LQ.act<3&&LQ.q.length){ LQ.q.sort((a,b)=>a.p-b.p||a.n-b.n); if(LQ.q[0].p>=3&&!LQ.ready) return; /* stages and stalls wait for the temple itself */
+    const j=LQ.q.shift(); LQ.act++; let done=false; const fin=()=>{ if(done) return; done=true; LQ.act--; if(j.p<=1){ LQ.essD++; LQ.essAt=performance.now(); } lqRun(); }; setTimeout(fin,30000); j.go(fin); } }
+function loadRaw(name,lite,cb){ if(!T.GLTFLoader) return; const pr=lqPri(name,lite); if(pr<=1){ LQ.essT++; LQ.essAt=performance.now(); } LQ.q.push({p:pr,n:LQ.q.length+LQ.act,go:fin=>loadRaw0(name,lite,cb,fin)}); lqRun(); }
+function loadRaw0(name,lite,cb,fin){ const gl=new T.GLTFLoader(); if(window.MeshoptDecoder) gl.setMeshoptDecoder(window.MeshoptDecoder);
+  const fix=g=>{ fin(); g.scene.traverse(o=>{ if(o.isMesh){ if(!o.geometry.attributes.normal) o.geometry.computeVertexNormals(); o.material.envMapIntensity=.9; if(o.material.map) o.material.map.anisotropy=4; } }); cb(g.scene); };
+  const viaScript=()=>{ { const key0=name==="mazu"?(lite?"MAZU_LITE_B64":"MAZU_GLB_B64"):"GLB_"+name.toUpperCase()+(lite?"_LITE":""); if(window[key0]){ try{ const b=atob(window[key0]); const u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); gl.parse(u.buffer,"",fix,fin); }catch(e){ fin(); } return; } } // already on the page
     const sc=document.createElement("script"); sc.src=name+(lite?"-lite":"")+"-model.js"; sc.async=true; const key=name==="mazu"?(lite?"MAZU_LITE_B64":"MAZU_GLB_B64"):"GLB_"+name.toUpperCase()+(lite?"_LITE":"");
-    sc.onerror=()=>{ sc.remove(); const n=(loadRaw.tries[name]=(loadRaw.tries[name]||0)+1); if(n<5) setTimeout(viaScript,1500*n); };
-    sc.onload=()=>{ if(!window[key]){ sc.onerror(); return; } try{ const b=atob(window[key]||""); const u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); window[key]=null; gl.parse(u.buffer,"",fix,()=>{}); }catch(e){} }; document.head.appendChild(sc); };
+    sc.onerror=()=>{ sc.remove(); const n=(loadRaw.tries[name]=(loadRaw.tries[name]||0)+1); if(n<5) setTimeout(viaScript,1500*n); else fin(); };
+    sc.onload=()=>{ if(!window[key]){ sc.onerror(); return; } try{ const b=atob(window[key]||""); const u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); window[key]=null; gl.parse(u.buffer,"",fix,fin); }catch(e){ fin(); } }; document.head.appendChild(sc); };
   if(IN_ARTIFACT) setTimeout(viaScript,300); else gl.load(name+(lite?"-lite":"")+".glb",fix,undefined,()=>setTimeout(viaScript,100)); }
 loadRaw.tries={};
 /* 神像遠近分級: statues arrive as their light copy first (quick to download, few triangles); when you come within ~15 m the full
@@ -5448,8 +5471,8 @@ function nmEndDraw(L,x,W,H){ const e=L.endMsg; if(!e) return false; x.fillStyle=
 /* ---- sprites from the stall art sheets (public/nm/*.webp) ---- */
 // inside the preview host all the stall pictures come in one bundle loaded with the page (nm-pack.js), the same way the
 // 3D models do, because files fetched later don't always arrive there; on the real site each picture is its own file
-if(IN_ARTIFACT) setTimeout(()=>{ const sc=document.createElement("script"); sc.src="bdx"+(Q.lite?"-lite":"")+"-model.js"; document.head.appendChild(sc); },1400);
-if(IN_ARTIFACT) setTimeout(()=>["qq","sausage","bbq","fish","pachinko","boba","balloon"].forEach((k,i)=>setTimeout(()=>{ const sc=document.createElement("script"); sc.src="stall-"+k+(Q.lite?"-lite":"")+"-model.js"; document.head.appendChild(sc); },i*150)),600); // preview host: the stall models come in with the page's other models, not later
+if(IN_ARTIFACT) whenEssential(()=>setTimeout(()=>{ const sc=document.createElement("script"); sc.src="bdx"+(Q.lite?"-lite":"")+"-model.js"; document.head.appendChild(sc); },1400));
+if(IN_ARTIFACT) whenEssential(()=>setTimeout(()=>["qq","sausage","bbq","fish","pachinko","boba","balloon"].forEach((k,i)=>setTimeout(()=>{ const sc=document.createElement("script"); sc.src="stall-"+k+(Q.lite?"-lite":"")+"-model.js"; document.head.appendChild(sc); },i*400)),3000)); // preview host: the stall models come in with the page's other models, not later
 if(IN_ARTIFACT&&!window.NM_PACK){ const sc=document.createElement("script"); sc.src="nm-pack.js"; sc.async=true; sc.onload=()=>{ for(const n in NMI){ const i=NMI[n]; if(!(i.complete&&i.naturalWidth)&&window.NM_PACK&&NM_PACK[n]) i.src=NM_PACK[n]; } }; document.head.appendChild(sc); }
 const NMI={}; function nmSrc(n,r){ return window.NM_PACK&&NM_PACK[n]?NM_PACK[n]:"nm/"+n+".webp"+(r?"?r="+r:""); }
 function nmImg(n){ let i=NMI[n]; if(!i){ i=NMI[n]=new Image(); i.tries=0; i.onerror=()=>{ if(i.tries++<5) setTimeout(()=>{ i.src=nmSrc(n,i.tries); },800*i.tries); }; if(IN_ARTIFACT&&!window.NM_PACK){ /* wait for the bundle */ } else i.src=nmSrc(n); } return i; }
@@ -6089,6 +6112,17 @@ try{ wallBricks(); }catch(e){} try{ unifyBricks(); }catch(e){} try{ floorLayers(
 buildNpcs();
 if(document.fonts&&document.fonts.load){ Promise.all([document.fonts.load(`700 64px "LXGW WenKai TC"`,"母聖上天邊德護千家海慈航庇萬眾香油籤詩服務處金爐"),document.fonts.load(`500 30px "Noto Sans TC"`,"你香客")]).then(()=>{ fontTextures.forEach(redraw); meAv.setName(myLabel()); }).catch(()=>{}); }
 requestAnimationFrame(()=>{ tick(); setTimeout(()=>$("#loading").setAttribute("data-done",""),250); });
+/* 第一次進廟的下載畫面: the buildings and statues (the essential models) are counted as they arrive; a little figure runs along the bar.
+   It only appears if they take more than a moment (a phone that already has them stored skips it), and closes once they are all in. */
+{ const el=$("#dlPack"), t0=performance.now(); let shown=false, show=0, closed=false;
+  const render=()=>{ const p=Math.round(show*100); $("#dlFill").style.width=p+"%"; $("#dlRun").style.left=p+"%"; $("#dlPct").textContent=p+"%"; $("#dlWhat").textContent=`已下載 ${LQ.essD} / ${Math.max(LQ.essT,LQ.essD)} 件（廟宇建築與神尊）`; };
+  const close=()=>{ if(closed) return; closed=true; LQ.ready=true; LQ.wait.splice(0).forEach(f=>{ try{ f(); }catch(e){} }); lqRun(); if(shown){ el.setAttribute("data-done",""); setTimeout(()=>{ el.hidden=true; },800); } };
+  $("#dlSkip").onclick=close;
+  const step=()=>{ if(closed) return; const now=performance.now(), want=LQ.essD/Math.max(1,LQ.essT);
+    if(LQ.essD>=LQ.essT&&now-LQ.essAt>1800&&now-t0>2500){ if(shown){ show=1; render(); setTimeout(close,500); } else close(); return; } /* nothing new asked for in a while: the temple is in */
+    if(!shown&&now-t0>1200){ shown=true; el.hidden=false; }
+    show+=(Math.min(.97,want)-show)*.08; if(now-t0>20000) $("#dlSkip").hidden=false; render(); requestAnimationFrame(step); };
+  requestAnimationFrame(step); setTimeout(close,120000); }
 if(firstVisit) setTimeout(async()=>{ if(await profRestore()){ firstVisitPending=false; toast("歡迎回來！已自動找回你的角色",3600); return; } openLook(true); },600); else setTimeout(()=>toast(guideStep().n===1?"先到大殿入口右手邊的服務處，請清香、金紙和供品":(matchMedia("(pointer:fine)").matches?"WASD 走動・拖曳滑鼠轉視角":"點地板走動・拖曳畫面轉視角"),4200),900);
 // ---- in-app browser hint (Threads / Instagram / Facebook / LINE / other app web views) ----
 { const ua=navigator.userAgent||"", SITE="https://mazu-temple.harper88888.workers.dev/";
