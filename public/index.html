@@ -247,6 +247,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
 .lb{list-style:none;margin:6px 0 0;padding:0}.lb li{display:flex;gap:10px;align-items:center;padding:6px 10px;border-radius:10px;font-size:14px}.lb li:nth-child(odd){background:rgba(255,255,255,.04)}.lb li.me{background:rgba(240,199,94,.18);color:#ffe2a0}
 .lb .rk{width:22px;text-align:center;color:var(--gold);font-weight:700}.lb .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lb .tm{font-variant-numeric:tabular-nums}
 .th-banner{display:flex;align-items:center;gap:10px;top:calc(env(safe-area-inset-top,0px) + 120px)}.th-banner[hidden]{display:none}.th-banner .chip{padding:4px 10px;font-size:12px}
+.dz-zoom{position:absolute;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;gap:8px;z-index:2}.dz-zoom .chip{font-size:16px;padding:8px 14px;background:rgba(20,20,40,.7);color:#fff}
 .gg-done{text-align:center}.gg-time{font-family:var(--f-display);font-size:40px;color:var(--gold);margin:6px 0 4px}
 .dlpack{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 30%,#3a120b,#140906 70%);color:#f5e6c8;font-family:var(--f-display);transition:opacity .7s;padding:24px}
 .dlpack[data-done]{opacity:0;pointer-events:none}.dlpack[hidden]{display:none}
@@ -1777,7 +1778,13 @@ setTimeout(()=>{ Object.assign(CENSER_INFO,{guanyin:["觀世音菩薩","後殿�
     for(const [x,z] of [[-1.2,-.4],[1.1,-.6],[.4,-1.4],[-.5,-1.5]]){ const p=mesh(new T.CircleGeometry(.26,14),mat("#3f8a3a",{roughness:.6}),x,.615,.95+z,g); p.rotation.x=-Math.PI/2; }
     mesh(new T.SphereGeometry(.12,10,8),mat("#ff9ab8",{roughness:.5}),-1.2,.7,.55,g).scale.y=.7;
     poolLight("#bfe6ff",.9,6,RFT.x,1.6,RFT.z-1.6);
-    { const old=[...g.children]; loadShared("longquan",m=>{ old.forEach(o=>{ o.visible=false; }); const c=m.clone(); const w=fitModel(c,3.4); const f=new T.Group(); f.add(w); f.rotation.y=Math.PI; f.position.set(0,0,-1.15); g.add(f); }); }
+    { const old=[...g.children]; loadShared("longquan",m=>{ old.forEach(o=>{ o.visible=false; }); const c=m.clone(); const w=fitModel(c,3.4); const f=new T.Group(); f.add(w); f.rotation.y=Math.PI; f.position.set(0,0,-1.15); g.add(f);
+      /* water pouring from the dragon's mouth into the basin, with a splash and ripples where it lands */
+      const arc2=[]; for(let i=0;i<=14;i++){ const t2=i/14; arc2.push(new T.Vector3(0,1.86-t2*t2*1.0,-.78-t2*.62)); }
+      const st2=new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(arc2),24,.085,10,false),wm); g.add(st2);
+      const sp2=new T.Sprite(splash.material); sp2.position.set(0,.9,-1.42); sp2.scale.set(.7,.4,1); g.add(sp2);
+      const rp2=new T.Mesh(ripple.geometry,ripple.material); rp2.rotation.x=-Math.PI/2; rp2.position.set(0,.86,-1.42); g.add(rp2);
+      let t3=0; REAR_TICK.push(dt=>{ t3+=dt; const q=(t3*.7)%1; rp2.scale.setScalar(1+q*7); sp2.scale.set(.6+Math.sin(t3*9)*.08,.35+Math.sin(t3*7)*.05,1); }); }); }
     let ft=0; REAR_TICK.push(dt=>{ ft+=dt; waterTex.offset.y-=dt*1.6; const q=(ft*.7)%1; ripple.scale.setScalar(1+q*9); ripple.material.opacity=.6*(1-q); splash.scale.set(.8+Math.sin(ft*9)*.1,.45+Math.sin(ft*7)*.06,1); });
     }
   // two pines (松柏) beside the fountain
@@ -3091,7 +3098,7 @@ function syncPeers(peers){ const seen=new Set();
     else if(look.join()!==av.look.join()) av.setLook(look);
     const pno=Number.isInteger(pr.k)&&pr.k>0&&pr.k<1e8?pr.k:0; let nm=cleanName(pr.n)||(pno?`香客${pno}`:"香客"); if(pr.q!==1&&[SP_NAME,SP_OLD].includes(nm)) nm=pno?`香客${pno}`:"香客"; if(nm!==av.name){ av.name=nm; av.setName(nm); }
     av.setSp(pr.q===1); if(pr.q===1) av.name=SP_NAME; av.flyGoal=pr.q===1&&pr.fl?Math.max(.6,Math.min(40,+pr.fl||FLY_H)):0; csForm(av,pr.q===1&&pr.cs===1);
-    { const eq=Array.isArray(pr.eq)?[pr.eq[0],pr.eq[1],pr.eq[2]].map(v=>typeof v==="string"&&ACC[v]?v:0):[0,0,0]; if(String(eq)!==String(av.eq||[0,0,0])) av.setAcc(eq); }
+    { const eq=Array.isArray(pr.eq)?[pr.eq[0],pr.eq[1],pr.eq[2],pr.eq[3]].map(v=>typeof v==="string"&&ACC[v]?v:0):[0,0,0,0]; if(String(eq)!==String(av.eq||[0,0,0,0])) av.setAcc(eq); }
     { const tx=num(pr.x,-24,24,av.target.x), tz=num(pr.z,-43,HZ+YX+18,av.target.y); if(tx!==av.goalX||tz!==av.goalZ){ av.goalX=tx; av.goalZ=tz; const pth=av.flyGoal>0?[[tx,tz]]:planPath(av.pos.x,av.pos.y,tx,tz); av.target.set(pth[0][0],pth[0][1]); av.path=pth.slice(1); } } const seat=Number.isInteger(pr.s)&&pr.s>=0&&pr.s<SEATS.length?pr.s:-1; av.seat=seat; if(seat>=0) npcYield(seat);
     av.faceGoal=num(pr.r,-10,10,Math.PI); av.hold=pr.h===1?1:0; av.headGoal=num(pr.y,-1.2,1.2,0); av.sparkler=pr.sk===1; if(Array.isArray(pr.fs)&&Number.isFinite(pr.fs[0])&&pr.fs[0]!==FW.seed){ const el=Date.now()-num(pr.fs[1],0,1e13,0); if(el>=0&&el<FW_LEN*1000) fwStart(pr.fs[0],el); } av.sq=(Array.isArray(pr.sq)&&pr.sq[0]>=1&&pr.sq[0]<=2)?[pr.sq[0]-1,num(pr.sq[1],0,1e13,0)]:null;
     if(pr.b!==av.lastBow){ av.lastBow=pr.b; if(!quietFx()) av.bow(); }
@@ -3598,7 +3605,7 @@ let bagTab="all", bagSel=null;
 function bagEntries(){ const a=accState(), out=[];
   if(bagTab==="all"||bagTab==="goods") GOODS.forEach(g=>{ const n=bag.items[g.k]||0; if(n||bagTab==="goods") out.push({id:"g:"+g.k,ic:g.k,n,name:g.name,desc:g.meta}); });
   if(bagTab==="all"||bagTab==="goods"){ const hb=bag.hongbao||0; if(hb) out.push({id:"g:hongbao",ic:"hongbao",n:hb,name:"紅包",desc:"財神爺撒下來的紅包，裡面的平安幣已經收進錢包。留著當紀念。"}); }
-  if(bagTab==="all"||bagTab==="acc") ACC_IDS.filter(id=>a.owned[id]).forEach(id=>out.push({id:"a:"+id,ic:id,name:ACC[id].name,on:a[ACC[id].slot]===id,desc:(ACC[id].note?ACC[id].note+"。":"")+(ACC[id].cat==="頭飾"?"戴在頭上的頭飾。":ACC[id].slot==="mouth"?"咬在嘴邊的小東西。":"拿在手上的小東西。")}));
+  if(bagTab==="all"||bagTab==="acc") ACC_IDS.filter(id=>a.owned[id]).forEach(id=>out.push({id:"a:"+id,ic:id,name:ACC[id].name,on:a[ACC[id].slot]===id,desc:(ACC[id].note?ACC[id].note+"。":"")+(ACC[id].cat==="頭飾"?"戴在頭上的頭飾。":ACC[id].slot==="mouth"?"咬在嘴邊的小東西。":ACC[id].slot==="pet"?"跟在身邊的小夥伴。":"拿在手上的小東西。")}));
   if(bagTab==="all"||bagTab==="poem"){ const L=(bag.poems||[]).length; (bag.poems||[]).slice().reverse().forEach((n,i)=>{ if(bagTab==="all"&&i>=8) return; const t=(bag.poemT||[])[L-1-i]||0, done=!!(bag.jqDone&&bag.jqDone[n+"@"+t]);
     out.push({id:"p:"+n+":"+i,poem:n,done,name:`第${CN_NUM(n)}籤`,desc:`${POEMS[n-1]?POEMS[n-1].gz+"・":""}${t?`${fmtDraw(t)} 抽到。`:"在籤詩櫃求到的籤詩。"}${done?"已經解過籤。":"想知道意思，可以到解籤處問。"}`}); }); }
   return out; }
@@ -5394,11 +5401,12 @@ const ACC={qqball:{name:"地瓜球頭飾",cat:"頭飾",slot:"head"},boba:{name:"
   sausage:{name:"香腸",cat:"裝飾品",slot:"hand",note:"好濃的蒜頭味"},skewer:{name:"烤肉串",cat:"裝飾品",slot:"hand"},
   pacifier:{name:"奶嘴",cat:"嘴邊",slot:"mouth",note:"註生娘娘賜的，咬著會冒粉紅愛心"},
   peachsword:{name:"桃木七星劍",cat:"裝飾品",slot:"hand",note:"九天玄女賜的，身邊有仙女飄帶"},
-  bamboo:{name:"受祝福的竹葉",cat:"嘴邊",slot:"mouth",note:"觀音菩薩賜的，全身閃閃發亮、神清氣爽"}}; /* new ones always go at the end: the order is part of saved codes (15 at most) */
+  bamboo:{name:"受祝福的竹葉",cat:"嘴邊",slot:"mouth",note:"觀音菩薩賜的，全身閃閃發亮、神清氣爽"},
+  ghost:{name:"小幽靈",cat:"夥伴",slot:"pet",note:"幫地藏王找回 10 段記憶的小幽靈，會飄在你身邊發光"}}; /* new ones always go at the end: the order is part of saved codes (15 at most) */
 const ACC_IDS=Object.keys(ACC);
-function accState(){ if(!bag.acc||typeof bag.acc!=="object") bag.acc={owned:{},head:0,hand:0,mouth:0}; bag.acc.owned=bag.acc.owned||{}; if(bag.acc.mouth===undefined) bag.acc.mouth=0; return bag.acc; }
+function accState(){ if(!bag.acc||typeof bag.acc!=="object") bag.acc={owned:{},head:0,hand:0,mouth:0,pet:0}; bag.acc.owned=bag.acc.owned||{}; if(bag.acc.mouth===undefined) bag.acc.mouth=0; if(bag.acc.pet===undefined) bag.acc.pet=0; return bag.acc; }
 function nmDay(){ const d=new Date(Date.now()+8*3600e3).toISOString().slice(0,10); if(!bag.nm||bag.nm.day!==d) bag.nm={day:d,fish:0,pWin:0,pCash:0}; return bag.nm; }
-function myEq(){ const a=accState(); return [a.head||0,a.hand||0,a.mouth||0]; }
+function myEq(){ const a=accState(); return [a.head||0,a.hand||0,a.mouth||0,a.pet||0]; }
 function giveAcc(id){ const a=accState(); const had=!!a.owned[id]; a.owned[id]=1; if(!had){ a[ACC[id].slot]=id; } saveBag(); meAv.setAcc(myEq()); markDirty(); return had; }
 function payStall(price){ if(!price) return true; if((bag.coins||0)<price){ toast(`平安幣不夠，這攤要 ${price} 幣`); return false; } bag.coins-=price; saveBag(); sfx.coin&&sfx.coin(); return true; }
 
@@ -5431,10 +5439,21 @@ function buildAccHead(id){ const g=new T.Group();
     g.userData.sparkle=1; g.userData.bald=1; }
   return g; }
 /* 嘴邊 pieces (held in the mouth): filled in by the god games' rewards */
+/* 小幽靈: a little glowing ghost (drawn after the puzzle pictures) floating by your shoulder */
+function buildGhostPet(av){ const g=new T.Group(); g.userData.noMerge=1; const white=new T.MeshStandardMaterial({color:new T.Color("#ffffff"),emissive:new T.Color("#dff4ff"),emissiveIntensity:.75,roughness:.6,transparent:true,opacity:.92});
+  const head=new T.Mesh(new T.SphereGeometry(.13,18,14),white); head.scale.y=1.05; g.add(head);
+  const body=new T.Mesh(new T.ConeGeometry(.13,.26,18,1,true),white); body.rotation.x=Math.PI; body.position.y=-.13; g.add(body);
+  for(let i=0;i<3;i++){ const w=new T.Mesh(new T.SphereGeometry(.05,10,8),white); w.position.set(Math.cos(i*2.1)*.08,-.27,Math.sin(i*2.1)*.08); g.add(w); }
+  const eyeM=new T.MeshBasicMaterial({color:new T.Color("#1a1a2a")}), blush=new T.MeshBasicMaterial({color:new T.Color("#ffa3b8")});
+  for(const s2 of [-1,1]){ const e=new T.Mesh(new T.SphereGeometry(.018,8,6),eyeM); e.position.set(s2*.045,.02,.12); g.add(e); const b=new T.Mesh(new T.CircleGeometry(.018,10),blush); b.position.set(s2*.075,-.02,.125); g.add(b); }
+  const glow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#cfefff"),transparent:true,opacity:.7,blending:T.AdditiveBlending,depthWrite:false})); glow.scale.set(.9,.9,1); g.add(glow);
+  g.position.set(.5,1.45,.1); av.root.add(g); g.userData.glow=glow; return g; }
 const ACC_MOUTH={
-  bamboo(g){ const leaf=accMat("#4caf50",{r:.5,e:"#2a7a30",ei:.25}), stem=accMat("#7a9a3a",{r:.6});
-    const st=new T.Mesh(new T.CylinderGeometry(.006,.006,.22,5),stem); st.rotation.z=Math.PI/2; st.position.x=.08; g.add(st);
-    for(const [x,a,sc] of [[.16,.5,1],[.2,-.4,.85],[.12,-.9,.7]]){ const l=new T.Mesh(new T.SphereGeometry(.05,10,6),leaf); l.scale.set(2.2,.35,.7); l.position.set(x,.02,0); l.rotation.z=a; g.add(l); }
+  bamboo(g){ /* one long blade of leaf held in the corner of the mouth, sticking out to the side (like the grass leaf in RO) */
+    const sh=new T.Shape(); sh.moveTo(0,0); sh.quadraticCurveTo(.1,.042,.3,0); sh.quadraticCurveTo(.1,-.036,0,0);
+    const leaf=new T.Mesh(new T.ShapeGeometry(sh,8),new T.MeshStandardMaterial({color:new T.Color("#3fae4a"),emissive:new T.Color("#1f6a26"),emissiveIntensity:.3,roughness:.5,side:T.DoubleSide}));
+    const rib=new T.Mesh(new T.PlaneGeometry(.26,.005),new T.MeshBasicMaterial({color:new T.Color("#a8e08a"),side:T.DoubleSide})); rib.position.set(.13,0,.001);
+    const blade=new T.Group(); blade.add(leaf,rib); blade.position.set(.035,0,.01); blade.rotation.set(-.35,-.55,.32); g.add(blade);
     g.userData.fresh=1; },
   pacifier(g){ const pink=accMat("#ff8fb8",{r:.35,e:"#ff6fa0",ei:.25}), white=accMat("#fff4f8",{r:.3});
     const shield=new T.Mesh(new T.SphereGeometry(.075,18,10),pink); shield.scale.set(1.25,.85,.32); g.add(shield);
@@ -5457,7 +5476,7 @@ function buildAccHand(id){ const g=new T.Group(); if(ACC_BUILD_HAND[id]){ ACC_BU
     const glow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffb040"),transparent:true,opacity:.75,blending:T.AdditiveBlending,depthWrite:false})); glow.scale.set(.42,.42,1); glow.position.y=.26; g.add(glow); g.userData.glow=glow;
     g.rotation.set(Math.PI*.85,0,0); g.userData.aroma=1; }
   return g; }
-Avatar.prototype.setAcc=function(eq){ eq=[...(eq||[]),0,0,0].slice(0,3).map(v=>ACC[v]?v:0); this.eq=eq; if(this.ribbon){ this.root.remove(this.ribbon); this.ribbon=null; }
+Avatar.prototype.setAcc=function(eq){ eq=[...(eq||[]),0,0,0,0].slice(0,4).map(v=>ACC[v]?v:0); this.eq=eq; if(this.ribbon){ this.root.remove(this.ribbon); this.ribbon=null; } if(this.pet){ this.root.remove(this.pet); this.pet=null; } if(eq[3]&&eq[3]==='ghost') this.pet=buildGhostPet(this);
   if(this.accMouth){ this.accMouth.parent&&this.accMouth.parent.remove(this.accMouth); this.accMouth=null; }
   if(this.accHead){ this.accHead.parent&&this.accHead.parent.remove(this.accHead); this.accHead=null; }
   if(this.accHand){ this.accHand.parent&&this.accHand.parent.remove(this.accHand); this.accHand=null; }
@@ -5465,7 +5484,7 @@ Avatar.prototype.setAcc=function(eq){ eq=[...(eq||[]),0,0,0].slice(0,3).map(v=>A
   if(eq[0]&&this.head){ this.accHead=buildAccHead(eq[0]); this.head.add(this.accHead);
     if(this.accHead.userData.bald){ const all=!!this.accHead.userData.full; this.baldHid=[]; this.head.children.forEach(o=>{ if(o===this.accHead||!o.visible) return; if(!all&&o.isMesh&&o.material&&o.material.map) return; o.visible=false; this.baldHid.push(o); }); } }
   if(eq[1]&&this.hands&&this.hands[0]){ this.accHand=buildAccHand(eq[1]); this.hands[0].add(this.accHand); }
-  if(eq[2]&&this.head){ this.accMouth=buildAccMouth(eq[2]); this.accMouth.position.set(0,-.08,.25); this.head.add(this.accMouth); }
+  if(eq[2]&&this.head){ this.accMouth=buildAccMouth(eq[2]); this.accMouth.position.set(0,-.15,.215); /* at the mouth (it sat up by the nose before) */ this.head.add(this.accMouth); }
   // tall head pieces push the name tag and speech bubble up so they stay readable
   this.accLift={qqball:.62,boba:.5,afro:.32}[eq[0]]||0; if(this.label) this.label.position.y=(this.sp?1.46:1.42)+this.accLift; if(this.glow) this.glow.position.y=1.46+this.accLift; };
 // 你好臭: someone holding a 香腸 trails little green stink clouds, and now and then a "好臭～" pops up over them
@@ -5493,12 +5512,19 @@ function accTick(av,dt){ stinkFlies(av,!!(av.accHand&&av.accHand.userData.stink&
   if(av.accHead&&av.accHead.userData.bubbles&&near){ av.bubT=(av.bubT||0)-dt; if(av.bubT<0){ av.bubT=.18+Math.random()*.2; av.accHead.getWorldPosition(_v1); // rainbow soap bubbles drifting up from the cup
       const c=["#ff6b9a","#ffd24a","#6bdcff","#9a7bff","#7dffb0","#ffffff"][(Math.random()*6)|0]; const b=new T.Sprite(new T.SpriteMaterial({map:BUB_TEX(),color:new T.Color(c),transparent:true,depthWrite:false})); const sz=.05+Math.random()*.06;
       b.position.set(_v1.x+rand(-.15,.15),_v1.y+.5+rand(0,.15),_v1.z+rand(-.15,.15)); b.scale.set(sz,sz,1); scene.add(b); parts.push({s:b,vx:rand(-.12,.12),vy:.35+Math.random()*.2,vz:rand(-.12,.12),life:0,max:1.8+Math.random(),grow:.03,op:.9}); } }
-  if(av.accHand&&av.accHand.userData.fairy&&near){ /* 仙女飄帶: two silk ribbons drifting round the wearer */
-    if(!av.ribbon){ av.ribbon=new T.Group(); av.ribbon.userData.noMerge=1; av.root.add(av.ribbon);
-      for(const [c,ph] of [["#ff6fa8",0],["#6fc0ff",Math.PI]]){ const geo=new T.PlaneGeometry(1,1,28,1); const m=new T.Mesh(geo,new T.MeshBasicMaterial({color:new T.Color(c),transparent:true,opacity:.7,side:T.DoubleSide,depthWrite:false,toneMapped:false})); m.userData.ph=ph; m.frustumCulled=false; av.ribbon.add(m); } }
-    const t=performance.now()/1000; av.ribbon.children.forEach(m=>{ const pa=m.geometry.attributes.position, n=pa.count/2;
-      for(let i=0;i<n;i++){ const u=i/(n-1), a=t*1.1+m.userData.ph+u*3.4, r=.5+u*.12, y=.75+u*.55+Math.sin(u*5+t*2.2+m.userData.ph)*.12, w=.07*(1-u*.6);
-        pa.setXYZ(i,Math.cos(a)*r,y+w,Math.sin(a)*r); pa.setXYZ(i+n,Math.cos(a)*r,y-w,Math.sin(a)*r); } pa.needsUpdate=true; }); }
+  if(av.pet){ const t=performance.now()/1000; av.pet.position.set(.5+Math.sin(t*.8)*.08,1.45+Math.sin(t*2)*.08,.1+Math.cos(t*.8)*.08); av.pet.rotation.y=Math.sin(t*.6)*.4; av.pet.rotation.z=Math.sin(t*1.7)*.1; av.pet.userData.glow.material.opacity=.55+.2*Math.sin(t*3); }
+  if(av.accHand&&av.accHand.userData.fairy&&near&&av.torso){ /* 仙女披帛: two thin silk scarves draped over the shoulders, round the back and under the arms, ends fluttering */
+    if(!av.ribbon||av.ribbon.parent!==av.torso){ if(av.ribbon&&av.ribbon.parent) av.ribbon.parent.remove(av.ribbon); av.ribbon=new T.Group(); av.ribbon.userData.noMerge=1; av.torso.add(av.ribbon);
+      for(const [c,k] of [["#ffffff",0],["#ffffff",1]]){ const geo=new T.BufferGeometry(), n=48; geo.setAttribute("position",new T.BufferAttribute(new Float32Array(n*2*3),3));
+        { const col=new Float32Array(n*2*3), A=new T.Color(k?"#a35cff":"#ff6fae").convertSRGBToLinear(), B=new T.Color(k?"#ff8fc8":"#8f5cff").convertSRGBToLinear(), cc=new T.Color(); for(let i=0;i<n;i++){ const u=Math.abs(i/(n-1)-.5)*2; cc.copy(A).lerp(B,u); for(const q of [0,1]) col.set([cc.r,cc.g,cc.b],(i*2+q)*3); } geo.setAttribute("color",new T.BufferAttribute(col,3)); } /* pink to purple along each scarf */ const idx=[]; for(let i=0;i<n-1;i++){ const a2=i*2; idx.push(a2,a2+1,a2+2,a2+1,a2+3,a2+2); } geo.setIndex(idx);
+        const m=new T.Mesh(geo,new T.MeshBasicMaterial({vertexColors:true,transparent:true,opacity:.95,side:T.DoubleSide,depthWrite:false,toneMapped:false})); m.userData.k=k; m.userData.n=n; m.frustumCulled=false; av.ribbon.add(m); } }
+    const t=performance.now()/1000, V=(a2,b2,c2)=>new T.Vector3(a2,b2,c2), _p=new T.Vector3(), _tg=new T.Vector3(), _o=new T.Vector3(), _sd=new T.Vector3();
+    av.ribbon.children.forEach(m=>{ const k=m.userData.k, n=m.userData.n, ph=k*1.7, w1=Math.sin(t*2.3+ph), w2=Math.sin(t*2.3+ph+1.2), w3=Math.cos(t*1.9+ph);
+      const top=k?.72:.8, tz=k?-.3:-.34, tl=k?-.1:.02; /* the loop rises behind the neck; the tails stream out behind */
+      const pts=[V(-.4+w1*.05,tl+w2*.08,-.62+w3*.07),V(-.33,.02+w1*.03,-.32),V(-.28,.08,.04),V(-.21,.3,.11),V(-.16,.46,.02),V(-.15,.62,tz*.6),V(0,top,tz),V(.15,.62,tz*.6),V(.16,.46,.02),V(.21,.3,.11),V(.28,.08,.04),V(.33,.02-w1*.03,-.32),V(.4-w2*.05,tl+w1*.08,-.62-w3*.07)];
+      const cv2=new T.CatmullRomCurve3(pts), pa=m.geometry.attributes.position, wd=.04;
+      for(let i=0;i<n;i++){ const u=i/(n-1); cv2.getPointAt(u,_p); cv2.getTangentAt(u,_tg); _o.set(_p.x,0,_p.z); if(_o.lengthSq()<1e-6) _o.set(0,0,1); _o.normalize(); _sd.crossVectors(_tg,_o).normalize().multiplyScalar(wd*(1-Math.abs(u-.5)*.5));
+        pa.setXYZ(i*2,_p.x+_sd.x,_p.y+_sd.y,_p.z+_sd.z); pa.setXYZ(i*2+1,_p.x-_sd.x,_p.y-_sd.y,_p.z-_sd.z); } pa.needsUpdate=true; }); }
   if(av.accMouth&&av.accMouth.userData.fresh&&near){ av.freshT=(av.freshT||0)-dt; if(av.freshT<0){ av.freshT=.07+Math.random()*.08; const p0=av.root.position; /* 神清氣爽: bright sparkles all over the body */
       const sp=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color(["#ffffff","#bff6ff","#d8ffcf","#fff6b0"][(Math.random()*4)|0]),transparent:true,depthWrite:false,blending:T.AdditiveBlending})); const sz=.05+Math.random()*.07;
       const a=Math.random()*6.283, r=.25+Math.random()*.2; sp.position.set(p0.x+Math.cos(a)*r,.1+Math.random()*1.5,p0.z+Math.sin(a)*r); sp.scale.set(sz,sz,1); scene.add(sp); parts.push({s:sp,vx:0,vy:.25+Math.random()*.25,vz:0,life:0,max:.9+Math.random()*.5,grow:.02,op:1}); } }
@@ -5527,7 +5553,7 @@ async function godGameWin(g,ms,accId,extra){ const rw=extra||gameReward(g,accId)
   openSheet("godGame",GOD_GAMES[g]||"小遊戲",`<div class="gg-done"><div class="gg-time">${fmtMs(ms)}</div><p class="lead">${rw.kind==="acc"?"🎁 ":rw.kind==="gacha"?"🎟️ ":""}${esc(rw.text)}</p>
     <div class="group"><span class="group-label">🏆 最快排行榜</span><div id="ggBoard"><p class="note">讀取中…</p></div></div></div>`);
   const list=await lbSubmit(g,ms); const el=$("#ggBoard"); if(el) el.innerHTML=lbHTML(list); }
-const GOD_PLAY={tudi:"⛏️ 尋寶（找到發光的寶藏挖出來）",zhusheng:"🍼 哄寶寶睡覺",jiutian:"☯️ 八卦迷宮（傾斜手機滾彈珠）",guanyin:"💧 接福水（轉動木水道）"};
+const GOD_PLAY={tudi:"⛏️ 尋寶（找到發光的寶藏挖出來）",zhusheng:"🍼 哄寶寶睡覺",jiutian:"☯️ 八卦迷宮（傾斜手機滾彈珠）",guanyin:"💧 接福水（轉動木水道）",dizang:"🧩 記憶碎片（幫小幽靈拼回記憶）"};
 const GOD_START={}; HANDLERS.godPlay=g=>{ closeSheet(); if(GOD_START[g]) GOD_START[g](); else toast("這個遊戲還在準備中"); };
 /* ================= 土地公・尋寶: a beam of light marks treasure somewhere in the grounds; walk there, tap it, dig it up ================= */
 const TH={on:false,t0:0,x:0,z:0,g:null,hit:null,digging:false};
@@ -5737,15 +5763,59 @@ function playFushui(){ const L=gameLayer("觀音菩薩・接福水","點木水�
     requestAnimationFrame(draw); };
   requestAnimationFrame(draw); }
 GOD_START.guanyin=playFushui;
+/* ================= 地藏王・記憶碎片: a little ghost has lost its memories — put the 25-piece picture back together. Pinch or use ＋／－ to zoom,
+   drag empty space to look around. Every finished picture is remembered; 10 different ones bring the 小幽靈 to your side. ================= */
+const DZ_PICS=14;
+function playMemory(){ bag.dz=bag.dz||{done:[]}; const done0=new Set(bag.dz.done); const fresh=[...Array(DZ_PICS)].map((_,i)=>i+1).filter(n=>!done0.has(n)); const pic=(fresh.length?fresh:[...Array(DZ_PICS)].map((_,i)=>i+1))[(Math.random()*(fresh.length||DZ_PICS))|0];
+  const L=gameLayer("地藏王・記憶碎片",`小幽靈的第 ${pic} 段記憶：把 25 片拼回去（已找回 ${done0.size}／10 段）`); const {x,cv}=L;
+  const img=new Image(); img.src=`ghost${pic}.webp`; const N=5, BW=1000, BH=558, pw=BW/N, ph=BH/N;
+  const edge=[]; for(let j=0;j<N;j++){ edge.push([]); for(let i=0;i<N;i++) edge[j].push({r:i<N-1?(Math.random()<.5?1:-1):0,b:j<N-1?(Math.random()<.5?1:-1):0}); }
+  const pieces=[]; for(let j=0;j<N;j++) for(let i=0;i<N;i++){ const t=j?-edge[j-1][i].b:0, l=i?-edge[j][i-1].r:0; pieces.push({i,j,tab:[t,edge[j][i].r,edge[j][i].b,l],x:0,y:0,lock:false,z:0}); }
+  pieces.forEach((p,k)=>{ p.x=-60+Math.random()*(BW+120-pw)+0; p.y=BH+70+Math.random()*560; p.z=k; }); /* scattered in the tray under the frame */
+  const path=(p,c)=>{ const s2=pw*.22, s3=ph*.22, [t,r,b,l]=p.tab; c.beginPath(); c.moveTo(0,0);
+    const side=(x0,y0,x1,y1,dir,sz)=>{ const mx=(x0+x1)/2, my=(y0+y1)/2, dx=x1-x0, dy=y1-y0, len=Math.hypot(dx,dy), nx=-dy/len, ny=dx/len;
+      if(!dir){ c.lineTo(x1,y1); return; } const a=.36, k=dir*sz; c.lineTo(x0+dx*a,y0+dy*a); c.bezierCurveTo(x0+dx*a+nx*k*.2,y0+dy*a+ny*k*.2, mx-dx*.2+nx*k*1.3,my-dy*.2+ny*k*1.3, mx+nx*k*1.25,my+ny*k*1.25); c.bezierCurveTo(mx+dx*.2+nx*k*1.3,my+dy*.2+ny*k*1.3, x1-dx*a+nx*k*.2,y1-dy*a+ny*k*.2, x1-dx*a,y1-dy*a); c.lineTo(x1,y1); };
+    side(0,0,pw,0,-t,s3); side(pw,0,pw,ph,-r,s2); side(pw,ph,0,ph,-b,s3); side(0,ph,0,0,-l,s2); c.closePath(); };
+  let view={s:1,ox:0,oy:0}; const fitView=()=>{ const W=L.W(), H=L.H(); const s2=Math.min((W-20)/(BW+160),(H-170)/(BH+700)); view={s:s2,ox:(W-(BW)*s2)/2,oy:120+20*s2}; }; fitView();
+  const toW=(sx,sy)=>[(sx-view.ox)/view.s,(sy-view.oy)/view.s];
+  let drag=null, pan=null, pts=new Map(), pinch=null, t0=performance.now(), done=false, placed=0;
+  cv.addEventListener("pointerdown",e=>{ pts.set(e.pointerId,[e.clientX,e.clientY]); if(pts.size===2){ const [a,b]=[...pts.values()]; pinch={d:Math.hypot(a[0]-b[0],a[1]-b[1]),s:view.s,mx:(a[0]+b[0])/2,my:(a[1]+b[1])/2}; drag=null; pan=null; return; }
+    const [wx,wy]=toW(e.clientX,e.clientY); const hit=pieces.filter(p=>!p.lock&&wx>p.x-pw*.1&&wx<p.x+pw*1.1&&wy>p.y-ph*.1&&wy<p.y+ph*1.1).sort((a,b)=>b.z-a.z)[0];
+    if(hit){ hit.z=Math.max(...pieces.map(p=>p.z))+1; drag={p:hit,dx:wx-hit.x,dy:wy-hit.y}; } else pan={x:e.clientX,y:e.clientY,ox:view.ox,oy:view.oy}; });
+  cv.addEventListener("pointermove",e=>{ if(!pts.has(e.pointerId)) return; pts.set(e.pointerId,[e.clientX,e.clientY]);
+    if(pinch&&pts.size===2){ const [a,b]=[...pts.values()], d=Math.hypot(a[0]-b[0],a[1]-b[1]); zoomAt(pinch.mx,pinch.my,Math.max(.25,Math.min(3,pinch.s*d/pinch.d))/view.s); return; }
+    if(drag){ const [wx,wy]=toW(e.clientX,e.clientY); drag.p.x=wx-drag.dx; drag.p.y=wy-drag.dy; } else if(pan){ view.ox=pan.ox+e.clientX-pan.x; view.oy=pan.oy+e.clientY-pan.y; } });
+  const upP=e=>{ pts.delete(e.pointerId); if(pts.size<2) pinch=null; if(drag){ const p=drag.p; if(Math.hypot(p.x-p.i*pw,p.y-p.j*ph)<pw*.28){ p.x=p.i*pw; p.y=p.j*ph; p.lock=true; p.z=-1; placed++; tone(660+placed*12,.15,.08); if(placed===N*N) win(); } drag=null; } pan=null; };
+  cv.addEventListener("pointerup",upP); cv.addEventListener("pointercancel",upP);
+  const zoomAt=(sx,sy,k)=>{ const [wx,wy]=toW(sx,sy); view.s*=k; view.ox=sx-wx*view.s; view.oy=sy-wy*view.s; };
+  const bar=document.createElement("div"); bar.className="dz-zoom"; bar.innerHTML=`<button class="chip" data-z="1.25">＋</button><button class="chip" data-z=".8">－</button><button class="chip" data-z="0">全部</button>`; L.el.appendChild(bar);
+  bar.querySelectorAll("button").forEach(b=>b.onclick=()=>{ const k=+b.dataset.z; if(!k) fitView(); else zoomAt(L.W()/2,L.H()/2,k); });
+  window.__dz=()=>pieces.map(p=>[p.i,p.j,p.lock]); window.__dzSnap=k=>{ const p=pieces[k]; if(p.lock) return; p.x=p.i*pw; p.y=p.j*ph; drag={p}; upP({pointerId:-1}); };
+  const win=()=>{ done=true; const ms=performance.now()-t0; healSound(); bag.dz.done=[...new Set([...bag.dz.done,pic])]; const n=bag.dz.done.length; let extra=null;
+    if(n>=10&&!accState().owned.ghost){ giveAcc("ghost"); extra={kind:"acc",text:`小幽靈找回了 10 段記憶，決定跟著你了！（已戴上「小幽靈」）`}; }
+    const rw=gameReward("dizang",null); saveBag(); setTimeout(()=>{ L.close(); godGameWin("dizang",ms,null,extra||{kind:rw.kind,text:`找回第 ${pic} 段記憶（共 ${n}／10 段）。${rw.text}`}); },1800); };
+  const draw=now=>{ if(L.done) return; const W=L.W(), H=L.H(); const bg=x.createLinearGradient(0,0,0,H); bg.addColorStop(0,"#141a2a"); bg.addColorStop(1,"#2a2238"); x.fillStyle=bg; x.fillRect(0,0,W,H);
+    x.save(); x.translate(view.ox,view.oy); x.scale(view.s,view.s);
+    x.fillStyle="rgba(255,255,255,.06)"; x.fillRect(0,0,BW,BH); x.strokeStyle="rgba(220,235,255,.5)"; x.lineWidth=3/view.s; x.strokeRect(0,0,BW,BH);
+    if(img.complete&&img.naturalWidth){ x.globalAlpha=.12; x.drawImage(img,0,0,BW,BH); x.globalAlpha=1; }
+    x.fillStyle="rgba(255,255,255,.04)"; x.fillRect(-80,BH+50,BW+160,620);
+    [...pieces].sort((a,b)=>a.z-b.z).forEach(p=>{ x.save(); x.translate(p.x,p.y); path(p,x); x.save(); x.clip(); if(img.complete&&img.naturalWidth) x.drawImage(img,-p.i*pw,-p.j*ph,BW,BH); else { x.fillStyle="#556"; x.fillRect(-pw,-ph,pw*3,ph*3); } x.restore();
+      x.strokeStyle=p.lock?"rgba(255,255,255,.15)":drag&&drag.p===p?"#ffe28a":"rgba(255,255,255,.75)"; x.lineWidth=(p.lock?1:2)/view.s; x.stroke(); x.restore(); });
+    x.restore();
+    x.fillStyle="#fff"; x.font=`600 15px ${UI_FONT}`; x.textAlign="left"; x.fillText(`${((now-t0)/1000).toFixed(1)} 秒・${placed}／25 片`,18,104);
+    if(done){ x.textAlign="center"; x.fillStyle="#dff0ff"; x.font=`700 24px ${DISPLAY_FONT}`; x.fillText("小幽靈想起來了！",W/2,H-60); }
+    requestAnimationFrame(draw); };
+  requestAnimationFrame(draw); }
+GOD_START.dizang=playMemory;
 HANDLERS.godBoard=async g=>{ openSheet("godGame",(GOD_GAMES[g]||"小遊戲")+" 排行榜",`<div id="ggBoard"><p class="note">讀取中…</p></div>`); const el=$("#ggBoard"); const list=await lbGet(g); if(el) el.innerHTML=lbHTML(list); };
 
 /* ---- bag: 飾品 tab ---- */
 let accTab="頭飾";
-function accHTML(){ const a=accState(); const tabs=["服裝","頭飾","裝飾品","嘴邊"];
+function accHTML(){ const a=accState(); const tabs=["服裝","頭飾","裝飾品","嘴邊","夥伴"];
   const list=ACC_IDS.filter(id=>ACC[id].cat===accTab&&a.owned[id]);
   return `<div class="group"><span class="group-label">飾品</span><div class="chips">${tabs.map(t=>`<button class="chip" data-act="accTab" data-v="${t}" aria-pressed="${t===accTab}">${t}</button>`).join("")}</div>
     ${list.length?`<div class="goods">${list.map(id=>{ const on=a[ACC[id].slot]===id; return `<button class="good" data-act="accWear" data-v="${id}" style="${on?"border-color:var(--gold);background:rgba(142,28,20,.35)":""}"><span class="name">${ACC[id].name}${on?"　✓ 穿戴中":""}</span><span class="meta">${ACC[id].note?ACC[id].note+"・":""}${on?"點一下脫下":"點一下穿上"}</span></button>`; }).join("")}</div>`
-      :`<p class="note">${accTab==="嘴邊"?"還沒有嘴邊的飾品。到觀音菩薩、註生娘娘玩小遊戲可以得到。":accTab==="服裝"?"還沒有服裝。":accTab==="頭飾"?"還沒有頭飾。到夜市玩地瓜球、珍珠奶茶、射氣球可以得到。":"還沒有裝飾品。到夜市香腸攤擲骰子可以得到。"}</p>`}</div>`; }
+      :`<p class="note">${accTab==="夥伴"?"還沒有夥伴。幫地藏王拼回 10 張不同的記憶，就會有小幽靈跟著你。":accTab==="嘴邊"?"還沒有嘴邊的飾品。到觀音菩薩、註生娘娘玩小遊戲可以得到。":accTab==="服裝"?"還沒有服裝。":accTab==="頭飾"?"還沒有頭飾。到夜市玩地瓜球、珍珠奶茶、射氣球可以得到。":"還沒有裝飾品。到夜市香腸攤擲骰子可以得到。"}</p>`}</div>`; }
 HANDLERS.accTab=v=>{ accTab=v; openBag(); };
 HANDLERS.accWear=id=>{ const a=accState(); if(!a.owned[id]) return; const sl=ACC[id].slot; a[sl]=a[sl]===id?0:id; saveBag(); meAv.setAcc(myEq()); markDirty(); toast(a[sl]?`穿上${ACC[id].name}`:`脫下${ACC[id].name}`); openBag(); };
 function nightMarketHTML(){ const d=nmDay(); return `<div class="group"><span class="group-label">夜市（攤位還在搭，先從這裡玩）</span><div class="goods">${NM_STALLS.map(s=>`<button class="good" data-act="nmPlay" data-v="${s.k}"><span class="name">${s.icon} ${s.name}</span><span class="meta">${s.note}</span><span class="own">${s.price?`${s.price} 幣`:"免費入場"}${s.k==="fish"&&d.fish?"・今天玩過了":""}</span></button>`).join("")}</div></div>`; }
@@ -6221,7 +6291,7 @@ function tick(){ if(gameAsleep) return; const _ft0=performance.now(); { const no
     r1.scale.setScalar(k); r2.scale.setScalar(1+((tapT*1.2)%1)*.8); r2.material.opacity=.7*(1-((tapT*1.2)%1));
     if(arrived||tapT>12){ const f=Math.max(0,r1.material.opacity-dt*3); r1.material.opacity=f; dot.material.opacity=f; if(f<=0){ tapMark.visible=false; r1.material.opacity=.9; dot.material.opacity=.9; } } }
   botTick(dt);
-  lodPrep(); remotes.forEach(r=>{ lodUpdate(r,dt); if((r.eq&&(r.eq[0]||r.eq[1]||r.eq[2]))||r.flies) accTick(r,dt); }); /* r.flies: keep ticking once more so flies go away after the sausage is put down */ sjUpdate(dt); fwUpdate(dt); updateSkyLanterns(dt); renderSLBtn(); opTick(dt); ptTick(dt); REAR_TICK.forEach(f=>f(dt)); csTick(dt); hbTick(dt); flyCtlTick(dt); slodTick(dt); poolTick(dt); rearVis(); buildTick(); ftTick(dt); mkTick(dt);
+  lodPrep(); remotes.forEach(r=>{ lodUpdate(r,dt); if((r.eq&&(r.eq[0]||r.eq[1]||r.eq[2]||r.eq[3]))||r.flies) accTick(r,dt); }); /* r.flies: keep ticking once more so flies go away after the sausage is put down */ sjUpdate(dt); fwUpdate(dt); updateSkyLanterns(dt); renderSLBtn(); opTick(dt); ptTick(dt); REAR_TICK.forEach(f=>f(dt)); csTick(dt); hbTick(dt); flyCtlTick(dt); slodTick(dt); poolTick(dt); rearVis(); buildTick(); ftTick(dt); mkTick(dt);
   if(room&&dirty&&performance.now()-lastSend>((keys.size||joy.on)?800:SEND_GAP)) sendPresence();
   updateFlyers(dt); updateFu(dt); updateCats(dt); updateWater(dt);
   { let best=null, bd=2.6; if(!sheetKind&&!customizing&&!pendingStation&&meAv.seat<0&&!(meAv.danceT>0)) for(const k in stations){ if(k==="cats"){ if(CATS.off) continue; const dc=Math.hypot(meAv.pos.x-CATS.c.x,meAv.pos.y-CATS.c.z); if(dc<3.6){ best=k; bd=0; } continue; } const d=meAv.pos.distanceTo(stations[k].approach); if(d<bd){ bd=d; best=k; } }
