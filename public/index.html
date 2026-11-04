@@ -884,7 +884,9 @@ scene.environment=pmrem.fromEquirectangular(envTex).texture;
 scene.add(new T.HemisphereLight("#7a5444","#1c0b06",.32));
 scene.add(new T.AmbientLight("#4a2c1e",.18));
 const sunLight=new T.DirectionalLight("#ff9a52",.75); sunLight.position.copy(SUN).multiplyScalar(40).setY(16); scene.add(sunLight);
-function plight(c,i,d,x,y,z){ const l=new T.PointLight(c,i,d,2); l.position.set(x,y,z); scene.add(l); return l; }
+/* every fixed point light is virtual: it keeps its colour, strength, reach and flicker, but is not in the scene itself.
+   The light pool (below) lends one of a few real lights to whichever virtual lights matter most where you are. */
+const VLIGHTS=[]; function plight(c,i,d,x,y,z){ const l=new T.PointLight(c,i,d,2); l.position.set(x,y,z); VLIGHTS.push(l); return l; }
 const candleLight=plight("#ff9a40",2.2,9,0,1.8,-10.2);
 plight("#ffc070",.9,7,0,4.6,-12.3);
 const hallL1=plight("#ff8a3a",1.5,15,-4.5,5.6,-3), hallL2=plight("#ff8a3a",1.5,15,4.5,5.6,-3);
@@ -1519,7 +1521,7 @@ function ridgeTrio(y,z,parent=scene,k=1){ const plat=mat("#2b6fae",{roughness:.5
     for(const sd of [-1,1]){ for(const [a,b] of [[FD.cw/2,FD.x-FD.sw/2],[FD.x+FD.sw/2,12]]){ const w=b-a; mesh(new T.PlaneGeometry(w,8.7),bm(w/1.9,4.5),sd*(a+b)/2,5.65,z); mesh(new T.PlaneGeometry(w,1.3),new T.MeshStandardMaterial({map:texRep(stonePanelTex,Math.max(1,w/1.8),1),roughness:.85}),sd*(a+b)/2,.65,z); }
       mesh(new T.PlaneGeometry(FD.sw,HH-FD.sh),bm(1.1,3.2),sd*FD.x,FD.sh+(HH-FD.sh)/2,z);
       mesh(new T.PlaneGeometry(2.2,2.2),new T.MeshStandardMaterial({map:roundWinTex,transparent:true,alphaTest:.5,roughness:.8,side:T.DoubleSide}),sd*9.95,3.7,z+.035);
-      box(.5,10,.5,mat("#a49e94",{roughness:.85}),sd*11.95,5,HZ+.15); }
+      box(.56,10,.56,mat("#a49e94",{roughness:.85}),sd*11.95,5,HZ+.15); }
     mesh(new T.PlaneGeometry(FD.cw,HH-FD.ch),bm(1.8,2.6),0,FD.ch+(HH-FD.ch)/2,z);
     const band=cvs(512,64,(x,w,h)=>{ x.fillStyle="#1f4f9a"; x.fillRect(0,0,w,h); x.fillStyle="#e8b23c"; x.fillRect(0,0,w,6); x.fillRect(0,h-6,w,6);
       for(let i=0;i<8;i++){ const cx=i*64+32; x.fillStyle="#2e9a4e"; x.beginPath(); x.ellipse(cx,h/2,22,13,0,0,Math.PI*2); x.fill(); x.fillStyle="#d8341e"; x.beginPath(); x.arc(cx,h/2,7,0,Math.PI*2); x.fill(); x.strokeStyle="#e8b23c"; x.lineWidth=3; x.beginPath(); x.ellipse(cx,h/2,22,13,0,0,Math.PI*2); x.stroke(); } });
@@ -1589,18 +1591,28 @@ function roofClipObj(o){ o.traverse(q=>{ if(q.isMesh) (Array.isArray(q.material)
    They register spots here, and a few lights move to the spots nearest the camera. The number of lights never changes, so nothing recompiles. */
 const LPOOL={spots:[],lights:[],t:0};
 function poolLight(c,i,d,x,y,z,tag){ LPOOL.spots.push({c:new T.Color(c),i,d,p:new T.Vector3(x,y,z),tag}); }
-for(let k=0;k<(Q.lite?2:3);k++){ const l=new T.PointLight(0xffffff,0,8,2); scene.add(l); LPOOL.lights.push(l); }
-function poolTick(dt){ LPOOL.lights.forEach(l=>{ const g=l.userData.goal||0; l.intensity+=(g-l.intensity)*Math.min(1,dt*3); }); // lights fade, never pop
-  LPOOL.t-=dt; if(LPOOL.t>0) return; LPOOL.t=.4; const c=camera.position, mx=meAv?meAv.pos.x:c.x, mz=meAv?meAv.pos.y:c.z;
-  // in or just in front of the 觀音殿, all the lights stay on its shrine; elsewhere they go to the nearest spots
-  const lock=Math.abs(mx)<RH.x+.3&&mz<RH.z0+3&&mz>RH.z1?"H":null;
-  const near=(lock?LPOOL.spots.filter(sp=>sp.tag===lock):LPOOL.spots.filter(sp=>!sp.tag)).map(sp=>[sp,sp.p.distanceToSquared(c)]).filter(e=>lock||e[1]<26*26).sort((a,b)=>a[1]-b[1]);
-  let want=near.slice(0,LPOOL.lights.length).map(e=>e[0]);
-  /* anywhere in the 後埕 or the 側殿 (but not inside the 觀音殿): the 觀音殿 shrine and both 側殿 shrines are lit already, so nothing switches on as you walk in */
-  if(!lock&&mz<RY0+1){ const H0=LPOOL.spots.find(sp=>sp.tag==="H"), Q=LPOOL.spots.filter(sp=>sp.tag==="Q").sort((a,b)=>a.p.distanceToSquared(c)-b.p.distanceToSquared(c)); want=[H0,...Q].filter(Boolean).slice(0,LPOOL.lights.length); }
-  LPOOL.lights.forEach(l=>{ const sp=l.userData.sp; l.userData.goal=sp&&want.includes(sp)?sp.i:0; });
-  want.forEach(sp=>{ if(LPOOL.lights.some(l=>l.userData.sp===sp)) return; const l=LPOOL.lights.find(l=>(!l.userData.sp||!want.includes(l.userData.sp))&&(l.intensity<.03||l.userData.sp.p.distanceTo(c)>l.userData.sp.d+12)); if(!l) return; /* a light whose old spot is far out of sight moves at once */
-    l.userData.sp=sp; l.intensity=0; l.position.copy(sp.p); l.color.copy(sp.c); l.distance=sp.d; l.userData.goal=sp.i; }); }
+LPOOL.vn=0; function poolSync(){ while(LPOOL.vn<VLIGHTS.length){ const l=VLIGHTS[LPOOL.vn++]; LPOOL.spots.push({c:l.color,i:l.intensity,d:l.distance,p:l.position,src:l}); } } // fixed lights made later join too
+// how many real lights: 省電 2 · 低配 2 · 標準 4 · 高畫質 6 (a fixed number per setting, so shaders never recompile while you walk)
+function poolSize(){ return Q.lite?2:Q.mode==="low"?3:Q.mode==="high"?6:4; }
+function poolResize(){ const n=poolSize(); while(LPOOL.lights.length<n){ const l=new T.PointLight(0xffffff,0,8,2); l.userData.k=0; scene.add(l); LPOOL.lights.push(l); } while(LPOOL.lights.length>n){ const l=LPOOL.lights.pop(); scene.remove(l); } LPOOL.t=0; }
+poolResize();
+const spI=sp=>sp.src?(sp.src.visible?sp.src.intensity:0):sp.i;
+function poolTick(dt){ const fade=Math.min(1,dt*3);
+  LPOOL.lights.forEach(l=>{ const u=l.userData; u.k=(u.k||0)+(((u.goal?1:0))-(u.k||0))*fade; l.intensity=u.sp?u.k*spI(u.sp):0; }); // lights fade, never pop; a flickering source keeps flickering
+  LPOOL.t-=dt; if(LPOOL.t>0) return; LPOOL.t=.4; poolSync(); const c=camera.position, mx=meAv?meAv.pos.x:c.x, mz=meAv?meAv.pos.y:c.z;
+  // in or just in front of the 觀音殿, all the lights stay on its shrine; elsewhere the ones that matter most here
+  const lock=Math.abs(mx)<RH.x+.3&&mz<RH.z0+3&&mz>RH.z1?"H":null; const N=LPOOL.lights.length, held=new Set(LPOOL.lights.map(l=>l.userData.sp));
+  // importance: strength × reach, falling off with distance from the camera; a light already shining keeps a 30% head start (no flip-flopping)
+  const score=sp=>{ const d2=sp.p.distanceToSquared(c), r=sp.d+6; if(d2>r*r) return 0; return spI(sp)*sp.d/(1+d2/(sp.d*sp.d))*(held.has(sp)?1.3:1); };
+  let want;
+  if(lock) want=LPOOL.spots.filter(sp=>sp.tag===lock).slice(0,N);
+  else { const rear=mz<RY0+1; const pri=rear?[LPOOL.spots.find(sp=>sp.tag==="H"),...LPOOL.spots.filter(sp=>sp.tag==="Q")].filter(Boolean):[];
+    /* anywhere in the 後埕 or the 側殿 (not inside the 觀音殿): the 觀音殿 shrine and both 側殿 shrines are lit already, so nothing switches on as you walk in */
+    const rest=LPOOL.spots.filter(sp=>!sp.tag).map(sp=>[sp,score(sp)]).filter(e=>e[1]>0).sort((a,b)=>b[1]-a[1]).map(e=>e[0]);
+    want=[...pri,...rest].slice(0,N); }
+  LPOOL.lights.forEach(l=>{ const sp=l.userData.sp; l.userData.goal=sp&&want.includes(sp)?1:0; });
+  want.forEach(sp=>{ if(LPOOL.lights.some(l=>l.userData.sp===sp)) return; const l=LPOOL.lights.find(l=>(!l.userData.sp||!want.includes(l.userData.sp))&&((l.userData.k||0)<.03||l.userData.sp.p.distanceTo(c)>l.userData.sp.d+12)); if(!l) return; /* a light whose old spot is far out of sight moves at once */
+    l.userData.sp=sp; l.userData.k=0; l.intensity=0; l.position.copy(sp.p); l.color.copy(sp.c); l.distance=sp.d; l.userData.goal=1; }); }
 /* the rear (後埕, 後殿, 側殿) lives in its own group: it is merged on its own and only drawn when the camera could see it */
 const REAR_G=new T.Group(); REAR_G.userData.region=1; scene.add(REAR_G);
 function rearVis(){ const c=camera.position; const v=c.z<-14.6||(Math.abs(c.x)>12.05&&c.z<SHZ1+.5)||c.y>10.5; if(REAR_G.visible!==v) REAR_G.visible=v; }
@@ -2075,7 +2087,7 @@ scene.add(cushions,rims); cushions.userData.seats=true;
       ["hc-rear","觀音殿",8.4,2.7,RH.z0+.32,0],
       ["hc-q","斗姥殿／地藏殿",20.6,2.4,RS.z0+.32,0] ];
     loadShared("huachuang",m=>{ spots.forEach(([id,lab,x,y,z,ry])=>{ for(const sd of [-1,1]){ const g=fitModel(m.clone(),1.3); const w=new T.Group(); w.add(g); g.position.y-=.65; w.position.set(sd*x,y,z); w.rotation.y=sd>0?ry:-ry; w.userData.noMerge=1; scene.add(w);
-        regEdit(id+(sd>0?"-R":"-L"),"八角花窗・"+lab+(sd>0?"（龍邊）":"（虎邊）"),w); } }); }); }
+        regEdit(id+(sd>0?"-R":"-L"),"八角花窗・"+lab+(sd>0?"（龍邊）":"（虎邊）"),w); } }); setTimeout(holesRefresh,0); }); }
   for(let i=0;i<14;i++){ const x=rand(-58,-30), z=rand(-40,40); /* kept well clear of the 月老殿 (x ≥ -19.2) so no tree pokes through it */ const t=new T.Group(); t.position.set(x,0,z); scene.add(t); for(let k=0;k<3;k++) mesh(new T.SphereGeometry(rand(1.6,2.6),10,8),leaf,rand(-1,1),rand(3,5),rand(-1,1),t); }
   function hallSil(x,z,w,ry){ const g=new T.Group(); g.position.set(x,0,z); g.rotation.y=ry; scene.add(g); box(w,4,6,dark,0,2,0,g);
     for(const s of [-1,1]){ const r=box(w+1.2,.3,4.2,roof,0,5.2,s*1.6,g); r.rotation.x=s*.45; }
@@ -3228,7 +3240,7 @@ function openChair(){ if(!me.sp) return;
   <div class="ct-group"><span class="group-label">活動</span><div class="ct-grid">${ctTile("askFw","🎆","全服煙火","3 分鐘")}${ctTile("askSL","🏮","50 盞天燈")}${ctTile("toggleStage","🎭",OP.on?"收回戲台":"擺出戲台",OP.on?"演出中":"")}${ctTile("puppetChair","🎎","布袋戲台",PT.on?"演出中":"")}${ctTile("marketOpen","🏮","夜市",Object.keys(MK.open).length?`${Object.keys(MK.open).length} 攤營業中`:"")}</div></div>
   <div class="ct-group"><span class="group-label">線上人數</span><div class="crowd-row"><span class="crowd-now"><span>全廟 <b>${shownTotal()}</b> 人</span><small>這殿 ${hallShown(HALLS.current(),Date.now())} 人・${CROWD.real?"真實人數":CROWD.at&&CROWD.target!=null?`目標 ${CROWD.target}`:"自動"}</small></span><input id="crowdIn" type="text" inputmode="numeric" maxlength="3" placeholder="目標"><button class="chip" data-act="crowdSet">設定</button><button class="chip" data-act="crowdAuto">自動</button><button class="chip" data-act="crowdReal" aria-pressed="${!!CROWD.real}">真實人數</button></div>
     <p class="real-count" id="realCount">真實在線：讀取中…</p><p class="note">目標是全廟人數，會依序分到各殿（前一殿快滿才開下一殿）。約 1 分鐘慢慢變到目標，之後在上下 10 人內浮動。「自動」回到依時段變化（凌晨少、白天多）。「真實人數」不加假人，有多少玩家就顯示多少。</p></div>
-  <div class="ct-group"><span class="group-label">主委自己</span><div class="ct-grid">${ctTile("chairHide",chairHidden?"👁":"🫥",chairHidden?"解除隱形":"隱形",chairHidden?"隱形中":"")}${ctTile("chairBuild","🏗️","建築模式","移動屋頂與裝飾")}${ctTile("chairFly","🕊️",myFly?"降落":"飛行",myFly?"飛行中":"")}${ctTile("chairCs","💰",myCs?"變回主委":"變身財神爺",myCs?"發金光中":"")}${ctTile("chairReset","🔄","重置今日","測試用")}</div></div>`);
+  <div class="ct-group"><span class="group-label">主委自己</span><div class="ct-grid">${ctTile("chairHide",chairHidden?"👁":"🫥",chairHidden?"解除隱形":"隱形",chairHidden?"隱形中":"")}${ctTile("chairBuild","🏗️","建築模式","移動屋頂與裝飾")}${ctTile("chairSpeed","🏃","移動速度",CHAIR_SPD+"×")}${ctTile("chairFly","🕊️",myFly?"降落":"飛行",myFly?"飛行中":"")}${ctTile("chairCs","💰",myCs?"變回主委":"變身財神爺",myCs?"發金光中":"")}${ctTile("chairReset","🔄","重置今日","測試用")}</div></div>`);
   const k=$("#readKey"); const keep=()=>{ save("mz.rk",k.value.trim()); }; k.addEventListener("input",keep); k.addEventListener("change",keep); realStats(); }
 // real players only (no demo worshippers, no added numbers), straight from the server's hall counts
 async function realStats(){ const el=$("#realCount"); if(!el) return; let c=null; if(USE_CF){ const j=await probeCF(); if(j) c=j.counts; } else if(room) c=(HALLS.counts||[]).slice();
@@ -4846,6 +4858,11 @@ for(const [id,d] of [["#flyUp",1],["#flyDn",-1]]){ const b=$(id); b.addEventList
 function flyCtlTick(dt){ let d=flyDir; if(keys.has(" ")) d=1; else if(keys.has("shift")) d=-1; if(!myFly||!d) return; meAv.flyGoal=Math.max(.6,Math.min(FLY_MAX,(meAv.flyGoal||FLY_H)+d*dt*3.2));
   const now=performance.now(); if(now-flySentAt>400){ flySentAt=now; markDirty(); } }
 function flyClamp(x,z){ return [Math.max(-38,Math.min(38,x)),Math.max(-48,Math.min(HZ+YX+20,z))]; }
+/* 主委 walking speed: 1× (normal) up to 5×, remembered on this device; only ever applies while signed in as 主委 */
+const CHAIR_SPDS=[1,1.5,2,3,5]; let CHAIR_SPD=load("mz.spd",1); if(!CHAIR_SPDS.includes(CHAIR_SPD)) CHAIR_SPD=1;
+function applyChairSpeed(){ if(meAv) meAv.moveSpeed=me&&me.sp&&CHAIR_SPD>1?3.31*CHAIR_SPD:undefined; }
+HANDLERS.chairSpeed=()=>{ if(!me.sp) return; CHAIR_SPD=CHAIR_SPDS[(CHAIR_SPDS.indexOf(CHAIR_SPD)+1)%CHAIR_SPDS.length]; save("mz.spd",CHAIR_SPD); applyChairSpeed(); toast(`移動速度 ${CHAIR_SPD}×`); openChair(); };
+setTimeout(applyChairSpeed,1500);
 HANDLERS.chairFly=()=>{ if(!me.sp) return; myFly=myFly?0:1; meAv.flyGoal=myFly?FLY_H:0; $("#flyCtl").hidden=!myFly; flyDir=0;
   if(!myFly){ const c=clampSpot(meAv.pos.x,meAv.pos.y); if(!walkable(c[0],c[1])){ c[0]=0; c[1]=HZ+6; } meAv.pos.set(c[0],c[1]); meAv.target.set(c[0],c[1]); meAv.path=[]; }
   markDirty(); toast(myFly?"🕊️ 起飛！按住右邊 ▲▼ 上升下降，搖桿或點地面飛到任何地方":"降落了",3000); openChair(); };
@@ -4931,7 +4948,7 @@ function buildCollect(){ const mods={}, adds=[]; BUILD.items.forEach(it=>{ const
 // ---- the panel ----
 function buildSel(id){ BUILD.sel=id&&BUILD.items.has(id)?id:null; if(BUILD.helper){ scene.remove(BUILD.helper); BUILD.helper=null; }
   const it=BUILD.items.get(BUILD.sel); if(it){ BUILD.helper=new T.BoxHelper(it.obj,0xffd040); BUILD.helper.material.depthTest=false; BUILD.helper.renderOrder=9; scene.add(BUILD.helper); } buildPanel(); }
-function buildTick(){ if(BUILD.helper){ const it=BUILD.items.get(BUILD.sel); if(it){ BUILD.helper.setFromObject(it.obj); } } }
+let _holeT=0; function buildTick(){ if(BUILD.on&&performance.now()-_holeT>600){ _holeT=performance.now(); try{ holesRefresh(); }catch(e){} } if(BUILD.helper){ const it=BUILD.items.get(BUILD.sel); if(it){ BUILD.helper.setFromObject(it.obj); } } }
 const fmt=(v,d=2)=>(+v).toFixed(d);
 function buildPanel(){ const P=$("#buildPanel"); document.body.classList.toggle("building",BUILD.on); if(BUILD.on&&BUILD.sel){ const it=BUILD.items.get(BUILD.sel); buildNoSink(it); buildMirror(it); } if(!BUILD.on){ P.hidden=true; return; } P.hidden=false; const it=BUILD.items.get(BUILD.sel);
   const list=[...BUILD.items.values()].sort((a,b)=>a.label.localeCompare(b.label,"zh-Hant"));
@@ -5760,7 +5777,7 @@ function tick(){ if(gameAsleep) return; { const now=performance.now(), cap=frame
 const perf={t:0,n:0,done:false,warm:0};
 function perfSample(dt){ if(perf.done||Q.mode!=="auto"||customizing||document.hidden) return; perf.warm+=dt; if(perf.warm<3) return; perf.t+=dt; perf.n++;
   if(perf.t>=4){ perf.done=true; const fps=perf.n/perf.t; if(fps<32){ applyQuality("low",true); toast("偵測到裝置較吃力，已切換為省電畫質，可在背包設定調整",4200); } } }
-function applyQuality(mode,auto){ if(!auto){ Q.mode=mode; save("mz.q",mode); } Q.low=mode==="low"||Q.lite;
+function applyQuality(mode,auto){ if(!auto){ Q.mode=mode; save("mz.q",mode); } Q.low=mode==="low"||Q.lite; try{ poolResize(); }catch(e){}
   renderer.setPixelRatio(Q.lite?.6:Q.low?Math.min(window.devicePixelRatio||1,1)*.8:Math.min(window.devicePixelRatio||1,1.5)); resize();
   dust.visible=!Q.low; shafts.forEach(m=>m.visible=!Q.low); extraLights.forEach(l=>l.visible=!Q.low); farDecor.forEach(o=>o.visible=!Q.low);
   scene.traverse(o=>{ if(o.isSprite&&o.material===glowMat) o.visible=!Q.low; }); /* the same people stay: quality no longer changes how many are shown */ }
@@ -5770,10 +5787,43 @@ meAv.setAmulet(!!bag.items.fu); meAv.setThread(!!bag.redThread); syncLamps(); se
 /* ---- merge static scenery by material: hundreds of draw calls become a few dozen ---- */
 const MERGED=[];
 function unmergeAll(){ MERGED.splice(0).forEach(M=>{ if(M.parent) M.parent.remove(M); M.geometry.dispose(); }); scene.traverse(o=>{ if(o.userData&&o.userData.mergedOff){ o.visible=true; delete o.userData.mergedOff; } }); }
-function remerge(){ try{ unmergeAll(); mergeStatic(); }catch(e){} }
+function remerge(){ try{ unmergeAll(); mergeStatic(); }catch(e){} holeKey=""; try{ holesRefresh(); }catch(e){} }
 function floorLayers(){ const L=[outsideGround]; scene.traverse(o=>{ if(o.isMesh&&o.userData.floor) L.push(o); });
   L.forEach(o=>{ const y=o.getWorldPosition(new T.Vector3()).y, u=Math.max(0,Math.min(30,Math.round((.04-y)*500))); const m=o.material; if(!m||Array.isArray(m)) return;
     if(m.userData.fl!=null&&m.userData.fl!==u){ o.material=m.clone(); } const mm=o.material; mm.userData.fl=u; mm.polygonOffset=u>0; mm.polygonOffsetFactor=u*.5; mm.polygonOffsetUnits=u*2; mm.needsUpdate=true; }); }
+/* One shader patch for walls and for anything a 花窗 sits on.
+   wall: plain red walls show brick on every face that looks outdoors and stay plain red on faces inside a room (rooms = the
+   same boxes the roofs use), so the whole temple reads as brick from outside without touching any geometry.
+   holes: a 花窗 cuts its octagon right through the wall behind it, so you can see through the carving. */
+const HOLE_MAX=6; const hasOwnShader=m=>m.onBeforeCompile!==T.Material.prototype.onBeforeCompile&&!m.userData.pm;
+function patchMat(m){ const u=m.userData; if(u.pm) { m.needsUpdate=true; return; } u.pm=1; u.hu={M:{value:[...Array(HOLE_MAX)].map(()=>new T.Matrix4())},A:{value:new Array(HOLE_MAX).fill(0)},N:{value:0}}; u.plain=u.plain||{value:new T.Color(1,1,1)};
+  m.onBeforeCompile=sh=>{ const W=!!u.wall, H=!!u.holes;
+    sh.uniforms.uHM=u.hu.M; sh.uniforms.uHA=u.hu.A; sh.uniforms.uHN=u.hu.N; sh.uniforms.uPlain=u.plain; sh.uniforms.uIntMin={value:INT_MIN}; sh.uniforms.uIntMax={value:INT_MAX};
+    sh.vertexShader="varying vec3 vPmW; varying vec3 vPmN;\n"+sh.vertexShader.replace("#include <project_vertex>","#include <project_vertex>\n vPmW=(modelMatrix*vec4(transformed,1.0)).xyz; vPmN=normalize(mat3(modelMatrix)*objectNormal);");
+    let pre="varying vec3 vPmW; varying vec3 vPmN;\n", top="";
+    if(H){ pre+="uniform mat4 uHM["+HOLE_MAX+"]; uniform float uHA["+HOLE_MAX+"]; uniform int uHN;\n";
+      top+=" for(int i=0;i<"+HOLE_MAX+";i++){ if(i>=uHN) break; vec3 hp=(uHM[i]*vec4(vPmW,1.0)).xyz; if(hp.z<0.05&&hp.z>-0.8){ vec2 q=abs(hp.xy); if(max(max(q.x,q.y),(q.x+q.y)*0.7071)<uHA[i]) discard; } }\n"; }
+    let fs=sh.fragmentShader;
+    if(W){ pre+="uniform vec3 uPlain; uniform vec3 uIntMin["+INT_N+"]; uniform vec3 uIntMax["+INT_N+"];\n";
+      fs=fs.replace("#include <map_fragment>","#include <map_fragment>\n { vec3 q=vPmW+normalize(vPmN)*0.35; bool inRoom=false; for(int i=0;i<"+INT_N+";i++){ if(all(greaterThan(q,uIntMin[i]))&&all(lessThan(q,uIntMax[i]))) inRoom=true; } if(inRoom) diffuseColor.rgb=uPlain; }"); }
+    sh.fragmentShader=pre+fs.replace("void main() {","void main() {\n"+top); };
+  m.customProgramCacheKey=()=>"pm"+(u.wall?1:0)+(u.holes?1:0); m.needsUpdate=true; }
+const WALL_REDS=["5c130d","5e130c","6a1a10"];
+function wallBricks(){ const done=new Set(); scene.traverse(o=>{ if(!o.isMesh||o.isInstancedMesh) return; const m=o.material; if(!m||Array.isArray(m)||!m.isMeshStandardMaterial||m.map||hasOwnShader(m)) return;
+    if(!WALL_REDS.includes(m.color.getHexString())||m.roughness<.79) return; if(done.has(m)) return; done.add(m);
+    m.userData.plain={value:m.color.clone()}; m.color.setRGB(1,1,1); m.map=brickTex; m.userData.wall=1; patchMat(m); }); }
+// 花窗 holes: every window cuts through whatever lies just behind it (looked up again whenever a window moves)
+const HOLES=[]; let holeKey="";
+function holesRefresh(){ const W=[]; BUILD.items.forEach(it=>{ if(/^hc-/.test(it.id)&&it.obj.visible) W.push(it.obj); }); if(!W.length) return;
+  scene.updateMatrixWorld(true); const key=W.map(o=>o.matrixWorld.elements.map(v=>v.toFixed(2)).join(",")).join("|"); if(key===holeKey) return; holeKey=key;
+  const boxes=W.map(o=>new T.Box3().setFromCenterAndSize(o.getWorldPosition(new T.Vector3()),new T.Vector3(2.2,2.2,2.2))), inv=W.map(o=>new T.Matrix4().copy(o.matrixWorld).invert());
+  const per=new Map(), bb=new T.Box3();
+  scene.traverse(o=>{ if(!o.isMesh||o.isInstancedMesh||!o.geometry) return; let q=o; while(q){ if(q.userData&&(q.userData.isAvatar||(q.userData.buildId&&/^hc-/.test(q.userData.buildId)))) return; q=q.parent; }
+    const m=o.material; if(!m||Array.isArray(m)||!(m.isMeshStandardMaterial||m.isMeshPhongMaterial||m.isMeshLambertMaterial)||(hasOwnShader(m))||m.transparent) return;
+    if(!o.geometry.boundingBox) o.geometry.computeBoundingBox(); bb.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld);
+    boxes.forEach((b,i)=>{ if(b.intersectsBox(bb)){ if(!per.has(m)) per.set(m,new Set()); per.get(m).add(i); } }); });
+  per.forEach((set,m)=>{ const u=m.userData, ids=[...set].slice(0,HOLE_MAX); const was=!!u.holes; u.holes=1; if(!u.pm||!was) patchMat(m);
+    ids.forEach((i,k)=>{ u.hu.M.value[k].copy(inv[i]); u.hu.A.value[k]=.5; }); u.hu.N.value=ids.length; }); }
 function unifyBricks(){ const S=2.0, seen=new Set(), p=new T.Vector3(), n=new T.Vector3(), nm=new T.Matrix3(); scene.updateMatrixWorld(true);
   scene.traverse(o=>{ if(!o.isMesh||o.isInstancedMesh) return; const m=o.material; if(!m||Array.isArray(m)||!m.map||m.map.image!==brickTex.image) return;
     let g=o.geometry; if(!g.attributes.uv||!g.attributes.normal) return; if(seen.has(g)){ g=g.clone(); o.geometry=g; } seen.add(g);
@@ -5849,7 +5899,7 @@ function buildMirror(it){ if(!BUILD.sym||!it||!it.pair) return; const tw=BUILD.i
   const d=it.def, e=tw.def; t.position.set(e.p[0]-(o.position.x-d.p[0]),e.p[1]+(o.position.y-d.p[1]),e.p[2]+(o.position.z-d.p[2])); t.rotation.y=e.r-(o.rotation.y-d.r);
   t.scale.set(e.s[0]*(o.scale.x/d.s[0]),e.s[1]*(o.scale.y/d.s[1]),e.s[2]*(o.scale.z/d.s[2])); t.visible=o.visible; }
 try{ buildUnits(); }catch(e){ window.__unitErr=String(e); }
-try{ unifyBricks(); }catch(e){} try{ floorLayers(); }catch(e){} try{ window.__merged=mergeStatic(); }catch(e){ window.__mergeErr=String(e); }
+try{ wallBricks(); }catch(e){} try{ unifyBricks(); }catch(e){} try{ floorLayers(); }catch(e){} try{ window.__merged=mergeStatic(); }catch(e){ window.__mergeErr=String(e); }
 buildNpcs();
 if(document.fonts&&document.fonts.load){ Promise.all([document.fonts.load(`700 64px "LXGW WenKai TC"`,"母聖上天邊德護千家海慈航庇萬眾香油籤詩服務處金爐"),document.fonts.load(`500 30px "Noto Sans TC"`,"你香客")]).then(()=>{ fontTextures.forEach(redraw); meAv.setName(myLabel()); }).catch(()=>{}); }
 requestAnimationFrame(()=>{ tick(); setTimeout(()=>$("#loading").setAttribute("data-done",""),250); });
