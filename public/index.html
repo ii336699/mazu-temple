@@ -246,6 +246,7 @@ body.toolsfold .fold-btn.ping::after{content:"";position:absolute;top:2px;right:
 input,textarea{-webkit-user-select:text;user-select:text}
 .lb{list-style:none;margin:6px 0 0;padding:0}.lb li{display:flex;gap:10px;align-items:center;padding:6px 10px;border-radius:10px;font-size:14px}.lb li:nth-child(odd){background:rgba(255,255,255,.04)}.lb li.me{background:rgba(240,199,94,.18);color:#ffe2a0}
 .lb .rk{width:22px;text-align:center;color:var(--gold);font-weight:700}.lb .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lb .tm{font-variant-numeric:tabular-nums}
+.th-banner{display:flex;align-items:center;gap:10px;top:calc(env(safe-area-inset-top,0px) + 120px)}.th-banner[hidden]{display:none}.th-banner .chip{padding:4px 10px;font-size:12px}
 .gg-done{text-align:center}.gg-time{font-family:var(--f-display);font-size:40px;color:var(--gold);margin:6px 0 4px}
 .dlpack{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 30%,#3a120b,#140906 70%);color:#f5e6c8;font-family:var(--f-display);transition:opacity .7s;padding:24px}
 .dlpack[data-done]{opacity:0;pointer-events:none}.dlpack[hidden]{display:none}
@@ -406,6 +407,7 @@ body.hideui .joy,body.customizing .joy,body.hideui .camreset,body.customizing .c
   </div>
   <div class="inapp-arrow" id="inappArrow" hidden aria-hidden="true"><span>⬆</span><b>點右上角「⋯」<br>選外部瀏覽器開啟</b></div></div>
 <div class="sj-banner glass" id="sjBanner" hidden></div>
+<div class="sj-banner glass th-banner" id="thBanner" hidden><span id="thText"></span><button class="chip" id="thQuit">放棄</button></div>
 <div class="fw-end" id="fwEnd" hidden aria-label="一直以來，辛苦你了。"><p class="vt" aria-hidden="true"><span>一</span><span>直</span><span>以</span><span>來</span><span>︐</span><span>辛</span><span>苦</span><span>你</span><span>了</span><span>︒</span></p></div>
 <div class="fw-btns" id="fwBtns" hidden><button class="spark-btn glass" id="sparkBtn">🎇 拿起仙女棒</button><button class="spark-btn glass" id="fwViewBtn">🎆 看煙火視角</button><button class="spark-btn glass" id="fwCloseBtn" aria-label="關閉仙女棒按鈕">✕</button></div>
 <div class="marquee" id="marquee" hidden aria-live="polite"><span id="marqueeText"></span></div>
@@ -3640,7 +3642,7 @@ HANDLERS.toggleNpc=(v,b)=>{ showNpc=!showNpc; save("mz.npc",showNpc); b.setAttri
 HANDLERS.showPoem=v=>openPoem(+v,true);
 
 /* ---- stations ---- */
-function openStation(k){ if(k.startsWith("nm:")){ openStall(k.slice(3)); return; } if(k==="puppet"){ ptOpen(); return; } if(k==="fortune"){ openFortune(); return; } if(k==="cats"){ openCats(); return; } if(k==="fountain"){ openFountain(); return; } if(k==="wish"){ openWish(); return; } if(CENSER_INFO[k]){ openCenser(k); return; } if(k==="jieqian"){ openJieqian(); return; } if(k==="shop") openShop(); if(k==="altar") openAltar(); if(k==="burn") openBurn(); if(k==="donate") openDonate(); if(k==="lot") openLot("ask"); if(k==="lamp"||k==="lampR") openLamp(); if(k==="bell"){ meAv.burnT=0; ringBell(); toast("咚——鐘聲迴盪（只有你聽得到）"); } if(k==="drum"){ meAv.burnT=0; hitDrum(); toast("咚！鼓聲響起（只有你聽得到）"); } }
+function openStation(k){ if(k==="treasure"){ thDig(); return; } if(k.startsWith("nm:")){ openStall(k.slice(3)); return; } if(k==="puppet"){ ptOpen(); return; } if(k==="fortune"){ openFortune(); return; } if(k==="cats"){ openCats(); return; } if(k==="fountain"){ openFountain(); return; } if(k==="wish"){ openWish(); return; } if(CENSER_INFO[k]){ openCenser(k); return; } if(k==="jieqian"){ openJieqian(); return; } if(k==="shop") openShop(); if(k==="altar") openAltar(); if(k==="burn") openBurn(); if(k==="donate") openDonate(); if(k==="lot") openLot("ask"); if(k==="lamp"||k==="lampR") openLamp(); if(k==="bell"){ meAv.burnT=0; ringBell(); toast("咚——鐘聲迴盪（只有你聽得到）"); } if(k==="drum"){ meAv.burnT=0; hitDrum(); toast("咚！鼓聲響起（只有你聽得到）"); } }
 function openThanks(i){ const th=THANKS[i]; if(!th) return; sfx.coin(); openSheet("thanks","感謝贊助",`<img class="thanks-img" src="${th.img}" alt="感謝看板" width="1024" height="768"><p class="thanks-text">${esc(th.text)}</p>`); }
 function openShop(){ const html=`<p class="lead">拜拜順序：天公爐 → 媽祖 → 玄天上帝 → 武財神 → 文昌帝君 → 關聖帝君 → 月老 → 土地公 → 觀音菩薩 → 註生娘娘 → 斗姥元君 → 九天玄女 → 地藏王。十三爐都插好香，再到廟埕金爐燒金紙。</p>
   <div class="goods">${GOODS.map(g=>`<button class="good" data-act="buy" data-v="${g.k}" ${bag.coins<g.price?"disabled":""}><span class="name">${g.name}</span><span class="meta">${g.meta}</span><span class="price">${g.price} 平安幣</span><span class="own">持有 ${bag.items[g.k]||0}</span></button>`).join("")}</div>
@@ -3689,7 +3691,7 @@ function plantProgress(){ const done=Array.isArray(bag.planted)?bag.planted:[]; 
 HANDLERS.plant=()=>{ if(plantAt("mazu")) openAltar(); };
 const CENSER_INFO={tiangong:["天公爐","先在廟埕面向天空，向玉皇大帝稟報姓名、住址和來意，再進殿參拜。"],xuantian:["玄天上帝","位在龍邊。北極玄天上帝鎮守北方，消災解厄、驅邪保平安。"],guangong:["關聖帝君","位在虎邊。忠義神武，護佑平安、事業順利，斬除小人。"],caishen:["財神爺","在龍邊偏殿。祈求財運亨通、工作順利、生意興隆。"],yuelao:["月下老人","在虎邊偏殿。祈求良緣、感情順利、人際和合。"],huye:["虎爺","在媽祖供桌下方守護廟宇，保佑孩童平安，也有人來求事業與偏財。"]};
 function openCenser(key){ const [t,d]=CENSER_INFO[key]; const n=bag.items.xiang||0;
-  const extra=key==="xuantian"?`<button class="primary" data-act="xiaozai">消災解厄（畫北斗七星）</button>`:key==="guangong"?`<button class="primary" data-act="zhan">斬小人</button>`:key==="caishen"?`<button class="primary" data-act="facai">求發財金</button>`:key==="yuelao"?`<button class="primary" data-act="hongxian">${bag.redThread?"已求得紅線":"求紅線"}</button>`:"";
+  const extra=GOD_GAMES[key]?`<button class="primary" data-act="godPlay" data-v="${key}">${GOD_PLAY[key]||"開始遊戲"}</button><button class="secondary" data-act="godBoard" data-v="${key}">🏆 排行榜</button>`:key==="xuantian"?`<button class="primary" data-act="xiaozai">消災解厄（畫北斗七星）</button>`:key==="guangong"?`<button class="primary" data-act="zhan">斬小人</button>`:key==="caishen"?`<button class="primary" data-act="facai">求發財金</button>`:key==="yuelao"?`<button class="primary" data-act="hongxian">${bag.redThread?"已求得紅線":"求紅線"}</button>`:"";
   const bw=bowedAt(key);
   openSheet("censer",t,`<p class="lead">${d}</p>${plantProgress()}<div class="row"><button class="${bw?"secondary":"primary"}" data-act="bowAt" data-v="${key}" ${n?"":"disabled"}>① 持香參拜${bw?"（已拜）":""}</button><button class="${bw&&!stuckIn(key)?"primary":"secondary"}" data-act="plantAt" data-v="${key}" ${n&&bw&&!stuckIn(key)?"":"disabled"}>${stuckIn(key)?"② 已插香（一爐一支）":`② 插香（持有 ${n} 支）`}</button></div>${n?"":`<button class="secondary" data-act="goShop">去服務處請香</button>`}${guoluHTML(key)}${extra}`); }
 HANDLERS.guolu=k=>{ if(!CENSERS[k]) return; if(!bag.items.fu){ toast("身上沒有平安符，先到服務處請一個"); return; } if(meAv.fuAnim) return;
@@ -5484,6 +5486,62 @@ async function godGameWin(g,ms,accId,extra){ const rw=extra||gameReward(g,accId)
   openSheet("godGame",GOD_GAMES[g]||"小遊戲",`<div class="gg-done"><div class="gg-time">${fmtMs(ms)}</div><p class="lead">${rw.kind==="acc"?"🎁 ":rw.kind==="gacha"?"🎟️ ":""}${esc(rw.text)}</p>
     <div class="group"><span class="group-label">🏆 最快排行榜</span><div id="ggBoard"><p class="note">讀取中…</p></div></div></div>`);
   const list=await lbSubmit(g,ms); const el=$("#ggBoard"); if(el) el.innerHTML=lbHTML(list); }
+const GOD_PLAY={tudi:"⛏️ 尋寶（找到發光的寶藏挖出來）"};
+const GOD_START={}; HANDLERS.godPlay=g=>{ closeSheet(); if(GOD_START[g]) GOD_START[g](); else toast("這個遊戲還在準備中"); };
+/* ================= 土地公・尋寶: a beam of light marks treasure somewhere in the grounds; walk there, tap it, dig it up ================= */
+const TH={on:false,t0:0,x:0,z:0,g:null,hit:null,digging:false};
+function thSpot(){ const R=[ZRECT.C,ZRECT.B,ZRECT["K+"],ZRECT["K-"],ZRECT["P+"],ZRECT["P-"]], W=[6,3,1,1,1,1];
+  for(let k=0;k<400;k++){ let i=0, r=Math.random()*W.reduce((a,b)=>a+b); while(r>W[i]){ r-=W[i]; i++; } const [x0,x1,z0,z1]=R[i]; const x=x0+.8+Math.random()*(x1-x0-1.6), z=z0+.8+Math.random()*(z1-z0-1.6);
+    if(!walkable(x,z)||!walkable(x+.6,z)||!walkable(x-.6,z)||!walkable(x,z+.6)||!walkable(x,z-.6)) continue; if(Math.hypot(x-meAv.pos.x,z-meAv.pos.y)<12&&k<300) continue; return [x,z]; }
+  return [0,HZ+8]; }
+function thBeam(x,z){ const g=new T.Group(); g.position.set(x,0,z); g.userData.noMerge=1; scene.add(g);
+  const bm=(c,o)=>new T.MeshBasicMaterial({color:new T.Color(c),transparent:true,opacity:o,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide,toneMapped:false});
+  const outer=new T.Mesh(new T.CylinderGeometry(.6,.6,40,24,1,true),bm("#ffd25e",.18)); outer.position.y=20; g.add(outer);
+  const inner=new T.Mesh(new T.CylinderGeometry(.22,.22,40,16,1,true),bm("#fff4c0",.45)); inner.position.y=20; g.add(inner);
+  const ring=new T.Mesh(new T.RingGeometry(.35,.75,32),bm("#ffd25e",.7)); ring.rotation.x=-Math.PI/2; ring.position.y=.04; g.add(ring);
+  const glow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffd25e"),transparent:true,opacity:.8,blending:T.AdditiveBlending,depthWrite:false})); glow.position.y=.5; glow.scale.set(2.2,2.2,1); g.add(glow);
+  const mound=new T.Mesh(new T.SphereGeometry(.42,14,8,0,Math.PI*2,0,Math.PI/2),mat("#6a4a2a",{roughness:1})); mound.scale.y=.35; g.add(mound);
+  g.userData.fx={outer,inner,ring,glow}; return g; }
+function thStart(){ if(TH.on) return; if(me.sp&&myFly) toast("飛行中也可以找，但要落地才能挖"); const [x,z]=thSpot(); TH.on=true; TH.digging=false; TH.x=x; TH.z=z; TH.t0=performance.now(); TH.g=thBeam(x,z);
+  TH.hit=addHit("treasure",x,0,z,.9,2.6); station("treasure",[x,z+.9],Math.PI); STATION_LABEL.treasure="挖寶藏"; STATION_HINT.treasure="走去挖寶藏";
+  $("#thBanner").hidden=false; sfx.dingdong&&sfx.dingdong(); toast("土地公說：寶藏埋在園區某處，跟著金色光束去找！",4200); requestAnimationFrame(thLoop); }
+function thStop(){ TH.on=false; if(TH.g){ scene.remove(TH.g); TH.g=null; } if(TH.hit){ scene.remove(TH.hit); const i=pickables.indexOf(TH.hit); if(i>=0) pickables.splice(i,1); TH.hit=null; } delete stations.treasure; $("#thBanner").hidden=true; }
+function thLoop(){ if(!TH.on) return; const t=(performance.now()-TH.t0)/1000, f=TH.g&&TH.g.userData.fx;
+  if(f){ f.outer.material.opacity=.14+.06*Math.sin(t*3); f.inner.material.opacity=.38+.12*Math.sin(t*5); const q=(t*.8)%1; f.ring.scale.setScalar(1+q*1.6); f.ring.material.opacity=.7*(1-q); f.glow.material.opacity=.6+.25*Math.sin(t*4); }
+  if(!TH.digging){ const d=Math.hypot(TH.x-meAv.pos.x,TH.z-meAv.pos.y); $("#thText").textContent=`⛏️ 尋寶中 ${t.toFixed(1)} 秒・${d<3?"點光束開挖！":"距離 "+d.toFixed(0)+" 公尺"}`; }
+  requestAnimationFrame(thLoop); }
+$("#thQuit").onclick=()=>{ thStop(); toast("下次再來找寶藏"); };
+function thDig(){ if(!TH.on||TH.digging) return; if(Math.hypot(TH.x-meAv.pos.x,TH.z-meAv.pos.y)>2.6){ goStation("treasure"); return; }
+  TH.digging=true; const ms=performance.now()-TH.t0; $("#thText").textContent=`⛏️ 挖寶中…（${(ms/1000).toFixed(2)} 秒找到）`;
+  meAv.faceGoal=Math.atan2(TH.x-meAv.pos.x,TH.z-meAv.pos.y); pendingStation=null;
+  /* a shovel in the hand, three strokes with dirt flying */
+  const sh=new T.Group(); const pole=new T.Mesh(new T.CylinderGeometry(.018,.018,.62,6),mat("#8a5a2a",{roughness:.8})); pole.position.y=-.2; sh.add(pole);
+  const blade=new T.Mesh(new T.BoxGeometry(.16,.2,.02),mat("#a8adb4",{metalness:.7,roughness:.35})); blade.position.y=-.56; sh.add(blade); sh.rotation.x=Math.PI*.9; if(meAv.hands&&meAv.hands[0]) meAv.hands[0].add(sh);
+  const dirt=mat("#5a3a1c",{roughness:1}); let n=0;
+  const stroke=()=>{ myBow++; meAv.bow(); markDirty(); tone(140,.12,.12,"triangle"); noiseBurst(.18,.25,500);
+    for(let i=0;i<10;i++){ const d=new T.Mesh(new T.SphereGeometry(.05+Math.random()*.04,6,5),dirt); d.position.set(TH.x+rand(-.2,.2),.1,TH.z+rand(-.2,.2)); scene.add(d); const v=new T.Vector3(rand(-1.4,1.4),rand(2.4,3.6),rand(-1.4,1.4)), t0=performance.now();
+      const fly=()=>{ const k=(performance.now()-t0)/1000; d.position.x+=v.x*.016; d.position.z+=v.z*.016; v.y-=9.8*.016; d.position.y+=v.y*.016; if(d.position.y>0&&k<1.5) requestAnimationFrame(fly); else scene.remove(d); }; fly(); }
+    if(++n<3) setTimeout(stroke,620); else setTimeout(()=>{ if(sh.parent) sh.parent.remove(sh); thChest(ms); },700); };
+  setTimeout(stroke,200); }
+const TH_LOOT=[["coins","💰 一袋平安幣",.42],["sock","🧦 臭襪子",.24],["bone","🦴 魚骨頭",.24],["gacha","🎟️ 扭蛋幣",.10]];
+function thChest(ms){ const g=new T.Group(); g.position.set(TH.x,-.6,TH.z); g.rotation.y=Math.atan2(meAv.pos.x-TH.x,meAv.pos.y-TH.z); g.userData.noMerge=1; scene.add(g);
+  const wood=mat("#7a4a22",{roughness:.7}), gold=mat("#e0b04a",{metalness:.8,roughness:.3});
+  const body=new T.Mesh(new T.BoxGeometry(.7,.42,.46),wood); body.position.y=.21; g.add(body); for(const x of [-.25,.25]){ const b=new T.Mesh(new T.BoxGeometry(.06,.44,.48),gold); b.position.set(x,.21,0); g.add(b); }
+  const lid=new T.Group(); lid.position.set(0,.42,-.23); g.add(lid); const top=new T.Mesh(new T.CylinderGeometry(.23,.23,.7,16,1,false,0,Math.PI),wood); top.rotation.z=Math.PI/2; top.position.z=.23; lid.add(top);
+  const lock=new T.Mesh(new T.BoxGeometry(.1,.12,.04),gold); lock.position.set(0,.36,.24); g.add(lock);
+  /* what's inside */ bag.gd=bag.gd||{}; let r=Math.random(), pick=TH_LOOT[0]; for(const L of TH_LOOT){ if(r<L[2]){ pick=L; break; } r-=L[2]; }
+  if(pick[0]==="gacha"&&bag.gd.tudiG===twDay()) pick=TH_LOOT[0];
+  let text; if(pick[0]==="coins"){ const amt=30+Math.round(Math.random()*9)*10; bag.coins+=amt; text=`挖到一袋平安幣：${amt} 幣！`; }
+  else if(pick[0]==="gacha"){ bag.gd.tudiG=twDay(); bag.gacha=(bag.gacha||0)+1; text="挖到扭蛋幣 1 枚！（扭蛋機尚未開放，先存著）"; }
+  else if(pick[0]==="sock"){ text="挖到一隻臭襪子……土地公說這不是他的。"; } else { text="挖到一根魚骨頭……應該是廟裡的貓藏的。"; }
+  saveBag(); markDirty();
+  const item=textSprite(pick[1].split(" ")[0],{fs:72,h:.5,pad:4}); item.position.set(0,.3,0); item.visible=false; g.add(item);
+  const t0=performance.now(); const up=()=>{ const k=(performance.now()-t0)/1000;
+    g.position.y=k<.5?-.6+1.3*(k/.5)-.6*(k/.5)*(k/.5):(.1*Math.max(0,1-(k-.5)*4)); if(k>.9) lid.rotation.x=-Math.min(1.9,(k-.9)*5);
+    if(k>1.1){ item.visible=true; item.position.y=.3+Math.min(1,(k-1.1)*2)*.7; } if(k<1.25&&k>1.1) sfx.coin&&sfx.coin();
+    if(k<3.2) requestAnimationFrame(up); else { godGameWin("tudi",ms,null,{kind:pick[0]==="gacha"?"gacha":"none",text}); setTimeout(()=>{ scene.remove(g); },6000); thStop(); } };
+  tone(523,.2,.12); tone(784,.3,.1,"sine",.15); up(); }
+GOD_START.tudi=thStart;
 HANDLERS.godBoard=async g=>{ openSheet("godGame",(GOD_GAMES[g]||"小遊戲")+" 排行榜",`<div id="ggBoard"><p class="note">讀取中…</p></div>`); const el=$("#ggBoard"); const list=await lbGet(g); if(el) el.innerHTML=lbHTML(list); };
 
 /* ---- bag: 飾品 tab ---- */
