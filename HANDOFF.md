@@ -160,3 +160,12 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - `wallBricks()` 改寫：所有紅色、牆的形狀（厚 <.75 m、寬高都 ≥2.4 m）一律換紅磚，室內也貼（不再室內純色）。
 - 金色壁磚：`goldCarvedTex` 改成方塊金磚（凸邊框、回紋角、福字圓章、四葉），加 `GOLD_BUMP` 立體刻紋。
 - 斗姥眾星歸位 v2：一開始就有星圖（每局隨機 10 洞，最短連線組成星座），落下的形狀星星直接抓到同形狀的洞；雲在最上層擋視線；流星撞掉、偶爾打雷；背景傍晚紫→橘＋遠山。
+
+## 2026-11-05 batch (games)
+- 哄寶寶: removed the painted eye dots and tears (kept 「哇——」); the meter's cloud picture is replaced by a drawn gold/red arrow; zs-cloud.webp no longer loaded.
+- 接福水 (playFushui) rebuilt: 6×8 board on portrait, 8×6 on landscape; start = top-right cell (from above), end = bottom-right cell (down into the hands).
+  Pipes are drawn in code (tileArt) with symmetric stroke layers so every edge joins seamlessly; wood board is one cached canvas (boardArt).
+  Assets: gy-bg.webp (panel removed), gy-vase.webp (stream animated via STREAM centre line), gy-hands.webp. Hooks: __gy, __gyTap(i,j), __gySolve().
+- 眾星歸位: three levels picked at start (DM_LV): 初階 as before, 中階 sp×1.6, 高階 sp×1.75 + bigger chart, 15 holes, 80 s. Hook __dmPick(n).
+- 拼圖: 7×4 = 28 near-square pieces; each piece cached as a sprite with a raised bevel; picture chosen + downloaded when 地藏王's panel opens (dzPrep / DZ_PRE); clock starts when the picture is ready.
+- Joystick stuck after games: the god-table approach points of 玄天上帝/關公/註生娘娘/九天玄女 sit on unwalkable ground; the stick now lets you walk off a blocked spot.

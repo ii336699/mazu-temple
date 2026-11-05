@@ -5967,9 +5967,10 @@ function playFushui(){ const L=gameLayer("觀音菩薩・接福水","點木水�
       if(Math.random()<.35) vdrops.push({x:scx+(Math.random()-.5)*g.cs*.5,y:g.oy+g.cs*.2,vx:(Math.random()-.5)*50,vy:-30-Math.random()*50,t:0});
       for(const d of vdrops){ d.t+=.016; d.x+=d.vx*.016; d.y+=d.vy*.016; d.vy+=300*.016; x.fillStyle=`rgba(200,240,255,${Math.max(0,.9-d.t*1.6)})`; x.beginPath(); x.arc(d.x,d.y,Math.max(1,g.cs*.022),0,7); x.fill(); } vdrops=vdrops.filter(d=>d.t<.55); }
     // the cupped hands under the bottom-right cell
-    if(ok("hands")){ const hw=g.cs*1.85, hh=hw*IM.hands.naturalHeight/IM.hands.naturalWidth, hx=scx-hw*.5, hy=g.oy+g.bh+g.cs*.02;
-      if(won){ const fy=g.oy+g.bh-g.cs*.05, ty2=hy+hh*.38; x.strokeStyle="rgba(70,190,255,.85)"; x.lineWidth=g.cs*.2; x.lineCap="round"; x.beginPath(); x.moveTo(scx,fy); x.lineTo(scx,ty2); x.stroke(); x.strokeStyle="rgba(220,250,255,.8)"; x.lineWidth=g.cs*.05; x.setLineDash([g.cs*.08,g.cs*.16]); x.lineDashOffset=-t*g.cs*1.6; x.beginPath(); x.moveTo(scx,fy); x.lineTo(scx,ty2); x.stroke(); x.setLineDash([]); }
+    if(ok("hands")){ const hw=g.cs*1.35, hh=hw*IM.hands.naturalHeight/IM.hands.naturalWidth, hx=scx-hw*.5, hy=g.oy+g.bh+g.cs*.04;
+      if(won){ const fy=g.oy+g.bh-g.cs*.05, ty2=hy+hh*.5; x.strokeStyle="rgba(70,190,255,.85)"; x.lineWidth=g.cs*.2; x.lineCap="round"; x.beginPath(); x.moveTo(scx,fy); x.lineTo(scx,ty2); x.stroke(); x.strokeStyle="rgba(220,250,255,.8)"; x.lineWidth=g.cs*.05; x.setLineDash([g.cs*.08,g.cs*.16]); x.lineDashOffset=-t*g.cs*1.6; x.beginPath(); x.moveTo(scx,fy); x.lineTo(scx,ty2); x.stroke(); x.setLineDash([]); }
       x.drawImage(IM.hands,hx,hy,hw,hh);
+      if(won){ const k3=Math.min(1,(now-wonT)/900), px3=scx, py3=hy+hh*.5; const pg2=x.createRadialGradient(px3,py3,0,px3,py3,hw*.24); pg2.addColorStop(0,"rgba(190,240,255,.95)"); pg2.addColorStop(.6,"rgba(70,180,250,.85)"); pg2.addColorStop(1,"rgba(40,140,230,0)"); x.fillStyle=pg2; x.beginPath(); x.ellipse(px3,py3,hw*.24*k3,hh*.1*k3,0,0,7); x.fill(); }
       if(won){ if(Math.random()<.5) drops.push({x:scx+(Math.random()-.5)*hw*.5,y:hy+hh*.35,vx:(Math.random()-.5)*60,vy:-60-Math.random()*80,t:0}); }
       for(const d of drops){ d.t+=.016; d.x+=d.vx*.016; d.y+=d.vy*.016; d.vy+=260*.016; x.fillStyle=`rgba(255,255,220,${Math.max(0,1-d.t)})`; x.beginPath(); x.arc(d.x,d.y,2.2,0,7); x.fill(); } while(drops.length&&drops[0].t>1) drops.shift(); }
     x.fillStyle="#fff"; x.font=`600 15px ${UI_FONT}`; x.textAlign="left"; x.fillText(`${(((done?wonT:now)-t0)/1000).toFixed(1)} 秒`,16,104);
