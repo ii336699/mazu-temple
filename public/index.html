@@ -936,8 +936,8 @@ const pmrem=new T.PMREMGenerator(renderer);
 scene.environment=pmrem.fromEquirectangular(envTex).texture;
 
 /* ---------- lights ---------- */
-scene.add(new T.HemisphereLight("#7a5444","#1c0b06",.32));
-scene.add(new T.AmbientLight("#4a2c1e",.18));
+scene.add(new T.HemisphereLight("#7a5444","#5a3a14",.32)); /* warm gold bounce from the floors */
+scene.add(new T.AmbientLight("#6e4c22",.18));
 const sunLight=new T.DirectionalLight("#ff9a52",.75); sunLight.position.copy(SUN).multiplyScalar(40).setY(16); scene.add(sunLight);
 /* every fixed point light is virtual: it keeps its colour, strength, reach and flicker, but is not in the scene itself.
    The light pool (below) lends one of a few real lights to whichever virtual lights matter most where you are. */
@@ -1527,7 +1527,7 @@ function sideHall(side,label){ const sx=v=>side*v, W=SHX1-SHX0, D=SHZ1-SHZ0, zc=
   { const wx0=17.0, wx1=18.6; const fw=new T.Mesh(archGeo(archShape(SHX0,wx0,SHH,[{cx:SHXC,...MOON}],side)),wallM); fw.position.z=SHZ1; scene.add(fw);
     box(SHX1+.2-wx1,SHH,.4,wallM,sx((wx1+SHX1+.2)/2),SHH/2,SHZ1); box(wx1-wx0,1.3,.4,wallM,sx((wx0+wx1)/2),.65,SHZ1); box(wx1-wx0,SHH-3.5,.4,wallM,sx((wx0+wx1)/2),3.5+(SHH-3.5)/2,SHZ1); win(SHZ1,wx0,wx1,1.3,3.5);
     archTrim(sx(SHXC),SHZ1,0,0,goldP,"z",MOON); }
-  for(const f of [1,-1]){ const w=mesh(new T.PlaneGeometry(1.2,1.2),new T.MeshStandardMaterial({map:BAGUA_WIN,transparent:true,alphaTest:.4,roughness:.5,metalness:.3,emissive:new T.Color("#3a1606"),emissiveMap:BAGUA_WIN}),sx(SHXC),4.0,SHZ1+f*.215); if(f<0) w.rotation.y=Math.PI; }
+  for(const f of [1,-1]){ const w=mesh(new T.PlaneGeometry(1.05,1.05),new T.MeshStandardMaterial({map:BAGUA_WIN,transparent:true,alphaTest:.4,roughness:.5,metalness:.3,emissive:new T.Color("#3a1606"),emissiveMap:BAGUA_WIN}),sx(SHXC),3.82,SHZ1+f*.215); if(f<0) w.rotation.y=Math.PI; }
   for(const f of [1,-1]){ const m=mesh(new T.PlaneGeometry(1.8,.5),new T.MeshStandardMaterial({map:plaqueTexH(f<0?(side>0?"文昌殿":"福德祠"):label),roughness:.5}),sx(SHXC),3.02,SHZ1+f*.24); if(f<0) m.rotation.y=Math.PI; } /* each side names the hall the door leads into */
   /* the 偏殿's own drawn roof was taken off at the chair's request; the walls and ceiling stay */
   // inside: no lanterns — recessed ceiling downlights (崁燈) in a grid, each a lit disc in a gold ring with a soft glow under it
@@ -1756,8 +1756,8 @@ const INT_N=12, INT_MIN=[], INT_MAX=[];
 { const add=(x0,y0,z0,x1,y1,z1)=>{ INT_MIN.push(new T.Vector3(x0,y0,z0)); INT_MAX.push(new T.Vector3(x1,y1,z1)); }, m=.18;
   add(-HX+m,-1,-HZ+m,HX-m,HH-.02,HZ-m);
   for(const s of [-1,1]){ const xs=(a,b)=>s>0?[a,b]:[-b,-a];
-    { const [a,b]=xs(SHX0+m,SHX1-m); add(a,-1,SHZ0+m,b,SHH-.02,SHZ1-m); }
-    { const [a,b]=xs(HX+.02,GH.x1-m); add(a,-1,SHZ1+m,b,GH.H-.02,GH.z1-.005); } } } /* the 文昌殿／福德祠 run right up to the main hall's wall and to their front wall: roof models moved here are hidden inside it */
+    { const [a,b]=xs(SHX0+m,SHX1-m); add(a,-1,SHZ0+m,b,SHH+.6,SHZ1-m); } /* cut a little above the ceiling too: ridge pieces of roofs moved over the hall no longer poke through */
+    { const [a,b]=xs(HX+.02,GH.x1-m); add(a,-1,SHZ1+m,b,GH.H+.6,GH.z1-.005); } } } /* the 文昌殿／福德祠 run right up to the main hall's wall and to their front wall: roof models moved here are hidden inside it */
 /* 投射燈 on the roofs: every roof is washed in warm light from below, strongest along the eaves and fading toward the ridge, brighter as night falls */
 const ROOF_FLOOD={value:.3};
 function roofClip(mat){ if(!mat||mat.userData.roofClip) return; mat.userData.roofClip=1;
@@ -3161,9 +3161,9 @@ function botTick(dt){ const now=performance.now(); botFps(dt);
   if(now>(BOT.chk||0)){ BOT.chk=now+1000; let live=0; for(const n of npcs) if(!n.leaving&&!n.classic) live++; if(Math.abs(live-botWant())>4&&BOT.nextAdjust>now+4000) BOT.nextAdjust=now+rand(500,1500); }
   if(now>BOT.nextAdjust){ const live=npcs.filter(n=>!n.leaving&&!n.classic), want=botWant(); BOT.nextAdjust=now+(Math.abs(live.length-want)>10?rand(600,1500):Math.abs(live.length-want)>4?rand(1500,4000):rand(15000,40000));
     if(live.length<want-6){ for(let k=Math.min(4,want-live.length);k>0;k--) placeBot(); BOT.nextAdjust=now+rand(800,1600); }
-    else if(live.length<want){ const sp=botExit({pos:{x:Math.random()<.5?-1:1,y:rand(HZ+3,HZ+YX+15)}}), a=makeBot(sp); a.role=pickRole(); a.growT=0; }              // someone walks in from the side of the courtyard
+    else if(live.length<want){ placeBot(); }              // someone walks in from the side of the courtyard
     else if(live.length>want){ for(let k=Math.min(live.length-want,live.length-want>4?1+((Math.random()*4)|0):1);k>0;k--){ const j=(Math.random()*live.length)|0, n=live.splice(j,1)[0]; if(!n) break;
-        if(Math.random()<.65){ n.sjq=null; n.leaving=true; botVanish(n); continue; }   // logs off: gone at once, like a player closing the game
+        n.sjq=null; n.dispose(); npcs.splice(npcs.indexOf(n),1); continue; /* a pretend player just logs off: gone at once */   // logs off: gone at once, like a player closing the game
         n.pauseT=0; n.saved=null; n.sjq=null; n.leaving=true; n.hold=0; n.danceT=0; n.anim=null; n.steps=[]; botStart(n,{leave:botExit(n)}); } } } // or heads home on foot
   if(FW.on) for(const n of npcs){ if(n.classic||n.leaving||n.sjq||n.fwSeed===FW.seed) continue; n.fwSeed=FW.seed; if(n.role==="afk"&&Math.random()<.7) continue; if(Math.random()<.2) continue;
     if(n.act>=0) stopAct(n); n.anim=null; n.danceT=0; n.hold=0; n.seat=-1; n.goalSeat=false; n.pauseT=0; n.saved=null; const out=n.pos.y<HZ+1.5, [x,z]=botSpot();
@@ -3177,8 +3177,8 @@ function botTick(dt){ const now=performance.now(); botFps(dt);
     if(n.pauseT>0){ n.pauseT-=dt; if(n.pauseT<=0&&n.saved){ n.target.copy(n.saved.t); n.path=n.saved.p; n.saved=null; n.faceGoal=null; } botPose(n); continue; }
     if(n.step&&(n.step.go||n.step.leave||n.step.sj!=null)&&!n.leaving&&n.pos.distanceTo(n.target)+(n.path?n.path.length:0)>1.2&&Math.random()<dt*BOT_WALK.STOP_RATE){
       n.saved={t:n.target.clone(),p:n.path||[]}; n.target.copy(n.pos); n.path=[]; n.pauseT=rand(...BOT_WALK.STOP_SECS); n.headGoal=rand(-.9,.9); if(Math.random()<.3) n.faceGoal=n.rotY+rand(-1,1); continue; }
-    if(!n.step){ if(!n.steps||!n.steps.length){ if(n.leaving){ botVanish(n); continue; } botPlan(n); } const nx=n.steps.shift(); if(nx.go&&Math.random()<BOT_WALK.HESITATE){ n.steps.unshift(nx); botStart(n,{look:rand(.6,2.5)}); } else botStart(n,nx); }
-    else if(botStep(n,dt)){ if(n.act>=0&&ACTS[n.act].loop) stopAct(n); n.anim=null; n.step=null; if(n.leaving&&(!n.steps||!n.steps.length)){ botVanish(n); continue; } }
+    if(!n.step){ if(!n.steps||!n.steps.length){ if(n.leaving){ n.dispose(); npcs.splice(i,1); continue; } botPlan(n); } const nx=n.steps.shift(); if(nx.go&&Math.random()<BOT_WALK.HESITATE){ n.steps.unshift(nx); botStart(n,{look:rand(.6,2.5)}); } else botStart(n,nx); }
+    else if(botStep(n,dt)){ if(n.act>=0&&ACTS[n.act].loop) stopAct(n); n.anim=null; n.step=null; if(n.leaving&&(!n.steps||!n.steps.length)){ n.dispose(); npcs.splice(i,1); continue; } }
     botPose(n); if(n.afk) continue;
     if(Math.random()<dt/160){ const ph=PHRASES[(Math.random()*PHRASES.length)|0]; n.say(ph,"#f7ecd6"); if(Math.random()<.25) logChat(n.name,ph,false); }
     if(Math.random()<dt/240) showEmo(n,BOT_EMO[(Math.random()*BOT_EMO.length)|0]); } }
@@ -4670,12 +4670,12 @@ function dayNight(dt){ const want=(FW.on||LAKE.on)?{night:.38,day:0}:todPhase();
   skyMat.uniforms.night.value=_dn.night; skyMat.uniforms.day.value=_dn.day;
   sunLight.intensity=.75*(1-_dn.night)+.5*_dn.day; sunLight.color.setRGB(1,.6+.38*_dn.day,.32+.6*_dn.day);
   /* inside the 偏殿, the rear hall and the side halls the fill light comes up (no lights added, so nothing recompiles) */
-  { let r="O"; try{ r=camRoom(meAv.pos.x,meAv.pos.y); }catch(e){} const w2=r!=="M"&&r!=="O"?1:0; _dn.ind=(_dn.ind||0)+(w2-(_dn.ind||0))*Math.min(1,dt*1.5); if(ambLight) ambLight.intensity=.18+.5*_dn.ind; }
+  { let r="O"; try{ r=camRoom(meAv.pos.x,meAv.pos.y); }catch(e){} const w2=r!=="M"&&r!=="O"?1:0; _dn.ind=(_dn.ind||0)+(w2-(_dn.ind||0))*Math.min(1,dt*1.5); if(ambLight) ambLight.intensity=.26+.45*_dn.ind; }
   if(hemiLight){ hemiLight.intensity=.32+.5*_dn.day-.14*_dn.night+.7*(_dn.ind||0); hemiLight.color.setRGB(.48+.4*_dn.day-.2*_dn.night,.33+.5*_dn.day-.1*_dn.night,.27+.6*_dn.day+.1*_dn.night); }
   scene.fog.color.copy(fogDusk).lerp(_c1.setRGB(.55,.66,.75),_dn.day).lerp(_c1.setRGB(.03,.03,.07),_dn.night);
   sky.position.copy(camera.position); /* the sky dome travels with the camera, so flying far out never reaches its edge */ { const far=(myFly||LAKE.on)?520:200; if(camera.far!==far){ camera.far=far; camera.updateProjectionMatrix(); } }
   CUR_T.value+=dt; MOON_S.sp.material.opacity=Math.min(1,_dn.night*1.3); MOON_S.gl.material.opacity=_dn.night*.8; MOON_S.sp.visible=MOON_S.gl.visible=_dn.night>.02;
-  lanternMat.emissiveIntensity=.55+.3*_dn.night-.25*_dn.day; try{ POOL_M.opacity=.05+.17*_dn.night-.04*_dn.day; }catch(e){} ROOF_FLOOD.value=.3+.55*_dn.night; HALL_GLOW.forEach(g=>{ g.material.opacity=g.userData.op*(.45+.55*_dn.night); }); }
+  lanternMat.emissiveIntensity=.55+.3*_dn.night-.25*_dn.day; try{ POOL_M.opacity=.12+.2*_dn.night-.04*_dn.day; }catch(e){} ROOF_FLOOD.value=.3+.55*_dn.night; HALL_GLOW.forEach(g=>{ g.material.opacity=g.userData.op*(.45+.55*_dn.night); }); }
 const _c1=new T.Color();
 // announcements and shows are replayed to anyone who (re)connects; each browser plays each one only once
 function seenOnce(key){ let seen=[]; try{ seen=JSON.parse(localStorage.getItem("mz.seen")||"[]"); }catch(e){} if(seen.includes(key)) return true; seen.push(key); try{ localStorage.setItem("mz.seen",JSON.stringify(seen.slice(-30))); }catch(e){} return false; }
@@ -5625,6 +5625,7 @@ function buildPanel(){ const P=$("#buildPanel"); document.body.classList.toggle(
     const tw=it.pair&&BUILD.items.get(it.pair); h+=`<div class="bp-sel">選取：<b>${esc(it.label)}</b>${o.visible?"":"（已隱藏）"}</div>
     <div class="bp-row"><button class="chip ${BUILD.sym?"on":""}" data-bp="sym">🪞 對稱：${BUILD.sym?"開":"關"}</button><span class="bp-note">${tw?"另一邊：「"+esc(tw.label)+"」會跟著左右相反地改":"這個物件沒有左右對稱的另一半"}</span></div>
     <div class="bp-row bp-step">每次移動 ${[.1,.5,1,2].map(v=>`<button class="chip ${BUILD.step===v?"on":""}" data-bp="step" data-v="${v}">${v} 公尺</button>`).join("")}</div>
+    <div class="bp-row bp-step">每次旋轉 ${[.5,1,5,15,45].map(v=>`<button class="chip ${(BUILD.rstep||5)===v?"on":""}" data-bp="rstep" data-v="${v}">${v}°</button>`).join("")}</div>
     <div class="bp-grid"><span>左右 X</span>${num("px",o.position.x)}<span>高低 Y</span>${num("py",o.position.y)}<span>前後 Z</span>${num("pz",o.position.z)}
       <span>轉向（度）</span>${num("ry",((o.rotation.y*180/Math.PI)%360+360)%360,0)}
       <span>長（公尺）</span>${num("sx",sz[0])}<span>高（公尺）</span>${num("sy",sz[1])}<span>寬（公尺）</span>${num("sz",sz[2])}</div>
@@ -5645,7 +5646,7 @@ function buildDrop(it){ _bbA.setFromObject(it.obj); if(_bbA.isEmpty()) return; i
 function buildNoSink(it){ if(!BUILD.snap||!it) return; _bbA.setFromObject(it.obj); if(_bbA.isEmpty()) return; const top=buildTopBelow(it); if(_bbA.min.y<top-.001) it.obj.position.y+=top-_bbA.min.y; }
 function buildNudge(k,d){ const it=BUILD.items.get(BUILD.sel); if(!it) return; const o=it.obj, st=BUILD.step;
   if(k==="px") o.position.x+=d*st; else if(k==="py") o.position.y+=d*st; else if(k==="pz") o.position.z+=d*st;
-  else if(k==="ry") o.rotation.y+=d*(st>=1?15:5)*Math.PI/180;
+  else if(k==="ry") o.rotation.y+=d*(BUILD.rstep||5)*Math.PI/180;
   else if(k==="sx"||k==="sy"||k==="sz"){ const i={sx:0,sy:1,sz:2}[k]; const sg=Math.sign(o.scale.getComponent(i))||1, cur=it.base[i]*Math.abs(o.scale.getComponent(i)); const nv=Math.max(.05,cur+d*st); o.scale.setComponent(i,sg*nv/it.base[i]); }
   else if(k==="all") o.scale.multiplyScalar(d>0?1.05:1/1.05);
   buildPanel(); }
@@ -5677,6 +5678,7 @@ function buildAct(a,el,rep){ const d=+(el.dataset.d||0);
     if(BUILD.sym&&Math.abs(x)>.5){ const id2=id+"m"; buildMakeAdd({id:id2,m,p:[-x,0,z],r:-(meAv.rotY+Math.PI),s:def,pair:id}); const w2=setInterval(()=>{ const A=BUILD.items.get(id), B=BUILD.items.get(id2); if(A&&B){ clearInterval(w2); A.pair=id2; B.pair=id; } },150); setTimeout(()=>clearInterval(w2),15000); }
     const wait=setInterval(()=>{ if(BUILD.items.has(id)){ clearInterval(wait); buildSel(id); } },150); setTimeout(()=>clearInterval(wait),15000); return; }
   if(a==="step"){ BUILD.step=+el.dataset.v; buildPanel(); return; }
+  if(a==="rstep"){ BUILD.rstep=+el.dataset.v; buildPanel(); return; }
   if(a==="sym"){ BUILD.sym=!BUILD.sym; buildPanel(); return; }
   if(a==="snap"){ BUILD.snap=!BUILD.snap; buildPanel(); return; }
   if(a==="save"){ buildSave(); return; }
@@ -7203,7 +7205,7 @@ function mergeStatic(){ const buckets=new Map(); scene.updateMatrixWorld(true);
    no real lights, so phones stay smooth). Collected before the scenery is merged, while each lantern still has its own place. */
 let POOLS=null; const POOL_M=new T.MeshBasicMaterial({map:cvs(256,256,(x)=>{ const g=x.createRadialGradient(128,128,0,128,128,128);
     for(let i=0;i<=16;i++){ const t=i/16, a=Math.exp(-t*t*2.6)*(1-t*t); g.addColorStop(t,`rgba(255,${Math.round(226-30*t)},${Math.round(130-60*t)},${(a*.9).toFixed(3)})`); } /* warm lantern yellow, fading very gently */ /* bell-shaped falloff: no visible edge */
-    x.fillStyle=g; x.fillRect(0,0,256,256); }),color:new T.Color("#ffc95a"),transparent:true,opacity:.42,blending:T.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2,toneMapped:false});
+    x.fillStyle=g; x.fillRect(0,0,256,256); }),color:new T.Color("#ffb53a"),transparent:true,opacity:.55,blending:T.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2,toneMapped:false});
 function lanternPools(){ scene.updateMatrixWorld(true); const spots=[], v=new T.Vector3(), M=new T.Matrix4();
   scene.traverse(o=>{ if(!o.visible&&!o.userData.mergedOff) return;
     if(o.userData&&o.userData.lanternBody){ o.getWorldPosition(v); spots.push([v.x,v.z,v.y,1.1]); return; } /* the 黃燈籠 models */
