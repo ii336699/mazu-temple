@@ -63,8 +63,8 @@ export class Hall extends DurableObject {
     const url = new URL(req.url);
     if (url.pathname === "/fireworks") { // from the lobby: everyone here starts the same seeded 3-minute show
       let b = {}; try { b = await req.json(); } catch {}
-      const fw = { seed: (b.seed | 0) >>> 0, at: Date.now() }; await this.ctx.storage.put("fw", fw);
-      const out = JSON.stringify({ t: "fw", seed: fw.seed, el: 0 }); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
+      const fw = { seed: (b.seed | 0) >>> 0, at: Number(b.at) || Date.now(), sh: b.sh | 0, txt: String(b.txt || "").slice(0, 24), len: Number(b.len) || 218 }; await this.ctx.storage.put("fw", fw);
+      const out = JSON.stringify({ t: "fw", seed: fw.seed, el: Date.now() - fw.at, sh: fw.sh, txt: fw.txt }); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
     }
     if (url.pathname === "/lanterns") { let b = {}; try { b = await req.json(); } catch {} const out = JSON.stringify({ t: "sl50", seed: (b.seed | 0) >>> 0 }); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok"); }
     if (url.pathname === "/announce") { // from the lobby: push the chair's announcement to everyone in this hall
@@ -114,7 +114,7 @@ export class Hall extends DurableObject {
     const ann = await this.ctx.storage.get("ann"); if (ann && Date.now() - ann.at < 5 * 60 * 1000) server.send(JSON.stringify(ann));
     const stage = await this.ctx.storage.get("stage"); if (stage && stage.on) server.send(JSON.stringify(stage));
     const puppet = await this.ctx.storage.get("puppet"); if (puppet && puppet.on) server.send(JSON.stringify(puppet));
-    const fw = await this.ctx.storage.get("fw"); if (fw && Date.now() - fw.at < 218000) server.send(JSON.stringify({ t: "fw", seed: fw.seed, el: Date.now() - fw.at }));
+    const fw = await this.ctx.storage.get("fw"); if (fw && Date.now() - fw.at < (fw.len || 218) * 1000) server.send(JSON.stringify({ t: "fw", seed: fw.seed, el: Date.now() - fw.at, sh: fw.sh | 0, txt: fw.txt || "" }));
     this.report(h);
     return new Response(null, { status: 101, webSocket: client });
   }
@@ -411,9 +411,11 @@ export class Lobby extends DurableObject {
     }
     if (url.pathname === "/fireworks" && req.method === "POST") {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
-      const last = (await this.ctx.storage.get("fwAt")) || 0; if (Date.now() - last < 224000) return json({ ok: false, busy: true });
-      await this.ctx.storage.put("fwAt", Date.now()); const seed = (Math.random() * 4294967295) >>> 0;
-      await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/fireworks", { method: "POST", body: JSON.stringify({ seed }) }).catch(() => {})));
+      // which show (0 classic 218 s, 1 春櫻 97 s, 2 龍騰 126 s, 3 眾神 186 s) and the chair's closing words; it starts 10 s from now so every phone can fetch the song first
+      let b = {}; try { b = await req.json(); } catch {} const LENS = [218, 97, 126, 186], sh = LENS[b.sh | 0] ? b.sh | 0 : 0, txt = plain(b.txt, 24), len = LENS[sh];
+      const last = (await this.ctx.storage.get("fwAt")) || 0, lastLen = (await this.ctx.storage.get("fwLen")) || 218; if (Date.now() - last < (lastLen + 16) * 1000) return json({ ok: false, busy: true });
+      const at = Date.now() + 10000; await this.ctx.storage.put("fwAt", at); await this.ctx.storage.put("fwLen", len); const seed = (Math.random() * 4294967295) >>> 0;
+      await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/fireworks", { method: "POST", body: JSON.stringify({ seed, at, sh, txt, len }) }).catch(() => {})));
       return json({ ok: true });
     }
     if (url.pathname === "/msgs") {
