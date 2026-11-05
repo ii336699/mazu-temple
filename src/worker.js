@@ -302,6 +302,17 @@ export class Lobby extends DurableObject {
       const GAMES = ["wenchang", "tudi", "guanyin", "zhusheng", "doumu", "jiutian", "dizang"];
       let b = {}; if (req.method === "POST") { try { b = await req.json(); } catch {} }
       const g = String((req.method === "POST" ? b.g : url.searchParams.get("g")) || ""); if (!GAMES.includes(g)) return json({ ok: false });
+      // 文昌 ranks by the best average score (0–100), ties by time; kept under its own key so the old time board is left alone
+      if (g === "wenchang") {
+        let top = (await this.ctx.storage.get("lb:wenchang:s")) || [];
+        if (req.method === "POST") {
+          const t = Math.round(Number(b.t) || 0), s = Math.round(Number(b.s)), name = clean(b.name, 10) || "香客", id = clean(b.id, 16) || "anon";
+          this.lastLb = this.lastLb || new Map(); const now = Date.now(); const ok = s >= 0 && s <= 100 && t >= 3000 && t <= 600000 && now - (this.lastLb.get(id + g) || 0) > 4000; this.lastLb.set(id + g, now);
+          if (ok) { const cur = top.find(e => e.id === id); if (!cur) top.push({ id, name, s, t, at: now }); else { cur.name = name; if (s > cur.s || (s === cur.s && t < cur.t)) { cur.s = s; cur.t = t; cur.at = now; } }
+            top.sort((a, c) => c.s - a.s || a.t - c.t || a.at - c.at); top = top.slice(0, 20); await this.ctx.storage.put("lb:wenchang:s", top); }
+        }
+        return json({ ok: true, top: top.slice(0, 10) });
+      }
       let top = (await this.ctx.storage.get("lb:" + g)) || [];
       if (req.method === "POST") {
         const t = Math.round(Number(b.t) || 0), name = clean(b.name, 10) || "香客", id = clean(b.id, 16) || "anon";

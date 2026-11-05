@@ -169,3 +169,4 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - 眾星歸位: every game is 3 stages in a row (DM_LV: 8 holes 45 s sp1 → 10 holes 55 s sp1.3 → 12 holes 65 s sp1.55 bigger chart); score = total time, a failed stage restarts with its limit added.
 - 拼圖: 7×4 = 28 near-square pieces; each piece cached as a sprite with a raised bevel; picture chosen + downloaded when 地藏王's panel opens (dzPrep / DZ_PRE); clock starts when the picture is ready.
 - Joystick stuck after games: the god-table approach points of 玄天上帝/關公/註生娘娘/九天玄女 sit on unwalkable ground; the stick now lets you walk off a blocked spot.
+- 文昌寫字: a character is scored only when strokes ≥ its hand-written stroke count (WC_STROKES) AND every part has ink; 「✔ 寫好了」 button allows one stroke short (joined strokes). Time limit 120 s. Board for wenchang ranks by best average score then time — worker key `lb:wenchang:s` (old time board untouched); mock.js updated. Needs a deploy for the live worker.
