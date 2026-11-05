@@ -3732,7 +3732,7 @@ HANDLERS.dbg=(v,b)=>{ DBG[v]=DBG[v]?0:1; b.setAttribute("aria-pressed",String(!!
 const PREDL={done:load("mz.predl",false),busy:false};
 function preDlList(){ const L=Q.lite; const models=["mazu","qianli","shunfeng","guanyin","xuantian","guangong","caishen","yuelao","huye","tiangong","jinlu","guanyin2","zhusheng","jiutian","dizang","doumu","wenchang","tudi","roof1","roof2","roof3","decor","stage","bdx","shishim","shishif","huachuang","weiqiangfar","stall-bbq","stall-pachinko","stall-boba","stall-balloon","stall-fish","stall-qq","stall-sausage","ghostpet"];
   const out=[]; models.forEach(n=>{ out.push(n+"-lite.glb"); if(!L&&STATUE_LOD.has(n)) out.push(n+".glb"); if(!L&&!STATUE_LOD.has(n)) out[out.length-1]=n+".glb"; });
-  THANKS.forEach(t=>out.push(t.img)); ["music.mp3","rearsong.mp3","fwsong.mp3","catsong.mp3","opera1.mp3","opera2.mp3","opera3.mp3","mural.jpg","tex1.jpg",...[...Array(14)].map((_,i)=>"ghost"+(i+1)+".webp"),...["frame","cradle","hanger","zzz","watch","cloud","meter","barP","barR"].map(n=>"zs-"+n+".webp")].forEach(f=>out.push(f)); return out; }
+  THANKS.forEach(t=>out.push(t.img)); ["music.mp3","rearsong.mp3","fwsong.mp3","catsong.mp3","opera1.mp3","opera2.mp3","opera3.mp3","mural.jpg","tex1.jpg",...[...Array(14)].map((_,i)=>"ghost"+(i+1)+".webp"),...["frame","cradle","hanger","zzz","watch","meter","barP","barR"].map(n=>"zs-"+n+".webp")].forEach(f=>out.push(f)); return out; }
 HANDLERS.preDl=async(v,b)=>{ if(PREDL.busy) return; if(IN_ARTIFACT||!("serviceWorker" in navigator)){ toast("這個環境不能預先下載（請在網站上開啟）",2800); return; }
   const list=preDlList(); PREDL.busy=true; let i=0, ok=0, bytes=0; const next=async()=>{ while(i<list.length){ const f=list[i++]; try{ const r=await fetch(f,{cache:"no-cache"}); if(r.ok){ const bl=await r.blob(); bytes+=bl.size; ok++; } }catch(e){} if(b) b.textContent=`📥 下載中 ${ok}/${list.length}（${(bytes/1e6).toFixed(0)} MB）`; } };
   await Promise.all([next(),next()]); PREDL.busy=false; PREDL.done=ok===list.length; save("mz.predl",PREDL.done); if(b) b.textContent=PREDL.done?"✓ 已預先下載":"📥 再試一次";
@@ -5739,7 +5739,7 @@ function thChest(ms){ const g=new T.Group(); g.position.set(TH.x,-.6,TH.z); g.ro
 GOD_START.tudi=thStart;
 /* ================= 註生娘娘・哄睡: rock the cradle — hold to push harder, let go to ease off — and keep the rocking inside the
    band that drifts up and down. Inside it the baby gets sleepier; too hard or too soft and it starts to stir, and wakes if it goes on. ================= */
-const ZS=(()=>{ const o={}; let made=false; return new Proxy(o,{get:(t,k)=>{ if(!made){ made=true; for(const n of ["frame","cradle","hanger","zzz","watch","cloud","meter","barP","barR"]){ const im=new Image(); im.src="zs-"+n+".webp"; o[n]=im; } } return t[k]; }}); })(); /* 註生娘娘 game art, loaded the first time the game opens */
+const ZS=(()=>{ const o={}; let made=false; return new Proxy(o,{get:(t,k)=>{ if(!made){ made=true; for(const n of ["frame","cradle","hanger","zzz","watch","meter","barP","barR"]){ const im=new Image(); im.src="zs-"+n+".webp"; o[n]=im; } } return t[k]; }}); })(); /* 註生娘娘 game art, loaded the first time the game opens */
 function playLullaby(){ const L=gameLayer("註生娘娘・哄寶寶睡覺","按住搖得用力、放開變輕，讓指標停在粉紅區裡"); const {x,cv}=L; ensureAudio();
   let f=.35, v=0, hold=false, zc=.5, zt=.5, zh=.12, nextMove=0, sleep=0, wake=0, cry=0, t0=performance.now(), last=t0, done=false, sw=0, zzz=[], msg="", msgT=0;
   const down=e=>{ hold=true; e&&e.preventDefault&&e.preventDefault(); }, up=()=>{ hold=false; };
@@ -5770,10 +5770,7 @@ function playLullaby(){ const L=gameLayer("註生娘娘・哄寶寶睡覺","按�
     x.save(); x.translate(apx,apy); x.rotate(ang);
     if(ok("hanger")) x.drawImage(ZS.hanger,-hw/2,-hw*.03,hw,hh+hw*.03);
     const cy0=hh-ch*.2; if(ok("cradle")) x.drawImage(ZS.cradle,-cw/2,cy0,cw,ch);
-    const awake=cry>0||wake>.55, hx=-cw/2+cw*.345, hy=cy0+ch*.2;
-    if(awake){ x.fillStyle="#3a2418"; for(const ex of [-cw*.035,cw*.035]){ x.beginPath(); x.ellipse(hx+ex,hy,cw*.012,cw*.016,0,0,7); x.fill(); } } /* eyes open */
-    if(cry>0){ x.fillStyle="#7fc8ff"; for(const ex of [-cw*.05,cw*.05]){ x.beginPath(); x.ellipse(hx+ex,hy+cw*.03+((now/200)%1)*cw*.06,3,6,0,0,7); x.fill(); }
-      x.fillStyle="#fff"; x.font=`900 ${Math.round(cw*.12)}px ${DISPLAY_FONT}`; x.textAlign="center"; x.fillText("哇——",hx-cw*.12,hy-cw*.22); }
+    if(cry>0){ const hx=-cw/2+cw*.345, hy=cy0+ch*.2; x.fillStyle="#fff"; x.font=`900 ${Math.round(cw*.12)}px ${DISPLAY_FONT}`; x.textAlign="center"; x.fillText("哇——",hx-cw*.12,hy-cw*.22); }
     x.restore();
     // ZZZ drifting up from the baby while it gets sleepy
     if(!done&&cry<=0&&sleep>.2&&Math.random()<dt*1.2) zzz.push({x:apx+Math.sin(ang)*(hh+ch*.1)-cw*.1,y:apy+Math.cos(ang)*(hh)+ch*.05,t:0}); zzz=zzz.filter(z=>(z.t+=dt)<2.4);
@@ -5783,8 +5780,13 @@ function playLullaby(){ const L=gameLayer("註生娘娘・哄寶寶睡覺","按�
     if(ok("meter")){ const iw=ZS.meter.naturalWidth, ih=ZS.meter.naturalHeight, sc=iw/mw, cs=cap*sc; x.drawImage(ZS.meter,0,0,iw,cs,mx,my0,mw,cap); x.drawImage(ZS.meter,0,cs,iw,ih-cs*2,mx,my0+cap,mw,mh-cap*2); x.drawImage(ZS.meter,0,ih-cs,iw,cs,mx,my0+mh-cap,mw,cap); }
     const ty0=my0+cap*.8, th=mh-cap*1.6, Y=v2=>ty0+th*(1-v2), inZ2=Math.abs(f-zc)<zh;
     x.fillStyle="rgba(255,130,180,.55)"; x.fillRect(mx+mw*.3,Y(Math.min(1,zc+zh)),mw*.4,th*zh*2); x.strokeStyle="rgba(255,200,225,.8)"; x.lineWidth=1.5; x.strokeRect(mx+mw*.3,Y(Math.min(1,zc+zh)),mw*.4,th*zh*2);
-    { const cy=Y(f), cs2=mw*1.25; if(ok("cloud")){ x.save(); if(!inZ2){ x.filter="hue-rotate(-40deg) saturate(1.6)"; } x.drawImage(ZS.cloud,mx-cs2*.9,cy-cs2/2,cs2,cs2*114/110); x.restore(); }
-      x.fillStyle=inZ2?"#ffd94a":"#ff6a5c"; x.beginPath(); x.moveTo(mx-cs2*.05,cy-6); x.lineTo(mx+mw*.42,cy); x.lineTo(mx-cs2*.05,cy+6); x.closePath(); x.fill(); }
+    { // drawn arrow: gold inside the pink band, red outside it
+      const cy=Y(f), tx=mx+mw*.42, L=mw*1.15, h1=mw*.34, h2=mw*.13, nx=tx-L*.45, ex=tx-L;
+      x.save(); x.beginPath(); x.moveTo(tx,cy); x.lineTo(nx,cy-h1); x.quadraticCurveTo(nx+L*.06,cy-h2*1.3,nx-L*.02,cy-h2); x.lineTo(ex+h2,cy-h2); x.arc(ex+h2*.2,cy,h2*1.35,-Math.PI/2.6,Math.PI/2.6,true); x.lineTo(nx-L*.02,cy+h2); x.quadraticCurveTo(nx+L*.06,cy+h2*1.3,nx,cy+h1); x.closePath();
+      const gA=x.createLinearGradient(0,cy-h1,0,cy+h1); if(inZ2){ gA.addColorStop(0,"#fff6c4"); gA.addColorStop(.45,"#ffd34a"); gA.addColorStop(1,"#c98512"); x.shadowColor="rgba(255,220,110,.9)"; x.shadowBlur=12; } else { gA.addColorStop(0,"#ffd0c6"); gA.addColorStop(.45,"#ff6a5c"); gA.addColorStop(1,"#b52a22"); x.shadowColor="rgba(0,0,0,.35)"; x.shadowBlur=4; }
+      x.fillStyle=gA; x.fill(); x.shadowBlur=0; x.lineJoin="round"; x.lineWidth=2.2; x.strokeStyle=inZ2?"#7a4a0c":"#6e1712"; x.stroke();
+      x.beginPath(); x.moveTo(nx+L*.05,cy-h1*.55); x.lineTo(tx-L*.12,cy-h1*.08); x.moveTo(ex+h2*1.2,cy-h2*.45); x.lineTo(nx-L*.04,cy-h2*.45); x.strokeStyle="rgba(255,255,255,.75)"; x.lineWidth=1.6; x.lineCap="round"; x.stroke();
+      x.beginPath(); x.arc(ex+h2*.2,cy,h2*.6,0,7); x.fillStyle=inZ2?"#ff8fb8":"#ffe3a0"; x.fill(); x.lineWidth=1.4; x.strokeStyle=inZ2?"#7a4a0c":"#6e1712"; x.stroke(); x.restore(); }
     x.fillStyle="#ffd6e6"; x.font=`600 12px ${UI_FONT}`; x.textAlign="center"; x.fillText("用力",mx+mw/2,my0-6); x.fillText("輕輕",mx+mw/2,my0+mh+16);
     // sleepiness and stirring, in the framed bars
     const bx0=82, bw=W-bx0-16, bh=Math.min(30,bw*73/1000*1.4), bar=(img,y,v2,c1,c2)=>{ const iw=ZS[img].naturalWidth, ih=ZS[img].naturalHeight, ce=bh*1.25, cs=ce*ih/bh;
