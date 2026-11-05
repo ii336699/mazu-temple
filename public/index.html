@@ -3150,6 +3150,10 @@ function crowdTick(dt){ FARCROWD.eye.value.set(meAv.pos.x,meAv.pos.y); crowdT-=d
   const each=r=>r&&r.root&&r!==meAv&&r.root.traverse(o=>{ if(!o.material) return; (Array.isArray(o.material)?o.material:[o.material]).forEach(crowdMat); });
   try{ npcs.forEach(each); }catch(e){} remotes.forEach(each); }
 function botNear(n,r){ return Math.hypot(n.pos.x-meAv.pos.x,n.pos.y-meAv.pos.y)<r; }
+/* demo people come and go at the far sides of the courtyard (by the balustrade, never inside a building or a stage), and they shrink away
+   (or grow in) over half a second instead of vanishing on the spot */
+function botExit(n){ const sd=n.pos.x<0?-1:1, z0=Math.max(HZ+3,Math.min(HZ+YX+15,n.pos.y)); for(const dz of [0,3,-3,6,-6,9,-9]) for(const x of [22,20.5,19]){ const z=z0+dz; if(walkable(sd*x,z)) return [sd*x,z]; } return [sd*16.5,z0]; }
+function botVanish(n){ if(n.vanishT!=null) return; n.vanishT=.55; n.target.copy(n.pos); n.path=[]; }
 function botTick(dt){ const now=performance.now(); botFps(dt);
   // 隱藏其他玩家: checked every frame, so nobody can pop back into view — everyone else goes, the kneeling demo worshippers too (the chair's call)
   if(!customizing){ for(const n of npcs){ const v=othersShown; if(n.root.visible!==v) n.root.visible=v; } remotes.forEach(r=>{ if(r.root.visible!==othersShown) r.root.visible=othersShown; }); }
@@ -3157,22 +3161,24 @@ function botTick(dt){ const now=performance.now(); botFps(dt);
   if(now>(BOT.chk||0)){ BOT.chk=now+1000; let live=0; for(const n of npcs) if(!n.leaving&&!n.classic) live++; if(Math.abs(live-botWant())>4&&BOT.nextAdjust>now+4000) BOT.nextAdjust=now+rand(500,1500); }
   if(now>BOT.nextAdjust){ const live=npcs.filter(n=>!n.leaving&&!n.classic), want=botWant(); BOT.nextAdjust=now+(Math.abs(live.length-want)>10?rand(600,1500):Math.abs(live.length-want)>4?rand(1500,4000):rand(15000,40000));
     if(live.length<want-6){ for(let k=Math.min(4,want-live.length);k>0;k--) placeBot(); BOT.nextAdjust=now+rand(800,1600); }
-    else if(live.length<want){ const a=makeBot([(Math.random()<.5?-1:1)*16.5,rand(HZ+3,HZ+YX+15)]); a.role=pickRole(); }              // someone walks in from the side of the courtyard
+    else if(live.length<want){ const sp=botExit({pos:{x:Math.random()<.5?-1:1,y:rand(HZ+3,HZ+YX+15)}}), a=makeBot(sp); a.role=pickRole(); a.growT=0; }              // someone walks in from the side of the courtyard
     else if(live.length>want){ for(let k=Math.min(live.length-want,live.length-want>4?1+((Math.random()*4)|0):1);k>0;k--){ const j=(Math.random()*live.length)|0, n=live.splice(j,1)[0]; if(!n) break;
-        if(Math.random()<.65){ n.sjq=null; n.dispose(); npcs.splice(npcs.indexOf(n),1); continue; }   // logs off: gone at once, like a player closing the game
-        n.pauseT=0; n.saved=null; n.sjq=null; n.leaving=true; n.hold=0; n.danceT=0; n.anim=null; n.steps=[]; botStart(n,{leave:[(n.pos.x<0?-1:1)*16.5,Math.max(HZ+3,Math.min(HZ+YX+15,n.pos.y))]}); } } } // or heads home on foot
+        if(Math.random()<.65){ n.sjq=null; n.leaving=true; botVanish(n); continue; }   // logs off: gone at once, like a player closing the game
+        n.pauseT=0; n.saved=null; n.sjq=null; n.leaving=true; n.hold=0; n.danceT=0; n.anim=null; n.steps=[]; botStart(n,{leave:botExit(n)}); } } } // or heads home on foot
   if(FW.on) for(const n of npcs){ if(n.classic||n.leaving||n.sjq||n.fwSeed===FW.seed) continue; n.fwSeed=FW.seed; if(n.role==="afk"&&Math.random()<.7) continue; if(Math.random()<.2) continue;
     if(n.act>=0) stopAct(n); n.anim=null; n.danceT=0; n.hold=0; n.seat=-1; n.goalSeat=false; n.pauseT=0; n.saved=null; const out=n.pos.y<HZ+1.5, [x,z]=botSpot();
     n.steps=out?[{go:[x,Math.min(z,HZ+YX+8)]},{watch:1}]:[{watch:1}]; if(!out){ n.target.copy(n.pos); n.path=[]; } n.step=null; }
   lodPrep();
   for(let i=npcs.length-1;i>=0;i--){ const n=npcs[i]; lodUpdate(n,dt);
+    if(n.vanishT!=null){ n.vanishT-=dt; n.root.scale.setScalar(Math.max(.001,n.vanishT/.55)); if(n.vanishT<=0){ n.dispose(); npcs.splice(i,1); } continue; }
+    if(n.growT!=null){ n.growT+=dt; const k=Math.min(1,n.growT/.55); n.root.scale.setScalar(Math.max(.001,k)); if(k>=1) n.growT=null; }
     if(n.classic){ n.next-=dt; if(n.next<0){ n.next=rand(8,24); n.bow(); } continue; }
     // walking like a person: now and then stop for a moment, look around, then carry on
     if(n.pauseT>0){ n.pauseT-=dt; if(n.pauseT<=0&&n.saved){ n.target.copy(n.saved.t); n.path=n.saved.p; n.saved=null; n.faceGoal=null; } botPose(n); continue; }
     if(n.step&&(n.step.go||n.step.leave||n.step.sj!=null)&&!n.leaving&&n.pos.distanceTo(n.target)+(n.path?n.path.length:0)>1.2&&Math.random()<dt*BOT_WALK.STOP_RATE){
       n.saved={t:n.target.clone(),p:n.path||[]}; n.target.copy(n.pos); n.path=[]; n.pauseT=rand(...BOT_WALK.STOP_SECS); n.headGoal=rand(-.9,.9); if(Math.random()<.3) n.faceGoal=n.rotY+rand(-1,1); continue; }
-    if(!n.step){ if(!n.steps||!n.steps.length){ if(n.leaving){ n.dispose(); npcs.splice(i,1); continue; } botPlan(n); } const nx=n.steps.shift(); if(nx.go&&Math.random()<BOT_WALK.HESITATE){ n.steps.unshift(nx); botStart(n,{look:rand(.6,2.5)}); } else botStart(n,nx); }
-    else if(botStep(n,dt)){ if(n.act>=0&&ACTS[n.act].loop) stopAct(n); n.anim=null; n.step=null; if(n.leaving&&(!n.steps||!n.steps.length)){ n.dispose(); npcs.splice(i,1); continue; } }
+    if(!n.step){ if(!n.steps||!n.steps.length){ if(n.leaving){ botVanish(n); continue; } botPlan(n); } const nx=n.steps.shift(); if(nx.go&&Math.random()<BOT_WALK.HESITATE){ n.steps.unshift(nx); botStart(n,{look:rand(.6,2.5)}); } else botStart(n,nx); }
+    else if(botStep(n,dt)){ if(n.act>=0&&ACTS[n.act].loop) stopAct(n); n.anim=null; n.step=null; if(n.leaving&&(!n.steps||!n.steps.length)){ botVanish(n); continue; } }
     botPose(n); if(n.afk) continue;
     if(Math.random()<dt/160){ const ph=PHRASES[(Math.random()*PHRASES.length)|0]; n.say(ph,"#f7ecd6"); if(Math.random()<.25) logChat(n.name,ph,false); }
     if(Math.random()<dt/240) showEmo(n,BOT_EMO[(Math.random()*BOT_EMO.length)|0]); } }
@@ -7196,8 +7202,8 @@ function mergeStatic(){ const buckets=new Map(); scene.updateMatrixWorld(true);
 /* ---- lantern light on the ground: a soft warm pool on the floor under every lantern (one draw call for all of them,
    no real lights, so phones stay smooth). Collected before the scenery is merged, while each lantern still has its own place. */
 let POOLS=null; const POOL_M=new T.MeshBasicMaterial({map:cvs(256,256,(x)=>{ const g=x.createRadialGradient(128,128,0,128,128,128);
-    for(let i=0;i<=16;i++){ const t=i/16, a=Math.exp(-t*t*2.6)*(1-t*t); g.addColorStop(t,`rgba(255,${Math.round(238-24*t)},${Math.round(190-50*t)},${(a*.9).toFixed(3)})`); } /* cream-yellow (米黃), fading very gently */ /* bell-shaped falloff: no visible edge */
-    x.fillStyle=g; x.fillRect(0,0,256,256); }),color:new T.Color("#ffdf9e"),transparent:true,opacity:.42,blending:T.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2,toneMapped:false});
+    for(let i=0;i<=16;i++){ const t=i/16, a=Math.exp(-t*t*2.6)*(1-t*t); g.addColorStop(t,`rgba(255,${Math.round(226-30*t)},${Math.round(130-60*t)},${(a*.9).toFixed(3)})`); } /* warm lantern yellow, fading very gently */ /* bell-shaped falloff: no visible edge */
+    x.fillStyle=g; x.fillRect(0,0,256,256); }),color:new T.Color("#ffc95a"),transparent:true,opacity:.42,blending:T.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2,toneMapped:false});
 function lanternPools(){ scene.updateMatrixWorld(true); const spots=[], v=new T.Vector3(), M=new T.Matrix4();
   scene.traverse(o=>{ if(!o.visible&&!o.userData.mergedOff) return;
     if(o.userData&&o.userData.lanternBody){ o.getWorldPosition(v); spots.push([v.x,v.z,v.y,1.1]); return; } /* the 黃燈籠 models */
