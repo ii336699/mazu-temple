@@ -5681,7 +5681,7 @@ async function godGameWin(g,ms,accId,extra){ const rw=extra||gameReward(g,accId)
   openSheet("godGame",GOD_GAMES[g]||"小遊戲",`<div class="gg-done"><div class="gg-time">${fmtMs(ms)}</div><p class="lead">${rw.kind==="acc"?"🎁 ":rw.kind==="gacha"?"🎟️ ":""}${esc(rw.text)}</p>
     <div class="group"><span class="group-label">🏆 最快排行榜</span><div id="ggBoard"><p class="note">讀取中…</p></div></div></div>`);
   const list=await lbSubmit(g,ms); const el=$("#ggBoard"); if(el) el.innerHTML=lbHTML(list); }
-const GOD_PLAY={doumu:"⭐ 眾星歸位（60 秒點亮 10 顆星）",wenchang:"🖌️ 寫字（照紅字描 3 個字）",tudi:"⛏️ 尋寶（找到發光的寶藏挖出來）",zhusheng:"🍼 哄寶寶睡覺",jiutian:"☯️ 八卦迷宮（傾斜手機滾彈珠）",guanyin:"💧 接福水（轉動木水道）",dizang:"🧩 記憶碎片（幫小幽靈拼回記憶）"};
+const GOD_PLAY={doumu:"⭐ 眾星歸位（三種難度，點亮星圖）",wenchang:"🖌️ 寫字（照紅字描 3 個字）",tudi:"⛏️ 尋寶（找到發光的寶藏挖出來）",zhusheng:"🍼 哄寶寶睡覺",jiutian:"☯️ 八卦迷宮（傾斜手機滾彈珠）",guanyin:"💧 接福水（轉動木水道）",dizang:"🧩 記憶碎片（幫小幽靈拼回記憶）"};
 const GOD_START={}; HANDLERS.godPlay=g=>{ closeSheet(); if(GOD_START[g]) GOD_START[g](); else toast("這個遊戲還在準備中"); };
 /* ================= 土地公・尋寶: a beam of light marks treasure somewhere in the grounds; walk there, tap it, dig it up ================= */
 const TH={on:false,t0:0,x:0,z:0,g:null,hit:null,digging:false};
@@ -6095,15 +6095,22 @@ function dmShape(x,k,px,py,r,rot=0,a=1,glow=1){ x.save(); x.translate(px,py); x.
 /* 眾星歸位 (v2): the star chart is up from the start — 10 holes in a new random constellation each game. Shape-stars fall through the
    dusk sky; catch one and drag it straight into a hole of the same shape. Clouds drift across in front of everything; meteors knock a
    star out of your hand. All 10 lit in 60 s: the sky brightens and 斗姥元君 gives her blessing. */
-function playDoumu(){ const L=gameLayer("斗姥元君・眾星歸位","抓住落下的星星，拖到星圖上一樣形狀的洞，60 秒點亮 10 顆星"); const {x,cv}=L, LIMIT=60, KINDS=Object.keys(DM_KIND), N=10;
+/* three levels: 1 as designed; 2 everything falls and spawns faster; 3 faster still, and the chart is bigger with 15 holes */
+const DM_LV=[null,{n:"初階",sp:1,N:10,T:60,big:0},{n:"中階",sp:1.6,N:10,T:60,big:0},{n:"高階",sp:1.75,N:15,T:80,big:1}];
+function playDoumu(lv){ const L=gameLayer("斗姥元君・眾星歸位","選一個難度開始"); const {x,cv}=L;
+  if(!lv){ { const W=L.W(), H=L.H(), bg=x.createLinearGradient(0,0,0,H); bg.addColorStop(0,"#3a1e5c"); bg.addColorStop(.5,"#963e6e"); bg.addColorStop(1,"#ffb26e"); x.fillStyle=bg; x.fillRect(0,0,W,H); }
+    const b=document.createElement("div"); b.className="dm-lv"; b.style.cssText="position:absolute;left:50%;top:54%;transform:translate(-50%,-50%);display:flex;flex-direction:column;gap:12px;width:min(300px,80vw);z-index:3";
+    b.innerHTML=[1,2,3].map(n=>`<button class="btn primary" data-lv="${n}" style="padding:14px 10px;font:700 19px var(--f-display)">${["","⭐ 初階","⭐⭐ 中階","⭐⭐⭐ 高階"][n]}<br><small style="font:500 13px var(--f-ui);opacity:.85">${["","60 秒點亮 10 顆星","星星落得更快","更快，星圖更大、15 顆星"][n]}</small></button>`).join("");
+    L.el.appendChild(b); b.querySelectorAll("button").forEach(bt=>bt.onclick=()=>{ L.close(); playDoumu(+bt.dataset.lv); }); window.__dmPick=n=>b.querySelector(`[data-lv="${n}"]`).click(); return; }
+  const LV=DM_LV[lv], LIMIT=LV.T, KINDS=Object.keys(DM_KIND), N=LV.N, SP=LV.sp; { const h=L.el.querySelector(".mini-hint"); if(h) h.textContent=`${LV.n}・把落下的星星拖進同形狀的洞，${LIMIT} 秒點亮 ${N} 顆`; }
   const need=[]; for(let i=0;i<N;i++) need.push(i<5?KINDS[i]:KINDS[(Math.random()*5)|0]); need.sort(()=>Math.random()-.5);
   /* a fresh constellation: 10 points spread over the chart (kept apart), joined by their shortest links */
-  const CH=[]; for(let tries=0;CH.length<N&&tries<4000;tries++){ const p=[.06+Math.random()*.88,.08+Math.random()*.84]; if(CH.every(q=>Math.hypot((q[0]-p[0])*1.4,q[1]-p[1])>.2)) CH.push(p); }
+  const CH=[]; for(let tries=0;CH.length<N&&tries<4000;tries++){ const p=[.06+Math.random()*.88,.08+Math.random()*.84]; if(CH.every(q=>Math.hypot((q[0]-p[0])*1.4,q[1]-p[1])>(N>10?.165:.2))) CH.push(p); }
   while(CH.length<N) CH.push([.1+Math.random()*.8,.1+Math.random()*.8]);
   const LINES=[]; { const inT=[0], d=(i,j)=>Math.hypot((CH[i][0]-CH[j][0])*1.4,CH[i][1]-CH[j][1]); while(inT.length<N){ let best=null; for(const i of inT) for(let j=0;j<N;j++) if(!inT.includes(j)&&(!best||d(i,j)<best[2])) best=[i,j,d(i,j)]; LINES.push([best[0],best[1]]); inT.push(best[1]); } }
   let t0=performance.now(), last=t0, items=[], held=null, lit=need.map(()=>0), meteors=[], clouds=[], flash=0, bolt=null, nextSpawn=0, nextMet=5, nextCloud=1.5, nextBolt=14, msg="抓住落下的星星，放進一樣形狀的洞！", msgT=t0, fin=0, fail=false, done=false, sparks=[];
   const sky=[...Array(70)].map(()=>[Math.random(),Math.random()*.6,Math.random()*1.2+.3,Math.random()*6]);
-  const G=()=>{ const W=L.W(), H=L.H(); const cw=Math.min(W-60,560), chH=Math.min(H*.4,cw*.8); return {W,H,cx:(W-cw)/2,cy:150,cw,chH}; };
+  const G=()=>{ const W=L.W(), H=L.H(); const cw=LV.big?Math.min(W-34,720):Math.min(W-60,560), chH=LV.big?Math.min(H*.5,cw*.95):Math.min(H*.4,cw*.8); return {W,H,cx:(W-cw)/2,cy:150,cw,chH}; };
   const holeXY=(i,g)=>[g.cx+CH[i][0]*g.cw,g.cy+CH[i][1]*g.chH];
   const left=()=>{ const m={}; need.forEach((k,i)=>{ if(!lit[i]) m[k]=(m[k]||0)+1; }); return m; };
   const say=s2=>{ msg=s2; msgT=performance.now(); };
@@ -6122,19 +6129,19 @@ function playDoumu(){ const L=gameLayer("斗姥元君・眾星歸位","抓住落
   window.__dm=()=>({need,lit:lit.map(v=>!!v),done,fail,items:items.length,holes:CH.length,lines:LINES.length});
   window.__dmAuto=(n=99)=>{ const g=G(); need.forEach((k,i)=>{ if(n<=0||lit[i]) return; const [hx,hy]=holeXY(i,g); const it={k,x:hx,y:hy,vx:0,vy:0,rot:0}; items.push(it); held=it; n--; drop(); }); };
   const draw=now=>{ if(L.done) return; const dt=Math.min(.033,(now-last)/1000); last=now; const g=G(), el=(now-t0)/1000;
-    if(!done&&!fail&&el>LIMIT){ fail=true; held=null; tone(220,.4,.1,"triangle"); const b=document.createElement("div"); b.innerHTML=`<p>時間到了，星星還沒全部歸位</p><button class="btn primary">再試一次</button>`; b.style.cssText="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(40,16,40,.94);border:1px solid #ffb07a;border-radius:14px;padding:20px 26px;text-align:center;color:#ffe9b0;font:700 19px var(--f-display);z-index:3"; L.el.appendChild(b); b.querySelector("button").onclick=()=>{ L.close(); playDoumu(); }; }
+    if(!done&&!fail&&el>LIMIT){ fail=true; held=null; tone(220,.4,.1,"triangle"); const b=document.createElement("div"); b.innerHTML=`<p>時間到了，星星還沒全部歸位</p><button class="btn primary">再試一次</button>`; b.style.cssText="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(40,16,40,.94);border:1px solid #ffb07a;border-radius:14px;padding:20px 26px;text-align:center;color:#ffe9b0;font:700 19px var(--f-display);z-index:3"; L.el.appendChild(b); b.querySelector("button").onclick=()=>{ L.close(); playDoumu(lv); }; }
     const fk=done?Math.min(1,(now-fin)/1800):0;
     // dusk sky: purple overhead fading to warm orange at the horizon (brightening to gold at the finale)
     const bg=x.createLinearGradient(0,0,0,g.H); bg.addColorStop(0,`rgb(${58+fk*120|0},${30+fk*90|0},${92+fk*50|0})`); bg.addColorStop(.45,`rgb(${150+fk*80|0},${62+fk*90|0},${110-fk*20|0})`); bg.addColorStop(.8,`rgb(${240|0},${132+fk*70|0},${78+fk*50|0})`); bg.addColorStop(1,`rgb(255,${178+fk*50|0},${110+fk*60|0})`); x.fillStyle=bg; x.fillRect(0,0,g.W,g.H);
     sky.forEach(([sx,sy,sr,ph])=>{ x.globalAlpha=(.25+.35*Math.sin(now/600+ph))*(1-sy); x.fillStyle="#fff"; x.beginPath(); x.arc(sx*g.W,sy*g.H,sr,0,7); x.fill(); }); x.globalAlpha=1;
     { x.fillStyle="rgba(60,20,50,.55)"; x.beginPath(); x.moveTo(0,g.H); for(let i=0;i<=12;i++){ x.lineTo(i/12*g.W,g.H-60-Math.sin(i*1.7)*22-Math.sin(i*.6)*30); } x.lineTo(g.W,g.H); x.fill(); } /* distant hills */
     if(!done&&!fail){
-      nextSpawn-=dt; if(nextSpawn<=0){ nextSpawn=.5+Math.random()*.35; const m=left(), want=KINDS.filter(k=>m[k]>0); const k=want.length&&Math.random()<.65?want[(Math.random()*want.length)|0]:KINDS[(Math.random()*5)|0];
-        items.push({k,x:30+Math.random()*(g.W-60),y:-30,vx:(Math.random()-.5)*24,vy:45+Math.random()*40,rot:Math.random()*6,vr:(Math.random()-.5)*1.4,ph:Math.random()*6}); }
-      for(const it of items) if(!it.held){ it.vy=Math.min(it.vy+35*dt,100); it.x+=(it.vx+Math.sin(now/700+it.ph)*16)*dt; it.y+=it.vy*dt; it.vx*=.98; it.rot+=it.vr*dt; }
+      nextSpawn-=dt; if(nextSpawn<=0){ nextSpawn=(.5+Math.random()*.35)/SP; const m=left(), want=KINDS.filter(k=>m[k]>0); const k=want.length&&Math.random()<.65?want[(Math.random()*want.length)|0]:KINDS[(Math.random()*5)|0];
+        items.push({k,x:30+Math.random()*(g.W-60),y:-30,vx:(Math.random()-.5)*24,vy:(45+Math.random()*40)*SP,rot:Math.random()*6,vr:(Math.random()-.5)*1.4,ph:Math.random()*6}); }
+      for(const it of items) if(!it.held){ it.vy=Math.min(it.vy+35*SP*dt,100*SP); it.x+=(it.vx+Math.sin(now/700+it.ph)*16*SP)*dt; it.y+=it.vy*dt; it.vx*=.98; it.rot+=it.vr*dt; }
       items=items.filter(it=>it.held||it.y<g.H+40);
-      nextCloud-=dt; if(nextCloud<=0){ nextCloud=4.5+Math.random()*3.5; const dir=Math.random()<.5?1:-1; clouds.push({x:dir>0?-180:g.W+180,y:g.cy+g.chH*(.1+Math.random()*.9),v:dir*(24+Math.random()*16),s:.9+Math.random()*.7}); }
-      nextMet-=dt; if(nextMet<=0){ nextMet=4+Math.random()*3; const fromR=Math.random()<.5; meteors.push({x:fromR?g.W+40:-40,y:Math.random()*g.H*.4+60,vx:(fromR?-1:1)*(330+Math.random()*120),vy:170+Math.random()*80}); }
+      nextCloud-=dt; if(nextCloud<=0){ nextCloud=(4.5+Math.random()*3.5)/Math.sqrt(SP); const dir=Math.random()<.5?1:-1; clouds.push({x:dir>0?-180:g.W+180,y:g.cy+g.chH*(.1+Math.random()*.9),v:dir*(24+Math.random()*16)*SP,s:.9+Math.random()*.7}); }
+      nextMet-=dt; if(nextMet<=0){ nextMet=(4+Math.random()*3)/SP; const fromR=Math.random()<.5; meteors.push({x:fromR?g.W+40:-40,y:Math.random()*g.H*.4+60,vx:(fromR?-1:1)*(330+Math.random()*120),vy:170+Math.random()*80}); }
       for(const m of meteors){ m.x+=m.vx*dt; m.y+=m.vy*dt; if(held&&Math.hypot(held.x-m.x,held.y-m.y)<34){ held.held=false; held.vx=m.vx*.4; held.vy=m.vy*.3; held=null; say("被流星撞掉了！"); tone(180,.25,.08,"triangle"); burst(m.x,m.y,"#ffd0a0",8); }
         for(const it of items) if(!it.held&&Math.hypot(it.x-m.x,it.y-m.y)<26){ it.vx+=m.vx*.3; it.vy=-30; } }
       meteors=meteors.filter(m=>m.y<g.H+60&&m.x>-80&&m.x<g.W+80);
