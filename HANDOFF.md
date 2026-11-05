@@ -166,6 +166,6 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - 接福水 (playFushui) rebuilt: 6×8 board on portrait, 8×6 on landscape; start = top-right cell (from above), end = bottom-right cell (down into the hands).
   Pipes are drawn in code (tileArt) with symmetric stroke layers so every edge joins seamlessly; wood board is one cached canvas (boardArt).
   Assets: gy-bg.webp (panel removed), gy-vase.webp (stream animated via STREAM centre line), gy-hands.webp. Hooks: __gy, __gyTap(i,j), __gySolve().
-- 眾星歸位: three levels picked at start (DM_LV): 初階 as before, 中階 sp×1.6, 高階 sp×1.75 + bigger chart, 15 holes, 80 s. Hook __dmPick(n).
+- 眾星歸位: every game is 3 stages in a row (DM_LV: 8 holes 45 s sp1 → 10 holes 55 s sp1.3 → 12 holes 65 s sp1.55 bigger chart); score = total time, a failed stage restarts with its limit added.
 - 拼圖: 7×4 = 28 near-square pieces; each piece cached as a sprite with a raised bevel; picture chosen + downloaded when 地藏王's panel opens (dzPrep / DZ_PRE); clock starts when the picture is ready.
 - Joystick stuck after games: the god-table approach points of 玄天上帝/關公/註生娘娘/九天玄女 sit on unwalkable ground; the stick now lets you walk off a blocked spot.
