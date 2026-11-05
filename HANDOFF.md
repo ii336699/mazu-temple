@@ -189,3 +189,5 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - goldCurtain(): 媽祖、千里眼、順風耳 bays and the three 觀音 bays. wallBricks also tiles 1.2–2.4 m pieces (the walled-in window strip in the 偏殿 front walls).
 - 山門 at z 53.7 (under the chair's roof3): brick walls, arch passage, lanterns, uplights, plaque, stone lions. Sponsor wall unchanged.
 - Bag: acc-icons.webp (starwand, ghost, wenbi, peachsword ribbon, bamboo leaf, pacifier) via ACC_IC2 in bic().
+- Correction: the 山門 I built is removed. The brown building outside (hallSil at z 54 under the chair's roof3) is now litHall(): brick walls, arch passage with gold trim, plaques, pillars, lanterns, uplights, pool lights, stone lions outside.
+- しだれ柳: sk 3/8/10 stars lay down segments along their path (20/s, life 3–4 s, velocity×.2 so each segment is a short streak) → curved hanging lines. "silkfall" is now a huge gold weeping willow (40–70 stars). Willow 70 stars, kamuro every 3rd. Straight silk threads removed (FW_TRK willow/kamuro/silkfall 0, palm/meteor 1). Smiley shells removed from the shows.
