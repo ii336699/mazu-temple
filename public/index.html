@@ -970,9 +970,9 @@ const WIN=[-9.5,.5,10.5], WHW=1.7, WY0=1.2, WY1=3.8, BG0=-6.5, BG1=-2.5; // 八�
 for(const side of [-1,1]){ const x=side*HX;
   box(.4,WY0,BG0+HZ,stoneMat,x,WY0/2,(-HZ+BG0)/2); box(.4,WY0,HZ-BG1,stoneMat,x,WY0/2,(BG1+HZ)/2);
   box(.4,HH-WY1,HZ*2,redWall,x,WY1+(HH-WY1)/2,0);
-  const edges=[-HZ]; [...WIN.map(c=>[c-WHW,c+WHW]),[BG0,BG1]].sort((a,b)=>a[0]-b[0]).forEach(([a,b])=>edges.push(a,b)); edges.push(HZ);
+  const edges=[-HZ]; [[BG0,BG1]].sort((a,b)=>a[0]-b[0]).forEach(([a,b])=>edges.push(a,b)); edges.push(HZ);
   for(let i=0;i<edges.length;i+=2){ const a=edges[i],b=edges[i+1]; box(.4,WY1-WY0,b-a,redWall,x,(WY0+WY1)/2,(a+b)/2); }
-  WIN.forEach(c=>{ const w=mesh(new T.PlaneGeometry(WHW*2,WY1-WY0),latticeMat,x-side*.05,(WY0+WY1)/2,c); w.rotation.y=Math.PI/2;
+  /* the old lattice windows were taken out at the chair's request: the wall runs solid */ if(0) WIN.forEach(c=>{ const w=mesh(new T.PlaneGeometry(WHW*2,WY1-WY0),latticeMat,x-side*.05,(WY0+WY1)/2,c); w.rotation.y=Math.PI/2;
     box(.5,.17,WHW*2+.2,GOLD(),x-side*.02,WY1+.055,c); box(.5,.17,WHW*2+.2,GOLD(),x-side*.02,WY0-.055,c); });
 }
 // back wall
@@ -1011,10 +1011,23 @@ box(11,.5,4,mat("#4e1a10",{roughness:.6}),0,.25,-13);
 box(11,.08,.1,GOLD(),0,.5,-11.02);
 // pavilion (神龕): as wide as the mural, red base, gold body, red tiled roof
 const PAV={z:-13.05, w:10.4};
-const goldCarvedTex=cvs(256,256,(x,w,h)=>{ const g=x.createLinearGradient(0,0,w,h); g.addColorStop(0,"#e9c068"); g.addColorStop(.5,"#c8963c"); g.addColorStop(1,"#e2b55a"); x.fillStyle=g; x.fillRect(0,0,w,h);
-  x.strokeStyle="#8a5a1c"; x.lineWidth=5; x.strokeRect(8,8,w-16,h-16); x.lineWidth=2; x.strokeRect(18,18,w-36,h-36);
-  x.lineWidth=3; for(let i=0;i<9;i++){ const cx=40+((i%3)*88), cy=40+Math.floor(i/3)*88; x.beginPath(); x.arc(cx,cy,22,0,Math.PI*1.6); x.stroke(); x.beginPath(); x.arc(cx+6,cy-4,10,Math.PI,Math.PI*2.6); x.stroke(); }
-  x.fillStyle="rgba(255,240,190,.45)"; for(let i=0;i<70;i++){ x.beginPath(); x.arc(Math.random()*w,Math.random()*h,1.4,0,7); x.fill(); } });
+/* 金色壁磚: square gold tiles (2×2 per texture), each with a raised border and a carved 回紋 / 福-medallion centre; GOLD_BUMP is the
+   matching height map so the carving catches the light */
+const GOLD_TILE=(x,w,h,bump)=>{ const n=2, s2=w/n;
+  for(let i=0;i<n;i++) for(let j=0;j<n;j++){ const ox=i*s2, oy=j*s2;
+    if(bump){ x.fillStyle="#808080"; x.fillRect(ox,oy,s2,s2); }
+    else { const g=x.createLinearGradient(ox,oy,ox+s2,oy+s2); g.addColorStop(0,"#f0cc78"); g.addColorStop(.5,"#c99a42"); g.addColorStop(1,"#e6bd62"); x.fillStyle=g; x.fillRect(ox,oy,s2,s2); }
+    const hi=bump?"#ffffff":"rgba(255,244,200,.85)", lo=bump?"#000000":"rgba(110,70,20,.85)";
+    x.lineWidth=6; x.strokeStyle=lo; x.strokeRect(ox+3,oy+3,s2-6,s2-6); x.lineWidth=3; x.strokeStyle=hi; x.strokeRect(ox+9,oy+9,s2-18,s2-18); /* raised rim, groove inside */
+    x.lineWidth=4; x.strokeStyle=bump?"#e0e0e0":"rgba(150,100,30,.9)"; const c=s2/2, r=s2*.17; /* 回紋 corners */
+    for(const [sx2,sy2] of [[-1,-1],[1,-1],[-1,1],[1,1]]){ const qx=ox+c+sx2*s2*.3, qy=oy+c+sy2*s2*.3; x.beginPath(); x.moveTo(qx-sx2*10,qy); x.lineTo(qx,qy); x.lineTo(qx,qy-sy2*10); x.lineTo(qx-sx2*5,qy-sy2*10); x.lineTo(qx-sx2*5,qy-sy2*5); x.stroke(); }
+    x.beginPath(); x.arc(ox+c,oy+c,r,0,7); x.lineWidth=5; x.strokeStyle=bump?"#ffffff":"rgba(120,78,22,.9)"; x.stroke(); /* medallion */
+    x.beginPath(); x.arc(ox+c,oy+c,r*.62,0,7); x.fillStyle=bump?"#d8d8d8":"rgba(255,226,150,.55)"; x.fill();
+    for(let k=0;k<4;k++){ const a2=k*Math.PI/2+Math.PI/4; x.beginPath(); x.ellipse(ox+c+Math.cos(a2)*r*1.6,oy+c+Math.sin(a2)*r*1.6,r*.38,r*.2,a2,0,7); x.fillStyle=bump?"#c8c8c8":"rgba(150,100,30,.7)"; x.fill(); } /* four leaves */
+  }
+  if(!bump){ x.fillStyle="rgba(255,240,190,.35)"; for(let i=0;i<60;i++){ x.beginPath(); x.arc(Math.random()*w,Math.random()*h,1.2,0,7); x.fill(); } } };
+const goldCarvedTex=cvs(256,256,(x,w,h)=>GOLD_TILE(x,w,h,false));
+const GOLD_BUMP=cvs(256,256,(x,w,h)=>GOLD_TILE(x,w,h,true)); GOLD_BUMP.encoding=T.LinearEncoding; GOLD_BUMP.wrapS=GOLD_BUMP.wrapT=T.RepeatWrapping;
 const tileTex=cvs(256,256,(x,w,h)=>{ const cols=8, cw=w/cols; for(let i=0;i<cols;i++){ const g=x.createLinearGradient(i*cw,0,(i+1)*cw,0); g.addColorStop(0,"#5a120c"); g.addColorStop(.5,"#c4301e"); g.addColorStop(1,"#5a120c"); x.fillStyle=g; x.fillRect(i*cw,0,cw,h); }
   x.fillStyle="rgba(30,4,2,.55)"; for(let r=0;r<8;r++) x.fillRect(0,r*h/8,w,3); });
 tileTex.wrapS=tileTex.wrapT=T.RepeatWrapping; tileTex.repeat.set(14,3);
@@ -1480,7 +1493,7 @@ function sideHall(side,label){ const sx=v=>side*v, W=SHX1-SHX0, D=SHZ1-SHZ0, zc=
   const wallX=(z,ox0,ox1,oy0,oy1)=>{ const a0=SHX0, a1=SHX1+.2; if(ox0==null){ box(a1-a0,SHH,.4,wallM,sx((a0+a1)/2),SHH/2,z); return; }
     box(ox0-a0,SHH,.4,wallM,sx((a0+ox0)/2),SHH/2,z); box(a1-ox1,SHH,.4,wallM,sx((ox1+a1)/2),SHH/2,z);
     box(ox1-ox0,oy0,.4,wallM,sx((ox0+ox1)/2),oy0/2,z); box(ox1-ox0,SHH-oy1,.4,wallM,sx((ox0+ox1)/2),oy1+(SHH-oy1)/2,z); };
-  const win=(z,x0,x1,y0,y1)=>{ const w=mesh(new T.PlaneGeometry(x1-x0,y1-y0),latticeMat,sx((x0+x1)/2),(y0+y1)/2,z); for(const yy of [y0-.08,y1+.08]) box(x1-x0+.2,.17,.5,GOLD(),sx((x0+x1)/2),yy,z); for(const xx of [x0-.06,x1+.06]) box(.15,y1-y0+.3,.5,GOLD(),sx(xx),(y0+y1)/2,z); };
+  const win=(z,x0,x1,y0,y1)=>{ box(x1-x0,y1-y0,.4,wallM,sx((x0+x1)/2),(y0+y1)/2,z); return; /* lattice window removed: the opening is walled in */ const w=mesh(new T.PlaneGeometry(x1-x0,y1-y0),latticeMat,sx((x0+x1)/2),(y0+y1)/2,z); for(const yy of [y0-.08,y1+.08]) box(x1-x0+.2,.17,.5,GOLD(),sx((x0+x1)/2),yy,z); for(const xx of [x0-.06,x1+.06]) box(.15,y1-y0+.3,.5,GOLD(),sx(xx),(y0+y1)/2,z); };
   // back wall: an arched doorway out to the rear courtyard (後埕) and a lattice window
   { const sh=archShape(SHX0,SHX1+.2,SHH,[{cx:SHXC,...MOON}],side); const w=new T.Mesh(archGeo(sh),wallM); w.position.z=SHZ0; scene.add(w); archTrim(SHXC*side,SHZ0,0,0,goldP,"z",MOON); } /* back door on the path line; its window was taken out */
   // front wall: now the inside wall between this hall and the 文昌殿 / 福德祠 part, opened by a round moon gate (圓拱門)
@@ -2246,7 +2259,7 @@ const SUNDIR=new T.Vector3(-1,-.42,.22).normalize();
 const shaftMat=new T.MeshBasicMaterial({vertexColors:true,transparent:true,opacity:.11,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide,fog:false});
 const poolMat=new T.MeshBasicMaterial({map:gapTex,color:new T.Color("#ff9a50"),transparent:true,opacity:.42,blending:T.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2});
 function proj(p){ const t=p.y/(-SUNDIR.y); return new T.Vector3(p.x+SUNDIR.x*t,0.012,p.z+SUNDIR.z*t); }
-WIN.forEach(c=>{ if(c===-4.5) return; const x=HX-.25; const tl=new T.Vector3(x,WY1,c-WHW), tr=new T.Vector3(x,WY1,c+WHW), bl=new T.Vector3(x,WY0,c-WHW), br=new T.Vector3(x,WY0,c+WHW);
+[].forEach(c=>{ if(c===-4.5) return; const x=HX-.25; /* no windows, no sun shafts */ const tl=new T.Vector3(x,WY1,c-WHW), tr=new T.Vector3(x,WY1,c+WHW), bl=new T.Vector3(x,WY0,c-WHW), br=new T.Vector3(x,WY0,c+WHW);
   const ptl=proj(tl),ptr=proj(tr),pbl=proj(bl),pbr=proj(br);
   const pos=[], colr=[]; const hi=[1,.62,.32], lo=[.22,.12,.06];
   function quad(a,b,cc,d,ca,cb,ccc,cd){ [a,b,cc,a,cc,d].forEach((v,i)=>{ pos.push(v.x,v.y,v.z); colr.push(...[ca,cb,ccc,ca,ccc,cd][i]); }); }
@@ -4455,7 +4468,7 @@ function dayNight(dt){ const want=FW.on?{night:0,day:0}:todPhase(); const k=_dn.
   sunLight.intensity=.75*(1-_dn.night)+.5*_dn.day; sunLight.color.setRGB(1,.6+.38*_dn.day,.32+.6*_dn.day);
   if(hemiLight){ hemiLight.intensity=.32+.5*_dn.day-.14*_dn.night; hemiLight.color.setRGB(.48+.4*_dn.day-.2*_dn.night,.33+.5*_dn.day-.1*_dn.night,.27+.6*_dn.day+.1*_dn.night); }
   scene.fog.color.copy(fogDusk).lerp(_c1.setRGB(.55,.66,.75),_dn.day).lerp(_c1.setRGB(.03,.03,.07),_dn.night);
-  lanternMat.emissiveIntensity=.55+.3*_dn.night-.25*_dn.day; try{ POOL_M.opacity=.14+.5*_dn.night-.1*_dn.day; }catch(e){} ROOF_FLOOD.value=.3+.55*_dn.night; HALL_GLOW.forEach(g=>{ g.material.opacity=g.userData.op*(.45+.55*_dn.night); }); }
+  lanternMat.emissiveIntensity=.55+.3*_dn.night-.25*_dn.day; try{ POOL_M.opacity=.05+.17*_dn.night-.04*_dn.day; }catch(e){} ROOF_FLOOD.value=.3+.55*_dn.night; HALL_GLOW.forEach(g=>{ g.material.opacity=g.userData.op*(.45+.55*_dn.night); }); }
 const _c1=new T.Color();
 // announcements and shows are replayed to anyone who (re)connects; each browser plays each one only once
 function seenOnce(key){ let seen=[]; try{ seen=JSON.parse(localStorage.getItem("mz.seen")||"[]"); }catch(e){} if(seen.includes(key)) return true; seen.push(key); try{ localStorage.setItem("mz.seen",JSON.stringify(seen.slice(-30))); }catch(e){} return false; }
@@ -6727,9 +6740,14 @@ function patchMat(m){ const u=m.userData; if(u.pm) { m.needsUpdate=true; return;
     sh.fragmentShader=pre+fs.replace("void main() {","void main() {\n"+top); };
   m.customProgramCacheKey=()=>"pm"+(u.wall?1:0)+(u.holes?1:0); m.needsUpdate=true; }
 const WALL_REDS=["5c130d","5e130c","6a1a10"];
-function wallBricks(){ const done=new Set(); scene.traverse(o=>{ if(!o.isMesh||o.isInstancedMesh) return; const m=o.material; if(!m||Array.isArray(m)||!m.isMeshStandardMaterial||m.map||hasOwnShader(m)) return;
-    if(!WALL_REDS.includes(m.color.getHexString())||m.roughness<.79) return; if(done.has(m)) return; done.add(m);
-    m.userData.plain={value:m.color.clone()}; m.color.setRGB(1,1,1); m.map=brickTex; m.userData.wall=1; patchMat(m); }); }
+function wallBricks(){ /* every red wall — inside and out — wears the red brick (only wall-shaped pieces: thin, at least 2.4 m tall and wide) */
+  scene.updateMatrixWorld(true); const brickWall=new T.MeshStandardMaterial({map:brickTex,roughness:.85}), bb=new T.Box3(), sz=new T.Vector3();
+  scene.traverse(o=>{ if(!o.isMesh||o.isInstancedMesh) return; const m=o.material; if(!m||Array.isArray(m)||!m.isMeshStandardMaterial||m.map||hasOwnShader(m)||m.transparent) return;
+    const c=m.color; if(!(c.r>.2&&c.g<.16&&c.b<.12&&c.r>c.g*2.4)) return;
+    for(let q=o;q;q=q.parent) if(q.userData&&q.userData.isAvatar) return;
+    if(!o.geometry.boundingBox) o.geometry.computeBoundingBox(); bb.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld); bb.getSize(sz);
+    const thin=Math.min(sz.x,sz.z), wide=Math.max(sz.x,sz.z); if(!(thin<.75&&wide>=2.4&&sz.y>=2.4)) return;
+    o.material=brickWall; }); }
 // 花窗 holes: every window cuts through whatever lies just behind it (looked up again whenever a window moves)
 const HOLES=[]; let holeKey="";
 function holesRefresh(){ const W=[]; BUILD.items.forEach(it=>{ if(/^hc-/.test(it.id)&&it.obj.visible) W.push(it.obj); }); if(!W.length) return;
@@ -6775,14 +6793,16 @@ function lanternPools(){ scene.updateMatrixWorld(true); const spots=[], v=new T.
     if(o.isInstancedMesh&&o.material===lanternMat){ for(let i=0;i<o.count;i++){ o.getMatrixAt(i,M); v.setFromMatrixPosition(M).applyMatrix4(o.matrixWorld); spots.push([v.x,v.z,v.y,1]); } return; }
     if(o.material===lanternMat){ o.getWorldPosition(v); spots.push([v.x,v.z,v.y,1]); return; }
     if(o.material&&o.material.isMeshBasicMaterial&&o.material.color&&o.material.color.getHexString()==="ffbf6a"){ o.getWorldPosition(v); if(v.y<2) spots.push([v.x,v.z,v.y,.6]); } });
-  const keep=spots.filter(s2=>s2[2]<9); if(!keep.length) return;
+  const raw=spots.filter(s2=>s2[2]<9), keep=[]; /* lanterns closer than 3.5 m share one pool, so a string of them doesn't add up into a glare */
+  for(const sp of raw){ const near=keep.find(k=>Math.hypot(k[0]-sp[0],k[1]-sp[1])<3.5&&Math.abs(k[2]-sp[2])<2); if(near){ near[4]=(near[4]||1)+1; near[0]+=(sp[0]-near[0])/near[4]; near[1]+=(sp[1]-near[1])/near[4]; } else keep.push([...sp]); }
+  if(!keep.length) return;
   if(POOLS){ scene.remove(POOLS); POOLS.dispose(); }
   const geo=new T.PlaneGeometry(1,1); geo.rotateX(-Math.PI/2);
   const im=new T.InstancedMesh(geo,POOL_M,keep.length), Q=new T.Quaternion(), S=new T.Vector3(), P=new T.Vector3();
   /* each pool lies on whatever floor is under its lantern (the porch, a step, a hall floor), found by looking straight down */
   const rc=new T.Raycaster(), down=new T.Vector3(0,-1,0), floors=[]; scene.traverse(o=>{ if(o.isMesh&&!o.isInstancedMesh&&o.geometry&&!o.material.transparent&&!(o.userData&&o.userData.lanternBody)&&(o.geometry.boundingSphere||o.geometry.computeBoundingSphere()||o.geometry.boundingSphere).radius*o.getWorldScale(P).x>1.2){ /* only big surfaces count as floor, not a lantern's own tassel or cap */ let q=o, ok=true; for(;q;q=q.parent){ if(!q.visible&&!(q.userData&&q.userData.mergedOff)||q.userData&&q.userData.isAvatar){ ok=false; break; } } if(ok) floors.push(o); } });
   keep.forEach(([x,z,y,k],i)=>{ let fy=.03; rc.set(P.set(x,y-.45,z),down); rc.far=y+1; for(const h of rc.intersectObjects(floors,false)){ const n=h.face&&h.face.normal.clone().transformDirection(h.object.matrixWorld); if(!n||n.y>.7){ fy=h.point.y+.03; break; } }
-    const r=Math.max(4.2,Math.min(11,3.2+(y-fy)*1.5))*k; /* wide and soft */ im.setMatrixAt(i,M.compose(P.set(x,fy,z),Q,S.set(r,1,r))); }); /* a wide spill: the higher the lantern, the wider (and softer) its light on the ground */
+    const r=Math.max(4.2,Math.min(9,3.2+(y-fy)*1.3))*k*(1+Math.min(.5,((keep[i][4]||1)-1)*.12)); /* wide and soft */ im.setMatrixAt(i,M.compose(P.set(x,fy,z),Q,S.set(r,1,r))); }); /* a wide spill: the higher the lantern, the wider (and softer) its light on the ground */
   im.userData.noMerge=1; im.renderOrder=1; im.raycast=()=>{}; scene.add(im); POOLS=im; window.__pools=keep.length; }
 try{ lanternPools(); }catch(e){} whenEssential(()=>{ for(const t of [1500,6000,20000,60000]) setTimeout(()=>{ try{ lanternPools(); }catch(e){} },t); }); /* again once the lantern models have arrived */
 /* floors: on iPhones the reflection lighting (scene.environment) left soft green blotches on floor tiles. Floors don't need reflections,
@@ -6831,7 +6851,7 @@ function buildMirror(it){ if(!BUILD.sym||!it||!it.pair) return; const tw=BUILD.i
   const d=it.def, e=tw.def; t.position.set(e.p[0]-(o.position.x-d.p[0]),e.p[1]+(o.position.y-d.p[1]),e.p[2]+(o.position.z-d.p[2])); t.rotation.y=e.r-(o.rotation.y-d.r);
   t.scale.set(e.s[0]*(o.scale.x/d.s[0]),e.s[1]*(o.scale.y/d.s[1]),e.s[2]*(o.scale.z/d.s[2])); t.visible=o.visible; }
 try{ buildUnits(); }catch(e){ window.__unitErr=String(e); }
-try{ wallBricks(); }catch(e){} try{ unifyBricks(); }catch(e){} try{ floorLayers(); }catch(e){} try{ window.__merged=mergeStatic(); }catch(e){ window.__mergeErr=String(e); }
+try{ wallBricks(); }catch(e){} try{ scene.traverse(o=>{ const m=o.material; if(m&&!Array.isArray(m)&&m.map&&m.map.image===goldCarvedTex.image&&!m.bumpMap){ m.bumpMap=GOLD_BUMP; m.bumpScale=.05; m.needsUpdate=true; } }); }catch(e){} /* gold tiles get their carved relief */ try{ unifyBricks(); }catch(e){} try{ floorLayers(); }catch(e){} try{ window.__merged=mergeStatic(); }catch(e){ window.__mergeErr=String(e); }
 buildNpcs();
 if(document.fonts&&document.fonts.load){ Promise.all([document.fonts.load(`700 64px "LXGW WenKai TC"`,"母聖上天邊德護千家海慈航庇萬眾香油籤詩服務處金爐"),document.fonts.load(`500 30px "Noto Sans TC"`,"你香客")]).then(()=>{ fontTextures.forEach(redraw); meAv.setName(myLabel()); }).catch(()=>{}); }
 requestAnimationFrame(()=>{ tick(); setTimeout(()=>$("#loading").setAttribute("data-done",""),250); });
