@@ -198,3 +198,4 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - Fireworks: 🙈 隱藏介面 button (body.fwclean hides all UI and name labels; faint 👁 top-right brings it back; auto-off when the show ends). Weeping willows: 60–110 stars, life 7.5 s, longer slower trail segments (life 4.5–6 s), FWN 36k (16k low); silk() fires 5–6 willows in a row at once.
 - Camera can tilt up (camPitch down to −0.9: camera stays, rotateX up); lake view tilt up to .6. During a show the normal view widens to fwFov (≤96°). Blinking stars (twinkle/strobe) smaller, no over-bright/size pulse so they stay sharp.
 - Statue rebuilt at ~27k tris, 1024 px texture (statue.glb ~385 KB). Show view/lake: drag direction no longer mirrored. While a show is on, rendering goes to full device resolution in any view (DRES.fw); star size ×1.3, round heads narrower.
+- Chair tools: 📷 記錄視角 (copies MZVIEW camera code) and 🌫️ 除霧 toggle (local only, survives lake trips).
