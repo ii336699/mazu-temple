@@ -5914,49 +5914,58 @@ function playFushui(){ const L=gameLayer("觀音菩薩・接福水","點木水�
   const G=()=>{ const W=L.W(), H=L.H(), top=118, cs=Math.floor(Math.min((W-28)/C,(H-top-14)/(R+2.35))), bw=cs*C, bh=cs*R, ox=Math.round((W-bw)/2), oy=Math.round(top+cs*1.3+(H-top-14-cs*(R+2.35))/2); return {W,H,cs,ox,oy,bw,bh}; };
   // ---- the tiles are drawn here (not images) so every channel sits exactly in the middle of every edge ----
   const TC={}; let tcSize=0;
+  /* pipes only (the wood board underneath is one piece). Every layer is a stroke centred on the pipe's axis, so the gold rims and the
+     water have the same cross-section on every edge and in every rotation: neighbouring tiles join like one pipe, with no seams */
   const tileArt=(k,isWet,s)=>{ const key=k+(isWet?"w":"d"); if(tcSize!==s){ for(const q in TC) delete TC[q]; tcSize=s; } if(TC[key]) return TC[key];
-    const c=document.createElement("canvas"); c.width=c.height=s; const g=c.getContext("2d"), m=s*.035, rr=s*.13;
-    const rrect=(a,b,w,h,r)=>{ g.beginPath(); g.moveTo(a+r,b); g.arcTo(a+w,b,a+w,b+h,r); g.arcTo(a+w,b+h,a,b+h,r); g.arcTo(a,b+h,a,b,r); g.arcTo(a,b,a+w,b,r); g.closePath(); };
-    // wood block with a soft bevel
-    rrect(m,m,s-2*m,s-2*m,rr); const wg=g.createLinearGradient(0,m,0,s-m); wg.addColorStop(0,"#b07a45"); wg.addColorStop(.5,"#94602f"); wg.addColorStop(1,"#73461f"); g.fillStyle=wg; g.fill();
-    g.save(); g.clip(); g.globalAlpha=.16; g.strokeStyle="#3d2410"; g.lineWidth=Math.max(1,s*.008); let seed=k.charCodeAt(0)*7+(isWet?3:1); const rnd=()=>{ seed=(seed*9301+49297)%233280; return seed/233280; };
-    for(let n=0;n<11;n++){ const y0=m+rnd()*(s-2*m), amp=s*(.01+rnd()*.02), ph=rnd()*6; g.beginPath(); for(let xx=0;xx<=s;xx+=s/16){ const yy=y0+Math.sin(xx/s*6+ph)*amp; xx?g.lineTo(xx,yy):g.moveTo(xx,yy); } g.stroke(); }
-    g.globalAlpha=1; g.restore();
-    g.lineWidth=s*.025; g.strokeStyle="rgba(255,225,170,.45)"; g.beginPath(); g.moveTo(m+rr,m+s*.02); g.lineTo(s-m-rr,m+s*.02); g.stroke();
-    rrect(m,m,s-2*m,s-2*m,rr); g.lineWidth=Math.max(1.5,s*.022); const og=g.createLinearGradient(0,0,s,s); og.addColorStop(0,"#ffe7a0"); og.addColorStop(.5,"#d9a23a"); og.addColorStop(1,"#9c6716"); g.strokeStyle=og; g.stroke();
-    const arms=BASE[k], w=s*.25, rim=s*.062, h=s/2;
-    const shape=(lw,col,cap)=>{ g.strokeStyle=col; g.lineWidth=lw; g.lineCap="butt"; for(const d of arms){ g.beginPath(); g.moveTo(h,h); g.lineTo(h+OP[d][0]*h,h+OP[d][1]*h); g.stroke(); } if(arms.length&&cap!==false){ g.fillStyle=col; g.beginPath(); g.arc(h,h,lw/2,0,7); g.fill(); } };
+    const c=document.createElement("canvas"); c.width=c.height=s; const g=c.getContext("2d"), arms=BASE[k], w=s*.28, r=s*.075, h=s/2, px=Math.max(1,s/80);
+    const shape=(lw,col)=>{ g.strokeStyle=col; g.fillStyle=col; g.lineWidth=lw; g.lineCap="butt"; for(const d of arms){ g.beginPath(); g.moveTo(h,h); g.lineTo(h+OP[d][0]*h,h+OP[d][1]*h); g.stroke(); } g.beginPath(); g.arc(h,h,lw/2,0,7); g.fill(); };
     if(arms.length){
-      shape(w+rim*2+s*.02,"rgba(40,20,5,.45)"); // shadow line around the rim
-      const gg=g.createLinearGradient(0,h-w/2-rim,0,h+w/2+rim); gg.addColorStop(0,"#fff0b8"); gg.addColorStop(.35,"#f0bd4a"); gg.addColorStop(1,"#a8701a");
-      shape(w+rim*2,"#8a5a12"); shape(w+rim*2-s*.016,gg); shape(w+rim*.55,"rgba(255,246,200,.55)");
-      if(isWet){ const bg2=g.createLinearGradient(0,h-w/2,0,h+w/2); bg2.addColorStop(0,"#1e8fd8"); bg2.addColorStop(.5,"#46c4ff"); bg2.addColorStop(1,"#1878c0"); shape(w,"#0f6aa8"); shape(w-s*.012,bg2); shape(w*.32,"rgba(190,240,255,.55)"); }
-      else { shape(w,"#2e1a0b"); shape(w-s*.012,"#4c2d14"); shape(w*.45,"rgba(30,15,5,.35)"); }
-    } else { // a blank block gets a small carved lotus medallion
-      g.strokeStyle="#d9a23a"; g.lineWidth=s*.02; g.beginPath(); g.arc(h,h,s*.11,0,7); g.stroke(); g.fillStyle="rgba(255,220,140,.5)"; for(let n=0;n<6;n++){ const a=n*Math.PI/3; g.beginPath(); g.ellipse(h+Math.cos(a)*s*.05,h+Math.sin(a)*s*.05,s*.045,s*.02,a,0,7); g.fill(); } }
+      shape(w+r*2+px*3,"#5a3a12"); shape(w+r*2,"#b57d22"); shape(w+r*1.55,"#e6b24a"); shape(w+r*1.2,"#ffe8a6"); shape(w+r*.85,"#f2c562"); shape(w+r*.35,"#a8701c");
+      if(isWet){ shape(w,"#0d5f99"); shape(w-px*2.5,"#2196dd"); shape(w*.62,"#3fb8f6"); shape(w*.3,"#7fd8ff"); shape(w*.1,"#d6f6ff"); }
+      else { shape(w,"#24140a"); shape(w-px*2.5,"#3e2412"); shape(w*.5,"#4a2c16"); }
+    }
     TC[key]=c; return c; };
+  /* the board: one wood panel (grain runs straight across it) with carved grooves between the cells and a gold frame */
+  let BC=null, bcKey="";
+  const boardArt=(g)=>{ const dpr=Math.min(2,window.devicePixelRatio||1), key=g.cs+"x"+dpr; if(BC&&bcKey===key) return BC; bcKey=key;
+    const fr=g.cs*.16, W2=Math.round((g.bw+fr*2)*dpr), H2=Math.round((g.bh+fr*2)*dpr), c=document.createElement("canvas"); c.width=W2; c.height=H2; const b=c.getContext("2d"); b.scale(dpr,dpr);
+    const bw=g.bw+fr*2, bh=g.bh+fr*2, rr=(a,y,w2,h2,r2)=>{ b.beginPath(); b.moveTo(a+r2,y); b.arcTo(a+w2,y,a+w2,y+h2,r2); b.arcTo(a+w2,y+h2,a,y+h2,r2); b.arcTo(a,y+h2,a,y,r2); b.arcTo(a,y,a+w2,y,r2); b.closePath(); };
+    rr(0,0,bw,bh,fr*.9); const fg=b.createLinearGradient(0,0,bw,bh); fg.addColorStop(0,"#ffe6a0"); fg.addColorStop(.5,"#d39a35"); fg.addColorStop(1,"#8f5d14"); b.fillStyle=fg; b.fill();
+    b.fillStyle="#7a4c22"; b.fillRect(fr-2,fr-2,g.bw+4,g.bh+4);
+    const wg=b.createLinearGradient(0,fr,0,fr+g.bh); wg.addColorStop(0,"#a8723f"); wg.addColorStop(1,"#8a5a2c"); b.fillStyle=wg; b.fillRect(fr,fr,g.bw,g.bh);
+    b.save(); b.beginPath(); b.rect(fr,fr,g.bw,g.bh); b.clip(); let seed=7; const rnd=()=>{ seed=(seed*9301+49297)%233280; return seed/233280; };
+    for(let n=0;n<Math.round(g.bh/5);n++){ const y0=fr+rnd()*g.bh, amp=2+rnd()*5, ph=rnd()*6, fq=2+rnd()*3; b.globalAlpha=.06+rnd()*.12; b.strokeStyle=rnd()<.6?"#5a3416":"#c9925a"; b.lineWidth=.6+rnd()*1.6; b.beginPath(); for(let xx=0;xx<=g.bw;xx+=8){ const yy=y0+Math.sin(xx/g.bw*fq*6.28+ph)*amp; xx?b.lineTo(fr+xx,yy):b.moveTo(fr+xx,yy); } b.stroke(); }
+    b.globalAlpha=1; for(let i=1;i<C;i++){ const xx=fr+i*g.cs; b.fillStyle="rgba(50,25,8,.35)"; b.fillRect(xx-1,fr,1.4,g.bh); b.fillStyle="rgba(255,215,160,.18)"; b.fillRect(xx+.4,fr,1,g.bh); }
+    for(let j=1;j<R;j++){ const yy=fr+j*g.cs; b.fillStyle="rgba(50,25,8,.35)"; b.fillRect(fr,yy-1,g.bw,1.4); b.fillStyle="rgba(255,215,160,.18)"; b.fillRect(fr,yy+.4,g.bw,1); }
+    b.restore(); BC={c,fr}; return BC; };
   cv.addEventListener("pointerdown",e=>{ if(done) return; const g=G(), i=Math.floor((e.clientX-g.ox)/g.cs), j=Math.floor((e.clientY-g.oy)/g.cs); if(i<0||j<0||i>=C||j>=R) return;
     const c=cells[j][i]; if(c.k==="N"||c.k==="X") return; c.rt++; tone(380+Math.random()*60,.08,.08,"triangle"); fill();
     if(won&&!done){ done=true; wonT=performance.now(); const ms=wonT-t0; healSound(); setTimeout(()=>{ L.close(); godGameWin("guanyin",ms,"bamboo"); },2200); } });
   window.__gy=()=>({cells:cells.map(r=>r.map(c=>[c.k,c.rt%4,!!c.sol])),path,won,done,C,R}); window.__gyTap=(i,j)=>{ const g=G(); cv.dispatchEvent(new PointerEvent("pointerdown",{clientX:g.ox+(i+.5)*g.cs,clientY:g.oy+(j+.5)*g.cs})); };
   window.__gySolve=()=>{ path.forEach(([i,j],n)=>{ const c=cells[j][i], din=n?dirTo([i,j],path[n-1]):0, dout=n<path.length-1?dirTo([i,j],path[n+1]):2; for(let r=0;r<4;r++){ const o=BASE[c.k].map(d=>(d+r)%4); if(o.includes(din)&&o.includes(dout)){ c.rt=r; c.a=r*Math.PI/2; break; } } }); fill(); };
-  const drops=[];
+  const drops=[]; let glints=[], vdrops=[];
+  const STREAM=[[548,212,30],[585,228,36],[620,252,44],[648,280,54],[668,312,62],[684,350,68]]; /* centre line and half-width of the stream in the vase picture */
   const draw=now=>{ if(L.done) return; const g=G(), t=(now-t0)/1000, dpr=Math.min(2,window.devicePixelRatio||1), ts=Math.round(g.cs*dpr);
     // background: Guanyin and the lotus pond, cover-scaled and kept to the left so she stays in view
     if(ok("bg")){ const iw=IM.bg.naturalWidth, ih=IM.bg.naturalHeight, sc=Math.max(g.W/iw,g.H/ih), dw=iw*sc, dh=ih*sc; x.drawImage(IM.bg,Math.min(0,(g.W-dw)*.12),(g.H-dh)/2,dw,dh); } else { x.fillStyle="#cdeee4"; x.fillRect(0,0,g.W,g.H); }
     { const tg=x.createLinearGradient(0,0,0,110); tg.addColorStop(0,"rgba(20,50,50,.8)"); tg.addColorStop(1,"rgba(20,50,50,0)"); x.fillStyle=tg; x.fillRect(0,0,g.W,110); } /* keeps the title readable */
     // the board panel
-    { const p=g.cs*.16; x.save(); x.shadowColor="rgba(20,70,60,.35)"; x.shadowBlur=14; x.fillStyle="rgba(205,240,228,.92)"; x.beginPath(); x.roundRect?x.roundRect(g.ox-p,g.oy-p,g.bw+p*2,g.bh+p*2,p*1.2):x.rect(g.ox-p,g.oy-p,g.bw+p*2,g.bh+p*2); x.fill(); x.restore();
-      x.strokeStyle="rgba(150,210,190,.9)"; x.lineWidth=2; x.stroke(); }
+    { const bc=boardArt(g); x.save(); x.shadowColor="rgba(20,70,60,.4)"; x.shadowBlur=16; x.shadowOffsetY=4; x.drawImage(bc.c,g.ox-bc.fr,g.oy-bc.fr,g.bw+bc.fr*2,g.bh+bc.fr*2); x.restore(); }
     for(let j=0;j<R;j++) for(let i=0;i<C;i++){ const c=cells[j][i], goal=c.rt*Math.PI/2; c.a+=(goal-c.a)*.3; if(Math.abs(goal-c.a)<.002) c.a=goal;
       const cx=g.ox+(i+.5)*g.cs, cy=g.oy+(j+.5)*g.cs, isW=wet.has(i+","+j);
       x.save(); x.translate(cx,cy); x.rotate(c.a); x.drawImage(tileArt(c.k,isW,ts),-g.cs/2,-g.cs/2,g.cs,g.cs);
-      if(isW){ x.strokeStyle="rgba(255,255,255,.75)"; x.lineWidth=Math.max(1.2,g.cs*.025); x.setLineDash([g.cs*.08,g.cs*.22]); x.lineDashOffset=-t*g.cs*.9; x.lineCap="round";
-        for(const d of BASE[c.k]){ x.beginPath(); const o=(d+c.rt)%4===0||(d+c.rt)%4===3; if(o){ x.moveTo(OP[d][0]*g.cs/2,OP[d][1]*g.cs/2); x.lineTo(0,0); } else { x.moveTo(0,0); x.lineTo(OP[d][0]*g.cs/2,OP[d][1]*g.cs/2); } x.stroke(); } x.setLineDash([]); }
-      x.restore(); }
+      x.restore(); if(isW&&c.a===c.rt*Math.PI/2&&Math.random()<.06){ const d=(BASE[c.k][(Math.random()*BASE[c.k].length)|0]+c.rt)%4, f=Math.random()*.5; glints.push({x:cx+OP[d][0]*g.cs*f,y:cy+OP[d][1]*g.cs*f,t:0}); } }
+    x.save(); x.globalCompositeOperation="lighter"; for(const q of glints){ q.t+=.016; const a2=Math.sin(Math.min(1,q.t/.7)*Math.PI), rr=g.cs*.07*a2; x.globalAlpha=a2*.9; x.fillStyle="#e8fbff"; x.beginPath(); x.moveTo(q.x,q.y-rr); x.lineTo(q.x+rr*.25,q.y); x.lineTo(q.x,q.y+rr); x.lineTo(q.x-rr*.25,q.y); x.closePath(); x.moveTo(q.x-rr,q.y); x.lineTo(q.x,q.y+rr*.25); x.lineTo(q.x+rr,q.y); x.lineTo(q.x,q.y-rr*.25); x.closePath(); x.fill(); } x.restore(); glints=glints.filter(q=>q.t<.7);
     // the vase, its stream ending in the top-right cell
     const scx=g.ox+(C-.5)*g.cs;
-    if(ok("vase")){ const s=g.cs*.62/142, vw=IM.vase.naturalWidth*s, vh=IM.vase.naturalHeight*s; x.drawImage(IM.vase,scx-688*s,g.oy+g.cs*.28-vh,vw,vh); }
+    if(ok("vase")){ const s=g.cs*.62/142, vw=IM.vase.naturalWidth*s, vh=IM.vase.naturalHeight*s, vx=scx-688*s, vy=g.oy+g.cs*.28-vh; x.drawImage(IM.vase,vx,vy,vw,vh);
+      // the pouring water moves: bright ripples run down the stream, drops spill off the end
+      x.save(); x.translate(vx,vy); x.scale(s,s); x.globalCompositeOperation="lighter"; x.lineCap="round";
+      for(const [off,al,wd] of [[-.3,.45,7],[0,.6,9],[.3,.4,6]]){ x.beginPath(); STREAM.forEach(([px2,py2,hw2],n)=>{ const nx2=n<STREAM.length-1?STREAM[n+1]:STREAM[n-1], dx=nx2[0]-px2, dy=nx2[1]-py2, l=Math.hypot(dx,dy)||1, ox2=-dy/l*hw2*off*(n<STREAM.length-1?1:-1), oy2=dx/l*hw2*off*(n<STREAM.length-1?1:-1); n?x.lineTo(px2+ox2,py2+oy2):x.moveTo(px2+ox2,py2+oy2); });
+        x.strokeStyle=`rgba(220,248,255,${al})`; x.lineWidth=wd; x.setLineDash([26,44]); x.lineDashOffset=-t*170-off*40; x.stroke(); }
+      x.setLineDash([]); x.restore();
+      if(Math.random()<.35) vdrops.push({x:scx+(Math.random()-.5)*g.cs*.5,y:g.oy+g.cs*.2,vx:(Math.random()-.5)*50,vy:-30-Math.random()*50,t:0});
+      for(const d of vdrops){ d.t+=.016; d.x+=d.vx*.016; d.y+=d.vy*.016; d.vy+=300*.016; x.fillStyle=`rgba(200,240,255,${Math.max(0,.9-d.t*1.6)})`; x.beginPath(); x.arc(d.x,d.y,Math.max(1,g.cs*.022),0,7); x.fill(); } vdrops=vdrops.filter(d=>d.t<.55); }
     // the cupped hands under the bottom-right cell
     if(ok("hands")){ const hw=g.cs*1.85, hh=hw*IM.hands.naturalHeight/IM.hands.naturalWidth, hx=scx-hw*.5, hy=g.oy+g.bh+g.cs*.02;
       if(won){ const fy=g.oy+g.bh-g.cs*.05, ty2=hy+hh*.38; x.strokeStyle="rgba(70,190,255,.85)"; x.lineWidth=g.cs*.2; x.lineCap="round"; x.beginPath(); x.moveTo(scx,fy); x.lineTo(scx,ty2); x.stroke(); x.strokeStyle="rgba(220,250,255,.8)"; x.lineWidth=g.cs*.05; x.setLineDash([g.cs*.08,g.cs*.16]); x.lineDashOffset=-t*g.cs*1.6; x.beginPath(); x.moveTo(scx,fy); x.lineTo(scx,ty2); x.stroke(); x.setLineDash([]); }
