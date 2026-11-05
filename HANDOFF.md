@@ -175,3 +175,4 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - 文昌殿／福德祠: main-hall outer wall inside them gets a brick panel; their roof-clip box now spans from the main hall wall to the front wall (roof models no longer show inside).
 - Indoor fill: in any room except 正殿 and outdoors, hemisphere +.42 and ambient up to .48 (eased), no extra lights.
 - Download screen: background dl-bg.webp (preloaded); the 3D avatar above the bar is replaced by a 2D white butterfly with glitter dust (dlRunner, no WebGL).
+- 花束: every built-in bouquet (main altar, 天公 table, every side shrine) uses bouquetStd — the size/turn of the chair's 文昌帝君 pair (2.561×2.8×1.8, left +.468 rad, right −.055). The added huashu items were removed from BUILD_DEFAULT (now v:3) since the shrine's own pair is placed there.
