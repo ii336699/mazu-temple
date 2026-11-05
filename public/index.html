@@ -3732,7 +3732,7 @@ HANDLERS.dbg=(v,b)=>{ DBG[v]=DBG[v]?0:1; b.setAttribute("aria-pressed",String(!!
 const PREDL={done:load("mz.predl",false),busy:false};
 function preDlList(){ const L=Q.lite; const models=["mazu","qianli","shunfeng","guanyin","xuantian","guangong","caishen","yuelao","huye","tiangong","jinlu","guanyin2","zhusheng","jiutian","dizang","doumu","wenchang","tudi","roof1","roof2","roof3","decor","stage","bdx","shishim","shishif","huachuang","weiqiangfar","stall-bbq","stall-pachinko","stall-boba","stall-balloon","stall-fish","stall-qq","stall-sausage","ghostpet"];
   const out=[]; models.forEach(n=>{ out.push(n+"-lite.glb"); if(!L&&STATUE_LOD.has(n)) out.push(n+".glb"); if(!L&&!STATUE_LOD.has(n)) out[out.length-1]=n+".glb"; });
-  THANKS.forEach(t=>out.push(t.img)); ["music.mp3","rearsong.mp3","fwsong.mp3","catsong.mp3","opera1.mp3","opera2.mp3","opera3.mp3","mural.jpg","tex1.jpg",...[...Array(14)].map((_,i)=>"ghost"+(i+1)+".webp"),...["frame","cradle","hanger","zzz","watch","meter","barP","barR"].map(n=>"zs-"+n+".webp")].forEach(f=>out.push(f)); return out; }
+  THANKS.forEach(t=>out.push(t.img)); ["music.mp3","rearsong.mp3","fwsong.mp3","catsong.mp3","opera1.mp3","opera2.mp3","opera3.mp3","mural.jpg","tex1.jpg",...[...Array(14)].map((_,i)=>"ghost"+(i+1)+".webp"),...["frame","cradle","hanger","zzz","watch","meter","barP","barR"].map(n=>"zs-"+n+".webp"),"gy-bg.webp","gy-vase.webp","gy-hands.webp"].forEach(f=>out.push(f)); return out; }
 HANDLERS.preDl=async(v,b)=>{ if(PREDL.busy) return; if(IN_ARTIFACT||!("serviceWorker" in navigator)){ toast("這個環境不能預先下載（請在網站上開啟）",2800); return; }
   const list=preDlList(); PREDL.busy=true; let i=0, ok=0, bytes=0; const next=async()=>{ while(i<list.length){ const f=list[i++]; try{ const r=await fetch(f,{cache:"no-cache"}); if(r.ok){ const bl=await r.blob(); bytes+=bl.size; ok++; } }catch(e){} if(b) b.textContent=`📥 下載中 ${ok}/${list.length}（${(bytes/1e6).toFixed(0)} MB）`; } };
   await Promise.all([next(),next()]); PREDL.busy=false; PREDL.done=ok===list.length; save("mz.predl",PREDL.done); if(b) b.textContent=PREDL.done?"✓ 已預先下載":"📥 再試一次";
@@ -5890,48 +5890,82 @@ GOD_START.jiutian=playBagua;
 /* ================= 觀音菩薩・接福水: 觀音's vase pours at the top left; tap the wooden channels to turn them until the blessed water
    runs all the way to the cupped hands at the bottom right. A fresh, always-solvable board each time. ================= */
 function playFushui(){ const L=gameLayer("觀音菩薩・接福水","點木水道轉動，把寶瓶的水接到右下角的雙手"); const {x,cv}=L;
-  const R=5, C=6, OP=[[0,-1],[1,0],[0,1],[-1,0]]; /* directions: 0 up 1 right 2 down 3 left */
-  const cells=[]; for(let j=0;j<R;j++){ cells.push([]); for(let i=0;i<C;i++) cells[j].push({k:"S",r:0,a:0}); }
-  // a random path from the vase (enters (0,0) from the left) to the hands (leaves (C-1,R-1) to the right)
-  let path=null; for(let tries=0;tries<200&&!path;tries++){ const seen=new Set(["0,0"]), P=[[0,0]];
-    const go=()=>{ const [i,j]=P[P.length-1]; if(i===C-1&&j===R-1) return P.length>=12; const ds=[0,1,2,3].sort(()=>Math.random()-.5);
+  const port=L.H()>L.W(), C=port?6:8, R=port?8:6, OP=[[0,-1],[1,0],[0,1],[-1,0]]; /* directions: 0 up 1 right 2 down 3 left */
+  const BASE={S:[1,3],E:[1,2],T:[1,2,3],X:[0,1,2,3],N:[]};
+  const IM={}; for(const n of ["bg","vase","hands"]){ const im=new Image(); im.src=`gy-${n}.webp`; IM[n]=im; } const ok=n=>IM[n].complete&&IM[n].naturalWidth>0;
+  const cells=[]; for(let j=0;j<R;j++){ cells.push([]); for(let i=0;i<C;i++) cells[j].push({k:"N",rt:0,a:0}); }
+  // a long winding path from the vase (enters the top-right cell from above) to the hands (leaves the bottom-right cell downwards)
+  const S0=[C-1,0], E0=[C-1,R-1], minLen=Math.round(C*R*.42); let path=null;
+  for(let tries=0;tries<300&&!path;tries++){ const seen=new Set([S0+""]), P=[S0]; let steps=0;
+    const go=()=>{ if(++steps>4000) return false; const [i,j]=P[P.length-1]; if(i===E0[0]&&j===E0[1]) return P.length>=minLen; const ds=[0,1,2,3].sort(()=>Math.random()-.5);
       for(const d of ds){ const ni=i+OP[d][0], nj=j+OP[d][1]; if(ni<0||nj<0||ni>=C||nj>=R||seen.has(ni+","+nj)) continue; seen.add(ni+","+nj); P.push([ni,nj]); if(go()) return true; P.pop(); seen.delete(ni+","+nj); } return false; };
     if(go()) path=P.slice(); }
   const dirTo=(a,b)=>OP.findIndex(([dx,dy])=>a[0]+dx===b[0]&&a[1]+dy===b[1]);
-  path.forEach((c,n)=>{ const din=n?(dirTo(c,path[n-1])):3, dout=n<path.length-1?dirTo(c,path[n+1]):1; cells[c[1]][c[0]].k=(din+2)%4===dout?"S":"E"; cells[c[1]][c[0]].sol=1; });
-  for(let j=0;j<R;j++) for(let i=0;i<C;i++){ const c=cells[j][i]; if(!c.sol) c.k=Math.random()<.5?"S":"E"; c.r=(Math.random()*4)|0; c.a=c.r*Math.PI/2; }
-  const opens=c=>(c.k==="S"?[0,2]:[0,1]).map(d=>(d+c.r)%4);
-  let wet=new Set(), won=false, t0=performance.now(), done=false, flow=0;
-  const fill=()=>{ wet=new Set(); won=false; const q=[]; if(opens(cells[0][0]).includes(3)){ wet.add("0,0"); q.push([0,0]); }
-    while(q.length){ const [i,j]=q.shift(); for(const d of opens(cells[j][i])){ const ni=i+OP[d][0], nj=j+OP[d][1]; if(i===C-1&&j===R-1&&d===1) won=true; if(ni<0||nj<0||ni>=C||nj>=R) continue; const k2=ni+","+nj; if(wet.has(k2)) continue; if(!opens(cells[nj][ni]).includes((d+2)%4)) continue; wet.add(k2); q.push([ni,nj]); } } };
-  fill();
-  const G=()=>{ const W=L.W(), H=L.H(), cs=Math.min((W-130)/C,(H-280)/R), bw=cs*C, bh=cs*R, ox=(W-bw)/2+6, oy=150+(H-280-bh)/2; return {W,H,cs,ox,oy,bw,bh}; };
+  const fit=need=>{ need=[...need].sort().join(); for(const k of ["S","E","T","X"]) for(let r=0;r<4;r++) if(BASE[k].map(d=>(d+r)%4).sort().join()===need) return [k,r]; };
+  path.forEach((c,n)=>{ const din=n?dirTo(c,path[n-1]):0, dout=n<path.length-1?dirTo(c,path[n+1]):2; const need=new Set([din,dout]);
+    if(Math.random()<.18){ const free=[0,1,2,3].filter(d=>!need.has(d)); need.add(free[(Math.random()*free.length)|0]); } const [k]=fit(need); Object.assign(cells[c[1]][c[0]],{k,sol:1}); });
+  const pool="SSSEEEETTXN"; for(let j=0;j<R;j++) for(let i=0;i<C;i++){ const c=cells[j][i]; if(!c.sol) c.k=pool[(Math.random()*pool.length)|0]; c.rt=(Math.random()*4)|0; c.a=c.rt*Math.PI/2; }
+  const opens=c=>BASE[c.k].map(d=>(d+c.rt)%4);
+  let wet=new Set(), won=false, t0=performance.now(), done=false, wonT=0;
+  const fill=()=>{ wet=new Set(); won=false; const q=[]; const s=cells[S0[1]][S0[0]]; if(opens(s).includes(0)){ wet.add(S0+""); q.push(S0); }
+    while(q.length){ const [i,j]=q.shift(); for(const d of opens(cells[j][i])){ const ni=i+OP[d][0], nj=j+OP[d][1]; if(i===E0[0]&&j===E0[1]&&d===2) won=true; if(ni<0||nj<0||ni>=C||nj>=R) continue; const k2=ni+","+nj; if(wet.has(k2)) continue; if(!opens(cells[nj][ni]).includes((d+2)%4)) continue; wet.add(k2); q.push([ni,nj]); } } };
+  fill(); if(won){ const c=cells[E0[1]][E0[0]]; c.rt++; c.a=c.rt*Math.PI/2; fill(); }
+  // layout: vase above the board's top-right corner, cupped hands under its bottom-right corner
+  const G=()=>{ const W=L.W(), H=L.H(), top=118, cs=Math.floor(Math.min((W-28)/C,(H-top-14)/(R+2.35))), bw=cs*C, bh=cs*R, ox=Math.round((W-bw)/2), oy=Math.round(top+cs*1.3+(H-top-14-cs*(R+2.35))/2); return {W,H,cs,ox,oy,bw,bh}; };
+  // ---- the tiles are drawn here (not images) so every channel sits exactly in the middle of every edge ----
+  const TC={}; let tcSize=0;
+  const tileArt=(k,isWet,s)=>{ const key=k+(isWet?"w":"d"); if(tcSize!==s){ for(const q in TC) delete TC[q]; tcSize=s; } if(TC[key]) return TC[key];
+    const c=document.createElement("canvas"); c.width=c.height=s; const g=c.getContext("2d"), m=s*.035, rr=s*.13;
+    const rrect=(a,b,w,h,r)=>{ g.beginPath(); g.moveTo(a+r,b); g.arcTo(a+w,b,a+w,b+h,r); g.arcTo(a+w,b+h,a,b+h,r); g.arcTo(a,b+h,a,b,r); g.arcTo(a,b,a+w,b,r); g.closePath(); };
+    // wood block with a soft bevel
+    rrect(m,m,s-2*m,s-2*m,rr); const wg=g.createLinearGradient(0,m,0,s-m); wg.addColorStop(0,"#b07a45"); wg.addColorStop(.5,"#94602f"); wg.addColorStop(1,"#73461f"); g.fillStyle=wg; g.fill();
+    g.save(); g.clip(); g.globalAlpha=.16; g.strokeStyle="#3d2410"; g.lineWidth=Math.max(1,s*.008); let seed=k.charCodeAt(0)*7+(isWet?3:1); const rnd=()=>{ seed=(seed*9301+49297)%233280; return seed/233280; };
+    for(let n=0;n<11;n++){ const y0=m+rnd()*(s-2*m), amp=s*(.01+rnd()*.02), ph=rnd()*6; g.beginPath(); for(let xx=0;xx<=s;xx+=s/16){ const yy=y0+Math.sin(xx/s*6+ph)*amp; xx?g.lineTo(xx,yy):g.moveTo(xx,yy); } g.stroke(); }
+    g.globalAlpha=1; g.restore();
+    g.lineWidth=s*.025; g.strokeStyle="rgba(255,225,170,.45)"; g.beginPath(); g.moveTo(m+rr,m+s*.02); g.lineTo(s-m-rr,m+s*.02); g.stroke();
+    rrect(m,m,s-2*m,s-2*m,rr); g.lineWidth=Math.max(1.5,s*.022); const og=g.createLinearGradient(0,0,s,s); og.addColorStop(0,"#ffe7a0"); og.addColorStop(.5,"#d9a23a"); og.addColorStop(1,"#9c6716"); g.strokeStyle=og; g.stroke();
+    const arms=BASE[k], w=s*.25, rim=s*.062, h=s/2;
+    const shape=(lw,col,cap)=>{ g.strokeStyle=col; g.lineWidth=lw; g.lineCap="butt"; for(const d of arms){ g.beginPath(); g.moveTo(h,h); g.lineTo(h+OP[d][0]*h,h+OP[d][1]*h); g.stroke(); } if(arms.length&&cap!==false){ g.fillStyle=col; g.beginPath(); g.arc(h,h,lw/2,0,7); g.fill(); } };
+    if(arms.length){
+      shape(w+rim*2+s*.02,"rgba(40,20,5,.45)"); // shadow line around the rim
+      const gg=g.createLinearGradient(0,h-w/2-rim,0,h+w/2+rim); gg.addColorStop(0,"#fff0b8"); gg.addColorStop(.35,"#f0bd4a"); gg.addColorStop(1,"#a8701a");
+      shape(w+rim*2,"#8a5a12"); shape(w+rim*2-s*.016,gg); shape(w+rim*.55,"rgba(255,246,200,.55)");
+      if(isWet){ const bg2=g.createLinearGradient(0,h-w/2,0,h+w/2); bg2.addColorStop(0,"#1e8fd8"); bg2.addColorStop(.5,"#46c4ff"); bg2.addColorStop(1,"#1878c0"); shape(w,"#0f6aa8"); shape(w-s*.012,bg2); shape(w*.32,"rgba(190,240,255,.55)"); }
+      else { shape(w,"#2e1a0b"); shape(w-s*.012,"#4c2d14"); shape(w*.45,"rgba(30,15,5,.35)"); }
+    } else { // a blank block gets a small carved lotus medallion
+      g.strokeStyle="#d9a23a"; g.lineWidth=s*.02; g.beginPath(); g.arc(h,h,s*.11,0,7); g.stroke(); g.fillStyle="rgba(255,220,140,.5)"; for(let n=0;n<6;n++){ const a=n*Math.PI/3; g.beginPath(); g.ellipse(h+Math.cos(a)*s*.05,h+Math.sin(a)*s*.05,s*.045,s*.02,a,0,7); g.fill(); } }
+    TC[key]=c; return c; };
   cv.addEventListener("pointerdown",e=>{ if(done) return; const g=G(), i=Math.floor((e.clientX-g.ox)/g.cs), j=Math.floor((e.clientY-g.oy)/g.cs); if(i<0||j<0||i>=C||j>=R) return;
-    const c=cells[j][i]; c.r=(c.r+1)%4; tone(380+Math.random()*60,.08,.08,"triangle"); fill();
-    if(won&&!done){ done=true; const ms=performance.now()-t0; healSound(); setTimeout(()=>{ L.close(); godGameWin("guanyin",ms,"bamboo"); },1900); } });
-  window.__gy=()=>({cells:cells.map(r=>r.map(c=>[c.k,c.r,!!c.sol])),path,won,done}); window.__gyTap=(i,j)=>{ const g=G(); cv.dispatchEvent(new PointerEvent("pointerdown",{clientX:g.ox+(i+.5)*g.cs,clientY:g.oy+(j+.5)*g.cs})); };
-  const wood="#9a6a3a", woodD="#6a4424", water="#5fc8ff";
-  const draw=now=>{ if(L.done) return; const g=G(), t=(now-t0)/1000; flow+=.016;
-    const bg=x.createLinearGradient(0,0,0,g.H); bg.addColorStop(0,"#e8f4ff"); bg.addColorStop(1,"#bfe0d0"); x.fillStyle=bg; x.fillRect(0,0,g.W,g.H);
-    for(let i=0;i<14;i++){ x.fillStyle=`rgba(255,255,255,${.35+.2*Math.sin(t+i)})`; x.beginPath(); x.arc((i*131)%g.W,(i*71)%140+60,18+(i%3)*8,0,7); x.fill(); }
-    { const tg=x.createLinearGradient(0,0,0,120); tg.addColorStop(0,"rgba(20,40,50,.85)"); tg.addColorStop(1,"rgba(20,40,50,0)"); x.fillStyle=tg; x.fillRect(0,0,g.W,120); } /* keeps the title readable */
-    x.fillStyle="#6bb6a0"; x.fillRect(g.ox-8,g.oy-8,g.bw+16,g.bh+16); x.fillStyle="#9ad6c8"; x.fillRect(g.ox,g.oy,g.bw,g.bh);
-    // the vase (top left) pouring into the first channel
-    { const vx=g.ox-30, vy=g.oy-62; x.save(); x.translate(vx,vy); x.rotate(.7); x.fillStyle="#fbfbf6"; x.beginPath(); x.ellipse(0,0,16,24,0,0,7); x.fill(); x.fillRect(-5,-34,10,14); x.strokeStyle="#7ab0d8"; x.lineWidth=2; x.beginPath(); x.ellipse(0,2,11,6,0,0,7); x.stroke();
-      x.fillStyle="#4caf50"; x.beginPath(); x.ellipse(-3,-40,4,12,-.4,0,7); x.fill(); x.restore();
-      x.strokeStyle=water; x.lineWidth=7; x.lineCap="round"; x.beginPath(); x.moveTo(vx+22,vy+14); x.quadraticCurveTo(g.ox-20,g.oy,g.ox-4,g.oy+g.cs/2); x.stroke(); }
-    for(let j=0;j<R;j++) for(let i=0;i<C;i++){ const c=cells[j][i]; c.a+=((c.r*Math.PI/2)-c.a+ (c.r===0&&c.a>Math.PI?2*Math.PI:0))*.3; if(c.r===0&&c.a>6.2) c.a=0;
-      const cx=g.ox+(i+.5)*g.cs, cy=g.oy+(j+.5)*g.cs, w=g.cs*.36, wetC=wet.has(i+","+j);
-      x.save(); x.translate(cx,cy); x.rotate(c.a); const arms=c.k==="S"?[0,2]:[0,1];
-      for(const [lw,col] of [[w,woodD],[w*.78,wood],[w*.42,wetC?water:"#5a3a20"]]){ x.strokeStyle=col; x.lineWidth=lw; x.lineCap="butt"; x.beginPath();
-        if(c.k==="S"){ x.moveTo(0,-g.cs/2); x.lineTo(0,g.cs/2); } else { x.moveTo(0,-g.cs/2); x.lineTo(0,0); x.lineTo(g.cs/2,0); } x.stroke(); }
-      if(wetC){ x.strokeStyle="rgba(255,255,255,.7)"; x.lineWidth=2; x.setLineDash([4,8]); x.lineDashOffset=-flow*60; x.beginPath(); if(c.k==="S"){ x.moveTo(0,-g.cs/2); x.lineTo(0,g.cs/2); } else { x.moveTo(0,-g.cs/2); x.lineTo(0,0); x.lineTo(g.cs/2,0); } x.stroke(); x.setLineDash([]); }
-      x.restore(); x.strokeStyle="rgba(0,60,50,.12)"; x.lineWidth=1; x.strokeRect(g.ox+i*g.cs,g.oy+j*g.cs,g.cs,g.cs); }
-    // the cupped hands (bottom right)
-    { const hx=g.ox+g.bw+18, hy=g.oy+g.bh-g.cs/2; x.fillStyle="#f6d2b4"; x.beginPath(); x.ellipse(hx,hy+6,22,12,0,0,Math.PI); x.fill(); x.beginPath(); x.ellipse(hx-12,hy+2,10,16,.5,0,7); x.ellipse(hx+12,hy+2,10,16,-.5,0,7); x.fill();
-      if(won){ x.fillStyle=water; x.beginPath(); x.ellipse(hx,hy+2,16,6,0,0,7); x.fill(); for(let k=0;k<6;k++){ const a=t*3+k; x.fillStyle="rgba(255,255,220,.9)"; x.beginPath(); x.arc(hx+Math.cos(a)*30,hy-10+Math.sin(a*1.3)*20,3,0,7); x.fill(); } } }
-    x.fillStyle="#fff"; x.font=`600 15px ${UI_FONT}`; x.textAlign="left"; x.fillText(`${t.toFixed(1)} 秒`,18,104);
-    if(won){ x.textAlign="center"; x.fillStyle="#2a6a5a"; x.font=`700 26px ${DISPLAY_FONT}`; x.fillText("福水流進雙手了！",g.W/2,g.H-50); }
+    const c=cells[j][i]; if(c.k==="N"||c.k==="X") return; c.rt++; tone(380+Math.random()*60,.08,.08,"triangle"); fill();
+    if(won&&!done){ done=true; wonT=performance.now(); const ms=wonT-t0; healSound(); setTimeout(()=>{ L.close(); godGameWin("guanyin",ms,"bamboo"); },2200); } });
+  window.__gy=()=>({cells:cells.map(r=>r.map(c=>[c.k,c.rt%4,!!c.sol])),path,won,done,C,R}); window.__gyTap=(i,j)=>{ const g=G(); cv.dispatchEvent(new PointerEvent("pointerdown",{clientX:g.ox+(i+.5)*g.cs,clientY:g.oy+(j+.5)*g.cs})); };
+  window.__gySolve=()=>{ path.forEach(([i,j],n)=>{ const c=cells[j][i], din=n?dirTo([i,j],path[n-1]):0, dout=n<path.length-1?dirTo([i,j],path[n+1]):2; for(let r=0;r<4;r++){ const o=BASE[c.k].map(d=>(d+r)%4); if(o.includes(din)&&o.includes(dout)){ c.rt=r; c.a=r*Math.PI/2; break; } } }); fill(); };
+  const drops=[];
+  const draw=now=>{ if(L.done) return; const g=G(), t=(now-t0)/1000, dpr=Math.min(2,window.devicePixelRatio||1), ts=Math.round(g.cs*dpr);
+    // background: Guanyin and the lotus pond, cover-scaled and kept to the left so she stays in view
+    if(ok("bg")){ const iw=IM.bg.naturalWidth, ih=IM.bg.naturalHeight, sc=Math.max(g.W/iw,g.H/ih), dw=iw*sc, dh=ih*sc; x.drawImage(IM.bg,Math.min(0,(g.W-dw)*.12),(g.H-dh)/2,dw,dh); } else { x.fillStyle="#cdeee4"; x.fillRect(0,0,g.W,g.H); }
+    { const tg=x.createLinearGradient(0,0,0,110); tg.addColorStop(0,"rgba(20,50,50,.8)"); tg.addColorStop(1,"rgba(20,50,50,0)"); x.fillStyle=tg; x.fillRect(0,0,g.W,110); } /* keeps the title readable */
+    // the board panel
+    { const p=g.cs*.16; x.save(); x.shadowColor="rgba(20,70,60,.35)"; x.shadowBlur=14; x.fillStyle="rgba(205,240,228,.92)"; x.beginPath(); x.roundRect?x.roundRect(g.ox-p,g.oy-p,g.bw+p*2,g.bh+p*2,p*1.2):x.rect(g.ox-p,g.oy-p,g.bw+p*2,g.bh+p*2); x.fill(); x.restore();
+      x.strokeStyle="rgba(150,210,190,.9)"; x.lineWidth=2; x.stroke(); }
+    for(let j=0;j<R;j++) for(let i=0;i<C;i++){ const c=cells[j][i], goal=c.rt*Math.PI/2; c.a+=(goal-c.a)*.3; if(Math.abs(goal-c.a)<.002) c.a=goal;
+      const cx=g.ox+(i+.5)*g.cs, cy=g.oy+(j+.5)*g.cs, isW=wet.has(i+","+j);
+      x.save(); x.translate(cx,cy); x.rotate(c.a); x.drawImage(tileArt(c.k,isW,ts),-g.cs/2,-g.cs/2,g.cs,g.cs);
+      if(isW){ x.strokeStyle="rgba(255,255,255,.75)"; x.lineWidth=Math.max(1.2,g.cs*.025); x.setLineDash([g.cs*.08,g.cs*.22]); x.lineDashOffset=-t*g.cs*.9; x.lineCap="round";
+        for(const d of BASE[c.k]){ x.beginPath(); const o=(d+c.rt)%4===0||(d+c.rt)%4===3; if(o){ x.moveTo(OP[d][0]*g.cs/2,OP[d][1]*g.cs/2); x.lineTo(0,0); } else { x.moveTo(0,0); x.lineTo(OP[d][0]*g.cs/2,OP[d][1]*g.cs/2); } x.stroke(); } x.setLineDash([]); }
+      x.restore(); }
+    // the vase, its stream ending in the top-right cell
+    const scx=g.ox+(C-.5)*g.cs;
+    if(ok("vase")){ const s=g.cs*.62/142, vw=IM.vase.naturalWidth*s, vh=IM.vase.naturalHeight*s; x.drawImage(IM.vase,scx-688*s,g.oy+g.cs*.28-vh,vw,vh); }
+    // the cupped hands under the bottom-right cell
+    if(ok("hands")){ const hw=g.cs*1.85, hh=hw*IM.hands.naturalHeight/IM.hands.naturalWidth, hx=scx-hw*.5, hy=g.oy+g.bh+g.cs*.02;
+      if(won){ const fy=g.oy+g.bh-g.cs*.05, ty2=hy+hh*.38; x.strokeStyle="rgba(70,190,255,.85)"; x.lineWidth=g.cs*.2; x.lineCap="round"; x.beginPath(); x.moveTo(scx,fy); x.lineTo(scx,ty2); x.stroke(); x.strokeStyle="rgba(220,250,255,.8)"; x.lineWidth=g.cs*.05; x.setLineDash([g.cs*.08,g.cs*.16]); x.lineDashOffset=-t*g.cs*1.6; x.beginPath(); x.moveTo(scx,fy); x.lineTo(scx,ty2); x.stroke(); x.setLineDash([]); }
+      x.drawImage(IM.hands,hx,hy,hw,hh);
+      if(won){ if(Math.random()<.5) drops.push({x:scx+(Math.random()-.5)*hw*.5,y:hy+hh*.35,vx:(Math.random()-.5)*60,vy:-60-Math.random()*80,t:0}); }
+      for(const d of drops){ d.t+=.016; d.x+=d.vx*.016; d.y+=d.vy*.016; d.vy+=260*.016; x.fillStyle=`rgba(255,255,220,${Math.max(0,1-d.t)})`; x.beginPath(); x.arc(d.x,d.y,2.2,0,7); x.fill(); } while(drops.length&&drops[0].t>1) drops.shift(); }
+    x.fillStyle="#fff"; x.font=`600 15px ${UI_FONT}`; x.textAlign="left"; x.fillText(`${(((done?wonT:now)-t0)/1000).toFixed(1)} 秒`,16,104);
+    if(won){ const k2=Math.min(1,(now-wonT)/400), my=g.oy+g.bh/2; x.globalAlpha=k2; x.fillStyle="rgba(255,255,255,.88)"; x.beginPath(); x.roundRect?x.roundRect(g.W/2-130,my-30,260,56,28):x.rect(g.W/2-130,my-30,260,56); x.fill();
+      x.textAlign="center"; x.font=`700 26px ${DISPLAY_FONT}`; x.fillStyle="#1f6a58"; x.fillText("福水流進雙手了！",g.W/2,my+8); x.globalAlpha=1; }
     requestAnimationFrame(draw); };
   requestAnimationFrame(draw); }
 GOD_START.guanyin=playFushui;
@@ -6629,7 +6663,7 @@ function tick(){ if(gameAsleep) return; const _ft0=performance.now(); { const no
     if(keys.has("q")||keys.has("arrowleft")){ camYaw+=dt*1.8; rotAnim=null; } if(keys.has("e")||keys.has("arrowright")){ camYaw-=dt*1.8; rotAnim=null; }
     if(f||r){ const fx=-Math.sin(camYaw), fz=-Math.cos(camYaw); let mx=fx*f-fz*r, mz=fz*f+fx*r; const L=Math.hypot(mx,mz); mx/=L; mz/=L;
       if(meAv.seat>=0){ meAv.seat=-1; updateStandBtn(); } pendingStation=null; meAv.faceGoal=null; tapMark.visible=false;
-      { let nx=meAv.pos.x+mx*.5, nz=meAv.pos.y+mz*.5; const inNow=isIn(meAv.pos.y); if(myFly){ [nx,nz]=flyClamp(nx,nz); } else if(!walkable(nx,nz)){ if(walkable(nx,meAv.pos.y)) nz=meAv.pos.y; else if(walkable(meAv.pos.x,nz)) nx=meAv.pos.x; else { nx=meAv.pos.x; nz=meAv.pos.y; } } meAv.path=[]; meAv.target.set(nx,nz); } markDirty(); } }
+      { let nx=meAv.pos.x+mx*.5, nz=meAv.pos.y+mz*.5; const inNow=isIn(meAv.pos.y); if(myFly){ [nx,nz]=flyClamp(nx,nz); } else if(!walkable(meAv.pos.x,meAv.pos.y)){ /* standing on a spot the walk map calls blocked (a god's table after a game): let the stick walk you off it */ } else if(!walkable(nx,nz)){ if(walkable(nx,meAv.pos.y)) nz=meAv.pos.y; else if(walkable(meAv.pos.x,nz)) nx=meAv.pos.x; else { nx=meAv.pos.x; nz=meAv.pos.y; } } meAv.path=[]; meAv.target.set(nx,nz); } markDirty(); } }
   if(rotAnim){ camYaw+=(rotAnim.to-camYaw)*Math.min(1,dt*7); if(Math.abs(rotAnim.to-camYaw)<.005){ camYaw=rotAnim.to; rotAnim=null; } }
   // head follows where the camera looks
   // head follows where the camera looks; when the camera swings round in front, the character looks into the lens instead (with hysteresis so it doesn't flip-flop)
