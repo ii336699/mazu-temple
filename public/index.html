@@ -990,9 +990,9 @@ const WIN=[-9.5,.5,10.5], WHW=1.7, WY0=1.2, WY1=3.8, BG0=-6.5, BG1=-2.5; // 八�
 for(const side of [-1,1]){ const x=side*HX;
   box(.4,WY0,BG0+HZ,stoneMat,x,WY0/2,(-HZ+BG0)/2); box(.4,WY0,HZ-BG1,stoneMat,x,WY0/2,(BG1+HZ)/2);
   box(.4,HH-WY1,HZ*2,redWall,x,WY1+(HH-WY1)/2,0);
-  const edges=[-HZ]; [[BG0,BG1]].sort((a,b)=>a[0]-b[0]).forEach(([a,b])=>edges.push(a,b)); edges.push(HZ);
+  const edges=[-HZ]; [...WIN.map(c=>[c-WHW,c+WHW]),[BG0,BG1]].sort((a,b)=>a[0]-b[0]).forEach(([a,b])=>edges.push(a,b)); edges.push(HZ);
   for(let i=0;i<edges.length;i+=2){ const a=edges[i],b=edges[i+1]; box(.4,WY1-WY0,b-a,redWall,x,(WY0+WY1)/2,(a+b)/2); }
-  /* the old lattice windows were taken out at the chair's request: the wall runs solid */ if(0) WIN.forEach(c=>{ const w=mesh(new T.PlaneGeometry(WHW*2,WY1-WY0),latticeMat,x-side*.05,(WY0+WY1)/2,c); w.rotation.y=Math.PI/2;
+  /* the lattice windows of the main hall, back again: the setting sun shines in through them */ WIN.forEach(c=>{ const w=mesh(new T.PlaneGeometry(WHW*2,WY1-WY0),latticeMat,x-side*.05,(WY0+WY1)/2,c); w.rotation.y=Math.PI/2;
     box(.5,.17,WHW*2+.2,GOLD(),x-side*.02,WY1+.055,c); box(.5,.17,WHW*2+.2,GOLD(),x-side*.02,WY0-.055,c); });
 }
 // back wall
@@ -1525,7 +1525,7 @@ function sideHall(side,label){ const sx=v=>side*v, W=SHX1-SHX0, D=SHZ1-SHZ0, zc=
   { const sh=archShape(SHX0,SHX1+.2,SHH,[{cx:SHXC,...MOON}],side); const w=new T.Mesh(archGeo(sh),wallM); w.position.z=SHZ0; scene.add(w); archTrim(SHXC*side,SHZ0,0,0,goldP,"z",MOON); } /* back door on the path line; its window was taken out */
   // front wall: now the inside wall between this hall and the 文昌殿 / 福德祠 part, opened by a round moon gate (圓拱門)
   { const wx0=17.0, wx1=18.6; const fw=new T.Mesh(archGeo(archShape(SHX0,wx0,SHH,[{cx:SHXC,...MOON}],side)),wallM); fw.position.z=SHZ1; scene.add(fw);
-    box(SHX1+.2-wx1,SHH,.4,wallM,sx((wx1+SHX1+.2)/2),SHH/2,SHZ1); box(wx1-wx0,1.3,.4,wallM,sx((wx0+wx1)/2),.65,SHZ1); box(wx1-wx0,SHH-3.5,.4,wallM,sx((wx0+wx1)/2),3.5+(SHH-3.5)/2,SHZ1); win(SHZ1,wx0,wx1,1.3,3.5);
+    box(SHX1+.2-wx1,SHH,.4,wallM,sx((wx1+SHX1+.2)/2),SHH/2,SHZ1); for(const b of [box(wx1-wx0,1.3,.4,wallM,sx((wx0+wx1)/2),.65,SHZ1),box(wx1-wx0,SHH-3.5,.4,wallM,sx((wx0+wx1)/2),3.5+(SHH-3.5)/2,SHZ1),box(wx1-wx0,3.5-1.3,.4,wallM,sx((wx0+wx1)/2),2.4,SHZ1)]) b.userData.brickMe=1;
     archTrim(sx(SHXC),SHZ1,0,0,goldP,"z",MOON); }
   for(const f of [1,-1]){ const w=mesh(new T.PlaneGeometry(1.05,1.05),new T.MeshStandardMaterial({map:BAGUA_WIN,transparent:true,alphaTest:.4,roughness:.5,metalness:.3,emissive:new T.Color("#3a1606"),emissiveMap:BAGUA_WIN}),sx(SHXC),3.82,SHZ1+f*.215); if(f<0) w.rotation.y=Math.PI; }
   for(const f of [1,-1]){ const m=mesh(new T.PlaneGeometry(1.8,.5),new T.MeshStandardMaterial({map:plaqueTexH(f<0?(side>0?"文昌殿":"福德祠"):label),roughness:.5}),sx(SHXC),3.02,SHZ1+f*.24); if(f<0) m.rotation.y=Math.PI; } /* each side names the hall the door leads into */
@@ -2322,7 +2322,7 @@ const SUNDIR=new T.Vector3(-1,-.42,.22).normalize();
 const shaftMat=new T.MeshBasicMaterial({vertexColors:true,transparent:true,opacity:.11,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide,fog:false});
 const poolMat=new T.MeshBasicMaterial({map:gapTex,color:new T.Color("#ff9a50"),transparent:true,opacity:.42,blending:T.AdditiveBlending,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2});
 function proj(p){ const t=p.y/(-SUNDIR.y); return new T.Vector3(p.x+SUNDIR.x*t,0.012,p.z+SUNDIR.z*t); }
-[].forEach(c=>{ if(c===-4.5) return; const x=HX-.25; /* no windows, no sun shafts */ const tl=new T.Vector3(x,WY1,c-WHW), tr=new T.Vector3(x,WY1,c+WHW), bl=new T.Vector3(x,WY0,c-WHW), br=new T.Vector3(x,WY0,c+WHW);
+WIN.forEach(c=>{ if(c===-4.5) return; const x=HX-.25; /* 夕陽灑落: light shafts through the west windows */ const tl=new T.Vector3(x,WY1,c-WHW), tr=new T.Vector3(x,WY1,c+WHW), bl=new T.Vector3(x,WY0,c-WHW), br=new T.Vector3(x,WY0,c+WHW);
   const ptl=proj(tl),ptr=proj(tr),pbl=proj(bl),pbr=proj(br);
   const pos=[], colr=[]; const hi=[1,.62,.32], lo=[.22,.12,.06];
   function quad(a,b,cc,d,ca,cb,ccc,cd){ [a,b,cc,a,cc,d].forEach((v,i)=>{ pos.push(v.x,v.y,v.z); colr.push(...[ca,cb,ccc,ca,ccc,cd][i]); }); }
@@ -7179,7 +7179,7 @@ function wallBricks(){ /* every red wall — inside and out — wears the red br
     const c=m.color; if(!(c.r>.2&&c.g<.16&&c.b<.12&&c.r>c.g*2.4)) return;
     for(let q=o;q;q=q.parent) if(q.userData&&q.userData.isAvatar) return;
     if(!o.geometry.boundingBox) o.geometry.computeBoundingBox(); bb.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld); bb.getSize(sz);
-    const thin=Math.min(sz.x,sz.z), wide=Math.max(sz.x,sz.z); if(!(thin<.75&&((wide>=2.4&&sz.y>=2.4)||(wide>=1.2&&sz.y>=1&&wide*sz.y>=1.8)))) return; /* the walled-in window pieces are narrower */
+    const thin=Math.min(sz.x,sz.z), wide=Math.max(sz.x,sz.z); if(!o.userData.brickMe&&!(thin<.75&&wide>=2.4&&sz.y>=2.4)) return; /* brickMe: the narrower walled-in window pieces of the 偏殿 */
     o.material=brickWall; }); }
 // 花窗 holes: every window cuts through whatever lies just behind it (looked up again whenever a window moves)
 const HOLES=[]; let holeKey="";
