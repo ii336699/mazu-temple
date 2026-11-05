@@ -3745,7 +3745,7 @@ HANDLERS.dbg=(v,b)=>{ DBG[v]=DBG[v]?0:1; b.setAttribute("aria-pressed",String(!!
 const PREDL={done:load("mz.predl",false),busy:false};
 function preDlList(){ const L=Q.lite; const models=["mazu","qianli","shunfeng","guanyin","xuantian","guangong","caishen","yuelao","huye","tiangong","jinlu","guanyin2","zhusheng","jiutian","dizang","doumu","wenchang","tudi","roof1","roof2","roof3","decor","stage","bdx","shishim","shishif","huachuang","weiqiangfar","stall-bbq","stall-pachinko","stall-boba","stall-balloon","stall-fish","stall-qq","stall-sausage","ghostpet"];
   const out=[]; models.forEach(n=>{ out.push(n+"-lite.glb"); if(!L&&STATUE_LOD.has(n)) out.push(n+".glb"); if(!L&&!STATUE_LOD.has(n)) out[out.length-1]=n+".glb"; });
-  THANKS.forEach(t=>out.push(t.img)); ["music.mp3","rearsong.mp3","fwsong.mp3","fw1.m4a","fw2.m4a","fw3.m4a","fw-gods.json","catsong.mp3","opera1.mp3","opera2.mp3","opera3.mp3","mural.jpg","tex1.jpg",...[...Array(14)].map((_,i)=>"ghost"+(i+1)+".webp"),...["frame","cradle","hanger","zzz","watch","meter","barP","barR"].map(n=>"zs-"+n+".webp"),"gy-bg.webp","gy-vase.webp","gy-hands.webp"].forEach(f=>out.push(f)); return out; }
+  THANKS.forEach(t=>out.push(t.img)); ["music.mp3","rearsong.mp3","fwsong.mp3","fw1.mp3","fw2.mp3","fw3.mp3","fw-gods.json","catsong.mp3","opera1.mp3","opera2.mp3","opera3.mp3","mural.jpg","tex1.jpg",...[...Array(14)].map((_,i)=>"ghost"+(i+1)+".webp"),...["frame","cradle","hanger","zzz","watch","meter","barP","barR"].map(n=>"zs-"+n+".webp"),"gy-bg.webp","gy-vase.webp","gy-hands.webp"].forEach(f=>out.push(f)); return out; }
 HANDLERS.preDl=async(v,b)=>{ if(PREDL.busy) return; if(IN_ARTIFACT||!("serviceWorker" in navigator)){ toast("這個環境不能預先下載（請在網站上開啟）",2800); return; }
   const list=preDlList(); PREDL.busy=true; let i=0, ok=0, bytes=0; const next=async()=>{ while(i<list.length){ const f=list[i++]; try{ const r=await fetch(f,{cache:"no-cache"}); if(r.ok){ const bl=await r.blob(); bytes+=bl.size; ok++; } }catch(e){} if(b) b.textContent=`📥 下載中 ${ok}/${list.length}（${(bytes/1e6).toFixed(0)} MB）`; } };
   await Promise.all([next(),next()]); PREDL.busy=false; PREDL.done=ok===list.length; save("mz.predl",PREDL.done); if(b) b.textContent=PREDL.done?"✓ 已預先下載":"📥 再試一次";
@@ -4436,7 +4436,7 @@ let FW_LEN=218;
 /* ---- three more shows (1:30 / 2:00 / 3:00), each cut to its own song. New pieces: 吊車／風火輪 (spinning wheels, hanging or flying up),
    彩千輪, 巨型 (giant shells), 拖尾 (comets that leave their own colour behind), 閃爍 (strobing stars), low shells, and at the end, after the
    climax and a breath of empty sky, one 神明 drawn in sparks on its own so nothing crosses it ---- */
-const FW_SHOWS=[{n:"經典煙火秀",d:"3 分 36 秒・媽祖",len:218,song:"fwsong.mp3"},{n:"春櫻",d:"1 分 30 秒",len:97,song:"fw1.m4a"},{n:"龍騰",d:"2 分鐘",len:126,song:"fw2.m4a"},{n:"眾神",d:"3 分鐘",len:186,song:"fw3.m4a"}];
+const FW_SHOWS=[{n:"經典煙火秀",d:"3 分 36 秒・媽祖",len:218,song:"fwsong.mp3"},{n:"春櫻",d:"1 分 30 秒",len:97,song:"fw1.mp3"},{n:"龍騰",d:"2 分鐘",len:126,song:"fw2.mp3"},{n:"眾神",d:"3 分鐘",len:186,song:"fw3.mp3"}];
 const FW_GOD_NAMES=["mazu","guangong","xuantian","guanyin","yuelao","tudi","caishen","wenchang","zhusheng","dizang","doumu","jiutian","huye"];
 const FW_GOD_LABEL={mazu:"天上聖母",guangong:"關聖帝君",xuantian:"玄天上帝",guanyin:"觀世音菩薩",yuelao:"月下老人",tudi:"福德正神",caishen:"武財神",wenchang:"文昌帝君",zhusheng:"註生娘娘",dizang:"地藏王菩薩",doumu:"斗姥元君",jiutian:"九天玄女",huye:"虎爺"};
 let FW_GODS=null, fwGodsReq=null;
