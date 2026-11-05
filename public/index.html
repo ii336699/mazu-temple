@@ -1561,9 +1561,27 @@ for(const s of [-1,1]){ baguaDoor(s); sideHall(s,s>0?"財神殿":"月老殿"); g
 
 /* 巨型菩薩像 behind the 後殿, as tall as anyone can fly (FLY_MAX). Kept cheap: one 5k-triangle mesh, a 512 px texture, plain Lambert shading,
    no shadows, loaded after everything else; fog softens it into the sky like a distant mountain shrine */
-setTimeout(()=>loadShared("statue",m=>{ const o=fitModel(m.clone(),42); o.position.set(0,0,-48-17); o.traverse(q=>{ if(q.isMesh){ const mp=q.material&&q.material.map; q.material=new T.MeshBasicMaterial({map:mp,color:new T.Color(1.18,1.08,.95),fog:false}); q.castShadow=q.receiveShadow=false; q.userData.noMerge=1; } }); /* lit by nothing: always bright, even at night and from far away */
-  o.userData.noMerge=1; scene.add(o); window.__statue=o;
-  const halo=new T.Sprite(new T.SpriteMaterial({map:fwTex,color:new T.Color("#ffd99a"),transparent:true,opacity:.28,depthWrite:false,fog:false,blending:T.AdditiveBlending})); halo.scale.set(52,52,1); halo.position.set(0,26,-48-19); halo.userData.noMerge=1; scene.add(halo); }),0);
+/* The statue is lit like a floodlit monument: three lamps on the ground in front throw light up its face, strongest low down and fading
+   toward the crown, with the back and sides left in shadow. The light is worked out once into the vertex colours (unlit material, no lights,
+   nothing per frame), and three faint additive beams rise from the lamps */
+setTimeout(()=>loadShared("statue",m=>{ const o=fitModel(m.clone(),42), SZ=-48-17; o.position.set(0,0,SZ); scene.add(o); o.updateMatrixWorld(true);
+  const lamps=[[-7,.3,SZ+11],[0,.3,SZ+12.5],[7,.3,SZ+11]], v=new T.Vector3(), n=new T.Vector3(), nm=new T.Matrix3(), d=new T.Vector3();
+  o.traverse(q=>{ if(!q.isMesh) return; const g=q.geometry, P=g.attributes.position, N=g.attributes.normal; nm.getNormalMatrix(q.matrixWorld); const col=new Float32Array(P.count*3);
+    for(let i=0;i<P.count;i++){ v.fromBufferAttribute(P,i).applyMatrix4(q.matrixWorld); if(N) n.fromBufferAttribute(N,i).applyMatrix3(nm).normalize(); else n.set(0,0,1);
+      let L=.2+.12*Math.max(0,n.y); /* moonlight from above keeps the shadow side readable */
+      for(const [lx,ly,lz] of lamps){ d.set(lx-v.x,ly-v.y,lz-v.z); const dist=d.length(); d.divideScalar(dist); const lam=Math.max(0,n.dot(d)); L+=lam*1.25*Math.pow(Math.max(0,1-dist/58),1.3); }
+      L=Math.min(1.35,L); col[i*3]=L*1.08; col[i*3+1]=L*.98; col[i*3+2]=L*.84; }
+    g.setAttribute("color",new T.BufferAttribute(col,3)); const mp=q.material&&q.material.map; q.material=new T.MeshBasicMaterial({map:mp,vertexColors:true,fog:false}); q.castShadow=q.receiveShadow=false; q.userData.noMerge=1; });
+  o.userData.noMerge=1; window.__statue=o;
+  const beamM=new T.MeshBasicMaterial({color:new T.Color("#ffe2b0"),transparent:true,opacity:.07,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide,fog:false});
+  for(const [lx,ly,lz] of lamps){ const h=30, cone=new T.Mesh(new T.CylinderGeometry(4.5,.25,h,16,1,true),beamM); cone.position.set(lx,ly,lz); const tgt=new T.Vector3(lx*.4,24,SZ+1), dir=tgt.clone().sub(cone.position).normalize(); cone.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),dir); cone.translateY(h/2); cone.userData.noMerge=1; scene.add(cone);
+    const lm=new T.Mesh(new T.BoxGeometry(.9,.5,.9),new T.MeshBasicMaterial({color:"#fff1c8"})); lm.position.set(lx,.25,lz); scene.add(lm); } }),0);
+/* 月亮: a full moon low in the sky over the rear of the temple, fading in as night falls (two sprites, no light) */
+const MOON_S=(()=>{ const tex=cvs(256,256,(x,w,h)=>{ const g=x.createRadialGradient(118,112,10,128,128,120); g.addColorStop(0,"#fffbe8"); g.addColorStop(.75,"#f3e7c2"); g.addColorStop(1,"#d9c99a"); x.fillStyle=g; x.beginPath(); x.arc(128,128,120,0,7); x.fill();
+    x.fillStyle="rgba(170,155,120,.28)"; for(const [cx,cy,r] of [[90,95,26],[160,80,16],[150,160,30],[95,170,14],[180,130,10],[120,130,9]]){ x.beginPath(); x.arc(cx,cy,r,0,7); x.fill(); } });
+  const sp=new T.Sprite(new T.SpriteMaterial({map:tex,transparent:true,depthWrite:false,fog:false})), gl=new T.Sprite(new T.SpriteMaterial({map:fwTexLate(),color:new T.Color("#fff3cf"),transparent:true,depthWrite:false,fog:false,blending:T.AdditiveBlending}));
+  const p=new T.Vector3(-.42,.5,-.76).normalize().multiplyScalar(135); sp.position.copy(p); gl.position.copy(p); sp.scale.set(11,11,1); gl.scale.set(46,46,1); scene.add(gl,sp); return {sp,gl}; })();
+function fwTexLate(){ return cvs(64,64,(x,w,h)=>{ const g=x.createRadialGradient(32,32,0,32,32,32); g.addColorStop(0,"rgba(255,255,255,.55)"); g.addColorStop(.35,"rgba(255,255,255,.18)"); g.addColorStop(1,"rgba(255,255,255,0)"); x.fillStyle=g; x.fillRect(0,0,w,h); }); }
 // 虎爺 in the niche under the altar table
 function buildTiger(){ const g=new T.Group();
   const fur=new T.MeshStandardMaterial({map:cvs(256,128,(x,w,h)=>{ x.fillStyle="#e3962e"; x.fillRect(0,0,w,h); x.strokeStyle="#2a160c"; x.lineWidth=6; for(let i=0;i<14;i++){ const xx=i*w/14+4; x.beginPath(); x.moveTo(xx,0); x.quadraticCurveTo(xx+10,h*.3,xx-4,h*.55); x.stroke(); } }),roughness:.55,metalness:.15});
@@ -4569,6 +4587,7 @@ function dayNight(dt){ const want=FW.on?{night:0,day:0}:todPhase(); const k=_dn.
   { let r="O"; try{ r=camRoom(meAv.pos.x,meAv.pos.y); }catch(e){} const w2=r!=="M"&&r!=="O"?1:0; _dn.ind=(_dn.ind||0)+(w2-(_dn.ind||0))*Math.min(1,dt*1.5); if(ambLight) ambLight.intensity=.18+.5*_dn.ind; }
   if(hemiLight){ hemiLight.intensity=.32+.5*_dn.day-.14*_dn.night+.7*(_dn.ind||0); hemiLight.color.setRGB(.48+.4*_dn.day-.2*_dn.night,.33+.5*_dn.day-.1*_dn.night,.27+.6*_dn.day+.1*_dn.night); }
   scene.fog.color.copy(fogDusk).lerp(_c1.setRGB(.55,.66,.75),_dn.day).lerp(_c1.setRGB(.03,.03,.07),_dn.night);
+  MOON_S.sp.material.opacity=Math.min(1,_dn.night*1.3); MOON_S.gl.material.opacity=_dn.night*.8; MOON_S.sp.visible=MOON_S.gl.visible=_dn.night>.02;
   lanternMat.emissiveIntensity=.55+.3*_dn.night-.25*_dn.day; try{ POOL_M.opacity=.05+.17*_dn.night-.04*_dn.day; }catch(e){} ROOF_FLOOD.value=.3+.55*_dn.night; HALL_GLOW.forEach(g=>{ g.material.opacity=g.userData.op*(.45+.55*_dn.night); }); }
 const _c1=new T.Color();
 // announcements and shows are replayed to anyone who (re)connects; each browser plays each one only once
