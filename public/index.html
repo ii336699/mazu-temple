@@ -184,6 +184,9 @@ body.customizing .hall,body.customizing .actions,body.customizing .rot{display:n
 .code-in{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px!important;letter-spacing:.02em}.code-box .mail-row{margin:8px 0}
 .marquee{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 6px);z-index:40;height:38px;overflow:hidden;background:linear-gradient(90deg,rgba(120,14,10,.92),rgba(160,24,16,.95),rgba(120,14,10,.92));border-top:1px solid #e6b93d;border-bottom:1px solid #e6b93d;box-shadow:0 4px 18px rgba(0,0,0,.45);pointer-events:none}.marquee[hidden]{display:none}.marquee span{position:absolute;top:0;left:0;white-space:nowrap;line-height:38px;font-family:var(--f-display);font-size:19px;font-weight:700;color:#ffe08a;text-shadow:0 1px 3px rgba(0,0,0,.6);will-change:transform}
 .fw-end{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.25em;pointer-events:none;text-align:center;padding:16px;font-family:var(--f-display);font-weight:700;font-size:clamp(28px,8vw,56px);line-height:1.35;color:#ffe9a8;text-shadow:0 0 18px rgba(255,190,90,.85),0 2px 6px rgba(0,0,0,.7);opacity:0}.fw-end p{margin:0}.fw-end .vt{display:flex;flex-direction:column;align-items:center;font-size:clamp(19px,4.4vh,40px);line-height:1.12}.fw-end .vt span{display:block}.fw-end[hidden]{display:none}.fw-end.on{animation:fwEndFade 9s ease forwards}@keyframes fwEndFade{0%{opacity:0;transform:scale(.96)}18%{opacity:1;transform:scale(1)}80%{opacity:1}100%{opacity:0}}
+body.fwclean .top,body.fwclean .actions,body.fwclean .rot,body.fwclean .joy,body.fwclean .camreset,body.fwclean .near-chip,body.fwclean .standup,body.fwclean .fw-btns,body.fwclean .toast,body.fwclean .caption,body.fwclean .fw-count,body.fwclean .test-badge,body.fwclean #testBadge{display:none!important}
+.fw-btns{flex-wrap:wrap;justify-content:center;max-width:calc(100vw - 24px)}.fw-btns .spark-btn{padding:8px 14px;font-size:14px}
+.fw-show{position:fixed;right:max(10px,env(safe-area-inset-right,0px));top:calc(env(safe-area-inset-top,0px) + 10px);z-index:61;width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,230,180,.35);background:rgba(0,0,0,.25);color:#fff;font-size:16px;opacity:.45}.fw-show[hidden]{display:none}
 .train-ov{position:fixed;inset:0;z-index:60;background:#000;display:grid;place-items:center;opacity:0;transition:opacity .6s;pointer-events:auto}.train-ov.on{opacity:1}.train-ov[hidden]{display:none}.train-ov p{color:#f3e2b8;font:700 22px var(--f-display);letter-spacing:.2em;animation:trainBob 1s ease-in-out infinite}@keyframes trainBob{50%{transform:translateY(-3px)}}
 body.lakeview .top,body.lakeview .actions,body.lakeview .rot,body.lakeview .joy,body.lakeview .camreset,body.lakeview .near-chip,body.lakeview .standup{display:none!important}
 .fw-count{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 70px);transform:translateX(-50%);z-index:31;background:rgba(30,10,8,.88);border:1px solid var(--gold);border-radius:14px;padding:10px 16px;text-align:center;color:#ffe8a0;font:700 17px var(--f-display);box-shadow:0 0 22px rgba(255,190,90,.4);white-space:nowrap}.fw-count small{display:block;font:500 12px var(--f-ui);opacity:.85;margin-top:3px}.fw-count[hidden]{display:none}
@@ -415,7 +418,7 @@ body.hideui .joy,body.customizing .joy,body.hideui .camreset,body.customizing .c
 <div class="sj-banner glass" id="sjBanner" hidden></div>
 <div class="sj-banner glass th-banner" id="thBanner" hidden><span id="thText"></span><button class="chip" id="thQuit">放棄</button></div>
 <div class="fw-end" id="fwEnd" hidden aria-label="一直以來，辛苦你了。"><p class="vt" aria-hidden="true"><span>一</span><span>直</span><span>以</span><span>來</span><span>︐</span><span>辛</span><span>苦</span><span>你</span><span>了</span><span>︒</span></p></div>
-<div class="fw-btns" id="fwBtns" hidden><button class="spark-btn glass" id="sparkBtn">🎇 拿起仙女棒</button><button class="spark-btn glass" id="fwViewBtn">🎆 看煙火視角</button><button class="spark-btn glass" id="fwCloseBtn" aria-label="關閉仙女棒按鈕">✕</button></div>
+<div class="fw-btns" id="fwBtns" hidden><button class="spark-btn glass" id="sparkBtn">🎇 拿起仙女棒</button><button class="spark-btn glass" id="fwViewBtn">🎆 看煙火視角</button><button class="spark-btn glass" id="fwCloseBtn" aria-label="關閉仙女棒按鈕">✕</button><button class="spark-btn glass" id="fwCleanBtn" aria-label="隱藏所有介面">🙈 隱藏介面</button></div><button class="fw-show" id="fwShowBtn" hidden aria-label="顯示介面">👁</button>
 <div class="marquee" id="marquee" hidden aria-live="polite"><span id="marqueeText"></span></div>
 <div class="top">
   <div class="hall">
@@ -4418,7 +4421,7 @@ HANDLERS.doAct=v=>{ const i=+v; closeSheet(); const n=Math.random().toString(36)
 HANDLERS.emo=v=>{ const i=+v; const now=performance.now(); if(now-(HANDLERS.emo.last||0)<1200){ toast("慢一點點～"); return; } HANDLERS.emo.last=now; closeSheet(); myEmo=[i,Math.random().toString(36).slice(2,8)]; markDirty(); showEmo(meAv,i); };
 $("#emoBtn").onclick=()=>{ ensureAudio(); if(sheetKind==="emo") closeSheet(); else openEmo(); };
 /* ================= 全服煙火 (3-minute show over the courtyard, same seeded program on every screen) + 仙女棒 ================= */
-const FWN=Q.low?9000:20000; // particle pool
+const FWN=Q.low?16000:36000; /* the weeping willows need many trail segments */ // particle pool
 const FW={on:false,t0:0,ev:[],i:0,rockets:[],gerbs:[],wheels:[],head:0,endAt:-1e9,sh:0,txt:""};
 const fwGeo=new T.BufferGeometry(); const fwPos=new Float32Array(FWN*3), fwCol=new Float32Array(FWN*3), fwA=new Float32Array(FWN), fwSz=new Float32Array(FWN);
 const fwSK=new Uint8Array(FWN); const fwTr=new Float32Array(FWN); let FW_TR=0; /* how much of a streak each star leaves: 0 a round star, 1 a long line */ const fwV=new Float32Array(FWN*3), fwLife=new Float32Array(FWN), fwMax=new Float32Array(FWN), fwDrag=new Float32Array(FWN), fwGrav=new Float32Array(FWN), fwFlick=new Float32Array(FWN), fwC2=new Float32Array(FWN*3), fwSplit=new Float32Array(FWN), fwSz0=new Float32Array(FWN);
@@ -4473,7 +4476,7 @@ function fwBurst0(e){ const {x,y,z}=e, r=Math.random; const [c1,c2]=e.c, sp=e.s,
     case "twotone": sph((a,b,c,i)=>{ const inner=i%3===0; fwEmit(x,y,z,a*sp*(inner?.5:1),b*sp*(inner?.5:1),c*sp*(inner?.5:1),inner?c2:c1,inner?c2:c1,1.8+r()*.4,.6,1.4,2.2); }); break;
     case "senrin": { const m=Math.round(80*LOW), ga=Math.PI*(3-Math.sqrt(5)); for(let i=0;i<m;i++){ const u=1-2*(i+.5)/m, th=i*ga, q=Math.sqrt(1-u*u); fwEmit(x,y,z,q*Math.cos(th)*sp,u*sp,q*Math.sin(th)*sp,"#ffe9a8","#ffd27a",2,.45,.9,1.2,0,.85+r()*.35,2); } break; }
     case "chrys": sph((a,b,c)=>fwEmit(x,y,z,a*sp,b*sp,c*sp,c1,c2,2.3+r()*.6,.5,1.1,2.6,.0)); break;
-    case "willow": { const keep=n; sph((a,b,c,i)=>{ if(i%Math.max(1,Math.round(keep/70))) return; fwEmit(x,y,z,a*sp*.8,b*sp*.8+1,c*sp*.8,"#ffe08a","#d0701a",4.4+r()*1.2,.55,1.7,2.6,.15,0,3); }); break; }
+    case "willow": { const keep=n; sph((a,b,c,i)=>{ if(i%Math.max(1,Math.round(keep/110))) return; fwEmit(x,y,z,a*sp*.8,b*sp*.8+1,c*sp*.8,"#ffe08a","#d0701a",6.5+r()*1.5,.55,1.7,2.6,.15,0,3); }); break; }
     case "meteor": sph((a,b,c,i)=>{ if(i%2) return; fwEmit(x,y,z,a*sp*.75,b*sp*.75+1.5,c*sp*.75,c1,c2,3.6+r()*.8,.6,1.5,3.4,.1,0,3); }); break;
     case "glitter": sph((a,b,c)=>fwEmit(x,y,z,a*sp,b*sp,c*sp,c1,c2,2.2+r()*.6,.55,1.3,2.4,1)); break;
     case "ring": { const ax=r()*Math.PI, ay=r()*Math.PI; for(let i=0;i<n;i++){ const t=i/n*Math.PI*2; let a=Math.cos(t), b=Math.sin(t), c=0; const b2=b*Math.cos(ax)-c*Math.sin(ax), c2_=b*Math.sin(ax)+c*Math.cos(ax); const a3=a*Math.cos(ay)+c2_*Math.sin(ay), c3=-a*Math.sin(ay)+c2_*Math.cos(ay); fwEmit(x,y,z,a3*sp,b2*sp,c3*sp,c1,c2,1.8,.6,1.3,1.6); }
@@ -4493,7 +4496,7 @@ function fwBurst0(e){ const {x,y,z}=e, r=Math.random; const [c1,c2]=e.c, sp=e.s,
       for(let i=0;i<P.length;i+=step){ const [px,py,k]=P[i]; const tx=(px-128)*H, ty=(127-py)*H; fwEmit(x,y,z,tx*K,ty*K,0,C[k][0],C[k][1],11+r()*.8,.6,K,0,0,0,9); }
       fwGodEnd(); break; }
     case "silkfall": { /* 特大しだれ柳: a huge gold weeping willow — stars fly out, droop over and slide down on curving paths, each drawing its own long glittering line */
-      const m=Math.max(40,Math.round(70*LOW)), ga=Math.PI*(3-Math.sqrt(5)), V=sp*1.15; for(let i=0;i<m;i++){ const u=1-2*(i+.5)/m*.85, th=i*ga, q=Math.sqrt(1-u*u); fwEmit(x,y,z,q*Math.cos(th)*V,u*V+2,q*Math.sin(th)*V,"#fff0b8","#ff9a3b",5.4+r()*1.2,.5,1.25,3.1,0,0,10); } break; }
+      const m=Math.max(60,Math.round(110*LOW)), ga=Math.PI*(3-Math.sqrt(5)), V=sp*1.15; for(let i=0;i<m;i++){ const u=1-2*(i+.5)/m*.85, th=i*ga, q=Math.sqrt(1-u*u); fwEmit(x,y,z,q*Math.cos(th)*V,u*V+2,q*Math.sin(th)*V,"#fff0b8","#ff9a3b",7.5+r()*1.5,.5,.95,3.2,0,0,10); } break; }
     case "smile": { /* 笑臉: a ring face, two eyes and a smiling mouth */ const R=sp, ring=Math.round(n*.55); for(let i=0;i<ring;i++){ const t=i/ring*Math.PI*2; fwEmit(x,y,z,Math.cos(t)*R,Math.sin(t)*R,0,c1,c2,2.4,.62,1.5,.9); }
       for(const ex of [-.36,.36]) for(let i=0;i<14;i++){ const t=i/14*Math.PI*2; fwEmit(x,y,z,(ex+Math.cos(t)*.09)*R,(.28+Math.sin(t)*.12)*R,0,"#ffffff",c1,2.4,.6,1.5,.9); }
       for(let i=0;i<30;i++){ const t=Math.PI*(1.15+i/29*.7); fwEmit(x,y,z,Math.cos(t)*.55*R,(Math.sin(t)*.55+.05)*R,0,"#ffe066",c2,2.4,.62,1.5,.9); } break; }
@@ -4546,7 +4549,7 @@ function fwProgramN(sh,seed){ const r=fwRng(seed^(sh*2654435761)), ev=[]; const 
   const senrin=(t,o={})=>{ shell(t,"senrin",{x:0,big:true,y:34,s:15,...o}); pair(t+.2,"senrin",{x:17,y:27,s:12}); };
   const god=(t)=>{ shell(t,"god",{x:0,y:31,z:BZ+16,big:true,fl:2.4,god:FW_GOD_NAMES[(r()*FW_GOD_NAMES.length)|0]}); ev[ev.length-1].pal=(r()*FW_GOD_PAL.length)|0; };
   const huge=(t,o={})=>giant(t,{s:30,n:1100,y:52,...o}); /* 超巨大 */
-  const silk=(t,o={})=>shell(t,"silkfall",{y:36,s:10,...o}); /* 拉線飄落 */
+  const silk=(t,o={})=>{ const n=5+(r()<.5?1:0), xs=n===6?[-20,-12,-4,4,12,20]:[-18,-9,0,9,18]; xs.forEach((x,k)=>shell(t+k*.07,"silkfall",{y:34+r()*6,s:10,x,...o,x})); }; /* 特大垂柳: five or six at once */
   /* 超巨型扇形: every tube of a big cake fires at once, a tall fan of comets from the roofs */
   const bigFan=(t,c)=>{ const pal=c||pick(FWC); for(const x of [-10,10]) for(let k=0;k<17;k++){ const ang=(k/16*2-1)*1.25, h=24+r()*5; ev.push({t:t+(x>0?.05:0),kind:"comet",big:1,sx:x,sy:3.9,sz:WALL,ex:x+Math.sin(ang)*h,ey:3.9+Math.cos(ang)*h,ez:WALL+.6,c:[pal[k%2],pal[(k+1)%2]],fl:1.3}); } };
   const T=["peony","chrys","glitter","ring","palm","crossette","dring","rainbow","twotone","tail","strobe","meteor","multi","twinkle","kamuro"];
@@ -4561,7 +4564,7 @@ function fwProgramN(sh,seed){ const r=fwRng(seed^(sh*2654435761)), ev=[]; const 
     for(let t=39;t<60;t+=.7+r()*.35){ if(r()<.55) pair(t,pick(T)); else shell(t,pick(["rainbow","twotone","tail"]),{x:0}); }
     senrin(45); senrin(52.5); wheel(40,-14,12,10,{mode:"rise",up:2.4}); wheel(44,14,12,10,{mode:"rise",up:2.4,dir:-1}); pair(57,"twinkle",{big:true});
     for(let t=54;t<60;t+=1.5) pair(t,"strobe",{y:24+r()*6});
-    huge(60.4); pair(60.6,"tail",{big:true}); silk(50,{x:0}); pair(66,"silkfall",{y:34,x:14}); for(let t=64.5;t<69;t+=1.5) pair(t,"kamuro",{y:22});
+    huge(60.4); pair(60.6,"tail",{big:true}); silk(50); silk(66); for(let t=64.5;t<69;t+=1.5) pair(t,"kamuro",{y:22});
     for(let t=64;t<69.5;t+=.4+r()*.3){ if(r()<.5){ mine(t,-8-r()*6); mine(t,8+r()*6); } else low(t,pick(["glitter","peony","crackle"])); }
     for(let t=70;t<84.5;t+=.25+r()*.2){ if(r()<.5) pair(t,pick(["peony","chrys","tail","strobe","rainbow","twotone","crackle","multi"]),{big:r()<.35}); else shell(t,pick(T),{x:(r()-.5)*12}); }
     wheel(70,-12,10,14,{R:2.2}); wheel(70,0,12.5,14,{R:2.8,dir:-1}); wheel(70,12,10,14,{R:2.2}); for(const x of [-14,-5,5,14]) gerb(72,x,12);
@@ -4573,7 +4576,7 @@ function fwProgramN(sh,seed){ const r=fwRng(seed^(sh*2654435761)), ev=[]; const 
     for(let t=9;t<30;t+=5+r()*2) fans(t);
     for(const [t,x] of [[14,-13],[15.5,13],[21,-7],[22.5,7],[27,0]]) wheel(t,x,9,6,{mode:"rise",up:3.4,R:1.7,c:pick(FWC)});
     for(let t=30;t<40;t+=.8+r()*.3){ pair(t,pick(["strobe","twinkle"]),{y:20+r()*12}); if(r()<.4) shell(t+.3,"glitter",{x:0}); } pair(33,"bees"); pair(37,"bees");
-    for(let t=40;t<50;t+=.7+r()*.3){ pair(t,"tail",{big:r()<.3}); if(r()<.4) low(t,"crackle"); } pair(46,"heart"); silk(48,{x:0}); pair(93,"silkfall",{y:34,x:15});
+    for(let t=40;t<50;t+=.7+r()*.3){ pair(t,"tail",{big:r()<.3}); if(r()<.4) low(t,"crackle"); } pair(46,"heart"); silk(48); silk(93);
     for(let t=50;t<60;t+=3.3){ senrin(t); pair(t+1.6,pick(["dring","ring","palm"])); }
     for(let t=60;t<90;t+=.55+r()*.3){ if(r()<.45){ mine(t,-7-r()*7); mine(t,7+r()*7); } else if(r()<.6) low(t,pick(["peony","glitter","crackle","ring","rainbow"])); else pair(t,pick(T)); }
     for(let t=62;t<90;t+=4.5+r()*1.5) fans(t);
@@ -4593,7 +4596,7 @@ function fwProgramN(sh,seed){ const r=fwRng(seed^(sh*2654435761)), ev=[]; const 
     for(let t=62;t<90;t+=7) senrin(t); huge(68); giant(82,{x:-9}); giant(83.5,{x:9}); for(let t=64;t<90;t+=6) fans(t); pair(86,"bees");
     for(let t=90;t<120;t+=.75+r()*.3){ pair(t,pick(["crossette","ring","dring","palm","tail","strobe"])); }
     for(const [t,x] of [[92,-14],[94,14],[100,-7],[102,7],[108,0],[112,-12],[113,12]]) wheel(t,x,9,6,{mode:"rise",up:3.2,R:1.8});
-    wheel(96,0,13,20,{R:3,c:["#ffd23b","#ff3b3b"]}); for(let t=110;t<119;t+=2.2) pair(t,"kamuro",{big:true}); silk(72,{x:0}); pair(114,"silkfall",{y:34,x:16}); silk(146,{x:0});
+    wheel(96,0,13,20,{R:3,c:["#ffd23b","#ff3b3b"]}); for(let t=110;t<119;t+=2.2) pair(t,"kamuro",{big:true}); silk(72); silk(114); silk(146);
     for(let t=120;t<150;t+=.4+r()*.25){ if(r()<.55) pair(t,pick(T),{big:r()<.3}); else shell(t,pick(T),{x:(r()-.5)*14}); }
     for(let t=121;t<150;t+=6) senrin(t); for(let t=124;t<150;t+=5) fans(t); huge(130); giant(140,{x:-8}); giant(141.4,{x:8}); pair(145,"bees");
     for(const x of [-14,-7,0,7,14]) wheel(135,x,11,14,{R:x?1.8:2.6,dir:x<0?1:-1});
@@ -4741,8 +4744,8 @@ function fwUpdate(dt){ const now=performance.now();
     fwV[j]*=dg; fwV[j+1]=fwV[j+1]*dg-fwGrav[i]*dt; fwV[j+2]*=dg; fwPos[j]+=fwV[j]*dt; fwPos[j+1]+=fwV[j+1]*dt; fwPos[j+2]+=fwV[j+2]*dt;
     /* 3 willow, 8 kamuro, 10 shidare: the star lays down short segments along the path it has just flown, which linger and fade — so every star draws
        its own curved line hanging behind it (round head, glittering thread) */
-    if((fwSK[i]===3||fwSK[i]===8||fwSK[i]===10)&&Math.random()<dt*20){ const tr=FW_TR; FW_TR=1; const kk=fwSK[i]===8?["#f2f6ff","#7a869a"]:["#ffd98a","#7a3a08"];
-      fwEmit(fwPos[j],fwPos[j+1],fwPos[j+2],fwV[j]*.2,fwV[j+1]*.2,fwV[j+2]*.2,kk[0],kk[1],(fwSK[i]===10?4:3)*(.85+Math.random()*.3),fwSz0[i]*.55,.6,.25,.2); FW_TR=tr; }
+    if((fwSK[i]===3||fwSK[i]===8||fwSK[i]===10)&&Math.random()<dt*11){ const tr=FW_TR; FW_TR=1; const kk=fwSK[i]===8?["#f2f6ff","#7a869a"]:["#ffd98a","#7a3a08"];
+      fwEmit(fwPos[j],fwPos[j+1],fwPos[j+2],fwV[j]*.38,fwV[j+1]*.38,fwV[j+2]*.38,kk[0],kk[1],(fwSK[i]===10?6:4.5)*(.85+Math.random()*.3),fwSz0[i]*.55,1.6,.35,.2); FW_TR=tr; }
     if(fwSK[i]===7){ fwV[j]+=(Math.random()-.5)*60*dt; fwV[j+1]+=(Math.random()-.5)*60*dt; fwV[j+2]+=(Math.random()-.5)*30*dt; if(Math.random()<.5) fwEmit(fwPos[j],fwPos[j+1],fwPos[j+2],0,0,0,"#fff2c2","#ff8a3b",.35,fwSz0[i]*.5,1,0,0); }
     else if(fwSK[i]===4&&Math.random()<.45){ const q=FW.head; fwEmit(fwPos[j],fwPos[j+1],fwPos[j+2],0,-.2,0,"#000000",null,.5+Math.random()*.3,fwSz0[i]*.5,2,.6,0); const qj=q*3; fwCol[qj]=fwCol[j]; fwCol[qj+1]=fwCol[j+1]; fwCol[qj+2]=fwCol[j+2]; fwC2[qj]=fwCol[j]*.25; fwC2[qj+1]=fwCol[j+1]*.25; fwC2[qj+2]=fwCol[j+2]*.25; }
     const k=L/M; fwCol[j]+=(fwC2[j]-fwCol[j])*dt*1.2; fwCol[j+1]+=(fwC2[j+1]-fwCol[j+1])*dt*1.2; fwCol[j+2]+=(fwC2[j+2]-fwCol[j+2])*dt*1.2;
@@ -4843,10 +4846,13 @@ function trainTo(on){ if(trainBusy) return; trainBusy=true; let ov=$("#trainOv")
   ov.hidden=false; void ov.offsetWidth; ov.classList.add("on"); trainSound();
   setTimeout(()=>{ lakeSet(on); },600); setTimeout(()=>{ ov.classList.remove("on"); setTimeout(()=>{ ov.hidden=true; trainBusy=false; },600); },1400); }
 $("#fwViewBtn").onclick=()=>{ ensureAudio(); trainTo(!LAKE.on); };
+/* 隱藏介面: every button off the screen to just watch; the faint eye in the corner (or any tap on it) brings them back */
+function fwClean(on){ document.body.classList.toggle("fwclean",on); $("#fwShowBtn").hidden=!on; try{ if(meAv.label) meAv.label.visible=!on; remotes.forEach(r=>{ if(r.label) r.label.visible=!on; }); npcs.forEach(n=>{ if(n.label) n.label.visible=!on; }); }catch(e){} }
+$("#fwCleanBtn").onclick=()=>fwClean(true); $("#fwShowBtn").onclick=()=>fwClean(false);
 $("#fwCloseBtn").onclick=()=>{ sparkDismissed=true; if(mySparkler){ mySparkler=false; meAv.sparkler=false; markDirty(); } renderSparkBtn(); };
 let sparkDismissed=false; const sparkAvail=()=>FW.on||(FW.endAt>0&&!sparkDismissed); let sparkLitAt=0;
 let fwFinale=false;
-function renderSparkBtn(){ const b=$("#sparkBtn"), on=sparkAvail(); renderSparkBtn.last=on; $("#fwBtns").hidden=!(on||FW.pendingAt||LAKE.on)||(fwFinale&&!LAKE.on); if(!FW.on&&fwView&&!fwFinale) setFwView(false); $("#fwViewBtn").hidden=!(FW.on||FW.pendingAt||LAKE.on); $("#fwViewBtn").textContent=LAKE.on?"↩ 回到廟裡":"✨ 前往湖畔看煙火"; if(!on&&mySparkler){ mySparkler=false; meAv.sparkler=false; markDirty(); } b.textContent=mySparkler?"熄滅仙女棒":"🎇 拿起仙女棒"; $("#fwCloseBtn").hidden=FW.on; }
+function renderSparkBtn(){ const b=$("#sparkBtn"), on=sparkAvail(); if(!(on||FW.pendingAt||LAKE.on)&&document.body.classList.contains("fwclean")) fwClean(false); renderSparkBtn.last=on; $("#fwBtns").hidden=!(on||FW.pendingAt||LAKE.on)||(fwFinale&&!LAKE.on); if(!FW.on&&fwView&&!fwFinale) setFwView(false); $("#fwViewBtn").hidden=!(FW.on||FW.pendingAt||LAKE.on); $("#fwViewBtn").textContent=LAKE.on?"↩ 回到廟裡":"✨ 前往湖畔看煙火"; if(!on&&mySparkler){ mySparkler=false; meAv.sparkler=false; markDirty(); } b.textContent=mySparkler?"熄滅仙女棒":"🎇 拿起仙女棒"; $("#fwCloseBtn").hidden=FW.on; }
 $("#sparkBtn").onclick=()=>{ ensureAudio(); mySparkler=!mySparkler; meAv.sparkler=mySparkler; markDirty(); renderSparkBtn(); if(mySparkler){ sparkLitAt=performance.now(); meAv.say("✨","#ffe8a0",1.5); } };
 setInterval(()=>{ if(mySparkler&&performance.now()-sparkLitAt>60000){ mySparkler=false; meAv.sparkler=false; markDirty(); renderSparkBtn(); toast("仙女棒燒完了",2200); } },1000);
 const sparkStickGeo=new T.CylinderGeometry(.006,.006,.36,5); sparkStickGeo.translate(0,.18,0); const sparkStickMat=mat("#8a8f96",{metalness:.6,roughness:.4});
