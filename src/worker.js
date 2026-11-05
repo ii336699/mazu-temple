@@ -302,14 +302,14 @@ export class Lobby extends DurableObject {
       const GAMES = ["wenchang", "tudi", "guanyin", "zhusheng", "doumu", "jiutian", "dizang"];
       let b = {}; if (req.method === "POST") { try { b = await req.json(); } catch {} }
       const g = String((req.method === "POST" ? b.g : url.searchParams.get("g")) || ""); if (!GAMES.includes(g)) return json({ ok: false });
-      // 文昌 ranks by the best average score (0–100), ties by time; kept under its own key so the old time board is left alone
+      // 文昌 ranks by total = average score ×10 + time bonus (0–240), ties by time; kept under its own key so the old time board is left alone
       if (g === "wenchang") {
-        let top = (await this.ctx.storage.get("lb:wenchang:s")) || [];
+        let top = (await this.ctx.storage.get("lb:wenchang:c")) || [];
         if (req.method === "POST") {
-          const t = Math.round(Number(b.t) || 0), s = Math.round(Number(b.s)), name = clean(b.name, 10) || "香客", id = clean(b.id, 16) || "anon";
-          this.lastLb = this.lastLb || new Map(); const now = Date.now(); const ok = s >= 0 && s <= 100 && t >= 3000 && t <= 600000 && now - (this.lastLb.get(id + g) || 0) > 4000; this.lastLb.set(id + g, now);
-          if (ok) { const cur = top.find(e => e.id === id); if (!cur) top.push({ id, name, s, t, at: now }); else { cur.name = name; if (s > cur.s || (s === cur.s && t < cur.t)) { cur.s = s; cur.t = t; cur.at = now; } }
-            top.sort((a, c) => c.s - a.s || a.t - c.t || a.at - c.at); top = top.slice(0, 20); await this.ctx.storage.put("lb:wenchang:s", top); }
+          const t = Math.round(Number(b.t) || 0), s = Math.round(Number(b.s)), a = Math.round(Number(b.a)), name = clean(b.name, 10) || "香客", id = clean(b.id, 16) || "anon";
+          this.lastLb = this.lastLb || new Map(); const now = Date.now(); const ok = s >= 0 && s <= 1240 && a >= 0 && a <= 100 && s <= a * 10 + 240 && t >= 3000 && t <= 600000 && now - (this.lastLb.get(id + g) || 0) > 4000; this.lastLb.set(id + g, now);
+          if (ok) { const cur = top.find(e => e.id === id); if (!cur) top.push({ id, name, s, a, t, at: now }); else { cur.name = name; if (s > cur.s || (s === cur.s && t < cur.t)) { cur.s = s; cur.a = a; cur.t = t; cur.at = now; } }
+            top.sort((a, c) => c.s - a.s || a.t - c.t || a.at - c.at); top = top.slice(0, 20); await this.ctx.storage.put("lb:wenchang:c", top); }
         }
         return json({ ok: true, top: top.slice(0, 10) });
       }
@@ -359,7 +359,7 @@ export class Lobby extends DurableObject {
       const L = b.layout || {}, n = (v, lo, hi, d) => { v = Number(v); return Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : d; };
       const v3 = (a, lo, hi, d) => Array.isArray(a) && a.length === 3 ? a.map(x => +n(x, lo, hi, d).toFixed(3)) : [d, d, d];
       const okId = t => typeof t === "string" && /^[a-z0-9:_-]{1,40}$/i.test(t);
-      const out = { mods: {}, adds: [] };
+      const out = { v: Math.round(n(L.v, 0, 999, 0)), mods: {}, adds: [] };
       if (L.mods && typeof L.mods === "object") for (const [id, m] of Object.entries(L.mods).slice(0, 300)) { if (!okId(id) || !m || typeof m !== "object") continue; out.mods[id] = { p: v3(m.p, -200, 200, 0), r: +n(m.r, -100, 100, 0).toFixed(4), s: v3(m.s, .001, 500, 1), hide: !!m.hide }; }
       if (Array.isArray(L.adds)) for (const a of L.adds.slice(0, 200)) { if (!a || !okId(a.id) || !okId(a.m)) continue; const e = { id: a.id, m: a.m, p: v3(a.p, -200, 200, 0), r: +n(a.r, -100, 100, 0).toFixed(4), s: v3(a.s, .001, 500, 1) }; if (okId(a.pair)) e.pair = a.pair; out.adds.push(e); }
       const st = { layout: out, at: Date.now() }; await this.ctx.storage.put("layout", st);

@@ -1446,7 +1446,8 @@ function gardenHall(side){ const sx=v=>side*v, W=GH.x1-GH.x0, D=GH.z1-GH.z0, zc=
   const brick=(rx,ry)=>new T.MeshStandardMaterial({map:texRep(brickTex,rx,ry),roughness:.8}), wallM=mat("#6a1a10",{roughness:.85}), goldP=mat("#d6a24a",{metalness:.85,roughness:.3}), redM=mat("#9c1d13",{roughness:.45}), stoneB=mat("#8f897f",{roughness:.85});
   const X0=HX+.2, Wf=GH.x1-X0, xf=(X0+GH.x1)/2; /* the hall runs right up to the main hall's wall: no second wall in front of its windows */
   const fl=mesh(new T.PlaneGeometry(Wf,D),new T.MeshStandardMaterial({map:floorTex,roughness:.3}),sx(xf),.03,zc); fl.rotation.x=-Math.PI/2; fl.userData.floor=true; fl.userData.noMerge=1;
-  const ce=mesh(new T.PlaneGeometry(Wf,D),mat("#2b130c",{roughness:.9,side:T.DoubleSide}),sx(xf),GH.H,zc); ce.rotation.x=Math.PI/2;
+  const ce=mesh(new T.PlaneGeometry(Wf,D),mat("#5e3220",{roughness:.9,side:T.DoubleSide}),sx(xf),GH.H,zc); ce.rotation.x=Math.PI/2;
+  { const Lw=GH.z1-SHZ1, wl=mesh(new T.PlaneGeometry(Lw,GH.H),brick(Lw/2.2,2),sx(X0+.012),GH.H/2,(GH.z1+SHZ1)/2); wl.rotation.y=side>0?Math.PI/2:-Math.PI/2; } /* the main hall's outer wall inside this hall and the joining section gets the same red tiles */
   box(.4,GH.H,D+.4,brick(D/2.2,2),sx(GH.x1),GH.H/2,zc);
   { const z=GH.z1, bm=new T.MeshStandardMaterial({map:texRep(brickTex,1/2.3,1/2.3),roughness:.8}); const fw=new T.Mesh(archGeo(archShape(X0,GH.x1+.2,GH.H,[{cx:SHXC,...MOON}],side)),bm); fw.position.z=z; scene.add(fw);
     archTrim(sx(SHXC),z,0,0,goldP,"z",MOON); const hw=Math.sqrt(MOON.r*MOON.r-MOON.cy*MOON.cy)+.1; /* stone sill either side of the gate */
@@ -1458,10 +1459,10 @@ function gardenHall(side){ const sx=v=>side*v, W=GH.x1-GH.x0, D=GH.z1-GH.z0, zc=
   const god=side>0?buildDeity({robe:"#2b5fa8",brow:"#1c1512",beard:"#1c1512",long:true,hat:"wusha"}):buildDeity({robe:"#c99a2e",brow:"#f2efe8",beard:"#f2efe8",long:true,hat:"wusha",prop:"ingot"}); god.userData.noMerge=1;
   const key=side>0?"wenchang":"tudi"; buildSideShrine(side,key,side>0?"文昌帝君":"福德正神",god,[sx(GH.x1-.95),zc]);
   swapDeity(god,key,2.25,key); setTimeout(()=>addHit(key,sx(GH.x1-.95),.9,zc,1.4,3.2),0);
-  poolLight("#ffcf8a",1.4,8,sx(xm),3.8,zc);
+  poolLight("#ffcf8a",1.4,8,sx(xm),3.8,zc); poolLight("#ffd9a0",1.6,7,sx(GH.x1-2.4),3.6,zc); poolLight("#ffd9a0",1.2,7,sx(xm),3.6,(SHZ1+GH.z0)/2);
   // the joining section between the 偏殿 and this hall: floor, ceiling, outer walls, lanterns and its own roof, so you never step outdoors in between
   { const z0=SHZ1, z1=GH.z0, zm=(z0+z1)/2, Dl=z1-z0; const f2=mesh(new T.PlaneGeometry(Wf,Dl),new T.MeshStandardMaterial({map:floorTex,roughness:.3}),sx(xf),.03,zm); f2.rotation.x=-Math.PI/2; f2.userData.floor=true; f2.userData.noMerge=1;
-    const c2=mesh(new T.PlaneGeometry(Wf,Dl+.02),mat("#2b130c",{roughness:.9,side:T.DoubleSide}),sx(xf),GH.H-.01,zm); c2.rotation.x=Math.PI/2;
+    const c2=mesh(new T.PlaneGeometry(Wf,Dl+.02),mat("#5e3220",{roughness:.9,side:T.DoubleSide}),sx(xf),GH.H-.01,zm); c2.rotation.x=Math.PI/2;
     box(.4,GH.H,Dl,brick(Dl/2.2,2),sx(GH.x1),GH.H/2,zm);
     for(const dx of [0,3]) downlight(sx(SHXC+dx),GH.H,zm);
     if(0) for(const dz of [-1,1]){ const g=new T.Group(); g.position.set(sx(SHXC),3.7,zm+dz); scene.add(g); const b=new T.Mesh(new T.SphereGeometry(.26,14,10),lanternMat); b.scale.y=.86; g.add(b); for(const y of [.22,-.22]){ const c=new T.Mesh(new T.CylinderGeometry(.12,.12,.06,10),GOLD()); c.position.y=y; g.add(c); } const sp=new T.Sprite(glowMat); sp.scale.set(1.4,1.4,1); g.add(sp); }
@@ -1487,7 +1488,7 @@ function archTrim(cxW,c,w,spring,m,axis,moon){ const d=moon?{cx:0,r:moon.r,cy:mo
 function sideHall(side,label){ const sx=v=>side*v, W=SHX1-SHX0, D=SHZ1-SHZ0, zc=(SHZ0+SHZ1)/2;
   const wallM=mat("#5c130d",{roughness:.85}), stoneB=mat("#3e3833",{roughness:.85}), goldP=mat("#d6a24a",{metalness:.85,roughness:.3});
   const fl=mesh(new T.PlaneGeometry(W,D),new T.MeshStandardMaterial({map:floorTex,roughness:.3}),sx(SHMX),.006,zc); fl.rotation.x=-Math.PI/2; fl.userData.floor=true; fl.userData.noMerge=1;
-  const ce=mesh(new T.PlaneGeometry(W,D),mat("#2b130c",{roughness:.9}),sx(SHMX),SHH,zc); ce.rotation.x=Math.PI/2;
+  const ce=mesh(new T.PlaneGeometry(W,D),mat("#5e3220",{roughness:.9}),sx(SHMX),SHH,zc); ce.rotation.x=Math.PI/2;
   box(.4,SHH,D+.4,wallM,sx(SHX1),SHH/2,zc); box(.5,1,D+.5,stoneB,sx(SHX1),.5,zc);
   // a wall run along x with an optional rectangular opening (x-range, y-range) filled by a lattice window
   const wallX=(z,ox0,ox1,oy0,oy1)=>{ const a0=SHX0, a1=SHX1+.2; if(ox0==null){ box(a1-a0,SHH,.4,wallM,sx((a0+a1)/2),SHH/2,z); return; }
@@ -1709,7 +1710,7 @@ const INT_N=12, INT_MIN=[], INT_MAX=[];
   add(-HX+m,-1,-HZ+m,HX-m,HH-.02,HZ-m);
   for(const s of [-1,1]){ const xs=(a,b)=>s>0?[a,b]:[-b,-a];
     { const [a,b]=xs(SHX0+m,SHX1-m); add(a,-1,SHZ0+m,b,SHH-.02,SHZ1-m); }
-    { const [a,b]=xs(GH.x0+m,GH.x1-m); add(a,-1,SHZ1+m,b,GH.H-.02,GH.z1-m); } } }
+    { const [a,b]=xs(HX+.02,GH.x1-m); add(a,-1,SHZ1+m,b,GH.H-.02,GH.z1-.005); } } } /* the 文昌殿／福德祠 run right up to the main hall's wall and to their front wall: roof models moved here are hidden inside it */
 /* 投射燈 on the roofs: every roof is washed in warm light from below, strongest along the eaves and fading toward the ridge, brighter as night falls */
 const ROOF_FLOOD={value:.3};
 function roofClip(mat){ if(!mat||mat.userData.roofClip) return; mat.userData.roofClip=1;
@@ -1767,7 +1768,7 @@ setTimeout(()=>{ Object.assign(CENSER_INFO,{guanyin:["觀世音菩薩","後殿�
   Object.assign(STATION_LABEL,{guanyin:"觀世音菩薩",zhusheng:"註生娘娘",jiutian:"九天玄女",doumu:"斗姥元君",dizang:"地藏王菩薩",wenchang:"文昌帝君",tudi:"土地公"});
   Object.assign(STATION_HINT,{guanyin:"走向觀世音菩薩",zhusheng:"走向註生娘娘",jiutian:"走向九天玄女",doumu:"走向斗姥元君",dizang:"走向地藏王菩薩",wenchang:"走向文昌帝君",tudi:"走向土地公"}); },0);
 { const k=Q.lite; const brickM=(rx,ry)=>new T.MeshStandardMaterial({map:texRep(brickTex,rx,ry),roughness:.8}), inWall=mat("#6a1a10",{roughness:.85}), stoneB=mat("#8f897f",{roughness:.85}),
-    redM=mat("#9c1d13",{roughness:.45}), goldP=mat("#d6a24a",{metalness:.85,roughness:.3}), ceilM=mat("#2b130c",{roughness:.9,side:T.DoubleSide});
+    redM=mat("#9c1d13",{roughness:.45}), goldP=mat("#d6a24a",{metalness:.85,roughness:.3}), ceilM=mat("#5e3220",{roughness:.9,side:T.DoubleSide}); for(const sd of [-1,1]) poolLight("#ffd9a0",1.6,7,sd*7.9,3.4,-42.4); /* the 註生娘娘／九天玄女 corners of the rear hall */
   const floorM=new T.MeshStandardMaterial({map:floorTex,roughness:.3});
   const yardM=new T.MeshStandardMaterial({map:texRep(yardTex,9,4),roughness:.75});
   const plane=(x0,x1,z0,z1,y,m,down)=>{ const f=mesh(new T.PlaneGeometry(x1-x0,Math.abs(z1-z0)),m,(x0+x1)/2,y,(z0+z1)/2); f.rotation.x=down?Math.PI/2:-Math.PI/2; if(!down){ f.userData.floor=true; f.userData.noMerge=1; } return f; };
@@ -4458,7 +4459,7 @@ function fwProgram(seed){ const r=fwRng(seed), ev=[]; const pick=a=>a[(r()*a.len
   ev.sort((a,b)=>a.t-b.t); return ev; }
 function fwEndMsg(){ const el=$("#fwEnd"); el.classList.remove("on"); el.hidden=false; void el.offsetWidth; el.classList.add("on"); el.onanimationend=()=>{ el.hidden=true; el.classList.remove("on"); if(fwFinale){ fwFinale=false; setFwView(false); } renderSparkBtn(); }; renderSparkBtn(); }
 let myFwShow=null;
-const hemiLight=scene.children.find(o=>o.isHemisphereLight); const fogDusk=scene.fog.color.clone();
+const hemiLight=scene.children.find(o=>o.isHemisphereLight), ambLight=scene.children.find(o=>o.isAmbientLight); const fogDusk=scene.fog.color.clone();
 function todPhase(){ const p=(Date.now()/1000%1200)/1200; // 0–.3 dusk … .3→.45 nightfall … .45–.85 night … .85→1 back to dusk
   const sm=(a,b,v)=>{ const t=Math.max(0,Math.min(1,(v-a)/(b-a))); return t*t*(3-2*t); };
   const night=sm(.3,.45,p)-sm(.85,1,p); return {night,day:0}; } // dusk ↔ night only
@@ -4466,7 +4467,9 @@ const _dn={night:0,day:0};
 function dayNight(dt){ const want=FW.on?{night:0,day:0}:todPhase(); const k=_dn.init?Math.min(1,dt*.5):1; _dn.init=1; _dn.night+=(want.night-_dn.night)*k; _dn.day+=(want.day-_dn.day)*k;
   skyMat.uniforms.night.value=_dn.night; skyMat.uniforms.day.value=_dn.day;
   sunLight.intensity=.75*(1-_dn.night)+.5*_dn.day; sunLight.color.setRGB(1,.6+.38*_dn.day,.32+.6*_dn.day);
-  if(hemiLight){ hemiLight.intensity=.32+.5*_dn.day-.14*_dn.night; hemiLight.color.setRGB(.48+.4*_dn.day-.2*_dn.night,.33+.5*_dn.day-.1*_dn.night,.27+.6*_dn.day+.1*_dn.night); }
+  /* inside the 偏殿, the rear hall and the side halls the fill light comes up (no lights added, so nothing recompiles) */
+  { let r="O"; try{ r=camRoom(meAv.pos.x,meAv.pos.y); }catch(e){} const w2=r!=="M"&&r!=="O"?1:0; _dn.ind=(_dn.ind||0)+(w2-(_dn.ind||0))*Math.min(1,dt*1.5); if(ambLight) ambLight.intensity=.18+.5*_dn.ind; }
+  if(hemiLight){ hemiLight.intensity=.32+.5*_dn.day-.14*_dn.night+.7*(_dn.ind||0); hemiLight.color.setRGB(.48+.4*_dn.day-.2*_dn.night,.33+.5*_dn.day-.1*_dn.night,.27+.6*_dn.day+.1*_dn.night); }
   scene.fog.color.copy(fogDusk).lerp(_c1.setRGB(.55,.66,.75),_dn.day).lerp(_c1.setRGB(.03,.03,.07),_dn.night);
   lanternMat.emissiveIntensity=.55+.3*_dn.night-.25*_dn.day; try{ POOL_M.opacity=.05+.17*_dn.night-.04*_dn.day; }catch(e){} ROOF_FLOOD.value=.3+.55*_dn.night; HALL_GLOW.forEach(g=>{ g.material.opacity=g.userData.op*(.45+.55*_dn.night); }); }
 const _c1=new T.Color();
@@ -5262,7 +5265,7 @@ function buildBase(obj){ const r=obj.rotation.y; obj.rotation.y=0; obj.updateMat
   return [sz.x/Math.abs(obj.scale.x||1), sz.y/Math.abs(obj.scale.y||1), sz.z/Math.abs(obj.scale.z||1)]; }
 function regEdit(id,label,obj,add){ if(!obj) return; const it={id,label,obj,add:!!add,base:buildBase(obj),def:{p:obj.position.toArray(),r:obj.rotation.y,s:obj.scale.toArray()}};
   obj.traverse(o=>{ o.userData.buildId=id; }); BUILD.items.set(id,it); if(!add) buildApplyOne(it); if(BUILD.on) buildPanel(); return it; }
-function buildApplyOne(it){ let m=BUILD.layout.mods&&BUILD.layout.mods[it.id]; if((it.id==="g-G-L-3"||it.id==="g-G-R-3")&&m&&m.s&&m.s[1]>1.1){ const k=1.1/m.s[1]; m={...m,s:m.s.map(v=>v*k)}; } /* 文昌帝君／福德正神 shrines: no taller than the hall */ if(it.id==="roof-houdian"&&m&&m.p&&m.s&&m.p[2]>-39.5){ const D=RH.z0-RH.z1; m={...m,p:[m.p[0],m.p[1],m.p[2]-RH_EXT/2],s:[m.s[0],m.s[1],m.s[2]*(D+3.6)/(D-RH_EXT+3.6)]}; } const d=m||it.def; it.obj.position.fromArray(d.p||it.def.p); it.obj.rotation.y=d.r??it.def.r; it.obj.scale.fromArray(d.s||it.def.s); it.obj.visible=!(m&&m.hide); }
+function buildApplyOne(it){ let m=BUILD.layout.mods&&BUILD.layout.mods[it.id]; if(/^g-G-[LR]-[13]$/.test(it.id)&&m&&m.s&&m.s[1]>1.1){ const k=1.1/m.s[1]; m={...m,s:m.s.map(v=>v*k)}; } /* 文昌帝君／福德正神 shrines: no taller than the hall */ if(it.id==="roof-houdian"&&m&&m.p&&m.s&&m.p[2]>-39.5){ const D=RH.z0-RH.z1; m={...m,p:[m.p[0],m.p[1],m.p[2]-RH_EXT/2],s:[m.s[0],m.s[1],m.s[2]*(D+3.6)/(D-RH_EXT+3.6)]}; } const d=m||it.def; it.obj.position.fromArray(d.p||it.def.p); it.obj.rotation.y=d.r??it.def.r; it.obj.scale.fromArray(d.s||it.def.s); it.obj.visible=!(m&&m.hide); }
 function buildMakeAdd(a){ const g=new T.Group(); g.userData.noMerge=1; scene.add(g); g.position.fromArray(a.p); g.rotation.y=a.r||0;
   const fin=w=>{ g.add(w); g.scale.set(1,1,1); const it=regEdit(a.id,BUILD_NAME[a.m]||a.m,g,true); it.m=a.m; if(a.pair){ it.pair=a.pair; const P=BUILD.items.get(a.pair); if(P) P.pair=a.id; } g.scale.fromArray(a.s||[1,1,1]); };
   if(a.m==="decor:lantern") loadShared("ylantern",m=>fin(litLantern(m,1)));
@@ -5275,15 +5278,16 @@ function buildApplyAll(){ BUILD.items.forEach(it=>{ if(!it.add) buildApplyOne(it
   [...BUILD.items.values()].filter(it=>it.add).forEach(it=>{ const a=want.get(it.id); if(!a){ scene.remove(it.obj); BUILD.items.delete(it.id); return; } it.obj.position.fromArray(a.p); it.obj.rotation.y=a.r||0; it.obj.scale.fromArray(a.s); want.delete(it.id); });
   want.forEach(a=>buildMakeAdd(a)); }
 /* the chair's own building-mode layout (11/04), written into the game: used whenever nothing newer has been saved */
-const BUILD_DEFAULT={"mods":{"g-S-R-1":{"p":[22.05,0,-6.8],"r":-1.5708,"s":[1.3,1.3,1.3],"hide":false},"g-S-L-1":{"p":[-22.05,0,-6.2],"r":1.5708,"s":[1.3,1.3,1.3],"hide":false},"g-M-27":{"p":[8.37,0,-13.85],"r":0,"s":[1.3,1.3,1.3],"hide":false},"g-M-28":{"p":[-8.37,0,-13.85],"r":0,"s":[1.3,1.3,1.3],"hide":false},"g-G-L-3":{"p":[-22.05,0,4.3],"r":1.5708,"s":[1.3,1.3,1.3],"hide":false},"g-G-R-3":{"p":[22.05,0,5],"r":-1.5708,"s":[1.3,1.3,1.3],"hide":false},"rdec1":{"p":[-3,0,-30.4],"r":0,"s":[-0.72,1.069,0.72],"hide":false},"rdec5":{"p":[-3.7,4.6,-30.5],"r":0,"s":[1,1,1],"hide":true},"rdec6":{"p":[-7.2,4.6,-30.5],"r":0,"s":[1,1,1],"hide":true},"rdec7":{"p":[-16.7,3.3,-30.75],"r":0,"s":[1,1,1],"hide":true},"rdec10":{"p":[3,0,-30.4],"r":0,"s":[0.72,1.069,0.72],"hide":false},"rdec14":{"p":[3.7,4.6,-30.5],"r":0,"s":[1,1,1],"hide":true},"rdec15":{"p":[7.2,4.6,-30.5],"r":0,"s":[1,1,1],"hide":true},"rdec16":{"p":[16.7,3.3,-30.75],"r":0,"s":[1,1,1],"hide":true},"roof-link-L":{"p":[-17.775,4.7,1.15],"r":0,"s":[12.3298,5.2766,12.7732],"hide":true},"roof-tudi":{"p":[-18.275,4.2,7],"r":0,"s":[13.353,11.9738,18.653],"hide":true},"roof-link-R":{"p":[17.775,4.7,1.15],"r":0,"s":[12.3298,5.2766,12.7732],"hide":true},"roof-wenchang":{"p":[17.775,3.7,7],"r":0,"s":[13.353,11.9738,18.653],"hide":true},"roof-houdian":{"p":[0,6.65,-37.7],"r":0,"s":[27.7291,16.6416,34.6702],"hide":false},"roof-porch":{"p":[0,6.25,17.7],"r":0,"s":[31.3544,14.8469,17.4058],"hide":false}},"adds":[{"id":"addmw0vxagz5","m":"decor:panel2","p":[10.275,2.5,15.278],"r":-18.8154,"s":[2,2.5,2],"pair":"addmw0vxagz5m"},{"id":"addmw0vxagz5m","m":"decor:panel2","p":[-10.275,2.5,15.278],"r":18.8154,"s":[2,2.5,2],"pair":"addmw0vxagz5"},{"id":"addmw0w03q86","m":"decor:panel2","p":[8.275,2.5,15.278],"r":-18.8154,"s":[1.01,2.5,3.2281]},{"id":"addmw0w20l57","m":"decor:panel2","p":[-8.225,2.5,15.278],"r":-18.8154,"s":[1.01,2.5,3.2281]},{"id":"addmw0w47et8","m":"decor:lantern","p":[-3.422,4,17.876],"r":0.177,"s":[3.2237,2.5,3.1964]},{"id":"addmw0w5bgx9","m":"decor:lantern","p":[3.578,4,17.376],"r":0.177,"s":[3.2237,2.5,3.1964]},{"id":"addmw0uyaom0","m":"roof3","p":[-0.006,3.5,53.677],"r":9.451,"s":[10.7706,7,9.5348]},{"id":"addmw0wcygq1","m":"roof3","p":[17.75,3.5,-0.687],"r":-23.5538,"s":[12.2771,10,14.5162]},{"id":"addmw0wgv7n2","m":"roof3","p":[-17.75,3.5,-0.687],"r":-23.5538,"s":[12.2771,10,14.5162]},{"id":"addmw0wn2j25","m":"roof3","p":[-0.25,8,-7.487],"r":-25.1246,"s":[16.0433,14.2,18.9441]},{"id":"addmw0w98y30","m":"roof1","p":[-0.27,8.5,8.117],"r":-25.097,"s":[15.8315,10.5,14.9894]},{"id":"addmw0wixtq3","m":"roof2","p":[-17.608,5,10.182],"r":-6.3039,"s":[6,5,4]},{"id":"addmw0wknts4","m":"roof2","p":[17.892,5,10.182],"r":-6.3039,"s":[6,5,4]}]};
+const BUILD_DEFAULT={"mods":{"g-S-R-1":{"p":[22.05,0,-6.8],"r":-1.5708,"s":[1.3,1.3,1.3],"hide":false},"g-S-L-1":{"p":[-22.05,0,-6.2],"r":1.5708,"s":[1.3,1.3,1.3],"hide":false},"g-M-27":{"p":[8.37,0,-13.85],"r":0,"s":[1.3,1.3,1.3],"hide":false},"g-M-28":{"p":[-8.37,0,-13.85],"r":0,"s":[1.3,1.3,1.3],"hide":false},"g-G-R-1":{"p":[22.05,0,4.5],"r":-1.5708,"s":[1.3,1.3,1.3],"hide":false},"roof-link-L":{"p":[-17.775,4.7,1.15],"r":0,"s":[12.3298,5.2766,12.7732],"hide":true},"roof-tudi":{"p":[-18.275,4.2,7],"r":0,"s":[13.353,11.9738,18.653],"hide":true},"roof-link-R":{"p":[17.775,4.7,1.15],"r":0,"s":[12.3298,5.2766,12.7732],"hide":true},"roof-wenchang":{"p":[17.775,3.7,7],"r":0,"s":[13.353,11.9738,18.653],"hide":true},"roof-houdian":{"p":[0,6.65,-39.95],"r":0,"s":[27.7291,16.6416,44.6712],"hide":false},"roof-porch":{"p":[0,6.25,17.7],"r":0,"s":[31.3544,14.8469,17.4058],"hide":false},"rdec1":{"p":[-3,0,-30.4],"r":0,"s":[-0.72,1.069,0.72],"hide":false},"rdec5":{"p":[-3.7,4.6,-30.5],"r":0,"s":[1,1,1],"hide":true},"rdec6":{"p":[-7.2,4.6,-30.5],"r":0,"s":[1,1,1],"hide":true},"rdec7":{"p":[-16.7,3.3,-30.75],"r":0,"s":[1,1,1],"hide":true},"rdec10":{"p":[3,0,-30.4],"r":0,"s":[0.72,1.069,0.72],"hide":false},"rdec14":{"p":[3.7,4.6,-30.5],"r":0,"s":[1,1,1],"hide":true},"rdec15":{"p":[7.2,4.6,-30.5],"r":0,"s":[1,1,1],"hide":true},"rdec16":{"p":[16.7,3.3,-30.75],"r":0,"s":[1,1,1],"hide":true},"g-G-L-1":{"p":[-22.05,0,4.5],"r":1.5708,"s":[1.3,1.3,1.3],"hide":false}},"adds":[{"id":"addmw0w98y30","m":"roof1","p":[-0.27,8.5,8.117],"r":-25.097,"s":[15.8315,10.5,14.9894]},{"id":"addmw0wixtq3","m":"roof2","p":[-17.608,5,10.182],"r":-6.3039,"s":[6,5,4]},{"id":"addmw0wknts4","m":"roof2","p":[17.892,5,10.182],"r":-6.3039,"s":[6,5,4]},{"id":"addmw0vxagz5","m":"decor:panel2","p":[10.275,2.5,15.278],"r":-18.8154,"s":[2,2.5,2],"pair":"addmw0vxagz5m"},{"id":"addmw0vxagz5m","m":"decor:panel2","p":[-10.275,2.5,15.278],"r":18.8154,"s":[2,2.5,2],"pair":"addmw0vxagz5"},{"id":"addmw0w03q86","m":"decor:panel2","p":[8.275,2.5,15.278],"r":-18.8154,"s":[1.01,2.5,3.2281]},{"id":"addmw0w20l57","m":"decor:panel2","p":[-8.225,2.5,15.278],"r":-18.8154,"s":[1.01,2.5,3.2281]},{"id":"addmw0w47et8","m":"decor:lantern","p":[-3.422,4,17.876],"r":0.177,"s":[3.2237,2.5,3.1964]},{"id":"addmw0w5bgx9","m":"decor:lantern","p":[3.578,4,17.376],"r":0.177,"s":[3.2237,2.5,3.1964]},{"id":"addmw0uyaom0","m":"roof3","p":[-0.006,3.5,53.677],"r":9.451,"s":[10.7706,7,9.5348]},{"id":"addmw0wcygq1","m":"roof3","p":[17.75,3.5,-0.687],"r":-23.5538,"s":[12.2771,10,14.5162]},{"id":"addmw0wgv7n2","m":"roof3","p":[-17.75,3.5,-0.687],"r":-23.5538,"s":[12.2771,10,14.5162]},{"id":"addmw0wn2j25","m":"roof3","p":[-0.25,8,-7.487],"r":-25.1246,"s":[16.0433,14.2,18.9441]},{"id":"addmw39v9740","m":"huashu","p":[21.179,0,1.955],"r":5.1807,"s":[2.561,2.8,1.8],"pair":"addmw39v9740m"},{"id":"addmw39yj911","m":"huashu","p":[21.179,0,6.955],"r":4.6571,"s":[2.561,2.8,1.8],"pair":"addmw39yj911m"},{"id":"addmw39v9740m","m":"huashu","p":[-21.179,0,1.955],"r":-5.1807,"s":[2.561,2.8,1.8],"pair":"addmw39v9740"},{"id":"addmw39yj911m","m":"huashu","p":[-21.179,0,6.955],"r":-4.6571,"s":[2.561,2.8,1.8],"pair":"addmw39yj911"}],"v":2};
 async function buildFetch(){ let L=null; try{ if(USE_CF){ const r=await fetch("/layout",{cache:"no-store"}); const j=await r.json(); L=j&&j.layout; } else L=load("mz.layout",null); }catch(e){}
-  if(!L||typeof L!=="object"||(!Object.keys(L.mods||{}).length&&!(L.adds||[]).length)) L=JSON.parse(JSON.stringify(BUILD_DEFAULT));
-  BUILD.layout=L&&typeof L==="object"?{mods:L.mods||{},adds:L.adds||[]}:{mods:{},adds:[]}; buildApplyAll(); if(!BUILD.on&&Object.keys(BUILD.layout.mods).length) remerge(); }
+  /* a saved layout older than the built-in one (v) is replaced by it, so a layout made on the test page reaches the live site with the code */
+  if(!L||typeof L!=="object"||(!Object.keys(L.mods||{}).length&&!(L.adds||[]).length)||(L.v||0)<(BUILD_DEFAULT.v||0)) L=JSON.parse(JSON.stringify(BUILD_DEFAULT));
+  BUILD.layout=L&&typeof L==="object"?{v:L.v||0,mods:L.mods||{},adds:L.adds||[]}:{v:0,mods:{},adds:[]}; buildApplyAll(); if(!BUILD.on&&Object.keys(BUILD.layout.mods).length) remerge(); }
 function buildCollect(){ const mods={}, adds=[]; BUILD.items.forEach(it=>{ const o=it.obj, p=o.position.toArray().map(v=>+v.toFixed(3)), s=o.scale.toArray().map(v=>+v.toFixed(4)), r=+o.rotation.y.toFixed(4);
     if(it.add){ adds.push(it.pair?{id:it.id,m:it.m,p,r,s,pair:it.pair}:{id:it.id,m:it.m,p,r,s}); return; }
     if(!it.touched&&!(BUILD.layout.mods&&BUILD.layout.mods[it.id])) return; // things that move by themselves (dancing cats, the stage) are never saved unless you moved them
     const d=it.def, same=!o.visible?false:p.every((v,i)=>Math.abs(v-d.p[i])<.001)&&Math.abs(r-d.r)<.0005&&s.every((v,i)=>Math.abs(v-d.s[i])<.0001); if(!same) mods[it.id]={p,r,s,hide:!o.visible}; });
-  return {mods,adds}; }
+  return {v:BUILD_DEFAULT.v||0,mods,adds}; }
 // ---- the panel ----
 function buildSel(id){ BUILD.sel=id&&BUILD.items.has(id)?id:null; if(BUILD.helper){ scene.remove(BUILD.helper); BUILD.helper=null; }
   const it=BUILD.items.get(BUILD.sel); if(it){ BUILD.helper=new T.BoxHelper(it.obj,0xffd040); BUILD.helper.material.depthTest=false; BUILD.helper.renderOrder=9; scene.add(BUILD.helper); } buildPanel(); }
@@ -5670,18 +5674,19 @@ function gameReward(g,accId){ bag.gd=bag.gd||{}; const a=accState();
   if(bag.gd[g]===twDay()) return {kind:"none",text:"今天這個遊戲的扭蛋幣已經領過了，明天再來"};
   bag.gd[g]=twDay(); bag.gacha=(bag.gacha||0)+1; saveBag(); markDirty(); return {kind:"gacha",text:"獲得扭蛋幣 1 枚（扭蛋機尚未開放，先存著）"}; }
 const fmtMs=ms=>(ms/1000).toFixed(2)+" 秒";
-async function lbSubmit(g,ms,sc){ const name=(me.name||(me.no?`香客${me.no}`:"香客")).slice(0,10), id=load("mz.id","")||"anon";
-  try{ const r=await fetch("/lb",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({g,t:Math.round(ms),s:sc,name,id})}); const j=await r.json(); if(Array.isArray(j.top)) return j.top.map(e=>({...e,me:e.id===id})); }catch(e){}
+async function lbSubmit(g,ms,sc,avg){ const name=(me.name||(me.no?`香客${me.no}`:"香客")).slice(0,10), id=load("mz.id","")||"anon";
+  try{ const r=await fetch("/lb",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({g,t:Math.round(ms),s:sc,a:avg,name,id})}); const j=await r.json(); if(Array.isArray(j.top)) return j.top.map(e=>({...e,me:e.id===id})); }catch(e){}
   return []; }
 async function lbGet(g){ try{ const r=await fetch("/lb?g="+encodeURIComponent(g),{cache:"no-store"}); const j=await r.json(); const id=load("mz.id","")||"anon"; if(Array.isArray(j.top)) return j.top.map(e=>({...e,me:e.id===id})); }catch(e){} return []; }
 function lbHTML(list){ if(!list.length) return `<p class="note">排行榜還沒有人，你可以是第一名！</p>`;
-  return `<ol class="lb">${list.slice(0,10).map((r,i)=>`<li${r.me?' class="me"':""}><span class="rk">${i+1}</span><span class="nm">${esc(r.name||"香客")}</span><span class="tm">${r.s!=null?`${r.s} 分 <small style="opacity:.6">${fmtMs(r.t)}</small>`:fmtMs(r.t)}</span></li>`).join("")}</ol>`; }
+  return `<ol class="lb">${list.slice(0,10).map((r,i)=>`<li${r.me?' class="me"':""}><span class="rk">${i+1}</span><span class="nm">${esc(r.name||"香客")}</span><span class="tm">${r.s!=null?`${r.s} <small style="opacity:.6">平均${r.a!=null?r.a:"?"}・${fmtMs(r.t)}</small>`:fmtMs(r.t)}</span></li>`).join("")}</ol>`; }
 /* call when a game is won: ms = time taken; accId = that god's accessory (or null when the game gives something else) */
-/* sc (文昌 only): {s: average score, list: each character's score}; that board ranks by highest average, then by time */
+/* sc (文昌 only): {s: total = average×10 + time bonus (2 per second left of the 120), a: average, tb: time bonus, list: each character's score};
+   that board ranks by the total, so neat writing counts most and speed breaks the tie-ish cases */
 async function godGameWin(g,ms,accId,extra,sc){ const rw=extra||gameReward(g,accId); sfx.coin&&sfx.coin();
-  openSheet("godGame",GOD_GAMES[g]||"小遊戲",`<div class="gg-done"><div class="gg-time">${sc?`平均 ${sc.s} 分`:fmtMs(ms)}</div>${sc?`<p class="note">三個字：${sc.list.join("、")} 分・用時 ${fmtMs(ms)}</p>`:""}<p class="lead">${rw.kind==="acc"?"🎁 ":rw.kind==="gacha"?"🎟️ ":""}${esc(rw.text)}</p>
-    <div class="group"><span class="group-label">🏆 ${sc?"平均分數排行榜":"最快排行榜"}</span><div id="ggBoard"><p class="note">讀取中…</p></div></div></div>`);
-  const list=await lbSubmit(g,ms,sc?sc.s:undefined); const el=$("#ggBoard"); if(el) el.innerHTML=lbHTML(list); }
+  openSheet("godGame",GOD_GAMES[g]||"小遊戲",`<div class="gg-done"><div class="gg-time">${sc?`總分 ${sc.s}`:fmtMs(ms)}</div>${sc?`<p class="note">平均 ${sc.a} 分 ×10 ＋ 時間加分 ${sc.tb}（用時 ${fmtMs(ms)}）<br>三個字：${sc.list.join("、")} 分</p>`:""}<p class="lead">${rw.kind==="acc"?"🎁 ":rw.kind==="gacha"?"🎟️ ":""}${esc(rw.text)}</p>
+    <div class="group"><span class="group-label">🏆 ${sc?"總分排行榜（分數＋時間）":"最快排行榜"}</span><div id="ggBoard"><p class="note">讀取中…</p></div></div></div>`);
+  const list=await lbSubmit(g,ms,sc?sc.s:undefined,sc?sc.a:undefined); const el=$("#ggBoard"); if(el) el.innerHTML=lbHTML(list); }
 const GOD_PLAY={doumu:"⭐ 眾星歸位（連過三關點亮星圖）",wenchang:"🖌️ 寫字（照紅字描 3 個字）",tudi:"⛏️ 尋寶（找到發光的寶藏挖出來）",zhusheng:"🍼 哄寶寶睡覺",jiutian:"☯️ 八卦迷宮（傾斜手機滾彈珠）",guanyin:"💧 接福水（轉動木水道）",dizang:"🧩 記憶碎片（幫小幽靈拼回記憶）"};
 const GOD_START={}; HANDLERS.godPlay=g=>{ closeSheet(); if(GOD_START[g]) GOD_START[g](); else toast("這個遊戲還在準備中"); };
 /* ================= 土地公・尋寶: a beam of light marks treasure somewhere in the grounds; walk there, tap it, dig it up ================= */
@@ -5894,23 +5899,49 @@ function playFushui(){ const L=gameLayer("觀音菩薩・接福水","點木水�
   const port=L.H()>L.W(), C=port?6:8, R=port?8:6, OP=[[0,-1],[1,0],[0,1],[-1,0]]; /* directions: 0 up 1 right 2 down 3 left */
   const BASE={S:[1,3],E:[1,2],T:[1,2,3],X:[0,1,2,3],N:[]};
   const IM={}; for(const n of ["bg","vase","hands"]){ const im=new Image(); im.src=`gy-${n}.webp`; IM[n]=im; } const ok=n=>IM[n].complete&&IM[n].naturalWidth>0;
-  const cells=[]; for(let j=0;j<R;j++){ cells.push([]); for(let i=0;i<C;i++) cells[j].push({k:"N",rt:0,a:0}); }
+  let cells=[], path=null; const S0=[C-1,0], E0=[C-1,R-1], minLen=Math.round(C*R*.3);
   // a long winding path from the vase (enters the top-right cell from above) to the hands (leaves the bottom-right cell downwards)
-  const S0=[C-1,0], E0=[C-1,R-1], minLen=Math.round(C*R*.42); let path=null;
-  for(let tries=0;tries<300&&!path;tries++){ const seen=new Set([S0+""]), P=[S0]; let steps=0;
-    const go=()=>{ if(++steps>4000) return false; const [i,j]=P[P.length-1]; if(i===E0[0]&&j===E0[1]) return P.length>=minLen; const ds=[0,1,2,3].sort(()=>Math.random()-.5);
-      for(const d of ds){ const ni=i+OP[d][0], nj=j+OP[d][1]; if(ni<0||nj<0||ni>=C||nj>=R||seen.has(ni+","+nj)) continue; seen.add(ni+","+nj); P.push([ni,nj]); if(go()) return true; P.pop(); seen.delete(ni+","+nj); } return false; };
-    if(go()) path=P.slice(); }
+  /* a path that runs straight right beside itself can't be scrambled without the two runs touching (a straight piece has only two turns),
+     so such paths are thrown away */
+  const sideOK=P=>{ const ix=new Map(P.map((p,n)=>[p+"",n])), str=n=>{ const a=n?P[n-1]:[P[0][0],P[0][1]-1], b=n<P.length-1?P[n+1]:[P[n][0],P[n][1]+1]; return a[0]===b[0]?"v":a[1]===b[1]?"h":""; };
+    for(let n=0;n<P.length;n++){ const k=str(n); if(!k) continue; for(const [dx,dy] of k==="h"?[[0,1]]:[[1,0]]){ const m=ix.get([P[n][0]+dx,P[n][1]+dy]+""); if(m!=null&&Math.abs(m-n)>1&&str(m)===k) return false; } } return true; };
   const dirTo=(a,b)=>OP.findIndex(([dx,dy])=>a[0]+dx===b[0]&&a[1]+dy===b[1]);
   const fit=need=>{ need=[...need].sort().join(); for(const k of ["S","E","T","X"]) for(let r=0;r<4;r++) if(BASE[k].map(d=>(d+r)%4).sort().join()===need) return [k,r]; };
-  path.forEach((c,n)=>{ const din=n?dirTo(c,path[n-1]):0, dout=n<path.length-1?dirTo(c,path[n+1]):2; const need=new Set([din,dout]);
-    if(Math.random()<.18){ const free=[0,1,2,3].filter(d=>!need.has(d)); need.add(free[(Math.random()*free.length)|0]); } const [k]=fit(need); Object.assign(cells[c[1]][c[0]],{k,sol:1}); });
-  const pool="SSSEEEETTXN"; for(let j=0;j<R;j++) for(let i=0;i<C;i++){ const c=cells[j][i]; if(!c.sol) c.k=pool[(Math.random()*pool.length)|0]; c.rt=(Math.random()*4)|0; c.a=c.rt*Math.PI/2; }
+  /* scramble: every path tile starts turned wrong, the path needs at least 10 taps in all, and no two tiles anywhere start joined
+     (so no water flows at the start and there is nothing half-done to begin from) */
+  const pool="SSSEEEETTN", fitsPath=(c,r)=>{ const o=BASE[c.k].map(d=>(d+r)%4); return o.includes(c.din)&&o.includes(c.dout); };
+  const tapsFor=c=>{ for(let n=0;n<4;n++) if(fitsPath(c,(c.rt+n)%4)) return n; return 0; };
+  const joined=()=>{ const out=[]; for(let j=0;j<R;j++) for(let i=0;i<C;i++){ const c=cells[j][i]; for(const d of [1,2]){ const ni=i+OP[d][0], nj=j+OP[d][1]; if(ni>=C||nj>=R) continue; const n2=cells[nj][ni];
+      if(BASE[c.k].map(q=>(q+c.rt)%4).includes(d)&&BASE[n2.k].map(q=>(q+n2.rt)%4).includes((d+2)%4)) out.push([c,n2]); } } return out; };
+  /* min-conflicts: a "conflict" is two tiles whose channels meet, or the first tile already taking water from the vase / the last one already
+     pouring into the hands; each step turns one tile in a conflict to its least-conflicting allowed turn (path tiles never to a right turn) */
+  const opn=(c,r)=>BASE[c.k].map(q=>(q+r)%4);
+  const conf=(i,j,r)=>{ const c=cells[j][i], o=opn(c,r); let n=0; for(const d of o){ const ni=i+OP[d][0], nj=j+OP[d][1]; if(ni<0||nj<0||ni>=C||nj>=R){ if((i===S0[0]&&j===S0[1]&&d===0)||(i===E0[0]&&j===E0[1]&&d===2)) n++; continue; } const n2=cells[nj][ni]; if(opn(n2,n2.rt).includes((d+2)%4)) n++; } return n; };
+  const allowed=c=>[0,1,2,3].filter(r=>!c.sol||!fitsPath(c,r));
+  const T0g=performance.now();
+  for(let att=0;att<30;att++){ /* whole new board until one scrambles with nothing touching (usually a few tries, well under a second) */
+    cells=[]; for(let j=0;j<R;j++){ cells.push([]); for(let i=0;i<C;i++) cells[j].push({k:"N",rt:0,a:0}); }
+    path=null; for(let tries=0;tries<300&&!path;tries++){ const seen=new Set([S0+""]), P=[S0]; let steps=0;
+      const go=()=>{ if(++steps>4000) return false; const [i,j]=P[P.length-1]; if(i===E0[0]&&j===E0[1]) return P.length>=minLen; const ds=[0,1,2,3].sort(()=>Math.random()-.5);
+        for(const d of ds){ const ni=i+OP[d][0], nj=j+OP[d][1]; if(ni<0||nj<0||ni>=C||nj>=R||seen.has(ni+","+nj)) continue; seen.add(ni+","+nj); P.push([ni,nj]); if(go()) return true; P.pop(); seen.delete(ni+","+nj); } return false; };
+      if(go()&&sideOK(P)) path=P.slice(); }
+    path.forEach((c,n)=>{ const din=n?dirTo(c,path[n-1]):0, dout=n<path.length-1?dirTo(c,path[n+1]):2; const need=new Set([din,dout]);
+      if(Math.random()<.18){ const free=[0,1,2,3].filter(d=>!need.has(d)); need.add(free[(Math.random()*free.length)|0]); } const [k]=fit(need); Object.assign(cells[c[1]][c[0]],{k,sol:1,din,dout}); });
+    for(let j=0;j<R;j++) for(let i=0;i<C;i++){ const c=cells[j][i]; if(!c.sol) c.k=pool[(Math.random()*pool.length)|0]; }
+    for(let tries=0;tries<2;tries++){
+      for(let j=0;j<R;j++) for(let i=0;i<C;i++){ const c=cells[j][i], rs=allowed(c); c.rt=rs[(Math.random()*rs.length)|0]; }
+      for(let step=0;step<1500;step++){ const bad=[]; for(let j=0;j<R;j++) for(let i=0;i<C;i++) if(conf(i,j,cells[j][i].rt)) bad.push([i,j]); if(!bad.length) break;
+        const [i,j]=bad[(Math.random()*bad.length)|0], c=cells[j][i]; let best=[], bn=99; for(const r of allowed(c)){ const n=conf(i,j,r); if(n<bn){ bn=n; best=[r]; } else if(n===bn) best.push(r); }
+        if(bn>0&&!c.sol&&Math.random()<.35){ c.k="SEN"[(Math.random()*3)|0]; c.rt=(Math.random()*4)|0; continue; } /* a stuck blank-area tile may become a simpler one */
+        c.rt=Math.random()<.03?allowed(c)[(Math.random()*allowed(c).length)|0]:best[(Math.random()*best.length)|0]; }
+      let sum=0; path.forEach(([i,j])=>sum+=tapsFor(cells[j][i])); if(sum>=10&&sum<=22&&!joined().length) break; }
+    { let sum=0; path.forEach(([i,j])=>sum+=tapsFor(cells[j][i])); if((!joined().length&&sum>=10&&sum<=22)||performance.now()-T0g>900) break; } }
+  for(let j=0;j<R;j++) for(let i=0;i<C;i++){ const c=cells[j][i]; c.a=c.rt*Math.PI/2; }
   const opens=c=>BASE[c.k].map(d=>(d+c.rt)%4);
   let wet=new Set(), won=false, t0=performance.now(), done=false, wonT=0;
   const fill=()=>{ wet=new Set(); won=false; const q=[]; const s=cells[S0[1]][S0[0]]; if(opens(s).includes(0)){ wet.add(S0+""); q.push(S0); }
     while(q.length){ const [i,j]=q.shift(); for(const d of opens(cells[j][i])){ const ni=i+OP[d][0], nj=j+OP[d][1]; if(i===E0[0]&&j===E0[1]&&d===2) won=true; if(ni<0||nj<0||ni>=C||nj>=R) continue; const k2=ni+","+nj; if(wet.has(k2)) continue; if(!opens(cells[nj][ni]).includes((d+2)%4)) continue; wet.add(k2); q.push([ni,nj]); } } };
-  fill(); if(won){ const c=cells[E0[1]][E0[0]]; c.rt++; c.a=c.rt*Math.PI/2; fill(); }
+  fill(); let taps0=0; path.forEach(([i,j])=>taps0+=tapsFor(cells[j][i]));
   // layout: vase above the board's top-right corner, cupped hands under its bottom-right corner
   const G=()=>{ const W=L.W(), H=L.H(), top=118, cs=Math.floor(Math.min((W-28)/C,(H-top-14)/(R+2.4))), bw=cs*C, bh=cs*R, ox=Math.round((W-bw)/2), oy=Math.round(top+cs*1.35+(H-top-14-cs*(R+2.4))/2); return {W,H,cs,ox,oy,bw,bh}; };
   // ---- the tiles are drawn here (not images) so every channel sits exactly in the middle of every edge ----
@@ -5942,7 +5973,7 @@ function playFushui(){ const L=gameLayer("觀音菩薩・接福水","點木水�
   cv.addEventListener("pointerdown",e=>{ if(done) return; const g=G(), i=Math.floor((e.clientX-g.ox)/g.cs), j=Math.floor((e.clientY-g.oy)/g.cs); if(i<0||j<0||i>=C||j>=R) return;
     const c=cells[j][i]; if(c.k==="N"||c.k==="X") return; c.rt++; tone(380+Math.random()*60,.08,.08,"triangle"); fill();
     if(won&&!done){ done=true; wonT=performance.now(); const ms=wonT-t0; healSound(); setTimeout(()=>{ L.close(); godGameWin("guanyin",ms,"bamboo"); },2200); } });
-  window.__gy=()=>({cells:cells.map(r=>r.map(c=>[c.k,c.rt%4,!!c.sol])),path,won,done,C,R}); window.__gyTap=(i,j)=>{ const g=G(); cv.dispatchEvent(new PointerEvent("pointerdown",{clientX:g.ox+(i+.5)*g.cs,clientY:g.oy+(j+.5)*g.cs})); };
+  window.__gy=()=>({cells:cells.map(r=>r.map(c=>[c.k,c.rt%4,!!c.sol])),path,won,done,C,R,taps0,joined:joined().length,jsol:joined().map(([a2,b2])=>[a2,b2].map(c=>{ let pi=-1; for(let j=0;j<R;j++) for(let i=0;i<C;i++) if(cells[j][i]===c) pi=path.findIndex(q=>q[0]===i&&q[1]===j); return c.k+c.rt%4+'/'+c.din+c.dout+'#'+pi; }).join('~')).join(' '),wet:wet.size}); window.__gyTap=(i,j)=>{ const g=G(); cv.dispatchEvent(new PointerEvent("pointerdown",{clientX:g.ox+(i+.5)*g.cs,clientY:g.oy+(j+.5)*g.cs})); };
   window.__gySolve=()=>{ path.forEach(([i,j],n)=>{ const c=cells[j][i], din=n?dirTo([i,j],path[n-1]):0, dout=n<path.length-1?dirTo([i,j],path[n+1]):2; for(let r=0;r<4;r++){ const o=BASE[c.k].map(d=>(d+r)%4); if(o.includes(din)&&o.includes(dout)){ c.rt=r; c.a=r*Math.PI/2; break; } } }); fill(); };
   const drops=[]; let glints=[], vdrops=[];
   const STREAM=[[548,212,30],[585,228,36],[620,252,44],[648,280,54],[668,312,62],[684,350,68]]; /* centre line and half-width of the stream in the vase picture */
@@ -6051,7 +6082,7 @@ const WB_TEX=(()=>{ const c={}; return k=>c[k]||(c[k]=(()=>{ const w=k.length>1?
 const WC_POOL="福文昌學天中心光平安喜春明吉永正和金玉山水月日火木土生年好愛家神佛書筆言仁義禮智信德善美興旺財壽樂";
 /* how many strokes each character takes when written by hand (礻 written as 4) — the character is only scored once this many strokes are down */
 const WC_STROKES={福:13,文:4,昌:8,學:16,天:4,中:4,心:4,光:6,平:5,安:6,喜:12,春:9,明:8,吉:6,永:5,正:5,和:8,金:8,玉:5,山:3,水:4,月:4,日:4,火:4,木:4,土:3,生:5,年:6,好:6,愛:13,家:10,神:9,佛:7,書:10,筆:12,言:7,仁:4,義:13,禮:17,智:12,信:9,德:15,善:12,美:9,興:16,旺:8,財:10,壽:14,樂:15};
-function playWenchang(){ const L=gameLayer("文昌帝君・寫字","照紅字一筆一筆寫，筆畫寫滿才打分數（寫在紅字裡越多分數越高），排行看三個字的平均分"); const {x,cv}=L, LIMIT=120;
+function playWenchang(){ const L=gameLayer("文昌帝君・寫字","照紅字一筆一筆寫，筆畫寫滿才打分數；排行看總分＝平均分×10＋剩餘秒數×2"); const {x,cv}=L, LIMIT=120;
   const pool=[...WC_POOL], chars=[]; while(chars.length<3){ const c=pool.splice((Math.random()*pool.length)|0,1)[0]; chars.push(c); }
   const M=72; let idx=0, glyph=null, gCount=0, ink=document.createElement("canvas"), mk=document.createElement("canvas"); mk.width=mk.height=M; const mx=mk.getContext("2d");
   const big=document.createElement("canvas"), bx=big.getContext("2d"); let strokes=[], cur=null, t0=performance.now(), last=t0, done=false, passT=0, msg="", msgT=0, fail=false;
@@ -6081,7 +6112,7 @@ function playWenchang(){ const L=gameLayer("文昌帝君・寫字","照紅字一
   const check=(force)=>{ const n=nStrokes(), N=need(); if(n<N-(force?1:0)){ if(force){ say(`還沒寫完：寫了 ${n}／${N} 筆`); tone(260,.15,.05,"triangle"); } return null; }
     const r=score(); if(!(r.cov>=.6&&r.part>=.45)){ if(force||!warned){ warned=true; say("還有地方沒寫到，照紅字補上"); tone(260,.15,.05,"triangle"); } return r; }
     { passT=performance.now(); scores.push(r.pts); stampTxt=r.pts+"分"; tone(880,.12,.08,"triangle"); tone(1320,.2,.08,"triangle",.1);
-      setTimeout(()=>{ idx++; if(idx>=chars.length){ done=true; const ms=performance.now()-t0, avg=Math.round(scores.reduce((a2,b2)=>a2+b2,0)/scores.length); healSound(); msg=`寫完了！平均 ${avg} 分`; msgT=performance.now(); setTimeout(()=>{ L.close(); godGameWin("wenchang",ms,"wenbi",null,{s:avg,list:scores}); },1600); } else { passT=0; warned=false; next(); } },1300); }
+      setTimeout(()=>{ idx++; if(idx>=chars.length){ done=true; const ms=performance.now()-t0, avg=Math.round(scores.reduce((a2,b2)=>a2+b2,0)/scores.length); healSound(); msg=`寫完了！平均 ${avg} 分`; msgT=performance.now(); const tb=Math.max(0,Math.round((LIMIT-ms/1000)*2)), tot=avg*10+tb; setTimeout(()=>{ L.close(); godGameWin("wenchang",ms,"wenbi",null,{s:tot,a:avg,tb,list:scores}); },1600); } else { passT=0; warned=false; next(); } },1300); }
     return r; };
   const say=t2=>{ msg=t2; msgT=performance.now(); };
   const local=e=>{ const g=G(), rc=cv.getBoundingClientRect(); return [e.clientX-rc.left-g.ox,e.clientY-rc.top-g.oy]; };
