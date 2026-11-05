@@ -4439,7 +4439,7 @@ const fwStreakMat=new T.ShaderMaterial({uniforms:{uTrail:{value:.22},uAsp:{value
    "void main(){ if(iA<=0.003){ gl_Position=vec4(2.,2.,2.,1.); return; } vec4 h=projectionMatrix*modelViewMatrix*vec4(iPos,1.); vec3 tl=iTr>1.5?(length(iVel)>.02?normalize(iVel)*iTr:vec3(0.)):iVel*uTrail*iTr; vec4 t=projectionMatrix*modelViewMatrix*vec4(iPos-tl,1.); /* iTr>1.5: a fixed long silk thread behind the star, hanging up from it as it drifts down */ if(h.w<.2||t.w<.2){ gl_Position=vec4(2.,2.,2.,1.); return; }"+
    " vec2 A=vec2(uAsp,1.); vec2 hs=h.xy/h.w*A, ts=t.xy/t.w*A; vec2 d=hs-ts; float L=length(d); vec2 dir=L>1e-5?d/L:vec2(0.,1.); vec2 nr=vec2(-dir.y,dir.x); float w=iSz*(.62+.55*max(0.,1.-iTr))/h.w*(iTr>1.5?.75:1.); vL=L/(L+2.*w);"+
    " vec2 p=mix(ts,hs,corner.x)+dir*(corner.x*2.-1.)*w+nr*corner.y*w; gl_Position=vec4(p/A*h.w,h.z,h.w); vC=iCol; vA=iA; vQ=corner; }",
-  fragmentShader:"varying vec3 vC; varying float vA; varying vec2 vQ; varying float vL; void main(){ float along=mix(1.-abs(vQ.x*2.-1.)*.9,pow(vQ.x,1.3),vL); float across=1.-abs(vQ.y); float a=vA*along*across*across; if(a<=.004) discard; float core=smoothstep(.55,1.,across)*smoothstep(.5,1.,mix(1.-abs(vQ.x*2.-1.),vQ.x,vL)); gl_FragColor=vec4(mix(vC*1.75,vec3(1.),core*.42),a); }"});
+  fragmentShader:"varying vec3 vC; varying float vA; varying vec2 vQ; varying float vL; void main(){ float along=mix(1.-abs(vQ.x*2.-1.)*.9,pow(vQ.x,1.3),vL); float across=1.-abs(vQ.y); float a=vA*along*across*across; if(a<=.004) discard; float core=smoothstep(.55,1.,across)*smoothstep(.5,1.,mix(1.-abs(vQ.x*2.-1.),vQ.x,vL)); gl_FragColor=vec4(mix(vC*2.1,vec3(1.),core*.22),a); }"});
 const fwStreak=new T.Mesh(fwStreakGeo,fwStreakMat); fwStreak.frustumCulled=false; fwStreak.userData.noMerge=1; fwStreak.renderOrder=5; scene.add(fwStreak);
 const fwStreakAsp=()=>{ fwStreakMat.uniforms.uAsp.value=window.innerWidth/Math.max(1,window.innerHeight); }; fwStreakAsp(); window.addEventListener("resize",fwStreakAsp);
 window.addEventListener("resize",()=>{ fwMat.uniforms.scale.value=window.innerHeight*.5; });
@@ -4449,7 +4449,7 @@ const _fc1=new T.Color(), _fc2=new T.Color();
 function fwEmit(x,y,z,vx,vy,vz,c1,c2,life,size,drag,grav,flick,split,sk){ const i=FW.head; FW.head=(FW.head+1)%FWN; const j=i*3;
   fwPos[j]=x; fwPos[j+1]=y; fwPos[j+2]=z; fwV[j]=vx; fwV[j+1]=vy; fwV[j+2]=vz; _fc1.set(c1); _fc2.set(c2||c1);
   fwCol[j]=_fc1.r; fwCol[j+1]=_fc1.g; fwCol[j+2]=_fc1.b; fwC2[j]=_fc2.r; fwC2[j+1]=_fc2.g; fwC2[j+2]=_fc2.b;
-  fwTr[i]=FW_TR; size*=FW_TR||FW.on?1.3:1; fwLife[i]=0; fwMax[i]=life*(.8+Math.random()*.4); /* every star burns a little shorter or longer, so a shell fades out softly instead of all at once */ fwSz[i]=fwSz0[i]=size; fwA[i]=1; fwDrag[i]=drag; fwGrav[i]=grav; fwFlick[i]=flick||0; fwSplit[i]=split||0; fwSK[i]=sk||1; }
+  fwTr[i]=FW_TR; size*=FW_TR||FW.on?1.55:1; fwLife[i]=0; fwMax[i]=life*(.8+Math.random()*.4); /* every star burns a little shorter or longer, so a shell fades out softly instead of all at once */ fwSz[i]=fwSz0[i]=size; fwA[i]=1; fwDrag[i]=drag; fwGrav[i]=grav; fwFlick[i]=flick||0; fwSplit[i]=split||0; fwSK[i]=sk||1; }
 function fwRng(seed){ let a=seed>>>0; return ()=>{ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
 // a short punchy "蹦": sine kick with a fast pitch drop plus a muffled noise thud
 function fwThump(dur,vol,f0){ const a=ensureAudio(); if(!a) return; const v=vol*sVol(); if(v<=0) return; const t=a.currentTime;
@@ -4498,7 +4498,7 @@ function fwBurst0(e){ const {x,y,z}=e, r=Math.random; const [c1,c2]=e.c, sp=e.s,
       for(const ex of [-.36,.36]) for(let i=0;i<14;i++){ const t=i/14*Math.PI*2; fwEmit(x,y,z,(ex+Math.cos(t)*.09)*R,(.28+Math.sin(t)*.12)*R,0,"#ffffff",c1,2.4,.6,1.5,.9); }
       for(let i=0;i<30;i++){ const t=Math.PI*(1.15+i/29*.7); fwEmit(x,y,z,Math.cos(t)*.55*R,(Math.sin(t)*.55+.05)*R,0,"#ffe066",c2,2.4,.62,1.5,.9); } break; }
     case "bees": { /* 亂飛: stars that dart about on their own, whistling */ for(let i=0;i<Math.round(70*LOW);i++){ const u=r()*2-1, th=r()*Math.PI*2, q=Math.sqrt(1-u*u); fwEmit(x,y,z,q*Math.cos(th)*sp*.6,u*sp*.6,q*Math.sin(th)*sp*.6,VIVID[(i+e.ci)%VIVID.length],"#ffffff",2.6+r(),.55,.6,.8,0,0,7); } fwSound("whistle",x,y,z); break; }
-    case "kamuro": { /* 銀柳: a dense silver-white crown whose stars hang and fall slowly, each leaving a long glittering tail */ sph((a,b,c,i)=>{ if(i%3) return; fwEmit(x,y,z,a*sp*.75,b*sp*.75+1,c*sp*.75,"#ffffff","#c9d4e6",5.2+r()*1.4,.62,1.9,1.6,.25,0,8); }); break; }
+    case "kamuro": { /* 銀柳: a dense silver-white crown whose stars hang and fall slowly, each leaving a long glittering tail */ sph((a,b,c,i)=>{ if(i%4) return; fwEmit(x,y,z,a*sp*.75,b*sp*.75+1,c*sp*.75,"#ffffff","#c9d4e6",5.2+r()*1.4,.4,1.9,1.6,.25,0,8); }); break; }
     case "cloud": { /* 七彩祥雲: soft coloured clouds that bloom, drift down and melt, sprinkled with sparkles */ for(let i=0;i<Math.round(90*LOW);i++){ const u=r()*2-1, th=r()*Math.PI*2, q=Math.sqrt(1-u*u), s2=sp*(.25+r()*.5), k=(i+e.ci)%VIVID.length; _fc1.set(VIVID[k]).multiplyScalar(.22); fwEmit(x,y,z,q*Math.cos(th)*s2,u*s2*.6,q*Math.sin(th)*s2,"#"+_fc1.getHexString(),"#"+_fc1.multiplyScalar(.5).getHexString(),4.5+r()*1.5,3.4+r()*1.6,1.8,.5,0); }
       for(let i=0;i<Math.round(120*LOW);i++){ const u=r()*2-1, th=r()*Math.PI*2, q=Math.sqrt(1-u*u), s2=sp*(.3+r()*.6); fwEmit(x,y,z,q*Math.cos(th)*s2,u*s2,q*Math.sin(th)*s2,"#ffffff",VIVID[(i+e.ci)%VIVID.length],3.5+r()*1.5,.35,1.6,1.4,.6,0,5); } break; }
     case "twinkle": sph((a,b,c,i)=>{ if(i%2) return; fwEmit(x,y,z,a*sp,b*sp,c*sp,i%3?"#fffbe6":c1,"#ffffff",4.2+r(),1.05,1.7,.6,0,0,6); }); break; /* 一閃一閃: stars that hang and slowly twinkle */
@@ -4547,6 +4547,8 @@ function fwProgramN(sh,seed){ const r=fwRng(seed^(sh*2654435761)), ev=[]; const 
   const god=(t)=>{ shell(t,"god",{x:0,y:31,z:BZ+16,big:true,fl:2.4,god:FW_GOD_NAMES[(r()*FW_GOD_NAMES.length)|0]}); ev[ev.length-1].pal=(r()*FW_GOD_PAL.length)|0; };
   const huge=(t,o={})=>giant(t,{s:30,n:1100,y:52,...o}); /* 超巨大 */
   const silk=(t,o={})=>shell(t,"silkfall",{y:36,s:10,...o}); /* 拉線飄落 */
+  /* 超巨型扇形: every tube of a big cake fires at once, a tall fan of comets from the roofs */
+  const bigFan=(t,c)=>{ const pal=c||pick(FWC); for(const x of [-10,10]) for(let k=0;k<17;k++){ const ang=(k/16*2-1)*1.25, h=24+r()*5; ev.push({t:t+(x>0?.05:0),kind:"comet",big:1,sx:x,sy:3.9,sz:WALL,ex:x+Math.sin(ang)*h,ey:3.9+Math.cos(ang)*h,ez:WALL+.6,c:[pal[k%2],pal[(k+1)%2]],fl:1.3}); } };
   const T=["peony","chrys","glitter","ring","palm","crossette","dring","rainbow","twotone","tail","strobe","meteor","multi","twinkle","kamuro"];
   if(sh===1){ /* 春櫻 1:30 — soft and low at first, wheels and colour in the middle, a dense finish */
     for(const x of [-10,-3.5,3.5,10]) gerb(.5,x,9,"#ffb3d9");
@@ -4557,14 +4559,14 @@ function fwProgramN(sh,seed){ const r=fwRng(seed^(sh*2654435761)), ev=[]; const 
     wheel(18,0,13,11,{R:2.6}); wheel(30,-11,11,8,{R:1.8}); wheel(30,11,11,8,{R:1.8,dir:-1});
     for(let t=26;t<38;t+=3.2) shell(t,"strobe",{x:(r()-.5)*24,y:22+r()*8}); shell(34.5,"heart",{x:0,y:28}); pair(36.5,"heart",{y:24});
     for(let t=39;t<60;t+=.7+r()*.35){ if(r()<.55) pair(t,pick(T)); else shell(t,pick(["rainbow","twotone","tail"]),{x:0}); }
-    senrin(45); senrin(52.5); wheel(40,-14,12,10,{mode:"rise",up:2.4}); wheel(44,14,12,10,{mode:"rise",up:2.4,dir:-1}); shell(48,"cloud",{x:0,y:30,s:10}); pair(57,"twinkle",{big:true});
+    senrin(45); senrin(52.5); wheel(40,-14,12,10,{mode:"rise",up:2.4}); wheel(44,14,12,10,{mode:"rise",up:2.4,dir:-1}); pair(57,"twinkle",{big:true});
     for(let t=54;t<60;t+=1.5) pair(t,"strobe",{y:24+r()*6});
     huge(60.4); pair(60.6,"tail",{big:true}); silk(50,{x:0}); pair(66,"silkfall",{y:34,x:14}); for(let t=64.5;t<69;t+=1.5) pair(t,"kamuro",{y:22});
     for(let t=64;t<69.5;t+=.4+r()*.3){ if(r()<.5){ mine(t,-8-r()*6); mine(t,8+r()*6); } else low(t,pick(["glitter","peony","crackle"])); }
     for(let t=70;t<84.5;t+=.25+r()*.2){ if(r()<.5) pair(t,pick(["peony","chrys","tail","strobe","rainbow","twotone","crackle","multi"]),{big:r()<.35}); else shell(t,pick(T),{x:(r()-.5)*12}); }
     wheel(70,-12,10,14,{R:2.2}); wheel(70,0,12.5,14,{R:2.8,dir:-1}); wheel(70,12,10,14,{R:2.2}); for(const x of [-14,-5,5,14]) gerb(72,x,12);
-    fans(73); fans(77); fans(81); senrin(76); pair(74.5,"bees"); pair(78,"bees"); shell(77,"cloud",{x:0,y:32,s:11}); giant(79,{x:-6}); giant(81.4,{x:6}); huge(83.2);
-    god(86); }
+    fans(73); fans(77); fans(81); senrin(76); pair(74.5,"bees"); pair(78,"bees"); giant(79,{x:-6}); giant(81.4,{x:6}); huge(83.2);
+    bigFan(24); bigFan(55); bigFan(72); bigFan(80); god(86); }
   else if(sh===2){ /* 龍騰 2:00 — opens with one giant, flying wheels, a strobing sky, rows of hanging wheels, then the climax */
     giant(.8,{y:44}); for(let t=2.5;t<8;t+=1.4) shell(t,"tail",{x:(r()-.5)*20,y:26+r()*6});
     for(let t=8;t<30;t+=.6+r()*.35){ if(r()<.55) pair(t,pick(T)); else low(t,pick(["peony","glitter","ring"])); }
@@ -4572,14 +4574,14 @@ function fwProgramN(sh,seed){ const r=fwRng(seed^(sh*2654435761)), ev=[]; const 
     for(const [t,x] of [[14,-13],[15.5,13],[21,-7],[22.5,7],[27,0]]) wheel(t,x,9,6,{mode:"rise",up:3.4,R:1.7,c:pick(FWC)});
     for(let t=30;t<40;t+=.8+r()*.3){ pair(t,pick(["strobe","twinkle"]),{y:20+r()*12}); if(r()<.4) shell(t+.3,"glitter",{x:0}); } pair(33,"bees"); pair(37,"bees");
     for(let t=40;t<50;t+=.7+r()*.3){ pair(t,"tail",{big:r()<.3}); if(r()<.4) low(t,"crackle"); } pair(46,"heart"); silk(48,{x:0}); pair(93,"silkfall",{y:34,x:15});
-    for(let t=50;t<60;t+=3.3){ senrin(t); pair(t+1.6,pick(["dring","ring","palm"])); } shell(53,"cloud",{x:-12,y:30,s:10}); shell(56,"cloud",{x:12,y:30,s:10});
+    for(let t=50;t<60;t+=3.3){ senrin(t); pair(t+1.6,pick(["dring","ring","palm"])); }
     for(let t=60;t<90;t+=.55+r()*.3){ if(r()<.45){ mine(t,-7-r()*7); mine(t,7+r()*7); } else if(r()<.6) low(t,pick(["peony","glitter","crackle","ring","rainbow"])); else pair(t,pick(T)); }
     for(let t=62;t<90;t+=4.5+r()*1.5) fans(t);
     for(const x of [-14,-7,0,7,14]) wheel(65,x,11+(x?0:1.5),16,{R:x?1.8:2.6,dir:x<0?1:-1}); giant(75); giant(88,{x:-8}); pair(88.4,"tail",{big:true});
     for(let t=90;t<100;t+=1.6+r()*.6) pair(t,r()<.6?"kamuro":"willow",{big:true});
     for(let t=100;t<108;t+=.16+r()*.14){ if(r()<.5) pair(t,pick(["peony","chrys","tail","strobe","rainbow","twotone","multi","glitter"]),{big:r()<.45}); else shell(t,pick(T),{x:(r()-.5)*10}); }
     for(const x of [-12,12]) wheel(100,x,13,8,{mode:"rise",up:2.6,R:2.2}); fans(101); fans(104); senrin(102.5); pair(101.5,"bees"); giant(104.5,{x:-7}); giant(106,{x:7}); huge(107.4);
-    god(110.5); }
+    bigFan(20); bigFan(62); bigFan(85); bigFan(101); bigFan(105.5); god(110.5); }
   else { /* 眾神 3:00 — a slow opening, then movements: wheels, low show, strobes, colour, flying wheels, a long climax, the god, a last bow */
     for(const x of [-12,-6,0,6,12]) gerb(.5,x,11,"#ffe9a8"); for(let t=1.5;t<11;t+=2.2) pair(t,"willow",{big:true});
     pair(12,"rainbow",{big:true}); shell(12.3,"rainbow",{x:0,big:true}); for(let t=13;t<20;t+=.5+r()*.3) pair(t,pick(T));
@@ -4588,29 +4590,36 @@ function fwProgramN(sh,seed){ const r=fwRng(seed^(sh*2654435761)), ev=[]; const 
     for(let t=40;t<50;t+=.45+r()*.3){ if(r()<.5){ mine(t,-8-r()*6); mine(t,8+r()*6); } else low(t,pick(["peony","glitter","crackle"])); } fans(41); fans(45); fans(48.5);
     for(let t=50;t<60;t+=1.1) pair(t,r()<.5?"strobe":"twinkle",{y:18+r()*14}); pair(55,"heart");
     for(let t=60;t<90;t+=.6+r()*.3){ if(r()<.55) pair(t,pick(T),{big:r()<.25}); else low(t,pick(["peony","ring","crackle"])); }
-    for(let t=62;t<90;t+=7) senrin(t); huge(68); giant(82,{x:-9}); giant(83.5,{x:9}); for(let t=64;t<90;t+=6) fans(t); shell(75,"cloud",{x:0,y:30,s:11}); pair(86,"bees");
+    for(let t=62;t<90;t+=7) senrin(t); huge(68); giant(82,{x:-9}); giant(83.5,{x:9}); for(let t=64;t<90;t+=6) fans(t); pair(86,"bees");
     for(let t=90;t<120;t+=.75+r()*.3){ pair(t,pick(["crossette","ring","dring","palm","tail","strobe"])); }
     for(const [t,x] of [[92,-14],[94,14],[100,-7],[102,7],[108,0],[112,-12],[113,12]]) wheel(t,x,9,6,{mode:"rise",up:3.2,R:1.8});
     wheel(96,0,13,20,{R:3,c:["#ffd23b","#ff3b3b"]}); for(let t=110;t<119;t+=2.2) pair(t,"kamuro",{big:true}); silk(72,{x:0}); pair(114,"silkfall",{y:34,x:16}); silk(146,{x:0});
     for(let t=120;t<150;t+=.4+r()*.25){ if(r()<.55) pair(t,pick(T),{big:r()<.3}); else shell(t,pick(T),{x:(r()-.5)*14}); }
-    for(let t=121;t<150;t+=6) senrin(t); for(let t=124;t<150;t+=5) fans(t); huge(130); giant(140,{x:-8}); giant(141.4,{x:8}); shell(128,"cloud",{x:-12,y:30,s:10}); shell(133,"cloud",{x:12,y:30,s:10}); pair(145,"bees");
+    for(let t=121;t<150;t+=6) senrin(t); for(let t=124;t<150;t+=5) fans(t); huge(130); giant(140,{x:-8}); giant(141.4,{x:8}); pair(145,"bees");
     for(const x of [-14,-7,0,7,14]) wheel(135,x,11,14,{R:x?1.8:2.6,dir:x<0?1:-1});
     for(let t=150;t<161.5;t+=.13+r()*.12){ if(r()<.5) pair(t,pick(["peony","chrys","tail","strobe","rainbow","twotone","multi","glitter","crackle"]),{big:r()<.45}); else shell(t,pick(T),{x:(r()-.5)*10}); }
     fans(151); fans(154); fans(157); senrin(155); pair(153,"bees"); giant(158,{x:-7}); giant(159.4,{x:7}); huge(160.8); for(const x of [-14,-5,5,14]) gerb(150,x,12);
-    for(let t=162;t<168;t+=1.4) pair(t,"kamuro",{big:true}); god(170); }
+    for(let t=162;t<168;t+=1.4) pair(t,"kamuro",{big:true}); bigFan(26); bigFan(66); bigFan(100); bigFan(126); bigFan(152); bigFan(158); god(170); }
   ev.sort((a,b)=>a.t-b.t); return fwLayout(ev,r); }
 /* where things go off: the high shells rise behind the temple around the giant statue (so the temple, the statue and the sky show all fit
    in one picture from the lake and from the courtyard); fountains, mines, fan cakes, wheels and low shells sit on two pads either side of
    the temple; the god goes up alone, high above the statue's head */
-function fwLayout(ev,r){ const sg=v=>v<0?-1:v>0?1:(r()<.5?-1:1), PADZ=-5;
+const FW_ROOF=new Map();
+/* height of the roof (or ground) at x,z, found once per spot by a downward ray */
+function fwRoofY(x,z){ x=Math.round(x/2)*2; z=Math.round(z/2)*2; const k=x+","+z; if(FW_ROOF.has(k)) return FW_ROOF.get(k); const rc=new T.Raycaster(new T.Vector3(x,60,z),new T.Vector3(0,-1,0),0,70); rc.camera=camera;
+  let y=0; try{ const hs=rc.intersectObjects(scene.children.filter(o=>(o.isMesh||o.isGroup)&&o.visible&&o!==fwStreak&&o!==sky),true).filter(h=>!h.object.isSprite&&!h.object.isPoints&&h.object.visible); if(hs.length) y=hs[0].point.y; }catch(e){} FW_ROOF.set(k,y); return y; }
+/* where things go off. The giant statue (a 30 m wide column behind the temple) is kept clear: big shells burst either side of it or high above
+   its head. Fountains, mines, fan cakes, wheels and low shells go up from the temple roofs. The god goes up alone, high above the statue */
+function fwLayout(ev,r){ const sg=v=>v<0?-1:v>0?1:(r()<.5?-1:1), RZ=-2, roofX=v=>sg(v)*(4+Math.min(16,Math.abs(v)*.6));
   for(const e of ev){
-    if(e.kind==="shell"){ if(e.type==="god"||e.type==="mazu"){ e.x=0; e.y=60; e.z=-80; e.fl=2.8; continue; }
-      if(e.y<12){ e.x=sg(e.x)*(26+Math.abs(e.x)*.45); e.z=PADZ-3+r()*8; continue; }
-      if(Math.abs(e.x)<2){ e.z=-60; e.y+=20; e.s*=1.3; e.n=Math.round(e.n*1.15); continue; }
-      const dz=Math.max(0,(e.z||60)-53); e.x=e.x*1.25+sg(e.x)*6; e.z=-16-dz*.7; e.y+=8; e.s*=1.3; e.n=Math.round(e.n*1.15); continue; }
-    if(e.kind==="gerb"||e.kind==="mine"){ e.x=sg(e.x)*(26+Math.abs(e.x)*.6); e.z=PADZ; if(e.kind==="gerb") e.y=.4; continue; }
-    if(e.kind==="comet"){ const nx=sg(e.sx)*(28+Math.abs(e.sx)*.3), dx=nx-e.sx; e.sx+=dx; e.ex+=dx; e.sz=PADZ; e.ez=PADZ+.6; e.sy-=3.5; e.ey-=3.5; continue; }
-    if(e.kind==="wheel"){ if(Math.abs(e.x)<1){ e.z=-34; e.y+=6; } else { e.x=sg(e.x)*(24+Math.abs(e.x)*.5); e.z=PADZ; } } }
+    if(e.kind==="shell"){ if(e.type==="god"||e.type==="mazu"){ e.x=0; e.y=74; e.z=-80; e.fl=3.0; continue; }
+      if(e.y<12){ e.x=roofX(e.x); e.z=RZ+r()*4; e.y=fwRoofY(e.x,e.z)+7+r()*5; continue; }
+      e.s*=1.6; e.n=Math.round(e.n*1.2);
+      if(e.type==="giant"&&Math.abs(e.x)<2){ e.x=0; e.z=-72; e.y=92; continue; } /* 超巨大 right over the statue's head */
+      const dz=Math.max(0,(e.z||60)-53); e.x=sg(e.x)*(17+Math.abs(e.x)*.9); e.z=-18-dz*.8; e.y+=10; continue; }
+    if(e.kind==="gerb"||e.kind==="mine"){ e.x=roofX(e.x); e.z=RZ; e.y=fwRoofY(e.x,e.z)+.2; continue; }
+    if(e.kind==="comet"){ const nx=e.big?e.sx:roofX(e.sx), dx=nx-e.sx, y0=fwRoofY(nx,RZ)+.2, dy=y0-e.sy; e.sx+=dx; e.ex+=dx; e.sz=RZ; e.ez=RZ+.6; e.sy+=dy; e.ey+=dy; continue; }
+    if(e.kind==="wheel"){ e.x=sg(e.x)*(12+Math.abs(e.x)*.5); e.z=RZ; e.y=fwRoofY(e.x,e.z)+4+(e.mode==="rise"?0:2); } }
   return ev; }
 
 // 媽祖 outline for the final shell (points traced from the line drawing, 0-255 grid, 177 wide x 255 tall)
@@ -4659,7 +4668,7 @@ function fwProgram(seed){ const r=fwRng(seed), ev=[]; const pick=a=>a[(r()*a.len
   ev.sort((a,b)=>a.t-b.t); return fwLayout(ev,r); }
 const FW_END0="一直以來，辛苦你了。";
 function fwEndMsg(){ const el=$("#fwEnd"); const txt=(FW.txt||"").trim()||FW_END0, V={"，":"︐","。":"︒","、":"︑","！":"︕","？":"︖","：":"︓","；":"︔","「":"﹁","」":"﹂","（":"︵","）":"︶","…":"︙","—":"︱","-":"︱"};
-  el.setAttribute("aria-label",txt); el.innerHTML=`<p class="vt" aria-hidden="true">${[...txt].map(ch=>`<span>${esc(V[ch]||ch)}</span>`).join("")}</p>`; el.classList.remove("on"); el.hidden=false; void el.offsetWidth; el.classList.add("on"); el.onanimationend=()=>{ el.hidden=true; el.classList.remove("on"); if(fwFinale){ fwFinale=false; setFwView(false); } renderSparkBtn(); }; renderSparkBtn(); }
+  el.setAttribute("aria-label",txt); el.innerHTML=`<p class="vt" aria-hidden="true">${[...txt].map(ch=>`<span>${esc(V[ch]||ch)}</span>`).join("")}</p>`; el.classList.remove("on"); el.hidden=false; void el.offsetWidth; el.classList.add("on"); el.onanimationend=()=>{ el.hidden=true; el.classList.remove("on"); if(fwFinale){ fwFinale=false; } renderSparkBtn(); }; renderSparkBtn(); }
 let myFwShow=null;
 const hemiLight=scene.children.find(o=>o.isHemisphereLight), ambLight=scene.children.find(o=>o.isAmbientLight); const fogDusk=scene.fog.color.clone();
 function todPhase(){ const p=(Date.now()/1000%1200)/1200; // 0–.3 dusk … .3→.45 nightfall … .45–.85 night … .85→1 back to dusk
@@ -4700,7 +4709,7 @@ function fwUpdate(dt){ const now=performance.now();
       if(e.kind==="gerb") FW.gerbs.push({...e,t:0});
       if(e.kind==="wheel") FW.wheels.push({...e,t:0,a:0,y0:e.y,ci:(Math.random()*12)|0});
       if(e.kind==="comet") FW.rockets.push({comet:e,t:0,fl:e.fl||.8});
-      if(e.kind==="mine"){ FW_TR=.7; const n=Math.round(90*LOW); for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2, s=Math.random()*.35; fwEmit(e.x,.6,e.z,Math.cos(a)*s*14,9+Math.random()*9,Math.sin(a)*s*14,e.c[0],e.c[1],1.4+Math.random()*.6,.45,1.0,7,.4); } } }
+      if(e.kind==="mine"){ FW_TR=.7; const n=Math.round(90*LOW); for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2, s=Math.random()*.35; fwEmit(e.x,e.y||.6,e.z,Math.cos(a)*s*14,9+Math.random()*9,Math.sin(a)*s*14,e.c[0],e.c[1],1.4+Math.random()*.6,.45,1.0,7,.4); } } }
     for(let k=FW.rockets.length-1;k>=0;k--){ const rk=FW.rockets[k]; rk.t+=dt; FW_TR=.7;
       if(rk.comet){ const c=rk.comet, f=Math.min(1,rk.t/rk.fl), ease=1-(1-f)*(1-f); const x=c.sx+(c.ex-c.sx)*ease, y=c.sy+(c.ey-c.sy)*ease, z=c.sz+(c.ez-c.sz)*ease;
         for(let q=0;q<2;q++) fwEmit(x,y,z,(Math.random()-.5)*.5,-.6,(Math.random()-.5)*.5,c.c[0],c.c[1],.45,.4,1.2,1.5,.2);
@@ -4721,7 +4730,7 @@ function fwUpdate(dt){ const now=performance.now();
         for(let n2=0;n2<m;n2++){ const v=7+Math.random()*3; fwEmit(px,py,w.z,cx*v-sy*w.dir*1.2,sy*v+cx*w.dir*1.2,(Math.random()-.5)*.8,q%2?C1:C2,q%2?C2:"#fff2c2",1.0+Math.random()*.5,.45,1.5,1.8,.2); }
         fwEmit(px,py,w.z,0,0,0,"#ffffff",C1,.08,.8,0,0,0); }
       fwEmit(w.x,w.y,w.z,0,0,0,"#fff6d6",C2,.08,1.1,0,0,0); }
-    if(t>FW_LEN-4.5&&!fwFinale&&FW.i>=FW.ev.length-1){ fwFinale=true; closeSheet(); if(!fwView&&!LAKE.on) setFwView(true); camPitch=.3; camYaw=0; renderSparkBtn(); }
+    if(t>FW_LEN-4.5&&!fwFinale&&FW.i>=FW.ev.length-1){ fwFinale=true; closeSheet(); renderSparkBtn(); } /* the view stays wherever the player is looking */
     if(t>FW_LEN&&!FW.rockets.length){ FW.on=false; if(!FW.endShown){ FW.endShown=true; setTimeout(fwEndMsg,3800); } }
     // everyone hears the show song, kept in step with the fireworks
     else if(soundOn){ const fa=trk("fw"); if(curTrack!=="fw"){ try{ fa.currentTime=t; }catch(e){} setTrack("fw"); }
@@ -4800,7 +4809,11 @@ function lakeBuild(){ if(LAKE.built) return; LAKE.built=true; const g=new T.Grou
   // falling petals near the lens
   const pg=new T.BufferGeometry(), PN=60, pp=new Float32Array(PN*3); for(let i=0;i<PN;i++){ pp[i*3]=(Math.random()-.5)*8; pp[i*3+1]=Math.random()*5; pp[i*3+2]=-2-Math.random()*6; } pg.setAttribute("position",new T.BufferAttribute(pp,3));
   const petals=new T.Points(pg,new T.PointsMaterial({size:.09,map:bloomTex,transparent:true,depthWrite:false,fog:false,color:new T.Color("#ffd6e6")})); petals.frustumCulled=false; fg.add(petals); LAKE.petals=pp; LAKE.pg=pg; }
-function lakeFrame(){ const asp=window.innerWidth/Math.max(1,window.innerHeight); return asp<1?62:44; }
+/* one viewpoint per show, chosen like a photographer would: [camera, look-at]
+   經典: across the middle of the lake · 春櫻: from the cherry bank, trees framing the right · 龍騰: low by the water from the left, wide reflections ·
+   眾神: from the hill behind the lake, the whole statue and the sky */
+const LAKE_VIEWS=[[[-6,3.6,118],[1,38,-30]],[[28,3.2,117],[-6,38,-30]],[[-32,1.7,106],[6,40,-30]],[[6,15,142],[0,40,-40]]];
+function lakeFrame(){ const asp=window.innerWidth/Math.max(1,window.innerHeight); return asp<1?47:34; } /* a longer lens: the sky show fills a phone screen */
 /* render the still scenery's reflection once (and again a moment later when late models have come in) */
 function lakeReflect(){ if(!LAKE.on) return; const cam=camera, mc=new T.PerspectiveCamera(Math.min(150,cam.fov*1.7),1.4,.5,500); const ly=LAKE.ly;
   mc.position.set(cam.position.x,2*ly-cam.position.y,cam.position.z); mc.up.set(0,1,0); mc.lookAt(LAKE.tgt.x,2*ly-LAKE.tgt.y+30,LAKE.tgt.z); mc.updateMatrixWorld(true); mc.updateProjectionMatrix();
@@ -4809,7 +4822,7 @@ function lakeReflect(){ if(!LAKE.on) return; const cam=camera, mc=new T.Perspect
   const cp=renderer.clippingPlanes; renderer.clippingPlanes=[new T.Plane(new T.Vector3(0,1,0),-ly-.05)]; const rt0=renderer.getRenderTarget();
   renderer.setRenderTarget(LAKE.rt); renderer.clear(); renderer.render(scene,mc); renderer.setRenderTarget(rt0); renderer.clippingPlanes=cp; hide.forEach((o,i)=>o.visible=was[i]); }
 function lakeSet(on){ lakeBuild(); LAKE.on=on; LAKE.g.visible=on; LAKE.fg.visible=on; document.body.classList.toggle("lakeview",on);
-  if(on){ if(fwView) setFwView(false); LAKE.fog=[scene.fog.near,scene.fog.far]; scene.fog.near=160; scene.fog.far=420; camera.far=520; LAKE.yaw=0; LAKE.pitch=0; camYaw=0; camPitch=0; DRES.fw=true; applyDPR(); resize();
+  if(on){ const V=LAKE_VIEWS[FW.sh|0]||LAKE_VIEWS[0]; LAKE.cam.set(...V[0]); LAKE.tgt.set(...V[1]); if(fwView) setFwView(false); LAKE.fog=[scene.fog.near,scene.fog.far]; scene.fog.near=160; scene.fog.far=420; camera.far=520; LAKE.yaw=0; LAKE.pitch=0; camYaw=0; camPitch=0; DRES.fw=true; applyDPR(); resize();
     camera.position.copy(LAKE.cam); setTimeout(lakeReflect,60); setTimeout(lakeReflect,2500); }
   else { if(LAKE.fog){ scene.fog.near=LAKE.fog[0]; scene.fog.far=LAKE.fog[1]; } camera.far=200; camera.fov=55; DRES.fw=false; applyDPR(); resize(); }
   camera.updateProjectionMatrix(); renderSparkBtn(); }
