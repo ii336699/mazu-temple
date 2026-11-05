@@ -8,6 +8,7 @@
 <title>雲端天后宮</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="favicon.png">
+<link rel="preload" as="image" href="dl-bg.webp">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -249,13 +250,13 @@ input,textarea{-webkit-user-select:text;user-select:text}
 .th-banner{display:flex;align-items:center;gap:10px;top:calc(env(safe-area-inset-top,0px) + 120px)}.th-banner[hidden]{display:none}.th-banner .chip{padding:4px 10px;font-size:12px}
 .dz-zoom{position:absolute;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;gap:8px;z-index:2}.dz-zoom .chip{font-size:16px;padding:8px 14px;background:rgba(20,20,40,.7);color:#fff}
 .gg-done{text-align:center}.gg-time{font-family:var(--f-display);font-size:40px;color:var(--gold);margin:6px 0 4px}
-.dlpack{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 30%,#3a120b,#140906 70%);color:#f5e6c8;font-family:var(--f-display);transition:opacity .7s;padding:24px}
+.dlpack{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:#4a0f0a url(dl-bg.webp) center bottom/cover no-repeat;color:#f5e6c8;font-family:var(--f-display);transition:opacity .7s;padding:24px}
 .dlpack[data-done]{opacity:0;pointer-events:none}.dlpack[hidden]{display:none}
 .dl-in{width:min(420px,100%);text-align:center}.dl-in h2{margin:0 0 6px;font-size:26px;letter-spacing:.2em;color:#f0c75e}.dl-in p{margin:0 0 26px;font-size:14px;line-height:1.7;opacity:.85;font-family:var(--f-ui)}
 .dl-track{position:relative;height:14px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(240,199,94,.45);margin-top:100px}
 .dl-fill{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:999px;background:linear-gradient(90deg,#b8141a,#f0c75e);box-shadow:0 0 12px rgba(240,199,94,.6)}
 .dl-pct{margin-top:12px;font-size:22px;color:#f0c75e;font-variant-numeric:tabular-nums}.dl-what{margin-top:4px;font-size:12px;opacity:.6;font-family:var(--f-ui)}
-.dl-run{position:absolute;bottom:4px;left:0;width:72px;height:96px;margin-left:-36px}.dl-run canvas{width:72px;height:96px;display:block} /* the figure itself is drawn small inside, with room above for the hop */
+.dl-run{position:absolute;bottom:2px;left:0;width:150px;height:110px;margin-left:-105px;pointer-events:none}.dl-run canvas{width:150px;height:110px;display:block} /* the figure itself is drawn small inside, with room above for the hop */
 .dl-run i{position:absolute;display:block}.dl-run .hd{left:6px;top:0;width:16px;height:16px;border-radius:50%;background:#f4d4b6;box-shadow:inset 0 5px 0 #2a1712}
 .dl-run .bd{left:8px;top:15px;width:12px;height:15px;border-radius:5px 5px 3px 3px;background:#c4161c}
 .dl-run .lg{left:12px;top:28px;width:4px;height:13px;border-radius:2px;background:#2a1712;transform-origin:2px 1px;animation:dlLeg .32s ease-in-out infinite alternate}.dl-run .lg.b{animation-direction:alternate-reverse}
@@ -6960,14 +6961,27 @@ requestAnimationFrame(()=>{ tick(); setTimeout(()=>$("#loading").setAttribute("d
 /* 第一次進廟的下載畫面: the buildings and statues (the essential models) are counted as they arrive; a little figure runs along the bar.
    It only appears if they take more than a moment (a phone that already has them stored skips it), and closes once they are all in. */
 /* the runner on the bar is the game's own 財神爺 (the chair's 財神 costume), walking in place in a little canvas of its own */
-function dlRunner(){ try{ const cv=document.createElement("canvas"), dpr=Math.min(2,window.devicePixelRatio||1); cv.width=72*dpr; cv.height=96*dpr; $("#dlRun").appendChild(cv);
-    const r=new T.WebGLRenderer({canvas:cv,alpha:true,antialias:true}); r.setPixelRatio(1); r.outputEncoding=T.sRGBEncoding;
-    const sc=new T.Scene(); sc.add(new T.HemisphereLight(0xfff2dc,0x402010,1.1)); const d=new T.DirectionalLight(0xffffff,.9); d.position.set(1.5,2.5,3); sc.add(d);
-    const cam=new T.PerspectiveCamera(30,72/96,.1,20); cam.position.set(0,1.45,5.2); cam.lookAt(0,1.4,0); /* small figure, headroom for the hop */
-    const av=new Avatar(me.look,{npc:true,x:0,z:0}); scene.remove(av.root); sc.add(av.root); csDress(av); av.moveSpeed=1.6; av.rotY=Math.PI/2; av.root.rotation.y=av.rotY;
-    let last=performance.now(), alive=true;
-    const loop=()=>{ if(!alive) return; const now=performance.now(), dt=Math.min(.05,(now-last)/1000); last=now; av.target.set(av.pos.x+1,av.pos.y); av.update(dt); av.pos.set(0,0); av.root.position.set(0,Math.abs(Math.sin(now*.011))*.42,0); r.render(sc,cam); /* a big bouncy hop */ requestAnimationFrame(loop); };
-    loop(); return ()=>{ alive=false; try{ r.dispose(); r.forceContextLoss(); }catch(e){} }; }catch(e){ return ()=>{}; } }
+/* above the download bar: a white butterfly flapping along with the progress, shedding glittering dust behind it (2D canvas, no WebGL) */
+function dlRunner(){ try{ const W=150, H=110, dpr=Math.min(2,window.devicePixelRatio||1), cv=document.createElement("canvas"); cv.width=W*dpr; cv.height=H*dpr; $("#dlRun").appendChild(cv);
+    const x=cv.getContext("2d"); x.scale(dpr,dpr); const bx=105, by=52; let alive=true, dust=[], t0=performance.now(), last=t0;
+    const wing=(up,flip,k)=>{ x.save(); x.scale(flip*Math.max(.08,k),1); x.beginPath();
+        if(up){ x.moveTo(0,-2); x.bezierCurveTo(6,-22,30,-30,34,-16); x.bezierCurveTo(36,-6,22,2,0,2); }
+        else { x.moveTo(0,1); x.bezierCurveTo(16,2,28,10,24,22); x.bezierCurveTo(20,30,6,24,0,6); }
+        x.closePath(); const g=x.createLinearGradient(0,up?-28:0,up?34:26,up?0:26); g.addColorStop(0,"rgba(255,255,255,.98)"); g.addColorStop(.65,"rgba(246,248,255,.95)"); g.addColorStop(1,"rgba(255,226,170,.9)");
+        x.shadowColor="rgba(255,250,230,.95)"; x.shadowBlur=10; x.fillStyle=g; x.fill(); x.shadowBlur=0; x.strokeStyle="rgba(210,190,150,.7)"; x.lineWidth=.8; x.stroke();
+        x.strokeStyle="rgba(200,185,160,.45)"; x.lineWidth=.6; x.beginPath(); if(up){ x.moveTo(2,-1); x.lineTo(28,-18); x.moveTo(3,0); x.lineTo(30,-8); } else { x.moveTo(2,3); x.lineTo(20,18); } x.stroke();
+        x.fillStyle="rgba(255,214,120,.55)"; x.beginPath(); up?x.arc(24,-15,2.6,0,7):x.arc(17,16,2,0,7); x.fill(); x.restore(); };
+    const loop=()=>{ if(!alive) return; const now=performance.now(), dt=Math.min(.05,(now-last)/1000), t=(now-t0)/1000; last=now; x.clearRect(0,0,W,H);
+      const fl=Math.cos(t*14), k=Math.abs(fl), cy=by+Math.sin(t*3.1)*7-k*3, cx=bx+Math.sin(t*1.7)*3;
+      for(let n=0;n<3;n++) dust.push({x:cx+(Math.random()-.5)*24*k,y:cy+(Math.random()-.4)*14,vx:-30-Math.random()*40,vy:6+Math.random()*22,l:0,m:.7+Math.random()*.8,r:.6+Math.random()*1.6,c:Math.random()<.3?"255,220,140":"255,255,255"});
+      x.globalCompositeOperation="lighter"; dust=dust.filter(p=>(p.l+=dt)<p.m); for(const p of dust){ p.x+=p.vx*dt; p.y+=p.vy*dt; p.vx*=.98; const a=(1-p.l/p.m)*(.6+.4*Math.sin(p.l*30+p.x)); x.fillStyle=`rgba(${p.c},${Math.max(0,a)})`; x.beginPath(); x.arc(p.x,p.y,p.r,0,7); x.fill(); }
+      x.globalCompositeOperation="source-over";
+      x.save(); x.translate(cx,cy); x.rotate(-.18+Math.sin(t*3.1)*.08);
+      for(const f of [-1,1]){ wing(false,f,k*.9+.1); } for(const f of [-1,1]){ wing(true,f,k); }
+      const bg=x.createLinearGradient(0,-8,0,14); bg.addColorStop(0,"#fff8e6"); bg.addColorStop(1,"#d9c7a2"); x.fillStyle=bg; x.beginPath(); x.ellipse(0,3,2.2,10,0,0,7); x.fill(); x.beginPath(); x.arc(0,-8,2.4,0,7); x.fill();
+      x.strokeStyle="rgba(240,230,210,.9)"; x.lineWidth=.8; x.beginPath(); x.moveTo(-1,-10); x.quadraticCurveTo(-5,-18,-8,-20); x.moveTo(1,-10); x.quadraticCurveTo(5,-18,8,-20); x.stroke(); x.restore();
+      requestAnimationFrame(loop); };
+    loop(); return ()=>{ alive=false; }; }catch(e){ return ()=>{}; } }
 { const el=$("#dlPack"), t0=performance.now(); let shown=false, show=0, closed=false, stopRun=null;
   const render=()=>{ const p=Math.round(show*100); $("#dlFill").style.width=p+"%"; $("#dlRun").style.left=p+"%"; $("#dlPct").textContent=p+"%"; $("#dlWhat").textContent=`已下載 ${LQ.essD} / ${Math.max(LQ.essT,LQ.essD)} 件（廟宇建築與神尊）`; };
   const close=()=>{ if(closed) return; closed=true; LQ.ready=true; LQ.wait.splice(0).forEach(f=>{ try{ f(); }catch(e){} }); lqRun(); if(shown){ el.setAttribute("data-done",""); setTimeout(()=>{ el.hidden=true; if(stopRun) stopRun(); },800); } };

@@ -174,3 +174,4 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - Layout v2: BUILD_DEFAULT now carries v:2 (user's layout + 福德祠 g-G-L-1 mirrored to z 4.5 + mirrored bouquet pair). A saved layout with lower v (server or local) is replaced by the default; buildCollect saves v; worker keeps v.
 - 文昌殿／福德祠: main-hall outer wall inside them gets a brick panel; their roof-clip box now spans from the main hall wall to the front wall (roof models no longer show inside).
 - Indoor fill: in any room except 正殿 and outdoors, hemisphere +.42 and ambient up to .48 (eased), no extra lights.
+- Download screen: background dl-bg.webp (preloaded); the 3D avatar above the bar is replaced by a 2D white butterfly with glitter dust (dlRunner, no WebGL).
