@@ -416,8 +416,8 @@ body.hideui .joy,body.customizing .joy,body.hideui .camreset,body.customizing .c
   <div class="hall">
     <button class="pill glass hall-btn" id="hallBtn" aria-label="切換殿別"><span class="seal">媽</span><span class="hall-name">天后宮 正殿</span><span class="count hall-count"><span class="dot off" id="dot"></span><span id="countText">連線中…</span></span><span class="hall-more">切換 ▾</span></button>
     <button class="guide glass" id="guideBtn" aria-label="參拜指引"><span><b id="guideStep">參拜指引</b><span id="guideText">到服務處請香</span></span><span class="go">前往</span></button>
-    <button class="pill glass contact-btn" id="contactBtn" aria-label="聯絡作者">✉️ 聯絡作者</button>
-    <button class="pill glass letter-btn" id="letterBtn" hidden>💌 主委回信了</button>
+    <button class="pill glass contact-btn" id="contactBtn" aria-label="聯絡作者" hidden style="display:none">✉️ 聯絡作者</button>
+    <button class="pill glass letter-btn" id="letterBtn" hidden style="display:none">💌 主委回信了</button>
     <button class="pill glass chair-btn" id="chairBtn" hidden>🛠️ 主委工具</button>
   </div>
   <div class="tools">
@@ -2098,16 +2098,14 @@ const FT={x:0,z:HZ+YX+20.2,H:4.4,k:1,mouth:new T.Vector3(),pool:new T.Vector3(0,
           const rays=new T.Mesh(new T.PlaneGeometry(4.2,4.2),new T.MeshBasicMaterial({map:cvs(256,256,(c,w,h)=>{ c.translate(w/2,h/2); for(let k=0;k<16;k++){ c.rotate(Math.PI/8); const gr=c.createLinearGradient(0,0,0,-h/2); gr.addColorStop(0,"rgba(255,230,140,.9)"); gr.addColorStop(1,"rgba(255,200,80,0)"); c.fillStyle=gr; c.beginPath(); c.moveTo(0,0); c.lineTo(-10,-h/2); c.lineTo(10,-h/2); c.fill(); } }),transparent:true,opacity:.6,blending:T.AdditiveBlending,depthWrite:false})); rays.position.z=-.01; g.add(rays);
           const sparks=[...Array(18)].map(()=>({ph:Math.random()})), sparkC=speckCloud(g,18,.24,.1);
           fx={halo,rays,sparks,sparkC};
-          if(big){ // 500+: a bigger double halo, two searchlight beams sweeping the sky, fireworks bursting over the board, gold falling
+          if(big){ // 500+: a bigger double halo, a ring of beating hearts, gold falling
             halo.scale.set(7,5.6,1); const halo2=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ff6ad5"),transparent:true,opacity:.45,blending:T.AdditiveBlending,depthWrite:false})); halo2.scale.set(11,8.5,1); halo2.position.z=-.03; g.add(halo2);
             const rays2=rays.clone(); rays2.material=rays.material.clone(); rays2.scale.setScalar(1.45); rays2.position.z=-.012; g.add(rays2);
-            const beamTex=cvs(64,256,(c,w,h)=>{ const gr=c.createLinearGradient(0,h,0,0); gr.addColorStop(0,"rgba(255,240,190,.95)"); gr.addColorStop(1,"rgba(255,220,140,0)"); c.fillStyle=gr; c.beginPath(); c.moveTo(w*.4,h); c.lineTo(w*.6,h); c.lineTo(w,0); c.lineTo(0,0); c.fill(); });
-            const beams=[]; /* the searchlight beams were taken out at the chair's request */
             // a ring of hearts round the board, turning slowly and beating
             const heartTex=cvs(128,128,(c,w,h)=>{ c.translate(w/2,h/2+6); c.beginPath(); c.moveTo(0,40); c.bezierCurveTo(-62,-2,-36,-56,0,-24); c.bezierCurveTo(36,-56,62,-2,0,40); c.closePath(); c.shadowColor="rgba(255,120,170,.9)"; c.shadowBlur=14; c.fillStyle="#ff4f8b"; c.fill(); c.shadowBlur=0; c.fillStyle="rgba(255,255,255,.55)"; c.beginPath(); c.ellipse(-16,-14,9,6,-.6,0,Math.PI*2); c.fill(); });
             const hearts=[...Array(16)].map((_,k)=>{ const sp=new T.Sprite(new T.SpriteMaterial({map:heartTex,transparent:true,depthWrite:false})); sp.position.z=.18; g.add(sp); return {sp,a:k/16*Math.PI*2}; });
             const gold=[...Array(40)].map(()=>({ph:Math.random(),x:(Math.random()*2-1)*1.9})), goldC=speckCloud(g,40,.18,.2);
-            Object.assign(fx,{halo2,rays2,beams,hearts,gold,goldC}); }
+            Object.assign(fx,{big:1,halo2,rays2,hearts,gold,goldC}); }
           }
         const t0=performance.now(); setInterval(()=>{ if(!thanksNear()) return; const t=(performance.now()-t0)/1000; /* nothing to update while nobody is near the wall */
           for(let i=0;i<nb.n;i++){ const u=i/nb.n, pulse=.55+.45*Math.max(0,Math.sin((u*6-t*(tier===3?4.5:3))*Math.PI));
@@ -2115,8 +2113,7 @@ const FT={x:0,z:HZ+YX+20.2,H:4.4,k:1,mouth:new T.Vector3(),pool:new T.Vector3(0,
             else { const h=(u+t*(tier===3?.6:.35))%1; _bc.setHSL(h,1,.45+.2*pulse); _gc.setHSL(h,1,.55); nb.set(i,_bc,_gc,.45+.5*pulse); } } nb.done();
           if(fx){ fx.halo.material.opacity=.5+.25*Math.sin(t*2.2); fx.halo.material.color.setHSL((t*.05)%1*.15+.1,1,.6); fx.rays.rotation.z=t*.35; fx.rays.material.opacity=.4+.2*Math.sin(t*1.7);
             fx.sparks.forEach((o,i)=>{ const v=(t*.35+o.ph)%1, a=o.ph*40, k=Math.sin(v*Math.PI); _gc.setHSL((o.ph+t*.3)%1,1,.65); fx.sparkC.set(i,Math.sin(a)*1.45+Math.sin(t*2+a)*.08,-1.1+v*2.4,_gc,k*.95*(.5+.5*k)); }); fx.sparkC.done();
-            if(fx.beams){ fx.halo2.material.opacity=.3+.2*Math.sin(t*1.3+1); fx.halo2.material.color.setHSL((t*.08)%1,1,.6); fx.rays2.rotation.z=-t*.22; fx.rays2.material.opacity=.3+.15*Math.sin(t*2.1);
-              fx.beams.forEach(o=>{ o.piv.rotation.z=o.sd*(.25+.3*Math.sin(t*.8+o.sd)); o.b.material.opacity=.5+.2*Math.sin(t*2+o.sd); o.b.material.color.setHSL((t*.1+(o.sd>0?.5:0))%1,.7,.75); });
+            if(fx.big){ fx.halo2.material.opacity=.3+.2*Math.sin(t*1.3+1); fx.halo2.material.color.setHSL((t*.08)%1,1,.6); fx.rays2.rotation.z=-t*.22; fx.rays2.material.opacity=.3+.15*Math.sin(t*2.1);
               fx.hearts.forEach((o,k)=>{ const a=o.a+t*.35, beat=1+.18*Math.max(0,Math.sin(t*5.2-k*.4)); o.sp.position.x=Math.cos(a)*1.75; o.sp.position.y=Math.sin(a)*1.38; o.sp.scale.setScalar(.6*beat); o.sp.material.color.setHSL(.93+.05*Math.sin(t*2+k),1,.7); });
               _gc.set("#ffd75a"); fx.gold.forEach((o,i)=>{ const v=(t*.22+o.ph)%1; fx.goldC.set(i,o.x+Math.sin(t*3+o.ph*20)*.12,1.9-v*3.4,_gc,Math.sin(v*Math.PI)*.9*(.8+.2*Math.sin(t*9+o.ph*30))); }); fx.goldC.done(); } } },60);
         } else { const nb=bulbBatch(g,bg,pts,1,.2), lit=new T.Color("#fff6d6"), dim=new T.Color("#c9862e"), gl=new T.Color("#ffcf73");
@@ -3394,7 +3391,7 @@ const HANDLERS={};
 // ---- 聯絡作者: anyone can leave a private message; only the chair (unlocked on this device) can read them ----
 const msgName=()=>(me.name||(me.no?`香客${me.no}`:"香客")).slice(0,16);
 function openContact(){
-  openSheet("contact","聯絡作者",`<p class="lead">有建議、發現問題或想對作者說的話，都可以寫在這裡，只有作者看得到。</p><p class="lead small">請勿留下電話、地址、帳號等個人資料。</p>
+  openSheet("contact","聯絡作者",`<button class="secondary ct-back" data-act="boardBack">← 公告與訊息</button><p class="lead">有建議、發現問題或想對作者說的話，都可以寫在這裡，只有作者看得到。</p><p class="lead small">請勿留下電話、地址、帳號等個人資料。</p>
   <textarea class="msg-box" id="msgText" maxlength="500" placeholder="想說的話（500 字以內）"></textarea>
   <div class="msg-meta"><span id="msgCount">0 / 500</span><span>署名：${esc(msgName())}</span></div>
   <button class="good wide" data-act="sendMsg"><span class="name">送出留言</span></button>`);
@@ -3452,10 +3449,16 @@ async function crowdSend(target,real=false){ const key=ck(); if(!key){ toast("�
 // ---- 公告: the chair's notice board. The button glows yellow until this device has opened the newest version, then turns grey ----
 const fmtT=t=>new Date(t).toLocaleString("zh-TW",{hour12:false});
 let board={text:"",at:0};
-function renderBoardBtn(){ const b=$("#boardBtn"); const fresh=!!board.text&&board.at>Number(load("mz.boardSeen",0)); b.classList.toggle("fresh",fresh); b.classList.toggle("seen",!fresh); b.setAttribute("aria-label",fresh?"公告（有新公告）":"公告"); }
+const LETTER_TTL=24*3600e3; let letters=[];
+function renderBoardBtn(){ const b=$("#boardBtn"); const fresh=(!!board.text&&board.at>Number(load("mz.boardSeen",0)))||(letters.length&&lettersUnread()); b.classList.toggle("fresh",fresh); b.classList.toggle("seen",!fresh); b.setAttribute("aria-label",fresh?"公告（有新公告）":"公告"); }
 async function fetchBoard(){ try{ const r=await fetch("/board",{cache:"no-store"}); if(!r.ok) return false; const j=await r.json(); if(!j||typeof j.text!=="string") return false; const changed=j.at!==board.at; board={text:j.text,at:+j.at||0}; renderBoardBtn(); return changed; }catch(e){ return false; } }
-function openBoard(){ if(board.at) save("mz.boardSeen",board.at); renderBoardBtn();
-  openSheet("board","公告",`${me.sp?backBtn:""}${board.text?`<div class="board-text">${esc(board.text)}</div><p class="note">更新於 ${fmtT(board.at)}</p>`:`<p class="lead">目前沒有公告。</p>`}
+function openBoard(){ if(board.at) save("mz.boardSeen",board.at); { const read=load("mz.lettersRead",[]); letters.forEach(l=>{ if(!read.includes(l.at)) read.push(l.at); }); save("mz.lettersRead",read.slice(-30)); } renderBoardBtn();
+  const now=Date.now(), mail=letters.length?`<div class="group" style="margin-top:10px"><span class="group-label">💌 主委的回信</span>${letters.map(l=>{ const h=Math.max(1,Math.ceil((LETTER_TTL-(now-l.at))/3600e3)); return `<div class="letter">
+    ${l.q?`<p class="lq">你的留言：${esc(l.q)}</p>`:""}<p class="lto">${esc(msgName())}　您好：</p><div class="lbody">${esc(l.text)}</div>
+    <p class="lsign">天后宮 主委 敬上<small>${fmtT(l.at)}</small></p>
+    <div class="lfoot"><span>這封信約 ${h} 小時後自動消失</span><button data-act="delLetter" data-v="${l.at}">刪除這封信</button></div></div>`; }).join("")}</div>`:"";
+  openSheet("board","公告與訊息",`${me.sp?backBtn:""}<div class="group"><span class="group-label">📢 公告</span>${board.text?`<div class="board-text">${esc(board.text)}</div><p class="note">更新於 ${fmtT(board.at)}</p>`:`<p class="lead">目前沒有公告。</p>`}</div>${mail}
+  <div class="group" style="margin-top:10px"><span class="group-label">✉️ 聯絡作者</span><p class="lead">有建議、發現問題或想對作者說的話，留言只有作者看得到；作者回信會出現在這裡。</p><button class="secondary" data-act="contactOpen" style="width:100%">寫留言給作者</button></div>
   ${me.sp?`<div class="group" style="margin-top:8px"><span class="group-label">✏️ 修改公告（主委）</span><textarea class="msg-box" id="boardEdit" maxlength="1000" placeholder="公告內容，1000 字以內，可以換行">${esc(board.text)}</textarea>
   <input class="mail-box" id="boardKey" type="password" autocomplete="off" oninput="try{localStorage.setItem('mz.rk',JSON.stringify(this.value.trim()))}catch(e){}" placeholder="留言讀取密碼" value="${esc(load("mz.rk",""))}">
   <button class="good wide" data-act="saveBoard"><span class="name">儲存公告</span><span class="meta">儲存後，每個人的公告按鈕都會亮起黃色，直到他們點開看過。清空再儲存就是撤下公告。</span></button></div>`:""}`); }
@@ -3466,21 +3469,23 @@ HANDLERS.saveBoard=async(v,b)=>{ const text=(($("#boardEdit")||{}).value||"").tr
 $("#boardBtn").onclick=async()=>{ ensureAudio(); if(sheetKind==="board"){ closeSheet(); return; } openBoard(); if(await fetchBoard()&&sheetKind==="board"&&!(document.activeElement&&document.activeElement.id==="boardEdit")) openBoard(); };
 
 // ---- 主委回信: whoever left a message checks their mailbox when they come back; a letter lasts one day, or until they delete it ----
-const LETTER_TTL=24*3600e3; let letters=[];
+/* LETTER_TTL and letters are declared earlier, before the 公告 panel that shows them */
 function myMailId(){ let id=load("mz.id",""); if(!id){ id=Math.random().toString(36).slice(2,12); save("mz.id",id); } return id; }
-function renderLetterBtn(){ const b=$("#letterBtn"), now=Date.now(); letters=letters.filter(l=>now-l.at<LETTER_TTL); b.hidden=!letters.length; if(!letters.length) return;
+function lettersUnread(){ const read=load("mz.lettersRead",[]); return letters.some(l=>!read.includes(l.at)); }
+function renderLetterBtn(){ const b=$("#letterBtn"), now=Date.now(); letters=letters.filter(l=>now-l.at<LETTER_TTL); b.hidden=true; renderBoardBtn(); if(!letters.length) return;
   const read=load("mz.lettersRead",[]); const unread=letters.some(l=>!read.includes(l.at)); b.classList.toggle("unread",unread); b.textContent=unread?"💌 主委回信了":`💌 主委的回信${letters.length>1?`（${letters.length}）`:""}`; }
 async function checkLetters(){ const sent=Number(load("mz.sentMsg",0)); if(!sent||Date.now()-sent>60*864e5) return; // only people who left a message have a mailbox
   try{ const r=await fetch(`/letters?id=${encodeURIComponent(myMailId())}`,{cache:"no-store"}); if(!r.ok) return; const j=await r.json(); if(!j||!Array.isArray(j.letters)) return;
-    letters=j.letters.filter(l=>l&&Number.isFinite(l.at)&&typeof l.text==="string"); renderLetterBtn(); if(!$("#letterBtn").hidden&&$("#letterBtn").classList.contains("unread")) toast("💌 主委回信給你了，點左上角的信打開",4200); }catch(e){} }
+    letters=j.letters.filter(l=>l&&Number.isFinite(l.at)&&typeof l.text==="string"); renderLetterBtn(); if(lettersUnread()) toast("💌 主委回信給你了，點右上角的「公告」打開",4200); }catch(e){} }
 function openLetters(){ const now=Date.now(), read=load("mz.lettersRead",[]); letters.forEach(l=>{ if(!read.includes(l.at)) read.push(l.at); }); save("mz.lettersRead",read.slice(-30)); renderLetterBtn();
   if(!letters.length){ closeSheet(); return; }
   openSheet("letters","主委的回信",letters.map(l=>{ const h=Math.max(1,Math.ceil((LETTER_TTL-(now-l.at))/3600e3)); return `<div class="letter">
     ${l.q?`<p class="lq">你的留言：${esc(l.q)}</p>`:""}<p class="lto">${esc(msgName())}　您好：</p><div class="lbody">${esc(l.text)}</div>
     <p class="lsign">天后宮 主委 敬上<small>${fmtT(l.at)}</small></p>
     <div class="lfoot"><span>這封信約 ${h} 小時後自動消失</span><button data-act="delLetter" data-v="${l.at}">刪除這封信</button></div></div>`; }).join("")); }
-HANDLERS.delLetter=v=>{ const at=+v; letters=letters.filter(l=>l.at!==at); renderLetterBtn(); toast("信已刪除"); openLetters();
+HANDLERS.delLetter=v=>{ const at=+v; letters=letters.filter(l=>l.at!==at); renderLetterBtn(); toast("信已刪除"); openBoard();
   fetch(`/letters?id=${encodeURIComponent(myMailId())}&at=${at}&del=1`,{method:"POST"}).catch(()=>{}); };
+HANDLERS.contactOpen=()=>openContact(); HANDLERS.boardBack=()=>openBoard();
 $("#letterBtn").onclick=()=>{ ensureAudio(); if(sheetKind==="letters") closeSheet(); else openLetters(); };
 HANDLERS.openReply=(v,b)=>{ const box=b.parentElement.querySelector(".reply-box"); if(!box) return; box.hidden=!box.hidden; if(!box.hidden) box.querySelector("textarea").focus(); };
 HANDLERS.sendReply=async(v,b)=>{ const box=b.closest(".reply-box"); const text=(box.querySelector("textarea").value||"").trim(); if(!text){ toast("先寫回覆內容"); return; } if(hasAddLine(text)){ toast("回信不能寫加賴",2800); return; }
@@ -3695,7 +3700,11 @@ document.addEventListener("input",e=>{ const k=e.target&&e.target.dataset&&e.tar
 document.addEventListener("change",e=>{ if(e.target&&e.target.dataset&&e.target.dataset.vol==="s") sfx.coin(); });
 function dbgHTML(){ const t=(k,n)=>`<button class="chip" data-act="dbg" data-v="${k}" aria-pressed="${!!DBG[k]}">${n}</button>`; return `<div class="group"><span class="group-label">綠點測試（只影響這台手機，重新整理就恢復）</span><p class="note">一次關一個，看哪一個關掉後綠點不見，告訴我是哪一個。</p><div class="chips">${t("point","① 關掉點光源")}${t("spot","② 關掉聚光燈")}${t("tone","③ 關掉色調映射")}${t("env","④ 關掉環境反光")}</div></div>`; }
 function openGfx(){ const opt=(v,t,d)=>`<button class="good" data-act="quality" data-v="${v}" aria-pressed="${Q.mode===v}" style="${Q.mode===v?"border-color:var(--gold);background:rgba(142,28,20,.35)":""}"><span class="name">${t}${Q.mode===v?"　✓":""}</span><span class="meta">${d}</span></button>`;
-  openSheet("gfx","設定",`${installBlock()}${dbgHTML()}<div class="group"><span class="group-label">流暢度</span><div class="chips"><button class="chip" data-act="fps60" aria-pressed="${PACE.smooth}">流暢模式（一直 60 格，較耗電）</button><button class="chip" data-act="perfPanel" aria-pressed="${PERF.on}">效能面板</button><button class="chip" data-act="preDl">${PREDL.done?"✓ 已預先下載":"📥 預先下載全部"}</button></div><p class="note">關閉時：操作和走路時 60 格，站著看時 30 格，半分鐘沒碰螢幕 20 格，比較省電。</p></div><div class="group"><span class="group-label">畫質</span><p class="lead">畫面卡頓或手機發燙時，可以改用省電畫質。</p></div><div class="goods">${opt("auto","自動","進場後自動偵測，太卡會切到省電")}${opt("high","高畫質","光束、灰塵、全部燈光，最漂亮")}${opt("low","省電","降低解析度與特效，舊手機也順")}${opt("lite","低配","最省：模型減面、小貼圖、關閉抗鋸齒，給比較舊的手機（會重新載入）")}</div><p class="note">目前：${Q.lite?"低配":Q.low?"省電畫質":"高畫質"}</p>`); }
+  /* order: what players change most (畫質) first, then smoothness, then saving the temple to the phone; the testing tools only for the chair */
+  openSheet("gfx","設定",`<div class="group"><span class="group-label">畫質</span><p class="lead">畫面卡頓或手機發燙時，可以改用省電畫質。</p></div><div class="goods">${opt("auto","自動","進場後自動偵測，太卡會切到省電")}${opt("high","高畫質","光束、灰塵、全部燈光，最漂亮")}${opt("low","省電","降低解析度與特效，舊手機也順")}${opt("lite","低配","最省：模型減面、小貼圖、關閉抗鋸齒，給比較舊的手機（會重新載入）")}</div><p class="note">目前：${Q.lite?"低配":Q.low?"省電畫質":"高畫質"}</p>`
+    +`<div class="group"><span class="group-label">流暢度</span><div class="chips"><button class="chip" data-act="fps60" aria-pressed="${PACE.smooth}">流暢模式（一直 60 格，較耗電）</button></div><p class="note">關閉時：操作和走路時 60 格，站著看時 30 格，半分鐘沒碰螢幕 20 格，比較省電。</p></div>`
+    +`<div class="group"><span class="group-label">下載到手機</span><p class="lead">先把模型、音樂和圖片存進手機，之後進廟更快、更省流量。</p><div class="chips"><button class="chip" data-act="preDl">${PREDL.done?"✓ 已預先下載":"📥 預先下載全部"}</button></div></div>${installBlock()}`
+    +(me.sp?`<div class="group"><span class="group-label">主委測試工具</span><div class="chips"><button class="chip" data-act="perfPanel" aria-pressed="${PERF.on}">效能面板</button></div></div>${dbgHTML()}`:"")); }
 /* 綠點測試: switches to find which part of the lighting makes the green/dark speckles some phones show. They only change this screen. */
 const DBG={point:0,spot:0,tone:0,env:0}; let DBG_ENV=null;
 function dbgApply(){ scene.traverse(o=>{ if(o.isPointLight) o.visible=!DBG.point; else if(o.isSpotLight) o.visible=!DBG.spot; });
@@ -3706,7 +3715,7 @@ HANDLERS.dbg=(v,b)=>{ DBG[v]=DBG[v]?0:1; b.setAttribute("aria-pressed",String(!!
 const PREDL={done:load("mz.predl",false),busy:false};
 function preDlList(){ const L=Q.lite; const models=["mazu","qianli","shunfeng","guanyin","xuantian","guangong","caishen","yuelao","huye","tiangong","jinlu","guanyin2","zhusheng","jiutian","dizang","doumu","wenchang","tudi","roof1","roof2","roof3","decor","stage","bdx","shishim","shishif","huachuang","weiqiangfar","stall-bbq","stall-pachinko","stall-boba","stall-balloon","stall-fish","stall-qq","stall-sausage"];
   const out=[]; models.forEach(n=>{ out.push(n+"-lite.glb"); if(!L&&STATUE_LOD.has(n)) out.push(n+".glb"); if(!L&&!STATUE_LOD.has(n)) out[out.length-1]=n+".glb"; });
-  THANKS.forEach(t=>out.push(t.img)); ["music.mp3","fwsong.mp3","catsong.mp3","opera1.mp3","opera2.mp3","opera3.mp3","mural.jpg","tex1.jpg"].forEach(f=>out.push(f)); return out; }
+  THANKS.forEach(t=>out.push(t.img)); ["music.mp3","rearsong.mp3","fwsong.mp3","catsong.mp3","opera1.mp3","opera2.mp3","opera3.mp3","mural.jpg","tex1.jpg",...[...Array(14)].map((_,i)=>"ghost"+(i+1)+".webp"),...["frame","cradle","hanger","zzz","watch","cloud","meter","barP","barR"].map(n=>"zs-"+n+".webp")].forEach(f=>out.push(f)); return out; }
 HANDLERS.preDl=async(v,b)=>{ if(PREDL.busy) return; if(IN_ARTIFACT||!("serviceWorker" in navigator)){ toast("這個環境不能預先下載（請在網站上開啟）",2800); return; }
   const list=preDlList(); PREDL.busy=true; let i=0, ok=0, bytes=0; const next=async()=>{ while(i<list.length){ const f=list[i++]; try{ const r=await fetch(f,{cache:"no-cache"}); if(r.ok){ const bl=await r.blob(); bytes+=bl.size; ok++; } }catch(e){} if(b) b.textContent=`📥 下載中 ${ok}/${list.length}（${(bytes/1e6).toFixed(0)} MB）`; } };
   await Promise.all([next(),next()]); PREDL.busy=false; PREDL.done=ok===list.length; save("mz.predl",PREDL.done); if(b) b.textContent=PREDL.done?"✓ 已預先下載":"📥 再試一次";
@@ -4029,7 +4038,7 @@ function renderHalls(){ const c=HALLS.counts||[]; const cur=HALLS.current(); con
 function localHalls(){ if(HALLS.switchTo) return; let hall=0; HALLS.current=()=>hall;
   HALLS.switchTo=i=>{ if(i===hall||i<0||i>=HALL_NAMES.length) return; hall=i; document.querySelector(".hall-name").textContent="天后宮 "+HALL_NAMES[i]; buildNpcs(); updateCount(); toast(`前往${HALL_NAMES[i]}`); }; }
 function openHalls(){ localHalls(); if(!HALLS.switchTo){ openSheet("halls","殿別",`<p class="lead">目前在單人或預覽模式，沒有其他殿可以切換。</p>`); return; }
-  openSheet("halls","切換殿別",`<p class="lead">每殿最多 ${HALL_CAP} 人。前面的殿快滿時，下一殿才會開放。</p><div class="hall-list" id="hallList"></div>`); renderHalls(); }
+  openSheet("halls","殿別",`<p class="lead">每殿最多 ${HALL_CAP} 人。前面的殿快滿時，下一殿才會開放。</p><div class="hall-list" id="hallList"></div>`); renderHalls(); }
 setInterval(()=>{ updateCount(); if(sheetKind==="halls") renderHalls(); },10000);
 HANDLERS.hallGo=v=>{ const i=+v; if(i===HALLS.current()){ closeSheet(); return; } if((HALLS.counts[i]||0)>=HALL_CAP){ toast("這一殿已經滿了"); return; } HALLS.switchTo(i); closeSheet(); };
 
@@ -5574,7 +5583,7 @@ Avatar.prototype.setAcc=function(eq){ eq=[...(eq||[]),0,0,0,0].slice(0,4).map(v=
 let BUB_T=null; const BUB_TEX=()=>BUB_T||(BUB_T=cvs(64,64,x=>{ const g=x.createRadialGradient(32,32,18,32,32,30); g.addColorStop(0,"rgba(255,255,255,.08)"); g.addColorStop(.8,"rgba(255,255,255,.55)"); g.addColorStop(1,"rgba(255,255,255,0)"); x.fillStyle=g; x.beginPath(); x.arc(32,32,30,0,7); x.fill(); x.fillStyle="rgba(255,255,255,.95)"; x.beginPath(); x.ellipse(23,22,6,4,-.6,0,7); x.fill(); }));
 const stinkMat=new T.SpriteMaterial({map:softTex,color:new T.Color("#8fd43a"),transparent:true,opacity:.75,depthWrite:false});
 const aromaMat=new T.SpriteMaterial({map:softTex,color:new T.Color("#ffd27a"),transparent:true,opacity:.55,depthWrite:false,blending:T.AdditiveBlending});
-const STINK_WORDS=["你好臭～","好臭！","臭臭的…","噗～","誰在烤香腸…"];
+
 function stinkCloud(av){ const sp=new T.Sprite(new T.SpriteMaterial({map:nmTex("sg-stink"),transparent:true,depthWrite:false})); sp.userData.noMerge=1; const h=av.root.position; sp.position.set(h.x+rand(-.3,.3),2.05,h.z+rand(-.3,.3)); sp.scale.set(.9,.47,1); scene.add(sp);
   const t0=performance.now(); const up=()=>{ const k=(performance.now()-t0)/2400; sp.position.y=2.05+k*.7; sp.material.opacity=k<.15?k/.15:k>.7?(1-k)/.3:1; sp.scale.set(.9+k*.2,.47+k*.1,1); if(k<1) requestAnimationFrame(up); else { scene.remove(sp); sp.material.dispose(); } }; requestAnimationFrame(up); }
 const FLY_MAT=new T.SpriteMaterial({map:softTex,color:new T.Color("#111111"),transparent:true,depthWrite:false});
@@ -5588,7 +5597,7 @@ function stinkReact(av,lines=["誰吃大蒜！？","好臭！","蒜頭怪來了�
 function accTick(av,dt){ stinkFlies(av,!!(av.accHand&&av.accHand.userData.stink&&av.root.visible)); if(!av.root.visible) return;
   const near=Math.hypot(av.pos.x-meAv.pos.x,av.pos.y-meAv.pos.y)<25;
   if(av.accHand&&av.accHand.userData.stink&&near){ av.stinkT=(av.stinkT||0)-dt; if(av.stinkT<0){ av.stinkT=.12+Math.random()*.1; const sg=av.accHand.children[1]||av.accHand; sg.getWorldPosition(_v1); spawnSmoke(_v1.x+rand(-.04,.04),_v1.y+rand(-.04,.06),_v1.z+rand(-.04,.04),{mat:stinkMat.clone(),size:.07,grow:.16,life:1.1,op:.5,vy:.22}); } // a steady thin wisp rising from the sausage itself
-    av.stinkSay=(av.stinkSay??0)-dt; if(av.stinkSay<0){ av.stinkSay=.5; stinkReact(av); if(false) av.say(STINK_WORDS[(Math.random()*STINK_WORDS.length)|0],"#c8f07a",1.8); } }
+    av.stinkSay=(av.stinkSay??0)-dt; if(av.stinkSay<0){ av.stinkSay=.5; stinkReact(av); } }
   if(av.accHand&&av.accHand.userData.aroma){ const gl=av.accHand.userData.glow; if(gl){ const k=.42+Math.sin(performance.now()/160)*.06; gl.scale.set(k,k,1); }
     if(near){ av.aromaT=(av.aromaT||0)-dt; if(av.aromaT<0){ av.aromaT=.12+Math.random()*.1; const sk=av.accHand.children[3]||av.accHand; sk.getWorldPosition(_v1); spawnSmoke(_v1.x+rand(-.04,.04),_v1.y+rand(-.02,.08),_v1.z+rand(-.04,.04),{mat:aromaMat.clone(),size:.07,grow:.16,life:1.1,op:.5,vy:.22}); } } // a steady thin warm wisp from the skewer
     av.aromaSay=(av.aromaSay??0)-dt; if(av.aromaSay<0){ av.aromaSay=.5; stinkReact(av,["噢好香！","肚子好餓！","好想吃烤肉..."],"#ffd27a"); } }
