@@ -5681,7 +5681,7 @@ async function godGameWin(g,ms,accId,extra){ const rw=extra||gameReward(g,accId)
   openSheet("godGame",GOD_GAMES[g]||"小遊戲",`<div class="gg-done"><div class="gg-time">${fmtMs(ms)}</div><p class="lead">${rw.kind==="acc"?"🎁 ":rw.kind==="gacha"?"🎟️ ":""}${esc(rw.text)}</p>
     <div class="group"><span class="group-label">🏆 最快排行榜</span><div id="ggBoard"><p class="note">讀取中…</p></div></div></div>`);
   const list=await lbSubmit(g,ms); const el=$("#ggBoard"); if(el) el.innerHTML=lbHTML(list); }
-const GOD_PLAY={doumu:"⭐ 眾星歸位（60 秒點亮 8 顆星）",wenchang:"🖌️ 寫字（照紅字描 3 個字）",tudi:"⛏️ 尋寶（找到發光的寶藏挖出來）",zhusheng:"🍼 哄寶寶睡覺",jiutian:"☯️ 八卦迷宮（傾斜手機滾彈珠）",guanyin:"💧 接福水（轉動木水道）",dizang:"🧩 記憶碎片（幫小幽靈拼回記憶）"};
+const GOD_PLAY={doumu:"⭐ 眾星歸位（60 秒點亮 10 顆星）",wenchang:"🖌️ 寫字（照紅字描 3 個字）",tudi:"⛏️ 尋寶（找到發光的寶藏挖出來）",zhusheng:"🍼 哄寶寶睡覺",jiutian:"☯️ 八卦迷宮（傾斜手機滾彈珠）",guanyin:"💧 接福水（轉動木水道）",dizang:"🧩 記憶碎片（幫小幽靈拼回記憶）"};
 const GOD_START={}; HANDLERS.godPlay=g=>{ closeSheet(); if(GOD_START[g]) GOD_START[g](); else toast("這個遊戲還在準備中"); };
 /* ================= 土地公・尋寶: a beam of light marks treasure somewhere in the grounds; walk there, tap it, dig it up ================= */
 const TH={on:false,t0:0,x:0,z:0,g:null,hit:null,digging:false};
@@ -6056,87 +6056,79 @@ function dmPath(x,k,r){ x.beginPath(); if(k==="circle") x.arc(0,0,r,0,7);
 function dmShape(x,k,px,py,r,rot=0,a=1,glow=1){ x.save(); x.translate(px,py); x.rotate(rot); x.globalAlpha=a; x.shadowColor=DM_KIND[k].c; x.shadowBlur=14*glow;
   const g=x.createRadialGradient(-r*.3,-r*.35,1,0,0,r*1.1); g.addColorStop(0,"#fff"); g.addColorStop(.35,DM_KIND[k].c); g.addColorStop(1,DM_KIND[k].c); x.fillStyle=g; dmPath(x,k,r); x.fill();
   x.shadowBlur=0; x.strokeStyle="rgba(255,255,255,.75)"; x.lineWidth=2; x.stroke(); x.restore(); }
-function playDoumu(){ const L=gameLayer("斗姥元君・眾星歸位","把星圖要的形狀拖進左下角的籃子，再放回星圖，60 秒點亮 8 顆星"); const {x,cv}=L, LIMIT=60, KINDS=Object.keys(DM_KIND);
-  const need=[]; for(let i=0;i<8;i++) need.push(i<5?KINDS[i]:KINDS[(Math.random()*5)|0]); need.sort(()=>Math.random()-.5);
-  const CH=[[.06,.62],[.22,.5],[.38,.56],[.54,.5],[.62,.74],[.84,.8],[.86,.5],[.9,.08]]; /* 搖光 開陽 玉衡 天權 天璣 天旋 天樞 + 北極星 */
-  const LINES=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,3]];
-  let phase=1, t0=performance.now(), last=t0, items=[], held=null, basket=[], lit=need.map(()=>0), meteors=[], clouds=[], flash=0, bolt=null, nextSpawn=0, nextMet=4, nextCloud=2, nextBolt=11, msg="把需要的形狀拖進籃子！", msgT=t0, fin=0, fail=false, done=false, sparks=[];
-  const sky=[...Array(110)].map(()=>[Math.random(),Math.random(),Math.random()*1.4+.3,Math.random()*6]);
-  const G=()=>{ const W=L.W(), H=L.H(); const cw=Math.min(W-40,520), chH=Math.min(H*.42,cw*.7); return {W,H,bx:62,by:H-74,br:50,cx:(W-cw)/2,cy:118,cw,chH}; };
-  const left=()=>{ const m={}; need.forEach(k=>m[k]=(m[k]||0)+1); basket.forEach(b=>m[b.k]--); return m; };
+/* 眾星歸位 (v2): the star chart is up from the start — 10 holes in a new random constellation each game. Shape-stars fall through the
+   dusk sky; catch one and drag it straight into a hole of the same shape. Clouds drift across in front of everything; meteors knock a
+   star out of your hand. All 10 lit in 60 s: the sky brightens and 斗姥元君 gives her blessing. */
+function playDoumu(){ const L=gameLayer("斗姥元君・眾星歸位","抓住落下的星星，拖到星圖上一樣形狀的洞，60 秒點亮 10 顆星"); const {x,cv}=L, LIMIT=60, KINDS=Object.keys(DM_KIND), N=10;
+  const need=[]; for(let i=0;i<N;i++) need.push(i<5?KINDS[i]:KINDS[(Math.random()*5)|0]); need.sort(()=>Math.random()-.5);
+  /* a fresh constellation: 10 points spread over the chart (kept apart), joined by their shortest links */
+  const CH=[]; for(let tries=0;CH.length<N&&tries<4000;tries++){ const p=[.06+Math.random()*.88,.08+Math.random()*.84]; if(CH.every(q=>Math.hypot((q[0]-p[0])*1.4,q[1]-p[1])>.2)) CH.push(p); }
+  while(CH.length<N) CH.push([.1+Math.random()*.8,.1+Math.random()*.8]);
+  const LINES=[]; { const inT=[0], d=(i,j)=>Math.hypot((CH[i][0]-CH[j][0])*1.4,CH[i][1]-CH[j][1]); while(inT.length<N){ let best=null; for(const i of inT) for(let j=0;j<N;j++) if(!inT.includes(j)&&(!best||d(i,j)<best[2])) best=[i,j,d(i,j)]; LINES.push([best[0],best[1]]); inT.push(best[1]); } }
+  let t0=performance.now(), last=t0, items=[], held=null, lit=need.map(()=>0), meteors=[], clouds=[], flash=0, bolt=null, nextSpawn=0, nextMet=5, nextCloud=1.5, nextBolt=14, msg="抓住落下的星星，放進一樣形狀的洞！", msgT=t0, fin=0, fail=false, done=false, sparks=[];
+  const sky=[...Array(70)].map(()=>[Math.random(),Math.random()*.6,Math.random()*1.2+.3,Math.random()*6]);
+  const G=()=>{ const W=L.W(), H=L.H(); const cw=Math.min(W-60,560), chH=Math.min(H*.4,cw*.8); return {W,H,cx:(W-cw)/2,cy:150,cw,chH}; };
   const holeXY=(i,g)=>[g.cx+CH[i][0]*g.cw,g.cy+CH[i][1]*g.chH];
+  const left=()=>{ const m={}; need.forEach((k,i)=>{ if(!lit[i]) m[k]=(m[k]||0)+1; }); return m; };
   const say=s2=>{ msg=s2; msgT=performance.now(); };
-  const note=i=>{ const sc=[523,587,659,784,880,1047,1175,1319]; tone(sc[i%8],.6,.06,"sine"); tone(sc[i%8]*2,.4,.025,"sine",.05); };
+  const note=i=>{ const sc=[523,587,659,784,880,1047,1175,1319,1397,1568]; tone(sc[i%10],.6,.06,"sine"); tone(sc[i%10]*2,.4,.025,"sine",.05); };
+  const burst=(px,py,c,n)=>{ for(let i=0;i<n;i++){ const a=Math.random()*6.283, v=60+Math.random()*160; sparks.push({x:px,y:py,vx:Math.cos(a)*v,vy:Math.sin(a)*v,l:0,m:.6+Math.random()*.6,c}); } };
   const pt=e=>{ const rc=cv.getBoundingClientRect(); return [e.clientX-rc.left,e.clientY-rc.top]; };
-  cv.addEventListener("pointerdown",e=>{ if(done||fail) return; const [px,py]=pt(e); let best=null, bd=48;
-    const pool=phase===1?items:basket.filter(b=>!b.placed); for(const it of pool){ const d=Math.hypot(it.x-px,it.y-py); if(d<bd){ bd=d; best=it; } }
+  cv.addEventListener("pointerdown",e=>{ if(done||fail) return; const [px,py]=pt(e); let best=null, bd=46; for(const it of items){ const d=Math.hypot(it.x-px,it.y-py); if(d<bd){ bd=d; best=it; } }
     if(best){ held=best; best.held=true; best.ox=best.x-px; best.oy=best.y-py; tone(660,.08,.04,"triangle"); } });
   cv.addEventListener("pointermove",e=>{ if(!held) return; const [px,py]=pt(e); held.x=px+held.ox; held.y=py+held.oy; });
-  const drop=()=>{ if(!held) return; const it=held, g=G(); held=null; it.held=false;
-    if(phase===1){ if(Math.hypot(it.x-g.bx,it.y-g.by)<g.br+22){ const m=left(); if(m[it.k]>0){ items.splice(items.indexOf(it),1); basket.push({k:it.k,x:0,y:0,placed:false}); note(basket.length-1); burst(g.bx,g.by,DM_KIND[it.k].c,10);
-          if(basket.length===need.length){ phase=2; say("星圖出現了！把形狀放回對應的洞"); layoutBasket(); } } else { it.vy=-120; it.vx=60; say(`星圖不需要更多${DM_KIND[it.k].n}了`); tone(260,.15,.05,"triangle"); } } }
-    else { let ok=false; need.forEach((k,i)=>{ if(ok||lit[i]||k!==it.k) return; const [hx,hy]=holeXY(i,g); if(Math.hypot(it.x-hx,it.y-hy)<38){ ok=true; lit[i]=performance.now(); it.placed=true; note(i); burst(hx,hy,"#fff6c0",22);
-          if(lit.every(v=>v)){ done=true; fin=performance.now(); const ms=fin-t0; healSound(); setTimeout(()=>{ L.close(); godGameWin("doumu",ms,"starwand"); },4200); } } });
-      if(!ok){ layoutBasket(); tone(260,.15,.05,"triangle"); } } };
+  const drop=()=>{ if(!held) return; const it=held, g=G(); held=null; it.held=false; it.vy=20;
+    let hit=-1, near=-1; need.forEach((k,i)=>{ if(lit[i]) return; const [hx,hy]=holeXY(i,g), d=Math.hypot(it.x-hx,it.y-hy); if(d<40){ if(k===it.k&&hit<0) hit=i; else near=i; } });
+    if(hit>=0){ lit[hit]=performance.now(); items.splice(items.indexOf(it),1); const [hx,hy]=holeXY(hit,g); note(lit.filter(v=>v).length-1); burst(hx,hy,"#fff6c0",22);
+      if(lit.every(v=>v)){ done=true; fin=performance.now(); const ms=fin-t0; healSound(); setTimeout(()=>{ L.close(); godGameWin("doumu",ms,"starwand"); },4200); } }
+    else if(near>=0){ say(`形狀不對，這個洞要${DM_KIND[need[near]].n}`); tone(260,.15,.05,"triangle"); } };
   cv.addEventListener("pointerup",drop); cv.addEventListener("pointercancel",drop);
-  const layoutBasket=()=>{ const g=G(), rest=basket.filter(b=>!b.placed); rest.forEach((b,i)=>{ b.x=g.W/2+(i-(rest.length-1)/2)*Math.min(46,(g.W-40)/Math.max(1,rest.length)); b.y=g.H-80; }); };
-  const burst=(px,py,c,n)=>{ for(let i=0;i<n;i++){ const a=Math.random()*6.283, v=60+Math.random()*160; sparks.push({x:px,y:py,vx:Math.cos(a)*v,vy:Math.sin(a)*v,l:0,m:.6+Math.random()*.6,c}); } };
-  window.__dm=()=>({phase,need,basket:basket.map(b=>b.k),lit:lit.map(v=>!!v),done,fail,items:items.length});
-  window.__dmAuto=(n=99)=>{ const g=G(); if(phase===1){ for(const k of Object.entries(left()).flatMap(([k,c])=>Array(Math.max(0,c)).fill(k)).slice(0,n)){ const it={k,x:g.bx,y:g.by,vx:0,vy:0,rot:0}; items.push(it); held=it; drop(); } return; }
-    need.forEach((k,i)=>{ if(n<=0||lit[i]) return; const b=basket.find(b2=>!b2.placed&&b2.k===k); if(!b) return; const [hx,hy]=holeXY(i,g); b.x=hx; b.y=hy; held=b; n--; drop(); }); };
+  window.__dm=()=>({need,lit:lit.map(v=>!!v),done,fail,items:items.length,holes:CH.length,lines:LINES.length});
+  window.__dmAuto=(n=99)=>{ const g=G(); need.forEach((k,i)=>{ if(n<=0||lit[i]) return; const [hx,hy]=holeXY(i,g); const it={k,x:hx,y:hy,vx:0,vy:0,rot:0}; items.push(it); held=it; n--; drop(); }); };
   const draw=now=>{ if(L.done) return; const dt=Math.min(.033,(now-last)/1000); last=now; const g=G(), el=(now-t0)/1000;
-    if(!done&&!fail&&el>LIMIT){ fail=true; held=null; tone(220,.4,.1,"triangle"); const b=document.createElement("div"); b.innerHTML=`<p>時間到了，星星還沒全部歸位</p><button class="btn primary">再試一次</button>`; b.style.cssText="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(16,14,40,.94);border:1px solid #c9a6ff;border-radius:14px;padding:20px 26px;text-align:center;color:#ffe9b0;font:700 19px var(--f-display);z-index:3"; L.el.appendChild(b); b.querySelector("button").onclick=()=>{ L.close(); playDoumu(); }; }
+    if(!done&&!fail&&el>LIMIT){ fail=true; held=null; tone(220,.4,.1,"triangle"); const b=document.createElement("div"); b.innerHTML=`<p>時間到了，星星還沒全部歸位</p><button class="btn primary">再試一次</button>`; b.style.cssText="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(40,16,40,.94);border:1px solid #ffb07a;border-radius:14px;padding:20px 26px;text-align:center;color:#ffe9b0;font:700 19px var(--f-display);z-index:3"; L.el.appendChild(b); b.querySelector("button").onclick=()=>{ L.close(); playDoumu(); }; }
     const fk=done?Math.min(1,(now-fin)/1800):0;
-    // sky: deep night, brightening into dawn gold at the finale
-    const bg=x.createLinearGradient(0,0,0,g.H); bg.addColorStop(0,`rgb(${12+fk*60|0},${14+fk*40|0},${46+fk*70|0})`); bg.addColorStop(.6,`rgb(${36+fk*150|0},${22+fk*90|0},${74+fk*60|0})`); bg.addColorStop(1,`rgb(${70+fk*180|0},${40+fk*130|0},${90+fk*20|0})`); x.fillStyle=bg; x.fillRect(0,0,g.W,g.H);
-    sky.forEach(([sx,sy,sr,ph])=>{ x.globalAlpha=.35+.35*Math.sin(now/600+ph); x.fillStyle="#fff"; x.beginPath(); x.arc(sx*g.W,sy*g.H,sr,0,7); x.fill(); }); x.globalAlpha=1;
+    // dusk sky: purple overhead fading to warm orange at the horizon (brightening to gold at the finale)
+    const bg=x.createLinearGradient(0,0,0,g.H); bg.addColorStop(0,`rgb(${58+fk*120|0},${30+fk*90|0},${92+fk*50|0})`); bg.addColorStop(.45,`rgb(${150+fk*80|0},${62+fk*90|0},${110-fk*20|0})`); bg.addColorStop(.8,`rgb(${240|0},${132+fk*70|0},${78+fk*50|0})`); bg.addColorStop(1,`rgb(255,${178+fk*50|0},${110+fk*60|0})`); x.fillStyle=bg; x.fillRect(0,0,g.W,g.H);
+    sky.forEach(([sx,sy,sr,ph])=>{ x.globalAlpha=(.25+.35*Math.sin(now/600+ph))*(1-sy); x.fillStyle="#fff"; x.beginPath(); x.arc(sx*g.W,sy*g.H,sr,0,7); x.fill(); }); x.globalAlpha=1;
+    { x.fillStyle="rgba(60,20,50,.55)"; x.beginPath(); x.moveTo(0,g.H); for(let i=0;i<=12;i++){ x.lineTo(i/12*g.W,g.H-60-Math.sin(i*1.7)*22-Math.sin(i*.6)*30); } x.lineTo(g.W,g.H); x.fill(); } /* distant hills */
     if(!done&&!fail){
-      if(phase===1){ nextSpawn-=dt; if(nextSpawn<=0){ nextSpawn=.55+Math.random()*.35; const m=left(), want=KINDS.filter(k=>m[k]>0); const k=want.length&&Math.random()<.6?want[(Math.random()*want.length)|0]:KINDS[(Math.random()*5)|0];
-          items.push({k,x:40+Math.random()*(g.W-80),y:-30,vx:(Math.random()-.5)*20,vy:55+Math.random()*45,rot:Math.random()*6,vr:(Math.random()-.5)*1.2,ph:Math.random()*6}); }
-        for(const it of items) if(!it.held){ it.vy=Math.min(it.vy+40*dt,110); it.x+=(it.vx+Math.sin(now/700+it.ph)*18)*dt; it.y+=it.vy*dt; it.vx*=.98; it.rot+=it.vr*dt; }
-        items=items.filter(it=>it.held||it.y<g.H+40);
-        nextCloud-=dt; if(nextCloud<=0){ nextCloud=6+Math.random()*4; const dir=Math.random()<.5?1:-1; clouds.push({x:dir>0?-160:g.W+160,y:g.H*(.25+Math.random()*.4),v:dir*(26+Math.random()*16),s:.9+Math.random()*.6}); }
-        nextBolt-=dt; if(nextBolt<=0){ nextBolt=10+Math.random()*5; flash=1; const bx0=g.W*(.2+Math.random()*.6); const pts=[[bx0,0]]; let yy=0; while(yy<g.H*.7){ yy+=30+Math.random()*40; pts.push([pts[pts.length-1][0]+(Math.random()-.5)*60,yy]); } bolt={pts,t:now};
-          tone(70,.7,.14,"sawtooth"); tone(50,.9,.1,"square",.05); if(held){ held.held=false; held.vy=40; held=null; } for(const it of items){ it.vx+=(Math.random()-.5)*160; } say("打雷了！手上的形狀掉了"); }
-      }
-      nextMet-=dt; if(nextMet<=0){ nextMet=3.5+Math.random()*3; const fromR=Math.random()<.5; meteors.push({x:fromR?g.W+40:-40,y:Math.random()*g.H*.35+80,vx:(fromR?-1:1)*(320+Math.random()*120),vy:180+Math.random()*80}); }
-      for(const m of meteors){ m.x+=m.vx*dt; m.y+=m.vy*dt; if(held&&Math.hypot(held.x-m.x,held.y-m.y)<34){ const h=held; h.held=false; held=null; if(phase===1){ h.vx=m.vx*.4; h.vy=m.vy*.3; } else layoutBasket(); say("被流星撞掉了！"); tone(180,.25,.08,"triangle"); burst(m.x,m.y,"#ffd0a0",8); }
-        if(phase===1) for(const it of items) if(!it.held&&Math.hypot(it.x-m.x,it.y-m.y)<26){ it.vx+=m.vx*.3; it.vy=-30; } }
+      nextSpawn-=dt; if(nextSpawn<=0){ nextSpawn=.5+Math.random()*.35; const m=left(), want=KINDS.filter(k=>m[k]>0); const k=want.length&&Math.random()<.65?want[(Math.random()*want.length)|0]:KINDS[(Math.random()*5)|0];
+        items.push({k,x:30+Math.random()*(g.W-60),y:-30,vx:(Math.random()-.5)*24,vy:45+Math.random()*40,rot:Math.random()*6,vr:(Math.random()-.5)*1.4,ph:Math.random()*6}); }
+      for(const it of items) if(!it.held){ it.vy=Math.min(it.vy+35*dt,100); it.x+=(it.vx+Math.sin(now/700+it.ph)*16)*dt; it.y+=it.vy*dt; it.vx*=.98; it.rot+=it.vr*dt; }
+      items=items.filter(it=>it.held||it.y<g.H+40);
+      nextCloud-=dt; if(nextCloud<=0){ nextCloud=4.5+Math.random()*3.5; const dir=Math.random()<.5?1:-1; clouds.push({x:dir>0?-180:g.W+180,y:g.cy+g.chH*(.1+Math.random()*.9),v:dir*(24+Math.random()*16),s:.9+Math.random()*.7}); }
+      nextMet-=dt; if(nextMet<=0){ nextMet=4+Math.random()*3; const fromR=Math.random()<.5; meteors.push({x:fromR?g.W+40:-40,y:Math.random()*g.H*.4+60,vx:(fromR?-1:1)*(330+Math.random()*120),vy:170+Math.random()*80}); }
+      for(const m of meteors){ m.x+=m.vx*dt; m.y+=m.vy*dt; if(held&&Math.hypot(held.x-m.x,held.y-m.y)<34){ held.held=false; held.vx=m.vx*.4; held.vy=m.vy*.3; held=null; say("被流星撞掉了！"); tone(180,.25,.08,"triangle"); burst(m.x,m.y,"#ffd0a0",8); }
+        for(const it of items) if(!it.held&&Math.hypot(it.x-m.x,it.y-m.y)<26){ it.vx+=m.vx*.3; it.vy=-30; } }
       meteors=meteors.filter(m=>m.y<g.H+60&&m.x>-80&&m.x<g.W+80);
+      nextBolt-=dt; if(nextBolt<=0){ nextBolt=13+Math.random()*6; flash=1; const bx0=g.W*(.2+Math.random()*.6), pts=[[bx0,0]]; let yy=0; while(yy<g.H*.6){ yy+=30+Math.random()*40; pts.push([pts[pts.length-1][0]+(Math.random()-.5)*60,yy]); } bolt={pts,t:now};
+        tone(70,.7,.14,"sawtooth"); tone(50,.9,.1,"square",.05); if(held){ held.held=false; held.vy=40; held=null; say("打雷了！手上的星星掉了"); } }
     }
-    // star chart
-    const ca=phase===2?1:.22; x.save(); x.globalAlpha=ca; x.strokeStyle="rgba(200,190,255,.5)"; x.lineWidth=2; x.setLineDash([4,6]); x.beginPath(); for(const [a2,b2] of LINES){ const p=holeXY(a2,g), q=holeXY(b2,g); x.moveTo(p[0],p[1]); x.lineTo(q[0],q[1]); } { const p=holeXY(6,g), q=holeXY(7,g); x.moveTo(p[0],p[1]); x.lineTo(q[0],q[1]); } x.stroke(); x.setLineDash([]);
-    need.forEach((k,i)=>{ const [hx,hy]=holeXY(i,g); if(lit[i]){ const lk=Math.min(1,(now-lit[i])/400); x.globalAlpha=1; x.save(); x.translate(hx,hy); x.globalCompositeOperation="lighter"; const r=26+6*Math.sin(now/300+i); const rg=x.createRadialGradient(0,0,0,0,0,r*2.2); rg.addColorStop(0,"rgba(255,250,210,.95)"); rg.addColorStop(.3,"rgba(255,220,140,.5)"); rg.addColorStop(1,"rgba(255,200,120,0)"); x.fillStyle=rg; x.beginPath(); x.arc(0,0,r*2.2*lk,0,7); x.fill(); x.restore(); dmShape(x,k,hx,hy,17,0,1,2); }
-      else { x.save(); x.translate(hx,hy); x.globalAlpha=ca; x.fillStyle="rgba(10,8,30,.6)"; dmPath(x,k,19); x.fill(); x.setLineDash([3,3]); x.strokeStyle=DM_KIND[k].c; x.lineWidth=2; x.stroke(); x.setLineDash([]); x.restore(); } });
-    if(lit.some(v=>v)){ x.globalAlpha=1; x.strokeStyle="rgba(255,236,170,.75)"; x.lineWidth=2.5; x.shadowColor="#ffe08a"; x.shadowBlur=10; x.beginPath(); for(const [a2,b2] of LINES) if(lit[a2]&&lit[b2]){ const p=holeXY(a2,g), q=holeXY(b2,g); x.moveTo(p[0],p[1]); x.lineTo(q[0],q[1]); } if(lit[6]&&lit[7]){ const p=holeXY(6,g), q=holeXY(7,g); x.moveTo(p[0],p[1]); x.lineTo(q[0],q[1]); } x.stroke(); x.shadowBlur=0; }
+    // star chart (always there)
+    x.save(); x.strokeStyle="rgba(255,240,220,.45)"; x.lineWidth=2; x.setLineDash([4,6]); x.beginPath(); for(const [a2,b2] of LINES){ const p=holeXY(a2,g), q=holeXY(b2,g); x.moveTo(p[0],p[1]); x.lineTo(q[0],q[1]); } x.stroke(); x.setLineDash([]);
+    x.strokeStyle="rgba(255,236,170,.85)"; x.lineWidth=2.5; x.shadowColor="#ffe08a"; x.shadowBlur=10; x.beginPath(); for(const [a2,b2] of LINES) if(lit[a2]&&lit[b2]){ const p=holeXY(a2,g), q=holeXY(b2,g); x.moveTo(p[0],p[1]); x.lineTo(q[0],q[1]); } x.stroke(); x.shadowBlur=0;
+    need.forEach((k,i)=>{ const [hx,hy]=holeXY(i,g); if(lit[i]){ const lk=Math.max(.01,Math.min(1,(now-lit[i])/400)); x.save(); x.translate(hx,hy); x.globalCompositeOperation="lighter"; const r=24+6*Math.sin(now/300+i), rg=x.createRadialGradient(0,0,0,0,0,r*2.2); rg.addColorStop(0,"rgba(255,250,210,.95)"); rg.addColorStop(.3,"rgba(255,220,140,.5)"); rg.addColorStop(1,"rgba(255,200,120,0)"); x.fillStyle=rg; x.beginPath(); x.arc(0,0,r*2.2*lk,0,7); x.fill(); x.restore(); dmShape(x,k,hx,hy,17,0,1,2); }
+      else { x.save(); x.translate(hx,hy); const hov=held&&held.k===k&&Math.hypot(held.x-hx,held.y-hy)<40; x.fillStyle=hov?"rgba(255,240,200,.35)":"rgba(40,10,40,.55)"; dmPath(x,k,19); x.fill(); x.setLineDash([3,3]); x.strokeStyle=DM_KIND[k].c; x.lineWidth=hov?3:2; x.stroke(); x.setLineDash([]); x.restore(); } });
     x.restore();
-    // clouds
-    for(const c of clouds){ c.x+=c.v*dt; if(phase===2) c.a=Math.max(0,(c.a??.82)-dt*.8); /* clouds clear away once the chart appears */ x.save(); x.globalAlpha=c.a??.82; x.fillStyle="#cfd2ea"; x.shadowColor="rgba(0,0,0,.3)"; x.shadowBlur=20; x.beginPath(); for(const [ox,oy,r] of [[0,0,46],[44,8,38],[-44,10,36],[20,-26,34],[-18,-22,30]]) { x.moveTo(c.x+ox*c.s+r*c.s,c.y+oy*c.s); x.arc(c.x+ox*c.s,c.y+oy*c.s,r*c.s,0,7); } x.fill(); x.restore(); }
-    clouds=clouds.filter(c=>c.x>-260&&c.x<g.W+260);
-    // falling shapes / basket shapes
-    if(phase===1) for(const it of items) dmShape(x,it.k,it.x,it.y,it.held?24:20,it.rot,1,it.held?2:1);
-    // basket
-    if(phase===1){ x.save(); x.translate(g.bx,g.by); const bg2=x.createLinearGradient(0,-30,0,40); bg2.addColorStop(0,"#d8a860"); bg2.addColorStop(1,"#8a5a26"); x.fillStyle=bg2; x.beginPath(); x.moveTo(-g.br,-12); x.lineTo(g.br,-12); x.lineTo(g.br*.75,38); x.lineTo(-g.br*.75,38); x.closePath(); x.fill();
-      x.strokeStyle="rgba(90,50,20,.6)"; x.lineWidth=2; for(let i=-3;i<=3;i++){ x.beginPath(); x.moveTo(i*14,-12); x.lineTo(i*10.5,38); x.stroke(); } x.strokeStyle="#f0d090"; x.lineWidth=5; x.beginPath(); x.ellipse(0,-12,g.br,10,0,0,7); x.stroke();
-      if(held){ x.globalAlpha=.4+.3*Math.sin(now/120); x.strokeStyle="#fff6a0"; x.lineWidth=3; x.beginPath(); x.arc(0,0,g.br+18,0,7); x.stroke(); } x.restore();
-      basket.forEach((b,i)=>dmShape(x,b.k,g.bx-30+(i%4)*20,g.by-20-((i/4)|0)*10,9,0,1,.5)); }
-    else for(const b of basket) if(!b.placed) dmShape(x,b.k,b.x,b.y,b.held?24:19,0,1,b.held?2:1);
+    // falling stars (the held one on top)
+    for(const it of items) if(!it.held) dmShape(x,it.k,it.x,it.y,20,it.rot,1,1);
+    if(held) dmShape(x,held.k,held.x,held.y,24,0,1,2);
     // meteors
     for(const m of meteors){ const tl=x.createLinearGradient(m.x,m.y,m.x-m.vx*.28,m.y-m.vy*.28); tl.addColorStop(0,"rgba(255,240,200,1)"); tl.addColorStop(1,"rgba(255,160,90,0)"); x.strokeStyle=tl; x.lineWidth=5; x.lineCap="round"; x.beginPath(); x.moveTo(m.x,m.y); x.lineTo(m.x-m.vx*.28,m.y-m.vy*.28); x.stroke(); x.fillStyle="#fff"; x.beginPath(); x.arc(m.x,m.y,5,0,7); x.fill(); }
-    // thunder
+    // clouds drift in FRONT of the stars and the chart, hiding them for a while
+    for(const c of clouds){ c.x+=c.v*dt; x.save(); x.globalAlpha=.93; const cg=x.createLinearGradient(0,c.y-50*c.s,0,c.y+40*c.s); cg.addColorStop(0,"#fde3d6"); cg.addColorStop(1,"#c9a0b8"); x.fillStyle=cg; x.shadowColor="rgba(60,20,50,.35)"; x.shadowBlur=18; x.beginPath();
+      for(const [ox,oy,r] of [[0,0,52],[50,10,42],[-50,12,40],[22,-30,38],[-20,-26,34],[80,20,30],[-82,22,28]]){ x.moveTo(c.x+ox*c.s+r*c.s,c.y+oy*c.s); x.arc(c.x+ox*c.s,c.y+oy*c.s,r*c.s,0,7); } x.fill(); x.restore(); }
+    clouds=clouds.filter(c=>c.x>-300&&c.x<g.W+300);
     if(bolt&&now-bolt.t<260){ x.strokeStyle="#fffbe0"; x.lineWidth=4; x.shadowColor="#bfd0ff"; x.shadowBlur=20; x.beginPath(); bolt.pts.forEach((p,i)=>i?x.lineTo(p[0],p[1]):x.moveTo(p[0],p[1])); x.stroke(); x.shadowBlur=0; }
-    if(flash>0){ x.fillStyle=`rgba(230,235,255,${flash*.55})`; x.fillRect(0,0,g.W,g.H); flash=Math.max(0,flash-dt*2.5); }
-    // sparks
+    if(flash>0){ x.fillStyle=`rgba(255,240,255,${flash*.5})`; x.fillRect(0,0,g.W,g.H); flash=Math.max(0,flash-dt*2.5); }
     x.globalCompositeOperation="lighter"; for(const p of sparks){ p.l+=dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.vx*=.96; p.vy=p.vy*.96+30*dt; const a=1-p.l/p.m; if(a<=0) continue; x.globalAlpha=a; x.fillStyle=p.c; x.beginPath(); x.arc(p.x,p.y,2.4,0,7); x.fill(); } x.globalCompositeOperation="source-over"; x.globalAlpha=1; sparks=sparks.filter(p=>p.l<p.m);
-    // finale: rays, 斗姥元君's blessing
-    if(done){ const t=(now-fin)/1000; x.save(); x.globalCompositeOperation="lighter"; x.translate(g.W/2,g.H*.36); for(let i=0;i<18;i++){ x.rotate(Math.PI/9); x.globalAlpha=fk*.18*(1+.4*Math.sin(t*3+i)); const rg=x.createLinearGradient(0,0,0,-g.H); rg.addColorStop(0,"#fff4c0"); rg.addColorStop(1,"rgba(255,220,140,0)"); x.fillStyle=rg; x.beginPath(); x.moveTo(-14,0); x.lineTo(14,0); x.lineTo(70,-g.H); x.lineTo(-70,-g.H); x.closePath(); x.fill(); }
+    if(done){ const t=(now-fin)/1000; x.save(); x.globalCompositeOperation="lighter"; x.translate(g.W/2,g.cy+g.chH/2); for(let i=0;i<18;i++){ x.rotate(Math.PI/9); x.globalAlpha=fk*.18*(1+.4*Math.sin(t*3+i)); const rg=x.createLinearGradient(0,0,0,-g.H); rg.addColorStop(0,"#fff4c0"); rg.addColorStop(1,"rgba(255,220,140,0)"); x.fillStyle=rg; x.beginPath(); x.moveTo(-14,0); x.lineTo(14,0); x.lineTo(70,-g.H); x.lineTo(-70,-g.H); x.closePath(); x.fill(); }
       for(let r=0;r<3;r++){ x.globalAlpha=fk*.5*(1-((t*.5+r/3)%1)); x.strokeStyle="#ffe8a8"; x.lineWidth=3; x.beginPath(); x.arc(0,0,40+((t*.5+r/3)%1)*g.W*.5,0,7); x.stroke(); } x.restore();
       if(Math.random()<.5) sparks.push({x:Math.random()*g.W,y:-10,vx:(Math.random()-.5)*30,vy:80+Math.random()*80,l:0,m:2.5,c:["#fff6c0","#ffc8e8","#c8e0ff"][(Math.random()*3)|0]});
-      x.globalAlpha=Math.min(1,Math.max(0,t-.6)); x.textAlign="center"; x.textBaseline="middle"; x.font=`900 ${Math.min(46,g.W*.11)}px ${DISPLAY_FONT}`; x.shadowColor="#fff0b0"; x.shadowBlur=24; x.fillStyle="#fff8dc"; x.fillText("眾星歸位",g.W/2,g.H*.6); x.font=`700 ${Math.min(24,g.W*.06)}px ${DISPLAY_FONT}`; x.fillStyle="#ffe0a0"; x.fillText("斗姥元君 賜福",g.W/2,g.H*.6+50); x.shadowBlur=0; x.globalAlpha=1; }
-    // HUD
-    x.textAlign="left"; x.textBaseline="alphabetic"; x.fillStyle=el>LIMIT-10&&!done?"#ff9a8a":"#fff"; x.font=`600 15px ${UI_FONT}`; x.fillText(`剩 ${Math.max(0,LIMIT-el).toFixed(1)} 秒・星星 ${lit.filter(v=>v).length}/8`,18,96);
-    if(phase===1){ const m=left(); let xx=g.W-18; x.textAlign="right"; x.font=`600 13px ${UI_FONT}`; x.fillStyle="rgba(255,255,255,.8)"; KINDS.slice().reverse().forEach(k=>{ if(!(m[k]>0)) return; x.fillText(`×${m[k]}`,xx,96); xx-=x.measureText(`×${m[k]}`).width+4; dmShape(x,k,xx-9,91,8,0,1,.5); xx-=24; }); x.fillText("還要：",xx,96); }
-    if(msg&&now-msgT<2000&&!done){ x.textAlign="center"; x.fillStyle=`rgba(255,236,180,${1-(now-msgT)/2000})`; x.font=`700 18px ${DISPLAY_FONT}`; x.fillText(msg,g.W/2,phase===1?g.H*.82:g.H-130); }
+      x.globalAlpha=Math.min(1,Math.max(0,t-.6)); x.textAlign="center"; x.textBaseline="middle"; x.font=`900 ${Math.min(46,g.W*.11)}px ${DISPLAY_FONT}`; x.shadowColor="#fff0b0"; x.shadowBlur=24; x.fillStyle="#fff8dc"; x.fillText("眾星歸位",g.W/2,g.H*.66); x.font=`700 ${Math.min(24,g.W*.06)}px ${DISPLAY_FONT}`; x.fillStyle="#ffe0a0"; x.fillText("斗姥元君 賜福",g.W/2,g.H*.66+50); x.shadowBlur=0; x.globalAlpha=1; }
+    x.textAlign="left"; x.textBaseline="alphabetic"; x.fillStyle=el>LIMIT-10&&!done?"#ffe0e0":"#fff"; x.font=`600 15px ${UI_FONT}`; x.shadowColor="rgba(0,0,0,.5)"; x.shadowBlur=4; x.fillText(`剩 ${Math.max(0,LIMIT-el).toFixed(1)} 秒・星星 ${lit.filter(v=>v).length}/${N}`,18,96); x.shadowBlur=0;
+    if(msg&&now-msgT<2000&&!done){ x.textAlign="center"; x.fillStyle=`rgba(255,250,235,${1-(now-msgT)/2000})`; x.font=`700 18px ${DISPLAY_FONT}`; x.shadowColor="rgba(60,20,50,.6)"; x.shadowBlur=6; x.fillText(msg,g.W/2,g.H-110); x.shadowBlur=0; }
     requestAnimationFrame(draw); };
   requestAnimationFrame(draw); }
 GOD_START.doumu=playDoumu;
