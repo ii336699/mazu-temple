@@ -4194,25 +4194,46 @@ function writeLantern(){ const L=gameLayer("寫天燈","用手指在天燈上寫
     myLantern=out.toDataURL("image/jpeg",.8); try{ localStorage.setItem("mz.skylantern",myLantern); }catch(e){} L.close(); renderSLBtn(); toast("天燈寫好了！到廟埕就能施放",3200); };
   requestAnimationFrame(draw); }
 HANDLERS.getLantern=()=>{ closeSheet(); writeLantern(); };
-// a sky lantern: tapered paper body with the writing on all four sides, flame and glow inside
-function makeSkyLantern(img){ const g=new T.Group(); g.userData.noMerge=1;
-  const tex=img?new T.TextureLoader().load(img,t=>{ t.encoding=T.sRGBEncoding; }):(cvs(240,320,(x,w,h)=>{ const gr=x.createLinearGradient(0,0,0,h); gr.addColorStop(0,"#f6d79a"); gr.addColorStop(1,"#ffe9c0"); x.fillStyle=gr; x.fillRect(0,0,w,h); x.fillStyle="#a8141a"; x.font=`700 76px ${DISPLAY_FONT}`; x.textAlign="center"; x.fillText("祈",w/2,135); x.fillText("福",w/2,230); }));
-  tex.wrapS=T.RepeatWrapping; tex.repeat.x=4; // the same writing on every side
-  const m=new T.MeshStandardMaterial({map:tex,emissive:new T.Color("#ff9a3a"),emissiveMap:tex,emissiveIntensity:.9,side:T.DoubleSide,transparent:true,opacity:.96,roughness:.9});
-  const body=new T.Mesh(new T.CylinderGeometry(.42,.32,1.0,4,1,true),m); body.rotation.y=Math.PI/4; g.add(body);
-  const top=new T.Mesh(new T.ConeGeometry(.42*1.414,.06,4),m); top.position.y=.53; top.rotation.y=Math.PI/4; g.add(top);
-  const fl=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffb04a"),transparent:true,blending:T.AdditiveBlending,depthWrite:false})); fl.scale.set(1.6,1.6,1); fl.position.y=-.2; g.add(fl);
-  const core=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#fff2c0"),transparent:true,blending:T.AdditiveBlending,depthWrite:false})); core.scale.set(.35,.35,1); core.position.y=-.45; g.add(core);
-  g.userData.mats=[m,fl.material,core.material]; return g; }
-function launchSkyLantern(av,img,y0){ const g=makeSkyLantern(img); g.position.set(av.pos.x,y0||1.6,av.pos.y); scene.add(g);
-  skyLanterns.push({g,t:0,vx:(Math.random()-.5)*.25,vz:.25+Math.random()*.25,ph:Math.random()*6}); if(skyLanterns.length>90){ const o=skyLanterns.shift(); scene.remove(o.g); } }
-// 主委: fifty sky lanterns rising all over the courtyard (same layout on every screen from the shared seed)
+/* 天燈 like a festival night: tall paper lanterns in warm cream, amber, rose-red and lavender, lit from the flame at the bottom (bright
+   below, dimmer toward the top), each with a soft halo; the chair's mass release also fills the far sky with hundreds of tiny lantern lights */
+const SL_PAL=[["#fff1c6","#ffd27a"],["#ffe3a8","#ffb046"],["#ffc2a8","#ff6a3a"],["#e8d6ff","#b48cff"],["#ffd0d8","#ff7a96"]];
+const SL_TEX={};
+function slTex(k,img){ if(!img&&SL_TEX[k]) return SL_TEX[k]; const [c1,c2]=SL_PAL[k];
+  const t=cvs(240,320,(x,w,h)=>{ const g=x.createLinearGradient(0,0,0,h); g.addColorStop(0,new T.Color(c2).multiplyScalar(.72).getStyle()); g.addColorStop(.6,c2); g.addColorStop(1,c1); x.fillStyle=g; x.fillRect(0,0,w,h);
+    x.fillStyle="rgba(120,60,20,.18)"; for(const yy of [h*.08,h*.94]) x.fillRect(0,yy,w,5); for(const xx of [3,w-8]) x.fillRect(xx,0,5,h);
+    if(!img){ x.fillStyle="rgba(150,40,20,.35)"; x.font=`700 56px ${DISPLAY_FONT}`; x.textAlign="center"; x.fillText(["平","福","安","願"][k%4],w/2,h*.45); x.fillText(["安","滿","康","成"][k%4],w/2,h*.68); } });
+  if(img){ new T.TextureLoader().load(img,ti=>{ const c=document.createElement("canvas"); c.width=240; c.height=320; const x=c.getContext("2d"); x.drawImage(t.image,0,0); x.globalAlpha=.85; x.drawImage(ti.image,0,0,240,320); t.image=c; t.needsUpdate=true; }); return t; }
+  SL_TEX[k]=t; return t; }
+function makeSkyLantern(img,k){ const g=new T.Group(); g.userData.noMerge=1; k=k==null?(Math.random()*SL_PAL.length)|0:k; if(img) k=0;
+  const tex=slTex(k,img); tex.wrapS=T.RepeatWrapping; tex.repeat.x=4; // the same writing on every side
+  const m=new T.MeshBasicMaterial({map:tex,side:T.DoubleSide,transparent:true,opacity:.97,toneMapped:false,fog:false});
+  const body=new T.Mesh(new T.CylinderGeometry(.4,.31,1.25,4,1,true),m); body.rotation.y=Math.PI/4; g.add(body);
+  const top=new T.Mesh(new T.ConeGeometry(.4*1.414,.05,4),m); top.position.y=.64; top.rotation.y=Math.PI/4; g.add(top);
+  const hc=new T.Color(SL_PAL[k][1]);
+  const halo=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:hc,transparent:true,opacity:.45,blending:T.AdditiveBlending,depthWrite:false,fog:false})); halo.scale.set(2.6,3.2,1); g.add(halo);
+  const fl=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffcf70"),transparent:true,blending:T.AdditiveBlending,depthWrite:false,fog:false})); fl.scale.set(1.3,1.3,1); fl.position.y=-.5; g.add(fl);
+  const core=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#fff6d8"),transparent:true,blending:T.AdditiveBlending,depthWrite:false,fog:false})); core.scale.set(.42,.42,1); core.position.y=-.6; g.add(core);
+  g.userData.mats=[m,fl.material,core.material,halo.material]; return g; }
+function launchSkyLantern(av,img,y0,k){ const g=makeSkyLantern(img,k); g.position.set(av.pos.x,y0||1.6,av.pos.y); g.scale.setScalar(img?1:.85+Math.random()*.4); scene.add(g);
+  skyLanterns.push({g,t:0,vx:(Math.random()-.5)*.35,vz:.2+Math.random()*.35,ph:Math.random()*6,sp:.85+Math.random()*.4}); if(skyLanterns.length>140){ const o=skyLanterns.shift(); scene.remove(o.g); } }
+/* far lanterns: one Points cloud of tiny glowing lights drifting up all over the sky (one draw call) */
+const SLFAR={pts:null,t:-1,n:Q.low?220:520};
+function slFarStart(seed){ const r=fwRng(seed^0x5a5a); if(!SLFAR.pts){ const n=SLFAR.n, pos=new Float32Array(n*3), col=new Float32Array(n*3), c=new T.Color(); SLFAR.v=new Float32Array(n); SLFAR.base=new Float32Array(n*3);
+    const geo=new T.BufferGeometry(); geo.setAttribute("position",new T.BufferAttribute(pos,3).setUsage(T.DynamicDrawUsage)); geo.setAttribute("color",new T.BufferAttribute(col,3));
+    SLFAR.pts=new T.Points(geo,new T.PointsMaterial({size:1.9,map:glowTex,vertexColors:true,transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false,fog:false,sizeAttenuation:true})); SLFAR.pts.frustumCulled=false; SLFAR.pts.userData.noMerge=1; scene.add(SLFAR.pts); }
+  const P=SLFAR.pts.geometry.attributes.position.array, C=SLFAR.pts.geometry.attributes.color.array, c=new T.Color();
+  for(let i=0;i<SLFAR.n;i++){ const a=r()*Math.PI*2, d=30+r()*110; SLFAR.base[i*3]=Math.cos(a)*d; SLFAR.base[i*3+1]=4+r()*55; SLFAR.base[i*3+2]=Math.sin(a)*d*.8+10; SLFAR.v[i]=.25+r()*.5; c.set(SL_PAL[(r()*SL_PAL.length)|0][1]).lerp(new T.Color("#fff1c0"),.3); C[i*3]=c.r; C[i*3+1]=c.g; C[i*3+2]=c.b; }
+  SLFAR.pts.geometry.attributes.color.needsUpdate=true; SLFAR.t=0; SLFAR.pts.visible=true; }
+function slFarTick(dt){ if(SLFAR.t<0||!SLFAR.pts) return; SLFAR.t+=dt; const t=SLFAR.t, P=SLFAR.pts.geometry.attributes.position.array, B=SLFAR.base;
+  for(let i=0;i<SLFAR.n;i++){ const k=i*3; P[k]=B[k]+Math.sin(t*.2+i)*1.2; P[k+1]=B[k+1]+SLFAR.v[i]*t; P[k+2]=B[k+2]; } SLFAR.pts.geometry.attributes.position.needsUpdate=true;
+  SLFAR.pts.material.opacity=Math.min(1,t/6)*Math.max(0,Math.min(1,(110-t)/15))*.9; if(t>110){ SLFAR.t=-1; SLFAR.pts.visible=false; } }
+// 主委: a mass release — lanterns rising all over the courtyard (same layout on every screen from the shared seed) and the far sky filling up
 function massLanterns(seed){ if(seenOnce("s"+seed)) return; const r=fwRng(seed); const pts=[]; let tries=0;
-  while(pts.length<50&&tries++<2000){ const x=(r()-.5)*34, z=HZ+2.5+r()*(20+YX); if(Math.hypot(x,z-(HZ+YX+20.2))<3.2) continue; if(pts.some(p=>Math.hypot(p[0]-x,p[1]-z)<2.1)) continue; pts.push([x,z]); }
-  pts.forEach(([x,z],i)=>setTimeout(()=>launchSkyLantern({pos:{x,y:z}},null,.4+r()*1.2),i*160+r()*400)); showCaption("天燈滿天，願望成真"); healSound(); }
-function updateSkyLanterns(dt){ for(let i=skyLanterns.length-1;i>=0;i--){ const s=skyLanterns[i]; s.t+=dt; const g=s.g; const up=s.t<1.5?.3:.55+Math.min(.4,s.t*.01);
-    g.position.y+=up*dt; g.position.x+=(s.vx+Math.sin(s.t*.6+s.ph)*.15)*dt; g.position.z+=s.vz*dt; g.rotation.y+=dt*.15; g.rotation.z=Math.sin(s.t*.8+s.ph)*.06;
-    const f=s.t>70?Math.max(0,1-(s.t-70)/10):1; g.userData.mats.forEach(m=>{ m.opacity=(m.isSpriteMaterial?1:.96)*f; }); g.userData.mats[1].opacity=f*(.75+Math.sin(s.t*9+s.ph)*.15);
+  while(pts.length<70&&tries++<3000){ const x=(r()-.5)*36, z=HZ+2.5+r()*(20+YX); if(Math.hypot(x,z-(HZ+YX+20.2))<3.2) continue; if(pts.some(p=>Math.hypot(p[0]-x,p[1]-z)<1.8)) continue; pts.push([x,z]); }
+  pts.forEach(([x,z],i)=>setTimeout(()=>launchSkyLantern({pos:{x,y:z}},null,.4+r()*1.2,(r()*SL_PAL.length)|0),i*130+r()*400)); slFarStart(seed); showCaption("天燈滿天，願望成真"); healSound(); }
+function updateSkyLanterns(dt){ slFarTick(dt); for(let i=skyLanterns.length-1;i>=0;i--){ const s=skyLanterns[i]; s.t+=dt; const g=s.g; const up=(s.t<1.5?.35:.7+Math.min(.5,s.t*.012))*s.sp;
+    g.position.y+=up*dt; g.position.x+=(s.vx+Math.sin(s.t*.6+s.ph)*.18)*dt; g.position.z+=s.vz*dt; g.rotation.y+=dt*.12; g.rotation.z=Math.sin(s.t*.8+s.ph)*.05;
+    const f=s.t>85?Math.max(0,1-(s.t-85)/12):1, fl=.82+Math.sin(s.t*9+s.ph)*.12+Math.sin(s.t*23+s.ph)*.05; const M=g.userData.mats; M[0].opacity=.97*f; M[1].opacity=f*fl; M[2].opacity=f; M[3].opacity=.45*f*fl;
     if(f<=0){ scene.remove(g); skyLanterns.splice(i,1); } } }
 function renderSLBtn(){ const b=$("#slBtn"); const show=!!myLantern&&!customizing&&meAv.pos.y>HZ+.8&&!miniOpen; b.hidden=!show; }
 $("#slBtn").onclick=()=>{ if(!myLantern) return; ensureAudio(); const img=myLantern; myLantern=null; try{ localStorage.removeItem("mz.skylantern"); }catch(e){} renderSLBtn();
