@@ -4900,11 +4900,11 @@ function lakeTick(dt){ if(!LAKE.on) return; LAKE.time.value+=dt; LAKE.fwMirror.v
   LAKE.fg.children.forEach(m=>{ if(m.userData.side){ const s=Math.max(hw,hh)*1.25; m.scale.set(s*.8,s*.8,1); m.position.set(m.userData.side*(hw-s*.18),hh-s*.2,-1.2); } });
   const p=LAKE.petals; for(let i=0;i<p.length;i+=3){ p[i+1]-=dt*(.35+(i%7)*.05); p[i]+=Math.sin(t*1.3+i)*dt*.3; if(p[i+1]<-3){ p[i+1]=4; p[i]=(Math.random()-.5)*8; } } LAKE.pg.attributes.position.needsUpdate=true; }
 /* the train: the screen goes black, 搭車中…, three seconds of a train, then you are there (or back) */
-let trainBusy=false;
+let trainBusy=0; /* time the move started; free again 2.1 s later even if a timer is late */
 function trainSound(){ const a=ensureAudio(); if(!a) return; for(let k=0;k<6;k++) noiseBurst(.35,.05,500+k*260,k*.12); tone(660,.9,.03,"sine",.1); tone(990,.9,.02,"sine",.45); } /* a soft whoosh and chime */
-function trainTo(on,spot){ if(trainBusy){ setTimeout(()=>trainTo(on,spot),400); return; } trainBusy=true; let ov=$("#trainOv"); if(!ov){ ov=document.createElement("div"); ov.id="trainOv"; ov.className="train-ov"; ov.innerHTML="<p>✨ 移動中…</p>"; document.body.appendChild(ov); }
+function trainTo(on,spot){ if(trainBusy&&performance.now()-trainBusy<2100){ setTimeout(()=>trainTo(on,spot),400); return; } trainBusy=performance.now(); let ov=$("#trainOv"); if(!ov){ ov=document.createElement("div"); ov.id="trainOv"; ov.className="train-ov"; ov.innerHTML="<p>✨ 移動中…</p>"; document.body.appendChild(ov); }
   ov.hidden=false; void ov.offsetWidth; ov.classList.add("on"); trainSound();
-  setTimeout(()=>{ if(on&&LAKE.on) lakeSet(false); lakeSet(on,spot); },600); setTimeout(()=>{ ov.classList.remove("on"); setTimeout(()=>{ ov.hidden=true; trainBusy=false; },600); },1400); }
+  setTimeout(()=>{ if(on&&LAKE.on) lakeSet(false); lakeSet(on,spot); },600); setTimeout(()=>{ ov.classList.remove("on"); trainBusy=0; setTimeout(()=>{ ov.hidden=true; },600); },1400); }
 $("#fwViewBtn").onclick=()=>{ ensureAudio(); FWV=FWV%FW_SPOTS.length+1; trainTo(true,FW_SPOTS[FWV-1]); setTimeout(renderSparkBtn,700); };
 function fwLeaveSpot(){ if(LAKE.on){ FWV=0; trainTo(false); } }
 $("#fwWideBtn").onclick=()=>{ FW_WIDE=!FW_WIDE; renderSparkBtn(); };
