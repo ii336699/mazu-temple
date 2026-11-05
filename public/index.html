@@ -5681,7 +5681,7 @@ async function godGameWin(g,ms,accId,extra){ const rw=extra||gameReward(g,accId)
   openSheet("godGame",GOD_GAMES[g]||"小遊戲",`<div class="gg-done"><div class="gg-time">${fmtMs(ms)}</div><p class="lead">${rw.kind==="acc"?"🎁 ":rw.kind==="gacha"?"🎟️ ":""}${esc(rw.text)}</p>
     <div class="group"><span class="group-label">🏆 最快排行榜</span><div id="ggBoard"><p class="note">讀取中…</p></div></div></div>`);
   const list=await lbSubmit(g,ms); const el=$("#ggBoard"); if(el) el.innerHTML=lbHTML(list); }
-const GOD_PLAY={doumu:"⭐ 眾星歸位（三種難度，點亮星圖）",wenchang:"🖌️ 寫字（照紅字描 3 個字）",tudi:"⛏️ 尋寶（找到發光的寶藏挖出來）",zhusheng:"🍼 哄寶寶睡覺",jiutian:"☯️ 八卦迷宮（傾斜手機滾彈珠）",guanyin:"💧 接福水（轉動木水道）",dizang:"🧩 記憶碎片（幫小幽靈拼回記憶）"};
+const GOD_PLAY={doumu:"⭐ 眾星歸位（連過三關點亮星圖）",wenchang:"🖌️ 寫字（照紅字描 3 個字）",tudi:"⛏️ 尋寶（找到發光的寶藏挖出來）",zhusheng:"🍼 哄寶寶睡覺",jiutian:"☯️ 八卦迷宮（傾斜手機滾彈珠）",guanyin:"💧 接福水（轉動木水道）",dizang:"🧩 記憶碎片（幫小幽靈拼回記憶）"};
 const GOD_START={}; HANDLERS.godPlay=g=>{ closeSheet(); if(GOD_START[g]) GOD_START[g](); else toast("這個遊戲還在準備中"); };
 /* ================= 土地公・尋寶: a beam of light marks treasure somewhere in the grounds; walk there, tap it, dig it up ================= */
 const TH={on:false,t0:0,x:0,z:0,g:null,hit:null,digging:false};
@@ -6124,14 +6124,11 @@ function dmShape(x,k,px,py,r,rot=0,a=1,glow=1){ x.save(); x.translate(px,py); x.
 /* 眾星歸位 (v2): the star chart is up from the start — 10 holes in a new random constellation each game. Shape-stars fall through the
    dusk sky; catch one and drag it straight into a hole of the same shape. Clouds drift across in front of everything; meteors knock a
    star out of your hand. All 10 lit in 60 s: the sky brightens and 斗姥元君 gives her blessing. */
-/* three levels: 1 as designed; 2 everything falls and spawns faster; 3 faster still, and the chart is bigger with 15 holes */
-const DM_LV=[null,{n:"初階",sp:1,N:10,T:60,big:0},{n:"中階",sp:1.6,N:10,T:60,big:0},{n:"高階",sp:1.75,N:15,T:80,big:1}];
-function playDoumu(lv){ const L=gameLayer("斗姥元君・眾星歸位","選一個難度開始"); const {x,cv}=L;
-  if(!lv){ { const W=L.W(), H=L.H(), bg=x.createLinearGradient(0,0,0,H); bg.addColorStop(0,"#3a1e5c"); bg.addColorStop(.5,"#963e6e"); bg.addColorStop(1,"#ffb26e"); x.fillStyle=bg; x.fillRect(0,0,W,H); }
-    const b=document.createElement("div"); b.className="dm-lv"; b.style.cssText="position:absolute;left:50%;top:54%;transform:translate(-50%,-50%);display:flex;flex-direction:column;gap:12px;width:min(300px,80vw);z-index:3";
-    b.innerHTML=[1,2,3].map(n=>`<button class="btn primary" data-lv="${n}" style="padding:14px 10px;font:700 19px var(--f-display)">${["","⭐ 初階","⭐⭐ 中階","⭐⭐⭐ 高階"][n]}<br><small style="font:500 13px var(--f-ui);opacity:.85">${["","60 秒點亮 10 顆星","星星落得更快","更快，星圖更大、15 顆星"][n]}</small></button>`).join("");
-    L.el.appendChild(b); b.querySelectorAll("button").forEach(bt=>bt.onclick=()=>{ L.close(); playDoumu(+bt.dataset.lv); }); window.__dmPick=n=>b.querySelector(`[data-lv="${n}"]`).click(); return; }
-  const LV=DM_LV[lv], LIMIT=LV.T, KINDS=Object.keys(DM_KIND), N=LV.N, SP=LV.sp; { const h=L.el.querySelector(".mini-hint"); if(h) h.textContent=`${LV.n}・把落下的星星拖進同形狀的洞，${LIMIT} 秒點亮 ${N} 顆`; }
+/* every game is three stages in a row: 1 gentle; 2 faster with more holes; 3 faster still on a bigger chart. The time on the board is
+   the total of all three (a failed stage restarts that stage and its full time limit is added as a penalty) */
+const DM_LV=[null,{n:"第一關",sp:1,N:8,T:45,big:0},{n:"第二關",sp:1.3,N:10,T:55,big:0},{n:"第三關",sp:1.55,N:12,T:65,big:1}];
+function playDoumu(lv,acc){ lv=lv||1; acc=acc||0; const L=gameLayer("斗姥元君・眾星歸位",""); const {x,cv}=L;
+  const LV=DM_LV[lv], LIMIT=LV.T, KINDS=Object.keys(DM_KIND), N=LV.N, SP=LV.sp; { const h=L.el.querySelector(".mini-hint"); if(h) h.textContent=`${LV.n}（共 3 關）・拖星星進同形狀的洞`; }
   const need=[]; for(let i=0;i<N;i++) need.push(i<5?KINDS[i]:KINDS[(Math.random()*5)|0]); need.sort(()=>Math.random()-.5);
   /* a fresh constellation: 10 points spread over the chart (kept apart), joined by their shortest links */
   const CH=[]; for(let tries=0;CH.length<N&&tries<4000;tries++){ const p=[.06+Math.random()*.88,.08+Math.random()*.84]; if(CH.every(q=>Math.hypot((q[0]-p[0])*1.4,q[1]-p[1])>(N>10?.165:.2))) CH.push(p); }
@@ -6152,13 +6149,13 @@ function playDoumu(lv){ const L=gameLayer("斗姥元君・眾星歸位","選一�
   const drop=()=>{ if(!held) return; const it=held, g=G(); held=null; it.held=false; it.vy=20;
     let hit=-1, near=-1; need.forEach((k,i)=>{ if(lit[i]) return; const [hx,hy]=holeXY(i,g), d=Math.hypot(it.x-hx,it.y-hy); if(d<40){ if(k===it.k&&hit<0) hit=i; else near=i; } });
     if(hit>=0){ lit[hit]=performance.now(); items.splice(items.indexOf(it),1); const [hx,hy]=holeXY(hit,g); note(lit.filter(v=>v).length-1); burst(hx,hy,"#fff6c0",22);
-      if(lit.every(v=>v)){ done=true; fin=performance.now(); const ms=fin-t0; healSound(); setTimeout(()=>{ L.close(); godGameWin("doumu",ms,"starwand"); },4200); } }
+      if(lit.every(v=>v)){ done=true; fin=performance.now(); const ms=acc+fin-t0; healSound(); if(lv<3) setTimeout(()=>{ L.close(); playDoumu(lv+1,ms); },2000); else setTimeout(()=>{ L.close(); godGameWin("doumu",ms,"starwand"); },4200); } }
     else if(near>=0){ say(`形狀不對，這個洞要${DM_KIND[need[near]].n}`); tone(260,.15,.05,"triangle"); } };
   cv.addEventListener("pointerup",drop); cv.addEventListener("pointercancel",drop);
   window.__dm=()=>({need,lit:lit.map(v=>!!v),done,fail,items:items.length,holes:CH.length,lines:LINES.length});
   window.__dmAuto=(n=99)=>{ const g=G(); need.forEach((k,i)=>{ if(n<=0||lit[i]) return; const [hx,hy]=holeXY(i,g); const it={k,x:hx,y:hy,vx:0,vy:0,rot:0}; items.push(it); held=it; n--; drop(); }); };
   const draw=now=>{ if(L.done) return; const dt=Math.min(.033,(now-last)/1000); last=now; const g=G(), el=(now-t0)/1000;
-    if(!done&&!fail&&el>LIMIT){ fail=true; held=null; tone(220,.4,.1,"triangle"); const b=document.createElement("div"); b.innerHTML=`<p>時間到了，星星還沒全部歸位</p><button class="btn primary">再試一次</button>`; b.style.cssText="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(40,16,40,.94);border:1px solid #ffb07a;border-radius:14px;padding:20px 26px;text-align:center;color:#ffe9b0;font:700 19px var(--f-display);z-index:3"; L.el.appendChild(b); b.querySelector("button").onclick=()=>{ L.close(); playDoumu(lv); }; }
+    if(!done&&!fail&&el>LIMIT){ fail=true; held=null; tone(220,.4,.1,"triangle"); const b=document.createElement("div"); b.innerHTML=`<p>時間到了，星星還沒全部歸位</p><button class="btn primary">再試${LV.n}</button>`; b.style.cssText="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(40,16,40,.94);border:1px solid #ffb07a;border-radius:14px;padding:20px 26px;text-align:center;color:#ffe9b0;font:700 19px var(--f-display);z-index:3"; L.el.appendChild(b); b.querySelector("button").onclick=()=>{ L.close(); playDoumu(lv,acc+LIMIT*1000); }; }
     const fk=done?Math.min(1,(now-fin)/1800):0;
     // dusk sky: purple overhead fading to warm orange at the horizon (brightening to gold at the finale)
     const bg=x.createLinearGradient(0,0,0,g.H); bg.addColorStop(0,`rgb(${58+fk*120|0},${30+fk*90|0},${92+fk*50|0})`); bg.addColorStop(.45,`rgb(${150+fk*80|0},${62+fk*90|0},${110-fk*20|0})`); bg.addColorStop(.8,`rgb(${240|0},${132+fk*70|0},${78+fk*50|0})`); bg.addColorStop(1,`rgb(255,${178+fk*50|0},${110+fk*60|0})`); x.fillStyle=bg; x.fillRect(0,0,g.W,g.H);
@@ -6198,8 +6195,8 @@ function playDoumu(lv){ const L=gameLayer("斗姥元君・眾星歸位","選一�
     if(done){ const t=(now-fin)/1000; x.save(); x.globalCompositeOperation="lighter"; x.translate(g.W/2,g.cy+g.chH/2); for(let i=0;i<18;i++){ x.rotate(Math.PI/9); x.globalAlpha=fk*.18*(1+.4*Math.sin(t*3+i)); const rg=x.createLinearGradient(0,0,0,-g.H); rg.addColorStop(0,"#fff4c0"); rg.addColorStop(1,"rgba(255,220,140,0)"); x.fillStyle=rg; x.beginPath(); x.moveTo(-14,0); x.lineTo(14,0); x.lineTo(70,-g.H); x.lineTo(-70,-g.H); x.closePath(); x.fill(); }
       for(let r=0;r<3;r++){ x.globalAlpha=fk*.5*(1-((t*.5+r/3)%1)); x.strokeStyle="#ffe8a8"; x.lineWidth=3; x.beginPath(); x.arc(0,0,40+((t*.5+r/3)%1)*g.W*.5,0,7); x.stroke(); } x.restore();
       if(Math.random()<.5) sparks.push({x:Math.random()*g.W,y:-10,vx:(Math.random()-.5)*30,vy:80+Math.random()*80,l:0,m:2.5,c:["#fff6c0","#ffc8e8","#c8e0ff"][(Math.random()*3)|0]});
-      x.globalAlpha=Math.min(1,Math.max(0,t-.6)); x.textAlign="center"; x.textBaseline="middle"; x.font=`900 ${Math.min(46,g.W*.11)}px ${DISPLAY_FONT}`; x.shadowColor="#fff0b0"; x.shadowBlur=24; x.fillStyle="#fff8dc"; x.fillText("眾星歸位",g.W/2,g.H*.66); x.font=`700 ${Math.min(24,g.W*.06)}px ${DISPLAY_FONT}`; x.fillStyle="#ffe0a0"; x.fillText("斗姥元君 賜福",g.W/2,g.H*.66+50); x.shadowBlur=0; x.globalAlpha=1; }
-    x.textAlign="left"; x.textBaseline="alphabetic"; x.fillStyle=el>LIMIT-10&&!done?"#ffe0e0":"#fff"; x.font=`600 15px ${UI_FONT}`; x.shadowColor="rgba(0,0,0,.5)"; x.shadowBlur=4; x.fillText(`剩 ${Math.max(0,LIMIT-el).toFixed(1)} 秒・星星 ${lit.filter(v=>v).length}/${N}`,18,96); x.shadowBlur=0;
+      x.globalAlpha=Math.min(1,Math.max(0,t-.6)); x.textAlign="center"; x.textBaseline="middle"; x.font=`900 ${Math.min(46,g.W*.11)}px ${DISPLAY_FONT}`; x.shadowColor="#fff0b0"; x.shadowBlur=24; x.fillStyle="#fff8dc"; x.fillText(lv<3?`${LV.n}完成！`:"眾星歸位",g.W/2,g.H*.66); x.font=`700 ${Math.min(24,g.W*.06)}px ${DISPLAY_FONT}`; x.fillStyle="#ffe0a0"; x.fillText(lv<3?`準備${DM_LV[lv+1].n}…`:"斗姥元君 賜福",g.W/2,g.H*.66+50); x.shadowBlur=0; x.globalAlpha=1; }
+    x.textAlign="left"; x.textBaseline="alphabetic"; x.fillStyle=el>LIMIT-10&&!done?"#ffe0e0":"#fff"; x.font=`600 15px ${UI_FONT}`; x.shadowColor="rgba(0,0,0,.5)"; x.shadowBlur=4; x.fillText(`${LV.n}・剩 ${Math.max(0,LIMIT-el).toFixed(1)} 秒・星星 ${lit.filter(v=>v).length}/${N}`,18,96); x.shadowBlur=0;
     if(msg&&now-msgT<2000&&!done){ x.textAlign="center"; x.fillStyle=`rgba(255,250,235,${1-(now-msgT)/2000})`; x.font=`700 18px ${DISPLAY_FONT}`; x.shadowColor="rgba(60,20,50,.6)"; x.shadowBlur=6; x.fillText(msg,g.W/2,g.H-110); x.shadowBlur=0; }
     requestAnimationFrame(draw); };
   requestAnimationFrame(draw); }
