@@ -3792,7 +3792,7 @@ function plantAt(key){ if(!(bag.items.xiang>0)) return false; if(stuckIn(key)){ 
 function plantProgress(){ const done=Array.isArray(bag.planted)?bag.planted:[]; return `<div class="steps">${CENSER_ORDER.map(k=>`<span ${done.includes(k)?"data-on":""}>${CENSER_NAME[k]}</span>`).join("")}</div>`; }
 HANDLERS.plant=()=>{ if(plantAt("mazu")) openAltar(); };
 const CENSER_INFO={tiangong:["天公爐","先在廟埕面向天空，向玉皇大帝稟報姓名、住址和來意，再進殿參拜。"],xuantian:["玄天上帝","位在龍邊。北極玄天上帝鎮守北方，消災解厄、驅邪保平安。"],guangong:["關聖帝君","位在虎邊。忠義神武，護佑平安、事業順利，斬除小人。"],caishen:["財神爺","在龍邊偏殿。祈求財運亨通、工作順利、生意興隆。"],yuelao:["月下老人","在虎邊偏殿。祈求良緣、感情順利、人際和合。"],huye:["虎爺","在媽祖供桌下方守護廟宇，保佑孩童平安，也有人來求事業與偏財。"]};
-function openCenser(key){ const [t,d]=CENSER_INFO[key]; const n=bag.items.xiang||0;
+function openCenser(key){ if(key==="dizang") dzPrep(); const [t,d]=CENSER_INFO[key]; const n=bag.items.xiang||0;
   const extra=GOD_GAMES[key]?`<button class="primary" data-act="godPlay" data-v="${key}">${GOD_PLAY[key]||"開始遊戲"}</button><button class="secondary" data-act="godBoard" data-v="${key}">🏆 排行榜</button>`:key==="xuantian"?`<button class="primary" data-act="xiaozai">消災解厄（畫北斗七星）</button>`:key==="guangong"?`<button class="primary" data-act="zhan">斬小人</button>`:key==="caishen"?`<button class="primary" data-act="facai">求發財金</button>`:key==="yuelao"?`<button class="primary" data-act="hongxian">${bag.redThread?"已求得紅線":"求紅線"}</button>`:"";
   const bw=bowedAt(key);
   openSheet("censer",t,`<p class="lead">${d}</p>${plantProgress()}<div class="row"><button class="${bw?"secondary":"primary"}" data-act="bowAt" data-v="${key}" ${n?"":"disabled"}>① 持香參拜${bw?"（已拜）":""}</button><button class="${bw&&!stuckIn(key)?"primary":"secondary"}" data-act="plantAt" data-v="${key}" ${n&&bw&&!stuckIn(key)?"":"disabled"}>${stuckIn(key)?"② 已插香（一爐一支）":`② 插香（持有 ${n} 支）`}</button></div>${n?"":`<button class="secondary" data-act="goShop">去服務處請香</button>`}${guoluHTML(key)}${extra}`); }
@@ -5969,16 +5969,19 @@ function playFushui(){ const L=gameLayer("觀音菩薩・接福水","點木水�
     requestAnimationFrame(draw); };
   requestAnimationFrame(draw); }
 GOD_START.guanyin=playFushui;
-/* ================= 地藏王・記憶碎片: a little ghost has lost its memories — put the 25-piece picture back together. Pinch or use ＋／－ to zoom,
+/* ================= 地藏王・記憶碎片: a little ghost has lost its memories — put the 28-piece (7×4) picture back together. Pinch or use ＋／－ to zoom,
    drag empty space to look around. Every finished picture is remembered; 10 different ones bring the 小幽靈 to your side. ================= */
-const DZ_PICS=14;
-function playMemory(){ bag.dz=bag.dz||{done:[]}; const done0=new Set(bag.dz.done); const fresh=[...Array(DZ_PICS)].map((_,i)=>i+1).filter(n=>!done0.has(n)); const pic=(fresh.length?fresh:[...Array(DZ_PICS)].map((_,i)=>i+1))[(Math.random()*(fresh.length||DZ_PICS))|0];
-  const L=gameLayer("地藏王・記憶碎片",`小幽靈的第 ${pic} 段記憶：把 25 片拼回去（已找回 ${done0.size}／10 段）`); const {x,cv}=L;
-  const img=new Image(); img.src=`ghost${pic}.webp`; const N=5, BW=1000, BH=558, pw=BW/N, ph=BH/N;
-  const edge=[]; for(let j=0;j<N;j++){ edge.push([]); for(let i=0;i<N;i++) edge[j].push({r:i<N-1?(Math.random()<.5?1:-1):0,b:j<N-1?(Math.random()<.5?1:-1):0}); }
-  const pieces=[]; for(let j=0;j<N;j++) for(let i=0;i<N;i++){ const t=j?-edge[j-1][i].b:0, l=i?-edge[j][i-1].r:0; pieces.push({i,j,tab:[t,edge[j][i].r,edge[j][i].b,l],x:0,y:0,lock:false,z:0}); }
+const DZ_PICS=14; let DZ_PRE=null;
+/* the picture is chosen and starts downloading as soon as 地藏王's panel opens, so it is ready when the game starts */
+function dzPrep(){ if(DZ_PRE) return DZ_PRE; bag.dz=bag.dz||{done:[]}; const done0=new Set(bag.dz.done); const all=[...Array(DZ_PICS)].map((_,i)=>i+1), fresh=all.filter(n=>!done0.has(n)), pool=fresh.length?fresh:all;
+  const pic=pool[(Math.random()*pool.length)|0], img=new Image(); img.src=`ghost${pic}.webp`; DZ_PRE={pic,img}; return DZ_PRE; }
+function playMemory(){ bag.dz=bag.dz||{done:[]}; const done0=new Set(bag.dz.done); const {pic,img}=dzPrep(); DZ_PRE=null;
+  const NX=7, NY=4, NP=NX*NY, BW=1000, BH=558, pw=BW/NX, ph=BH/NY; /* 7×4 on a 16:9 picture: every piece is almost square */
+  const L=gameLayer("地藏王・記憶碎片",`小幽靈的第 ${pic} 段記憶：把 ${NP} 片拼回去（已找回 ${done0.size}／10 段）`); const {x,cv}=L;
+  const edge=[]; for(let j=0;j<NY;j++){ edge.push([]); for(let i=0;i<NX;i++) edge[j].push({r:i<NX-1?(Math.random()<.5?1:-1):0,b:j<NY-1?(Math.random()<.5?1:-1):0}); }
+  const pieces=[]; for(let j=0;j<NY;j++) for(let i=0;i<NX;i++){ const t=j?-edge[j-1][i].b:0, l=i?-edge[j][i-1].r:0; pieces.push({i,j,tab:[t,edge[j][i].r,edge[j][i].b,l],x:0,y:0,lock:false,z:0}); }
   pieces.forEach((p,k)=>{ p.x=-60+Math.random()*(BW+120-pw)+0; p.y=BH+70+Math.random()*560; p.z=k; }); /* scattered in the tray under the frame */
-  const path=(p,c)=>{ const s2=pw*.22, s3=ph*.22, [t,r,b,l]=p.tab; c.beginPath(); c.moveTo(0,0);
+  const path=(p,c)=>{ const s2=Math.min(pw,ph)*.22, s3=s2, [t,r,b,l]=p.tab; c.beginPath(); c.moveTo(0,0);
     const side=(x0,y0,x1,y1,dir,sz)=>{ const mx=(x0+x1)/2, my=(y0+y1)/2, dx=x1-x0, dy=y1-y0, len=Math.hypot(dx,dy), nx=-dy/len, ny=dx/len;
       if(!dir){ c.lineTo(x1,y1); return; } const a=.36, k=dir*sz; c.lineTo(x0+dx*a,y0+dy*a); c.bezierCurveTo(x0+dx*a+nx*k*.2,y0+dy*a+ny*k*.2, mx-dx*.2+nx*k*1.3,my-dy*.2+ny*k*1.3, mx+nx*k*1.25,my+ny*k*1.25); c.bezierCurveTo(mx+dx*.2+nx*k*1.3,my+dy*.2+ny*k*1.3, x1-dx*a+nx*k*.2,y1-dy*a+ny*k*.2, x1-dx*a,y1-dy*a); c.lineTo(x1,y1); };
     side(0,0,pw,0,-t,s3); side(pw,0,pw,ph,-r,s2); side(pw,ph,0,ph,-b,s3); side(0,ph,0,0,-l,s2); c.closePath(); };
@@ -5991,7 +5994,7 @@ function playMemory(){ bag.dz=bag.dz||{done:[]}; const done0=new Set(bag.dz.done
   cv.addEventListener("pointermove",e=>{ if(!pts.has(e.pointerId)) return; pts.set(e.pointerId,[e.clientX,e.clientY]);
     if(pinch&&pts.size===2){ const [a,b]=[...pts.values()], d=Math.hypot(a[0]-b[0],a[1]-b[1]); zoomAt(pinch.mx,pinch.my,Math.max(.25,Math.min(3,pinch.s*d/pinch.d))/view.s); return; }
     if(drag){ const [wx,wy]=toW(e.clientX,e.clientY); drag.p.x=wx-drag.dx; drag.p.y=wy-drag.dy; } else if(pan){ view.ox=pan.ox+e.clientX-pan.x; view.oy=pan.oy+e.clientY-pan.y; } });
-  const upP=e=>{ pts.delete(e.pointerId); if(pts.size<2) pinch=null; if(drag){ const p=drag.p; if(Math.hypot(p.x-p.i*pw,p.y-p.j*ph)<pw*.28){ p.x=p.i*pw; p.y=p.j*ph; p.lock=true; p.z=-1; placed++; tone(660+placed*12,.15,.08); if(placed===N*N) win(); } drag=null; } pan=null; };
+  const upP=e=>{ pts.delete(e.pointerId); if(pts.size<2) pinch=null; if(drag){ const p=drag.p; if(Math.hypot(p.x-p.i*pw,p.y-p.j*ph)<pw*.28){ p.x=p.i*pw; p.y=p.j*ph; p.lock=true; p.z=-1; placed++; tone(660+placed*12,.15,.08); if(placed===NP) win(); } drag=null; } pan=null; };
   cv.addEventListener("pointerup",upP); cv.addEventListener("pointercancel",upP);
   const zoomAt=(sx,sy,k)=>{ const [wx,wy]=toW(sx,sy); view.s*=k; view.ox=sx-wx*view.s; view.oy=sy-wy*view.s; };
   const bar=document.createElement("div"); bar.className="dz-zoom"; bar.innerHTML=`<button class="chip" data-z="1.25">＋</button><button class="chip" data-z=".8">－</button><button class="chip" data-z="0">全部</button>`; L.el.appendChild(bar);
@@ -6000,15 +6003,26 @@ function playMemory(){ bag.dz=bag.dz||{done:[]}; const done0=new Set(bag.dz.done
   const win=()=>{ done=true; const ms=performance.now()-t0; healSound(); bag.dz.done=[...new Set([...bag.dz.done,pic])]; const n=bag.dz.done.length; let extra=null;
     if(n>=10&&!accState().owned.ghost){ giveAcc("ghost"); extra={kind:"acc",text:`小幽靈找回了 10 段記憶，決定跟著你了！（已戴上「小幽靈」）`}; }
     const rw=gameReward("dizang",null); saveBag(); setTimeout(()=>{ L.close(); godGameWin("dizang",ms,null,extra||{kind:rw.kind,text:`找回第 ${pic} 段記憶（共 ${n}／10 段）。${rw.text}`}); },1800); };
-  const draw=now=>{ if(L.done) return; const W=L.W(), H=L.H(); const bg=x.createLinearGradient(0,0,0,H); bg.addColorStop(0,"#141a2a"); bg.addColorStop(1,"#2a2238"); x.fillStyle=bg; x.fillRect(0,0,W,H);
+  /* each piece is drawn once into its own little canvas: picture, a raised bevel (light top-left, shade bottom-right) and a thin rim */
+  const ready=()=>img.complete&&img.naturalWidth>0, SPR=new Map(), RES=1.2;
+  const sprite=p=>{ let sp=SPR.get(p); if(sp) return sp; const m=Math.min(pw,ph)*.32, c=document.createElement("canvas"); c.width=Math.ceil((pw+m*2)*RES); c.height=Math.ceil((ph+m*2)*RES); const g=c.getContext("2d");
+    g.scale(RES,RES); g.translate(m,m); path(p,g); g.save(); g.clip(); g.drawImage(img,-p.i*pw,-p.j*ph,BW,BH);
+    const big=()=>{ g.beginPath(); g.rect(-m*2,-m*2,pw+m*4,ph+m*4); };
+    for(const [d,col] of [[2,"rgba(255,255,255,.22)"],[4.5,"rgba(255,255,255,.14)"],[7,"rgba(255,255,255,.07)"]]){ g.save(); g.translate(d,d); big(); path(p,{beginPath(){},moveTo:(a,b)=>g.moveTo(a,b),lineTo:(a,b)=>g.lineTo(a,b),bezierCurveTo:(...a)=>g.bezierCurveTo(...a),closePath:()=>g.closePath()}); g.fillStyle=col; g.fill("evenodd"); g.restore(); }
+    for(const [d,col] of [[2,"rgba(0,0,0,.30)"],[4.5,"rgba(0,0,0,.18)"],[7,"rgba(0,0,0,.09)"]]){ g.save(); g.translate(-d,-d); big(); path(p,{beginPath(){},moveTo:(a,b)=>g.moveTo(a,b),lineTo:(a,b)=>g.lineTo(a,b),bezierCurveTo:(...a)=>g.bezierCurveTo(...a),closePath:()=>g.closePath()}); g.fillStyle=col; g.fill("evenodd"); g.restore(); }
+    g.restore(); path(p,g); g.strokeStyle="rgba(40,30,20,.55)"; g.lineWidth=1.4; g.stroke();
+    sp={c,m}; SPR.set(p,sp); return sp; };
+  const draw=now=>{ if(L.done) return; if(!ready()) t0=now; /* the clock starts when the picture is there */ const W=L.W(), H=L.H(); const bg=x.createLinearGradient(0,0,0,H); bg.addColorStop(0,"#141a2a"); bg.addColorStop(1,"#2a2238"); x.fillStyle=bg; x.fillRect(0,0,W,H);
     x.save(); x.translate(view.ox,view.oy); x.scale(view.s,view.s);
     x.fillStyle="rgba(255,255,255,.06)"; x.fillRect(0,0,BW,BH); x.strokeStyle="rgba(220,235,255,.5)"; x.lineWidth=3/view.s; x.strokeRect(0,0,BW,BH);
     if(img.complete&&img.naturalWidth){ x.globalAlpha=.12; x.drawImage(img,0,0,BW,BH); x.globalAlpha=1; }
     x.fillStyle="rgba(255,255,255,.04)"; x.fillRect(-80,BH+50,BW+160,620);
-    [...pieces].sort((a,b)=>a.z-b.z).forEach(p=>{ x.save(); x.translate(p.x,p.y); path(p,x); x.save(); x.clip(); if(img.complete&&img.naturalWidth) x.drawImage(img,-p.i*pw,-p.j*ph,BW,BH); else { x.fillStyle="#556"; x.fillRect(-pw,-ph,pw*3,ph*3); } x.restore();
-      x.strokeStyle=p.lock?"rgba(255,255,255,.15)":drag&&drag.p===p?"#ffe28a":"rgba(255,255,255,.75)"; x.lineWidth=(p.lock?1:2)/view.s; x.stroke(); x.restore(); });
+    if(ready()) [...pieces].sort((a,b)=>a.z-b.z).forEach(p=>{ const sp=sprite(p), m=sp.m; x.save(); if(!p.lock){ x.shadowColor="rgba(0,0,0,.55)"; x.shadowBlur=8; x.shadowOffsetX=2; x.shadowOffsetY=4; }
+      x.drawImage(sp.c,p.x-m,p.y-m,pw+m*2,ph+m*2); x.restore();
+      if(drag&&drag.p===p){ x.save(); x.translate(p.x,p.y); path(p,x); x.strokeStyle="#ffe28a"; x.lineWidth=2.5/view.s; x.stroke(); x.restore(); } });
+    else { x.fillStyle="#dfe8ff"; x.font=`600 ${Math.round(28/view.s*.6)}px ${UI_FONT}`; x.textAlign="center"; x.fillText("記憶載入中…",BW/2,BH/2); }
     x.restore();
-    x.fillStyle="#fff"; x.font=`600 15px ${UI_FONT}`; x.textAlign="left"; x.fillText(`${((now-t0)/1000).toFixed(1)} 秒・${placed}／25 片`,18,104);
+    x.fillStyle="#fff"; x.font=`600 15px ${UI_FONT}`; x.textAlign="left"; x.fillText(`${((now-t0)/1000).toFixed(1)} 秒・${placed}／${NP} 片`,18,104);
     if(done){ x.textAlign="center"; x.fillStyle="#dff0ff"; x.font=`700 24px ${DISPLAY_FONT}`; x.fillText("小幽靈想起來了！",W/2,H-60); }
     requestAnimationFrame(draw); };
   requestAnimationFrame(draw); }
