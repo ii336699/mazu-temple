@@ -2382,7 +2382,7 @@ function zenWalkable(x,z){ const G=ZEN.GZ;
 
   /* ---- red arched bridge (太鼓橋) ---- */
   { const L=ZEN.BX1-ZEN.BX0, dg=new T.BoxGeometry(L,.16,2.1,28,1,1), p=dg.attributes.position; for(let i=0;i<p.count;i++){ const t=(p.getX(i)+L/2)/L; p.setY(i,p.getY(i)+ZEN.BH*Math.sin(Math.PI*t)-.08); } dg.computeVertexNormals();
-    const deck=mesh(dg,mat(ZL("#8a6038"),{roughness:.8}),(ZEN.BX0+ZEN.BX1)/2,0,G,g); deck.userData.floor=true; ZEN.pick.push(deck);
+    const deck=mesh(dg,mat(ZL("#8a6038"),{roughness:.8}),(ZEN.BX0+ZEN.BX1)/2,0,G,g); deck.userData.floor=true; deck.userData.keepMat=1; ZEN.pick.push(deck);
     const posts=[], caps=[]; for(const s of [-1,1]) for(let i=0;i<=8;i++){ const t=i/8, x=ZEN.BX1-L*t, y=ZEN.BH*Math.sin(Math.PI*t); posts.push({x,y:y+.42,z:G+s*1.0,sy:.84}); caps.push({x,y:y+.9,z:G+s*1.0}); }
     inst(new T.CylinderGeometry(.07,.07,1,8),red,posts); inst(new T.SphereGeometry(.09,10,8),mat(ZL("#5a3a22"),{roughness:.7}),caps);
     for(const s of [-1,1]) for(const hy of [.82,.42]){ const pts=[]; for(let i=0;i<=16;i++){ const t=i/16; pts.push(new T.Vector3(ZEN.BX1-L*t,ZEN.BH*Math.sin(Math.PI*t)+hy,G+s*1.0)); } mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts),40,hy>.6?.06:.04,6,false),red,0,0,0,g); }
@@ -2391,7 +2391,7 @@ function zenWalkable(x,z){ const G=ZEN.GZ;
   /* ---- the hall: raised dark floor, posts, shoji transoms, railings, ceiling, a hipped tile roof and an alcove ---- */
   const hl=ZEN.hall, pl=ZEN.plat, FY=ZEN.FY, H=3.5;
   { const base=box(pl.x1-pl.x0,FY,pl.z1-pl.z0,mat(ZL("#2a1c14"),{roughness:.8}),(pl.x0+pl.x1)/2,FY/2,(pl.z0+pl.z1)/2,g);
-    const fm=new T.MeshStandardMaterial({color:ZL("#4a2814"),roughness:.15,metalness:.05}); const fl=mesh(new T.PlaneGeometry(pl.x1-pl.x0,pl.z1-pl.z0),fm,(pl.x0+pl.x1)/2,FY+.004,(pl.z0+pl.z1)/2,g); fl.rotation.x=-Math.PI/2; fl.userData.floor=true; ZEN.pick.push(fl); ZEN.floor=fl;
+    const fm=new T.MeshStandardMaterial({color:ZL("#4a2814"),roughness:.15,metalness:.05}); const fl=mesh(new T.PlaneGeometry(pl.x1-pl.x0,pl.z1-pl.z0),fm,(pl.x0+pl.x1)/2,FY+.004,(pl.z0+pl.z1)/2,g); fl.rotation.x=-Math.PI/2; fl.userData.floor=true; fl.userData.keepMat=1; ZEN.pick.push(fl); ZEN.floor=fl;
     for(let i=0;i<4;i++) box(1.0,.14,3.0,mat(ZL("#2e1f15"),{roughness:.8}),pl.x1+.5+i*.0,FY-.14*(i+1)+.07,G,g).position.x=pl.x1+.4+i*.4; }
   { const posts=[], step=2.0; const nx=Math.round((hl.x1-hl.x0)/step), nz=Math.round((hl.z1-hl.z0)/step);
     for(let i=0;i<=nx;i++) for(const z of [hl.z0,hl.z1]) posts.push({x:hl.x0+(hl.x1-hl.x0)*i/nx,y:FY+H/2,z,sy:H});
@@ -2435,24 +2435,24 @@ function zenWalkable(x,z){ const G=ZEN.GZ;
   leafTex.encoding=T.LinearEncoding;
   const PAL=[["#a00a10","#b81414","#880810"],["#c8380a","#d85410","#b02808"],["#c88a06","#d8a010","#b07404"],["#900c2a","#a8143a","#740820"],["#3a6a14","#4a7c1a","#2c5a10"],["#e07898","#e890ac","#d06088"],["#f0e4e8","#e8ccd6","#f4dce4"]], PW=[.26,.2,.19,.12,.1,.09,.04];
   const PX0=ZEN.plat.x0, PX1=ZEN.plat.x1, PZ0=ZEN.plat.z0, PZ1=ZEN.plat.z1;
-  const keep=(x,z,r)=>{ if(x>ZEN.X1-1-r*.6||x<ZEN.X0+1+r*.6||z<ZEN.Z0+1+r*.6||z>ZEN.Z1-1-r*.6) return false; if(Math.abs(x+31.2)<3.2+r*.3) return false; if(x>PX0-.9-r*.45&&x<PX1+1.4+r*.3&&z>PZ0-.9-r*.45&&z<PZ1+.9+r*.45) return false; if(Math.abs(z-G)<1.9+r*.5&&x>PX1-1) return false; return true; };
+  const keep=(x,z,r)=>{ if(x>ZEN.X1-1-r*.6||x<ZEN.X0+1+r*.6||z<ZEN.Z0+1+r*.6||z>ZEN.Z1-1-r*.6) return false; if(Math.abs(x+31.2)<3.2+r*.3) return false; if(x>PX0-2.6-r*.5&&x<PX1+2.4+r*.4&&z>PZ0-2.6-r*.5&&z<PZ1+2.6+r*.5) return false; /* a clear band round the veranda */ if(Math.abs(z-G)<1.9+r*.5&&x>PX1-1) return false; return true; };
   const trunks=[], cards=[], spots=[];
   /* first a tight ring hugging the veranda (what fills the windows), then the rest of the garden */
-  for(let i=0;i<2600&&spots.length<70;i++){ const r=rr(2.2,3.4), side=i%4, t=R(); let x,z; const d=rr(.6,4.5)+r*.45;
+  for(let i=0;i<3000&&spots.length<74;i++){ const r=rr(2.6,3.8), side=i%4, t=R(); let x,z; const d=rr(2.8,8)+r*.5;
     if(side===0){ x=PX0-d; z=PZ0-3+t*(PZ1-PZ0+6); } else if(side===1){ x=PX0-3+t*(PX1-PX0+6); z=PZ0-d; } else if(side===2){ x=PX0-3+t*(PX1-PX0+6); z=PZ1+d; } else { x=PX1+d; z=PZ0-3+t*(PZ1-PZ0+6); }
     if(!keep(x,z,r)) continue; if(spots.some(s=>Math.hypot(s[0]-x,s[1]-z)<(s[2]+r)*.62)) continue; spots.push([x,z,r]); }
   for(let i=0;i<1200&&spots.length<120;i++){ const r=rr(2.0,3.2), x=rr(ZEN.X0,ZEN.X1), z=rr(ZEN.Z0,ZEN.Z1); if(!keep(x,z,r)) continue; if(spots.some(s=>Math.hypot(s[0]-x,s[1]-z)<(s[2]+r)*.7)) continue; spots.push([x,z,r]); }
   /* the near side of the hall (the view the photo has) gets the brightest colours */
-  spots.forEach(([x,z,r],i)=>{ let pi=0; { let u=R(); while(pi<PW.length-1&&u>PW[pi]){ u-=PW[pi]; pi++; } } const pal=PAL[pi], th=rr(.9,1.5), cy=th+r*.55;
+  spots.forEach(([x,z,r],i)=>{ let pi=0; { let u=R(); while(pi<PW.length-1&&u>PW[pi]){ u-=PW[pi]; pi++; } } const pal=PAL[pi], th=rr(1.6,2.4), cy=th+r*.6; /* taller trees, so from further out they still fill the windows top to bottom */
     trunks.push({x,y:th/2,z,sy:th,c:ZL("#3a2418")});
     { const nb=2+((R()*3)|0); for(let b=0;b<nb;b++){ const a=rr(0,6.28), tilt=rr(.6,1.1), L=r*rr(.7,1.05), y0=th*rr(.75,.95); /* a branch leaning out into the canopy, with a smaller twig off its end */
         trunks.push({x:x+Math.cos(a)*Math.sin(tilt)*L/2,y:y0+Math.cos(tilt)*L/2,z:z+Math.sin(a)*Math.sin(tilt)*L/2,sy:L,sx:.45,sz:.45,ry:-a+Math.PI/2,rz:-tilt,c:ZL("#3a2418")});
         const ex=x+Math.cos(a)*Math.sin(tilt)*L, ey=y0+Math.cos(tilt)*L, ez=z+Math.sin(a)*Math.sin(tilt)*L, a2=a+rr(-.7,.7), t2=tilt+rr(-.3,.4), L2=L*.45;
         trunks.push({x:ex+Math.cos(a2)*Math.sin(t2)*L2/2,y:ey+Math.cos(t2)*L2/2,z:ez+Math.sin(a2)*Math.sin(t2)*L2/2,sy:L2,sx:.25,sz:.25,ry:-a2+Math.PI/2,rz:-t2,c:ZL("#3a2418")}); } }
     const pal2=PAL[(pi+1+((R()*2)|0))%PAL.length];
-    const n=Math.round(44+r*16); for(let k=0;k<n;k++){ const a=rr(0,6.28), u=Math.cbrt(R()), y=rr(-.95,.75); const s=rr(.9,1.35)*(.8+r*.1);
+    const n=Math.round(52+r*18); for(let k=0;k<n;k++){ const a=rr(0,6.28), u=Math.cbrt(R()), y=rr(-.95,.75); const s=rr(.9,1.35)*(.8+r*.1);
       const q=R(), src=q<.08?PAL[4]:q<.28?pal2:pal, lo=(y<-.2?-.09:0)+(u>.8?.05:0); /* uneven: a neighbour colour and some green mixed in, darker underneath, lighter on the outside */
-      cards.push({x:x+Math.cos(a)*u*r,y:cy+y*r*.75,z:z+Math.sin(a)*u*r,ry:rr(0,3.14),rx:rr(-.5,.5),rz:rr(-.4,.4),sx:s,sy:s,sz:s,c:C3.set(ZL(src[k%3])).offsetHSL(rr(-.03,.03),rr(-.05,.05),lo+rr(-.12,.1)).getHex()}); } });
+      cards.push({x:x+Math.cos(a)*u*r,y:cy+y*r,z:z+Math.sin(a)*u*r,ry:rr(0,3.14),rx:rr(-.5,.5),rz:rr(-.4,.4),sx:s,sy:s,sz:s,c:C3.set(ZL(src[k%3])).offsetHSL(rr(-.03,.03),rr(-.05,.05),lo+rr(-.12,.1)).getHex()}); } });
   inst(new T.CylinderGeometry(.12,.2,1,6),new T.MeshStandardMaterial({roughness:.9,color:"#ffffff"}),trunks);
   { const cg=new T.PlaneGeometry(1,1), c2=new T.PlaneGeometry(1,1); c2.rotateY(Math.PI/2); const merged=new T.BufferGeometry(); const pa=[...cg.attributes.position.array,...c2.attributes.position.array], na=[...cg.attributes.normal.array,...c2.attributes.normal.array], ua=[...cg.attributes.uv.array,...c2.attributes.uv.array];
     const ia=[...cg.index.array,...Array.from(c2.index.array).map(v=>v+4)]; merged.setAttribute("position",new T.Float32BufferAttribute(pa,3)); merged.setAttribute("normal",new T.Float32BufferAttribute(na,3)); merged.setAttribute("uv",new T.Float32BufferAttribute(ua,2)); merged.setIndex(ia);
@@ -7885,7 +7885,7 @@ const TILE_SPAN=new Map([[floorTex.image,4],[yardTex.image,4.4]]);
 function floorUV(o,m){ const span=m.map&&TILE_SPAN.get(m.map.image), gp=o.geometry&&o.geometry.parameters; if(!span||!gp||gp.width==null||o.userData.uvFixed) return;
   const sc=o.getWorldScale(new T.Vector3()), W=gp.width*sc.x, H=gp.height*sc.y, rx=m.map.repeat.x||1, ry=m.map.repeat.y||1; const g0=o.geometry; o.geometry=g0.clone(); o.geometry.parameters=g0.parameters;
   const uv=o.geometry.attributes.uv; for(let i=0;i<uv.count;i++) uv.setXY(i,uv.getX(i)*W/(span*rx),uv.getY(i)*H/(span*ry)); uv.needsUpdate=true; o.userData.uvFixed=1; }
-function floorsPlain(){ const done=new Map(); scene.traverse(o=>{ if(!o.isMesh||!o.userData||!o.userData.floor) return; const m=o.material; if(!m||!m.isMeshStandardMaterial) return;
+function floorsPlain(){ const done=new Map(); scene.traverse(o=>{ if(!o.isMesh||!o.userData||!o.userData.floor||o.userData.keepMat) return; /* (keepMat: the zen bridge and hall floor keep their own colour — the flat white glow this adds turned them grey) */ const m=o.material; if(!m||!m.isMeshStandardMaterial) return;
     try{ floorUV(o,m); }catch(e){}
     if(!done.has(m)){ const k=m.envMapIntensity??1, gloss=!!(m.map&&m.map.image===floorTex.image), yard=!!(m.map&&m.map.image===yardTex.image); /* indoor stone: a polished sheen — tighter, brighter highlights from the lamps already lighting it, so no extra cost */ const n=new T.MeshPhongMaterial({map:m.map,color:m.color.clone(),shininess:gloss?28:yard?14:6,specular:new T.Color(gloss?"#6e5a44":yard?"#2e2820":"#0c0a08"),...(gloss?{bumpMap:floorBump,bumpScale:.045}:yard?{bumpMap:yardBump,bumpScale:.06}:{}),emissive:new T.Color(1,1,1).multiplyScalar(.16*k),emissiveMap:m.map,side:m.side,transparent:m.transparent,opacity:m.opacity,polygonOffset:m.polygonOffset,polygonOffsetFactor:m.polygonOffsetFactor,polygonOffsetUnits:m.polygonOffsetUnits}); done.set(m,n); }
     o.material=done.get(m); }); }
