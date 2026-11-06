@@ -2559,8 +2559,10 @@ function zenMirror(){ const Rf=ZEN.refl; if(!Rf) return; const cam=camera, y=ZEN
    sky tweaks, floor gloss, and sound made from one shared noise buffer through filters (no audio files). ================= */
 const WX_KINDS={clear:{n:"晴天",c:0,r:0,w:.12},cloudy:{n:"陰天",c:.8,r:0,w:.25},windy:{n:"風大",c:.35,r:0,w:1},rain:{n:"雨天",c:.85,r:1,w:.3},storm:{n:"雷雨",c:1,r:1,w:.75,th:1}};
 const WX={c:0,r:0,w:.12,th:0,set:null,setUntil:0,flash:0,nextBolt:0,trashAt:0,trash:null,t:0,dir:new T.Vector2(1,.35).normalize(),au:null,wet:0,wetMats:null,env:null};
-function wxAuto(){ const seg=Math.floor(Date.now()/360000); let h=(seg*2654435761)>>>0; h^=h>>>13; h=Math.imul(h,0x5bd1e995)>>>0; h^=h>>>15; const u=(h%10000)/10000;
-  return u<.42?"clear":u<.62?"cloudy":u<.76?"windy":u<.9?"rain":"storm"; }
+/* one weather for a whole day: it changes once, at a random time between 06:00 and 11:00 (Taiwan time), the same for everyone */
+const wxHash=n=>{ let t=(n*2654435761+0x6D2B79F5)>>>0; t=Math.imul(t^t>>>15,t|1); t^=t+Math.imul(t^t>>>7,t|61); return ((t^t>>>14)>>>0)/4294967296; };
+function wxDay(d){ const u=wxHash(d*7+3); return u<.4?"clear":u<.6?"cloudy":u<.75?"windy":u<.9?"rain":"storm"; }
+function wxAuto(){ const loc=Date.now()+8*3600e3, d=Math.floor(loc/864e5), changeAt=d*864e5+(6+5*wxHash(d*13+1))*3600e3; return wxDay(loc<changeAt?d-1:d); }
 function wxNow(){ if(typeof window.MZ_WX==="string"&&WX_KINDS[window.MZ_WX]) return window.MZ_WX; if(WX.set&&Date.now()<WX.setUntil) return WX.set; return wxAuto(); }
 const wxOutdoor=(x,z)=>{ let r="O"; try{ r=camRoom(x,z); }catch(e){} return r==="O"&&!(typeof zenPlat==="function"&&zenPlat(x,z)); };
 /* ---- rain: short slanted lines falling round the camera, never under a roof ---- */
@@ -2633,8 +2635,10 @@ function wxTick(dt){ WX.t+=dt; const show=(typeof FW!=="undefined"&&(FW.on||FW.p
     g.rotation.x+=T0.spin.x*dt; g.rotation.y+=T0.spin.y*dt; g.rotation.z+=T0.spin.z*dt; if(T0.t>6){ scene.remove(g); g.traverse(o=>{ if(o.geometry) o.geometry.dispose(); }); WX.trash=null; } }
   else if(w>.6&&WX.t>WX.trashAt){ WX.trashAt=WX.t+25+Math.random()*35; if(WX.t>8&&wxOutdoor(cam.x,cam.z)) wxTrash(cam); }
   /* the demo visitors outside go home when it rains (new ones arrive indoors until it stops) */
-  if(r>.5&&WX.t>(WX.homeT||0)){ WX.homeT=WX.t+2; for(const n of npcs){ if(!n.isBot||n.leaving||n.classic||n.sjq||n.seat>=0) continue; if(wxOutdoor(n.pos.x,n.pos.y)&&Math.random()<.3){ /* walks off home under the umbrella (no more shrinking away) */
+  if(r>.5&&WX.t>(WX.homeT||0)){ WX.homeT=WX.t+2; for(const n of npcs){ if(!n.isBot||n.leaving||n.classic||n.seat>=0) continue; if(wxOutdoor(n.pos.x,n.pos.y)&&Math.random()<.45){ n.sjq=null; /* walks off home under the umbrella (no more shrinking away) */
       if(n.act>=0) stopAct(n); n.pauseT=0; n.saved=null; n.leaving=true; n.hold=0; n.danceT=0; n.anim=null; n.steps=[]; botStart(n,{leave:botExit(n)}); } } }
+  { const shut=r>.5; if(shut!==!!WX.shut){ WX.shut=shut; /* the outdoor stalls pack up in the rain: the 收驚 grannies and the fortune teller */
+      try{ if(FTB.g) FTB.g.visible=!shut; if(FTB.av) FTB.av.root.visible=!shut; SJ.g.forEach(g=>{ if(g.av) g.av.root.visible=!shut; }); if(shut&&mySj) sjLeaveQueue(); }catch(e){} } }
   { const hide=r>.5; if(hide!==!!CATS.rainHide){ CATS.rainHide=hide; if(hide){ CATS.wasOff=CATS.off; catsShow(false); } else if(!CATS.wasOff) catsShow(true); } } /* the cats shelter from the rain */
   if(typeof SAKURA!=="undefined"&&SAKURA.glowU) SAKURA.glowU.value=.12+.38*_dn.night; SWAY.t.value=WX.t; SWAY.w.value=.12+.95*w;
   /* sound */
@@ -2649,9 +2653,12 @@ const _zv=new T.Vector3(), _zc=new T.Color();
 const UMB={geo:null,stick:null,mats:[]};
 function umbTick(av,wet){ if(!av||!av.root) return; const need=wet&&av.root.visible&&av.seat<0&&!((av.flyCur||0)>.3)&&wxOutdoor(av.pos.x,av.pos.y);
   if(!need){ if(av.umb) av.umb.visible=false; return; }
-  if(!av.umb){ if(!UMB.geo){ UMB.geo=new T.SphereGeometry(.62,14,5,0,Math.PI*2,0,Math.PI/2.7); UMB.stick=new T.CylinderGeometry(.013,.013,.95,6); UMB.mats=["#c8263a","#2a6fc8","#f2c230","#2a9a5a","#7a3ab0","#f07aa8","#3a3a44","#f4f0e8"].map(c=>new T.MeshStandardMaterial({color:c,roughness:.6,side:T.DoubleSide})); }
+  if(!av.umb){ if(!UMB.geo){ UMB.geo=new T.SphereGeometry(.62,14,5,0,Math.PI*2,0,Math.PI/2.7); UMB.stick=new T.CylinderGeometry(.013,.013,.95,6); UMB.mats=["#c8263a","#2a6fc8","#f2c230","#2a9a5a","#7a3ab0","#f07aa8","#3a3a44","#f4f0e8"].map(c=>new T.MeshStandardMaterial({map:cvs(128,64,(x,w,h)=>{ /* eight panels, each a little lighter in the middle, ribs and a hem drawn in */
+      for(let k=0;k<8;k++){ const g=x.createLinearGradient(k*w/8,0,(k+1)*w/8,0); g.addColorStop(0,c); g.addColorStop(.5,"#ffffff22"); g.addColorStop(1,c); x.fillStyle=c; x.fillRect(k*w/8,0,w/8,h); x.fillStyle=g; x.fillRect(k*w/8,0,w/8,h); }
+      x.strokeStyle="rgba(30,20,20,.75)"; x.lineWidth=2; for(let k=0;k<=8;k++){ x.beginPath(); x.moveTo(k*w/8,0); x.lineTo(k*w/8,h); x.stroke(); } x.fillStyle="rgba(255,255,255,.55)"; x.fillRect(0,h-6,w,3); x.fillStyle="rgba(0,0,0,.35)"; x.fillRect(0,h-3,w,3); }),roughness:.6,side:T.DoubleSide})); }
     const g=new T.Group(), m=UMB.mats[((av.npcId||0)+(av.isMe?3:0)+(av.name?av.name.length:0))%UMB.mats.length]; const top=new T.Mesh(UMB.geo,m); top.position.y=.5; top.scale.y=.75; g.add(top);
-    const st=new T.Mesh(UMB.stick,mat("#3a2a1a")); g.add(st); g.position.set(.17,1.12,.06); g.rotation.z=-.08; g.userData.noMerge=1; av.root.add(g); av.umb=g; }
+    const st=new T.Mesh(UMB.stick,mat("#3a2a1a")); g.add(st); const tip=new T.Mesh(new T.SphereGeometry(.03,6,4),mat("#3a2a1a")); tip.position.y=.82; g.add(tip);
+    const arm=av.arms&&av.arms[1], sd=arm?Math.sign(arm.position.x)||1:1; g.position.set(sd*.2,1.05,.16); g.rotation.z=-sd*.06; g.userData.noMerge=1; av.root.add(g); av.umb=g; av.umbArm=1; }
   av.umb.visible=true; }
 /* 影子: no shadow maps (too dear on phones). Each person's soft round shadow is stretched away from the sun, longer as it sinks, and the
    cherry trees get the same kind of soft shadow on the lawn; the sun light itself swings round with them. Fades out at dusk. */
@@ -3131,6 +3138,7 @@ class Avatar{
       this.hips.position.y=.3-.13*z; for(let i=0;i<2;i++){ const L=this.legs[i]; if(L.rotation.order!=="YXZ") L.rotation.order="YXZ"; const sd=Math.sign(L.position.x)||(i?1:-1); L.rotation.x=-1.42*z; L.rotation.y=-sd*.95*z; L.rotation.z=0; }
       this.arms[0].rotation.x=-.75*z; this.arms[1].rotation.x=-.75*z; this.arms[0].rotation.z=.5*z; this.arms[1].rotation.z=-.5*z; this.torso.rotation.x=0; this.head.rotation.x=.12*z; }
     else if(this.legs[0].rotation.y||this.legs[1].rotation.y){ this.legs[0].rotation.y=this.legs[1].rotation.y=0; }
+    if(this.umb&&this.umb.visible&&!holding){ const a=this.arms[this.umbArm||1], sd=Math.sign(a.position.x)||1; a.rotation.x=-2.3; a.rotation.z=-sd*.25; } /* holding the umbrella up */
     if(this.danceT>0&&!holding){ // same timeline as the cats, so everyone moves together
       const P=4, cyc=CATS.t%(P*3), ph=Math.floor(cyc/P), tt=CATS.t*1.25;
       let A0=0,A1=0,bY=0,bZ=0,hop=0;
@@ -4308,7 +4316,7 @@ HANDLERS.toggleNpc=(v,b)=>{ showNpc=!showNpc; save("mz.npc",showNpc); b.setAttri
 HANDLERS.showPoem=v=>openPoem(+v,true);
 
 /* ---- stations ---- */
-function openStation(k){ if(k==="treasure"){ thDig(); return; } if(k.startsWith("nm:")){ openStall(k.slice(3)); return; } if(k==="puppet"){ ptOpen(); return; } if(k==="fortune"){ openFortune(); return; } if(k==="cats"){ openCats(); return; } if(k==="fountain"){ openFountain(); return; } if(k==="wish"){ openWish(); return; } if(CENSER_INFO[k]){ openCenser(k); return; } if(k==="jieqian"){ openJieqian(); return; } if(k==="shop") openShop(); if(k==="altar") openAltar(); if(k==="burn") openBurn(); if(k==="donate") openDonate(); if(k==="lot") openLot("ask"); if(k==="lamp"||k==="lampR") openLamp(); if(k==="bell"){ meAv.burnT=0; ringBell(); toast("咚——鐘聲迴盪（只有你聽得到）"); } if(k==="drum"){ meAv.burnT=0; hitDrum(); toast("咚！鼓聲響起（只有你聽得到）"); } }
+function openStation(k){ if(typeof WX!=="undefined"&&WX.shut&&(k==="fortune"||k==="cats")){ toast("下雨了，老師傅收攤躲雨去了，天晴再來",2600); return; } if(k==="treasure"){ thDig(); return; } if(k.startsWith("nm:")){ openStall(k.slice(3)); return; } if(k==="puppet"){ ptOpen(); return; } if(k==="fortune"){ openFortune(); return; } if(k==="cats"){ openCats(); return; } if(k==="fountain"){ openFountain(); return; } if(k==="wish"){ openWish(); return; } if(CENSER_INFO[k]){ openCenser(k); return; } if(k==="jieqian"){ openJieqian(); return; } if(k==="shop") openShop(); if(k==="altar") openAltar(); if(k==="burn") openBurn(); if(k==="donate") openDonate(); if(k==="lot") openLot("ask"); if(k==="lamp"||k==="lampR") openLamp(); if(k==="bell"){ meAv.burnT=0; ringBell(); toast("咚——鐘聲迴盪（只有你聽得到）"); } if(k==="drum"){ meAv.burnT=0; hitDrum(); toast("咚！鼓聲響起（只有你聽得到）"); } }
 function openThanks(i){ const th=THANKS[i]; if(!th) return; sfx.coin(); openSheet("thanks","感謝贊助",`<img class="thanks-img" src="${th.img}" alt="感謝看板" width="1024" height="768"><p class="thanks-text">${esc(th.text)}</p>`); }
 function openShop(){ const html=`<p class="lead">拜拜順序：天公爐 → 媽祖 → 玄天上帝 → 武財神 → 文昌帝君 → 關聖帝君 → 月老 → 土地公 → 觀音菩薩 → 註生娘娘 → 斗姥元君 → 九天玄女 → 地藏王 → 虎爺。十四爐都插好香，再到廟埕金爐燒金紙。</p>
   <div class="goods">${GOODS.map(g=>`<button class="good" data-act="buy" data-v="${g.k}" ${bag.coins<g.price?"disabled":""}><span class="name">${g.name}</span><span class="meta">${g.meta}</span><span class="price">${g.price} 平安幣</span><span class="own">持有 ${bag.items[g.k]||0}</span></button>`).join("")}</div>
@@ -4854,7 +4862,7 @@ function sjGuard(proceed){ if(!mySj) return false; sjAsk=proceed; const g=SJ.g[m
 HANDLERS.sjStay=()=>{ sjAsk=null; closeSheet(); };
 HANDLERS.sjLeave=()=>{ sjLeaveQueue(); toast("已離開收驚隊伍"); const go=sjAsk; sjAsk=null; closeSheet(); if(go) go(); };
 function sjLeaveQueue(){ if(!mySj) return; const g=SJ.g[mySj.g]; if(g.serving&&g.serving.key==="me"){ sjStopRitual(g); g.serving=null; } mySj=null; sjCam.on=false; sjBuild(); markDirty(); }
-function sjTap(i){ const g=SJ.g[i];
+function sjTap(i){ if(typeof WX!=="undefined"&&WX.shut){ toast("下雨了，收驚阿嬤先進去躲雨，天晴再來",2600); return; } const g=SJ.g[i];
   if(mySj){ toast(mySj.g===i?(g.serving&&g.serving.key==="me"?"阿嬤正在幫你收驚":"你已經在排隊了"):"你已經在另一位阿嬤那邊排隊"); return; }
   closeSheet(); mySj={g:i,at:Date.now()}; sjBuild(); markDirty(); const k=g.q.findIndex(e=>e.me); const [x,z]=sjSlot(g,k);
   if(meAv.seat>=0) meAv.seat=-1; pendingStation=null; { const pth=planPath(meAv.pos.x,meAv.pos.y,x,z); meAv.moveTo(pth[0][0],pth[0][1]); meAv.path=pth.slice(1); } meAv.faceGoal=-Math.PI/2;
@@ -5654,7 +5662,7 @@ function fwedTick(){ if(!FWED.on||!FWED.cv) return; const S=FWED.show, now=fwedN
     tx.fillStyle="#fff"; tx.fillRect(now/S.len*W-1,0,2.5,H); } }
 
 HANDLERS.wxOpen=()=>{ const cur=wxNow(), manual=WX.set&&Date.now()<WX.setUntil; const left=manual?Math.max(1,Math.round((WX.setUntil-Date.now())/60000)):0;
-  openSheet("contact","天氣",`${backBtn}<p class="lead">現在：${WX_KINDS[cur].n}${manual?`（主委指定，還有 ${left} 分鐘）`:"（自動，每 6 分鐘可能換一次）"}。選一種天氣，全伺服器會一起換，維持 20 分鐘後回到自動。</p>
+  openSheet("contact","天氣",`${backBtn}<p class="lead">現在：${WX_KINDS[cur].n}${manual?`（主委指定，還有 ${left} 分鐘）`:"（自動：每天上午隨機一個時間換一次，一整天同一種天氣）"}。選一種天氣，全伺服器會一起換，維持 20 分鐘後回到自動。</p>
     <div class="goods">${Object.entries(WX_KINDS).map(([k,o])=>`<button class="good${cur===k?" on":""}" data-act="wxSet" data-v="${k}"><span class="name">${{clear:"☀️",cloudy:"☁️",windy:"🍃",rain:"🌧️",storm:"⛈️"}[k]} ${o.n}</span></button>`).join("")}<button class="good" data-act="wxSet" data-v=""><span class="name">🔄 回到自動</span></button></div>`); };
 HANDLERS.wxSet=async v=>{ const until=v?Date.now()+20*60000:0; if(!USE_CF){ WX.set=v||null; WX.setUntil=until; HANDLERS.wxOpen(); return; } const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return; }
   try{ const r=await fetch("/weather",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({w:v,min:20})}); const j=await r.json().catch(()=>({})); forgetKey(r,j); if(j.ok){ WX.set=j.w||null; WX.setUntil=j.until||0; toast(v?`天氣換成${WX_KINDS[v].n}`:"天氣回到自動",2200); HANDLERS.wxOpen(); } else toast(j.locked?"嘗試次數過多，今天先鎖住了":"密碼不對，天氣沒有換",2600); }catch(e){ toast("天氣沒有換，請稍後再試"); } };
@@ -5881,7 +5889,7 @@ function ftReading(y,m,d,hourIdx,now){ const H=hourIdx>=0?FT_HOURS[hourIdx][2]:1
    Everything is worked out on the player's own phone; the birth date is kept only in this browser and never sent anywhere. */
 const FTB={x:-13.6,z:FZ-3.6,av:null}; // the open spot on the temple side of the 金爐, where a 收驚阿嬤 used to stand
 const FT_ELC={木:"#4fae6a",火:"#e0533a",土:"#c99a3c",金:"#cfc8b8",水:"#4a8fe0"};
-{ const g=new T.Group(); g.position.set(FTB.x,0,FTB.z); g.rotation.y=Math.PI/2; scene.add(g); // local +z = the courtyard side
+{ const g=new T.Group(); g.position.set(FTB.x,0,FTB.z); g.rotation.y=Math.PI/2; scene.add(g); FTB.g=g; g.userData.noMerge=1; // local +z = the courtyard side
   const red=mat("#a3221a",{roughness:.7}), wood=mat("#4a2a18",{roughness:.8}), goldP=mat("#d6a24a",{metalness:.8,roughness:.3});
   box(1.9,.08,.85,mat("#7a1a12",{roughness:.6}),0,.84,0,g); box(1.95,.06,.9,goldP,0,.79,0,g);
   for(const sx of [-.85,.85]) for(const sz of [-.35,.35]) box(.07,.8,.07,wood,sx,.4,sz,g);
