@@ -1821,6 +1821,10 @@ const rearN0=scene.children.length;
    from the 後殿. 龍邊 (the deities' left) is +x. */
 const RH={x:10.2, z0:-31.5, z1:-48, H:7.8, door:5.4}; /* z1 was -43.5: made 4.5 m deeper at the chair's request */ const RH_EXT=4.5, RH_WALK=-48+4.6; // door: x of the two side doors (龍邊 in, 虎邊 out); the middle one is closed off by a red board                 // 後殿 interior: |x|<x, z1<z<z0
 const RS={x0:10.2, x1:23.2, z0:-31.5, z1:-41.5, H:5.2, cx:16.7}; // 側殿 on each side
+/* 靜思禪院 (garden beyond the left wall of the 後埕): the numbers, here because the wall code needs the gate position */
+const ZEN={GZ:-27.6, X0:-76, X1:-26.2, Z0:-50, Z1:-6, BX0:-37.4, BX1:-25.0, BH:1.25, FY:.55,
+  hall:{x0:-62, x1:-46, z0:-34.6, z1:-20.6}, plat:{x0:-63.6, x1:-44.4, z0:-36.2, z1:-19}, s0:0, pick:[], g:null, cush:null, on:false, refl:null};
+ZEN.GZ0=ZEN.GZ-1.3; ZEN.GZ1=ZEN.GZ+1.3;
 const RY0=-15.3, RFT={x:0,z:-16.4};                            // 後埕 starts behind the main hall; the wall fountain
 const RPINE=[[-4.6,-17.2],[4.6,-17.2]];
 const REAR_TICK=[];
@@ -1840,8 +1844,10 @@ setTimeout(()=>{ Object.assign(CENSER_INFO,{guanyin:["觀世音菩薩","後殿�
   // ---- 後埕: paving, the strips behind each 偏殿, the side walls ----
   plane(-RS.x1,RS.x1,RH.z0,RY0,.012,yardM);
   for(const s of [-1,1]){ const f=plane(s>0?SHX0:-RS.x1,s>0?RS.x1:-SHX0,RY0,SHZ0,.012,new T.MeshStandardMaterial({map:texRep(yardTex,3,1.5),roughness:.75})); }
-  for(const s of [-1,1]){ const L=SHZ0-RH.z0; box(.4,3.4,L,brickM(L/2.6,1.3),s*(RS.x1+.2),1.7,(SHZ0+RH.z0)/2); box(.7,.22,L+.3,mat("#3a1d14",{roughness:.9}),s*(RS.x1+.2),3.5,(SHZ0+RH.z0)/2);
-    box(.42,.5,L,stoneB,s*(RS.x1+.2),.25,(SHZ0+RH.z0)/2); }
+  for(const s of [-1,1]){ const L=SHZ0-RH.z0; box(.7,.22,L+.3,mat("#3a1d14",{roughness:.9}),s*(RS.x1+.2),3.5,(SHZ0+RH.z0)/2);
+    /* the left wall has the gate out to 靜思禪院 in it: two wall pieces and a lintel over a 2.4 m opening */
+    const parts=s>0?[[RH.z0,SHZ0]]:[[RH.z0,ZEN.GZ0],[ZEN.GZ1,SHZ0]]; for(const [a,b] of parts){ const l=b-a; box(.4,3.4,l,brickM(l/2.6,1.3),s*(RS.x1+.2),1.7,(a+b)/2); box(.42,.5,l,stoneB,s*(RS.x1+.2),.25,(a+b)/2); }
+    if(s<0){ box(.4,.7,ZEN.GZ1-ZEN.GZ0,brickM(1,.35),-(RS.x1+.2),3.05,ZEN.GZ); } }
   // the back of the main hall, seen from the 後埕: brick with a stone base
   { const bp=mesh(new T.PlaneGeometry(HX*2,HH),brickM(9,3.8),0,HH/2,-HZ-.235); bp.rotation.y=Math.PI; box(HX*2,1.2,.1,stoneB,0,.6,-HZ-.3); }
 
@@ -2325,6 +2331,179 @@ const rimGeo=new T.BoxGeometry(1.18,.05,.64); rimGeo.translate(0,.025,0);
 const rims=new T.InstancedMesh(rimGeo,GOLD(),SEATS.length);
 { const m=new T.Matrix4(); SEATS.forEach((s,i)=>{ m.makeTranslation(s.x,0,s.y); cushions.setMatrixAt(i,m); rims.setMatrixAt(i,m); }); }
 scene.add(cushions,rims); cushions.userData.seats=true;
+const ZL=h=>"#"+new T.Color(h).convertSRGBToLinear().getHexString(); /* a colour as it should look on screen, turned into the value the renderer expects */
+/* ================= 靜思禪院: out through a gate in the left wall of the 後埕, over a red arched bridge, into a walled garden of
+   coloured maples and flowering trees around a Japanese zen hall with 50 round cushions. The garden only draws while you are near it
+   (a tall bamboo fence hides it from the rest of the grounds); the hall floor is a live mirror while you are inside. ================= */
+ZEN.s0=SEATS.length; /* the 50 cushions: 5 rows of 10, everyone facing the alcove on the west wall */
+for(let r=0;r<5;r++) for(let c=0;c<10;c++){ const v=new T.Vector2(-48.4-r*1.75,ZEN.GZ+(c-4.5)*1.22); v.zen=true; v.face=-Math.PI/2; SEATS.push(v); }
+function zenIn(x,z){ return x<ZEN.X1+.4&&x>ZEN.X0&&z>ZEN.Z0&&z<ZEN.Z1; }
+function zenPlat(x,z){ const p=ZEN.plat; return x>p.x0&&x<p.x1&&z>p.z0&&z<p.z1; }
+/* height of the ground under a walker: the arched bridge and the raised hall floor (everywhere else 0) */
+function groundH(x,z){ if(x>-23.3) return 0; if(Math.abs(z-ZEN.GZ)<1.25&&x<=ZEN.BX1&&x>=ZEN.BX0){ const t=(ZEN.BX1-x)/(ZEN.BX1-ZEN.BX0); return ZEN.BH*Math.sin(Math.PI*t); }
+  if(zenPlat(x,z)) return ZEN.FY; if(Math.abs(z-ZEN.GZ)<1.6&&x>ZEN.plat.x1&&x<ZEN.plat.x1+1.6) return ZEN.FY*(1-(x-ZEN.plat.x1)/1.6); return 0; }
+function zenWalkable(x,z){ const G=ZEN.GZ;
+  if(x>-23.9&&x<=-22.6&&Math.abs(z-G)<.95) return true;                                   /* the gate in the wall */
+  if(x<=-23.6&&x>=ZEN.BX0-.2&&Math.abs(z-G)<.95) return true;                             /* bridge */
+  if(x<ZEN.BX0&&x>=ZEN.plat.x1&&Math.abs(z-G)<1.25) return true;                          /* stone path to the hall steps */
+  const p=ZEN.plat; if(x>p.x0+.3&&x<p.x1+.2&&z>p.z0+.3&&z<p.z1-.3) return !(x<-61.2&&Math.abs(z-G)<2.2); /* hall and veranda, short of the alcove */
+  return false; }
+{ const G=ZEN.GZ, root=new T.Group(); root.userData.noMerge=1; scene.add(root); ZEN.fence=root;
+  const g=new T.Group(); g.userData.noMerge=1; g.visible=false; scene.add(g); ZEN.g=g;
+  const M4=new T.Matrix4(), Q4=new T.Quaternion(), S3=new T.Vector3(), V3=new T.Vector3(), E3=new T.Euler(), C3=new T.Color(), R=mulberry(7);
+  function mulberry(a){ return ()=>{ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+  const rr=(a,b)=>a+(b-a)*R();
+  const inst=(geo,m,list,parent)=>{ const im=new T.InstancedMesh(geo,m,list.length); list.forEach((e,i)=>{ E3.set(e.rx||0,e.ry||0,e.rz||0); Q4.setFromEuler(E3); S3.set(e.sx||1,e.sy||1,e.sz||1); M4.compose(V3.set(e.x,e.y,e.z),Q4,S3); im.setMatrixAt(i,M4); if(e.c) im.setColorAt(i,C3.set(e.c)); });
+    im.instanceMatrix.needsUpdate=true; if(im.instanceColor) im.instanceColor.needsUpdate=true; im.userData.noMerge=1; (parent||g).add(im); return im; };
+  const wood=mat(ZL("#3a2418"),{roughness:.55}), darkWood=mat(ZL("#24150e"),{roughness:.5}), red=mat(ZL("#b8261c"),{roughness:.5}), tile=mat(ZL("#3c3f44"),{roughness:.7}), stone=mat(ZL("#9a968c"),{roughness:.9}), paper=mat(ZL("#f2ead8"),{roughness:.9,emissive:"#f6e6c0",emissiveIntensity:.25});
+
+  /* ---- the gate in the 後埕 wall (the wall itself is split around it, see the wall code) and a small roofed frame on the outside ---- */
+  for(const dz of [-1.32,1.32]){ box(.26,2.9,.26,darkWood,-23.62,1.45,G+dz,root); }
+  box(.3,.24,3.2,darkWood,-23.62,2.84,G,root); { const rf=box(1.5,.12,3.9,tile,-23.7,3.12,G,root); rf.rotation.z=.08; }
+  { const pt=cvs(256,64,(x,w,h)=>{ x.fillStyle="#2a1810"; x.fillRect(0,0,w,h); x.strokeStyle="#c9a24a"; x.lineWidth=4; x.strokeRect(4,4,w-8,h-8); x.fillStyle="#f3dfae"; x.font="bold 38px serif"; x.textAlign="center"; x.textBaseline="middle"; x.fillText("靜思禪院",w/2,h/2+2); });
+    for(const [dx,ry] of [[-.17,-Math.PI/2],[.17,Math.PI/2]]){ const pq=mesh(new T.PlaneGeometry(1.6,.4),new T.MeshStandardMaterial({map:pt,roughness:.8}),-23.62+dx,2.48,G,root); pq.rotation.y=ry; } }
+
+  /* ---- bamboo fence round the whole garden (always drawn: it is what you see from the rest of the grounds) ---- */
+  { const H=3.1, poles=[], runs=[[ZEN.X1,ZEN.Z0,ZEN.X1,G-1.5],[ZEN.X1,G+1.5,ZEN.X1,ZEN.Z1],[ZEN.X0,ZEN.Z0,ZEN.X0,ZEN.Z1],[ZEN.X0,ZEN.Z0,ZEN.X1,ZEN.Z0],[ZEN.X0,ZEN.Z1,ZEN.X1,ZEN.Z1]];
+    const rails=[]; for(const [x0,z0,x1,z1] of runs){ const L=Math.hypot(x1-x0,z1-z0), n=Math.round(L/.13); for(let i=0;i<=n;i++){ const t=i/n, h=H*(.92+.1*R()); poles.push({x:x0+(x1-x0)*t,y:h/2,z:z0+(z1-z0)*t,sy:h,c:C3.setHSL(.11+.03*R(),.3+.15*R(),.42+.12*R()).convertSRGBToLinear().getHex()}); }
+      for(const y of [.9,2.2]) rails.push({x:(x0+x1)/2,y,z:(z0+z1)/2,ry:Math.atan2(x1-x0,z1-z0),sz:L}); }
+    const bm=new T.MeshStandardMaterial({roughness:.6,color:"#ffffff"}); inst(new T.CylinderGeometry(.06,.065,1,6),bm,poles,root);
+    inst(new T.BoxGeometry(.09,.09,1),mat(ZL("#5a4a26"),{roughness:.8}),rails,root); }
+
+  /* ---- ground: moss with fallen leaves, a stream under the bridge, a stone path ---- */
+  const groundTex=cvs(512,512,(x,w,h)=>{ x.fillStyle="#3f5a2a"; x.fillRect(0,0,w,h); for(let i=0;i<5000;i++){ x.fillStyle=`hsla(${80+Math.random()*40},${30+Math.random()*30}%,${18+Math.random()*22}%,.5)`; x.fillRect(Math.random()*w,Math.random()*h,2+Math.random()*3,2+Math.random()*3); }
+    const L=["#c8261c","#e0641a","#e8b420","#b01e3a","#f08a2a"]; for(let i=0;i<900;i++){ x.fillStyle=L[i%5]; x.globalAlpha=.55+Math.random()*.4; x.beginPath(); x.ellipse(Math.random()*w,Math.random()*h,2.5+Math.random()*2.5,1.5+Math.random()*1.5,Math.random()*3,0,7); x.fill(); } x.globalAlpha=1; });
+  { const gm=new T.MeshStandardMaterial({map:texRep(groundTex,9,8),roughness:.95}); const gr=mesh(new T.PlaneGeometry(ZEN.X1-ZEN.X0,ZEN.Z1-ZEN.Z0),gm,(ZEN.X0+ZEN.X1)/2,.02,(ZEN.Z0+ZEN.Z1)/2,g); gr.rotation.x=-Math.PI/2; gr.userData.floor=true; ZEN.pick.push(gr);
+    /* the strip between the temple wall and the balustrade, under the bridge */ const st=mesh(new T.PlaneGeometry(2.6,4),gm,-24.6,.015,G,root); st.rotation.x=-Math.PI/2; }
+  { const wm=new T.MeshStandardMaterial({color:ZL("#2c5c60"),roughness:.12,metalness:.35,emissive:"#0c2226",emissiveIntensity:.4}); const wa=mesh(new T.PlaneGeometry(5.6,ZEN.Z1-ZEN.Z0-.4),wm,-31.2,.05,(ZEN.Z0+ZEN.Z1)/2,g); wa.rotation.x=-Math.PI/2; ZEN.water=wa;
+    const rocks=[]; for(let i=0;i<70;i++){ const s=rr(.25,.7), side=R()<.5?-1:1; rocks.push({x:-31.2+side*rr(2.6,3.2),y:s*.25,z:rr(ZEN.Z0+1,ZEN.Z1-1),sx:s*1.3,sy:s*.6,sz:s,ry:rr(0,3),c:C3.setHSL(.1,.05,.38+.15*R()).convertSRGBToLinear().getHex()}); }
+    inst(new T.DodecahedronGeometry(1,0),new T.MeshStandardMaterial({roughness:.95}),rocks.filter(r=>Math.abs(r.z-G)>1.6)); }
+  { const steps=[]; for(let x=ZEN.BX0-.3;x>ZEN.plat.x1+1.6;x-=.95) steps.push({x,y:.05,z:G+rr(-.15,.15),sx:rr(.7,.85),sz:rr(1.6,1.9),ry:rr(-.1,.1)}); inst(new T.CylinderGeometry(.5,.52,.1,10),stone,steps); }
+
+  /* ---- red arched bridge (太鼓橋) ---- */
+  { const L=ZEN.BX1-ZEN.BX0, dg=new T.BoxGeometry(L,.16,2.1,28,1,1), p=dg.attributes.position; for(let i=0;i<p.count;i++){ const t=(p.getX(i)+L/2)/L; p.setY(i,p.getY(i)+ZEN.BH*Math.sin(Math.PI*t)-.08); } dg.computeVertexNormals();
+    const deck=mesh(dg,mat(ZL("#7a4a2a"),{roughness:.7}),(ZEN.BX0+ZEN.BX1)/2,0,G,g); deck.userData.floor=true; ZEN.pick.push(deck);
+    const posts=[], caps=[]; for(const s of [-1,1]) for(let i=0;i<=8;i++){ const t=i/8, x=ZEN.BX1-L*t, y=ZEN.BH*Math.sin(Math.PI*t); posts.push({x,y:y+.42,z:G+s*1.0,sy:.84}); caps.push({x,y:y+.9,z:G+s*1.0}); }
+    inst(new T.CylinderGeometry(.07,.07,1,8),red,posts); inst(new T.SphereGeometry(.09,10,8),mat(ZL("#d4a640"),{metalness:.7,roughness:.35}),caps);
+    for(const s of [-1,1]) for(const hy of [.82,.42]){ const pts=[]; for(let i=0;i<=16;i++){ const t=i/16; pts.push(new T.Vector3(ZEN.BX1-L*t,ZEN.BH*Math.sin(Math.PI*t)+hy,G+s*1.0)); } mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts),40,hy>.6?.06:.04,6,false),red,0,0,0,g); }
+    /* the same deck seen from the courtyard side is drawn even when the garden is hidden */ }
+
+  /* ---- the hall: raised dark floor, posts, shoji transoms, railings, ceiling, a hipped tile roof and an alcove ---- */
+  const hl=ZEN.hall, pl=ZEN.plat, FY=ZEN.FY, H=3.5;
+  { const base=box(pl.x1-pl.x0,FY,pl.z1-pl.z0,mat(ZL("#2a1c14"),{roughness:.8}),(pl.x0+pl.x1)/2,FY/2,(pl.z0+pl.z1)/2,g);
+    const fm=new T.MeshStandardMaterial({color:ZL("#170d07"),roughness:.2,metalness:.05}); const fl=mesh(new T.PlaneGeometry(pl.x1-pl.x0,pl.z1-pl.z0),fm,(pl.x0+pl.x1)/2,FY+.004,(pl.z0+pl.z1)/2,g); fl.rotation.x=-Math.PI/2; fl.userData.floor=true; ZEN.pick.push(fl); ZEN.floor=fl;
+    /* plank seams */ const seams=[]; for(let z=pl.z0+.3;z<pl.z1;z+=.3) seams.push({x:(pl.x0+pl.x1)/2,y:FY+.006,z,sx:pl.x1-pl.x0}); inst(new T.BoxGeometry(1,.002,.012),mat(ZL("#140b06")),seams);
+    for(let i=0;i<4;i++) box(1.0,.14,3.0,mat(ZL("#2e1f15"),{roughness:.8}),pl.x1+.5+i*.0,FY-.14*(i+1)+.07,G,g).position.x=pl.x1+.4+i*.4; }
+  { const posts=[], step=2.0; const nx=Math.round((hl.x1-hl.x0)/step), nz=Math.round((hl.z1-hl.z0)/step);
+    for(let i=0;i<=nx;i++) for(const z of [hl.z0,hl.z1]) posts.push({x:hl.x0+(hl.x1-hl.x0)*i/nx,y:FY+H/2,z,sy:H});
+    for(let j=1;j<nz;j++) for(const x of [hl.x0,hl.x1]) posts.push({x,y:FY+H/2,z:hl.z0+(hl.z1-hl.z0)*j/nz,sy:H});
+    for(let i=0;i<=nx+1;i++) for(const z of [pl.z0+.15,pl.z1-.15]) posts.push({x:pl.x0+.15+(pl.x1-pl.x0-.3)*i/(nx+1),y:FY+(H-.3)/2,z,sy:H-.3,sx:.7,sz:.7});
+    inst(new T.BoxGeometry(.22,1,.22),darkWood,posts);
+    /* beams over the posts and the transom band of paper screens all round */
+    for(const z of [hl.z0,hl.z1]){ box(hl.x1-hl.x0+.4,.26,.3,darkWood,(hl.x0+hl.x1)/2,FY+H-.13,z,g); box(hl.x1-hl.x0,.1,.16,darkWood,(hl.x0+hl.x1)/2,FY+H-.85,z,g); }
+    for(const x of [hl.x0,hl.x1]){ box(.3,.26,hl.z1-hl.z0+.4,darkWood,x,FY+H-.13,(hl.z0+hl.z1)/2,g); box(.16,.1,hl.z1-hl.z0,darkWood,x,FY+H-.85,(hl.z0+hl.z1)/2,g); }
+    const shoji=cvs(256,64,(x,w,h)=>{ x.fillStyle="#f4ecd8"; x.fillRect(0,0,w,h); x.strokeStyle="#3a2416"; x.lineWidth=3; for(let i=0;i<=8;i++){ x.beginPath(); x.moveTo(i*w/8,0); x.lineTo(i*w/8,h); x.stroke(); } for(let j=0;j<=2;j++){ x.beginPath(); x.moveTo(0,j*h/2); x.lineTo(w,j*h/2); x.stroke(); } });
+    const sm=new T.MeshStandardMaterial({map:shoji,roughness:.9,emissive:"#fff1d0",emissiveMap:shoji,emissiveIntensity:.35,side:T.DoubleSide});
+    for(const z of [hl.z0,hl.z1]){ const p=mesh(new T.PlaneGeometry(hl.x1-hl.x0,.6),sm,(hl.x0+hl.x1)/2,FY+H-.55,z,g); sm.map.repeat.set(4,1); sm.map.wrapS=T.RepeatWrapping; }
+    for(const x of [hl.x1]){ const p=mesh(new T.PlaneGeometry(hl.z1-hl.z0,.6),sm,x,FY+H-.55,(hl.z0+hl.z1)/2,g); p.rotation.y=Math.PI/2; }
+    /* low railings round the veranda (open on the east where the steps come up) */
+    const rail=(x0,z0,x1,z1)=>{ const L=Math.hypot(x1-x0,z1-z0); const b=box(L,.08,.1,darkWood,(x0+x1)/2,FY+.78,(z0+z1)/2,g); b.rotation.y=-Math.atan2(z1-z0,x1-x0); const b2=box(L,.06,.08,darkWood,(x0+x1)/2,FY+.36,(z0+z1)/2,g); b2.rotation.y=b.rotation.y;
+      const n=Math.round(L/.5), sp=[]; for(let i=0;i<=n;i++){ const t=i/n; sp.push({x:x0+(x1-x0)*t,y:FY+.4,z:z0+(z1-z0)*t,sy:.8}); } inst(new T.BoxGeometry(.05,1,.05),darkWood,sp); };
+    rail(pl.x0+.15,pl.z0+.15,pl.x1-.15,pl.z0+.15); rail(pl.x0+.15,pl.z1-.15,pl.x1-.15,pl.z1-.15); rail(pl.x0+.15,pl.z0+.15,pl.x0+.15,pl.z1-.15);
+    rail(pl.x1-.15,pl.z0+.15,pl.x1-.15,G-1.6); rail(pl.x1-.15,G+1.6,pl.x1-.15,pl.z1-.15);
+    /* ceiling with a grid of dark battens */
+    const cl=mesh(new T.PlaneGeometry(pl.x1-pl.x0,pl.z1-pl.z0),mat(ZL("#2a1a10"),{roughness:.85}),(pl.x0+pl.x1)/2,FY+H+.02,(pl.z0+pl.z1)/2,g); cl.rotation.x=Math.PI/2;
+    const bat=[]; for(let x=pl.x0+1;x<pl.x1;x+=1.2) bat.push({x,y:FY+H-.03,z:(pl.z0+pl.z1)/2,sz:pl.z1-pl.z0}); inst(new T.BoxGeometry(.07,.07,1),darkWood,bat);
+    /* west wall with the alcove: a hanging scroll, an incense bowl and a single branch in a vase */
+    box(.3,H,hl.z1-hl.z0,mat(ZL("#9c8a6c"),{roughness:.95}),hl.x0-.05,FY+H/2,(hl.z0+hl.z1)/2,g);
+    box(.9,.12,3.6,darkWood,hl.x0+.5,FY+.06,G,g); box(.06,H-.6,.14,darkWood,hl.x0+.15,FY+(H-.6)/2,G-1.85,g); box(.06,H-.6,.14,darkWood,hl.x0+.15,FY+(H-.6)/2,G+1.85,g);
+    const scroll=cvs(128,384,(x,w,h)=>{ x.fillStyle="#efe6d0"; x.fillRect(0,0,w,h); x.fillStyle="#6a5a3a"; x.fillRect(0,0,w,18); x.fillRect(0,h-18,w,18); x.fillStyle="#1a1410"; x.font="bold 96px serif"; x.textAlign="center"; x.textBaseline="middle"; x.fillText("靜",w/2,h*.42); x.font="40px serif"; x.fillText("心",w/2,h*.72); });
+    const sc=mesh(new T.PlaneGeometry(.75,2.2),new T.MeshStandardMaterial({map:scroll,roughness:.9}),hl.x0+.12,FY+1.9,G,g); sc.rotation.y=Math.PI/2;
+    cyl(.16,.12,.14,mat(ZL("#6a4a2a"),{roughness:.5}),hl.x0+.55,FY+.19,G-.7,g,14); cyl(.1,.14,.42,mat(ZL("#2a3a44"),{roughness:.3,metalness:.2}),hl.x0+.55,FY+.33,G+.9,g,14);
+    for(let i=0;i<5;i++){ const b=cyl(.012,.016,.7,darkWood,hl.x0+.55+rr(-.1,.1),FY+.85,G+.9+rr(-.1,.1),g,5); b.rotation.set(rr(-.5,.5),0,rr(-.5,.5)); const bl=mesh(new T.SphereGeometry(.09,8,6),mat(ZL("#e85a8a"),{roughness:.8,emissive:"#5a1020",emissiveIntensity:.3}),b.position.x+Math.sin(b.rotation.z)*-.3,FY+1.15+rr(0,.15),b.position.z+Math.sin(b.rotation.x)*.3,g); }
+    /* hipped roof: a raised box-and-pyramid shape with deep eaves */
+    const rx0=pl.x0-1.3, rx1=pl.x1+1.3, rz0=pl.z0-1.3, rz1=pl.z1+1.3, ry=FY+H+.15, rh=3.4, cx=(rx0+rx1)/2, cz=(rz0+rz1)/2, w2=(rx1-rx0)/2, d2=(rz1-rz0)/2, rl=w2*.45;
+    const rg=new T.BufferGeometry(), V=[]; const A=[cx-w2,ry,cz-d2],B=[cx+w2,ry,cz-d2],C=[cx+w2,ry,cz+d2],D=[cx-w2,ry,cz+d2],E=[cx-rl,ry+rh,cz],F=[cx+rl,ry+rh,cz];
+    const tri=(a,b,c)=>V.push(...a,...b,...c); tri(A,F,B); tri(A,E,F); tri(B,F,C); tri(C,F,E); tri(C,E,D); tri(D,E,A); tri(A,B,C); tri(A,C,D);
+    rg.setAttribute("position",new T.Float32BufferAttribute(V,3)); rg.computeVertexNormals(); const roof=mesh(rg,new T.MeshStandardMaterial({color:ZL("#5a5e66"),roughness:.6,side:T.DoubleSide}),0,0,0,g);
+    box(2*rl+.6,.3,.5,mat(ZL("#2a2c30"),{roughness:.6}),cx,ry+rh+.1,cz,g);
+    const eave=box(2*w2+.2,.16,2*d2+.2,darkWood,cx,ry-.02,cz,g); }
+
+  /* ---- 50 round cushions (zafu) on square mats ---- */
+  { const zs=SEATS.slice(ZEN.s0), mats=zs.map(s=>({x:s.x,y:FY+.02,z:s.y})), cu=zs.map((s,i)=>({x:s.x,y:FY+.1,z:s.y,c:ZL(["#14172a","#1e1420","#121e18"][i%3])}));
+    inst(new T.BoxGeometry(.86,.035,.86),mat(ZL("#3e120c"),{roughness:.9}),mats);
+    ZEN.cush=inst(new T.CylinderGeometry(.3,.32,.16,18),new T.MeshStandardMaterial({roughness:.95,color:"#ffffff"}),cu); ZEN.pick.push(ZEN.cush); }
+
+  /* ---- trees: maples in red, crimson, orange and gold, some green, cherry and plum in bloom, a few pines ---- */
+  const leafTex=cvs(128,128,(x,w,h)=>{ x.clearRect(0,0,w,h); for(let i=0;i<150;i++){ const a=Math.random()*6.28, r=Math.sqrt(Math.random())*50, px=64+Math.cos(a)*r, py=64+Math.sin(a)*r*.85, s=3.5+Math.random()*4.5; x.save(); x.translate(px,py); x.rotate(Math.random()*6.28); x.fillStyle=`rgba(255,255,255,${.75+Math.random()*.25})`;
+      x.beginPath(); for(let k=0;k<10;k++){ const ang=k/10*6.28, rad=k%2?s*.45:s; x.lineTo(Math.cos(ang)*rad,Math.sin(ang)*rad); } x.closePath(); x.fill(); x.restore(); } });
+  leafTex.encoding=T.LinearEncoding;
+  const PAL=[["#a00a10","#b81414","#880810"],["#c8380a","#d85410","#b02808"],["#c88a06","#d8a010","#b07404"],["#900c2a","#a8143a","#740820"],["#3a6a14","#4a7c1a","#2c5a10"],["#e07898","#e890ac","#d06088"],["#f0e4e8","#e8ccd6","#f4dce4"]], PW=[.26,.2,.2,.12,.1,.08,.04];
+  const keep=(x,z,r)=>{ if(x>ZEN.X1-1.2-r||x<ZEN.X0+1.2+r||z<ZEN.Z0+1.2+r||z>ZEN.Z1-1.2-r) return false; if(Math.abs(x+31.2)<3.4+r*.4) return false; if(x>ZEN.plat.x0-1.2-r*.5&&x<ZEN.plat.x1+2.6+r*.3&&z>ZEN.plat.z0-1.2-r*.5&&z<ZEN.plat.z1+1.2+r*.5) return false; if(Math.abs(z-G)<2.2+r*.6&&x>ZEN.plat.x1) return false; return true; };
+  const trunks=[], cards=[], spots=[];
+  for(let i=0;i<400&&spots.length<54;i++){ const r=rr(2.0,3.2), x=rr(ZEN.X0,ZEN.X1), z=rr(ZEN.Z0,ZEN.Z1); if(!keep(x,z,r)) continue; if(spots.some(s=>Math.hypot(s[0]-x,s[1]-z)<(s[2]+r)*.72)) continue; spots.push([x,z,r]); }
+  /* the near side of the hall (the view the photo has) gets the brightest colours */
+  spots.forEach(([x,z,r],i)=>{ let pi=0; { let u=R(); while(pi<PW.length-1&&u>PW[pi]){ u-=PW[pi]; pi++; } } const pal=PAL[pi], th=rr(2.2,3.4), cy=th+r*.55;
+    trunks.push({x,y:th/2,z,sy:th,c:ZL("#4a3226")}); for(let k=0;k<3;k++){ const a=rr(0,6.28); trunks.push({x:x+Math.cos(a)*.5,y:th*.85,z:z+Math.sin(a)*.5,sy:th*.5,sx:.6,sz:.6,rz:Math.cos(a)*.7,rx:-Math.sin(a)*.7,c:ZL("#4a3226")}); }
+    const n=Math.round(34+r*14); for(let k=0;k<n;k++){ const a=rr(0,6.28), u=Math.cbrt(R()), y=rr(-.55,.7); const s=rr(.85,1.3)*(.8+r*.1);
+      cards.push({x:x+Math.cos(a)*u*r,y:cy+y*r*.75,z:z+Math.sin(a)*u*r,ry:rr(0,3.14),rx:rr(-.5,.5),rz:rr(-.4,.4),sx:s,sy:s,sz:s,c:C3.set(ZL(pal[k%3])).offsetHSL(rr(-.015,.015),0,rr(-.06,.06)).getHex()}); } });
+  inst(new T.CylinderGeometry(.12,.2,1,6),new T.MeshStandardMaterial({roughness:.9,color:"#ffffff"}),trunks);
+  { const cg=new T.PlaneGeometry(1,1), c2=new T.PlaneGeometry(1,1); c2.rotateY(Math.PI/2); const merged=new T.BufferGeometry(); const pa=[...cg.attributes.position.array,...c2.attributes.position.array], na=[...cg.attributes.normal.array,...c2.attributes.normal.array], ua=[...cg.attributes.uv.array,...c2.attributes.uv.array];
+    const ia=[...cg.index.array,...Array.from(c2.index.array).map(v=>v+4)]; merged.setAttribute("position",new T.Float32BufferAttribute(pa,3)); merged.setAttribute("normal",new T.Float32BufferAttribute(na,3)); merged.setAttribute("uv",new T.Float32BufferAttribute(ua,2)); merged.setIndex(ia);
+    const lm=new T.MeshStandardMaterial({map:leafTex,alphaTest:.45,side:T.DoubleSide,roughness:.85,color:"#ffffff",emissive:"#ffffff",emissiveIntensity:.0}); ZEN.leafMat=lm;
+    lm.onBeforeCompile=sh=>{ sh.fragmentShader=sh.fragmentShader.replace("#include <emissivemap_fragment>","#include <emissivemap_fragment>\n totalEmissiveRadiance+=diffuseColor.rgb*.14;"); }; lm.customProgramCacheKey=()=>"zenleaf";
+    ZEN.leaves=inst(merged,lm,cards); }
+  /* flower shrubs: azaleas along the fence and round the platform */
+  { const fl=[]; const P2=["#c81e5a","#d84a80","#9a2490","#e8e0e4","#d8780c","#c01c1c"]; for(let i=0;i<520;i++){ let x,z; if(i<340){ const side=i%4; const t=R(); x=side<2?ZEN.X0+1+t*(ZEN.X1-ZEN.X0-2):(side===2?ZEN.X0+.9:ZEN.X1-1); z=side<2?(side?ZEN.Z1-.9:ZEN.Z0+.9):ZEN.Z0+1+t*(ZEN.Z1-ZEN.Z0-2); if(side===3&&Math.abs(z-G)<2.5) continue; }
+      else { const t=R()*Math.PI*2; x=(ZEN.plat.x0+ZEN.plat.x1)/2+Math.cos(t)*((ZEN.plat.x1-ZEN.plat.x0)/2+1.1); z=G+Math.sin(t)*((ZEN.plat.z1-ZEN.plat.z0)/2+1.1); if(x>ZEN.plat.x1&&Math.abs(z-G)<2) continue; }
+      const s=rr(.22,.38); fl.push({x,y:s*.55,z,sx:s*1.3,sy:s,sz:s*1.3,c:ZL(P2[i%P2.length])}); }
+    inst(new T.IcosahedronGeometry(1,1),new T.MeshStandardMaterial({roughness:.8,color:"#ffffff",emissive:"#301018",emissiveIntensity:.25}),fl); }
+  /* stone lanterns along the path (they glow at night) */
+  ZEN.glows=[]; for(const x of [-39,-42.4]) for(const s of [-1,1]){ const z=G+s*1.8; box(.4,.1,.4,stone,x,.05,z,g); cyl(.08,.1,.8,stone,x,.5,z,g,8); box(.46,.36,.46,stone,x,1.08,z,g); const cap=mesh(new T.ConeGeometry(.42,.32,4),stone,x,1.42,z,g); cap.rotation.y=Math.PI/4;
+    const gl=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffc070"),transparent:true,opacity:.0,blending:T.AdditiveBlending,depthWrite:false})); gl.position.set(x,1.08,z); gl.scale.set(1.4,1.4,1); g.add(gl); ZEN.glows.push(gl); }
+  /* light inside the hall after dark: a warm glow in the paper screens and a soft lamp in each corner (sprites, no extra lights) */
+  for(const [x,z] of [[hl.x0+1,hl.z0+1],[hl.x0+1,hl.z1-1],[hl.x1-1,hl.z0+1],[hl.x1-1,hl.z1-1]]){ cyl(.16,.16,.5,paper,x,FY+.25,z,g,10); const gl=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffcf8a"),transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false})); gl.position.set(x,FY+.45,z); gl.scale.set(2.2,2.2,1); g.add(gl); ZEN.glows.push(gl); }
+
+  /* ---- sun shafts slanting in through the trees and across the hall, with dust in them (daytime) ---- */
+  const shaftTex=cvs(64,256,(x,w,h)=>{ const gr=x.createLinearGradient(0,0,0,h); gr.addColorStop(0,"rgba(255,240,200,0)"); gr.addColorStop(.25,"rgba(255,236,190,.9)"); gr.addColorStop(1,"rgba(255,226,170,0)"); x.fillStyle=gr; x.fillRect(0,0,w,h);
+    const g2=x.createLinearGradient(0,0,w,0); g2.addColorStop(0,"rgba(0,0,0,1)"); g2.addColorStop(.3,"rgba(0,0,0,0)"); g2.addColorStop(.7,"rgba(0,0,0,0)"); g2.addColorStop(1,"rgba(0,0,0,1)"); x.globalCompositeOperation="destination-out"; x.fillStyle=g2; x.fillRect(0,0,w,h); });
+  ZEN.shafts=[]; const shM=new T.MeshBasicMaterial({map:shaftTex,transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide,fog:false});
+  for(let i=0;i<14;i++){ const inside=i<6; const x=inside?rr(hl.x0+2,hl.x1-1):rr(ZEN.X0+4,ZEN.X1-6), z=inside?rr(hl.z0+1,hl.z1-1):rr(ZEN.Z0+4,ZEN.Z1-4); const L=inside?6:rr(10,14);
+    const s=mesh(new T.PlaneGeometry(inside?rr(.8,1.4):rr(1.2,2.4),L),shM,x,(inside?FY:0)+L*.42,z,g); s.rotation.set(0,rr(-.4,.4)+Math.PI/2,.5); s.userData.noMerge=1; ZEN.shafts.push(s); }
+  { const n=160, pos=new Float32Array(n*3); for(let i=0;i<n;i++){ pos[i*3]=rr(hl.x0,hl.x1+3); pos[i*3+1]=FY+rr(.3,3.2); pos[i*3+2]=rr(hl.z0,hl.z1); } const pg=new T.BufferGeometry(); pg.setAttribute("position",new T.BufferAttribute(pos,3));
+    ZEN.dust=new T.Points(pg,new T.PointsMaterial({color:ZL("#fff0c8"),size:.035,transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false})); g.add(ZEN.dust); }
+}
+/* ---- the mirror floor: the garden and hall drawn upside down into a texture each frame while you are inside (only the garden, at low resolution) ---- */
+function zenMirrorInit(){ if(ZEN.refl||Q.lite) return; const res=Q.low?256:512; const rt=new T.WebGLRenderTarget(res,res,{minFilter:T.LinearFilter,magFilter:T.LinearFilter}); rt.texture.encoding=T.sRGBEncoding;
+  const texMat={value:new T.Matrix4()}; const p=ZEN.plat;
+  const m=new T.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{tex:{value:rt.texture},texMat,op:{value:.55}},
+    vertexShader:`uniform mat4 texMat; varying vec4 vU; varying vec3 vW; void main(){ vec4 w=modelMatrix*vec4(position,1.0); vW=w.xyz; vU=texMat*w; gl_Position=projectionMatrix*viewMatrix*w; }`,
+    fragmentShader:`uniform sampler2D tex; uniform float op; varying vec4 vU; varying vec3 vW; void main(){ vec3 c=texture2DProj(tex,vU).rgb; float l=dot(c,vec3(.3,.5,.2)); gl_FragColor=vec4(c,op*(.55+.45*smoothstep(.05,.5,l))); }`});
+  const mp=mesh(new T.PlaneGeometry(p.x1-p.x0,p.z1-p.z0),m,(p.x0+p.x1)/2,ZEN.FY+.008,(p.z0+p.z1)/2,ZEN.g); mp.rotation.x=-Math.PI/2; mp.userData.noMerge=1; mp.renderOrder=2;
+  const mc=new T.PerspectiveCamera(); ZEN.refl={rt,texMat,mp,mc,frame:0};
+  ZEN.g.traverse(o=>{ if(o!==mp) o.layers.enable(3); }); }
+function zenMirror(){ const Rf=ZEN.refl; if(!Rf) return; const cam=camera, y=ZEN.FY+.008, mc=Rf.mc;
+  if((Rf.frame++)%(Q.low?2:1)) return;
+  mc.fov=cam.fov; mc.aspect=cam.aspect; mc.near=.1; mc.far=120; mc.updateProjectionMatrix();
+  mc.position.set(cam.position.x,2*y-cam.position.y,cam.position.z); const dir=new T.Vector3(); cam.getWorldDirection(dir); dir.y=-dir.y; mc.up.set(0,1,0); mc.lookAt(mc.position.x+dir.x,mc.position.y+dir.y,mc.position.z+dir.z); mc.updateMatrixWorld(true);
+  Rf.texMat.value.set(.5,0,0,.5, 0,.5,0,.5, 0,0,.5,.5, 0,0,0,1).multiply(mc.projectionMatrix).multiply(mc.matrixWorldInverse);
+  mc.layers.set(3); scene.traverse(o=>{ if(o.isLight) o.layers.enable(3); }); sky.layers.enable(3);
+  Rf.mp.visible=false; const cp=renderer.clippingPlanes; renderer.clippingPlanes=[new T.Plane(new T.Vector3(0,1,0),-y)]; const rt0=renderer.getRenderTarget();
+  renderer.setRenderTarget(Rf.rt); renderer.clear(); renderer.render(scene,mc); renderer.setRenderTarget(rt0); renderer.clippingPlanes=cp; Rf.mp.visible=true; }
+/* per frame: show the garden only when you are near it, keep the build-mode trees that used to stand there out of it, light it for the time of day */
+const _zv=new T.Vector3();
+/* the round build-mode trees that ended up out where the garden is (they looked odd there): hidden before the static merge, so they are not baked in */
+function zenHideTrees(){ for(const o of scene.children){ if(!(o.userData&&o.userData.buildId&&/^g-X-/.test(o.userData.buildId))) continue; let hit=false; o.updateMatrixWorld(true); o.traverse(m=>{ if(hit||!(m.isMesh||m.isPoints)) return; m.getWorldPosition(_zv); if(_zv.x<-26&&_zv.z<9) hit=true; }); if(hit) o.visible=false; } }
+function zenTick(dt){ const c=camera.position, near=(c.x<-14&&c.z<-8&&c.z>-54)||c.x<-24, me=meAv&&meAv.pos;
+  if(ZEN.g.visible!==near){ ZEN.g.visible=near; }
+  ZEN.t=(ZEN.t||0)+dt; if((ZEN.hideT=(ZEN.hideT||0)-dt)<0){ ZEN.hideT=3;  }
+  if(!near) return;
+  const day=_dn.day, night=_dn.night; for(const s of ZEN.shafts) s.material.opacity=.16*day+.05*(1-day)*(1-night);
+  ZEN.dust.material.opacity=.55*day; { const a=ZEN.dust.geometry.attributes.position; for(let i=0;i<a.count;i++){ let y=a.getY(i)+dt*.04*Math.sin(i+ZEN.t*.3); if(y>ZEN.FY+3.3) y=ZEN.FY+.3; a.setY(i,y); } a.needsUpdate=true; }
+  for(const gl of ZEN.glows) gl.material.opacity=.15+.75*night;
+  const inside=me&&me.x<ZEN.plat.x1+3&&me.x>ZEN.plat.x0-2&&me.y>ZEN.plat.z0-2&&me.y<ZEN.plat.z1+2&&c.x<ZEN.plat.x1+8;
+  if(inside&&!Q.lite){ zenMirrorInit(); if(ZEN.refl){ ZEN.refl.mp.visible=true; zenMirror(); } } else if(ZEN.refl) ZEN.refl.mp.visible=false; }
+
 
 /* outside: dusk silhouettes */
 { const dark=mat("#20120d",{roughness:1}), leaf=mat("#1b2216",{roughness:1}), roof=mat("#2a1610",{roughness:1});
@@ -2336,7 +2515,7 @@ scene.add(cushions,rims); cushions.userData.seats=true;
        Square posts with a lotus cap every 2.2 m, a plinth and a top rail, vase balusters in between — five instanced meshes in all */
     const stone=new T.MeshStandardMaterial({color:new T.Color("#e9e5dc"),roughness:.82}), stone2=new T.MeshStandardMaterial({color:new T.Color("#d9d3c7"),roughness:.9});
     const Z0=RH.z1-2.5, Z1=HZ+YX+24, X=25.6, GATE=8.5, SEG=2.2, H=1.3;
-    const runs=[[-X,Z0,-X,Z1],[X,Z0,X,Z1],[-X,Z0,X,Z0],[-X,Z1,-GATE,Z1],[GATE,Z1,X,Z1]]; const posts=[], segs=[];
+    const runs=[[-X,Z0,-X,ZEN.GZ-1.4],[-X,ZEN.GZ+1.4,-X,Z1],[X,Z0,X,Z1],[-X,Z0,X,Z0],[-X,Z1,-GATE,Z1],[GATE,Z1,X,Z1]]; const posts=[], segs=[];
     for(const [x0,z0,x1,z1] of runs){ const L=Math.hypot(x1-x0,z1-z0), n=Math.max(1,Math.round(L/SEG)); for(let i=0;i<=n;i++){ const t=i/n; posts.push([x0+(x1-x0)*t,z0+(z1-z0)*t]); if(i<n) segs.push([x0+(x1-x0)*t,z0+(z1-z0)*t,x0+(x1-x0)*(i+1)/n,z0+(z1-z0)*(i+1)/n]); } }
     const seen=new Set(), P=posts.filter(([x,z])=>{ const k=Math.round(x*10)+","+Math.round(z*10); if(seen.has(k)) return false; seen.add(k); return true; });
     const lathe=new T.LatheGeometry([[.001,0],[.07,0],[.075,.06],[.05,.12],[.085,.34],[.095,.5],[.06,.66],[.045,.72],[.075,.78],[.001,.8]].map(([x,y])=>new T.Vector2(x,y)),8);
@@ -2746,9 +2925,9 @@ class Avatar{
     let walking=false;
     if(dist<=.04&&this.path&&this.path.length){ const n=this.path.shift(); this.target.set(n[0],n[1]); if(this.isMe) markDirty(); }
     if(dist>.04){ walking=true; const step=Math.min(dist,speed*dt*(this.isMe||this.moveSpeed!=null?1:Math.min(3,1+dist))); this.pos.add(d.multiplyScalar(step/dist)); const want=Math.atan2(this.target.x-this.pos.x,this.target.y-this.pos.y); this.rotY=lerpAngle(this.rotY,want,Math.min(1,dt*10)); }
-    else if(this.seat>=0||this.faceGoal!=null){ this.rotY=lerpAngle(this.rotY,this.seat>=0?Math.PI:this.faceGoal,Math.min(1,dt*6)); }
+    else if(this.seat>=0||this.faceGoal!=null){ this.rotY=lerpAngle(this.rotY,this.seat>=0?(SEATS[this.seat]&&SEATS[this.seat].face!=null?SEATS[this.seat].face:Math.PI):this.faceGoal,Math.min(1,dt*6)); }
     const kneelGoal=(!walking&&this.seat>=0)?1:0; this.kneel+= (kneelGoal-this.kneel)*Math.min(1,dt*6);
-    this.root.position.set(this.pos.x,0,this.pos.y); this.root.rotation.y=this.rotY; flyTick(this,dt);
+    const zenK=(this.seat>=0&&SEATS[this.seat]&&SEATS[this.seat].zen)?this.kneel:0; this.root.position.set(this.pos.x,groundH(this.pos.x,this.pos.y)+.1*zenK,this.pos.y); this.root.rotation.y=this.rotY; flyTick(this,dt);
     const stride=walking&&!((this.flyCur||0)>.3); /* in the air on the cloud the legs stay still */ const k=this.kneel, w=stride?Math.sin(this.t*(this.walkCadence||11)):0;
     this.hips.position.y=.3-.08*k+(stride?Math.abs(Math.cos(this.t*(this.walkCadence||11)))*.025:0)+(k>.5?.06:0)*k;
     this.legs[0].rotation.x= w*.55*(1-k)+1.45*k; this.legs[1].rotation.x=-w*.55*(1-k)+1.45*k;
@@ -2769,6 +2948,10 @@ class Avatar{
       for(let i=0;i<2;i++){ const s=i?1:-1, a=this.arms[i]; a.rotation.x=w*.5*s*(1-pray) - 1.15*pray - throwA*1.4; }
       this.arms[0].rotation.z=-.12*(1-pray)+.4*pray; this.arms[1].rotation.z=.12*(1-pray)-.4*pray;
     }
+    if(zenK>.01){ /* 盤坐: sitting cross-legged on the round cushion, hands resting together in the lap */ const z=zenK;
+      this.hips.position.y=.3-.13*z; for(let i=0;i<2;i++){ const L=this.legs[i]; if(L.rotation.order!=="YXZ") L.rotation.order="YXZ"; const sd=Math.sign(L.position.x)||(i?1:-1); L.rotation.x=-1.42*z; L.rotation.y=-sd*.95*z; L.rotation.z=0; }
+      this.arms[0].rotation.x=-.75*z; this.arms[1].rotation.x=-.75*z; this.arms[0].rotation.z=.5*z; this.arms[1].rotation.z=-.5*z; this.torso.rotation.x=0; this.head.rotation.x=.12*z; }
+    else if(this.legs[0].rotation.y||this.legs[1].rotation.y){ this.legs[0].rotation.y=this.legs[1].rotation.y=0; }
     if(this.danceT>0&&!holding){ // same timeline as the cats, so everyone moves together
       const P=4, cyc=CATS.t%(P*3), ph=Math.floor(cyc/P), tt=CATS.t*1.25;
       let A0=0,A1=0,bY=0,bZ=0,hop=0;
@@ -2893,7 +3076,7 @@ const raycaster=new T.Raycaster(); const ndc=new T.Vector2();
 // lantern halos glow red (other lamps keep the warm glow)
 { const redGlow=new T.SpriteMaterial({map:glowTex,color:new T.Color("#ff3a26"),transparent:true,opacity:.8,blending:T.AdditiveBlending,depthWrite:false});
   scene.traverse(o=>{ if(o.isSprite&&o.material===glowMat&&(o.parent&&o.parent.children.some(c=>c.material===lanternMat)||o.userData.lanternGlow)) o.material=redGlow; }); }
-const pickables=[]; scene.traverse(o=>{ if(o.userData&&(o.userData.act||o.userData.seats||o.userData.floor)) pickables.push(o); });
+const pickables=[]; scene.traverse(o=>{ if(o.userData&&(o.userData.act||o.userData.seats||o.userData.floor)) pickables.push(o); }); ZEN.pick.forEach(o=>{ if(!pickables.includes(o)) pickables.push(o); });
 let pointers=new Map(), dragStart=null, pinchD=0, moved=false;
 canvas.addEventListener("pointerdown",e=>{ canvas.setPointerCapture(e.pointerId); pointers.set(e.pointerId,{x:e.clientX,y:e.clientY}); if(pointers.size===1){ dragStart={x:e.clientX,y:e.clientY,t:performance.now(),yaw:camYaw,pitch:camPitch,pv:pvYaw}; moved=false; rotAnim=null; } else if(pointers.size===2){ const [a,b]=[...pointers.values()]; pinchD=Math.hypot(a.x-b.x,a.y-b.y); moved=true; } });
 canvas.addEventListener("pointermove",e=>{ if(!pointers.has(e.pointerId)) return; pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
@@ -2928,15 +3111,17 @@ function onTap(cx,cy){ ensureAudio(); if(customizing) return; if(sheetKind){ clo
   if(act==="altar") act="altar";
   if(act&&stations[act]||act==="altar"){ goStation(act); return; }
   if(h.object===cushions&&h.instanceId!=null){ trySit(h.instanceId); return; }
+  if(h.object===ZEN.cush&&h.instanceId!=null){ trySit(ZEN.s0+h.instanceId); return; }
   if(h.object.userData.floor){ if(h.object===floor&&h.point.z<-9.6&&Math.abs(h.point.x)<3){ goStation("altar"); return; } const c=myFly?flyClamp(h.point.x,h.point.z):clampSpot(h.point.x,h.point.z); walkTo(c[0],c[1]); } }
 const isIn=z=>z<HZ;
 // zones: M main hall, C courtyard, S± side hall, P± garden path; doors link them
-function zoneOf(x,z){ const ax=Math.abs(x), sd=x<0?"-":"+"; if(z>=HZ+.1) return "C"; if(z<RH.z0) return ax<RH.x?"H":"Q"+sd; if(z<RY0) return "B"; if(ax>=12.2&&z<SHZ0-.05) return "K"+sd; if(ax<12.2) return "M"; if(ax>=GH.x0&&ax<GH.x1&&z>SHZ1&&z<GH.z1&&Math.abs(ax-SHXC)>1.1) return "G"+sd; /* inside a garden-path hall, off the path */ return (z<SHZ1?"S":"P")+sd; }
-const ZRECT={M:[-11,11,-9.5,HZ-.6],C:[-22,22,HZ+.7,HZ+YX+20.4],"S+":[12.9,SHX1-3.2,SHZ0+.7,-2],"S-":[-(SHX1-3.2),-12.9,SHZ0+.7,-2],"P+":[SHXC-1,SHXC+1,-.7,HZ+.6],"P-":[-SHXC-1,-SHXC+1,-.7,HZ+.6],
+function zoneOf(x,z){ if(x<-23.3&&z>ZEN.Z0-1&&z<ZEN.Z1+1) return "Z"; const ax=Math.abs(x), sd=x<0?"-":"+"; if(z>=HZ+.1) return "C"; if(z<RH.z0) return ax<RH.x?"H":"Q"+sd; if(z<RY0) return "B"; if(ax>=12.2&&z<SHZ0-.05) return "K"+sd; if(ax<12.2) return "M"; if(ax>=GH.x0&&ax<GH.x1&&z>SHZ1&&z<GH.z1&&Math.abs(ax-SHXC)>1.1) return "G"+sd; /* inside a garden-path hall, off the path */ return (z<SHZ1?"S":"P")+sd; }
+const ZRECT={Z:[ZEN.X0+1,-23.4,ZEN.Z0+1,ZEN.Z1-1],M:[-11,11,-9.5,HZ-.6],C:[-22,22,HZ+.7,HZ+YX+20.4],"S+":[12.9,SHX1-3.2,SHZ0+.7,-2],"S-":[-(SHX1-3.2),-12.9,SHZ0+.7,-2],"P+":[SHXC-1,SHXC+1,-.7,HZ+.6],"P-":[-SHXC-1,-SHXC+1,-.7,HZ+.6],
   "K+":[12.7,RS.x1-.5,RY0+.2,SHZ0-.4],"K-":[-RS.x1+.5,-12.7,RY0+.2,SHZ0-.4],B:[-RS.x1+.5,RS.x1-.5,RH.z0+.5,RY0-.3],
   H:[-RH.x+.5,RH.x-.5,RH_WALK,RH.z0-.5],"Q+":[RS.x0+.6,RS.x1-.6,-38.4,RS.z0-.5],"Q-":[-RS.x1+.6,-RS.x0-.6,-38.4,RS.z0-.5],"G+":[SHXC+1.1,GH.x1-.6,SHZ1+.5,GH.z1-.5],"G-":[-(GH.x1-.6),-(SHXC+1.1),SHZ1+.5,GH.z1-.5]};
-const ZLINK={M:["S+","S-","C"],C:["M","P+","P-"],"S+":["P+","M","K+"],"S-":["P-","M","K-"],"P+":["S+","C","G+"],"P-":["S-","C","G-"],"G+":["P+"],"G-":["P-"],"K+":["S+","B"],"K-":["S-","B"],B:["K+","K-","H","Q+","Q-"],H:["B","Q+","Q-"],"Q+":["B","H"],"Q-":["B","H"]};
-function doorPts(a,b,fx,tx,fz){ const key=a+">"+b, s=(a+b).includes("-")?-1:1;
+const ZLINK={M:["S+","S-","C"],C:["M","P+","P-"],"S+":["P+","M","K+"],"S-":["P-","M","K-"],"P+":["S+","C","G+"],"P-":["S-","C","G-"],"G+":["P+"],"G-":["P-"],"K+":["S+","B"],"K-":["S-","B"],B:["K+","K-","H","Q+","Q-","Z"],Z:["B"],H:["B","Q+","Q-"],"Q+":["B","H"],"Q-":["B","H"]};
+function doorPts(a,b,fx,tx,fz){ const key=a+">"+b, s=(a+b).includes("-")?-1:1; const ZG=ZEN.GZ, HX0=ZEN.plat.x1+.4;
+  if(key==="B>Z") return [[-22.0,ZG],[-23.8,ZG],[ZEN.BX0-.3,ZG]].concat(tx<HX0?[[HX0,ZG]]:[]); if(key==="Z>B") return (fx<HX0?[[HX0,ZG]]:[]).concat([[ZEN.BX0-.3,ZG],[-23.8,ZG],[-22.0,ZG]]);
   if(key==="M>C"||key==="C>M"){ // 龍邊進、虎邊出: in by the +x door, out by the -x door; someone already in a doorway keeps going straight through it
     const inDoor=fz!=null&&fz>HZ-1.2&&fz<HZ+1.3&&Math.abs(Math.abs(fx)-FD.x)<1.2, dx=inDoor?Math.sign(fx)*FD.x:(a==="M"?-FD.x:FD.x);
     const pts=a==="M"?[[dx,HZ-.9],[dx,HZ+1]]:[[dx,HZ+1],[dx,HZ-.9]]; return fz==null?pts:pts.filter(p=>a==="M"?p[1]>fz+.05:p[1]<fz-.05); }
@@ -2949,7 +3134,7 @@ function doorPts(a,b,fx,tx,fz){ const key=a+">"+b, s=(a+b).includes("-")?-1:1;
   if(a==="M") return [[s*11,BGZ],[s*13.2,BGZ]]; if(b==="M") return [[s*13.2,BGZ],[s*11,BGZ]];
   if(a[0]==="S") return [[s*SHXC,-2.1],[s*SHXC,-.5]]; if(b[0]==="S") return [[s*SHXC,-.5],[s*SHXC,-2.1]];
   if(a[0]==="P") return [[s*SHXC,HZ+.2],[s*SHXC,HZ+1.2]]; return [[s*SHXC,HZ+1.2],[s*SHXC,HZ+.2]]; }
-function walkable(x,z){ if(opInside(x,z)||ptInside(x,z)) return false; if(Math.hypot(x-WT.x,z-WT.z)<2.4) return false; /* the cherry tree's stone ring */ const ax=Math.abs(x);
+function walkable(x,z){ if(x<-22.6) return zenWalkable(x,z); if(opInside(x,z)||ptInside(x,z)) return false; if(Math.hypot(x-WT.x,z-WT.z)<2.4) return false; /* the cherry tree's stone ring */ const ax=Math.abs(x);
   if(ax<=11&&z>=-9.5&&z<=HZ-.6) return true; if(Math.abs(ax-FD.x)<.8&&z>HZ-.7&&z<HZ+.8) return true; if(ax<=22&&z>=HZ+.7&&z<=HZ+YX+18) return true; if(ax>=4.5&&ax<=17&&z>HZ+YX+18&&z<=HZ+YX+20.6) return true;
   if(ax>10.9&&ax<13&&Math.abs(z-BGZ)<1.1) return true; if(ax>=12.9&&ax<=SHX1-3.2&&z>=SHZ0+.7&&z<=-2) return true;
   if(Math.abs(ax-SHXC)<=.9&&z>=-2.2&&z<=HZ+.8) return true;
@@ -2964,7 +3149,7 @@ function walkable(x,z){ if(opInside(x,z)||ptInside(x,z)) return false; if(Math.h
   return false; }
 function clampSpot(x,z){ if(Math.abs(x)<4.5&&z>HZ+YX+17.8) z=HZ+YX+17.8; if(z<RY0&&z>RH.z0&&Math.abs(x)<2.65&&z>-18.1) z=-18.2; for(const [px,pz] of RPINE){ const d=Math.hypot(x-px,z-pz); if(z<RY0&&d<1.05){ x=px+(x-px)/(d||1)*1.1; z=pz+(z-pz)/(d||1)*1.1; } } // in front of the fountain, not into it
   if(opInside(x,z)){ const o=opRect(); z=z<OP.z?o.z0-.3:o.z1+.3; } if(ptInside(x,z)){ const o=ptRect(); z=z<PT.z?o.z0-.3:o.z1+.3; } const r=ZRECT[zoneOf(x,z)]; return [Math.max(r[0],Math.min(r[1],x)),Math.max(r[2],Math.min(r[3],z))]; }
-function planPath(fx,fz,tx,tz){ const a=zoneOf(fx,fz), b=zoneOf(tx,tz); if(a===b) return [[tx,tz]];
+function planPath(fx,fz,tx,tz){ const a=zoneOf(fx,fz), b=zoneOf(tx,tz); if(a===b){ if(a==="Z"){ const HX0=ZEN.plat.x1+.4; if((fx>HX0)!==(tx>HX0)) return [[HX0,ZEN.GZ],[tx,tz]]; } return [[tx,tz]]; }
   const prev={[a]:null}, q=[a]; while(q.length){ const z=q.shift(); if(z===b) break; for(const n of (tx<0?ZLINK[z].slice().reverse():ZLINK[z])) if(!(n in prev)){ prev[n]=z; q.push(n); } }
   const chain=[]; for(let z=b;z;z=prev[z]) chain.unshift(z); const pts=[]; for(let k=0;k<chain.length-1;k++) pts.push(...doorPts(chain[k],chain[k+1],fx,tx,k===0?fz:null)); pts.push([tx,tz]); return opDetour([fx,fz],pts); }
 // with the opera stage out, a straight line across the courtyard that would cut through it goes round the nearer side instead
@@ -2984,7 +3169,7 @@ function updateStandBtn(){ $("#standBtn").hidden=meAv.seat<0||customizing; }
 /* ================= NPC demo worshippers ================= */
 let showNpc=true; /* the kneeling demo worshippers are always there now (the old switch is gone) */ const npcs=[];
 function randomLook(allowChair=false){ return sanitizeLook(LOOK_RANGE.map((n,i)=>(i===11||i===12)?(Math.random()<.6?0:Math.floor(Math.random()*n)):Math.floor(Math.random()*n)),allowChair); }
-function freeSeat(){ const taken=new Set([meAv.seat,...npcs.map(n=>n.seat)]); remotes.forEach(r=>taken.add(r.seat)); const free=[]; for(let i=0;i<SEATS.length;i++) if(!taken.has(i)) free.push(i); return free.length?free[Math.floor(Math.random()*free.length)]:-1; }
+function freeSeat(){ const taken=new Set([meAv.seat,...npcs.map(n=>n.seat)]); remotes.forEach(r=>taken.add(r.seat)); let free=[]; for(let i=0;i<SEATS.length;i++) if(!taken.has(i)) free.push(i); { const main=free.filter(i=>!SEATS[i].zen); if(main.length&&Math.random()<.85) free=main; } return free.length?free[Math.floor(Math.random()*free.length)]:-1; }
 /* ================= 熱鬧的廟: the online count and the demo worshippers ================= */
 // Both live only on each player's phone: nothing here is sent to the server, so they cost no server traffic.
 // The count follows Taiwan time and moves smoothly (every phone computes the same number from the clock):
@@ -3283,12 +3468,12 @@ function cleanName(n){ const t=String(n||"").replace(/[\u0000-\u001f​-‏‪-�
 function syncPeers(peers){ const seen=new Set();
   for(const p of peers){ if(p.sameTab||p.kind!=="viewer") continue; const pr=p.presence||{}; if(pr.v!==1||pr.u===0) continue; seen.add(p.peer);
     let av=remotes.get(p.peer); const look=sanitizeLook(pr.l,pr.q===1); if(av) av.setSp(pr.q===1);
-    if(!av){ av=new Avatar(look,{sp:pr.q===1,x:num(pr.x,-24,24,0),z:num(pr.z,-43,HZ+YX+18,HZ+12)}); av.autoBake=true; try{ bakeAvatar(av); }catch(e){} if(!othersShown) av.root.visible=false; av.lastBow=pr.b; av.lastJ=Array.isArray(pr.j)?pr.j[1]:""; av.lastF=pr.f; av.offerGroup=new T.Group(); scene.add(av.offerGroup); remotes.set(p.peer,av); if(customizing) av.root.visible=false; }
+    if(!av){ av=new Avatar(look,{sp:pr.q===1,x:num(pr.x,-78,24,0),z:num(pr.z,-43,HZ+YX+18,HZ+12)}); av.autoBake=true; try{ bakeAvatar(av); }catch(e){} if(!othersShown) av.root.visible=false; av.lastBow=pr.b; av.lastJ=Array.isArray(pr.j)?pr.j[1]:""; av.lastF=pr.f; av.offerGroup=new T.Group(); scene.add(av.offerGroup); remotes.set(p.peer,av); if(customizing) av.root.visible=false; }
     else if(look.join()!==av.look.join()) av.setLook(look);
     const pno=Number.isInteger(pr.k)&&pr.k>0&&pr.k<1e8?pr.k:0; let nm=cleanName(pr.n)||(pno?`香客${pno}`:"香客"); if(pr.q!==1&&[SP_NAME,SP_OLD].includes(nm)) nm=pno?`香客${pno}`:"香客"; if(nm!==av.name){ av.name=nm; av.setName(nm); }
     av.setSp(pr.q===1); if(pr.q===1) av.name=SP_NAME; av.flyGoal=pr.q===1&&pr.fl?Math.max(.6,Math.min(40,+pr.fl||FLY_H)):0; csForm(av,pr.q===1&&pr.cs===1);
     { const eq=Array.isArray(pr.eq)?[pr.eq[0],pr.eq[1],pr.eq[2],pr.eq[3]].map(v=>typeof v==="string"&&ACC[v]?v:0):[0,0,0,0]; if(String(eq)!==String(av.eq||[0,0,0,0])) av.setAcc(eq); }
-    { const tx=num(pr.x,-24,24,av.target.x), tz=num(pr.z,-43,HZ+YX+18,av.target.y); if(tx!==av.goalX||tz!==av.goalZ){ av.goalX=tx; av.goalZ=tz; const pth=av.flyGoal>0?[[tx,tz]]:planPath(av.pos.x,av.pos.y,tx,tz); av.target.set(pth[0][0],pth[0][1]); av.path=pth.slice(1); } } const seat=Number.isInteger(pr.s)&&pr.s>=0&&pr.s<SEATS.length?pr.s:-1; av.seat=seat; if(seat>=0) npcYield(seat);
+    { const tx=num(pr.x,-78,24,av.target.x), tz=num(pr.z,-43,HZ+YX+18,av.target.y); if(tx!==av.goalX||tz!==av.goalZ){ av.goalX=tx; av.goalZ=tz; const pth=av.flyGoal>0?[[tx,tz]]:planPath(av.pos.x,av.pos.y,tx,tz); av.target.set(pth[0][0],pth[0][1]); av.path=pth.slice(1); } } const seat=Number.isInteger(pr.s)&&pr.s>=0&&pr.s<SEATS.length?pr.s:-1; av.seat=seat; if(seat>=0) npcYield(seat);
     av.faceGoal=num(pr.r,-10,10,Math.PI); av.hold=pr.h===1?1:0; av.headGoal=num(pr.y,-1.2,1.2,0); av.sparkler=pr.sk===1; if(Array.isArray(pr.fs)&&Number.isFinite(pr.fs[0])&&pr.fs[0]!==FW.seed){ const sh=FW_SHOWS[pr.fs[2]]?pr.fs[2]|0:0, el=Date.now()-num(pr.fs[1],0,1e13,0); if(el>-15000&&el<FW_SHOWS[sh].len*1000) fwStart(pr.fs[0],el,sh,typeof pr.fs[3]==="string"?pr.fs[3]:""); } av.sq=(Array.isArray(pr.sq)&&pr.sq[0]>=1&&pr.sq[0]<=2)?[pr.sq[0]-1,num(pr.sq[1],0,1e13,0)]:null;
     if(pr.b!==av.lastBow){ av.lastBow=pr.b; if(!quietFx()) av.bow(); }
     if(Array.isArray(pr.j)&&pr.j[1]&&pr.j[1]!==av.lastJ){ av.lastJ=pr.j[1]; const res=RESULT[pr.j[0]]?pr.j[0]:"sheng"; if(!quietFx()) throwJiao(av,res,()=>av.say(RESULT[res].t,RESULT[res].c)); }
@@ -3459,7 +3644,7 @@ function setTrack(name){ if(name===curTrack) return; curTrack=name; const a=trk(
 function trkPrime(){ const soon=[]; if(meAv&&meAv.pos.y<RY0+14) soon.push("rear"); if(!CATS.off&&Math.hypot(meAv.pos.x-CATS.c.x,meAv.pos.y-CATS.c.z)<12) soon.push("cat"); if(FW.on||FW.pendingAt) soon.push("fw");
   for(const n of soon){ const a=trk(n); if(a._primed) continue; a._primed=1; if(n!==curTrack){ const p=a.play(); if(p&&p.then) p.then(()=>{ if(n!==curTrack&&MIX[n]<.01) a.pause(); }).catch(()=>{ a._primed=0; }); } } }
 function playMusic(){ if(!soundOn||document.hidden) return; audioUnlocked=true; setTrack(FW.on?"fw":catMode?"cat":rearZone?"rear":"main"); trkPlay(trk(curTrack)); try{ trkPrime(); }catch(e){} }
-function musicTick(dt){ const z=meAv.pos.y, inRear=z<RY0; if(inRear!==rearZone){ rearDwell+=dt; if(rearDwell>2.5){ rearZone=inRear; rearDwell=0; } } else rearDwell=0; /* stay 2.5 s in an area before its song takes over */
+function musicTick(dt){ const z=meAv.pos.y, inRear=z<RY0||meAv.pos.x<-23.5; if(inRear!==rearZone){ rearDwell+=dt; if(rearDwell>2.5){ rearZone=inRear; rearDwell=0; } } else rearDwell=0; /* stay 2.5 s in an area before its song takes over */
   const want=FW.on?"fw":catMode?"cat":rearZone?"rear":"main"; if(want!==curTrack) setTrack(want);
   const mv=mVol(), near=(OP&&OP.on)?OP.prox:0, live=soundOn&&audioUnlocked&&!document.hidden&&!gameAsleep; duckF+=((duckT>0?.42:1)-duckF)*Math.min(1,dt*(duckT>0?2.5:1));
   for(const n in TRK){ const a=TRK[n], on=n===curTrack; MIX[n]+=((on?1:0)-MIX[n])*Math.min(1,dt*(on?.9:1.4)); /* about a 2-second cross-fade */
@@ -4956,7 +5141,7 @@ function fwUpdate(dt){ const now=performance.now(); fwHaloTick(dt);
       else { const c="#"+_fc1.setRGB(fwCol[j],fwCol[j+1],fwCol[j+2]).getHexString(); for(let q=0;q<4;q++){ const th=q*Math.PI/2+Math.random()*.3; fwEmit(px,py,pz,Math.cos(th)*5,Math.sin(th)*5,(Math.random()-.5)*2,c,VIVID[(Math.random()*VIVID.length)|0],.9,.5,1.4,2,.2); } }
       fwA[i]=0; } }
   if(any||FW.on){ for(const n of ["iPos","iVel","iCol","iA","iSz","iTr"]) fwStreakGeo.attributes[n].needsUpdate=true; }
-  fwPts.visible=false; fwStreak.visible=any||FW.on; fwStreakMat.uniforms.uGain.value=1; fwStreakMat.uniforms.uMinW.value=.0012*Math.max(1,Math.min(1.8,camera.fov/55)); /* wide/far views: a floor on spark size (round and sharp, so it doesn't blur) */ { const sharp=!!(FW.on||FW.pendingAt||LAKE.on||fwView); if(DRES.fw!==sharp){ DRES.fw=sharp; applyDPR(); } } /* full resolution while a show is on, whatever the view (省電 mode had blurred the sparks) */ /* the streaks draw the stars too (their round heads), so the old point sprites are no longer drawn or uploaded */ dayNight(dt);
+  fwPts.visible=false; fwStreak.visible=any||FW.on; fwStreakMat.uniforms.uGain.value=1; fwStreakMat.uniforms.uMinW.value=.0012*Math.max(1,Math.min(1.8,camera.fov/55)); /* wide/far views: a floor on spark size (round and sharp, so it doesn't blur) */ { const sharp=!!(FW.on||FW.pendingAt||LAKE.on||fwView); if(DRES.fw!==sharp){ DRES.fw=sharp; applyDPR(); } } /* full resolution while a show is on, whatever the view (省電 mode had blurred the sparks) */ /* the streaks draw the stars too (their round heads), so the old point sprites are no longer drawn or uploaded */ dayNight(dt); try{ zenTick(dt); }catch(e){ if(!zenTick.err){ zenTick.err=1; console.error(e); } }
   if(sparkAvail()!==renderSparkBtn.last) renderSparkBtn(); }
 // ---- 仙女棒: anyone can hold one while the show is on (and for two minutes after) ----
 let mySparkler=false, fwView=false;
@@ -7466,7 +7651,7 @@ function unifyBricks(){ const S=2.0, seen=new Set(), p=new T.Vector3(), n=new T.
     for(let i=0;i<P.count;i++){ p.fromBufferAttribute(P,i).applyMatrix4(o.matrixWorld); n.fromBufferAttribute(N,i).applyMatrix3(nm).normalize(); const ax=Math.abs(n.x), ay=Math.abs(n.y), az=Math.abs(n.z);
       let u,v; if(ay>ax&&ay>az){ u=p.x; v=p.z; } else if(ax>=az){ u=n.x>0?-p.z:p.z; v=p.y; } else { u=n.z>0?p.x:-p.x; v=p.y; } U.setXY(i,u/S,v/S); }
     U.needsUpdate=true; m.map.repeat.set(1,1); m.map.offset.set(0,0); }); }
-function mergeStatic(){ const buckets=new Map(); scene.updateMatrixWorld(true);
+function mergeStatic(){ const buckets=new Map(); scene.updateMatrixWorld(true); try{ zenHideTrees(); }catch(e){}
   const skip=o=>{ for(let p=o;p;p=p.parent){ if(p.userData&&p.userData.noMerge) return true; if(!p.visible) return true; if(p===scene) return false; } return false; };
   const region=o=>{ for(let p=o.parent;p&&p!==scene;p=p.parent) if(p.userData&&p.userData.region) return p; return scene; }; // merged per region, so a region can be hidden as a whole
   scene.traverse(o=>{ if(!o.isMesh||o.isInstancedMesh||o.isSkinnedMesh||!o.visible||Array.isArray(o.material)) return; if(o===sky||o===floor||o===outsideGround) return;
