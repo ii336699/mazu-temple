@@ -1,0 +1,7 @@
+E('me.sp=1; renderChairBtn(); closeSheet()'); time.sleep(1)
+E('bagTab="acc"; bagSel="hat_fox"; openBag()'); time.sleep(2); pg.screenshot(path=f'{S}/u_bag.png')
+E('HANDLERS.schedOpen()'); time.sleep(2)
+E('$("#schK").value="fw:1"; $("#schTxt").value="測試"; HANDLERS.schedAdd()'); time.sleep(2); pg.screenshot(path=f'{S}/u_sched.png')
+print(E('JSON.stringify(load("mz.sched",[]))'))
+E('closeSheet(); document.body.classList.add("hideui"); accState().wrist="redthread"; meAv.setThread(threadOn()); meAv.setAcc([0,0,0,"ghost"]); meAv.pos.set(6,30); meAv.target.set(6,30); meAv.rotY=Math.PI*.25; meAv.faceGoal=null; camYaw=0; camPitch=.1; camDist=3.2'); time.sleep(8); pg.screenshot(path=f'{S}/u_av.png')
+print(E('JSON.stringify([threadOn(), meAv.thread.visible, window.__errs])'))

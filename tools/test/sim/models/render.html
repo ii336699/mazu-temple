@@ -1,0 +1,11 @@
+<!doctype html><html><body style="margin:0;background:transparent">
+<script src="three.min.js"></script><script src="GLTFLoader.js"></script><script src="meshopt_decoder.js"></script>
+<script>
+const R=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true}); R.setSize(512,512); R.setClearColor(0,0); R.outputEncoding=THREE.sRGBEncoding; document.body.appendChild(R.domElement);
+const S=new THREE.Scene(); S.add(new THREE.HemisphereLight(0xffffff,0x886655,1.0)); const dl=new THREE.DirectionalLight(0xffffff,1.1); dl.position.set(2,3,4); S.add(dl);
+const C=new THREE.PerspectiveCamera(28,1,.01,100);
+const L=new THREE.GLTFLoader(); L.setMeshoptDecoder(MeshoptDecoder);
+window.shot=(file,name,yaw,pitch)=>new Promise(res=>{ L.load(file,g=>{ while(S.children.length>2) S.remove(S.children[2]); let o=null; g.scene.traverse(q=>{ if(q.name===name) o=q; }); o=o||g.scene; o=o.clone(); o.position.set(0,0,0); o.traverse(q=>{ if(q.isMesh&&q.material.map) q.material.map.encoding=THREE.sRGBEncoding; });
+  const w=new THREE.Group(); w.add(o); w.rotation.y=yaw||0; S.add(w); w.updateMatrixWorld(true); const bb=new THREE.Box3().setFromObject(w), c=bb.getCenter(new THREE.Vector3()), sz=bb.getSize(new THREE.Vector3()); const r=Math.max(sz.x,sz.y,sz.z)*.5;
+  const d=r/Math.sin(THREE.MathUtils.degToRad(14))*1.18, ph=pitch||.25; C.position.set(c.x,c.y+Math.sin(ph)*d,c.z+Math.cos(ph)*d); C.lookAt(c); R.render(S,C); res(R.domElement.toDataURL("image/png")); }); });
+</script></body></html>
