@@ -31,9 +31,9 @@
         P.snap=snap; P.at=now; if(body.id){ P.id=String(body.id); put("I:"+P.id,uid); } put("P:"+uid,P); return J({ok:true,code:P.code}); }
       case "/me/claim": { var code=String(body.code||"").toUpperCase().replace(/[^0-9A-Z]/g,"").slice(0,7), owner=code.length===7?get("C:"+code,null):null, OP=owner?get("P:"+owner,null):null;
         if(!OP) return J({ok:false}); put("uid",owner); return J({ok:true,switchTo:owner,p:{code:OP.code,snap:OP.snap}}); }
-      case "/gift": { if(!key) return J({ok:false}); var to=body.to==="me"?uid:get("I:"+String(body.to||""),null); if(!to) return J({ok:false,nouser:true});
+      case "/gift": { if(!key) return J({ok:false}); if(body.to==="all"){ var GA=get("GA",[]); GA.push({g:"a"+Math.random().toString(36).slice(2,10),kind:body.kind,k:body.k||"",n:body.n|0||1,from:body.from||"主委",at:now,all:1}); put("GA",GA.slice(-20)); return J({ok:true}); } var to=body.to==="me"?uid:get("I:"+String(body.to||""),null); if(!to) return J({ok:false,nouser:true});
         var G=get("G:"+to,[]); G.push({g:Math.random().toString(36).slice(2,10),kind:body.kind,k:body.k||"",n:body.n|0||1,from:body.from||"主委",at:now}); put("G:"+to,G.slice(-30)); return J({ok:true}); }
-      case "/gifts": { var GG=get("G:"+uid,[]); put("G:"+uid,[]); return J({ok:true,gifts:GG}); }
+      case "/gifts": { var GG=get("G:"+uid,[]); put("G:"+uid,[]); return J({ok:true,gifts:GG.concat(get("GA",[]))}); }
       case "/market": { var st=get("market",{open:{}}); if(method==="POST"){ if(!key) return J({ok:false}); var K=["qq","sausage","bbq","fish","pachinko","boba","balloon"]; if(body.all!=null) K.forEach(function(k,i){ if(body.all) st.open[k]=st.open[k]||now+i; else delete st.open[k]; }); else if(K.indexOf(body.k)>=0){ if(body.on) st.open[body.k]=now; else delete st.open[body.k]; } put("market",st); return J(Object.assign({ok:true},st)); } return J(st); }
       case "/nmrec": { var st=get("market",{open:{}}), all=get("nmrec",{}), LOW={bbq:1,boba:1,balloon:1};
         if(method==="POST"){ var k=String(body.k||""), v=Number(body.v); if(!st.open[k]||!(v>0)) return J({ok:false}); var r=all[k]; if(!r||r.s!==st.open[k]) r=all[k]={s:st.open[k],list:[]};

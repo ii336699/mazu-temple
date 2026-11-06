@@ -3782,11 +3782,12 @@ function giftNext(){ const g=GIFTQ.shift(); if(!g){ giftShowing=false; return; }
 function giftApply(g){ if(g.kind==="acc"){ if(!ACC[g.k]) return; accState().owned[g.k]=1; saveBag(); markDirty(); giftCard(g); return; } if(g.kind==="coins") bag.coins+=g.n; else if(GOOD_BY[g.k]){ bag.items[g.k]=(bag.items[g.k]||0)+g.n; if(g.k==="fu") meAv.setAmulet(true); } else return; saveBag(); markDirty(); giftCard(g); }
 const GIFT_SEEN=new Set(load("mz.giftSeen",[]));
 async function giftFetch(){ if(!NET_ME()) return; try{ const r=await fetch("/gifts",{cache:"no-store"}); const j=await r.json(); let any=false;
-    (j.gifts||[]).forEach(g=>{ if(!g||GIFT_SEEN.has(g.g)) return; GIFT_SEEN.add(g.g); any=true; giftApply({kind:g.kind,k:g.k,n:Math.max(1,g.n|0),from:g.from}); });
-    if(any){ save("mz.giftSeen",[...GIFT_SEEN].slice(-60)); profSave(true); } }catch(e){} }
+    const GAS=new Set(bag.gaSeen||[]); /* server-wide gifts: remembered in the bag (and the save code's profile) so each is taken once */
+    (j.gifts||[]).forEach(g=>{ if(!g) return; if(g.all){ if(GAS.has(g.g)) return; GAS.add(g.g); bag.gaSeen=[...GAS].slice(-40); } else { if(GIFT_SEEN.has(g.g)) return; GIFT_SEEN.add(g.g); } any=true; giftApply({kind:g.kind,k:g.k,n:Math.max(1,g.n|0),from:g.from}); });
+    if(any){ save("mz.giftSeen",[...GIFT_SEEN].slice(-60)); saveBag(); profSave(true); } }catch(e){} }
 let GIFT_TO=null; // [peer id, name]
-function openGift(id,name){ if(!me.sp) return; GIFT_TO=[id,name]; const it=GIFT_ITEMS.map(([k,n])=>`<button class="chip" data-act="giftItem" data-v="${k}" aria-pressed="false">${n}</button>`).join("");
-  openSheet("gift","送禮",`<p class="lead">送給：<b>${esc(name)}</b></p>
+function openGift(id,name){ if(!me.sp) return; GIFT_TO=[id,name]; const ALL=id==="all"; const it=GIFT_ITEMS.map(([k,n])=>`<button class="chip" data-act="giftItem" data-v="${k}" aria-pressed="false">${n}</button>`).join("");
+  openSheet("gift","送禮",`<p class="lead">送給：<b>${esc(name)}</b></p>${ALL?`<p class="note">全伺服器每一位玩家都會收到一份，現在不在線上的人（14 天內進來）也會收到，每人只領一次。</p>`:""}
     <div class="group"><span class="group-label">平安幣</span><div class="chips">${[50,100,500,1000].map(v=>`<button class="chip" data-act="giftAmt" data-v="${v}">${v}</button>`).join("")}</div>
       <div class="mail-row"><input class="mail-box" id="giftCoins" type="text" inputmode="numeric" maxlength="6" placeholder="輸入金額"><button class="primary" data-act="giftSend" data-v="coins">送平安幣</button></div></div>
     <div class="group"><span class="group-label">道具</span><div class="chips" id="giftItems">${it}</div>
@@ -3806,11 +3807,11 @@ async function giftGo(g){
   if(!NET_ME()||(GIFT_TO[0]==="me"&&!window.MZ_SIM)){ giftApply(g); toast("單機測試：送給自己預覽",2600); return; }
   const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return; }
   try{ const r=await fetch("/gift",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({to:GIFT_TO[0],...g})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
-    if(j.ok){ save("mz.rk",key); toast(`🎁 已送給 ${GIFT_TO[1]}`,2600); if(window.MZ_SIM) setTimeout(giftFetch,900); /* no hall to ping in the test page */ } else toast(j.nouser?"這位香客還沒有存檔（剛進來的話等一分鐘再送）":j.locked?"嘗試次數過多，今天先鎖住了":j.unset?"伺服器讀不到密碼設定（不是你打錯）":"密碼不對，沒有送出",3200); }catch(e){ toast("沒有送出，請稍後再試"); } };
+    if(j.ok){ save("mz.rk",key); toast(GIFT_TO[0]==="all"?"🎁 已送給全伺服器所有玩家":`🎁 已送給 ${GIFT_TO[1]}`,2600); if(window.MZ_SIM) setTimeout(giftFetch,900); /* no hall to ping in the test page */ } else toast(j.nouser?"這位香客還沒有存檔（剛進來的話等一分鐘再送）":j.locked?"嘗試次數過多，今天先鎖住了":j.unset?"伺服器讀不到密碼設定（不是你打錯）":"密碼不對，沒有送出",3200); }catch(e){ toast("沒有送出，請稍後再試"); } };
 HANDLERS.giftList=()=>{ if(!me.sp) return; const list=[...remotes.entries()].filter(([id,av])=>!av.sp).map(([id,av])=>[id,av.name||"香客"]);
   const rows=list.length?list.map(([id,n])=>`<button class="good" data-act="giftPick" data-v="${esc(id)}"><span class="name">${esc(n)}</span><span class="meta">點這位送禮</span></button>`).join(""):`<p class="note">這一殿現在沒有其他真人玩家（假香客不能收禮）。${USE_CF?"":"單機測試版可以送給自己預覽。"}</p>`;
-  openSheet("gift","送禮",`<p class="lead">選一位這一殿的玩家，也可以直接在畫面上點他。</p><div class="goods">${rows}${USE_CF?"":`<button class="good" data-act="giftPick" data-v="me"><span class="name">送給自己（預覽字卡）</span></button>`}</div>${backBtn}`); };
-HANDLERS.giftPick=v=>{ if(v==="me"){ openGift("me",me.name||"自己"); return; } const av=remotes.get(v); if(av) openGift(v,av.name||"香客"); };
+  openSheet("gift","送禮",`<p class="lead">選一位這一殿的玩家，也可以直接在畫面上點他。</p><div class="goods"><button class="good" data-act="giftPick" data-v="all" style="border-color:var(--gold)"><span class="name">🌐 送給全伺服器</span><span class="meta">每位玩家各一份（平安幣・道具・飾品）</span></button>${rows}${USE_CF?"":`<button class="good" data-act="giftPick" data-v="me"><span class="name">送給自己（預覽字卡）</span></button>`}</div>${backBtn}`); };
+HANDLERS.giftPick=v=>{ if(v==="all"){ openGift("all","全伺服器所有玩家"); return; } if(v==="me"){ openGift("me",me.name||"自己"); return; } const av=remotes.get(v); if(av) openGift(v,av.name||"香客"); };
 // tapping a real player opens the gift sheet for the 主委
 function giftTap(rc){ if(!me.sp||!remotes.size) return false; const roots=[...remotes.entries()].filter(([id,av])=>av.root.visible&&!av.sp); if(!roots.length) return false;
   const hit=rc.intersectObjects(roots.map(r=>r[1].root),true)[0]; if(!hit) return false; let o=hit.object; while(o&&!roots.some(r=>r[1].root===o)) o=o.parent; const e=roots.find(r=>r[1].root===o); if(!e) return false; openGift(e[0],e[1].name||"香客"); return true; }
@@ -4571,7 +4572,7 @@ const fwStreakMat=new T.ShaderMaterial({uniforms:{uTrail:{value:.22},uAsp:{value
   fragmentShader:"uniform float uGain; varying vec3 vC; varying float vA; varying float vS; varying float vT; varying float vLen; varying float vW; void main(){"+
    /* a round, sharp spark: distance to the trail segment in units of the spark radius; bright round head, tail fading behind it — no square blocks */
    " float s=clamp(vS,0.,vLen); float d=length(vec2(vS-s,vT))/vW; if(d>1.) discard; float f=vLen>1e-5?s/vLen:1.; float g=exp(-d*d*4.5); float a=vA*uGain*g*(.18+.82*f*f); if(a<=.004) discard;"+
-   " float small=1.-smoothstep(.0012,.003,vW); a=min(a*(1.+.8*small),.95); /* tiny far sparks get a brighter core instead of a bigger blur */ float core=exp(-d*d*14.)*f; gl_FragColor=vec4(mix(vC*(1.7+.5*small),vec3(1.),core*(.3+.25*small)),a); }"});
+   " float small=1.-smoothstep(.0012,.003,vW); a=min(a*(1.+.6*small),.82); /* tiny far sparks get a brighter core instead of a bigger blur */ float core=exp(-d*d*14.)*f; gl_FragColor=vec4(mix(vC*(1.3+.25*small),vec3(1.),core*(.1+.1*small)),a); }"}); /* colour kept saturated: no white-hot centres */
 const fwStreak=new T.Mesh(fwStreakGeo,fwStreakMat); fwStreak.frustumCulled=false; fwStreak.userData.noMerge=1; fwStreak.renderOrder=5; scene.add(fwStreak);
 const fwStreakAsp=()=>{ fwStreakMat.uniforms.uAsp.value=window.innerWidth/Math.max(1,window.innerHeight); }; fwStreakAsp(); window.addEventListener("resize",fwStreakAsp);
 window.addEventListener("resize",()=>{ fwMat.uniforms.scale.value=window.innerHeight*.5; });
@@ -4600,7 +4601,7 @@ let FW_CC=false;
 /* a soft halo of light round every burst (one additive sprite per shell, reused from a small pool): the slight bloom a real night sky shows */
 const FW_HALO=[]; for(let i=0;i<28;i++){ const s=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#fff"),transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false,fog:false})); s.visible=false; s.renderOrder=4; s.userData={t:0,d:1.8,o:0}; scene.add(s); FW_HALO.push(s); }
 let fwHaloI=0;
-function fwHalo(x,y,z,c,size,op){ const s=FW_HALO[fwHaloI=(fwHaloI+1)%FW_HALO.length]; s.position.set(x,y,z); s.material.color.set(c).lerp(_fcW,.25); s.scale.set(size,size,1); s.userData.t=0; s.userData.o=op; s.userData.sz=size; s.visible=true; }
+function fwHalo(x,y,z,c,size,op){ const s=FW_HALO[fwHaloI=(fwHaloI+1)%FW_HALO.length]; s.position.set(x,y,z); s.material.color.set(c); s.scale.set(size,size,1); s.userData.t=0; s.userData.o=op; s.userData.sz=size; s.visible=true; }
 const _fcW=new T.Color("#ffffff");
 function fwHaloTick(dt){ for(const s of FW_HALO){ if(!s.visible) continue; const u=s.userData; u.t+=dt; const k=u.t/u.d; if(k>=1){ s.visible=false; s.material.opacity=0; continue; }
   s.material.opacity=u.o*(k<.08?k/.08:Math.pow(1-(k-.08)/.92,1.6)); const g=u.sz*(.75+.45*Math.min(1,k*2.2)); s.scale.set(g,g,1); } }
@@ -4640,11 +4641,11 @@ function fwBurst0(e){ const {x,y,z}=e, r=Math.random; const [c1,c2]=e.c, sp=e.s,
       sph((a,b,c)=>fwEmit(x,y,z,a*sp,b*sp,c*sp,A,B,2.8+r()*.5,.95,1.15,1.9)); sph((a,b,c)=>fwEmit(x,y,z,a*sp*.55,b*sp*.55,c*sp*.55,B,A,2.4+r()*.4,.8,1.2,1.9,0,1.4+r()*.3,2)); break; }
     case "giantwillow": { /* 巨型金柳 */ e.type="silkfall"; fwBurst0({...e,s:sp*.9}); fwBurst0({...e,type:"peony",s:sp*.45,n:180,c:[VIVID[e.ci%12],VIVID[(e.ci+6)%12]]}); break; }
     case "giant": { /* 巨型四色: a huge chrysanthemum in four contrasting colours, every star changing to its opposite colour as it falls, then a coloured crackle */
-      const k0=e.ci%12; sph((a,b,c,i)=>{ const q=(k0+(i%4)*3)%12; fwEmit(x,y,z,a*sp,b*sp,c*sp,VIVID[q],VIVID[(q+6)%12],2.8+r()*.7,1.0,1.15,1.9,.03); });
+      const k0=e.ci%12; sph((a,b,c,i)=>{ const q=(k0+(i%4)*3)%12; fwEmit(x+a*sp*.1,y+b*sp*.1,z+c*sp*.1,a*sp,b*sp,c*sp, /* starts already opened a little, so the first instant is not one white-hot dot */VIVID[q],VIVID[(q+6)%12],2.8+r()*.7,1.0,1.15,1.9,.03); });
       setTimeout(()=>{ if(FW.on) fwSound("crackle",x,y,z); },1400); break; }
     case "tail": sph((a,b,c,i)=>{ if(i%3) return; const k=(e.ci+i)%VIVID.length; fwEmit(x,y,z,a*sp,b*sp,c*sp,VIVID[k],VIVID[(k+5)%VIVID.length],2.6+r()*.6,.62,1.25,2.6,0,0,4); }); break; /* 拖尾: each star leaves its own colour behind */
     case "strobe": sph((a,b,c,i)=>{ if(i%2) return; fwEmit(x,y,z,a*sp*.85,b*sp*.85,c*sp*.85,i%4?"#fff8e0":c1,c1,3.2+r()*.8,.36,1.6,.9,0,0,5); }); break; /* 閃爍: stars that hang and blink */
-    case "god": { const P=(FW_GODS&&FW_GODS[e.god])||null; if(!P){ e.type="mazu"; fwBurst(e); return; } const step=Q.low?2:1, K=3.2, H=44/255, C=FW_GOD_PAL[e.pal|0];
+    case "god": { const P=(FW_GODS&&FW_GODS[e.god])||null; if(!P){ e.type="mazu"; fwBurst(e); return; } const step=1, K=3.2, H=44/255, C=FW_GOD_PAL[e.pal|0];
       /* the very last shot: the god glides out of the shell, holds, then slowly twinkles away while the closing words appear */
       const gs=e.gs||1, gl=e.glife||11; for(let i=0;i<P.length;i+=step){ const [px,py,k]=P[i]; const tx=(px-128)*H*gs, ty=(127-py)*H*gs; fwEmit(x,y,z,tx*K,ty*K,0,C[k][0],C[k][1],gl+r()*.8,.6*Math.max(.7,gs),K,0,0,0,9); }
       if(!e.noEnd) fwGodEnd(); break; }
@@ -4654,7 +4655,7 @@ function fwBurst0(e){ const {x,y,z}=e, r=Math.random; const [c1,c2]=e.c, sp=e.s,
       for(const ex of [-.36,.36]) for(let i=0;i<14;i++){ const t=i/14*Math.PI*2; fwEmit(x,y,z,(ex+Math.cos(t)*.09)*R,(.28+Math.sin(t)*.12)*R,0,"#ffffff",c1,2.4,.6,1.5,.9); }
       for(let i=0;i<30;i++){ const t=Math.PI*(1.15+i/29*.7); fwEmit(x,y,z,Math.cos(t)*.55*R,(Math.sin(t)*.55+.05)*R,0,"#ffe066",c2,2.4,.62,1.5,.9); } break; }
     case "bees": { /* 亂飛: stars that dart about on their own, whistling */ for(let i=0;i<Math.round(70*LOW);i++){ const u=r()*2-1, th=r()*Math.PI*2, q=Math.sqrt(1-u*u); fwEmit(x,y,z,q*Math.cos(th)*sp*.6,u*sp*.6,q*Math.sin(th)*sp*.6,VIVID[(i+e.ci)%VIVID.length],"#ffffff",2.6+r(),.55,.6,.8,0,0,7); } break; }
-    case "kamuro": { /* 銀柳: a dense silver-white crown whose stars hang and fall slowly, each leaving a long glittering tail */ sph((a,b,c,i)=>{ if(i%2) return; fwEmit(x,y,z,a*sp*.75,b*sp*.75+1,c*sp*.75,"#ffffff","#c9d4e6",5.2+r()*1.4,.4,1.9,1.6,.25,0,8); }); break; }
+    case "kamuro": { /* 銀柳: a dense silver-white crown whose stars hang and fall slowly, each leaving a long glittering tail */ const ka=e.pink?(i=>i%3?"#ff7ab8":"#ffb3d6"):(()=>"#eef3ff"), kb=e.pink?"#ff3d8a":"#c9d4e6"; sph((a,b,c,i)=>{ if(i%2) return; fwEmit(x,y,z,a*sp*.75,b*sp*.75+1,c*sp*.75,ka(i),kb,5.2+r()*1.4,.4,1.9,1.6,.25,0,8); }); break; } /* e.pink: 粉紅銀柳 */
     case "cloud": { /* 七彩祥雲: soft coloured clouds that bloom, drift down and melt, sprinkled with sparkles */ for(let i=0;i<Math.round(90*LOW);i++){ const u=r()*2-1, th=r()*Math.PI*2, q=Math.sqrt(1-u*u), s2=sp*(.25+r()*.5), k=(i+e.ci)%VIVID.length; _fc1.set(VIVID[k]).multiplyScalar(.22); fwEmit(x,y,z,q*Math.cos(th)*s2,u*s2*.6,q*Math.sin(th)*s2,"#"+_fc1.getHexString(),"#"+_fc1.multiplyScalar(.5).getHexString(),4.5+r()*1.5,3.4+r()*1.6,1.8,.5,0); }
       for(let i=0;i<Math.round(120*LOW);i++){ const u=r()*2-1, th=r()*Math.PI*2, q=Math.sqrt(1-u*u), s2=sp*(.3+r()*.6); fwEmit(x,y,z,q*Math.cos(th)*s2,u*s2,q*Math.sin(th)*s2,"#ffffff",VIVID[(i+e.ci)%VIVID.length],3.5+r()*1.5,.35,1.6,1.4,.6,0,5); } break; }
     case "twinkle": sph((a,b,c,i)=>{ if(i%2) return; fwEmit(x,y,z,a*sp,b*sp,c*sp,i%3?"#fff6c8":c1,i%3?"#ffe9a0":c1,4.2+r(),.38,1.7,.6,0,0,6); }); break; /* 一閃一閃: stars that hang and slowly twinkle */
@@ -4698,10 +4699,10 @@ function fwProgramN(sh,seed){ const r=fwRng(seed^(sh*2654435761)), ev=[]; const 
   const fans=(t,c)=>{ const pal=c||pick(FWC); for(const x of [-12,0,12]) fan(t,x,11,pal); };
   // 吊車 hangs and spins in place; 風火輪 spins while it flies up and bursts at the top
   const wheel=(t,x,y,dur,o={})=>ev.push({t,kind:"wheel",x,y,z:o.z??BZ-2,dur,R:(o.R??2.2)*1.5,c:o.c??pick(FWC),mode:o.mode||"hang",dir:o.dir??(r()<.5?1:-1),up:o.up??0});
-  const giant=(t,o={})=>shell(t,"giant",{x:0,y:46,z:BZ+12,big:true,s:23,n:520,fl:2.4,...o}); /* (fewer stars than before: 900 piled into a solid white disc from far away) */
+  const giant=(t,o={})=>shell(t,"giant",{x:0,y:46,z:BZ+12,big:true,s:28,n:620,fl:2.4,...o}); /* (fewer stars than before: 900 piled into a solid white disc from far away) */
   const senrin=(t,o={})=>{ shell(t,"senrin",{x:0,big:true,y:34,s:15,...o}); pair(t+.2,"senrin",{x:17,y:27,s:12}); };
   const god=(t)=>{ shell(t,"god",{x:0,y:31,z:BZ+16,big:true,fl:2.4,god:FW_GOD_NAMES[(r()*FW_GOD_NAMES.length)|0]}); ev[ev.length-1].pal=(r()*FW_GOD_PAL.length)|0; };
-  const huge=(t,o={})=>giant(t,{s:30,n:620,y:52,...o}); /* 超巨大 */
+  const huge=(t,o={})=>giant(t,{s:36,n:760,y:52,...o}); /* 超巨大 */
   /* 超巨大彩千輪: eight at once, spread over the whole sky */
   const megaSenrin=t=>{ [[-42,52],[-26,72],[-12,48],[0,82],[12,48],[26,72],[42,52],[0,60]].forEach(([x,y],k)=>ev.push({t:t+k*.06,kind:"shell",type:"senrin",x,y,z:-34,big:true,mega:1,s:26,n:200,c:pick(FWC),ci:k,fl:2.2})); };
   /* 巨型掃射扇: a cake on the main roof sweeping fast from left to right and back, changing colour as it goes */
@@ -4713,6 +4714,8 @@ function fwProgramN(sh,seed){ const r=fwRng(seed^(sh*2654435761)), ev=[]; const 
   /* 噴射扇: a big fan of nine nozzles on the roofs spraying non-stop */
   const fanjet=(t,xs,dur)=>(xs||[0]).forEach((x,k)=>ev.push({t:t+k*.1,kind:"fanjet",x,dur:dur||7,ci:(r()*12)|0}));
   /* every god, in rows across the sky (4, 4, 5), each row lingering a little; small shells at the far sides and low down so none of them cover a god */
+  /* a sky full of 銀柳 at once (pink ones for 春櫻): five to seven across, high and wide */
+  const willowFill=(t,pink,k=6,y0=50)=>{ for(let i=0;i<k;i++) ev.push({t:t+i*.18,kind:"shell",type:"kamuro",pink:pink?1:0,keep:1,x:(i/(k-1)-.5)*96+(r()-.5)*6,y:y0+(i%2?10:0)+r()*6,z:-34-r()*8,big:true,s:22+r()*4,n:520,c:FWC[0],ci:i,fl:1.7}); };
   const godRows=t0=>{ const names=[...FW_GOD_NAMES].sort(()=>r()-.5), rows=[names.slice(0,4),names.slice(4,8),names.slice(8)];
     rows.forEach((row,ri)=>{ const t=t0+ri*6.5, n=row.length, gap=n===5?25:30;
       row.forEach((g,k)=>ev.push({t:t+k*.15,kind:"shell",type:"god",keep:1,x:(k-(n-1)/2)*gap,y:84+(k%2?4:0),z:-80,big:true,fl:1.9,god:g,pal:(r()*FW_GOD_PAL.length)|0,gs:.5,glife:ri<2?7:11,noEnd:!(ri===2&&k===n-1),s:10,n:1,c:pick(FWC),ci:k}));
@@ -4732,8 +4735,8 @@ function fwProgramN(sh,seed){ const r=fwRng(seed^(sh*2654435761)), ev=[]; const 
     for(let t=64;t<69.5;t+=.4+r()*.3){ if(r()<.5){ mine(t,-8-r()*6); mine(t,8+r()*6); } else low(t,pick(["glitter","peony","crackle"])); }
     for(let t=70;t<84.5;t+=.25+r()*.2){ if(r()<.5) pair(t,pick(["peony","chrys","tail","strobe","rainbow","twotone","crackle","multi"]),{big:r()<.35}); else shell(t,pick(T),{x:(r()-.5)*12}); }
     wheel(70,-12,10,14,{R:2.2}); wheel(70,0,12.5,14,{R:2.8,dir:-1}); wheel(70,12,10,14,{R:2.2}); for(const x of [-14,-5,5,14]) gerb(72,x,12);
-    fans(73); fans(77); fans(81); senrin(76); pair(74.5,"bees"); pair(78,"bees"); giant(79,{x:-6}); giant(81.4,{x:6}); huge(83.2);
-    sweep(35); megaSenrin(74.5); sweep(68,6); bigFan(24); bigFan(55); bigFan(72); bigFan(80); god(82.6); fanjet(28); fanjet(64,[-14,14],6); for(let t=42;t<60;t+=6) pair(t,"kamuro",{big:true}); }
+    fans(73); fans(77); fans(81); senrin(76); pair(74.5,"bees"); pair(78,"bees"); giant(77.5,{x:-6}); giant(79,{x:6}); huge(80.4); /* (moved earlier: they used to burst on top of the god) */
+    sweep(35); megaSenrin(74.5); sweep(68,6); bigFan(24); bigFan(55); bigFan(72); bigFan(80); god(82.6); willowFill(20,1,5); willowFill(46.5,1); willowFill(66.5,1); willowFill(74,1,7); fanjet(28); fanjet(64,[-14,14],6); for(let t=42;t<60;t+=6) pair(t,"kamuro",{big:true}); }
   else if(sh===2){ /* 龍騰 2:00 — opens with one giant, flying wheels, a strobing sky, rows of hanging wheels, then the climax */
     giant(.8,{y:44}); for(let t=2.5;t<8;t+=1.4) shell(t,"tail",{x:(r()-.5)*20,y:26+r()*6});
     for(let t=8;t<30;t+=.6+r()*.35){ if(r()<.55) pair(t,pick(T)); else low(t,pick(["peony","glitter","ring"])); }
@@ -4747,7 +4750,7 @@ function fwProgramN(sh,seed){ const r=fwRng(seed^(sh*2654435761)), ev=[]; const 
     for(const x of [-14,-7,0,7,14]) wheel(65,x,11+(x?0:1.5),16,{R:x?1.8:2.6,dir:x<0?1:-1}); giant(75); giant(88,{x:-8}); pair(88.4,"tail",{big:true});
     for(let t=90;t<100;t+=1.6+r()*.6) pair(t,r()<.6?"kamuro":"willow",{big:true});
     for(let t=100;t<108;t+=.16+r()*.14){ if(r()<.5) pair(t,pick(["peony","chrys","tail","strobe","rainbow","twotone","multi","glitter"]),{big:r()<.45}); else shell(t,pick(T),{x:(r()-.5)*10}); }
-    for(const x of [-12,12]) wheel(100,x,13,8,{mode:"rise",up:2.6,R:2.2}); fans(101); fans(104); senrin(102.5); pair(101.5,"bees"); giant(104.5,{x:-7}); giant(106,{x:7}); huge(107.4);
+    for(const x of [-12,12]) wheel(100,x,13,8,{mode:"rise",up:2.6,R:2.2}); fans(101); fans(104); senrin(102.5); pair(101.5,"bees"); giant(101.5,{x:-7}); giant(103,{x:7}); huge(104.4);
     sweep(45); megaSenrin(98); sweep(80,6); bigFan(20); bigFan(62); bigFan(85); bigFan(101); bigFan(105.5); god(106.8); fanjet(35); fanjet(92,[-14,14],6); for(let t=52;t<64;t+=5) pair(t,"kamuro",{big:true}); }
   else { /* 眾神 3:00 — a slow opening, then movements: wheels, low show, strobes, colour, flying wheels, a long climax, the god, a last bow */
     for(const x of [-12,-6,0,6,12]) gerb(.5,x,11,"#ffe9a8"); for(let t=1.5;t<11;t+=2.2) pair(t,"willow",{big:true});
@@ -4766,7 +4769,7 @@ function fwProgramN(sh,seed){ const r=fwRng(seed^(sh*2654435761)), ev=[]; const 
     for(const x of [-14,-7,0,7,14]) wheel(135,x,11,14,{R:x?1.8:2.6,dir:x<0?1:-1});
     for(let t=150;t<161.5;t+=.13+r()*.12){ if(r()<.5) pair(t,pick(["peony","chrys","tail","strobe","rainbow","twotone","multi","glitter","crackle"]),{big:r()<.45}); else shell(t,pick(T),{x:(r()-.5)*10}); }
     fans(151); fans(154); fans(157); senrin(155); pair(153,"bees"); giant(158,{x:-7}); giant(159.4,{x:7}); huge(160.8); for(const x of [-14,-5,5,14]) gerb(150,x,12);
-    sweep(57); sweep(117,6); megaSenrin(140); megaSenrin(159); bigFan(26); bigFan(66); bigFan(100); bigFan(126); bigFan(152); bigFan(158); godRows(163.5); fanjet(35); fanjet(105,[-14,14],6); fanjet(145); for(let t=74;t<90;t+=5) pair(t,"kamuro",{big:true}); }
+    sweep(57); sweep(117,6); megaSenrin(140); megaSenrin(159); bigFan(26); bigFan(66); bigFan(100); bigFan(126); bigFan(152); bigFan(158); for(let t=160.5;t<166;t+=2.6) willowFill(t,0,7,36); god(171.2); /* the willows fill the lower sky and have fallen away before the god opens above */ fanjet(35); giant(30,{x:0}); huge(100); giant(112,{x:-6}); giant(113.5,{x:6}); willowFill(57.5,0,5); willowFill(118.5,0,6); fanjet(80,[-14,14],6); megaSenrin(92); fanjet(105,[-14,14],6); fanjet(145); for(let t=74;t<90;t+=5) pair(t,"kamuro",{big:true}); }
   ev.sort((a,b)=>a.t-b.t); return fwLayout(ev,r); }
 /* where things go off: the high shells rise behind the temple around the giant statue (so the temple, the statue and the sky show all fit
    in one picture from the lake and from the courtyard); fountains, mines, fan cakes, wheels and low shells sit on two pads either side of
@@ -4780,12 +4783,13 @@ function fwRoofY(x,z){ x=Math.round(x/2)*2; z=Math.round(z/2)*2; const k=x+","+z
 function fwLayout(ev,r){ const sg=v=>v<0?-1:v>0?1:(r()<.5?-1:1), RZ=-2, roofX=v=>sg(v)*(4+Math.min(16,Math.abs(v)*.6));
   for(const e of ev){
     if(e.keep) continue;
-    if(e.kind==="shell"){ if(e.type==="god"||e.type==="mazu"){ e.x=0; e.y=74; e.z=-80; e.fl=1.9; continue; } /* (a quicker climb than before: the god used to keep everyone waiting) */
+    if(e.kind==="shell"){ if(e.type==="god"||e.type==="mazu"){ e.x=0; e.y=80; e.z=-80; e.fl=1.9; e.gs=e.gs||1.35; continue; } /* one god, big and sharp */ /* (a quicker climb than before: the god used to keep everyone waiting) */
       if(e.y<12){ e.x=roofX(e.x); e.z=RZ+r()*4; e.y=fwRoofY(e.x,e.z)+7+r()*5; continue; }
       e.s*=1.6; e.n=Math.round(e.n*1.2);
       if(e.type==="giant"){ e.type=["giant","giantcc","giantduo","giantwillow"][(r()*4)|0]; e.c=[VIVID[e.ci%12],VIVID[(e.ci+6)%12]]; } /* every 巨型 is one of four kinds, in contrasting colours */
       if(e.mega){ continue; }
       if(/^giant/.test(e.type)&&Math.abs(e.x)<2){ e.x=0; e.z=-72; e.y=92; continue; } /* 超巨大 right over the statue's head */
+      if(r()<.4){ e.x=(r()-.5)*20; e.z=-30-r()*8; e.y=Math.max(e.y+16,52+r()*10); continue; } /* the middle of the sky, above the statue's head */
       const dz=Math.max(0,(e.z||60)-53); e.x=sg(e.x)*(17+Math.abs(e.x)*.9); e.z=-18-dz*.8; e.y+=10; continue; }
     if(e.kind==="gerb"||e.kind==="mine"){ e.x=roofX(e.x); e.z=RZ; e.y=fwRoofY(e.x,e.z)+.2; continue; }
     if(e.kind==="comet"){ const nx=e.big?e.sx:roofX(e.sx), dx=nx-e.sx, y0=fwRoofY(nx,RZ)+.2, dy=y0-e.sy; e.sx+=dx; e.ex+=dx; e.sz=RZ; e.ez=RZ+.6; e.sy+=dy; e.ey+=dy; continue; }
@@ -4794,6 +4798,13 @@ function fwLayout(ev,r){ const sg=v=>v<0?-1:v>0?1:(r()<.5?-1:1), RZ=-2, roofX=v=
   /* 風火輪: all of a show's wheel moments become one symmetric row of four, hanging still high over the roofs */
   const W=ev.filter(e=>e.kind==="wheel"), times=[]; W.sort((a,b)=>a.t-b.t).forEach(e=>{ if(!times.some(t=>Math.abs(t-e.t)<28)) times.push(e.t); }); /* never back to back: one row of wheels at a time, at least 28 s apart */
   ev=ev.filter(e=>e.kind!=="wheel"); times.forEach((t,k)=>{ const c=FWC[(k*3)%FWC.length], dur=6.5; for(const [x,dir] of [[-22,1],[-9,1],[9,-1],[22,-1]]) ev.push({t,kind:"wheel",x,y:17,z:-6,dur,R:3,c,mode:"hang",dir,ci:k*3+(x>0?6:0)+(Math.abs(x)>15?3:0)}); });
+  /* no empty sky: wherever three seconds go by with fewer than two shells, add colourful ones in the middle */
+  { const sh=ev.filter(e=>e.kind==="shell"&&e.type!=="god"&&e.type!=="mazu").map(e=>e.t).sort((a,b)=>a-b), end=ev.reduce((m,e)=>e.type==="god"?Math.min(m,e.t):m,Infinity);
+    const last=Math.min(end,ev.reduce((m,e)=>Math.max(m,e.t),0)); let j=0;
+    for(let t=3;t<last-1;t+=1.5){ while(j<sh.length&&sh[j]<t-1.5) j++; let n=0; for(let q=j;q<sh.length&&sh[q]<t+1.5;q++) n++;
+      if(n<2){ for(let q=n;q<2;q++){ const k=(r()*12)|0; ev.push({t:t+q*.5,kind:"shell",type:["peony","chrys","fourcolor","twotone","kamuro","multi"][(r()*6)|0],keep:1,x:(r()-.5)*36,y:50+r()*14,z:-30-r()*10,big:true,s:20+r()*5,n:380,c:[VIVID[k],VIVID[(k+6)%12]],ci:k,fl:1.7}); sh.push(t+q*.5); } sh.sort((a,b)=>a-b); } } }
+  /* the god at the end stands alone: nothing high in the sky bursts from 4 s before it opens until it has faded */
+  { const g=ev.find(e=>e.type==="god"||e.type==="mazu"); if(g){ const tb=g.t+(g.fl||1.9); ev=ev.filter(e=>e===g||!(e.kind==="shell"&&e.y>30&&e.t+(e.fl||2)>tb-4&&e.t+(e.fl||2)<tb+14)); } }
   ev.sort((a,b)=>a.t-b.t); return ev; }
 
 // 媽祖 outline for the final shell (points traced from the line drawing, 0-255 grid, 177 wide x 255 tall)
@@ -4922,7 +4933,7 @@ function fwUpdate(dt){ const now=performance.now(); fwHaloTick(dt);
     fwV[j]*=dg; fwV[j+1]=fwV[j+1]*dg-fwGrav[i]*dt; fwV[j+2]*=dg; fwPos[j]+=fwV[j]*dt; fwPos[j+1]+=fwV[j+1]*dt; fwPos[j+2]+=fwV[j+2]*dt;
     /* 3 willow, 8 kamuro, 10 shidare: the star lays down short segments along the path it has just flown, which linger and fade — so every star draws
        its own curved line hanging behind it (round head, glittering thread) */
-    if((fwSK[i]===3||fwSK[i]===8||fwSK[i]===10)&&Math.random()<dt*11){ const tr=FW_TR; FW_TR=1; const kk=fwSK[i]===8?["#f2f6ff","#7a869a"]:["#ffd98a","#7a3a08"];
+    if((fwSK[i]===3||fwSK[i]===8||fwSK[i]===10)&&Math.random()<dt*11){ const tr=FW_TR; FW_TR=1; const kk=fwSK[i]===8?(fwC2[j]>.6&&fwC2[j+1]<.4?["#ff9cc8","#8a2a55"]:["#f2f6ff","#7a869a"]):["#ffd98a","#7a3a08"]; /* pink willows leave pink trails */
       fwEmit(fwPos[j],fwPos[j+1],fwPos[j+2],fwV[j]*.38,fwV[j+1]*.38,fwV[j+2]*.38,kk[0],kk[1],(fwSK[i]===10?6:4.5)*(.85+Math.random()*.3),fwSz0[i]*.55,1.6,.35,.2); FW_TR=tr; }
     if(fwSK[i]===7){ fwV[j]+=(Math.random()-.5)*60*dt; fwV[j+1]+=(Math.random()-.5)*60*dt; fwV[j+2]+=(Math.random()-.5)*30*dt; if(Math.random()<.5) fwEmit(fwPos[j],fwPos[j+1],fwPos[j+2],0,0,0,"#fff2c2","#ff8a3b",.35,fwSz0[i]*.5,1,0,0); }
     else if(fwSK[i]===11){ const ph=(L*2.6+(i%4)*.25)%1; if(ph<dt*2.6){ _fc1.set(VIVID[((L*2.6)|0)*3%12+0]); fwC2[j]=_fc1.r; fwC2[j+1]=_fc1.g; fwC2[j+2]=_fc1.b; } fwCol[j]+=(fwC2[j]-fwCol[j])*Math.min(1,dt*6); fwCol[j+1]+=(fwC2[j+1]-fwCol[j+1])*Math.min(1,dt*6); fwCol[j+2]+=(fwC2[j+2]-fwCol[j+2])*Math.min(1,dt*6); } /* colours that keep changing */

@@ -74,6 +74,7 @@ export class Hall extends DurableObject {
     }
     if (url.pathname === "/giftping") { // from the lobby: a gift is waiting for this player; their page fetches it
       let b = {}; try { b = await req.json(); } catch {} const to = String(b.to || "").replace(/[^a-z0-9]/g, "").slice(0, 16);
+      if (b.all) { for (const w of this.ctx.getWebSockets()) { try { w.send(JSON.stringify({ t: "gift" })); } catch {} } return new Response("ok"); } /* a gift for everyone */
       if (to) for (const w of this.ctx.getWebSockets(to)) { try { w.send(JSON.stringify({ t: "gift" })); } catch {} } return new Response("ok");
     }
     if (url.pathname === "/layout") { // from the lobby: the chair saved a new building layout; pages fetch it again
@@ -428,14 +429,20 @@ export class Lobby extends DurableObject {
       if (url.pathname === "/gift" && req.method === "POST") {
         const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
         let b = {}; try { b = await req.json(); } catch {} const to = clean(b.to, 16).replace(/[^a-z0-9]/g, ""), kind = b.kind === "item" ? "item" : b.kind === "acc" ? "acc" : "coins";
-        const k = kind !== "coins" ? String(b.k || "").replace(/[^a-z]/g, "").slice(0, 12) : "", n = kind === "acc" ? 1 : Math.max(1, Math.min(kind === "item" ? 99 : 100000, Math.floor(Number(b.n) || 0)));
+        const k = kind !== "coins" ? String(b.k || "").replace(/[^a-z_]/g, "").slice(0, 16) : "", n = kind === "acc" ? 1 : Math.max(1, Math.min(kind === "item" ? 99 : 100000, Math.floor(Number(b.n) || 0)));
         if (!to || (kind !== "coins" && !k)) return json({ ok: false });
+        if (to === "all") { /* 全伺服器: every player picks it up once (anyone who comes in within 14 days too) */
+          const now = Date.now(), GA = ((await this.ctx.storage.get("GA")) || []).filter(g => now - g.at < 14 * 86400000);
+          GA.push({ g: "a" + Math.random().toString(36).slice(2, 10), kind, k, n, from: clean(b.from, 16) || "主委", at: now, all: 1 }); await this.ctx.storage.put("GA", GA.slice(-20));
+          await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/giftping", { method: "POST", body: JSON.stringify({ all: 1 }) }).catch(() => {})));
+          return json({ ok: true });
+        }
         const owner = await this.ctx.storage.get("I:" + to); if (!owner) return json({ ok: false, nouser: true });
         const G = (await this.ctx.storage.get("G:" + owner)) || []; G.push({ g: Math.random().toString(36).slice(2, 10), kind, k, n, from: clean(b.from, 16) || "主委", at: Date.now() }); await this.ctx.storage.put("G:" + owner, G.slice(-30));
         await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/giftping", { method: "POST", body: JSON.stringify({ to }) }).catch(() => {})));
         return json({ ok: true });
       }
-      if (url.pathname === "/gifts") { const G = (await this.ctx.storage.get("G:" + uid)) || []; if (G.length) await this.ctx.storage.delete("G:" + uid); return json({ ok: true, gifts: G }); }
+      if (url.pathname === "/gifts") { const G = (await this.ctx.storage.get("G:" + uid)) || []; if (G.length) await this.ctx.storage.delete("G:" + uid); const now = Date.now(), GA = ((await this.ctx.storage.get("GA")) || []).filter(g => now - g.at < 14 * 86400000); return json({ ok: true, gifts: G.concat(GA) }); } /* server-wide gifts ride along; the page remembers which it already took */
       return json({ ok: false });
     }
     if (url.pathname === "/hbclaim" && req.method === "POST") {
