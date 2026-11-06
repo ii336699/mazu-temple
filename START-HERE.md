@@ -22,7 +22,7 @@
 | 項目 | 內容 |
 |---|---|
 | 倉庫 | GitHub `ii336699/mazu-temple` |
-| 開發分支 | **`audio-fix`**，最新 commit `2b420bb`（11/06 下午） |
+| 開發分支 | **`audio-fix`**，最新 commit `3779115`（11/06 16:10，含這份懶人包） |
 | 正式版 | `main`（目前是 `01a4d5a`，**很多天沒部署**，audio-fix 領先很多） |
 | 遊戲本體 | `public/index.html`（單一檔案，three.js r128） |
 | 伺服器 | `src/worker.js`（Cloudflare Worker + Durable Objects：Hall／Lobby） |
