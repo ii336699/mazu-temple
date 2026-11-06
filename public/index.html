@@ -3585,7 +3585,7 @@ $("#contactBtn").onclick=()=>{ ensureAudio(); openContact(); };
 const ckNorm=v=>String(v||"").normalize("NFKC").replace(/[\s\u200b-\u200f\u2060\ufeff]/g,"");
 const ck=()=>ckNorm((($("#readKey")||{}).value||"")||load("mz.rk",""));
 function forgetKey(r,j){ if(j&&!j.ok&&!j.locked&&!j.unset&&r&&r.status!==503) save("mz.rk",""); }
-function renderChairBtn(){ const b=$("#chairBtn"); if(b) b.hidden=!me.sp; }
+function renderChairBtn(){ const b=$("#chairBtn"); if(b) b.hidden=!me.sp; if(me.sp){ try{ accState(); saveBag(); }catch(e){} } }
 const ctTile=(act,icon,name,note="")=>`<button class="ct" data-act="${act}"><b>${icon}</b><span>${name}</span>${note?`<small>${note}</small>`:""}</button>`;
 function openChair(){ if(!me.sp) return;
   openSheet("chair","主委工具",`<div class="ck-row"><input class="mail-box ck" id="readKey" type="password" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="留言讀取密碼（輸入一次就會記住）" value="${esc(load("mz.rk",""))}"><button class="chip ck-eye" type="button" onclick="const i=document.getElementById('readKey'); i.type=i.type==='password'?'text':'password'; this.textContent=i.type==='password'?'👁':'🙈';">👁</button></div>
@@ -6001,7 +6001,7 @@ const ACC={qqball:{name:"地瓜球頭飾",cat:"頭飾",slot:"head"},boba:{name:"
 const HAT_FIT={hat_crown:{w:.6,y:.1},hat_guanmao:{w:.74,y:.12},hat_douli:{w:1.05,y:-.2},hat_peach:{w:.66,y:.12},hat_catbell:{w:.7,y:.1},
   hat_tiger:{w:.84,y:-.05},hat_witch:{w:.9,y:.08},hat_jasmine:{w:.68,y:.12},hat_fu:{w:.78,y:.06},hat_fox:{w:.62,y:-.05,z:.06,ry:.5}}; /* new ones always go at the end: the order is part of saved codes (15 at most) */
 const ACC_IDS=Object.keys(ACC);
-function accState(){ if(!bag.acc||typeof bag.acc!=="object") bag.acc={owned:{},head:0,hand:0,mouth:0,pet:0}; bag.acc.owned=bag.acc.owned||{}; if(bag.acc.mouth===undefined) bag.acc.mouth=0; if(bag.acc.pet===undefined) bag.acc.pet=0; if(bag.redThread&&!bag.acc.owned.redthread){ bag.acc.owned.redthread=1; if(!bag.acc.wrist) bag.acc.wrist="redthread"; } if(bag.acc.wrist===undefined) bag.acc.wrist=0; return bag.acc; }
+function accState(){ if(!bag.acc||typeof bag.acc!=="object") bag.acc={owned:{},head:0,hand:0,mouth:0,pet:0}; bag.acc.owned=bag.acc.owned||{}; if(bag.acc.mouth===undefined) bag.acc.mouth=0; if(bag.acc.pet===undefined) bag.acc.pet=0; if(bag.redThread&&!bag.acc.owned.redthread){ bag.acc.owned.redthread=1; if(!bag.acc.wrist) bag.acc.wrist="redthread"; } if(bag.acc.wrist===undefined) bag.acc.wrist=0; try{ if(me&&me.sp) Object.keys(ACC).forEach(id=>{ if(!bag.acc.owned[id]) bag.acc.owned[id]=1; }); }catch(e){} /* the chair always has one of every accessory, new ones included */ return bag.acc; }
 function threadOn(){ return !!bag.redThread&&accState().wrist==="redthread"; }
 function nmDay(){ const d=new Date(Date.now()+8*3600e3).toISOString().slice(0,10); if(!bag.nm||bag.nm.day!==d) bag.nm={day:d,fish:0,pWin:0,pCash:0}; return bag.nm; }
 function myEq(){ const a=accState(); return [a.head||0,a.hand||0,a.mouth||0,a.pet||0]; }
