@@ -4,7 +4,7 @@ import { DurableObject } from "cloudflare:workers";
 
 const HALLS = 10, CAP = 100, MAX_MSG = 4000;
 const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000, "/puppet": 5000, "/crowd": 5000, "/market": 5000, "/layout": 5000 };
-const LOBBY_PATHS = ["/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather"];
+const LOBBY_PATHS = ["/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather", "/stat"];
 const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage", "/puppet": "/puppet", "/crowd": "/crowd", "/market": "/market", "/layout": "/layout" }; // a POST here makes that cached list stale
 
 export default {
@@ -229,8 +229,47 @@ export class Lobby extends DurableObject {
     await this.ctx.storage.put("sched", keep); await this.schedArm(keep);
   }
 
+  // 每日統計: counters for one Taiwan day at "st:YYYY-MM-DD" (kept 60 days), for the chair now and for NPCs to talk about later.
+  // Kept in memory and written at most once a minute, so a busy day costs about 1,440 small writes (free tier allows 100,000).
+  stDay(t = Date.now()) { return new Date(t + 8 * 3600000).toISOString().slice(0, 10); }
+  async stGet() {
+    const day = this.stDay();
+    if (this.st && this.st.day !== day) { await this.stSave(true); this.st = null; }
+    if (!this.st) { this.st = (await this.ctx.storage.get("st:" + day)) || { day, c: {}, mx: {} }; this.st.day = day; this.st.c = this.st.c || {}; this.st.mx = this.st.mx || {}; this.stAt = Date.now(); }
+    return this.st;
+  }
+  async stSave(force) {
+    if (!this.st || !this.stDirty || (!force && Date.now() - (this.stAt || 0) < 60000)) return;
+    this.stAt = Date.now(); this.stDirty = false; await this.ctx.storage.put("st:" + this.st.day, this.st);
+    const days = (await this.ctx.storage.get("stDays")) || []; if (!days.includes(this.st.day)) { days.push(this.st.day); days.sort(); while (days.length > 60) await this.ctx.storage.delete("st:" + days.shift()); await this.ctx.storage.put("stDays", days); }
+  }
+  async stAdd(map, max) {
+    const st = await this.stGet(); let n = Object.keys(st.c).length;
+    for (const [k, v] of Object.entries(map || {})) { if (!/^[a-z][a-zA-Z0-9_]{0,23}$/.test(k)) continue; const x = Math.floor(Number(v)); if (!(x > 0)) continue;
+      if (st.c[k] == null) { if (n >= 300) continue; n++; } st.c[k] = (st.c[k] || 0) + Math.min(x, max || 200); }
+    this.stDirty = true; await this.stSave();
+  }
+  async stMax(k, v) { const st = await this.stGet(); if (!(v > (st.mx[k] || 0))) return; st.mx[k] = v; this.stDirty = true; await this.stSave(); }
+
   async fetch(req) {
     const url = new URL(req.url);
+    // 每日統計: things only the server sees are counted here; the pages send their own tallies to POST /stat
+    const SRV_ST = { "/wish": "wish", "/lamp": "lamp", "/msg": "msg", "/zhan": "zhan", "/lanterns": "lanterns", "/reply": "reply", "/letters": "letter", "/hongbao": "hongbao", "/hbclaim": "hbclaim", "/nmrec": "nightMarket" };
+    if (req.method === "POST" && SRV_ST[url.pathname]) { try { await this.stAdd({ [SRV_ST[url.pathname]]: 1 }); } catch {} }
+    if (url.pathname === "/stat") {
+      if (req.method === "POST") {
+        let b = {}; try { b = await req.json(); } catch {}
+        const id = String(b.id || "").slice(0, 16); this.stLast = this.stLast || new Map(); const now = Date.now();
+        if (id && now - (this.stLast.get(id) || 0) < 20000) return json({ ok: false, slow: true }); if (id) this.stLast.set(id, now); if (this.stLast.size > 5000) this.stLast.clear();
+        const c = {}; Object.entries(b.c || {}).slice(0, 40).forEach(([k, v]) => { c[k] = v; }); await this.stAdd(c, 200); return json({ ok: true });
+      }
+      const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
+      await this.stSave(true); const days = ((await this.ctx.storage.get("stDays")) || []).slice(-14), today = await this.stGet();
+      const list = []; for (const d of days) list.push(d === today.day ? today : ((await this.ctx.storage.get("st:" + d)) || { day: d, c: {}, mx: {} }));
+      if (!days.includes(today.day)) list.push(today);
+      const t0 = Date.parse(today.day + "T00:00:00+08:00"), ws = ((await this.ctx.storage.get("wishes")) || []).filter(w => w.at >= t0);
+      return json({ ok: true, days: list, wishesToday: ws.length, wishSample: ws.slice(0, 8).map(w => w.text) });
+    }
     // 煙火編排器: the chair's own shows. Anyone can read them (every phone needs the show to draw it); saving and deleting need the key.
     // Each: { id, name, song (0–3), len, n, ev: [{ t, ty, x, y, s, c? }] } at "fwc:<id>", with a short list at "fwcList" (20 shows at most).
     // 天氣: the chair can set one for everyone for a while (the page otherwise follows its own clock-based timetable)
@@ -527,7 +566,7 @@ export class Lobby extends DurableObject {
       const w = (await this.ctx.storage.get("wishes")) || []; w.unshift({ name, text, at: now }); await this.ctx.storage.put("wishes", w.slice(0, 300)); return json({ ok: true });
     }
     let c = (await this.ctx.storage.get("c")) || new Array(HALLS).fill(0);
-    if (url.pathname === "/set") { const h = parseInt(url.searchParams.get("h"), 10), n = parseInt(url.searchParams.get("n"), 10); if (h >= 0 && h < HALLS && n >= 0) { c[h] = n; await this.ctx.storage.put("c", c); } return new Response("ok"); }
+    if (url.pathname === "/set") { const h = parseInt(url.searchParams.get("h"), 10), n = parseInt(url.searchParams.get("n"), 10); if (h >= 0 && h < HALLS && n >= 0) { c[h] = n; await this.ctx.storage.put("c", c); try { const tot = c.reduce((a, v) => a + v, 0), hr = new Date(Date.now() + 8 * 3600000).getUTCHours(); await this.stMax("peak", tot); await this.stMax("h" + String(hr).padStart(2, "0"), tot); } catch {} } return new Response("ok"); }
     return new Response(JSON.stringify({ cap: CAP, counts: c }));
   }
 }

@@ -408,7 +408,7 @@ body.hideui .joy,body.customizing .joy,body.hideui .camreset,body.customizing .c
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
 </head>
 <body>
-<canvas id="c" tabindex="0" aria-label="雲端天后宮正殿 3D 場景"></canvas><div id="vig" aria-hidden="true"></div><button id="zenMusicBtn" class="zen-music" onclick="try{ ensureAudio(); HANDLERS.zenMusic(); }catch(e){}" hidden>🎵 禪堂音樂</button>
+<canvas id="c" tabindex="0" aria-label="雲端天后宮正殿 3D 場景"></canvas><div id="vig" aria-hidden="true"></div><button id="zenMusicBtn" class="zen-music" hidden>🎵 禪堂音樂</button><button id="zenWideBtn" class="zen-music" style="top:calc(env(safe-area-inset-top) + 128px)" hidden>📐 廣角</button>
 <div class="loading" id="loading">正在點燈</div>
 <div class="dlpack" id="dlPack" hidden role="dialog" aria-label="下載廟宇中"><div class="dl-in"><h2>雲端天后宮</h2><p>正在下載廟宇建築和神尊，第一次進廟會比較久。<br>下載過的會存在手機裡，下次就很快。</p>
   <div class="dl-track"><div class="dl-fill" id="dlFill"></div><div class="dl-run" id="dlRun"></div></div>
@@ -1650,7 +1650,7 @@ const yardBump=cvs(512,512,(x,w,h)=>{ const s=64; for(let i=0;i<8;i++) for(let j
   for(let i=0;i<40;i++){ const r=8+Math.random()*24, cx=Math.random()*w, cy=Math.random()*h, rg=x.createRadialGradient(cx,cy,0,cx,cy,r); rg.addColorStop(0,"rgba(0,0,0,.14)"); rg.addColorStop(1,"rgba(128,128,128,0)"); x.fillStyle=rg; x.fillRect(cx-r,cy-r,r*2,r*2); }
   for(const [lw,c] of [[9,"rgba(90,90,90,.5)"],[5,"rgba(40,40,40,.8)"],[2.5,"rgb(0,0,0)"]]){ x.strokeStyle=c; x.lineWidth=lw; for(let i=0;i<=8;i++){ x.beginPath(); x.moveTo(i*s,0); x.lineTo(i*s,h); x.stroke(); x.beginPath(); x.moveTo(0,i*s); x.lineTo(w,i*s); x.stroke(); } } });
 yardBump.encoding=T.LinearEncoding; yardBump.wrapS=yardBump.wrapT=T.RepeatWrapping;
-const yard=mesh(new T.PlaneGeometry(78,(30+YX)*1.5),new T.MeshStandardMaterial({map:yardTex,roughness:.75}),0,.012,HZ+.2+(30+YX)*.75); /* 50 % bigger outward */ yard.rotation.x=-Math.PI/2; yard.userData.floor=true;
+const yard=mesh(new T.PlaneGeometry(51.2,YX+23.8),new T.MeshStandardMaterial({map:yardTex,roughness:.75}),0,.012,HZ+.2+(YX+23.8)/2); /* only inside the balustrade (x ±25.6, up to HZ+YX+24) — outside it is lawn now */ yardTex.repeat.set(17.5*51.2/78,10.5*(YX+23.8)/((30+YX)*1.5)); yard.rotation.x=-Math.PI/2; yard.userData.floor=true;
 /* ---- 外觀: real-looking materials drawn on the spot (no files to download) and a curved 燕尾 roof ---- */
 // red brick (紅磚) with pale mortar, each brick a slightly different red
 const brickTex=cvs(512,512,(x,w,h)=>{ x.fillStyle="#d9ccb4"; x.fillRect(0,0,w,h); const bw=64, bh=24;
@@ -1848,8 +1848,8 @@ setTimeout(()=>{ Object.assign(CENSER_INFO,{guanyin:["觀世音菩薩","後殿�
   for(const s of [-1,1]){ const f=plane(s>0?SHX0:-RS.x1,s>0?RS.x1:-SHX0,RY0,SHZ0,.012,new T.MeshStandardMaterial({map:texRep(yardTex,3,1.5),roughness:.75})); }
   for(const s of [-1,1]){ const L=SHZ0-RH.z0; box(.7,.22,L+.3,mat("#3a1d14",{roughness:.9}),s*(RS.x1+.2),3.5,(SHZ0+RH.z0)/2);
     /* the left wall has the gate out to 靜思禪院 in it: two wall pieces and a lintel over a 2.4 m opening */
-    const parts=s>0?[[RH.z0,SHZ0]]:[[RH.z0,ZEN.GZ0],[ZEN.GZ1,SHZ0]]; for(const [a,b] of parts){ const l=b-a; box(.4,3.4,l,brickM(l/2.6,1.3),s*(RS.x1+.2),1.7,(a+b)/2); box(.42,.5,l,stoneB,s*(RS.x1+.2),.25,(a+b)/2); }
-    if(s<0){ box(.4,.7,ZEN.GZ1-ZEN.GZ0,brickM(1,.35),-(RS.x1+.2),3.05,ZEN.GZ); } }
+    const parts=[[RH.z0,ZEN.GZ0],[ZEN.GZ1,SHZ0]]; /* both side walls have a gate now: 靜思禪院 on the left, 禪房 on the right */ for(const [a,b] of parts){ const l=b-a; box(.4,3.4,l,brickM(l/2.6,1.3),s*(RS.x1+.2),1.7,(a+b)/2); box(.42,.5,l,stoneB,s*(RS.x1+.2),.25,(a+b)/2); }
+    box(.4,.7,ZEN.GZ1-ZEN.GZ0,brickM(1,.35),s*(RS.x1+.2),3.05,ZEN.GZ); }
   // the back of the main hall, seen from the 後埕: brick with a stone base
   { const bp=mesh(new T.PlaneGeometry(HX*2,HH),brickM(9,3.8),0,HH/2,-HZ-.235); bp.rotation.y=Math.PI; box(HX*2,1.2,.1,stoneB,0,.6,-HZ-.3); }
 
@@ -2350,8 +2350,8 @@ function zenWalkable(x,z){ const G=ZEN.GZ;
   if(x<ZEN.BX0&&x>=ZEN.plat.x1&&Math.abs(z-G)<1.25) return true;                          /* stone path to the hall steps */
   const p=ZEN.plat; if(x>p.x0+.3&&x<p.x1+.2&&z>p.z0+.3&&z<p.z1-.3) return true; /* hall and veranda */
   return false; }
-{ const G=ZEN.GZ, root=new T.Group(); root.userData.noMerge=1; scene.add(root); ZEN.fence=root;
-  const g=new T.Group(); g.userData.noMerge=1; g.visible=false; scene.add(g); ZEN.g=g;
+{ const G=ZEN.GZ, root=new T.Group(); root.userData.noMerge=1; root.userData.noBuild=1; scene.add(root); ZEN.fence=root;
+  const g=new T.Group(); g.userData.noMerge=1; g.userData.noBuild=1; g.visible=false; scene.add(g); ZEN.g=g;
   const M4=new T.Matrix4(), Q4=new T.Quaternion(), S3=new T.Vector3(), V3=new T.Vector3(), E3=new T.Euler(), C3=new T.Color(), R=mulberry(7);
   function mulberry(a){ return ()=>{ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
   const rr=(a,b)=>a+(b-a)*R();
@@ -2362,6 +2362,9 @@ function zenWalkable(x,z){ const G=ZEN.GZ;
   /* ---- the gate in the 後埕 wall (the wall itself is split around it, see the wall code) and a small roofed frame on the outside ---- */
   for(const dz of [-1.32,1.32]){ box(.26,2.9,.26,darkWood,-23.62,1.45,G+dz,root); }
   box(.3,.24,3.2,darkWood,-23.62,2.84,G,root); { const rf=box(1.5,.12,3.9,tile,-23.7,3.12,G,root); rf.rotation.z=.08; }
+  for(const dz of [-1.32,1.32]){ box(.26,2.9,.26,darkWood,23.62,1.45,G+dz,root); } box(.3,.24,3.2,darkWood,23.62,2.84,G,root); { const rf=box(1.5,.12,3.9,tile,23.7,3.12,G,root); rf.rotation.z=-.08; }
+  { const pt2=cvs(256,64,(x,w,h)=>{ x.fillStyle="#2a1810"; x.fillRect(0,0,w,h); x.strokeStyle="#c9a24a"; x.lineWidth=4; x.strokeRect(4,4,w-8,h-8); x.fillStyle="#f3dfae"; x.font="bold 38px serif"; x.textAlign="center"; x.textBaseline="middle"; x.fillText("禪 房",w/2,h/2+2); });
+    for(const [dx,ry] of [[-.17,-Math.PI/2],[.17,Math.PI/2]]){ const pq=mesh(new T.PlaneGeometry(1.6,.4),new T.MeshStandardMaterial({map:pt2,roughness:.8}),23.62+dx,2.48,G,root); pq.rotation.y=ry; } }
   { const pt=cvs(256,64,(x,w,h)=>{ x.fillStyle="#2a1810"; x.fillRect(0,0,w,h); x.strokeStyle="#c9a24a"; x.lineWidth=4; x.strokeRect(4,4,w-8,h-8); x.fillStyle="#f3dfae"; x.font="bold 38px serif"; x.textAlign="center"; x.textBaseline="middle"; x.fillText("靜思禪院",w/2,h/2+2); });
     for(const [dx,ry] of [[-.17,-Math.PI/2],[.17,Math.PI/2]]){ const pq=mesh(new T.PlaneGeometry(1.6,.4),new T.MeshStandardMaterial({map:pt,roughness:.8}),-23.62+dx,2.48,G,root); pq.rotation.y=ry; } }
 
@@ -2506,7 +2509,7 @@ const SAKURA={};
   let seed=11; const R=()=>{ seed=(seed*16807)%2147483647; return seed/2147483647; }, rr=(a,b)=>a+(b-a)*R();
   const BX=25.6, BZ0=-50.5, BZ1=HZ+YX+24; /* the balustrade */
   const free=(x,z,m)=>{ const ax=Math.abs(x); if(ax<BX+m&&z>BZ0-m&&z<BZ1+m) return false; /* inside the grounds */
-    if(x<-23&&x>-78-m&&z>-52-m&&z<-4+m) return false; /* 靜思禪院 */ if(ax<22&&z>BZ1-2&&z<64) return false; /* the approach to the gate */
+    if(x<-23&&x>-78-m&&z>-52-m&&z<-4+m) return false; /* 靜思禪院 */ if(x>23&&x<60+m&&z>-52-m&&z<-4+m) return false; /* 禪房 */ if(ax<22&&z>BZ1-2&&z<64) return false; /* the approach to the gate */
     if(z>60&&ax<75) return false; /* the lake */ if(ax<16&&z<BZ0&&z>-84) return false; /* the big statue */ return true; };
   const dist=(x,z)=>{ const ax=Math.abs(x); const dx=Math.max(0,ax-BX), dz=Math.max(0,BZ0-z,z-BZ1); return Math.hypot(dx,dz); };
   const near=[], far=[]; const NN=Q.lite?60:130, NF=Q.lite?110:230;
@@ -2528,12 +2531,12 @@ const SAKURA={};
       cards.push([x+Math.cos(a)*u*r*(detail?1:.75)+lean*(y+1)*r*.4,cy+y*r*(detail?.85:.6)*vs,z+Math.sin(a)*u*r*(detail?1:.75)+lean*(y+1)*r*.25,rr(-.5,.5),rr(0,3.14),rr(-.4,.4),s,s,s,C3.set(pc).convertSRGBToLinear().offsetHSL(0,rr(-.05,.05),(y<-.2?-.08:0)+rr(-.07,.06)).getHex()]); } };
   near.forEach(([x,z,r])=>tree(x,z,r,true)); far.forEach(([x,z,r])=>tree(x,z,r,false)); SAKURA.spots=near.concat(far);
   const inst=(geo,m,list)=>{ const im=new T.InstancedMesh(geo,m,list.length); list.forEach((e,i)=>{ E3.set(e[3],e[4],e[5]); Q4.setFromEuler(E3); M4.compose(V3.set(e[0],e[1],e[2]),Q4,S3.set(e[6],e[7],e[8])); im.setMatrixAt(i,M4); im.setColorAt(i,C3.set(e[9])); });
-    im.instanceMatrix.needsUpdate=true; im.instanceColor.needsUpdate=true; im.frustumCulled=false; im.userData.noMerge=1; scene.add(im); return im; };
+    im.instanceMatrix.needsUpdate=true; im.instanceColor.needsUpdate=true; im.frustumCulled=false; im.userData.noMerge=1; im.userData.noBuild=1; scene.add(im); return im; };
   SAKURA.leaves=inst(cross,lm,cards); SAKURA.trunks=inst(new T.CylinderGeometry(.12,.2,1,6),new T.MeshStandardMaterial({roughness:.9,color:"#ffffff"}),trunks);
   SAKURA.count=[near.length,far.length,cards.length];
   /* their shadows on the lawn (one instanced mesh, moved with the sun every few seconds) */
   SAKURA.shMat=new T.MeshBasicMaterial({map:shadowTex,transparent:true,depthWrite:false,opacity:0}); const sg=new T.PlaneGeometry(1,1); sg.rotateX(-Math.PI/2);
-  SAKURA.sh=new T.InstancedMesh(sg,SAKURA.shMat,SAKURA.spots.length); SAKURA.sh.frustumCulled=false; SAKURA.sh.userData.noMerge=1; SAKURA.sh.position.y=.03; scene.add(SAKURA.sh); }
+  SAKURA.sh=new T.InstancedMesh(sg,SAKURA.shMat,SAKURA.spots.length); SAKURA.sh.frustumCulled=false; SAKURA.sh.userData.noMerge=1; SAKURA.sh.userData.noBuild=1; SAKURA.sh.position.y=.03; scene.add(SAKURA.sh); }
 
 /* ---- the mirror floor: the garden and hall drawn upside down into a texture each frame while you are inside (only the garden, at low resolution) ---- */
 function zenMirrorInit(){ if(ZEN.refl||Q.lite) return; const res=Q.low?256:512; const rt=new T.WebGLRenderTarget(res,res,{minFilter:T.LinearFilter,magFilter:T.LinearFilter}); rt.texture.encoding=T.sRGBEncoding;
@@ -2568,7 +2571,7 @@ const wxOutdoor=(x,z)=>{ let r="O"; try{ r=camRoom(x,z); }catch(e){} return r===
 /* ---- rain: short slanted lines falling round the camera, never under a roof ---- */
 const RAIN_N=Q.lite?320:Q.low?700:1300;
 const rainGeo=new T.BufferGeometry(), rainPos=new Float32Array(RAIN_N*6), rainD=new Float32Array(RAIN_N*4); rainGeo.setAttribute("position",new T.BufferAttribute(rainPos,3));
-const rainMat=new T.LineBasicMaterial({color:"#c4cedd",transparent:true,opacity:0,depthWrite:false}); const rainMesh=new T.LineSegments(rainGeo,rainMat); rainMesh.frustumCulled=false; rainMesh.userData.noMerge=1; rainMesh.visible=false; scene.add(rainMesh);
+const rainMat=new T.LineBasicMaterial({color:"#c4cedd",transparent:true,opacity:0,depthWrite:false}); const rainMesh=new T.LineSegments(rainGeo,rainMat); rainMesh.frustumCulled=false; rainMesh.userData.noMerge=1; rainMesh.userData.noBuild=1; rainMesh.visible=false; scene.add(rainMesh);
 function rainSpawn(i,c,top){ const x=c.x+(Math.random()-.5)*44, z=c.z+(Math.random()-.5)*44, y=top?c.y+8+Math.random()*10:c.y-6+Math.random()*24; rainD[i*4]=x; rainD[i*4+1]=y; rainD[i*4+2]=z; rainD[i*4+3]=wxOutdoor(x,z)?1:0; }
 /* ---- wind: petals and leaves blowing past ---- */
 const PET_N=Q.lite?80:Q.low?150:260;
@@ -2605,11 +2608,15 @@ function wxThunder(near){ const A=wxAudio(); if(!A||document.hidden||!soundOn) r
   const s2=src(.08), lp2=a.createBiquadFilter(), g2=a.createGain(); lp2.type="lowpass"; lp2.frequency.value=90; g2.gain.setValueAtTime(0,t0); g2.gain.linearRampToValueAtTime(1.1*v,t0+.12); g2.gain.exponentialRampToValueAtTime(.001,t0+dur*.8); s2.connect(lp2).connect(g2).connect(a.destination); s2.stop(t0+dur); }
 /* ---- wet floors: outdoor floors darken and get a glossy, mirror-like sheen (a still picture of the surroundings taken once) ---- */
 function wxWetInit(){ if(WX.wetMats) return; WX.wetMats=[]; const seen=new Set(); scene.traverse(o=>{ if(!o.isMesh||!o.userData||!o.userData.floor||o.userData.keepMat) return; const m=o.material; if(!m||!m.isMeshPhongMaterial||seen.has(m)) return; o.updateMatrixWorld(); const p=new T.Vector3(); o.getWorldPosition(p); if(!wxOutdoor(p.x,p.z)) return; seen.add(m); WX.wetMats.push({m,col:m.color.clone(),spec:m.specular.clone(),sh:m.shininess,em:m.emissive.clone()}); });
-  if(!Q.lite){ try{ const rt=new T.WebGLCubeRenderTarget(128,{generateMipmaps:true,minFilter:T.LinearMipmapLinearFilter}); const cc=new T.CubeCamera(.5,200,rt); cc.position.set(0,1.2,HZ+12); scene.add(cc); const was=[rainMesh.visible,petMesh.visible]; rainMesh.visible=petMesh.visible=false; cc.update(renderer,scene); rainMesh.visible=was[0]; petMesh.visible=was[1]; scene.remove(cc); WX.env=rt.texture;
+  if(!Q.lite){ try{ const rt=new T.WebGLCubeRenderTarget(64,{generateMipmaps:true,minFilter:T.LinearMipmapLinearFilter}); const cc=new T.CubeCamera(.5,200,rt); cc.position.set(0,1.2,HZ+12); cc.updateMatrixWorld(true); WX.cube={rt,cc,face:0,done:false}; WX.env=rt.texture;
     for(const q of WX.wetMats){ q.m.envMap=WX.env; q.m.combine=T.MixOperation; q.m.reflectivity=0; q.m.needsUpdate=true; } }catch(e){} } }
+/* one face of the reflection picture per frame, only while it is wet and not yet taken */
+function wxCubeStep(){ const C=WX.cube; if(!C||C.done) return; const i=C.face, cams=C.cc.children; const rt0=renderer.getRenderTarget(), was=[rainMesh.visible,petMesh.visible]; rainMesh.visible=petMesh.visible=false;
+  C.rt.texture.generateMipmaps=i===5; renderer.setRenderTarget(C.rt,i); renderer.render(scene,cams[i]); renderer.setRenderTarget(rt0); rainMesh.visible=was[0]; petMesh.visible=was[1]; C.face++; if(C.face>5) C.done=true; }
+setTimeout(()=>{ try{ wxWetInit(); }catch(e){} },9000); /* compile the shiny-floor shader early, while nothing is happening */
 function wxWet(w){ if(Math.abs(w-WX.wet)<.004) return; WX.wet=w; if(w>.01) wxWetInit(); if(!WX.wetMats) return;
   for(const q of WX.wetMats){ q.m.color.copy(q.col).multiplyScalar(1-.38*w); q.m.specular.copy(q.spec).lerp(_wc.setRGB(.55,.58,.64),w); q.m.shininess=q.sh+90*w; q.m.emissive.copy(q.em).multiplyScalar(1-.5*w); if(WX.env) q.m.reflectivity=.32*w; } }
-const _wc=new T.Color();
+const _wc=new T.Color(), _wv2=new T.Vector2();
 /* per frame, after dayNight: weather moves gently toward the target; lights, sky, effects and sound follow */
 function wxTick(dt){ WX.t+=dt; const show=(typeof FW!=="undefined"&&(FW.on||FW.pendingAt))||(typeof LAKE!=="undefined"&&LAKE.on)||(typeof FWED!=="undefined"&&FWED.on);
   const K=WX_KINDS[show?"clear":wxNow()], f=Math.min(1,dt*.08); WX.kind=show?"clear":wxNow(); WX.c+=(K.c-WX.c)*f; WX.r+=(K.r-WX.r)*f; WX.w+=(K.w-WX.w)*f; WX.th=K.th?1:0;
@@ -2625,7 +2632,7 @@ function wxTick(dt){ WX.t+=dt; const show=(typeof FW!=="undefined"&&(FW.on||FW.p
     for(let i=0;i<RAIN_N;i++){ let y=rainD[i*4+1]-sp*dt; rainD[i*4]+=sx*dt; rainD[i*4+2]+=sz*dt; if(y<0||Math.abs(rainD[i*4]-cam.x)>24||Math.abs(rainD[i*4+2]-cam.z)>24){ rainSpawn(i,cam,true); y=rainD[i*4+1]; } rainD[i*4+1]=y;
       const j=i*6, on=rainD[i*4+3]&&i<RAIN_N*r; if(!on){ rainPos[j+1]=rainPos[j+4]=-50; continue; } rainPos[j]=rainD[i*4]; rainPos[j+1]=y; rainPos[j+2]=rainD[i*4+2]; rainPos[j+3]=rainD[i*4]-sx*.03; rainPos[j+4]=y+L; rainPos[j+5]=rainD[i*4+2]-sz*.03; }
     rainGeo.attributes.position.needsUpdate=true; }
-  wxWet(Math.min(1,r*1.15));
+  wxWet(Math.min(1,r*1.15)); if(r>.05) wxCubeStep();
   /* petals and leaves */
   const pOn=w>.4; petMesh.visible=pOn; if(pOn){ if(!WX.petInit){ WX.petInit=1; for(let i=0;i<PET_N;i++) petSpawn(i,cam,false); } petMesh.material.opacity=Math.min(1,(w-.4)*2.5); const d=WX.dir;
     for(let i=0;i<PET_N;i++){ const j=i*3, s=petV[i*4]*(.6+w*.6), ph=petV[i*4+3]+=dt*3; petPos[j]+=(d.x*s+Math.sin(ph)*.6)*dt; petPos[j+2]+=(d.y*s+Math.cos(ph*.7)*.6)*dt; petPos[j+1]+=(petV[i*4+1]+Math.sin(ph*1.3)*.9-.25)*dt;
@@ -2635,10 +2642,13 @@ function wxTick(dt){ WX.t+=dt; const show=(typeof FW!=="undefined"&&(FW.on||FW.p
     g.rotation.x+=T0.spin.x*dt; g.rotation.y+=T0.spin.y*dt; g.rotation.z+=T0.spin.z*dt; if(T0.t>6){ scene.remove(g); g.traverse(o=>{ if(o.geometry) o.geometry.dispose(); }); WX.trash=null; } }
   else if(w>.6&&WX.t>WX.trashAt){ WX.trashAt=WX.t+25+Math.random()*35; if(WX.t>8&&wxOutdoor(cam.x,cam.z)) wxTrash(cam); }
   /* the demo visitors outside go home when it rains (new ones arrive indoors until it stops) */
-  if(r>.5&&WX.t>(WX.homeT||0)){ WX.homeT=WX.t+2; for(const n of npcs){ if(!n.isBot||n.leaving||n.classic||n.seat>=0) continue; if(wxOutdoor(n.pos.x,n.pos.y)&&Math.random()<.45){ n.sjq=null; /* walks off home under the umbrella (no more shrinking away) */
-      if(n.act>=0) stopAct(n); n.pauseT=0; n.saved=null; n.leaving=true; n.hold=0; n.danceT=0; n.anim=null; n.steps=[]; botStart(n,{leave:botExit(n)}); } } }
+  if(r>.5&&WX.t>(WX.homeT||0)){ WX.homeT=WX.t+2; for(let i=npcs.length-1;i>=0;i--){ const n=npcs[i]; if(!n.isBot||n.classic||n.seat>=0) continue; if(wxOutdoor(n.pos.x,n.pos.y)&&Math.random()<.45){ n.sjq=null; n.dispose(); npcs.splice(i,1); } } } /* the pretend players outside just log off, like real players closing the game */
   { const shut=r>.5; if(shut!==!!WX.shut){ WX.shut=shut; /* the outdoor stalls pack up in the rain: the 收驚 grannies and the fortune teller */
-      try{ if(FTB.g) FTB.g.visible=!shut; if(FTB.av) FTB.av.root.visible=!shut; SJ.g.forEach(g=>{ if(g.av) g.av.root.visible=!shut; }); if(shut&&mySj) sjLeaveQueue(); }catch(e){} } }
+      try{ if(FTB.g) FTB.g.visible=!shut; if(shut&&mySj) sjLeaveQueue(); if(!WX.home){ WX.home=[{av:FTB.av,home:[FTB.x-.95,FTB.z],ft:1},...SJ.g.map(g=>({av:g.av,home:[g.x,g.z],face:Math.PI/2}))].filter(o=>o.av); WX.home.forEach(o=>{ o.exit=[-22.5,o.home[1]+1.5]; }); }
+        WX.home.forEach(o=>{ const av=o.av; av.moveSpeed=1.5; if(shut){ av.target.set(...o.exit); av.path=[]; av.faceGoal=null; o.state="out"; } else { av.root.visible=true; av.pos.set(...o.exit); av.target.set(...o.home); av.path=[]; o.state="back"; } }); FTB.walk=true; }catch(e){} } }
+  if(WX.home) for(const o of WX.home){ const av=o.av; /* the 收驚 grannies and the fortune teller walk off home in the rain, and walk back when it clears */
+    if(o.state==="out"&&av.pos.distanceTo(_wv2.set(...o.exit))<.4){ av.root.visible=false; o.state="gone"; }
+    if(o.state==="back"&&av.pos.distanceTo(_wv2.set(...o.home))<.08){ o.state=""; av.faceGoal=Math.PI/2; if(o.ft) FTB.walk=false; } }
   { const hide=r>.5; if(hide!==!!CATS.rainHide){ CATS.rainHide=hide; if(hide){ CATS.wasOff=CATS.off; catsShow(false); } else if(!CATS.wasOff) catsShow(true); } } /* the cats shelter from the rain */
   if(typeof SAKURA!=="undefined"&&SAKURA.glowU) SAKURA.glowU.value=.12+.38*_dn.night; SWAY.t.value=WX.t; SWAY.w.value=.12+.95*w;
   /* sound */
@@ -2653,16 +2663,26 @@ const _zv=new T.Vector3(), _zc=new T.Color();
 const UMB={geo:null,stick:null,mats:[]};
 function umbTick(av,wet){ if(!av||!av.root) return; const need=wet&&av.root.visible&&av.seat<0&&!((av.flyCur||0)>.3)&&wxOutdoor(av.pos.x,av.pos.y);
   if(!need){ if(av.umb) av.umb.visible=false; return; }
-  if(!av.umb){ if(!UMB.geo){ UMB.geo=new T.SphereGeometry(.62,14,5,0,Math.PI*2,0,Math.PI/2.7); UMB.stick=new T.CylinderGeometry(.013,.013,.95,6); UMB.mats=["#c8263a","#2a6fc8","#f2c230","#2a9a5a","#7a3ab0","#f07aa8","#3a3a44","#f4f0e8"].map(c=>new T.MeshStandardMaterial({map:cvs(128,64,(x,w,h)=>{ /* eight panels, each a little lighter in the middle, ribs and a hem drawn in */
-      for(let k=0;k<8;k++){ const g=x.createLinearGradient(k*w/8,0,(k+1)*w/8,0); g.addColorStop(0,c); g.addColorStop(.5,"#ffffff22"); g.addColorStop(1,c); x.fillStyle=c; x.fillRect(k*w/8,0,w/8,h); x.fillStyle=g; x.fillRect(k*w/8,0,w/8,h); }
-      x.strokeStyle="rgba(30,20,20,.75)"; x.lineWidth=2; for(let k=0;k<=8;k++){ x.beginPath(); x.moveTo(k*w/8,0); x.lineTo(k*w/8,h); x.stroke(); } x.fillStyle="rgba(255,255,255,.55)"; x.fillRect(0,h-6,w,3); x.fillStyle="rgba(0,0,0,.35)"; x.fillRect(0,h-3,w,3); }),roughness:.6,side:T.DoubleSide})); }
+  if(!av.umb){ if(!UMB.geo){ UMB.geo=new T.SphereGeometry(.62,8,4,Math.PI/8,Math.PI*2,0,Math.PI/2.6); UMB.stick=new T.CylinderGeometry(.013,.013,.95,6); /* eight flat panels, like a real umbrella */
+      UMB.mats=["#c8263a","#2a5aa8","#e8b830","#3a3a44","#7a3ab0","#e87aa0","#2a8a8a","#f2eee6"].map(c=>new T.MeshStandardMaterial({color:c,roughness:.55,flatShading:true,side:T.DoubleSide,map:cvs(64,32,(x,w,h)=>{ x.fillStyle="#ffffff"; x.fillRect(0,0,w,h); x.fillStyle="rgba(0,0,0,.18)"; for(let k=0;k<8;k++) x.fillRect(Math.round(k*w/8),0,1,h); x.fillStyle="rgba(0,0,0,.22)"; x.fillRect(0,h-2,w,2); })})); }
     const g=new T.Group(), m=UMB.mats[((av.npcId||0)+(av.isMe?3:0)+(av.name?av.name.length:0))%UMB.mats.length]; const top=new T.Mesh(UMB.geo,m); top.position.y=.5; top.scale.y=.75; g.add(top);
     const st=new T.Mesh(UMB.stick,mat("#3a2a1a")); g.add(st); const tip=new T.Mesh(new T.SphereGeometry(.03,6,4),mat("#3a2a1a")); tip.position.y=.82; g.add(tip);
     const arm=av.arms&&av.arms[1], sd=arm?Math.sign(arm.position.x)||1:1; g.position.set(sd*.2,1.05,.16); g.rotation.z=-sd*.06; g.userData.noMerge=1; av.root.add(g); av.umb=g; av.umbArm=1; }
   av.umb.visible=true; }
 /* 影子: no shadow maps (too dear on phones). Each person's soft round shadow is stretched away from the sun, longer as it sinks, and the
    cherry trees get the same kind of soft shadow on the lawn; the sun light itself swings round with them. Fades out at dusk. */
-const SHD={dir:new T.Vector3(),len:0,op:0,t:0};
+const SHD={dir:new T.Vector3(),len:0,op:0,t:0,b:null};
+/* buildings, the burners and the wish tree cast a soft shadow on the ground away from the sun (no shadow maps: one soft quad each) */
+function shdBuild(){ const tex=cvs(64,64,(x,w,h)=>{ const g=x.createRadialGradient(32,32,8,32,32,34); g.addColorStop(0,"rgba(0,0,0,.85)"); g.addColorStop(.6,"rgba(0,0,0,.6)"); g.addColorStop(1,"rgba(0,0,0,0)"); x.fillStyle=g; x.fillRect(0,0,w,h); });
+  const rect=cvs(64,64,(x,w,h)=>{ x.fillStyle="#000"; x.fillRect(0,0,w,h); const d=x.getImageData(0,0,w,h); for(let j=0;j<h;j++) for(let i=0;i<w;i++){ const e=Math.min(i,j,w-1-i,h-1-j)/10; d.data[(j*w+i)*4+3]=Math.round(255*Math.min(1,e)*.8); } x.putImageData(d,0,0); });
+  SHD.mat=new T.MeshBasicMaterial({map:rect,transparent:true,depthWrite:false,opacity:0,polygonOffset:true,polygonOffsetFactor:-1}); SHD.matR=new T.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,opacity:0,polygonOffset:true,polygonOffsetFactor:-1});
+  const C=[]; const add=(x0,x1,z0,z1,h,round)=>{ const g=new T.PlaneGeometry(1,1); g.rotateX(-Math.PI/2); const m=new T.Mesh(g,round?SHD.matR:SHD.mat); m.position.y=.024; m.renderOrder=1; m.userData.noMerge=1; m.userData.noBuild=1; scene.add(m); C.push({x0,x1,z0,z1,h,round,m}); };
+  add(-HX,HX,-HZ,HZ,HH); for(const s of [-1,1]){ const a=s>0?SHX0:-SHX1, b=s>0?SHX1:-SHX0; add(a,b,SHZ0,SHZ1,SHH); add(s>0?GH.x0:-GH.x1,s>0?GH.x1:-GH.x0,GH.z0,GH.z1,GH.H); add(s>0?RS.x0:-RS.x1,s>0?RS.x1:-RS.x0,RS.z1,RS.z0,RS.H); }
+  add(-RH.x,RH.x,RH.z1,RH.z0,RH.H); add(FX-1.4,FX+1.4,FZ-1.4,FZ+1.4,FURN_H,true); add(TG.x-1.1,TG.x+1.1,TG.z-1.1,TG.z+1.1,3.4,true); add(WT.x-3,WT.x+3,WT.z-3,WT.z+3,6.5,true); SHD.b=C; }
+function shdPlace(ux,uz){ if(!SHD.b) shdBuild(); const L=SHD.len*.85;
+  for(const c of SHD.b){ const w=c.x1-c.x0, d=c.z1-c.z0, cx=(c.x0+c.x1)/2, cz=(c.z0+c.z1)/2, l=c.h*L;
+    if(c.round){ c.m.position.set(cx+ux*l*.5,.024,cz+uz*l*.5); c.m.rotation.y=Math.atan2(ux,uz); c.m.scale.set(w*1.1,1,d*1.1+l); continue; }
+    /* the part outside the footprint, mostly: the footprint pushed along the sun direction */ const sx=w+Math.abs(ux)*l, sz=d+Math.abs(uz)*l; c.m.rotation.y=0; c.m.position.set(cx+ux*l*.5,.024,cz+uz*l*.5); c.m.scale.set(sx,1,sz); } }
 function shadowTick(dt){ let p=(Date.now()/1000%TOD_LEN)/TOD_LEN; if(typeof window.MZ_TOD==="number") p=window.MZ_TOD; const day=_dn.day, k=Math.max(0,Math.min(1,p<.5?p/.42:1)); const el=(58-50*k*k)*Math.PI/180, az=-2.2+2.9*k;
   SHD.dir.set(Math.cos(az)*Math.cos(el),Math.sin(el),Math.sin(az)*Math.cos(el)); SHD.len=Math.min(4,1/Math.tan(el)); SHD.op=day*(1-.6*(typeof WX!=="undefined"?WX.c:0));
   if(day>.02) sunLight.position.copy(SHD.dir).multiplyScalar(40).lerp(_zv.copy(SUN).multiplyScalar(40).setY(16),1-day);
@@ -2670,11 +2690,13 @@ function shadowTick(dt){ let p=(Date.now()/1000%TOD_LEN)/TOD_LEN; if(typeof wind
   const each=av=>{ const sh=av&&av.shadow; if(!sh) return; const r=av.root.rotation.y, c=Math.cos(r), s=Math.sin(r), lx=ux*c-uz*s, lz=ux*s+uz*c; sh.rotation.y=Math.atan2(lx,lz); sh.scale.set(1,1,stretch); sh.position.x=lx*off; sh.position.z=lz*off; };
   const wet=typeof WX!=="undefined"&&WX.r>.45; const all=[meAv,...npcs]; if(typeof remotes!=="undefined") remotes.forEach(a=>all.push(a));
   for(const av of all){ each(av); umbTick(av,wet); }
+  if(SHD.op>.01){ if(!SHD.b||SHD.t<=0) shdPlace(ux,uz); } if(SHD.b){ SHD.mat.opacity=.42*SHD.op; SHD.matR.opacity=.5*SHD.op; for(const c of SHD.b) c.m.visible=SHD.op>.01; }
   if(typeof SAKURA!=="undefined"&&SAKURA.sh){ SAKURA.shMat.opacity=.55*SHD.op; SHD.t-=dt; if(SHD.t<=0&&SHD.op>.01){ SHD.t=3; const M=new T.Matrix4(), Qt=new T.Quaternion().setFromAxisAngle(_zv.set(0,1,0),Math.atan2(ux,uz)), S=new T.Vector3(), P=new T.Vector3();
-      SAKURA.spots.forEach(([x,z,r],i)=>{ const h=r*1.6+2; M.compose(P.set(x+ux*h*SHD.len*.35,0,z+uz*h*SHD.len*.35),Qt,S.set(r*2.1,1,r*2.1+h*SHD.len*.55)); SAKURA.sh.setMatrixAt(i,M); }); SAKURA.sh.instanceMatrix.needsUpdate=true; } SAKURA.sh.visible=SHD.op>.01; } }
+      SAKURA.spots.forEach(([x,z,r],i)=>{ const h=r*1.6+2; M.compose(P.set(x+ux*h*SHD.len*.35,0,z+uz*h*SHD.len*.35),Qt,S.set(r*2.1,1,r*2.1+h*SHD.len*.55)); SAKURA.sh.setMatrixAt(i,M); }); SAKURA.sh.instanceMatrix.needsUpdate=true; } SAKURA.sh.visible=false; } else if(SHD.t<=0) SHD.t=3; }
 /* the round build-mode trees that ended up out where the garden is (they looked odd there): hidden before the static merge, so they are not baked in */
 function zenHideTrees(){ for(const o of scene.children){ if(!(o.userData&&o.userData.buildId&&/^g-X-/.test(o.userData.buildId))) continue; let hit=false; o.updateMatrixWorld(true); o.traverse(m=>{ if(hit||!(m.isMesh||m.isPoints)) return; m.getWorldPosition(_zv); if((_zv.x<-26&&_zv.z<9)||Math.abs(_zv.x)>26.5||_zv.z<-51.5||_zv.z>HZ+YX+25) hit=true; /* (and every one outside the balustrade: the cherry trees stand there now) */ }); if(hit) o.visible=false; } }
-function zenTick(dt){ { const b=$("#zenMusicBtn"), want=!!(meAv&&meAv.pos.x<-23.5); if(b&&b.hidden===want) b.hidden=!want; } const c=camera.position, near=(c.x<-14&&c.z<-8&&c.z>-54)||c.x<-24, me=meAv&&meAv.pos;
+function zenTick(dt){ { const b=$("#zenMusicBtn"), want=!!(meAv&&meAv.pos.x<-23.5); if(b&&b.hidden===want) b.hidden=!want; const w=$("#zenWideBtn"); if(w&&w.hidden===want) w.hidden=!want;
+    if(!LAKE.on&&!fwView&&!FWED.on){ const base=window.innerWidth<window.innerHeight?62:52, f=(want&&ZEN.wide)?base+26:base; if(Math.abs(camera.fov-f)>.2){ camera.fov+=(f-camera.fov)*Math.min(1,dt*4); camera.updateProjectionMatrix(); } } } const c=camera.position, near=(c.x<-14&&c.z<-8&&c.z>-54)||c.x<-24, me=meAv&&meAv.pos;
   if(ZEN.g.visible!==near){ ZEN.g.visible=near; }
   ZEN.t=(ZEN.t||0)+dt; if((ZEN.hideT=(ZEN.hideT||0)-dt)<0){ ZEN.hideT=3;  }
   if(!near) return;
@@ -2701,7 +2723,7 @@ function zenTick(dt){ { const b=$("#zenMusicBtn"), want=!!(meAv&&meAv.pos.x<-23.
        Square posts with a lotus cap every 2.2 m, a plinth and a top rail, vase balusters in between — five instanced meshes in all */
     const stone=new T.MeshStandardMaterial({color:new T.Color("#e9e5dc"),roughness:.82}), stone2=new T.MeshStandardMaterial({color:new T.Color("#d9d3c7"),roughness:.9});
     const Z0=RH.z1-2.5, Z1=HZ+YX+24, X=25.6, GATE=8.5, SEG=2.2, H=1.3;
-    const runs=[[-X,Z0,-X,ZEN.GZ-1.4],[-X,ZEN.GZ+1.4,-X,Z1],[X,Z0,X,Z1],[-X,Z0,X,Z0],[-X,Z1,-GATE,Z1],[GATE,Z1,X,Z1]]; const posts=[], segs=[];
+    const runs=[[-X,Z0,-X,ZEN.GZ-1.4],[-X,ZEN.GZ+1.4,-X,Z1],[X,Z0,X,ZEN.GZ-1.4],[X,ZEN.GZ+1.4,X,Z1],[-X,Z0,X,Z0],[-X,Z1,-GATE,Z1],[GATE,Z1,X,Z1]]; const posts=[], segs=[];
     for(const [x0,z0,x1,z1] of runs){ const L=Math.hypot(x1-x0,z1-z0), n=Math.max(1,Math.round(L/SEG)); for(let i=0;i<=n;i++){ const t=i/n; posts.push([x0+(x1-x0)*t,z0+(z1-z0)*t]); if(i<n) segs.push([x0+(x1-x0)*t,z0+(z1-z0)*t,x0+(x1-x0)*(i+1)/n,z0+(z1-z0)*(i+1)/n]); } }
     const seen=new Set(), P=posts.filter(([x,z])=>{ const k=Math.round(x*10)+","+Math.round(z*10); if(seen.has(k)) return false; seen.add(k); return true; });
     const lathe=new T.LatheGeometry([[.001,0],[.07,0],[.075,.06],[.05,.12],[.085,.34],[.095,.5],[.06,.66],[.045,.72],[.075,.78],[.001,.8]].map(([x,y])=>new T.Vector2(x,y)),8);
@@ -3113,7 +3135,7 @@ class Avatar{
     if(dist>.04){ walking=true; const step=Math.min(dist,speed*dt*(this.isMe||this.moveSpeed!=null?1:Math.min(3,1+dist))); this.pos.add(d.multiplyScalar(step/dist)); const want=Math.atan2(this.target.x-this.pos.x,this.target.y-this.pos.y); this.rotY=lerpAngle(this.rotY,want,Math.min(1,dt*10)); }
     else if(this.seat>=0||this.faceGoal!=null){ this.rotY=lerpAngle(this.rotY,this.seat>=0?(SEATS[this.seat]&&SEATS[this.seat].face!=null?SEATS[this.seat].face:Math.PI):this.faceGoal,Math.min(1,dt*6)); }
     const kneelGoal=(!walking&&this.seat>=0)?1:0; this.kneel+= (kneelGoal-this.kneel)*Math.min(1,dt*6);
-    const zenK=(this.seat>=0&&SEATS[this.seat]&&SEATS[this.seat].zen)?this.kneel:0; this.root.position.set(this.pos.x,groundH(this.pos.x,this.pos.y)+.1*zenK,this.pos.y); this.root.rotation.y=this.rotY; flyTick(this,dt);
+    const ST=this.seat>=0?SEATS[this.seat]:null, zenK=(ST&&ST.zen)?this.kneel:0, innK=(ST&&ST.inn)?this.kneel:0; this.root.position.set(this.pos.x,(typeof groundAt==="function"?groundAt(this,this.pos.x,this.pos.y):groundH(this.pos.x,this.pos.y))+.1*zenK+(innK?ST.lift*innK:0),this.pos.y); this.root.rotation.y=this.rotY; flyTick(this,dt);
     const stride=walking&&!((this.flyCur||0)>.3); /* in the air on the cloud the legs stay still */ const k=this.kneel, w=stride?Math.sin(this.t*(this.walkCadence||11)):0;
     this.hips.position.y=.3-.08*k+(stride?Math.abs(Math.cos(this.t*(this.walkCadence||11)))*.025:0)+(k>.5?.06:0)*k;
     this.legs[0].rotation.x= w*.55*(1-k)+1.45*k; this.legs[1].rotation.x=-w*.55*(1-k)+1.45*k;
@@ -3137,7 +3159,11 @@ class Avatar{
     if(zenK>.01){ /* 盤坐: sitting cross-legged on the round cushion, hands resting together in the lap */ const z=zenK;
       this.hips.position.y=.3-.13*z; for(let i=0;i<2;i++){ const L=this.legs[i]; if(L.rotation.order!=="YXZ") L.rotation.order="YXZ"; const sd=Math.sign(L.position.x)||(i?1:-1); L.rotation.x=-1.42*z; L.rotation.y=-sd*.95*z; L.rotation.z=0; }
       this.arms[0].rotation.x=-.75*z; this.arms[1].rotation.x=-.75*z; this.arms[0].rotation.z=.5*z; this.arms[1].rotation.z=-.5*z; this.torso.rotation.x=0; this.head.rotation.x=.12*z; }
+    else if(innK>.01){ const z=innK, kd=ST.kind; /* 禪房: lying on a bed or futon, or sitting on the toilet / in the bath */
+      if(kd==="bed"||kd==="futon"){ this.parts.rotation.x=-Math.PI/2*z; this.parts.position.set(0,.12*z,-.15*z); this.hips.position.y=.3; this.legs[0].rotation.x=this.legs[1].rotation.x=0; this.arms[0].rotation.x=this.arms[1].rotation.x=.1; this.arms[0].rotation.z=-.15; this.arms[1].rotation.z=.15; this.torso.rotation.x=0; this.innLie=1; }
+      else { this.hips.position.y=.3; this.legs[0].rotation.x=this.legs[1].rotation.x=-1.5*z; this.arms[0].rotation.x=this.arms[1].rotation.x=-.3; this.torso.rotation.x=0; } }
     else if(this.legs[0].rotation.y||this.legs[1].rotation.y){ this.legs[0].rotation.y=this.legs[1].rotation.y=0; }
+    if(!(innK>.01)&&this.innLie){ this.innLie=0; this.parts.rotation.set(0,0,0); this.parts.position.set(0,0,0); }
     if(this.umb&&this.umb.visible&&!holding){ const a=this.arms[this.umbArm||1], sd=Math.sign(a.position.x)||1; a.rotation.x=-2.3; a.rotation.z=-sd*.25; } /* holding the umbrella up */
     if(this.danceT>0&&!holding){ // same timeline as the cats, so everyone moves together
       const P=4, cyc=CATS.t%(P*3), ph=Math.floor(cyc/P), tt=CATS.t*1.25;
@@ -3175,6 +3201,8 @@ function dirArrowTick(close){ if(!meAv) return; if(!dirArrow){ const tex=cvs(128
     dirArrow=new T.Mesh(new T.PlaneGeometry(1.1,1.1),new T.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,opacity:.3})); dirArrow.rotation.set(-Math.PI/2,0,Math.PI); dirArrow.position.y=.03; dirArrow.renderOrder=2; meAv.root.add(dirArrow); }
   if(dirArrow.parent!==meAv.root) meAv.root.add(dirArrow); dirArrow.material.opacity=.22+.6*close; dirArrow.visible=!customizing&&!(meAv.flyCur>.3); }
 function camOK(x,y,z){ if(y<.35) return false; const ax=Math.abs(x);
+  if(x>23.3&&z>-52&&z<-4){ const up=(meAv.gy||0)>2.3; if(innIn(x,z)){ if(up) return x<INN.SX1?(y>INN.F2+.7&&y<INN.F2+.36+INN.H2-.2):(y>INN.F2+.7&&y<16); return y<INN.H1-.2; } if(up&&x>=INN.RX0) return y>INN.F2+.5&&y<16; return y<20; }
+  if(x<-23.3&&z>ZEN.Z0-1&&z<ZEN.Z1+1){ if(zenPlat(x,z)&&x>ZEN.hall.x0&&x<ZEN.hall.x1&&z>ZEN.hall.z0&&z<ZEN.hall.z1) return y<ZEN.FY+3.3; return y<20; }
   if(z<-15.25){ // 後埕 (open sky), then the 後殿 and its 側殿
     if(z>RH.z0+.25) return ax<RS.x1-.15&&y<15&&!(ax<2.6&&z>-17.9&&y<4);
     if(z>RH.z0-.3){ if(ax<RH.x) return (Math.abs(ax-RH.door)<.85&&y<3.2)||(ax<1.4&&y>1.1&&y<3.9); return Math.abs(ax-RS.cx)<.75&&y<2.5; }      // through the front door / a moon gate
@@ -3191,7 +3219,7 @@ function camOK(x,y,z){ if(y<.35) return false; const ax=Math.abs(x);
   if(ax>GH.x0-.1&&z>SHZ1+.3&&z<GH.z1+.3){ if(z>GH.z1-.25) return Math.abs(ax-SHXC)<1.0&&y<2.8; return ax>GH.x0+.3&&ax<GH.x1-.3&&y<GH.H-.3; } // the joined garden-path hall
   return ax<25.5&&y<16; }
 // which room a point is in ("O" = outdoors); indoors the camera never leaves your room through a doorway
-function camRoom(x,z){ const ax=Math.abs(x);
+function camRoom(x,z){ const ax=Math.abs(x); if(x>23.3&&z>-52&&z<-4){ if((typeof meAv!=="undefined"&&meAv&&(meAv.gy||0)>2.3)){ const i=innSuiteAt(x,z); return i>=0&&x>INN.CX1+.1?"RS"+i:"O"; } if(innIn(x,z)) return x<41?"RL":(z>-27.5?"RD":"RO"); return "O"; }
   if(ax<HX&&z>-HZ&&z<HZ) return "M"; if(ax>SHX0&&ax<SHX1+.2&&z>SHZ0&&z<SHZ1) return "S"+Math.sign(x); if(ax>GH.x0&&ax<GH.x1+.2&&z>SHZ1&&z<GH.z1) return "G"+Math.sign(x);
   if(ax<RH.x&&z<RH.z0&&z>RH.z1) return "H"; if(ax>RS.x0&&ax<RS.x1+.2&&z<RS.z0&&z>RS.z1) return "Q"+Math.sign(x); return "O"; }
 function camLimit(from,to,out){ if(myFly) return out.copy(to); let lo=0; const N=24; const room0=camRoom(from.x,from.z); // inside a 偏殿 the camera stays indoors (it used to slip out the garden door and end up behind the trees)
@@ -3295,15 +3323,18 @@ function onTap(cx,cy){ ensureAudio(); if(customizing) return; if(sheetKind){ clo
   let o=h.object, act=null; while(o){ if(o.userData&&o.userData.act){ act=o.userData.act; break; } o=o.parent; }
   if(act&&act.startsWith("sj:")){ sjTap(+act.slice(3)); return; }
   if(act&&act.startsWith("thanks:")){ openThanks(+act.split(":")[1]); return; }
+  if(act&&act.startsWith("iseat:")){ trySit(+act.slice(6)); return; }
+  if(act&&act.startsWith("innTv:")){ const t=INN.tv[+act.slice(6)]; if(t){ t.on=!t.on; if(t.on){ t.m.material.color.set("#ffffff"); innTvDraw(t); t.at=INN.t||0; toast("電視打開了：小幽靈輪播",1800); } else { t.m.material.color.set("#222222"); toast("電視關了",1200); } } return; }
+  if(act&&act.startsWith("innShower:")){ const sh=INN.shower[+act.slice(10)]; if(sh){ if(innLockedBy(sh.i)==="other"&&innSuiteAt(meAv.pos.x,meAv.pos.y)!==sh.i){ toast("這間套房有人鎖門了",2400); return; } tapGy=INN.F2; walkTo(sh.x,sh.z); sh.on=12; toast("嘩啦啦～洗個熱水澡",2200); } return; }
   if(act==="altar") act="altar";
   if(act&&stations[act]||act==="altar"){ goStation(act); return; }
   if(h.object===cushions&&h.instanceId!=null){ trySit(h.instanceId); return; }
   if(h.object===ZEN.cush&&h.instanceId!=null){ trySit(ZEN.s0+h.instanceId); return; }
-  if(h.object.userData.floor){ if(h.object===floor&&h.point.z<-9.6&&Math.abs(h.point.x)<3){ goStation("altar"); return; } const c=myFly?flyClamp(h.point.x,h.point.z):clampSpot(h.point.x,h.point.z); walkTo(c[0],c[1]); } }
+  if(h.object.userData.floor){ tapGy=h.point.y>3?INN.F2:0; tapGyS=tapGy>0?innSuiteAt(h.point.x,h.point.z):-1; if(h.object===floor&&h.point.z<-9.6&&Math.abs(h.point.x)<3){ goStation("altar"); return; } const c=myFly?flyClamp(h.point.x,h.point.z):clampSpot(h.point.x,h.point.z); walkTo(c[0],c[1]); } }
 const isIn=z=>z<HZ;
 // zones: M main hall, C courtyard, S± side hall, P± garden path; doors link them
-function zoneOf(x,z){ if(x<-23.3&&z>ZEN.Z0-1&&z<ZEN.Z1+1) return "Z"; const ax=Math.abs(x), sd=x<0?"-":"+"; if(z>=HZ+.1) return "C"; if(z<RH.z0) return ax<RH.x?"H":"Q"+sd; if(z<RY0) return "B"; if(ax>=12.2&&z<SHZ0-.05) return "K"+sd; if(ax<12.2) return "M"; if(ax>=GH.x0&&ax<GH.x1&&z>SHZ1&&z<GH.z1&&Math.abs(ax-SHXC)>1.1) return "G"+sd; /* inside a garden-path hall, off the path */ return (z<SHZ1?"S":"P")+sd; }
-const ZRECT={Z:[ZEN.X0+1,-23.4,ZEN.Z0+1,ZEN.Z1-1],M:[-11,11,-9.5,HZ-.6],C:[-22,22,HZ+.7,HZ+YX+20.4],"S+":[12.9,SHX1-3.2,SHZ0+.7,-2],"S-":[-(SHX1-3.2),-12.9,SHZ0+.7,-2],"P+":[SHXC-1,SHXC+1,-.7,HZ+.6],"P-":[-SHXC-1,-SHXC+1,-.7,HZ+.6],
+function zoneOf(x,z){ if(x<-23.3&&z>ZEN.Z0-1&&z<ZEN.Z1+1) return "Z"; if(x>23.3&&z>-52&&z<-4) return "R"; const ax=Math.abs(x), sd=x<0?"-":"+"; if(z>=HZ+.1) return "C"; if(z<RH.z0) return ax<RH.x?"H":"Q"+sd; if(z<RY0) return "B"; if(ax>=12.2&&z<SHZ0-.05) return "K"+sd; if(ax<12.2) return "M"; if(ax>=GH.x0&&ax<GH.x1&&z>SHZ1&&z<GH.z1&&Math.abs(ax-SHXC)>1.1) return "G"+sd; /* inside a garden-path hall, off the path */ return (z<SHZ1?"S":"P")+sd; }
+const ZRECT={R:[23.4,58,-50,-6],Z:[ZEN.X0+1,-23.4,ZEN.Z0+1,ZEN.Z1-1],M:[-11,11,-9.5,HZ-.6],C:[-22,22,HZ+.7,HZ+YX+20.4],"S+":[12.9,SHX1-3.2,SHZ0+.7,-2],"S-":[-(SHX1-3.2),-12.9,SHZ0+.7,-2],"P+":[SHXC-1,SHXC+1,-.7,HZ+.6],"P-":[-SHXC-1,-SHXC+1,-.7,HZ+.6],
   "K+":[12.7,RS.x1-.5,RY0+.2,SHZ0-.4],"K-":[-RS.x1+.5,-12.7,RY0+.2,SHZ0-.4],B:[-RS.x1+.5,RS.x1-.5,RH.z0+.5,RY0-.3],
   H:[-RH.x+.5,RH.x-.5,RH_WALK,RH.z0-.5],"Q+":[RS.x0+.6,RS.x1-.6,-38.4,RS.z0-.5],"Q-":[-RS.x1+.6,-RS.x0-.6,-38.4,RS.z0-.5],"G+":[SHXC+1.1,GH.x1-.6,SHZ1+.5,GH.z1-.5],"G-":[-(GH.x1-.6),-(SHXC+1.1),SHZ1+.5,GH.z1-.5]};
 const ZLINK={M:["S+","S-","C"],C:["M","P+","P-"],"S+":["P+","M","K+"],"S-":["P-","M","K-"],"P+":["S+","C","G+"],"P-":["S-","C","G-"],"G+":["P+"],"G-":["P-"],"K+":["S+","B"],"K-":["S-","B"],B:["K+","K-","H","Q+","Q-","Z"],Z:["B"],H:["B","Q+","Q-"],"Q+":["B","H"],"Q-":["B","H"]};
@@ -3321,7 +3352,7 @@ function doorPts(a,b,fx,tx,fz){ const key=a+">"+b, s=(a+b).includes("-")?-1:1; c
   if(a==="M") return [[s*11,BGZ],[s*13.2,BGZ]]; if(b==="M") return [[s*13.2,BGZ],[s*11,BGZ]];
   if(a[0]==="S") return [[s*SHXC,-2.1],[s*SHXC,-.5]]; if(b[0]==="S") return [[s*SHXC,-.5],[s*SHXC,-2.1]];
   if(a[0]==="P") return [[s*SHXC,HZ+.2],[s*SHXC,HZ+1.2]]; return [[s*SHXC,HZ+1.2],[s*SHXC,HZ+.2]]; }
-function walkable(x,z){ if(x<-22.6) return zenWalkable(x,z); if(opInside(x,z)||ptInside(x,z)) return false; if(Math.hypot(x-WT.x,z-WT.z)<2.4) return false; /* the cherry tree's stone ring */ const ax=Math.abs(x);
+function walkable(x,z){ if(x<-22.6) return zenWalkable(x,z); if(x>22.75) return innWalkable(x,z); if(opInside(x,z)||ptInside(x,z)) return false; if(Math.hypot(x-WT.x,z-WT.z)<2.4) return false; /* the cherry tree's stone ring */ const ax=Math.abs(x);
   if(ax<=11&&z>=-9.5&&z<=HZ-.6) return true; if(Math.abs(ax-FD.x)<.8&&z>HZ-.7&&z<HZ+.8) return true; if(ax<=22&&z>=HZ+.7&&z<=HZ+YX+18) return true; if(ax>=4.5&&ax<=17&&z>HZ+YX+18&&z<=HZ+YX+20.6) return true;
   if(ax>10.9&&ax<13&&Math.abs(z-BGZ)<1.1) return true; if(ax>=12.9&&ax<=SHX1-3.2&&z>=SHZ0+.7&&z<=-2) return true;
   if(Math.abs(ax-SHXC)<=.9&&z>=-2.2&&z<=HZ+.8) return true;
@@ -3336,17 +3367,23 @@ function walkable(x,z){ if(x<-22.6) return zenWalkable(x,z); if(opInside(x,z)||p
   return false; }
 function clampSpot(x,z){ if(Math.abs(x)<4.5&&z>HZ+YX+17.8) z=HZ+YX+17.8; if(z<RY0&&z>RH.z0&&Math.abs(x)<2.65&&z>-18.1) z=-18.2; for(const [px,pz] of RPINE){ const d=Math.hypot(x-px,z-pz); if(z<RY0&&d<1.05){ x=px+(x-px)/(d||1)*1.1; z=pz+(z-pz)/(d||1)*1.1; } } // in front of the fountain, not into it
   if(opInside(x,z)){ const o=opRect(); z=z<OP.z?o.z0-.3:o.z1+.3; } if(ptInside(x,z)){ const o=ptRect(); z=z<PT.z?o.z0-.3:o.z1+.3; } const r=ZRECT[zoneOf(x,z)]; return [Math.max(r[0],Math.min(r[1],x)),Math.max(r[2],Math.min(r[3],z))]; }
-function planPath(fx,fz,tx,tz){ const a=zoneOf(fx,fz), b=zoneOf(tx,tz); if(a===b){ if(a==="Z"){ const HX0=ZEN.plat.x1+.4; if((fx>HX0)!==(tx>HX0)) return [[HX0,ZEN.GZ],[tx,tz]]; } return [[tx,tz]]; }
+function planPath(fx,fz,tx,tz,fg,tg){ const a0=zoneOf(fx,fz), b0=zoneOf(tx,tz); fg=fg||0; tg=tg||0; const G=INN.G;
+  if(a0==="R"||b0==="R"){ /* the guest house: through the right gate, then along its own routes (both levels) */
+    if(a0==="R"&&b0==="R") return innRoute(fx,fz,fg,tx,tz,tg);
+    if(a0==="R") return innRoute(fx,fz,fg,24.3,G,0).concat([[23.6,G],[22.1,G]],planPath(22.1,G,tx,tz));
+    return planPath(fx,fz,22.1,G).slice(0,-1).concat([[22.1,G],[23.6,G]],innRoute(24.3,G,0,tx,tz,tg)); }
+  const a=a0, b=b0; if(a===b){ if(a==="Z"){ const HX0=ZEN.plat.x1+.4; if((fx>HX0)!==(tx>HX0)) return [[HX0,ZEN.GZ],[tx,tz]]; } return [[tx,tz]]; }
   const prev={[a]:null}, q=[a]; while(q.length){ const z=q.shift(); if(z===b) break; for(const n of (tx<0?ZLINK[z].slice().reverse():ZLINK[z])) if(!(n in prev)){ prev[n]=z; q.push(n); } }
   const chain=[]; for(let z=b;z;z=prev[z]) chain.unshift(z); const pts=[]; for(let k=0;k<chain.length-1;k++) pts.push(...doorPts(chain[k],chain[k+1],fx,tx,k===0?fz:null)); pts.push([tx,tz]); return opDetour([fx,fz],pts); }
 // with the opera stage out, a straight line across the courtyard that would cut through it goes round the nearer side instead
 function opDetour(start,pts){ if(!OP||!OP.on) return pts; const o=opRect(), out=[]; let p=start;
   for(const q of pts){ const zl=Math.min(p[1],q[1]), zh=Math.max(p[1],q[1]); if(zl<o.z1&&zh>o.z0){ const xm=(p[0]+q[0])/2; if(xm>o.x0-1&&xm<o.x1+1&&!(opInside(p[0],p[1])||opInside(q[0],q[1]))){ const sx=xm<OP.x?o.x0-.5:o.x1+.5; const n=p[1]<q[1]; out.push([sx,n?o.z0-.3:o.z1+.3],[sx,n?o.z1+.3:o.z0-.3]); } } out.push(q); p=q; } return out; }
 station("altar",[0,-9.35],Math.PI);
-function walkTo(x,z,stationKey){ if(sjGuard(()=>walkTo(x,z,stationKey))) return; closeSheet(); if(!stationKey) showTap(x,z); else { const st=stations[stationKey]; showTap(st.approach.x,st.approach.y); } const pth=myFly?[flyClamp(x,z)]:planPath(meAv.pos.x,meAv.pos.y,x,z); meAv.moveTo(pth[0][0],pth[0][1]); meAv.path=pth.slice(1); meAv.faceGoal=null; pendingStation=stationKey||null; meAv.hold=meAv.hold&&!stationKey?meAv.hold:meAv.hold; markDirty(); updateStandBtn(); }
+let tapGy=0, tapGyS=-1;
+function walkTo(x,z,stationKey){ if(sjGuard(()=>walkTo(x,z,stationKey))) return; closeSheet(); if(!stationKey) showTap(x,z); else { const st=stations[stationKey]; showTap(st.approach.x,st.approach.y); } const pth=myFly?[flyClamp(x,z)]:planPath(meAv.pos.x,meAv.pos.y,x,z,meAv.gy||0,tapGy); tapGy=0; if(!myFly&&zoneOf(x,z)==="R"){ const si=tapGyS; tapGyS=-1; if(si>=0&&innLockedBy(si)==="other"&&innSuiteAt(meAv.pos.x,meAv.pos.y)!==si){ toast("這間套房有人鎖門了",2400); return; } } meAv.moveTo(pth[0][0],pth[0][1]); meAv.path=pth.slice(1); meAv.faceGoal=null; pendingStation=stationKey||null; meAv.hold=meAv.hold&&!stationKey?meAv.hold:meAv.hold; markDirty(); updateStandBtn(); }
 function goStation(k){ const s=stations[k]; walkTo(s.approach.x,s.approach.y,k); toast(STATION_HINT[k]); }
-const STATION_HINT={xuantian:"走向玄天上帝",guangong:"走向關聖帝君",cats:"走向小貓",fountain:"走向觀音噴泉",wish:"走向許願樹",jieqian:"走向解籤處",tiangong:"走向天公爐",caishen:"走向財神爺",yuelao:"走向月老",huye:"走向虎爺",lamp:"走向光明燈",lampR:"走向光明燈",bell:"走去敲鐘",drum:"走去擊鼓",altar:"走向供桌",lot:"走向籤詩櫃",shop:"走向服務處",burn:"走向金爐",donate:"走向香油錢箱"};
-function trySit(i){ if(sjGuard(()=>trySit(i))) return; if(seatTakenByPeer(i)){ toast("這個拜墊已經有人了"); return; } closeSheet(); showTap(SEATS[i].x,SEATS[i].y); pendingStation=null; meAv.sitAt(i); { const pth=planPath(meAv.pos.x,meAv.pos.y,SEATS[i].x,SEATS[i].y); meAv.target.set(pth[0][0],pth[0][1]); meAv.path=pth.slice(1); } meAv.faceGoal=null; npcYield(i); markDirty(); updateStandBtn(); }
+const STATION_HINT={innDesk:"走向禪房櫃台",xuantian:"走向玄天上帝",guangong:"走向關聖帝君",cats:"走向小貓",fountain:"走向觀音噴泉",wish:"走向許願樹",jieqian:"走向解籤處",tiangong:"走向天公爐",caishen:"走向財神爺",yuelao:"走向月老",huye:"走向虎爺",lamp:"走向光明燈",lampR:"走向光明燈",bell:"走去敲鐘",drum:"走去擊鼓",altar:"走向供桌",lot:"走向籤詩櫃",shop:"走向服務處",burn:"走向金爐",donate:"走向香油錢箱"};
+function trySit(i){ if(sjGuard(()=>trySit(i))) return; { const S0=SEATS[i]; statInc("sit_"+(S0&&(S0.kind||(S0.zen?"zen":""))||"mat")); } { const S=SEATS[i]; if(S&&S.kind==="futon"&&!(bag.gd&&bag.gd.bedding)){ toast("先到櫃台跟阿姨領床具，才能鋪床睡覺喔",3000); return; } if(S&&S.suite!=null&&innLockedBy(S.suite)==="other"){ toast("這間套房有人鎖門了",2400); return; } } if(seatTakenByPeer(i)){ toast("這個拜墊已經有人了"); return; } closeSheet(); showTap(SEATS[i].x,SEATS[i].y); pendingStation=null; meAv.sitAt(i); { const pth=planPath(meAv.pos.x,meAv.pos.y,SEATS[i].x,SEATS[i].y,meAv.gy||0,SEATS[i].gy||0); meAv.target.set(pth[0][0],pth[0][1]); meAv.path=pth.slice(1); } meAv.faceGoal=null; npcYield(i); markDirty(); updateStandBtn(); }
 /* the small dot above the joystick: camera back behind your character at the normal height and distance */
 $("#camReset").onclick=()=>{ rotAnim={to:camYaw+wrapA(meAv.rotY+Math.PI-camYaw)}; camPitch=.3; camDist=4.6; };
 function arrivedCheck(){ if(pendingStation&&!(meAv.path&&meAv.path.length)&&meAv.pos.distanceTo(meAv.target)<.05){ const k=pendingStation; pendingStation=null; meAv.faceGoal=stations[k].face; { const want=stations[k].face+Math.PI; rotAnim={to:camYaw+wrapA(want-camYaw)}; camPitch=Math.max(camPitch,.28); } if(AUTO.on) AUTO.arrived=k; else openStation(k); } }
@@ -3356,7 +3393,7 @@ function updateStandBtn(){ $("#standBtn").hidden=meAv.seat<0||customizing; }
 /* ================= NPC demo worshippers ================= */
 let showNpc=true; /* the kneeling demo worshippers are always there now (the old switch is gone) */ const npcs=[];
 function randomLook(allowChair=false){ return sanitizeLook(LOOK_RANGE.map((n,i)=>(i===11||i===12)?(Math.random()<.6?0:Math.floor(Math.random()*n)):Math.floor(Math.random()*n)),allowChair); }
-function freeSeat(){ const taken=new Set([meAv.seat,...npcs.map(n=>n.seat)]); remotes.forEach(r=>taken.add(r.seat)); let free=[]; for(let i=0;i<SEATS.length;i++) if(!taken.has(i)) free.push(i); { const main=free.filter(i=>!SEATS[i].zen); if(main.length&&Math.random()<.85) free=main; } return free.length?free[Math.floor(Math.random()*free.length)]:-1; }
+function freeSeat(){ const taken=new Set([meAv.seat,...npcs.map(n=>n.seat)]); remotes.forEach(r=>taken.add(r.seat)); let free=[]; for(let i=0;i<SEATS.length;i++) if(!taken.has(i)&&!SEATS[i].inn) free.push(i); { const main=free.filter(i=>!SEATS[i].zen); if(main.length&&Math.random()<.85) free=main; } return free.length?free[Math.floor(Math.random()*free.length)]:-1; }
 /* ================= 熱鬧的廟: the online count and the demo worshippers ================= */
 // Both live only on each player's phone: nothing here is sent to the server, so they cost no server traffic.
 // The count follows Taiwan time and moves smoothly (every phone computes the same number from the clock):
@@ -3647,7 +3684,7 @@ let room=null, myBow=0, myJiao=[0,""], myBurn=0, myOffers=[];
 let dirty=true, lastSend=0, lastSentHead=0;
 function markDirty(){ dirty=true; }
 let chairHidden=false;
-function presencePayload(){ return {v:1,u:(customizing||chairHidden)?0:1,n:(me.name||"").slice(0,10),k:me.no||0,l:me.look,x:+meAv.target.x.toFixed(2),z:+meAv.target.y.toFixed(2),r:+meAv.rotY.toFixed(1),s:meAv.seat,b:myBow,h:meAv.hold?1:0,j:myJiao,f:myBurn,o:myOffers,a:bag.items.fu?1:0,g:me.lamp??-1,m:myMsg,c:myChat,p:myPlant,gf:myGF,fx:myFx,t:threadOn()?1:0,q:me.sp?1:0,eq:myEq(),w:myWish,y:+meAv.headGoal.toFixed(1),sq:mySj?[mySj.g+1,mySj.at]:0,sk:mySparkler?1:0,fs:myFwShow||0,e:myEmo,ac:myAct,sl:mySL,sm:myMassSL||0,fl:myFly?+(meAv.flyGoal||FLY_H).toFixed(1):0,cs:myCs}; }
+function presencePayload(){ return {v:1,u:(customizing||chairHidden)?0:1,n:(me.name||"").slice(0,10),k:me.no||0,l:me.look,x:+meAv.target.x.toFixed(2),z:+meAv.target.y.toFixed(2),r:+meAv.rotY.toFixed(1),s:meAv.seat,b:myBow,h:meAv.hold?1:0,j:myJiao,f:myBurn,o:myOffers,a:bag.items.fu?1:0,g:me.lamp??-1,m:myMsg,c:myChat,p:myPlant,gf:myGF,fx:myFx,t:threadOn()?1:0,q:me.sp?1:0,eq:myEq(),w:myWish,y:+meAv.headGoal.toFixed(1),sq:mySj?[mySj.g+1,mySj.at]:0,sk:mySparkler?1:0,fs:myFwShow||0,e:myEmo,ac:myAct,sl:mySL,sm:myMassSL||0,fl:myFly?+(meAv.flyGoal||FLY_H).toFixed(1):0,cs:myCs,iy:(meAv.gy||0)>2.3?1:0,lk:INN.lock||0}; }
 let lastSent="", lastBeat=0;
 setInterval(()=>{ if(room) sendPresence(true); },50000); // heartbeat while idle
 function sendPresence(force){ if(!room) return; dirty=false; const p=presencePayload(), str=JSON.stringify(p), now=performance.now(); lastSend=now; if(str===lastSent&&force!==true&&now-lastBeat<60000) return; lastSent=str; lastBeat=now; room.presence(p).catch(()=>{}); }
@@ -3657,12 +3694,12 @@ function cleanName(n){ const t=String(n||"").replace(/[\u0000-\u001f​-‏‪-�
 function syncPeers(peers){ const seen=new Set();
   for(const p of peers){ if(p.sameTab||p.kind!=="viewer") continue; const pr=p.presence||{}; if(pr.v!==1||pr.u===0) continue; seen.add(p.peer);
     let av=remotes.get(p.peer); const look=sanitizeLook(pr.l,pr.q===1); if(av) av.setSp(pr.q===1);
-    if(!av){ av=new Avatar(look,{sp:pr.q===1,x:num(pr.x,-78,24,0),z:num(pr.z,-43,HZ+YX+18,HZ+12)}); av.autoBake=true; try{ bakeAvatar(av); }catch(e){} if(!othersShown) av.root.visible=false; av.lastBow=pr.b; av.lastJ=Array.isArray(pr.j)?pr.j[1]:""; av.lastF=pr.f; av.offerGroup=new T.Group(); scene.add(av.offerGroup); remotes.set(p.peer,av); if(customizing) av.root.visible=false; }
+    if(!av){ av=new Avatar(look,{sp:pr.q===1,x:num(pr.x,-78,60,0),z:num(pr.z,-43,HZ+YX+18,HZ+12)}); av.autoBake=true; try{ bakeAvatar(av); }catch(e){} if(!othersShown) av.root.visible=false; av.lastBow=pr.b; av.lastJ=Array.isArray(pr.j)?pr.j[1]:""; av.lastF=pr.f; av.offerGroup=new T.Group(); scene.add(av.offerGroup); remotes.set(p.peer,av); if(customizing) av.root.visible=false; }
     else if(look.join()!==av.look.join()) av.setLook(look);
     const pno=Number.isInteger(pr.k)&&pr.k>0&&pr.k<1e8?pr.k:0; let nm=cleanName(pr.n)||(pno?`香客${pno}`:"香客"); if(pr.q!==1&&[SP_NAME,SP_OLD].includes(nm)) nm=pno?`香客${pno}`:"香客"; if(nm!==av.name){ av.name=nm; av.setName(nm); }
     av.setSp(pr.q===1); if(pr.q===1) av.name=SP_NAME; av.flyGoal=pr.q===1&&pr.fl?Math.max(.6,Math.min(40,+pr.fl||FLY_H)):0; csForm(av,pr.q===1&&pr.cs===1);
     { const eq=Array.isArray(pr.eq)?[pr.eq[0],pr.eq[1],pr.eq[2],pr.eq[3]].map(v=>typeof v==="string"&&ACC[v]?v:0):[0,0,0,0]; if(String(eq)!==String(av.eq||[0,0,0,0])) av.setAcc(eq); }
-    { const tx=num(pr.x,-78,24,av.target.x), tz=num(pr.z,-43,HZ+YX+18,av.target.y); if(tx!==av.goalX||tz!==av.goalZ){ av.goalX=tx; av.goalZ=tz; const pth=av.flyGoal>0?[[tx,tz]]:planPath(av.pos.x,av.pos.y,tx,tz); av.target.set(pth[0][0],pth[0][1]); av.path=pth.slice(1); } } const seat=Number.isInteger(pr.s)&&pr.s>=0&&pr.s<SEATS.length?pr.s:-1; av.seat=seat; if(seat>=0) npcYield(seat);
+    { const tx=num(pr.x,-78,60,av.target.x), tz=num(pr.z,-43,HZ+YX+18,av.target.y); if(tx!==av.goalX||tz!==av.goalZ){ av.goalX=tx; av.goalZ=tz; av.wantGy=pr.iy===1?INN.F2:0; const pth=av.flyGoal>0?[[tx,tz]]:planPath(av.pos.x,av.pos.y,tx,tz,av.gy||0,pr.iy===1?INN.F2:0); av.target.set(pth[0][0],pth[0][1]); av.path=pth.slice(1); } } av.lk=Number.isInteger(pr.lk)&&pr.lk>=1&&pr.lk<=4?pr.lk:0; const seat=Number.isInteger(pr.s)&&pr.s>=0&&pr.s<SEATS.length?pr.s:-1; av.seat=seat; if(seat>=0) npcYield(seat);
     av.faceGoal=num(pr.r,-10,10,Math.PI); av.hold=pr.h===1?1:0; av.headGoal=num(pr.y,-1.2,1.2,0); av.sparkler=pr.sk===1; if(Array.isArray(pr.fs)&&Number.isFinite(pr.fs[0])&&pr.fs[0]!==FW.seed){ const sh=FW_SHOWS[pr.fs[2]]?pr.fs[2]|0:0, el=Date.now()-num(pr.fs[1],0,1e13,0); if(el>-15000&&el<FW_SHOWS[sh].len*1000) fwStart(pr.fs[0],el,sh,typeof pr.fs[3]==="string"?pr.fs[3]:""); } av.sq=(Array.isArray(pr.sq)&&pr.sq[0]>=1&&pr.sq[0]<=2)?[pr.sq[0]-1,num(pr.sq[1],0,1e13,0)]:null;
     if(pr.b!==av.lastBow){ av.lastBow=pr.b; if(!quietFx()) av.bow(); }
     if(Array.isArray(pr.j)&&pr.j[1]&&pr.j[1]!==av.lastJ){ av.lastJ=pr.j[1]; const res=RESULT[pr.j[0]]?pr.j[0]:"sheng"; if(!quietFx()) throwJiao(av,res,()=>av.say(RESULT[res].t,RESULT[res].c)); }
@@ -3831,6 +3868,9 @@ function trkPlay(a){ if(a&&a.paused){ const p=a.play(); if(p&&p.catch) p.catch((
 function stopAllSound(){ for(const n in TRK) try{ TRK[n].pause(); }catch(e){} if(typeof OP!=="undefined"&&OP&&OP.aud) try{ OP.aud.pause(); }catch(e){} cutSfx(); }
 function zenSongSet(src){ TRK_SRC.zen=src; try{ localStorage.setItem("mz.zenSong",JSON.stringify(src)); }catch(e){} const a=TRK.zen; if(a){ try{ a.src=src; a.load(); a.loop=true; if(curTrack==="zen"&&audioUnlocked&&soundOn) trkPlay(a); }catch(e){} } }
 setTimeout(()=>{ /* (HANDLERS is declared further down the page) */ HANDLERS.zenMusic=()=>{ openSheet("contact","禪堂音樂",`<p class="lead">在靜思禪院裡聽哪一首？（只有你自己聽得到，會記住）</p><div class="goods">${ZEN_SONGS.map(([f,n])=>`<button class="good${TRK_SRC.zen===f?" on":""}" data-act="zenSong" data-v="${f}"><span class="name">${TRK_SRC.zen===f?"🎵 ":""}${n}</span></button>`).join("")}</div>`); };
+/* the page script is not global, so inline onclick="…" cannot see ensureAudio/HANDLERS/ZEN — wire the two zen buttons here */
+  $("#zenMusicBtn").onclick=e=>{ e.stopPropagation(); ensureAudio(); HANDLERS.zenMusic(); };
+  $("#zenWideBtn").onclick=e=>{ e.stopPropagation(); ZEN.wide=!ZEN.wide; e.currentTarget.textContent=ZEN.wide?"📐 一般視角":"📐 廣角"; };
 HANDLERS.zenSong=v=>{ zenSongSet(v); ensureAudio(); HANDLERS.zenMusic(); toast("禪院音樂換好了",1600); }; },0);
 function setTrack(name){ if(name===curTrack) return; curTrack=name; const a=trk(name); if(audioUnlocked&&soundOn&&!document.hidden) trkPlay(a); }
 /* phones only let a player start inside a tap, so a song that is about to be needed (walking toward the 後殿 or the cats, fireworks on)
@@ -3959,6 +3999,20 @@ function openSheet(kind,title,html){ const same=sheet.classList.contains("open")
 function closeSheet(){ sheet.classList.remove("peek"); if(!sheetKind) return; const k=sheetKind; sheetKind=null; sheet.classList.remove("open"); if(k==="look") endCustomize(); }
 $("#sheetClose").onclick=closeSheet;
 sheetBody.addEventListener("click",e=>{ const b=e.target.closest("[data-act]"); if(!b) return; ensureAudio(); const a=b.dataset.act; const v=b.dataset.v; HANDLERS[a]&&HANDLERS[a](v,b); });
+/* ---- 每日統計: every page tallies what its player does (menu actions, buttons, stations, seats, minutes in each area) and sends the tally
+   to the server every 5 minutes and when the page is hidden. The server adds them into one counter set per Taiwan day — later the NPCs
+   can talk about it ("今天已經有 300 人擲筊了"). Only counts, never names or text. ---- */
+const STATQ={q:{},id:Math.random().toString(36).slice(2,12)};
+function statInc(k,n){ k=String(k).replace(/[^a-zA-Z0-9_]/g,"").slice(0,24); if(!k) return; if(!/^[a-z]/.test(k)) k=("x"+k).slice(0,24); STATQ.q[k]=(STATQ.q[k]||0)+(n||1); }
+function statFlush(beacon){ const ks=Object.keys(STATQ.q); if(!ks.length||!USE_CF) return; const c={}; ks.slice(0,40).forEach(k=>{ c[k]=STATQ.q[k]; delete STATQ.q[k]; }); const body=JSON.stringify({id:STATQ.id,c});
+  try{ if(beacon&&navigator.sendBeacon) navigator.sendBeacon("/stat",new Blob([body],{type:"application/json"})); else fetch("/stat",{method:"POST",headers:{"content-type":"application/json"},body,keepalive:true}).catch(()=>{}); }catch(e){} }
+setInterval(()=>statFlush(),300000); document.addEventListener("visibilitychange",()=>{ if(document.hidden) statFlush(true); });
+sheetBody.addEventListener("click",e=>{ const b=e.target.closest("[data-act]"); if(b) statInc("a_"+b.dataset.act); },true);
+document.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closest("button[id]"); if(b&&!sheetBody.contains(b)) statInc("b_"+b.id); },true);
+{ const td=new Date(Date.now()+288e5).toISOString().slice(0,10); if(load("mz.stDay","")!==td){ save("mz.stDay",td); statInc("visitors"); } statInc("sessions"); }
+setInterval(()=>{ if(document.hidden||typeof meAv==="undefined"||!meAv) return; statInc("minOnline"); const x=meAv.pos.x, z=meAv.pos.y;
+  if(x<-23.5) statInc("minZen"); else if(x>26&&z<-14) statInc("minInn"); else if(z<RY0) statInc("minRear"); else statInc("minFront");
+  if(meAv.seat>=0) statInc("minSitting"); if(typeof wxNow==="function"){ const w=wxNow(); if(w==="rain"||w==="storm") statInc("minInRain"); } },60000);
 const HANDLERS={};
 // ---- 聯絡作者: anyone can leave a private message; only the chair (unlocked on this device) can read them ----
 const msgName=()=>(me.name||(me.no?`香客${me.no}`:"香客")).slice(0,16);
@@ -3994,7 +4048,7 @@ function renderChairBtn(){ const b=$("#chairBtn"); if(b) b.hidden=!me.sp; if(me.
 const ctTile=(act,icon,name,note="")=>`<button class="ct" data-act="${act}"><b>${icon}</b><span>${name}</span>${note?`<small>${note}</small>`:""}</button>`;
 function openChair(){ if(!me.sp) return;
   openSheet("chair","主委工具",`<div class="ck-row"><input class="mail-box ck" id="readKey" type="password" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="留言讀取密碼（輸入一次就會記住）" value="${esc(load("mz.rk",""))}"><button class="chip ck-eye" type="button" onclick="const i=document.getElementById('readKey'); i.type=i.type==='password'?'text':'password'; this.textContent=i.type==='password'?'👁':'🙈';">👁</button></div>
-  <div class="ct-group"><span class="group-label">訊息</span><div class="ct-grid">${ctTile("msgsOpen","📬","香客留言")}${ctTile("annOpen","📢","全服公告","跑馬燈")}${ctTile("boardOpen","📋","公告欄",board.text?"有公告":"空白")}</div></div>
+  <div class="ct-group"><span class="group-label">訊息</span><div class="ct-grid">${ctTile("msgsOpen","📬","香客留言")}${ctTile("annOpen","📢","全服公告","跑馬燈")}${ctTile("boardOpen","📋","公告欄",board.text?"有公告":"空白")}${ctTile("statOpen","📊","每日統計","今天・近 14 天")}</div></div>
   <div class="ct-group"><span class="group-label">活動</span><div class="ct-grid">${ctTile("askFw","🎆","全服煙火","4 場可選")}${ctTile("fwedOpen","🎼","煙火編排器","自己排")}${ctTile("wxOpen","🌦️","天氣",WX_KINDS[wxNow()].n)}${ctTile("schedOpen","⏰","定時活動","煙火・夜市")}${ctTile("camCode","📷","記錄視角","給 Claude")}${ctTile("noFog","🌫️",NOFOG.on?"恢復霧氣":"除霧",NOFOG.on?"目前無霧":"看清遠方")}${ctTile("askSL","🏮","50 盞天燈")}${ctTile("stageChair","🎭","歌仔戲台",OP.on?"演出中":"")}${ctTile("toggleCats","🐱",CATS.off?"放出貓咪":"收起貓咪",CATS.off?"已收起":"跳舞中")}${ctTile("puppetChair","🎎","布袋戲台",PT.on?"演出中":"")}${ctTile("marketOpen","🏮","夜市",Object.keys(MK.open).length?`${Object.keys(MK.open).length} 攤營業中`:"")}</div></div>
   <div class="ct-group"><span class="group-label">線上人數</span><div class="crowd-row"><span class="crowd-now"><span>全廟 <b>${shownTotal()}</b> 人</span><small>這殿 ${hallShown(HALLS.current(),Date.now())} 人・${CROWD.real?"真實人數":CROWD.at&&CROWD.target!=null?`目標 ${CROWD.target}`:"自動"}</small></span><input id="crowdIn" type="text" inputmode="numeric" maxlength="3" placeholder="目標"><button class="chip" data-act="crowdSet">設定</button><button class="chip" data-act="crowdAuto">自動</button><button class="chip" data-act="crowdReal" aria-pressed="${!!CROWD.real}">真實人數</button></div>
     <p class="real-count" id="realCount">真實在線：讀取中…</p><p class="note">目標是全廟人數，會依序分到各殿（前一殿快滿才開下一殿）。約 1 分鐘慢慢變到目標，之後在上下 10 人內浮動。「自動」：真實玩家超過 60 人時只顯示真實玩家；60 人以下會再加上約 20 位假人（上下浮動）。「真實人數」不加假人，有多少玩家就顯示多少。</p></div>
@@ -4316,7 +4370,7 @@ HANDLERS.toggleNpc=(v,b)=>{ showNpc=!showNpc; save("mz.npc",showNpc); b.setAttri
 HANDLERS.showPoem=v=>openPoem(+v,true);
 
 /* ---- stations ---- */
-function openStation(k){ if(typeof WX!=="undefined"&&WX.shut&&(k==="fortune"||k==="cats")){ toast("下雨了，老師傅收攤躲雨去了，天晴再來",2600); return; } if(k==="treasure"){ thDig(); return; } if(k.startsWith("nm:")){ openStall(k.slice(3)); return; } if(k==="puppet"){ ptOpen(); return; } if(k==="fortune"){ openFortune(); return; } if(k==="cats"){ openCats(); return; } if(k==="fountain"){ openFountain(); return; } if(k==="wish"){ openWish(); return; } if(CENSER_INFO[k]){ openCenser(k); return; } if(k==="jieqian"){ openJieqian(); return; } if(k==="shop") openShop(); if(k==="altar") openAltar(); if(k==="burn") openBurn(); if(k==="donate") openDonate(); if(k==="lot") openLot("ask"); if(k==="lamp"||k==="lampR") openLamp(); if(k==="bell"){ meAv.burnT=0; ringBell(); toast("咚——鐘聲迴盪（只有你聽得到）"); } if(k==="drum"){ meAv.burnT=0; hitDrum(); toast("咚！鼓聲響起（只有你聽得到）"); } }
+function openStation(k){ statInc("st_"+k); if(k==="innDesk"){ HANDLERS.innDeskOpen(); return; } if(typeof WX!=="undefined"&&WX.shut&&(k==="fortune"||k==="cats")){ toast("下雨了，老師傅收攤躲雨去了，天晴再來",2600); return; } if(k==="treasure"){ thDig(); return; } if(k.startsWith("nm:")){ openStall(k.slice(3)); return; } if(k==="puppet"){ ptOpen(); return; } if(k==="fortune"){ openFortune(); return; } if(k==="cats"){ openCats(); return; } if(k==="fountain"){ openFountain(); return; } if(k==="wish"){ openWish(); return; } if(CENSER_INFO[k]){ openCenser(k); return; } if(k==="jieqian"){ openJieqian(); return; } if(k==="shop") openShop(); if(k==="altar") openAltar(); if(k==="burn") openBurn(); if(k==="donate") openDonate(); if(k==="lot") openLot("ask"); if(k==="lamp"||k==="lampR") openLamp(); if(k==="bell"){ meAv.burnT=0; ringBell(); toast("咚——鐘聲迴盪（只有你聽得到）"); } if(k==="drum"){ meAv.burnT=0; hitDrum(); toast("咚！鼓聲響起（只有你聽得到）"); } }
 function openThanks(i){ const th=THANKS[i]; if(!th) return; sfx.coin(); openSheet("thanks","感謝贊助",`<img class="thanks-img" src="${th.img}" alt="感謝看板" width="1024" height="768"><p class="thanks-text">${esc(th.text)}</p>`); }
 function openShop(){ const html=`<p class="lead">拜拜順序：天公爐 → 媽祖 → 玄天上帝 → 武財神 → 文昌帝君 → 關聖帝君 → 月老 → 土地公 → 觀音菩薩 → 註生娘娘 → 斗姥元君 → 九天玄女 → 地藏王 → 虎爺。十四爐都插好香，再到廟埕金爐燒金紙。</p>
   <div class="goods">${GOODS.map(g=>`<button class="good" data-act="buy" data-v="${g.k}" ${bag.coins<g.price?"disabled":""}><span class="name">${g.name}</span><span class="meta">${g.meta}</span><span class="price">${g.price} 平安幣</span><span class="own">持有 ${bag.items[g.k]||0}</span></button>`).join("")}</div>
@@ -5348,7 +5402,7 @@ function fwUpdate(dt){ const now=performance.now(); fwHaloTick(dt);
       else { const c="#"+_fc1.setRGB(fwCol[j],fwCol[j+1],fwCol[j+2]).getHexString(); for(let q=0;q<4;q++){ const th=q*Math.PI/2+Math.random()*.3; fwEmit(px,py,pz,Math.cos(th)*5,Math.sin(th)*5,(Math.random()-.5)*2,c,VIVID[(Math.random()*VIVID.length)|0],.9,.5,1.4,2,.2); } }
       fwA[i]=0; } }
   if(any||FW.on){ for(const n of ["iPos","iVel","iCol","iA","iSz","iTr"]) fwStreakGeo.attributes[n].needsUpdate=true; }
-  fwPts.visible=false; fwStreak.visible=any||FW.on; fwStreakMat.uniforms.uGain.value=1; fwStreakMat.uniforms.uMinW.value=.0012*Math.max(1,Math.min(1.8,camera.fov/55)); /* wide/far views: a floor on spark size (round and sharp, so it doesn't blur) */ { const sharp=!!(FW.on||FW.pendingAt||LAKE.on||fwView); if(DRES.fw!==sharp){ DRES.fw=sharp; applyDPR(); } } /* full resolution while a show is on, whatever the view (省電 mode had blurred the sparks) */ /* the streaks draw the stars too (their round heads), so the old point sprites are no longer drawn or uploaded */ dayNight(dt); try{ shadowTick(dt); }catch(e){} try{ wxTick(dt); }catch(e){ if(!wxTick.err){ wxTick.err=1; console.error(e); } } try{ fwedTick(); }catch(e){} try{ zenTick(dt); }catch(e){ if(!zenTick.err){ zenTick.err=1; console.error(e); } }
+  fwPts.visible=false; fwStreak.visible=any||FW.on; fwStreakMat.uniforms.uGain.value=1; fwStreakMat.uniforms.uMinW.value=.0012*Math.max(1,Math.min(1.8,camera.fov/55)); /* wide/far views: a floor on spark size (round and sharp, so it doesn't blur) */ { const sharp=!!(FW.on||FW.pendingAt||LAKE.on||fwView); if(DRES.fw!==sharp){ DRES.fw=sharp; applyDPR(); } } /* full resolution while a show is on, whatever the view (省電 mode had blurred the sparks) */ /* the streaks draw the stars too (their round heads), so the old point sprites are no longer drawn or uploaded */ dayNight(dt); try{ shadowTick(dt); }catch(e){} try{ innTick(dt); }catch(e){ if(!innTick.err){ innTick.err=1; console.error(e); } } try{ wxTick(dt); }catch(e){ if(!wxTick.err){ wxTick.err=1; console.error(e); } } try{ fwedTick(); }catch(e){} try{ zenTick(dt); }catch(e){ if(!zenTick.err){ zenTick.err=1; console.error(e); } }
   if(sparkAvail()!==renderSparkBtn.last) renderSparkBtn(); }
 // ---- 仙女棒: anyone can hold one while the show is on (and for two minutes after) ----
 let mySparkler=false, fwView=false;
@@ -5664,6 +5718,26 @@ function fwedTick(){ if(!FWED.on||!FWED.cv) return; const S=FWED.show, now=fwedN
 HANDLERS.wxOpen=()=>{ const cur=wxNow(), manual=WX.set&&Date.now()<WX.setUntil; const left=manual?Math.max(1,Math.round((WX.setUntil-Date.now())/60000)):0;
   openSheet("contact","天氣",`${backBtn}<p class="lead">現在：${WX_KINDS[cur].n}${manual?`（主委指定，還有 ${left} 分鐘）`:"（自動：每天上午隨機一個時間換一次，一整天同一種天氣）"}。選一種天氣，全伺服器會一起換，維持 20 分鐘後回到自動。</p>
     <div class="goods">${Object.entries(WX_KINDS).map(([k,o])=>`<button class="good${cur===k?" on":""}" data-act="wxSet" data-v="${k}"><span class="name">${{clear:"☀️",cloudy:"☁️",windy:"🍃",rain:"🌧️",storm:"⛈️"}[k]} ${o.n}</span></button>`).join("")}<button class="good" data-act="wxSet" data-v=""><span class="name">🔄 回到自動</span></button></div>`); };
+/* 主委工具 → 每日統計: today's counters, the last 14 days of the main ones, busiest hours, and today's wishes */
+const STAT_NAME={visitors:"今日訪客",sessions:"進場次數",peak:"最高同時在線",minOnline:"在線總分鐘",minFront:"前殿・廟埕分鐘",minRear:"後殿分鐘",minZen:"靜思禪院分鐘",minInn:"禪房分鐘",minSitting:"坐著的分鐘",minInRain:"淋雨中的分鐘",
+  wish:"許願卡",lamp:"點燈",msg:"給主委留言",zhan:"沾喜氣",lanterns:"放天燈",reply:"回覆",letter:"寫信",hongbao:"發紅包",hbclaim:"搶紅包",nightMarket:"夜市紀錄",b_bowBtn:"拜拜",b_jiaoBtn:"擲筊",b_lotBtn:"求籤",b_holdBtn:"持香",b_bagBtn:"打開背包",b_hallBtn:"換殿",
+  sit_mat:"跪拜墊",sit_zen:"禪坐",sit_futon:"通鋪睡覺",sit_bed:"套房躺床",sit_tub:"泡澡",sit_toilet:"上廁所",st_innDesk:"找櫃台阿姨",st_fortune:"找鐵口直斷",st_cats:"找貓咪",st_lot:"求籤處"};
+const statName=k=>STAT_NAME[k]||(k.startsWith("a_")?"選單："+k.slice(2):k.startsWith("b_")?"按鈕："+k.slice(2).replace(/Btn$/,""):k.startsWith("st_")?"去 "+k.slice(3):k.startsWith("sit_")?"坐 "+k.slice(4):k);
+HANDLERS.statOpen=async()=>{ let j=null;
+  if(!USE_CF){ const d=new Date(Date.now()+288e5).toISOString().slice(0,10); j={ok:true,days:[{day:d,c:{...STATQ.q},mx:{}}],wishesToday:0,wishSample:[],local:1}; }
+  else { const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return; } openSheet("contact","每日統計",`${backBtn}<p class="lead">讀取中…</p>`);
+    try{ const r=await fetch("/stat",{headers:{"x-key":key},cache:"no-store"}); j=await r.json().catch(()=>({})); forgetKey(r,j); }catch(e){ j=null; } }
+  if(!j||!j.ok){ openSheet("contact","每日統計",`${backBtn}<p class="lead">讀不到統計（密碼不對或網路不穩）。</p>`); return; }
+  const days=j.days||[], T=days[days.length-1]||{c:{},mx:{}}, all={...T.c}; if(T.mx&&T.mx.peak) all.peak=T.mx.peak;
+  const rows=Object.entries(all).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<tr><td>${esc(statName(k))}</td><td style="text-align:right"><b>${v}</b></td></tr>`).join("")||`<tr><td>今天還沒有資料</td><td></td></tr>`;
+  const MAIN=["visitors","peak","wish","b_bowBtn","b_jiaoBtn","minOnline"], hist=days.slice(-14).map(d=>`<tr><td>${d.day.slice(5)}</td>${MAIN.map(k=>`<td style="text-align:right">${k==="peak"?(d.mx&&d.mx.peak)||0:(d.c&&d.c[k])||0}</td>`).join("")}</tr>`).join("");
+  const hrs=[]; for(let h=0;h<24;h++){ const v=(T.mx&&T.mx["h"+String(h).padStart(2,"0")])||0; hrs.push(v); } const hm=Math.max(1,...hrs), busy=hrs.indexOf(Math.max(...hrs));
+  const bars=`<div style="display:flex;align-items:flex-end;gap:2px;height:60px">${hrs.map((v,h)=>`<div title="${h} 點：${v} 人" style="flex:1;background:${h===busy&&v?"#e0a040":"#8a6a4a"};height:${Math.max(2,v/hm*100)}%"></div>`).join("")}</div><p class="note">每小時最多同時在線（0–23 點）${hrs.some(v=>v)?`，今天最熱鬧是 ${busy} 點（${hrs[busy]} 人）`:""}</p>`;
+  openSheet("contact","每日統計",`${backBtn}<p class="lead">${esc(T.day||"")}（台灣時間）${j.local?"・測試頁只顯示你自己這一頁還沒送出的數字":""}。只記次數，不記名字。之後 NPC 會拿這些來跟大家聊天。</p>
+    <div class="ct-group"><span class="group-label">今天</span><table style="width:100%;font-size:13px">${rows}</table></div>
+    <div class="ct-group"><span class="group-label">熱鬧時段</span>${bars}</div>
+    <div class="ct-group"><span class="group-label">今天的許願（${j.wishesToday||0} 張）</span>${(j.wishSample||[]).map(t=>`<p class="note">・${esc(t)}</p>`).join("")||`<p class="note">還沒有人許願</p>`}</div>
+    <div class="ct-group"><span class="group-label">近 14 天</span><table style="width:100%;font-size:12px"><tr><td>日期</td><td>訪客</td><td>最高在線</td><td>許願</td><td>拜拜</td><td>擲筊</td><td>在線分</td></tr>${hist}</table></div>`); };
 HANDLERS.wxSet=async v=>{ const until=v?Date.now()+20*60000:0; if(!USE_CF){ WX.set=v||null; WX.setUntil=until; HANDLERS.wxOpen(); return; } const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return; }
   try{ const r=await fetch("/weather",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({w:v,min:20})}); const j=await r.json().catch(()=>({})); forgetKey(r,j); if(j.ok){ WX.set=j.w||null; WX.setUntil=j.until||0; toast(v?`天氣換成${WX_KINDS[v].n}`:"天氣回到自動",2200); HANDLERS.wxOpen(); } else toast(j.locked?"嘗試次數過多，今天先鎖住了":"密碼不對，天氣沒有換",2600); }catch(e){ toast("天氣沒有換，請稍後再試"); } };
 let fwPickSh=1;
@@ -5925,7 +5999,7 @@ const FT_ELC={木:"#4fae6a",火:"#e0533a",土:"#c99a3c",金:"#cfc8b8",水:"#4a8f
 station("fortune",[FTB.x+1.9,FTB.z],-Math.PI/2);
 setTimeout(()=>addHit("fortune",FTB.x-.2,0,FTB.z,1.3,2.4),0);
 STATION_LABEL.fortune="鐵口直斷"; STATION_HINT.fortune="走向算命攤";
-function ftTick(dt){ const av=FTB.av; if(!av) return; av.pos.set(FTB.x-.95,FTB.z); av.target.copy(av.pos); av.faceGoal=Math.PI/2; av.update(dt);
+function ftTick(dt){ const av=FTB.av; if(!av) return; if(!FTB.walk){ av.pos.set(FTB.x-.95,FTB.z); av.target.copy(av.pos); av.faceGoal=Math.PI/2; } av.update(dt);
   av.root.position.y=.17; av.hips.position.y=.28; av.legs.forEach(l=>l.rotation.x=1.45); av.torso.rotation.x=.3; // sitting on his stool, a little bent
   if(FTB.talkT>0){ FTB.talkT-=dt; av.arms[1].rotation.set(-.9+Math.sin(av.t*5)*.25,0,.3); av.head.rotation.x=-.28+Math.sin(av.t*7)*.06; }
   else { av.arms[0].rotation.set(-.55,0,-.3); av.arms[1].rotation.set(-.55,0,.3); av.head.rotation.x=-.28+Math.sin(av.t*.9)*.05; } }
@@ -8073,6 +8147,193 @@ function floorsPlain(){ const done=new Map(); scene.traverse(o=>{ if(!o.isMesh||
     if(!done.has(m)){ const k=m.envMapIntensity??1, gloss=!!(m.map&&m.map.image===floorTex.image), yard=!!(m.map&&m.map.image===yardTex.image); /* indoor stone: a polished sheen — tighter, brighter highlights from the lamps already lighting it, so no extra cost */ const n=new T.MeshPhongMaterial({map:m.map,color:m.color.clone(),shininess:gloss?28:yard?14:6,specular:new T.Color(gloss?"#6e5a44":yard?"#2e2820":"#0c0a08"),...(gloss?{bumpMap:floorBump,bumpScale:.045}:yard?{bumpMap:yardBump,bumpScale:.06}:{}),emissive:new T.Color(1,1,1).multiplyScalar(.16*k),emissiveMap:m.map,side:m.side,transparent:m.transparent,opacity:m.opacity,polygonOffset:m.polygonOffset,polygonOffsetFactor:m.polygonOffsetFactor,polygonOffsetUnits:m.polygonOffsetUnits}); done.set(m,n); }
     o.material=done.get(m); }); }
 try{ floorsPlain(); }catch(e){}
+/* ================= 禪房: a small modern guest house out through the right wall of the 後埕 (the zen hall's mirror image).
+   Plain white concrete, wood slats and big windows, like a Taiwanese minimalist apartment block. Ground floor: lobby with a front desk
+   (an auntie hands out bedding), a tatami dormitory where you lay out your own futon, and an indoor hot spring with a little Japanese
+   garden (a towel goes on your head in the water). Upper floor, up an outdoor ramp along the facade: 4 hotel-style suites — big bed,
+   bedside tables, TV (the little ghost slideshow), bathroom with toilet, shower and bathtub, all usable — and a door you can lock.
+   Ceilings are high so the camera has room. Positions are 2D, so each person also carries a level (gy: 0 ground, 4.6 upstairs). ================= */
+const INN={X0:31,X1:55,Z0:-40,Z1:-15,G:ZEN.GZ,F2:4.6,H1:4.6,H2:4.0,RX0:26.6,RX1:28.6,RZB:-15.4,RZT:-38.2,CX0:28.6,CX1:31,SX1:42,lock:0,suites:[],seats:{},tv:[],shower:[],g:null};
+INN.sw=(INN.Z1-INN.Z0)/4; for(let i=0;i<4;i++){ const s0=INN.Z0+i*INN.sw, s1=s0+INN.sw; INN.suites.push({i,s0,s1,dz:s0+1.6}); }
+const innIn=(x,z)=>x>INN.X0&&x<INN.X1&&z>INN.Z0&&z<INN.Z1;
+const innRampH=z=>INN.F2*Math.max(0,Math.min(1,(INN.RZB-z)/(INN.RZB-INN.RZT)));
+const innOnRampStrip=(x,z)=>x>INN.RX0&&x<INN.RX1&&z<INN.RZB+.4&&z>INN.Z0;
+const innUp=(x,z)=>(x>INN.RX0&&x<INN.CX1&&z>INN.Z0&&z<INN.RZT+.2)||(x>=INN.CX0&&x<INN.CX1&&z>INN.Z0&&z<INN.Z1)||(x>=INN.CX1&&x<INN.SX1&&z>INN.Z0&&z<INN.Z1); /* landing, corridor, suites */
+const innPool=(x,z)=>x>44&&x<53&&z>-38&&z<-30.5;
+function innSuiteAt(x,z){ if(!(x>INN.CX1-.05&&x<INN.SX1&&z>INN.Z0&&z<INN.Z1)) return -1; return Math.min(3,Math.floor((z-INN.Z0)/INN.sw)); }
+/* level under a walker: keeps to the floor it is on, and only climbs the ramp from its foot (so you can walk under the ramp) */
+function groundAt(av,x,z){ let g=av.gy||0; if(av.gyInit==null&&av.wantGy!=null){ g=av.wantGy; av.gyInit=1; }
+  if(x>23.3){ if(innOnRampStrip(x,z)){ const h=innRampH(z); if(Math.abs(h-g)<.8) g=h; else if(g>2.3&&z<INN.RZT+.3) g=INN.F2; }
+      else if(g>2.3&&innUp(x,z)) g=INN.F2; else if(g>2.3&&!innUp(x,z)) g=0; else g=0;
+      av.gy=g; if(g<1&&innPool(x,z)) return -.45; return g; }
+  av.gy=0; return groundH(x,z); }
+function innLockedBy(i){ if(INN.lock===i+1) return "me"; if(typeof remotes!=="undefined") for(const r of remotes.values()) if(r.lk===i+1) return "other"; return null; }
+function innWalkable(x,z,gy){ const G=INN.G; gy=gy==null?(meAv.gy||0):gy;
+  if(x<=22.75) return false; if(x<23.9) return Math.abs(z-G)<.95;                                                /* the gate in the wall */
+  if(z<-51||z>-5) return false;
+  if(gy>2.3||(innOnRampStrip(x,z)&&Math.abs(innRampH(z)-gy)<.8)){ /* upstairs (or on the ramp) */
+    if(innOnRampStrip(x,z)) return true; if(x>INN.RX0&&x<INN.CX1&&z>INN.Z0+.2&&z<INN.RZT+.2) return true; if(x>=INN.CX0+.25&&x<INN.CX1-.05&&z>INN.Z0+.2&&z<INN.Z1-.2) return true; /* landing, corridor */
+    const i=innSuiteAt(x,z); if(i<0) return false; const S=INN.suites[i];
+    if(x<INN.CX1+.25){ if(!(z>S.dz-.6&&z<S.dz+.6)) return false; return innLockedBy(i)!=="other"; }                  /* the suite door */
+    if(x>INN.SX1-.25||z<S.s0+.2||z>S.s1-.2) return false;
+    if(x<34.6&&z>S.s1-3.1&&z<S.s1-2.75) return false; if(x>34.25&&x<34.6&&z>S.s1-3.1&&!(z>S.s1-1.7&&z<S.s1-.7)) return false; /* bathroom walls, its door */
+    if(x>36.3&&x<38.7&&z<S.s0+2.4) return x<36.5||x>38.5?false:z>S.s0+2.2;                                              /* the bed */
+    return true; }
+  if(innIn(x,z)){ /* ground floor */
+    if(x<INN.X0+.25) return Math.abs(z-G)<1.1;                                                                          /* front door */
+    if(z<INN.Z0+.25||z>INN.Z1-.25||x>INN.X1-.25) return false;
+    if(x<36.2&&z<-33.8) return false;                                                                                   /* indoor garden */
+    if(x>37.8&&x<39.3&&z>-31.7&&z<-24.8) return false;                                                                   /* front desk */
+    if(x>40.8&&x<41.2) return (z>-21.7&&z<-20.3)||(z>-34.7&&z<-33.3);                                                    /* doors to the dorm and the bath */
+    if(x>41&&z>-27.7&&z<-27.3) return false;
+    return true; }
+  if(innOnRampStrip(x,z)&&innRampH(z)<1.9) return false;                                                               /* too low to walk under */
+  if(x>INN.X1+3||z<INN.Z0-8||z>INN.Z1+8) return false; return true; }
+/* routes inside the grounds of the guest house (both levels): area → area through doors and up the ramp */
+function innArea(x,z,gy){ if(gy>2.3||innUp(x,z)&&gy>2.3){ const i=innSuiteAt(x,z); return i>=0&&x>INN.CX1+.1?"s"+i:"c"; } if(innIn(x,z)){ if(x<41) return "l"; return z>-27.5?"d":"o"; } return "out"; }
+function innRoute(fx,fz,fg,tx,tz,tg){ const G=INN.G, a=innArea(fx,fz,fg), b=innArea(tx,tz,tg); if(a===b) return [[tx,tz]];
+  const E={"out>l":[[30.4,G],[31.8,G]],"l>out":[[31.8,G],[30.4,G]],"l>d":[[40.4,-21],[41.7,-21]],"d>l":[[41.7,-21],[40.4,-21]],"l>o":[[40.4,-34],[41.7,-34]],"o>l":[[41.7,-34],[40.4,-34]],
+    "out>c":[[25.4,-14.6],[27.6,-14.6],[27.6,-16],[27.6,-38.6],[29.8,-39.2]],"c>out":[[29.8,-39.2],[27.6,-38.6],[27.6,-16],[27.6,-14.6],[25.4,-14.6]]};
+  for(const S of INN.suites){ E["c>s"+S.i]=[[29.8,S.dz],[31.7,S.dz]]; E["s"+S.i+">c"]=[[31.7,S.dz],[29.8,S.dz]]; }
+  const N={out:["l","c"],l:["out","d","o"],d:["l"],o:["l"],c:["out","s0","s1","s2","s3"],s0:["c"],s1:["c"],s2:["c"],s3:["c"]};
+  const prev={[a]:null}, q=[a]; while(q.length){ const z=q.shift(); if(z===b) break; for(const n of N[z]||[]) if(!(n in prev)){ prev[n]=z; q.push(n); } }
+  const chain=[]; for(let z=b;z!=null;z=prev[z]) chain.unshift(z); const pts=[]; for(let k=0;k<chain.length-1;k++) pts.push(...(E[chain[k]+">"+chain[k+1]]||[])); pts.push([tx,tz]); return pts; }
+{ const G=INN.G, root=new T.Group(); root.userData.noMerge=1; root.userData.noBuild=1; scene.add(root); INN.g=root; const L=h=>ZL(h);
+  const white=mat(L("#e9e6df"),{roughness:.85}), grey=mat(L("#5a5d63"),{roughness:.7}), dark=mat(L("#2e3034"),{roughness:.6}), slat=mat(L("#a8784a"),{roughness:.75}), wood=mat(L("#b48a5e"),{roughness:.7}),
+    stone=mat(L("#b9b5ad"),{roughness:.9}), glass=new T.MeshStandardMaterial({color:L("#4a6476"),roughness:.15,metalness:.35,transparent:true,opacity:.55,emissive:new T.Color("#ffd9a0"),emissiveIntensity:0});
+  INN.glass=glass; const B=(w,h,d,m,x,y,z)=>box(w,h,d,m,x,y,z,root);
+  const wallZ=(x,z0,z1,y0,h,m,gaps)=>{ let a=z0; for(const [g0,g1,gh] of (gaps||[]).concat([[z1,z1,0]]).sort((p,q)=>p[0]-q[0])){ if(g0>a) B(.25,h,g0-a,m,x,y0+h/2,(a+g0)/2); if(gh&&g1>g0) B(.25,h-gh,g1-g0,m,x,y0+gh+(h-gh)/2,(g0+g1)/2); a=Math.max(a,g1); } };
+  const wallX=(z,x0,x1,y0,h,m,gaps)=>{ let a=x0; for(const [g0,g1,gh] of (gaps||[]).concat([[x1,x1,0]]).sort((p,q)=>p[0]-q[0])){ if(g0>a) B(g0-a,h,.25,m,(a+g0)/2,y0+h/2,z); if(gh&&g1>g0) B(g1-g0,h-gh,.25,m,(g0+g1)/2,y0+gh+(h-gh)/2,z); a=Math.max(a,g1); } };
+  const floorP=(x0,x1,z0,z1,y,m,pick)=>{ const f=mesh(new T.PlaneGeometry(x1-x0,z1-z0),m,(x0+x1)/2,y,(z0+z1)/2,root); f.rotation.x=-Math.PI/2; f.userData.floor=true; f.userData.keepMat=1; if(pick) f.userData.innPick=1; return f; };
+  const X0=INN.X0,X1=INN.X1,Z0=INN.Z0,Z1=INN.Z1,H1=INN.H1,F2=INN.F2,H2=INN.H2,SX1=INN.SX1;
+  /* ---- ground: a stone path from the gate, lawn round the house ---- */
+  { const p=[]; for(let x=24.4;x<30.6;x+=.9) p.push(x); p.forEach(x=>{ const s=cyl(.42,.44,.08,stone,x,.04,G+(Math.random()-.5)*.2,root,10); }); for(let z=-16;z<-14;z+=.9){} }
+  /* ---- the shell: ground floor all round, the upper floor over the front half, a roof terrace behind ---- */
+  floorP(X0,X1,Z0,Z1,.02,mat(L("#d8d2c6"),{roughness:.5}));
+  wallZ(X0,Z0,Z1,0,H1,white,[[G-1.2,G+1.2,2.7]]); wallZ(X1,Z0,Z1,0,H1,white); wallX(Z0,X0,X1,0,H1,white); wallX(Z1,X0,X1,0,H1,white);
+  /* big glass on the street side and the back, grey frame bands, wood slats */
+  for(const z of [Z0+.14,Z1-.14]) for(let x=X0+1;x<X1-1;x+=4.6){ const gw=mesh(new T.PlaneGeometry(3.6,2.4),glass,x+1.8,1.9,z,root); if(z>Z0+1) gw.rotation.y=Math.PI; }
+  B(X1-X0+.4,.35,Z1-Z0+.4,grey,(X0+X1)/2,H1+.17,(Z0+Z1)/2);                                          /* slab between the floors (= 1F ceiling, 2F floor, terrace) */
+  floorP(X0,SX1,Z0,Z1,F2+.36,mat(L("#c9a97e"),{roughness:.45}),true);                                 /* 2F wood floor */
+  floorP(SX1,X1,Z0,Z1,F2+.36,mat(L("#8a8f86"),{roughness:.9}));                                         /* roof terrace */
+  { const cl=mesh(new T.PlaneGeometry(X1-X0,Z1-Z0),mat(L("#f2efe8"),{roughness:.95}),(X0+X1)/2,H1-.01,(Z0+Z1)/2,root); cl.rotation.x=Math.PI/2; }
+  /* upper floor box */
+  const y2=F2+.36; wallZ(SX1,Z0,Z1,y2,H2,white,[]); wallX(Z0,X0,SX1,y2,H2,white); wallX(Z1,X0,SX1,y2,H2,white);
+  const doorGaps=INN.suites.map(S=>[S.dz-.6,S.dz+.6,2.5]); wallZ(X0,Z0,Z1,y2,H2,white,doorGaps);
+  B(SX1-X0+.6,.4,Z1-Z0+.6,dark,(X0+SX1)/2,y2+H2+.2,(Z0+Z1)/2); /* roof */
+  for(const S of INN.suites){ const wz=mesh(new T.PlaneGeometry(INN.sw-1.2,2.6),glass,SX1+.14,y2+1.8,(S.s0+S.s1)/2,root); wz.rotation.y=Math.PI/2; } /* each suite's big window onto the terrace */
+  for(let i=0;i<14;i++) B(.12,H2,.08,slat,X0-.18,y2+H2/2,Z0+1+i*.18*1.0+(i>6?16:0)); /* slat screens */
+  for(let z=Z0+.6;z<Z1;z+=.22) if(Math.abs(z-G)>2) B(.06,1.6,.1,slat,X0-.14,H1-1.2,z);               /* slatted fascia over the ground floor */
+  /* terrace planters */ for(let x=SX1+1.5;x<X1-1;x+=3) { B(1.6,.5,.8,grey,x,y2+.25,Z1-1); B(1.6,.5,.8,grey,x,y2+.25,Z0+1); }
+  /* sign */ { const st=cvs(512,128,(x,w,h)=>{ x.fillStyle="#2e3034"; x.fillRect(0,0,w,h); x.fillStyle="#f4efe6"; x.font='600 74px "Noto Sans TC",sans-serif'; x.textAlign="center"; x.textBaseline="middle"; x.fillText("禪 房",w/2,h/2+4); x.fillStyle="#c8a46a"; x.fillRect(w*.2,h-14,w*.6,4); });
+    const sg=mesh(new T.PlaneGeometry(2.4,.6),new T.MeshStandardMaterial({map:st,roughness:.6,emissive:"#ffffff",emissiveMap:st,emissiveIntensity:.3}),X0-.2,3.5,G,root); sg.rotation.y=-Math.PI/2; }
+  /* entrance canopy */ B(1.6,.12,3.4,dark,X0-.7,2.9,G);
+  /* ---- the outdoor ramp up the front and the 2F walkway with glass rails ---- */
+  { const len=INN.RZB-INN.RZT, rg=new T.BoxGeometry(INN.RX1-INN.RX0,.18,len,1,1,12), p=rg.attributes.position; for(let i=0;i<p.count;i++){ const zz=p.getZ(i)+(INN.RZB+INN.RZT)/2; p.setY(i,p.getY(i)+innRampH(zz)-.09); p.setZ(i,zz); } rg.computeVertexNormals();
+    const rp=mesh(rg,mat(L("#9a9a96"),{roughness:.8}),(INN.RX0+INN.RX1)/2,0,0,root); rp.userData.floor=true; rp.userData.keepMat=1; rp.userData.innPick=1;
+    for(let z=INN.RZB-1;z>INN.RZT;z-=3) cyl(.08,.08,innRampH(z),grey,INN.RX0+.15,innRampH(z)/2,z,root,8);
+    const rail=new T.MeshStandardMaterial({color:L("#bcd4dc"),transparent:true,opacity:.35,roughness:.1}); for(let k=0;k<12;k++){ const za=INN.RZB-k*len/12, zb=za-len/12; const m=mesh(new T.PlaneGeometry(len/12,1),rail,INN.RX0+.05,(innRampH(za)+innRampH(zb))/2+.5,(za+zb)/2,root); m.rotation.y=Math.PI/2; m.rotation.x=Math.atan2(innRampH(zb)-innRampH(za),len/12); }
+    floorP(INN.RX0,INN.CX1,INN.Z0,INN.RZT,F2+.36,mat(L("#9a9a96"),{roughness:.8}),true); floorP(INN.CX0,INN.CX1,INN.RZT,INN.Z1,F2+.36,mat(L("#9a9a96"),{roughness:.8}),true);
+    B(INN.CX1-INN.RX0,.3,INN.RZT-INN.Z0,grey,(INN.RX0+INN.CX1)/2,F2+.2,(INN.Z0+INN.RZT)/2); B(INN.CX1-INN.CX0,.3,INN.Z1-INN.RZT,grey,(INN.CX0+INN.CX1)/2,F2+.2,(INN.RZT+INN.Z1)/2);
+    const gr=mesh(new T.PlaneGeometry(INN.Z1-INN.RZT,1.05),rail,INN.CX0+.05,F2+.9,(INN.RZT+INN.Z1)/2,root); gr.rotation.y=Math.PI/2; B(.06,.06,INN.Z1-INN.RZT,grey,INN.CX0+.05,F2+1.45,(INN.RZT+INN.Z1)/2);
+    B(.25,H2+.6,INN.Z1-INN.Z0,dark,INN.CX0-.4,F2+H2+.4,(INN.Z0+INN.Z1)/2).scale.set(.4,.08,1); }
+  /* ---- lobby: front desk, the auntie, a little indoor garden of white gravel and rock ---- */
+  { const desk=mat(L("#7a5a3a"),{roughness:.5}); B(1.2,1.05,6.6,desk,38.55,.53,-28.2); B(1.4,.06,6.8,mat(L("#e8e2d6"),{roughness:.3}),38.55,1.08,-28.2);
+    const ds=cvs(512,128,(x,w,h)=>{ x.fillStyle="#7a5a3a"; x.fillRect(0,0,w,h); x.fillStyle="#f6eedd"; x.font='600 64px "Noto Sans TC",sans-serif'; x.textAlign="center"; x.textBaseline="middle"; x.fillText("櫃 台 RECEPTION",w/2,h/2); }); /* 512 wide so the words fit */
+    const dp=mesh(new T.PlaneGeometry(2.4,.6),new T.MeshStandardMaterial({map:ds,roughness:.6}),37.93,.7,-28.2,root); dp.rotation.y=-Math.PI/2;
+    B(.15,2.2,4,wood,40.85,2.6,-28.2); /* wood panel behind the desk */
+    floorP(31,36.2,-40,-33.8,.05,mat(L("#e6e2d8"),{roughness:1}));
+    for(const [x,z,s] of [[33,-37,.8],[34.6,-35.6,.5],[32.4,-35,.4]]){ const r=mesh(new T.DodecahedronGeometry(s,0),stone,x,s*.5,z,root); r.scale.y=.6; }
+    for(let i=0;i<9;i++) cyl(.04,.05,3.2+Math.random()*.8,mat(L("#6a9a4a"),{roughness:.6}),31.5+Math.random()*1.2,1.8,-39.4+Math.random()*1.2,root,6);
+    for(const [x,z] of [[33,-15.6],[36,-15.6],[33,-39.6]]) { cyl(.25,.2,.5,grey,x,.25,z,root,12); mesh(new T.IcosahedronGeometry(.45,1),mat(L("#4a7a3a"),{roughness:.8}),x,.85,z,root); } }
+  /* ---- dormitory: tatami, shoji, a low table; futons appear where people sleep ---- */
+  { const tt=cvs(256,256,(x,w,h)=>{ x.fillStyle="#c8c08a"; x.fillRect(0,0,w,h); for(let i=0;i<260;i++){ x.fillStyle=`rgba(90,90,40,${.08+Math.random()*.08})`; x.fillRect(0,Math.random()*h,w,1); }
+      x.fillStyle="#3a3424"; x.fillRect(0,0,w,8); x.fillRect(0,h-8,w,8); x.fillStyle="#2a5a3a"; x.fillRect(0,0,6,h); x.fillRect(w-6,0,6,h); });
+    const tm=new T.MeshStandardMaterial({map:texRep(tt,1,1),roughness:.9}); for(let x=41.2;x<55;x+=1.8) for(let z=-27.3;z<-15;z+=.9){ const t=mesh(new T.PlaneGeometry(1.8,.9),tm,x+.9,.06,z+.45,root); t.rotation.x=-Math.PI/2; t.userData.floor=true; t.userData.keepMat=1; }
+    const sh=cvs(128,256,(x,w,h)=>{ x.fillStyle="#f4ecd8"; x.fillRect(0,0,w,h); x.strokeStyle="#5a3a22"; x.lineWidth=5; for(let i=0;i<=4;i++){ x.beginPath(); x.moveTo(i*w/4,0); x.lineTo(i*w/4,h); x.stroke(); } for(let j=0;j<=6;j++){ x.beginPath(); x.moveTo(0,j*h/6); x.lineTo(w,j*h/6); x.stroke(); } });
+    const shm=new T.MeshStandardMaterial({map:sh,roughness:.9,emissive:"#fff2d8",emissiveMap:sh,emissiveIntensity:.2}); for(let x=42;x<55;x+=1.6){ mesh(new T.PlaneGeometry(1.5,2.6),shm,x+.75,1.4,-15.2,root).rotation.y=Math.PI; }
+    B(1.6,.35,.9,mat(L("#5a3a22"),{roughness:.5}),48,.18,-21);
+    INN.futon=[]; const ft=new T.Group(); root.add(ft); const fm=mat(L("#f4f2ec"),{roughness:.95}), fb=[L("#4a6aa8"),L("#c85a5a"),L("#5a8a5a"),L("#d8a040")].map(c=>mat(c,{roughness:.95}));
+    for(let r=0;r<4;r++) for(let c=0;c<5;c++){ const x=43+c*2.4, z=-25.8+r*2.6; const f=new T.Group(); f.position.set(x,.06,z); const m1=new T.Mesh(new T.BoxGeometry(1.0,.1,2.0),fm); m1.position.y=.05; f.add(m1);
+      const bl=new T.Mesh(new T.BoxGeometry(1.02,.08,1.3),fb[(r+c)%4]); bl.position.set(0,.13,.3); f.add(bl); const pl=new T.Mesh(new T.BoxGeometry(.5,.12,.3),fm); pl.position.set(0,.14,-.78); f.add(pl); f.visible=false; ft.add(f);
+      const v=new T.Vector2(x,z+.05); v.inn=1; v.kind="futon"; v.face=0; v.lift=.16; v.gy=0; SEATS.push(v); INN.futon.push({f,i:SEATS.length-1}); } }
+  /* ---- hot spring: stone deck, a rock-edged pool with steam, bamboo, a stone lantern and a small maple ---- */
+  { const dk=mat(L("#8f8a80"),{roughness:.7}); /* stone deck round the pool, not over it */ floorP(41,55,-30.4,-27.5,.05,dk); floorP(41,55,-40,-38.1,.05,dk); floorP(41,44.1,-38.1,-30.4,.05,dk); floorP(52.9,55,-38.1,-30.4,.05,dk);
+    const wm=new T.MeshStandardMaterial({color:L("#5a9aa0"),roughness:.08,metalness:.2,transparent:true,opacity:.82,emissive:L("#1c4a50"),emissiveIntensity:.5}); const wa=mesh(new T.PlaneGeometry(9,7.5),wm,48.5,.01,-34.25,root); wa.rotation.x=-Math.PI/2; INN.water=wa;
+    B(9,.5,7.5,mat(L("#3a4a48"),{roughness:.9}),48.5,-.5,-34.25); const rocks=[]; for(let k=0;k<46;k++){ const t=k/46*Math.PI*2, rx=4.7, rz=3.9; rocks.push([48.5+Math.cos(t)*rx*(1+Math.random()*.06),-34.25+Math.sin(t)*rz*(1+Math.random()*.06),.25+Math.random()*.25]); }
+    rocks.forEach(([x,z,s])=>{ const r=mesh(new T.DodecahedronGeometry(s,0),mat(L("#6a6660"),{roughness:.95}),x,s*.35,z,root); r.rotation.set(Math.random(),Math.random(),Math.random()); r.scale.y=.55; });
+    INN.steam=[]; for(let k=0;k<10;k++){ const sp=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffffff"),transparent:true,opacity:.12,depthWrite:false})); sp.position.set(45+Math.random()*7,.4,-37+Math.random()*6); sp.scale.set(2.5,2.5,1); sp.userData.s=Math.random()*6; root.add(sp); INN.steam.push(sp); }
+    for(let i=0;i<14;i++) cyl(.04,.05,3.6,mat(L("#5a8a3a"),{roughness:.6}),54.3+Math.random()*.4,1.8,-39.5+i*.85,root,6); /* bamboo along the back wall */
+    { const lx=53.6,lz=-29; B(.4,.1,.4,stone,lx,.05,lz); cyl(.08,.1,.8,stone,lx,.5,lz,root,8); B(.46,.36,.46,stone,lx,1.08,lz); mesh(new T.ConeGeometry(.42,.32,4),stone,lx,1.42,lz,root).rotation.y=Math.PI/4; }
+    for(let k=0;k<6;k++){ cyl(.18,.16,.25,wood,42+k*.6,.13,-39.4,root,12); } /* wooden buckets and stools at the washing place */
+    const mp=new T.Group(); mp.position.set(52.6,0,-38.4); root.add(mp); cyl(.08,.12,1.6,mat(L("#4a3226")),0,.8,0,mp,6); for(let k=0;k<14;k++) mesh(new T.IcosahedronGeometry(.35,0),mat(L(["#c4161c","#d8281e","#e0501a"][k%3]),{roughness:.8}),(Math.random()-.5)*1.4,1.6+Math.random()*.8,(Math.random()-.5)*1.4,mp); }
+  /* ---- the suites upstairs ---- */
+  const y=y2; INN.tvTex=[];
+  for(const S of INN.suites){ if(S.i>0) wallX(S.s0,INN.CX1,SX1,y,H2,white,[]);
+    /* bathroom */ wallX(S.s1-2.95,INN.CX1,34.45,y,H2,white,[]); wallZ(34.45,S.s1-2.95,S.s1,y,H2,white,[[S.s1-1.65,S.s1-.75,2.3]]);
+    floorP(INN.CX1,34.45,S.s1-2.95,S.s1,y+.01,mat(L("#e6e4e0"),{roughness:.3}));
+    const porc=mat(L("#f6f6f4"),{roughness:.2});
+    B(1.8,.55,.8,porc,32.1,y+.28,S.s1-2.5); const tw=mesh(new T.PlaneGeometry(1.6,.6),new T.MeshStandardMaterial({color:L("#8fd0dc"),roughness:.05,transparent:true,opacity:.75}),32.1,y+.5,S.s1-2.5,root); tw.rotation.x=-Math.PI/2; /* bathtub */
+    B(.42,.42,.55,porc,33.85,y+.21,S.s1-2.45); B(.42,.5,.18,porc,33.85,y+.5,S.s1-2.8); /* toilet */
+    B(.55,.08,.4,porc,31.45,y+.85,S.s1-.4); B(.04,.6,.5,mat(L("#cfe6ee"),{roughness:.05,metalness:.6}),31.12,y+1.5,S.s1-.4); /* basin and mirror */
+    { const gl=new T.MeshStandardMaterial({color:L("#d8eef4"),transparent:true,opacity:.28,roughness:.05}); const p1=mesh(new T.PlaneGeometry(1.0,2.0),gl,33.85,y+1.0,S.s1-1.15,root); const p2=mesh(new T.PlaneGeometry(1.1,2.0),gl,33.3,y+1.0,S.s1-.6,root); p2.rotation.y=Math.PI/2;
+      cyl(.12,.12,.03,mat(L("#c8c8c8"),{metalness:.8,roughness:.2}),33.9,y+2.3,S.s1-.5,root,12); } /* shower */
+    /* bedroom: king bed against the south wall, bedside tables and lamps, TV on the north wall, an armchair by the window */
+    const sheet=mat(L("#f4f2ee"),{roughness:.9}), frame=mat(L("#6a4a30"),{roughness:.6}); B(2.3,.35,2.3,frame,37.5,y+.18,S.s0+1.25); B(2.15,.25,2.15,sheet,37.5,y+.48,S.s0+1.3); B(2.2,1.1,.12,frame,37.5,y+.9,S.s0+.1);
+    B(2.17,.06,1.3,mat(L(["#3a4a6a","#6a3a3a","#3a5a4a","#5a4a3a"][S.i]),{roughness:.9}),37.5,y+.62,S.s0+1.75); for(const dx of [-.5,.5]) B(.7,.16,.4,sheet,37.5+dx,y+.66,S.s0+.45);
+    for(const dx of [-1.6,1.6]){ B(.55,.5,.45,frame,37.5+dx,y+.25,S.s0+.35); cyl(.06,.1,.35,mat(L("#d8c8a8")),37.5+dx,y+.68,S.s0+.35,root,10); const lg=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffd9a0"),transparent:true,opacity:.5,blending:T.AdditiveBlending,depthWrite:false})); lg.position.set(37.5+dx,y+.95,S.s0+.35); lg.scale.set(.9,.9,1); root.add(lg); }
+    B(1.8,.5,.4,frame,37.5,y+.25,S.s1-.25); B(1.9,1.1,.08,mat("#111111",{roughness:.3}),37.5,y+1.6,S.s1-.12);
+    const tvc=document.createElement("canvas"); tvc.width=256; tvc.height=144; const tvt=new T.CanvasTexture(tvc); tvt.encoding=T.sRGBEncoding; const scr=mesh(new T.PlaneGeometry(1.76,.99),new T.MeshBasicMaterial({map:tvt,color:"#222222"}),37.5,y+1.6,S.s1-.17,root); scr.rotation.y=Math.PI;
+    INN.tv.push({c:tvc,t:tvt,m:scr,on:false,k:0,at:0,i:S.i});
+    B(.9,.45,.9,mat(L("#a8b4a0"),{roughness:.9}),40.8,y+.23,S.s0+4.2); B(.9,.6,.15,mat(L("#a8b4a0"),{roughness:.9}),41.2,y+.6,S.s0+4.2);
+    /* door (shown shut when someone has locked it) */ const dr=B(.08,2.5,1.15,mat(L("#6a4a30"),{roughness:.6}),INN.CX1+.02,y+1.25,S.dz); S.door=dr; dr.userData.base=dr.position.z;
+    const ns=cvs(128,64,(x,w,h)=>{ x.fillStyle="#2e3034"; x.fillRect(0,0,w,h); x.fillStyle="#f4efe6"; x.font='600 34px sans-serif'; x.textAlign="center"; x.textBaseline="middle"; x.fillText("20"+(S.i+1),w/2,h/2); });
+    const np=mesh(new T.PlaneGeometry(.4,.2),new T.MeshBasicMaterial({map:ns}),INN.CX1-.14,y+2.0,S.dz+.85,root); np.rotation.y=-Math.PI/2;
+    /* seats: the bed (lie down), the toilet, the bath */
+    for(const [x,z,kind,lift,face] of [[37.5,S.s0+1.35,"bed",.56,0],[33.85,S.s1-2.38,"toilet",.42,Math.PI],[32.1,S.s1-2.5,"tub",.12,Math.PI/2]]){ const v=new T.Vector2(x,z); v.inn=1; v.kind=kind; v.lift=lift; v.face=face; v.gy=F2; v.suite=S.i; SEATS.push(v); INN.seats[S.i+kind]=SEATS.length-1; }
+    INN.shower.push({x:33.85,z:S.s1-.55,y,i:S.i,on:0}); }
+  /* night: windows glow */
+  INN.lights=[]; for(const [x,yy,z] of [[36,3.6,-28],[48,3.6,-21],[48,3.6,-34]]){ const s=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffd9a0"),transparent:true,opacity:.35,blending:T.AdditiveBlending,depthWrite:false})); s.position.set(x,yy,z); s.scale.set(6,4,1); root.add(s); }
+  root.traverse(o=>{ if(o.isMesh){ o.userData.noMerge=1; if(o.userData.floor) pickables.push(o); } });
+}
+/* the auntie at the front desk */
+{ const av=new Avatar([1,7,0,2,6,3,0,4,2,0,1,0,0],{npc:true,x:39.6,z:-28.2}); av.sjBusy=1; av.rotY=-Math.PI/2; av.faceGoal=-Math.PI/2; av.setName("櫃台阿姨"); av.gy=0; INN.aunt=av; addHit("innDesk",38.6,0,-28.2,1.3,1.6); }
+station("innDesk",[37.3,-28.2],Math.PI/2);
+for(const [k,o] of Object.entries(INN.seats)){ const S=SEATS[o]; addHit("iseat:"+o,S.x,S.gy,S.y,S.kind==="bed"?1.1:.45,S.kind==="bed"?.9:.8); }
+INN.futon.forEach(o=>{ const S=SEATS[o.i]; addHit("iseat:"+o.i,S.x,0,S.y,.55,.3); });
+INN.tv.forEach(t=>addHit("innTv:"+t.i,37.5,INN.F2+.36+1.1,INN.suites[t.i].s1-.3,.9,1.0));
+INN.shower.forEach(s=>addHit("innShower:"+s.i,s.x,s.y,s.z,.45,2.2));
+const INN_SAY=["歡迎光臨禪房！今天住宿嗎？","通鋪的床具在這邊領喔，枕頭被子都洗好了。","溫泉在左手邊，進去記得先沖洗身體。","套房在二樓，從外面的坡道上去。","晚安，祝您好眠。","有需要再叫我喔！","退房時間是中午十二點喔。","泡完溫泉記得多喝水。"];
+HANDLERS.innDeskOpen=()=>{ const has=!!bag.gd&&bag.gd.bedding; INN.aunt.say(INN_SAY[(Math.random()*INN_SAY.length)|0],"#ffe2a0",3);
+  openSheet("contact","禪房櫃台",`<p class="lead">「歡迎光臨禪房！一樓有通鋪和溫泉，二樓是套房。」</p><div class="goods">
+    <button class="good" data-act="innBedding"><span class="name">${has?"✓ 已經領了床具":"🛏️ 領床具"}</span><span class="meta">${has?"到通鋪點一個位子就能鋪床睡覺":"領了才能在通鋪鋪床睡"}</span></button>
+    <button class="good" data-act="innRooms"><span class="name">🔑 套房</span><span class="meta">${INN.suites.map(S=>`20${S.i+1}${innLockedBy(S.i)?" 有人":" 空房"}`).join("・")}</span></button>
+    <button class="good" data-act="innOnsen"><span class="name">♨️ 溫泉須知</span><span class="meta">泡湯前先沖洗、毛巾放頭上</span></button></div>`); };
+HANDLERS.innBedding=()=>{ bag.gd=bag.gd||{}; bag.gd.bedding=1; saveBag(); INN.aunt.say("來，床具給您，晚安喔～","#ffe2a0",2.6); toast("領到床具了！到通鋪點一個位子就能鋪床睡覺",3000); HANDLERS.innDeskOpen(); };
+HANDLERS.innRooms=()=>{ toast("套房在二樓：從禪房前面的坡道走上去，進房後可以鎖門",3600); closeSheet(); };
+HANDLERS.innOnsen=()=>{ INN.aunt.say("泡湯前先沖洗身體，毛巾放頭上，不要放進池子裡喔！","#ffe2a0",3.4); closeSheet(); };
+/* lock / unlock button while inside your suite */
+{ const b=document.createElement("button"); b.id="innLockBtn"; b.className="zen-music"; b.style.top="calc(env(safe-area-inset-top) + 128px)"; b.hidden=true; b.onclick=()=>{ const i=innSuiteAt(meAv.pos.x,meAv.pos.y); if(i<0) return; if(INN.lock===i+1){ INN.lock=0; toast("房門開了",1600); } else { if(innLockedBy(i)==="other") return; INN.lock=i+1; toast("房門鎖上了，別人進不來；你離開房間就會自動解鎖",3200); } markDirty(); }; document.body.appendChild(b); INN.lockBtn=b; }
+/* the little ghost slideshow on the TVs */
+function innTvDraw(t){ const x=t.c.getContext("2d"), w=256, h=144, k=t.k%5; const bg=["#2a3a6a","#5a2a4a","#2a5a4a","#6a4a2a","#3a2a5a"][k]; x.fillStyle=bg; x.fillRect(0,0,w,h);
+  const gx=w/2+[0,-40,40,-20,20][k], gy=h/2+[0,6,-6,10,-4][k]; x.fillStyle="#fbfbff"; x.beginPath(); x.arc(gx,gy-10,30,Math.PI,0); x.lineTo(gx+30,gy+26); for(let i=0;i<4;i++){ x.quadraticCurveTo(gx+30-i*15-7.5,gy+36,gx+30-(i+1)*15,gy+26); } x.closePath(); x.fill();
+  x.fillStyle="#222"; x.beginPath(); x.arc(gx-10,gy-12,4,0,7); x.arc(gx+10,gy-12,4,0,7); x.fill(); x.fillStyle="#ff9ab8"; x.beginPath(); x.arc(gx-16,gy-2,4,0,7); x.arc(gx+16,gy-2,4,0,7); x.fill();
+  x.strokeStyle="#222"; x.lineWidth=2; x.beginPath(); x.arc(gx,gy-4,5,0,Math.PI); x.stroke();
+  const acc=["","🌸","🍡","🎈","⭐"][k]; if(acc){ x.font="28px serif"; x.fillText(acc,gx+26,gy-34); }
+  x.fillStyle="#fff"; x.font="600 16px sans-serif"; x.fillText(["小幽靈出門散步","小幽靈賞櫻花","小幽靈吃糰子","小幽靈放氣球","小幽靈看星星"][k],10,h-12); t.t.needsUpdate=true; }
+/* per frame: lock state, doors, futons, steam, towels, TV, shower */
+function innTick(dt){ const me=meAv; if(!me) return; INN.t=(INN.t||0)+dt;
+  const si=(me.gy||0)>2.3?innSuiteAt(me.pos.x,me.pos.y):-1; if(INN.lock&&si!==INN.lock-1){ INN.lock=0; markDirty(); } if(INN.lockBtn){ const show=si>=0&&me.pos.x>INN.CX1+.3; INN.lockBtn.hidden=!show; if(show) INN.lockBtn.textContent=INN.lock===si+1?"🔓 開門":"🔒 鎖門"; }
+  for(const S of INN.suites){ const lk=!!innLockedBy(S.i); S.door.position.z=lk?S.dz:S.dz+1.1; }
+  if((INN.ft=(INN.ft||0)-dt)<0){ INN.ft=.5; const taken=new Set([me.seat]); if(typeof remotes!=="undefined") remotes.forEach(r=>taken.add(r.seat)); npcs.forEach(n=>taken.add(n.seat)); INN.futon.forEach(o=>{ o.f.visible=taken.has(o.i); }); }
+  for(const s of INN.steam){ s.userData.s+=dt*.4; const k=s.userData.s%1; s.position.y=.3+k*2.4; s.material.opacity=.14*(1-k)*(k*4>1?1:k*4); }
+  const all=[me,...npcs]; if(typeof remotes!=="undefined") remotes.forEach(a=>all.push(a));
+  for(const av of all){ const want=!!(av.root&&av.root.visible&&(av.gy||0)<1&&innPool(av.pos.x,av.pos.y)); if(want&&!av.towel){ const tw=new T.Group(); const m=new T.Mesh(new T.BoxGeometry(.34,.07,.22),mat(L_TOWEL,{roughness:1})); tw.add(m); const f=new T.Mesh(new T.BoxGeometry(.34,.03,.08),mat(L_TOWEL,{roughness:1})); f.position.set(0,.05,-.03); tw.add(f); tw.position.set(0,.34,0); av.head.add(tw); av.towel=tw; } if(av.towel) av.towel.visible=want; }
+  INN.glass.emissiveIntensity=.45*_dn.night;
+  for(const t of INN.tv){ if(!t.on) continue; if(INN.t-t.at>3){ t.at=INN.t; t.k++; innTvDraw(t); } }
+  for(const s of INN.shower){ if(s.on>0){ s.on-=dt; if(Math.random()<.9) for(let q=0;q<3;q++) spawnSmoke(s.x+(Math.random()-.5)*.25,s.y+2.2-Math.random()*1.8,s.z+(Math.random()-.5)*.25,{size:.04,grow:.02,life:.5,op:.35,vy:-3}); } } }
+const L_TOWEL="#f8f6f0";
+
 
 /* ---- 建築模式: everything becomes editable. Just before the scenery is merged, loose pieces are gathered into one unit per area
    (正殿建築, 前殿立面, 廟埕, each 偏殿 …) and every object group (shrines, censers, lions, lamps, trees …) is its own item. Merging then
@@ -8082,7 +8343,7 @@ const AREA_NAME={M:"正殿建築",F:"前殿立面",C:"廟埕","S-R":"財神殿�
 function buildArea(x,z){ const r=camRoom(x,z), sd=x<0?"L":"R"; if(r==="M") return "M"; if(r[0]==="S") return "S-"+sd; if(r[0]==="G") return "G-"+sd; if(r==="H") return "H"; if(r[0]==="Q") return "Q-"+sd;
   const ax=Math.abs(x); if(ax>26||z<RH.z1-2.5||z>HZ+YX+26) return "X"; if(z<RY0) return "B"; if(z>=HZ&&z<HZ+6&&ax<HX+2) return "F"; if(ax>=12&&z>=SHZ1&&z<HZ) return "P-"+sd; if(z>=HZ) return "C"; return "X"; }
 function buildUnits(){ scene.updateMatrixWorld(true); const box=new T.Box3(), c=new T.Vector3(); let n=0; const groups=[];
-  const skipTop=o=>o.isLight||o===sky||o===outsideGround||o.isPoints||o.isCamera||(o.userData&&(o.userData.isAvatar||o.userData.region))||o.isInstancedMesh&&o.count>40;
+  const skipTop=o=>o.isLight||o===sky||o===outsideGround||o.isPoints||o.isCamera||(o.userData&&(o.userData.isAvatar||o.userData.region||o.userData.noBuild))||o.isInstancedMesh&&o.count>40; /* noBuild: added later (禪院、禪房、shadows, weather) — kept out so the chair's saved layout still matches every old item number */
   const visit=(parent,areaPrefix)=>{ const units={};
     [...parent.children].forEach(o=>{ if(skipTop(o)||o.userData.buildId) return; box.setFromObject(o); if(box.isEmpty()) return; box.getCenter(c); const area=buildArea(c.x,c.z);
       const hasMesh=(()=>{ let m=false; o.traverse(q=>{ if(q.isMesh) m=true; }); return m; })();
