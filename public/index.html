@@ -935,7 +935,10 @@ const skyMat=new T.ShaderMaterial({side:T.BackSide,depthWrite:false,fog:false,un
     if(h<m1){ c=mix(c,mix(vec3(.52,.25,.34),c,.3),.88); }
     if(h<m2){ c=vec3(.17,.08,.1)+vec3(.14,.06,.03)*pow(s,3.0); }
     if(h<0.0){ c=vec3(.11,.055,.05); }
-    vec3 dc=mix(vec3(.62,.78,.95),vec3(.22,.45,.86),clamp(h*2.2,0.,1.)); if(h<m1) dc=vec3(.30,.40,.36); if(h<m2) dc=vec3(.20,.28,.24); if(h<0.0) dc=vec3(.16,.2,.17);
+    vec3 dc=mix(vec3(.78,.87,.96),vec3(.36,.6,.92),smoothstep(0.,.35,h)); dc=mix(dc,vec3(.2,.42,.84),smoothstep(.35,.9,h)); dc+=vec3(1.,.95,.8)*pow(s,8.0)*.25;
+    if(h>0.0&&day>.01){ vec2 uv2=d.xz/(h+.18); float q=fbm(uv2*vec2(.7,1.1)+vec2(time*.006,0.0)); float q2=fbm(uv2*2.2-vec2(time*.009,0.0)+3.0);
+      float cv=smoothstep(.5,.78,q*.8+q2*.3)*smoothstep(.02,.12,h)*(1.0-smoothstep(.55,.85,h)); vec3 cw=mix(vec3(.72,.76,.84),vec3(1.0,.99,.97),smoothstep(.35,.8,q2+pow(s,2.0)*.3)); dc=mix(dc,cw,cv*.9); }
+    if(h<m1) dc=mix(vec3(.42,.52,.5),dc,.25); if(h<m2) dc=vec3(.24,.33,.28); if(h<0.0) dc=vec3(.18,.22,.18);
     dc=mix(dc,vec3(1.,.98,.9)*1.4,smoothstep(.9994,.9998,s)*step(0.,h)); c=mix(c,dc,day);
     c=mix(c,c*vec3(.16,.17,.32)+vec3(.006,.008,.03),night);
     vec3 sd=floor(normalize(vD)*260.); float st=fract(sin(dot(sd,vec3(12.9898,78.233,37.719)))*43758.5453); c+=vec3(.9,.92,1.)*step(.9975,st)*night*step(m1,h)*(.6+.4*sin(time*2.+st*40.));
@@ -4859,9 +4862,10 @@ function fwEndMsg(){ const el=$("#fwEnd"); const txt=(FW.txt||"").trim()||FW_END
   el.setAttribute("aria-label",txt); el.innerHTML=`<p class="vt" aria-hidden="true">${[...txt].map(ch=>`<span>${esc(V[ch]||ch)}</span>`).join("")}</p>`; el.classList.remove("on"); el.hidden=false; void el.offsetWidth; el.classList.add("on"); el.onanimationend=()=>{ el.hidden=true; el.classList.remove("on"); if(fwFinale){ fwFinale=false; } if(!FW.on) setTimeout(()=>{ if(!FW.on&&!FW.pendingAt) fwLeaveSpot(); },1500); renderSparkBtn(); }; renderSparkBtn(); }
 let myFwShow=null;
 const hemiLight=scene.children.find(o=>o.isHemisphereLight), ambLight=scene.children.find(o=>o.isAmbientLight); const fogDusk=scene.fog.color.clone();
-function todPhase(){ const p=(Date.now()/1000%1200)/1200; // 0–.3 dusk … .3→.45 nightfall … .45–.85 night … .85→1 back to dusk
+const TOD_LEN=1440; /* one full day in seconds (24 min) */
+function todPhase(){ let p=(Date.now()/1000%TOD_LEN)/TOD_LEN; if(typeof window.MZ_TOD==="number") p=window.MZ_TOD; /* 0–.32 day … .32→.42 golden hour … .42–.5 dusk … .5→.6 nightfall … .6–.86 night … .86→.94 dawn glow … .94→1 morning */
   const sm=(a,b,v)=>{ const t=Math.max(0,Math.min(1,(v-a)/(b-a))); return t*t*(3-2*t); };
-  const night=sm(.3,.45,p)-sm(.85,1,p); return {night,day:0}; } // dusk ↔ night only
+  const night=sm(.5,.6,p)-sm(.86,.94,p), day=1-sm(.32,.42,p)+sm(.93,1,p); return {night,day:Math.max(0,Math.min(1,day))}; }
 const _dn={night:0,day:0};
 function dayNight(dt){ const want=(FW.on||LAKE.on)?{night:.6,day:0}:todPhase(); /* the show sky: a darker dusk so the colours stand out */ const k=_dn.init?Math.min(1,dt*.5):1; _dn.init=1; _dn.night+=(want.night-_dn.night)*k; _dn.day+=(want.day-_dn.day)*k;
   skyMat.uniforms.night.value=_dn.night; skyMat.uniforms.day.value=_dn.day;
@@ -6270,7 +6274,7 @@ async function godGameWin(g,ms,accId,extra,sc){ const rw=extra||gameReward(g,acc
   openSheet("godGame",GOD_GAMES[g]||"小遊戲",`<div class="gg-done"><div class="gg-time">${sc?`總分 ${sc.s}`:fmtMs(ms)}</div>${sc?`<p class="note">平均 ${sc.a} 分 ×10 ＋ 時間加分 ${sc.tb}（用時 ${fmtMs(ms)}）<br>三個字：${sc.list.join("、")} 分</p>`:""}<p class="lead">${rw.kind==="acc"?"🎁 ":rw.kind==="gacha"?"🎟️ ":""}${esc(rw.text)}</p>
     <div class="group"><span class="group-label">🏆 ${sc?"總分排行榜（分數＋時間）":"最快排行榜"}</span><div id="ggBoard"><p class="note">讀取中…</p></div></div></div>`);
   const list=await lbSubmit(g,ms,sc?sc.s:undefined,sc?sc.a:undefined); const el=$("#ggBoard"); if(el) el.innerHTML=lbHTML(list); }
-const GOD_PLAY={doumu:"⭐ 眾星歸位（連過三關點亮星圖）",wenchang:"🖌️ 寫字（照紅字描 3 個字）",tudi:"⛏️ 尋寶（找到發光的寶藏挖出來）",zhusheng:"🍼 哄寶寶睡覺",jiutian:"☯️ 八卦迷宮（傾斜手機滾彈珠）",guanyin:"💧 接福水（轉動木水道）",dizang:"🧩 記憶碎片（幫小幽靈拼回記憶）"};
+const GOD_PLAY={doumu:"⭐ 眾星歸位（連過三關點亮星圖）",wenchang:"🖌️ 寫字（照紅字描 3 個字）",tudi:"⛏️ 尋寶（找到發光的寶藏挖出來，每天 3 次）",zhusheng:"🍼 哄寶寶睡覺",jiutian:"☯️ 八卦迷宮（傾斜手機滾彈珠）",guanyin:"💧 接福水（轉動木水道）",dizang:"🧩 記憶碎片（幫小幽靈拼回記憶）"};
 const GOD_START={}; HANDLERS.godPlay=g=>{ closeSheet(); if(GOD_START[g]) GOD_START[g](); else toast("這個遊戲還在準備中"); };
 /* ================= 土地公・尋寶: a beam of light marks treasure somewhere in the grounds; walk there, tap it, dig it up ================= */
 const TH={on:false,t0:0,x:0,z:0,g:null,hit:null,digging:false};
@@ -6286,7 +6290,8 @@ function thBeam(x,z){ const g=new T.Group(); g.position.set(x,0,z); g.userData.n
   const glow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffd25e"),transparent:true,opacity:.8,blending:T.AdditiveBlending,depthWrite:false})); glow.position.y=.5; glow.scale.set(2.2,2.2,1); g.add(glow);
   const mound=new T.Mesh(new T.SphereGeometry(.42,14,8,0,Math.PI*2,0,Math.PI/2),mat("#6a4a2a",{roughness:1})); mound.scale.y=.35; g.add(mound);
   g.userData.fx={outer,inner,ring,glow}; return g; }
-function thStart(){ if(TH.on) return; if(me.sp&&myFly) toast("飛行中也可以找，但要落地才能挖"); const [x,z]=thSpot(); TH.on=true; TH.digging=false; TH.x=x; TH.z=z; TH.t0=performance.now(); TH.g=thBeam(x,z);
+const TH_MAX=3; function thLeft(){ bag.gd=bag.gd||{}; const d=twDay(); if(!bag.gd.tudiN||bag.gd.tudiN.d!==d) bag.gd.tudiN={d,n:0}; return me.sp?99:TH_MAX-bag.gd.tudiN.n; }
+function thStart(){ if(TH.on) return; if(thLeft()<=0){ toast("今天已經挖了 3 次寶藏，土地公說明天再來！",3600); return; } if(me.sp&&myFly) toast("飛行中也可以找，但要落地才能挖"); const [x,z]=thSpot(); TH.on=true; TH.digging=false; TH.x=x; TH.z=z; TH.t0=performance.now(); TH.g=thBeam(x,z);
   TH.hit=addHit("treasure",x,0,z,.9,2.6); station("treasure",[x,z+.9],Math.PI); STATION_LABEL.treasure="挖寶藏"; STATION_HINT.treasure="走去挖寶藏";
   $("#thBanner").hidden=false; sfx.dingdong&&sfx.dingdong(); toast("土地公說：寶藏埋在園區某處，跟著金色光束去找！",4200); requestAnimationFrame(thLoop); }
 function thStop(){ TH.on=false; if(TH.g){ scene.remove(TH.g); TH.g=null; } if(TH.hit){ scene.remove(TH.hit); const i=pickables.indexOf(TH.hit); if(i>=0) pickables.splice(i,1); TH.hit=null; } delete stations.treasure; $("#thBanner").hidden=true; }
@@ -6307,18 +6312,19 @@ function thDig(){ if(!TH.on||TH.digging) return; if(Math.hypot(TH.x-meAv.pos.x,T
       const fly=()=>{ const k=(performance.now()-t0)/1000; d.position.x+=v.x*.016; d.position.z+=v.z*.016; v.y-=9.8*.016; d.position.y+=v.y*.016; if(d.position.y>0&&k<1.5) requestAnimationFrame(fly); else scene.remove(d); }; fly(); }
     if(++n<3) setTimeout(stroke,620); else setTimeout(()=>{ if(sh.parent) sh.parent.remove(sh); thChest(ms); },700); };
   setTimeout(stroke,200); }
-const TH_LOOT=[["coins","💰 一袋平安幣",.42],["sock","🧦 臭襪子",.24],["bone","🦴 魚骨頭",.24],["gacha","🎟️ 扭蛋幣",.10]];
+const TH_LOOT=[["big","💰 大袋平安幣",.05],["coins","💰 一袋平安幣",.39],["sock","🧦 臭襪子",.23],["bone","🦴 魚骨頭",.23],["gacha","🎟️ 扭蛋幣",.10]];
 function thChest(ms){ const g=new T.Group(); g.position.set(TH.x,-.6,TH.z); g.rotation.y=Math.atan2(meAv.pos.x-TH.x,meAv.pos.y-TH.z); g.userData.noMerge=1; scene.add(g);
   const wood=mat("#7a4a22",{roughness:.7}), gold=mat("#e0b04a",{metalness:.8,roughness:.3});
   const body=new T.Mesh(new T.BoxGeometry(.7,.42,.46),wood); body.position.y=.21; g.add(body); for(const x of [-.25,.25]){ const b=new T.Mesh(new T.BoxGeometry(.06,.44,.48),gold); b.position.set(x,.21,0); g.add(b); }
   const lid=new T.Group(); lid.position.set(0,.42,-.23); g.add(lid); const top=new T.Mesh(new T.CylinderGeometry(.23,.23,.7,16,1,false,0,Math.PI),wood); top.rotation.z=Math.PI/2; top.position.z=.23; lid.add(top);
   const lock=new T.Mesh(new T.BoxGeometry(.1,.12,.04),gold); lock.position.set(0,.36,.24); g.add(lock);
   /* what's inside */ bag.gd=bag.gd||{}; let r=Math.random(), pick=TH_LOOT[0]; for(const L of TH_LOOT){ if(r<L[2]){ pick=L; break; } r-=L[2]; }
-  if(pick[0]==="gacha"&&bag.gd.tudiG===twDay()) pick=TH_LOOT[0];
-  let text; if(pick[0]==="coins"){ const amt=30+Math.round(Math.random()*9)*10; bag.coins+=amt; text=`挖到一袋平安幣：${amt} 幣！`; }
+  if(pick[0]==="gacha"&&bag.gd.tudiG===twDay()) pick=TH_LOOT[1]; thLeft(); bag.gd.tudiN.n++; const left=Math.max(0,TH_MAX-bag.gd.tudiN.n);
+  let text; if(pick[0]==="big"){ bag.coins+=500; text="挖到大寶藏：500 平安幣！土地公保佑！"; }
+  else if(pick[0]==="coins"){ const amt=30+Math.round(Math.random()*9)*10; bag.coins+=amt; text=`挖到一袋平安幣：${amt} 幣！`; }
   else if(pick[0]==="gacha"){ bag.gd.tudiG=twDay(); bag.gacha=(bag.gacha||0)+1; text="挖到扭蛋幣 1 枚！（扭蛋機尚未開放，先存著）"; }
   else if(pick[0]==="sock"){ text="挖到一隻臭襪子……土地公說這不是他的。"; } else { text="挖到一根魚骨頭……應該是廟裡的貓藏的。"; }
-  saveBag(); markDirty();
+  if(!me.sp) text+=left?`（今天還能挖 ${left} 次）`:"（今天的 3 次挖完了）"; saveBag(); markDirty();
   const item=textSprite(pick[1].split(" ")[0],{fs:72,h:.5,pad:4}); item.position.set(0,.3,0); item.visible=false; g.add(item);
   const t0=performance.now(); const up=()=>{ const k=(performance.now()-t0)/1000;
     g.position.y=k<.5?-.6+1.3*(k/.5)-.6*(k/.5)*(k/.5):(.1*Math.max(0,1-(k-.5)*4)); if(k>.9) lid.rotation.x=-Math.min(1.9,(k-.9)*5);
