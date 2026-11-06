@@ -2308,7 +2308,7 @@ function makeSakura(seed){ let st=(seed>>>0)||1; const rnd=()=>{ st=(st+0x6D2B79
   // blossom: little five-petal flowers drawn on a card, many cards per branch end, facing every way
   const bloomTex=cvs(128,128,(x,w,h)=>{ x.clearRect(0,0,w,h); for(let k=0;k<26;k++){ const cx=16+Math.random()*96, cy=16+Math.random()*96, r=5+Math.random()*7; const pk=["#ffd3e2","#ffb8d0","#ffc6da","#fbe7ef","#ff9fc0"][k%5];
       for(let q=0;q<5;q++){ const a=q/5*Math.PI*2; x.fillStyle=pk; x.beginPath(); x.ellipse(cx+Math.cos(a)*r*.55,cy+Math.sin(a)*r*.55,r*.55,r*.4,a,0,7); x.fill(); } x.fillStyle="#d4567c"; x.beginPath(); x.arc(cx,cy,r*.22,0,7); x.fill(); } });
-  const bloomMat=new T.MeshStandardMaterial({map:bloomTex,alphaTest:.45,side:T.DoubleSide,roughness:.8,emissive:new T.Color("#5a2236"),emissiveMap:bloomTex});
+  const bloomMat=new T.MeshStandardMaterial({map:bloomTex,alphaTest:.45,side:T.DoubleSide,roughness:.8,emissive:new T.Color("#5a2236"),emissiveMap:bloomTex}); bloomMat.onBeforeCompile=sh=>{ if(typeof swayPatch==="function") swayPatch(sh,1.5,.035); }; bloomMat.customProgramCacheKey=()=>"wishsway";
   const N=Math.min(1400,tips.length*14), bl=new T.InstancedMesh(new T.PlaneGeometry(.95,.95),bloomMat,N), m4=new T.Matrix4(), q=new T.Quaternion(), e=new T.Euler(), sc=new T.Vector3();
   for(let k=0;k<N;k++){ const t=tips[k%tips.length]; e.set(R(0,6.3),R(0,6.3),R(0,6.3)); q.setFromEuler(e); const z=R(.7,1.25); m4.compose(new T.Vector3(t.x+R(-.75,.75),t.y+R(-.45,.55),t.z+R(-.75,.75)),q,sc.set(z,z,z)); bl.setMatrixAt(k,m4); }
   g.add(bl);
@@ -2422,7 +2422,14 @@ function zenWalkable(x,z){ const G=ZEN.GZ;
     const rx0=pl.x0-1.3, rx1=pl.x1+1.3, rz0=pl.z0-1.3, rz1=pl.z1+1.3, ry=FY+H+.15, rh=3.4, cx=(rx0+rx1)/2, cz=(rz0+rz1)/2, w2=(rx1-rx0)/2, d2=(rz1-rz0)/2, rl=w2*.45;
     const rg=new T.BufferGeometry(), V=[]; const A=[cx-w2,ry,cz-d2],B=[cx+w2,ry,cz-d2],C=[cx+w2,ry,cz+d2],D=[cx-w2,ry,cz+d2],E=[cx-rl,ry+rh,cz],F=[cx+rl,ry+rh,cz];
     const tri=(a,b,c)=>V.push(...a,...b,...c); tri(A,F,B); tri(A,E,F); tri(B,F,C); tri(C,F,E); tri(C,E,D); tri(D,E,A); tri(A,B,C); tri(A,C,D);
-    rg.setAttribute("position",new T.Float32BufferAttribute(V,3)); rg.computeVertexNormals(); const roof=mesh(rg,new T.MeshStandardMaterial({color:ZL("#5a5e66"),roughness:.6,side:T.DoubleSide}),0,0,0,g);
+    /* tiles: rows of round pan tiles (本瓦葺き style), laid along each slope */
+    const UV=[]; for(let i=0;i<V.length;i+=9){ const ax=V[i+3]-V[i],ay=V[i+4]-V[i+1],az=V[i+5]-V[i+2],bx=V[i+6]-V[i],by=V[i+7]-V[i+1],bz=V[i+8]-V[i+2]; const nx=Math.abs(ay*bz-az*by), nz=Math.abs(ax*by-ay*bx);
+      for(let k=0;k<3;k++){ const x=V[i+k*3], y=V[i+k*3+1], z=V[i+k*3+2]; UV.push((nz>=nx?x:z)/.32,(y-ry)/.3); } }
+    rg.setAttribute("position",new T.Float32BufferAttribute(V,3)); rg.setAttribute("uv",new T.Float32BufferAttribute(UV,2));
+    const tileTex=cvs(64,64,(x,w,h)=>{ x.fillStyle="#3a3e46"; x.fillRect(0,0,w,h); const gr=x.createLinearGradient(0,0,w,0); gr.addColorStop(0,"#2a2d33"); gr.addColorStop(.25,"#6a707c"); gr.addColorStop(.5,"#8a919e"); gr.addColorStop(.75,"#6a707c"); gr.addColorStop(1,"#2a2d33"); x.fillStyle=gr; x.fillRect(w*.08,0,w*.84,h);
+      x.fillStyle="rgba(0,0,0,.45)"; x.fillRect(0,h*.86,w,h*.14); x.fillStyle="rgba(255,255,255,.08)"; x.fillRect(0,h*.82,w,h*.04); });
+    tileTex.wrapS=tileTex.wrapT=T.RepeatWrapping; rg.computeVertexNormals();
+    const roof=mesh(rg,new T.MeshStandardMaterial({map:tileTex,color:ZL("#9aa0aa"),roughness:.55,metalness:.1,side:T.DoubleSide}),0,0,0,g);
     box(2*rl+.6,.3,.5,mat(ZL("#2a2c30"),{roughness:.6}),cx,ry+rh+.1,cz,g);
     const eave=box(2*w2+.2,.16,2*d2+.2,darkWood,cx,ry-.02,cz,g); }
 
@@ -2459,7 +2466,7 @@ function zenWalkable(x,z){ const G=ZEN.GZ;
   { const cg=new T.PlaneGeometry(1,1), c2=new T.PlaneGeometry(1,1); c2.rotateY(Math.PI/2); const merged=new T.BufferGeometry(); const pa=[...cg.attributes.position.array,...c2.attributes.position.array], na=[...cg.attributes.normal.array,...c2.attributes.normal.array], ua=[...cg.attributes.uv.array,...c2.attributes.uv.array];
     const ia=[...cg.index.array,...Array.from(c2.index.array).map(v=>v+4)]; merged.setAttribute("position",new T.Float32BufferAttribute(pa,3)); merged.setAttribute("normal",new T.Float32BufferAttribute(na,3)); merged.setAttribute("uv",new T.Float32BufferAttribute(ua,2)); merged.setIndex(ia);
     const lm=new T.MeshStandardMaterial({map:leafTex,alphaTest:.45,side:T.DoubleSide,roughness:.85,color:"#ffffff",emissive:"#ffffff",emissiveIntensity:.0}); ZEN.leafMat=lm;
-    ZEN.glowU={value:.14}; lm.onBeforeCompile=sh=>{ sh.uniforms.zGlow=ZEN.glowU; sh.fragmentShader="uniform float zGlow;\n"+sh.fragmentShader.replace("#include <emissivemap_fragment>","#include <emissivemap_fragment>\n totalEmissiveRadiance+=diffuseColor.rgb*zGlow;"); }; lm.customProgramCacheKey=()=>"zenleaf2";
+    ZEN.glowU={value:.14}; lm.onBeforeCompile=sh=>{ swayPatch(sh,.8,.035); sh.uniforms.zGlow=ZEN.glowU; sh.fragmentShader="uniform float zGlow;\n"+sh.fragmentShader.replace("#include <emissivemap_fragment>","#include <emissivemap_fragment>\n totalEmissiveRadiance+=diffuseColor.rgb*zGlow;"); }; lm.customProgramCacheKey=()=>"zenleaf2";
     ZEN.leaves=inst(merged,lm,cards); }
   /* flower shrubs: azaleas along the fence and round the platform */
   { const fl=[]; const P2=["#c81e5a","#d84a80","#9a2490","#e8e0e4","#d8780c","#c01c1c"]; for(let i=0;i<520;i++){ let x,z; if(i<340){ const side=i%4; const t=R(); x=side<2?ZEN.X0+1+t*(ZEN.X1-ZEN.X0-2):(side===2?ZEN.X0+.9:ZEN.X1-1); z=side<2?(side?ZEN.Z1-.9:ZEN.Z0+.9):ZEN.Z0+1+t*(ZEN.Z1-ZEN.Z0-2); if(side===3&&Math.abs(z-G)<2.5) continue; }
@@ -2484,6 +2491,14 @@ function zenWalkable(x,z){ const G=ZEN.GZ;
 /* ================= outside the balustrade: lawn, and cherry trees all round the grounds. Two kinds of tree: near the balustrade a full
    canopy of many small blossom cards (like the zen garden), further out a few big cards per tree — still 3D, so from the air it is a
    sea of pink crowns, not a painted wall. Each kind is one instanced draw. ================= */
+const SWAY={t:{value:0},w:{value:.12}};
+/* foliage sways in the wind: every leaf card is pushed sideways a little, more the higher it is, in a slow travelling wave */
+function swayPatch(sh,base,k){ sh.uniforms.uSwT=SWAY.t; sh.uniforms.uSwW=SWAY.w; sh.vertexShader="uniform float uSwT; uniform float uSwW;\n"+sh.vertexShader.replace("#include <project_vertex>",`vec4 mvPosition=vec4(transformed,1.0);
+#ifdef USE_INSTANCING
+  mvPosition=instanceMatrix*mvPosition;
+#endif
+  { vec3 wp=(modelMatrix*mvPosition).xyz; float hg=max(0.0,mvPosition.y-${base.toFixed(2)}); float sw=sin(uSwT*1.7+wp.x*.31+wp.z*.23)+.45*sin(uSwT*3.3+wp.x*.7+wp.z*.4); mvPosition.x+=sw*uSwW*hg*${k.toFixed(3)}; mvPosition.z+=sw*uSwW*hg*${(k*.6).toFixed(3)}; }
+  mvPosition=modelViewMatrix*mvPosition; gl_Position=projectionMatrix*mvPosition;`); }
 const SAKURA={};
 { const grassTex=cvs(256,256,(x,w,h)=>{ x.fillStyle="#4e6e2c"; x.fillRect(0,0,w,h); for(let i=0;i<4200;i++){ x.fillStyle=`hsla(${78+Math.random()*30},${35+Math.random()*25}%,${22+Math.random()*24}%,.55)`; x.fillRect(Math.random()*w,Math.random()*h,1+Math.random()*2,2+Math.random()*4); }
     for(let i=0;i<140;i++){ x.fillStyle=Math.random()<.7?"rgba(255,190,210,.8)":"rgba(255,245,248,.8)"; x.beginPath(); x.ellipse(Math.random()*w,Math.random()*h,2.2,1.4,Math.random()*3,0,7); x.fill(); } });
@@ -2495,8 +2510,8 @@ const SAKURA={};
     if(z>60&&ax<75) return false; /* the lake */ if(ax<16&&z<BZ0&&z>-84) return false; /* the big statue */ return true; };
   const dist=(x,z)=>{ const ax=Math.abs(x); const dx=Math.max(0,ax-BX), dz=Math.max(0,BZ0-z,z-BZ1); return Math.hypot(dx,dz); };
   const near=[], far=[]; const NN=Q.lite?60:130, NF=Q.lite?110:230;
-  for(let i=0;i<9000&&(near.length<NN||far.length<NF);i++){ const x=rr(-130,130), z=rr(-130,95), d=dist(x,z); if(d<3||d>70) continue; const r=d<15?rr(2.4,3.4):rr(3,4.4), isNear=d<15;
-    if(isNear&&near.length>=NN||!isNear&&far.length>=NF) continue; if(!free(x,z,r*.5+1)) continue; const L=isNear?near:far; if(near.some(s=>Math.hypot(s[0]-x,s[1]-z)<(s[2]+r)*.7)||far.some(s=>Math.hypot(s[0]-x,s[1]-z)<(s[2]+r)*.75)) continue; L.push([x,z,r]); }
+  for(let i=0;i<9000&&(near.length<NN||far.length<NF);i++){ let x=rr(-130,130), z=rr(-130,95); if(R()<.35&&(near.length||far.length)){ const L0=R()<.5&&near.length?near:far.length?far:near, p=L0[(R()*L0.length)|0]; x=p[0]+rr(-7,7); z=p[1]+rr(-7,7); } /* clumps, like trees seeding near each other */ const d=dist(x,z); if(d<3||d>70) continue; const r=d<15?(R()<.25?rr(1.3,2.2):rr(2.2,4.4)):rr(2,5.4), isNear=d<15;
+    if(isNear&&near.length>=NN||!isNear&&far.length>=NF) continue; if(!free(x,z,r*.5+1)) continue; const L=isNear?near:far; if(near.some(s=>Math.hypot(s[0]-x,s[1]-z)<(s[2]+r)*.6)||far.some(s=>Math.hypot(s[0]-x,s[1]-z)<(s[2]+r)*.62)) continue; L.push([x,z,r]); }
   const blossomTex=cvs(128,128,(x,w,h)=>{ x.clearRect(0,0,w,h); for(let i=0;i<120;i++){ const a=Math.random()*6.28, r=Math.sqrt(Math.random())*50, px=64+Math.cos(a)*r, py=64+Math.sin(a)*r*.85, s=2.5+Math.random()*3.2; x.fillStyle=`rgba(255,255,255,${.8+Math.random()*.2})`;
       for(let k=0;k<5;k++){ const b=k/5*6.283; x.beginPath(); x.arc(px+Math.cos(b)*s*.6,py+Math.sin(b)*s*.6,s*.55,0,7); x.fill(); } } });
   blossomTex.encoding=T.LinearEncoding;
@@ -2504,18 +2519,21 @@ const SAKURA={};
   const M4=new T.Matrix4(), Q4=new T.Quaternion(), E3=new T.Euler(), S3=new T.Vector3(), V3=new T.Vector3(), C3=new T.Color();
   const cross=(()=>{ const a=new T.PlaneGeometry(1,1), b=new T.PlaneGeometry(1,1); b.rotateY(Math.PI/2); const g=new T.BufferGeometry(); g.setAttribute("position",new T.Float32BufferAttribute([...a.attributes.position.array,...b.attributes.position.array],3)); g.setAttribute("normal",new T.Float32BufferAttribute([...a.attributes.normal.array,...b.attributes.normal.array],3)); g.setAttribute("uv",new T.Float32BufferAttribute([...a.attributes.uv.array,...b.attributes.uv.array],2)); g.setIndex([...a.index.array,...Array.from(b.index.array).map(v=>v+4)]); return g; })();
   SAKURA.glowU={value:.12};
-  const lm=new T.MeshStandardMaterial({map:blossomTex,alphaTest:.45,side:T.DoubleSide,roughness:.9,color:"#ffffff"}); lm.onBeforeCompile=sh=>{ sh.uniforms.sGlow=SAKURA.glowU; sh.fragmentShader="uniform float sGlow;\n"+sh.fragmentShader.replace("#include <emissivemap_fragment>","#include <emissivemap_fragment>\n totalEmissiveRadiance+=diffuseColor.rgb*sGlow;"); }; lm.customProgramCacheKey=()=>"sakura";
+  const lm=new T.MeshStandardMaterial({map:blossomTex,alphaTest:.45,side:T.DoubleSide,roughness:.9,color:"#ffffff"}); lm.onBeforeCompile=sh=>{ swayPatch(sh,1,.04); sh.uniforms.sGlow=SAKURA.glowU; sh.fragmentShader="uniform float sGlow;\n"+sh.fragmentShader.replace("#include <emissivemap_fragment>","#include <emissivemap_fragment>\n totalEmissiveRadiance+=diffuseColor.rgb*sGlow;"); }; lm.customProgramCacheKey=()=>"sakura";
   const cards=[], trunks=[];
-  const tree=(x,z,r,detail)=>{ const th=rr(1.8,2.8), cy=th+r*.55, tc=C3.set("#3a2620").convertSRGBToLinear().getHex(); trunks.push([x,th/2,z,0,0,0,1,th,1,tc]);
+  const tree=(x,z,r,detail)=>{ const th=rr(1,3.6)*(.55+r/7), vs=rr(.5,1.1), lean=rr(-.25,.25), cy=th+r*.55*vs, tc=C3.set("#3a2620").convertSRGBToLinear().getHex(); trunks.push([x,th/2,z,0,0,0,1,th,1,tc]);
     const nb=detail?3:2; for(let b=0;b<nb;b++){ const a=rr(0,6.28), tilt=rr(.6,1.0), L=r*rr(.6,.9); trunks.push([x+Math.cos(a)*Math.sin(tilt)*L/2,th*.85+Math.cos(tilt)*L/2,z+Math.sin(a)*Math.sin(tilt)*L/2,0,-a+Math.PI/2,-tilt,.5,L,.5,tc]); }
     const n=detail?Math.round(36+r*10):Math.round(9+r*1.5), base=PINK[(R()*PINK.length)|0];
     for(let k=0;k<n;k++){ const a=rr(0,6.28), u=Math.cbrt(R()), y=rr(-.8,.75), s=detail?rr(1,1.45)*(.85+r*.08):rr(2.6,3.4)*(r/3.6); const pc=R()<.6?base:PINK[(R()*PINK.length)|0];
-      cards.push([x+Math.cos(a)*u*r*(detail?1:.75),cy+y*r*(detail?.85:.6),z+Math.sin(a)*u*r*(detail?1:.75),rr(-.5,.5),rr(0,3.14),rr(-.4,.4),s,s,s,C3.set(pc).convertSRGBToLinear().offsetHSL(0,rr(-.05,.05),(y<-.2?-.08:0)+rr(-.07,.06)).getHex()]); } };
-  near.forEach(([x,z,r])=>tree(x,z,r,true)); far.forEach(([x,z,r])=>tree(x,z,r,false));
+      cards.push([x+Math.cos(a)*u*r*(detail?1:.75)+lean*(y+1)*r*.4,cy+y*r*(detail?.85:.6)*vs,z+Math.sin(a)*u*r*(detail?1:.75)+lean*(y+1)*r*.25,rr(-.5,.5),rr(0,3.14),rr(-.4,.4),s,s,s,C3.set(pc).convertSRGBToLinear().offsetHSL(0,rr(-.05,.05),(y<-.2?-.08:0)+rr(-.07,.06)).getHex()]); } };
+  near.forEach(([x,z,r])=>tree(x,z,r,true)); far.forEach(([x,z,r])=>tree(x,z,r,false)); SAKURA.spots=near.concat(far);
   const inst=(geo,m,list)=>{ const im=new T.InstancedMesh(geo,m,list.length); list.forEach((e,i)=>{ E3.set(e[3],e[4],e[5]); Q4.setFromEuler(E3); M4.compose(V3.set(e[0],e[1],e[2]),Q4,S3.set(e[6],e[7],e[8])); im.setMatrixAt(i,M4); im.setColorAt(i,C3.set(e[9])); });
     im.instanceMatrix.needsUpdate=true; im.instanceColor.needsUpdate=true; im.frustumCulled=false; im.userData.noMerge=1; scene.add(im); return im; };
   SAKURA.leaves=inst(cross,lm,cards); SAKURA.trunks=inst(new T.CylinderGeometry(.12,.2,1,6),new T.MeshStandardMaterial({roughness:.9,color:"#ffffff"}),trunks);
-  SAKURA.count=[near.length,far.length,cards.length]; }
+  SAKURA.count=[near.length,far.length,cards.length];
+  /* their shadows on the lawn (one instanced mesh, moved with the sun every few seconds) */
+  SAKURA.shMat=new T.MeshBasicMaterial({map:shadowTex,transparent:true,depthWrite:false,opacity:0}); const sg=new T.PlaneGeometry(1,1); sg.rotateX(-Math.PI/2);
+  SAKURA.sh=new T.InstancedMesh(sg,SAKURA.shMat,SAKURA.spots.length); SAKURA.sh.frustumCulled=false; SAKURA.sh.userData.noMerge=1; SAKURA.sh.position.y=.03; scene.add(SAKURA.sh); }
 
 /* ---- the mirror floor: the garden and hall drawn upside down into a texture each frame while you are inside (only the garden, at low resolution) ---- */
 function zenMirrorInit(){ if(ZEN.refl||Q.lite) return; const res=Q.low?256:512; const rt=new T.WebGLRenderTarget(res,res,{minFilter:T.LinearFilter,magFilter:T.LinearFilter}); rt.texture.encoding=T.sRGBEncoding;
@@ -2615,8 +2633,10 @@ function wxTick(dt){ WX.t+=dt; const show=(typeof FW!=="undefined"&&(FW.on||FW.p
     g.rotation.x+=T0.spin.x*dt; g.rotation.y+=T0.spin.y*dt; g.rotation.z+=T0.spin.z*dt; if(T0.t>6){ scene.remove(g); g.traverse(o=>{ if(o.geometry) o.geometry.dispose(); }); WX.trash=null; } }
   else if(w>.6&&WX.t>WX.trashAt){ WX.trashAt=WX.t+25+Math.random()*35; if(WX.t>8&&wxOutdoor(cam.x,cam.z)) wxTrash(cam); }
   /* the demo visitors outside go home when it rains (new ones arrive indoors until it stops) */
-  if(r>.5&&WX.t>(WX.homeT||0)){ WX.homeT=WX.t+2; for(const n of npcs){ if(!n.isBot||n.vanishT!=null||n.seat>=0) continue; if(wxOutdoor(n.pos.x,n.pos.y)&&Math.random()<.35) botVanish(n); } }
-  if(typeof SAKURA!=="undefined"&&SAKURA.glowU) SAKURA.glowU.value=.12+.38*_dn.night;
+  if(r>.5&&WX.t>(WX.homeT||0)){ WX.homeT=WX.t+2; for(const n of npcs){ if(!n.isBot||n.leaving||n.classic||n.sjq||n.seat>=0) continue; if(wxOutdoor(n.pos.x,n.pos.y)&&Math.random()<.3){ /* walks off home under the umbrella (no more shrinking away) */
+      if(n.act>=0) stopAct(n); n.pauseT=0; n.saved=null; n.leaving=true; n.hold=0; n.danceT=0; n.anim=null; n.steps=[]; botStart(n,{leave:botExit(n)}); } } }
+  { const hide=r>.5; if(hide!==!!CATS.rainHide){ CATS.rainHide=hide; if(hide){ CATS.wasOff=CATS.off; catsShow(false); } else if(!CATS.wasOff) catsShow(true); } } /* the cats shelter from the rain */
+  if(typeof SAKURA!=="undefined"&&SAKURA.glowU) SAKURA.glowU.value=.12+.38*_dn.night; SWAY.t.value=WX.t; SWAY.w.value=.12+.95*w;
   /* sound */
   const A=(r>.02||w>.3)&&soundOn&&!document.hidden?wxAudio():WX.au; if(A){ const out=wxOutdoor(cam.x,cam.z)?1:.45, sv=soundOn&&!document.hidden?sVol():0, gust=.55+.45*Math.sin(WX.t*.7)*Math.sin(WX.t*.23+1), now=A.a.currentTime;
     A.rainG.gain.setTargetAtTime(.1*r*out*sv,now,.4); A.rainLo.gain.setTargetAtTime(.07*r*out*sv,now,.4); A.windG.gain.setTargetAtTime(Math.max(0,w-.25)*.32*gust*out*sv,now,.3); A.wf.frequency.setTargetAtTime(260+520*gust*w,now,.3); } }
@@ -2625,6 +2645,26 @@ async function wxPoll(){ if(!USE_CF) return; try{ const r=await fetch("/weather"
 setTimeout(wxPoll,4000); setInterval(wxPoll,120000);
 
 const _zv=new T.Vector3(), _zc=new T.Color();
+/* 雨傘: out in the rain everyone holds an umbrella (shared shapes, a few colours) */
+const UMB={geo:null,stick:null,mats:[]};
+function umbTick(av,wet){ if(!av||!av.root) return; const need=wet&&av.root.visible&&av.seat<0&&!((av.flyCur||0)>.3)&&wxOutdoor(av.pos.x,av.pos.y);
+  if(!need){ if(av.umb) av.umb.visible=false; return; }
+  if(!av.umb){ if(!UMB.geo){ UMB.geo=new T.SphereGeometry(.62,14,5,0,Math.PI*2,0,Math.PI/2.7); UMB.stick=new T.CylinderGeometry(.013,.013,.95,6); UMB.mats=["#c8263a","#2a6fc8","#f2c230","#2a9a5a","#7a3ab0","#f07aa8","#3a3a44","#f4f0e8"].map(c=>new T.MeshStandardMaterial({color:c,roughness:.6,side:T.DoubleSide})); }
+    const g=new T.Group(), m=UMB.mats[((av.npcId||0)+(av.isMe?3:0)+(av.name?av.name.length:0))%UMB.mats.length]; const top=new T.Mesh(UMB.geo,m); top.position.y=.5; top.scale.y=.75; g.add(top);
+    const st=new T.Mesh(UMB.stick,mat("#3a2a1a")); g.add(st); g.position.set(.17,1.12,.06); g.rotation.z=-.08; g.userData.noMerge=1; av.root.add(g); av.umb=g; }
+  av.umb.visible=true; }
+/* 影子: no shadow maps (too dear on phones). Each person's soft round shadow is stretched away from the sun, longer as it sinks, and the
+   cherry trees get the same kind of soft shadow on the lawn; the sun light itself swings round with them. Fades out at dusk. */
+const SHD={dir:new T.Vector3(),len:0,op:0,t:0};
+function shadowTick(dt){ let p=(Date.now()/1000%TOD_LEN)/TOD_LEN; if(typeof window.MZ_TOD==="number") p=window.MZ_TOD; const day=_dn.day, k=Math.max(0,Math.min(1,p<.5?p/.42:1)); const el=(58-50*k*k)*Math.PI/180, az=-2.2+2.9*k;
+  SHD.dir.set(Math.cos(az)*Math.cos(el),Math.sin(el),Math.sin(az)*Math.cos(el)); SHD.len=Math.min(4,1/Math.tan(el)); SHD.op=day*(1-.6*(typeof WX!=="undefined"?WX.c:0));
+  if(day>.02) sunLight.position.copy(SHD.dir).multiplyScalar(40).lerp(_zv.copy(SUN).multiplyScalar(40).setY(16),1-day);
+  const sx=-SHD.dir.x, sz=-SHD.dir.z, sl=Math.hypot(sx,sz)||1, ux=sx/sl, uz=sz/sl, L=SHD.len*SHD.op, stretch=1+L*1.1, off=L*.5; shadowMat.opacity=.75+.25*SHD.op;
+  const each=av=>{ const sh=av&&av.shadow; if(!sh) return; const r=av.root.rotation.y, c=Math.cos(r), s=Math.sin(r), lx=ux*c-uz*s, lz=ux*s+uz*c; sh.rotation.y=Math.atan2(lx,lz); sh.scale.set(1,1,stretch); sh.position.x=lx*off; sh.position.z=lz*off; };
+  const wet=typeof WX!=="undefined"&&WX.r>.45; const all=[meAv,...npcs]; if(typeof remotes!=="undefined") remotes.forEach(a=>all.push(a));
+  for(const av of all){ each(av); umbTick(av,wet); }
+  if(typeof SAKURA!=="undefined"&&SAKURA.sh){ SAKURA.shMat.opacity=.55*SHD.op; SHD.t-=dt; if(SHD.t<=0&&SHD.op>.01){ SHD.t=3; const M=new T.Matrix4(), Qt=new T.Quaternion().setFromAxisAngle(_zv.set(0,1,0),Math.atan2(ux,uz)), S=new T.Vector3(), P=new T.Vector3();
+      SAKURA.spots.forEach(([x,z,r],i)=>{ const h=r*1.6+2; M.compose(P.set(x+ux*h*SHD.len*.35,0,z+uz*h*SHD.len*.35),Qt,S.set(r*2.1,1,r*2.1+h*SHD.len*.55)); SAKURA.sh.setMatrixAt(i,M); }); SAKURA.sh.instanceMatrix.needsUpdate=true; } SAKURA.sh.visible=SHD.op>.01; } }
 /* the round build-mode trees that ended up out where the garden is (they looked odd there): hidden before the static merge, so they are not baked in */
 function zenHideTrees(){ for(const o of scene.children){ if(!(o.userData&&o.userData.buildId&&/^g-X-/.test(o.userData.buildId))) continue; let hit=false; o.updateMatrixWorld(true); o.traverse(m=>{ if(hit||!(m.isMesh||m.isPoints)) return; m.getWorldPosition(_zv); if((_zv.x<-26&&_zv.z<9)||Math.abs(_zv.x)>26.5||_zv.z<-51.5||_zv.z>HZ+YX+25) hit=true; /* (and every one outside the balustrade: the cherry trees stand there now) */ }); if(hit) o.visible=false; } }
 function zenTick(dt){ { const b=$("#zenMusicBtn"), want=!!(meAv&&meAv.pos.x<-23.5); if(b&&b.hidden===want) b.hidden=!want; } const c=camera.position, near=(c.x<-14&&c.z<-8&&c.z>-54)||c.x<-24, me=meAv&&meAv.pos;
@@ -2982,7 +3022,7 @@ function textSprite(text,o={}){ const c=document.createElement("canvas"); const 
   x.fillStyle=o.color||"#fff"; x.textAlign="center"; x.textBaseline="middle"; if(!o.bg){ x.shadowColor="rgba(0,0,0,.85)"; x.shadowBlur=6; } x.fillText(text,c.width/2,c.height/2+2);
   const t=new T.CanvasTexture(c); t.encoding=T.sRGBEncoding; const s=new T.Sprite(new T.SpriteMaterial({map:t,transparent:true,depthWrite:false}));
   const hgt=o.h||.2; s.scale.set(hgt*c.width/c.height,hgt,1); return s; }
-const shadowMat=new T.MeshBasicMaterial({map:shadowTex,transparent:true,depthWrite:false});
+const shadowMat=new T.MeshBasicMaterial({map:cvs(64,64,(x,w,h)=>{ const g=x.createRadialGradient(32,32,0,32,32,32); g.addColorStop(0,"rgba(0,0,0,.72)"); g.addColorStop(.55,"rgba(0,0,0,.5)"); g.addColorStop(1,"rgba(0,0,0,0)"); x.fillStyle=g; x.fillRect(0,0,w,h); }),transparent:true,depthWrite:false}); /* a firmer core than shadowTex, so a long evening shadow still reads */
 const shadowGeo=new T.PlaneGeometry(.9,.9); shadowGeo.rotateX(-Math.PI/2);
 
 /* ---- 動作: ten silly body actions in the 表情 menu; the first five play once, the last five loop until you move or stop ---- */
@@ -3018,7 +3058,7 @@ class Avatar{
   constructor(look,o={}){ this.root=new T.Group(); this.root.userData.noMerge=1; this.root.userData.isAvatar=1; scene.add(this.root); this.isMe=!!o.isMe; this.npc=!!o.npc; this.sp=!!o.sp;
     this.pos=new T.Vector2(o.x||0,o.z||0); this.target=this.pos.clone(); this.root.position.set(this.pos.x,0,this.pos.y); this.rotY=o.r||Math.PI; this.root.rotation.y=this.rotY;
     this.state="stand"; this.act=-1; this.actT=0; this.seat=-1; this.bowT=-1; this.t=Math.random()*10; this.kneel=0; this.hold=0; this.burnT=-1; this.headYaw=0; this.headGoal=0; this.smokeT=Math.random();
-    const sh=new T.Mesh(shadowGeo,shadowMat); sh.position.y=.015; this.root.add(sh);
+    const sh=new T.Mesh(shadowGeo,shadowMat); sh.position.y=.015; this.root.add(sh); this.shadow=sh;
     this.parts=new T.Group(); this.root.add(this.parts); this.setLook(look); this.label=null; this.bubble=null; this.bubbleT=0; }
   setLook(l){ const lo=!this.isMe; if(!lo) return this._setLook(l); const keep=Object.assign({},G); LOWPOLY=true; Object.assign(G,G_LO); try{ return this._setLook(l); } finally{ Object.assign(G,keep); LOWPOLY=false; } }
   _setLook(l){ l=sanitizeLook(l,!!this.sp); this.shoulderPet=null; this.look=l.slice(); const p=this.parts; while(p.children.length) p.remove(p.children[0]);
@@ -3321,7 +3361,9 @@ function autoCrowd(ts){ const tw=new Date(ts+8*3600e3), h=tw.getUTCHours()+tw.ge
   const lo=120*(1-night)+50*night, hi=200*(1-night)+70*night; return Math.round(Math.max(lo,Math.min(hi,lo+(hi-lo)*slow+fast*6))); }
 let CROWD={target:null,from:null,at:0}; // set by the chair: ease from `from` to `target` (or back to automatic when target is null)
 const CROWD_RAMP=60e3; // how long the count takes to reach the chair's target (1 minute)
-function fakeTotal(ts){ const a=autoCrowd(ts); if(!CROWD.at) return a; const k=Math.max(0,Math.min(1,(ts-CROWD.at)/CROWD_RAMP)), s=k*k*(3-2*k), from=CROWD.from==null?a:CROWD.from;
+/* 自動模式 (the chair's rule): with more than 60 real players only they are shown; below that, about 20 demo visitors join them */
+function autoCrowd2(ts){ const R=realCounts().reduce((x,y)=>x+(y||0),0); if(R>60) return R; return R+20+Math.round(fakeNoise(ts,3*60e3,2)*6-3); }
+function fakeTotal(ts){ const a=autoCrowd2(ts); if(!CROWD.at) return a; const k=Math.max(0,Math.min(1,(ts-CROWD.at)/CROWD_RAMP)), s=k*k*(3-2*k), from=CROWD.from==null?a:CROWD.from;
   if(CROWD.target==null) return Math.round(from+(a-from)*s);
   if(CROWD.real) return Math.max(0,Math.round(from*(1-s))); // 真實人數: the demo crowd fades out within a minute
   return Math.max(0,Math.round(from+(CROWD.target-from)*s+crowdWobble(ts)*s)); }
@@ -3947,7 +3989,7 @@ function openChair(){ if(!me.sp) return;
   <div class="ct-group"><span class="group-label">訊息</span><div class="ct-grid">${ctTile("msgsOpen","📬","香客留言")}${ctTile("annOpen","📢","全服公告","跑馬燈")}${ctTile("boardOpen","📋","公告欄",board.text?"有公告":"空白")}</div></div>
   <div class="ct-group"><span class="group-label">活動</span><div class="ct-grid">${ctTile("askFw","🎆","全服煙火","4 場可選")}${ctTile("fwedOpen","🎼","煙火編排器","自己排")}${ctTile("wxOpen","🌦️","天氣",WX_KINDS[wxNow()].n)}${ctTile("schedOpen","⏰","定時活動","煙火・夜市")}${ctTile("camCode","📷","記錄視角","給 Claude")}${ctTile("noFog","🌫️",NOFOG.on?"恢復霧氣":"除霧",NOFOG.on?"目前無霧":"看清遠方")}${ctTile("askSL","🏮","50 盞天燈")}${ctTile("stageChair","🎭","歌仔戲台",OP.on?"演出中":"")}${ctTile("toggleCats","🐱",CATS.off?"放出貓咪":"收起貓咪",CATS.off?"已收起":"跳舞中")}${ctTile("puppetChair","🎎","布袋戲台",PT.on?"演出中":"")}${ctTile("marketOpen","🏮","夜市",Object.keys(MK.open).length?`${Object.keys(MK.open).length} 攤營業中`:"")}</div></div>
   <div class="ct-group"><span class="group-label">線上人數</span><div class="crowd-row"><span class="crowd-now"><span>全廟 <b>${shownTotal()}</b> 人</span><small>這殿 ${hallShown(HALLS.current(),Date.now())} 人・${CROWD.real?"真實人數":CROWD.at&&CROWD.target!=null?`目標 ${CROWD.target}`:"自動"}</small></span><input id="crowdIn" type="text" inputmode="numeric" maxlength="3" placeholder="目標"><button class="chip" data-act="crowdSet">設定</button><button class="chip" data-act="crowdAuto">自動</button><button class="chip" data-act="crowdReal" aria-pressed="${!!CROWD.real}">真實人數</button></div>
-    <p class="real-count" id="realCount">真實在線：讀取中…</p><p class="note">目標是全廟人數，會依序分到各殿（前一殿快滿才開下一殿）。約 1 分鐘慢慢變到目標，之後在上下 10 人內浮動。「自動」回到依時段變化（凌晨少、白天多）。「真實人數」不加假人，有多少玩家就顯示多少。</p></div>
+    <p class="real-count" id="realCount">真實在線：讀取中…</p><p class="note">目標是全廟人數，會依序分到各殿（前一殿快滿才開下一殿）。約 1 分鐘慢慢變到目標，之後在上下 10 人內浮動。「自動」：真實玩家超過 60 人時只顯示真實玩家；60 人以下會再加上約 20 位假人（上下浮動）。「真實人數」不加假人，有多少玩家就顯示多少。</p></div>
   <div class="ct-group"><span class="group-label">主委自己</span><div class="ct-grid">${ctTile("chairHide",chairHidden?"👁":"🫥",chairHidden?"解除隱形":"隱形",chairHidden?"隱形中":"")}${ctTile("chairBuild","🏗️","建築模式","移動屋頂與裝飾")}${ctTile("chairSpeed","🏃","移動速度",CHAIR_SPD+"×")}${ctTile("chairFly","🕊️",myFly?"降落":"飛行",myFly?"飛行中":"")}${ctTile("chairCs","💰",myCs?"變回主委":"變身財神爺",myCs?"發金光中":"")}${ctTile("giftList","🎁","送禮","平安幣・道具")}${ctTile("chairReset","🔄","重置今日","測試用")}</div></div>`);
   const k=$("#readKey"); const keep=()=>{ save("mz.rk",k.value.trim()); }; k.addEventListener("input",keep); k.addEventListener("change",keep); realStats(); }
 // real players only (no demo worshippers, no added numbers), straight from the server's hall counts
@@ -3965,7 +4007,7 @@ HANDLERS.crowdAuto=()=>crowdSend(null);
 HANDLERS.crowdReal=()=>crowdSend(null,true);
 async function crowdSend(target,real=false){ const key=ck(); if(!key){ toast("請先輸入留言讀取密碼"); return; }
   try{ const r=await fetch("/crowd",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({target,real,from:fakeTotal(Date.now())})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
-    if(j.ok){ save("mz.rk",key); CROWD={target:j.target,from:j.from,at:j.at,real:!!j.real}; toast(real?"改成只顯示真實玩家，假人 1 分鐘內離開":target==null?"人數改回自動，1 分鐘內慢慢回到時段人數":`人數會在 1 分鐘內慢慢變成約 ${target} 人`,3400); openChair(); }
+    if(j.ok){ save("mz.rk",key); CROWD={target:j.target,from:j.from,at:j.at,real:!!j.real}; toast(real?"改成只顯示真實玩家，假人 1 分鐘內離開":target==null?"人數改回自動：超過 60 位真人只顯示真人，不到 60 會加約 20 位假人":`人數會在 1 分鐘內慢慢變成約 ${target} 人`,3400); openChair(); }
     else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":j.unset?"伺服器讀不到密碼設定（不是你打錯）":"密碼不對，沒有變更",3200); }catch(e){ toast("沒有變更，請稍後再試"); } }
 
 // ---- 公告: the chair's notice board. The button glows yellow until this device has opened the newest version, then turns grey ----
@@ -5298,7 +5340,7 @@ function fwUpdate(dt){ const now=performance.now(); fwHaloTick(dt);
       else { const c="#"+_fc1.setRGB(fwCol[j],fwCol[j+1],fwCol[j+2]).getHexString(); for(let q=0;q<4;q++){ const th=q*Math.PI/2+Math.random()*.3; fwEmit(px,py,pz,Math.cos(th)*5,Math.sin(th)*5,(Math.random()-.5)*2,c,VIVID[(Math.random()*VIVID.length)|0],.9,.5,1.4,2,.2); } }
       fwA[i]=0; } }
   if(any||FW.on){ for(const n of ["iPos","iVel","iCol","iA","iSz","iTr"]) fwStreakGeo.attributes[n].needsUpdate=true; }
-  fwPts.visible=false; fwStreak.visible=any||FW.on; fwStreakMat.uniforms.uGain.value=1; fwStreakMat.uniforms.uMinW.value=.0012*Math.max(1,Math.min(1.8,camera.fov/55)); /* wide/far views: a floor on spark size (round and sharp, so it doesn't blur) */ { const sharp=!!(FW.on||FW.pendingAt||LAKE.on||fwView); if(DRES.fw!==sharp){ DRES.fw=sharp; applyDPR(); } } /* full resolution while a show is on, whatever the view (省電 mode had blurred the sparks) */ /* the streaks draw the stars too (their round heads), so the old point sprites are no longer drawn or uploaded */ dayNight(dt); try{ wxTick(dt); }catch(e){ if(!wxTick.err){ wxTick.err=1; console.error(e); } } try{ fwedTick(); }catch(e){} try{ zenTick(dt); }catch(e){ if(!zenTick.err){ zenTick.err=1; console.error(e); } }
+  fwPts.visible=false; fwStreak.visible=any||FW.on; fwStreakMat.uniforms.uGain.value=1; fwStreakMat.uniforms.uMinW.value=.0012*Math.max(1,Math.min(1.8,camera.fov/55)); /* wide/far views: a floor on spark size (round and sharp, so it doesn't blur) */ { const sharp=!!(FW.on||FW.pendingAt||LAKE.on||fwView); if(DRES.fw!==sharp){ DRES.fw=sharp; applyDPR(); } } /* full resolution while a show is on, whatever the view (省電 mode had blurred the sparks) */ /* the streaks draw the stars too (their round heads), so the old point sprites are no longer drawn or uploaded */ dayNight(dt); try{ shadowTick(dt); }catch(e){} try{ wxTick(dt); }catch(e){ if(!wxTick.err){ wxTick.err=1; console.error(e); } } try{ fwedTick(); }catch(e){} try{ zenTick(dt); }catch(e){ if(!zenTick.err){ zenTick.err=1; console.error(e); } }
   if(sparkAvail()!==renderSparkBtn.last) renderSparkBtn(); }
 // ---- 仙女棒: anyone can hold one while the show is on (and for two minutes after) ----
 let mySparkler=false, fwView=false;

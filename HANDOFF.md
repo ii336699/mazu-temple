@@ -223,3 +223,4 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - 11/07 03:10：天氣（WX，wxTick 在 dayNight 之後）：晴／陰／風大／雨／雷雨，依時間每 6 分鐘自動換（wxAuto，全服一樣不用伺服器），主委工具「🌦️ 天氣」可指定 20 分鐘（Lobby /weather，Hall /wx 廣播 {t:"wx"}，手機每 2 分鐘輪詢）。雨：相機周圍 LineSegments（室內不下）、戶外地板變濕變亮並用一次性 CubeCamera 反射（WX.wetMats）；雨天戶外假人回家、新假人在室內（botSpot）。雷雨：閃電（天空 flash uniform＋燈光）＋合成雷聲（wxThunder）。風大：花瓣樹葉 Points、偶爾報紙／塑膠袋／鋁罐飛過（wxTrash）。聲音全部用一段雜訊 buffer＋濾波器（雨、風有陣風）。測試：window.MZ_WX="storm"。
 - 欄杆外：地面改草皮（outsideGround），種櫻花（SAKURA：近處 87 棵細緻、外圍 230 棵大葉片，共約 9000 片，兩個 instanced draw），g-X 圓球樹與外面的深色錐形樹都拿掉。
 - 禪堂音樂按鈕（#zenMusicBtn）要直接 onclick：data-act 只在 sheet 裡面才會被處理。
+- 11/07 03:40：影子（shadowTick：人物圓影依太陽方向拉長、櫻花樹草地上的影子、sunLight 跟著轉；陰天變淡；夜晚還原圓影）。人數自動模式改成：真人 >60 只顯示真人，≤60 加約 20 位假人（autoCrowd2）。禪堂屋頂加瓦片貼圖（每面依方向算 UV）。雨天：戶外假人「走回家」（leave，不再縮小消失）、戶外的人都撐傘（umbTick，共用幾何、8 色）、貓咪躲雨（CATS.rainHide）。風：葉片／櫻花用 swayPatch（vertex shader 依高度搖晃，SWAY.w 跟風力）。櫻花樹改成野生感：大小高低、樹冠扁長、歪斜、成叢分布。
