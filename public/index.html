@@ -2217,6 +2217,17 @@ function updateWater(dt){ if(!FT.ready) return; if(Math.abs(meAv.pos.y-FT.z)>26)
   for(const s of [-1,1]){ flood(s*9.5,HZ+2.2,s*6,9,HZ-1); flood(s*16,HZ+1.4,s*17,7,6); flood(s*5.5,RY0-3,s*5,9,-34); } }
 
 // 許願樹
+/* 月老紅線 on the wrist: a red cord round the wrist with a small heart charm hanging from it that glows and gently pulses (accTick) */
+let RT_GEO=null;
+function makeRedThread(){ if(!RT_GEO){ const sh=new T.Shape(); sh.moveTo(0,-.5); sh.bezierCurveTo(-.15,-.3,-.62,-.05,-.5,.28); sh.bezierCurveTo(-.4,.55,-.08,.55,0,.3); sh.bezierCurveTo(.08,.55,.4,.55,.5,.28); sh.bezierCurveTo(.62,-.05,.15,-.3,0,-.5);
+    RT_GEO={band:new T.TorusGeometry(.056,.011,6,18),heart:new T.ExtrudeGeometry(sh,{depth:.18,bevelEnabled:true,bevelThickness:.08,bevelSize:.07,bevelSegments:2,curveSegments:8})}; RT_GEO.heart.center(); }
+  const g=new T.Group(); const band=new T.Mesh(RT_GEO.band,new T.MeshStandardMaterial({color:new T.Color("#d81424"),emissive:new T.Color("#7a0612"),roughness:.45})); band.rotation.x=Math.PI/2; g.add(band);
+  const knot=new T.Mesh(new T.SphereGeometry(.016,8,6),band.material); knot.position.set(0,-.004,.06); g.add(knot);
+  const cord=new T.Mesh(new T.CylinderGeometry(.004,.004,.05,5),band.material); cord.position.set(0,-.03,.064); g.add(cord);
+  const hm=new T.MeshStandardMaterial({color:new T.Color("#ff3a6a"),emissive:new T.Color("#ff2a5a"),emissiveIntensity:1.4,roughness:.3,metalness:.1,toneMapped:false});
+  const heart=new T.Mesh(RT_GEO.heart,hm); heart.scale.setScalar(.075); heart.position.set(0,-.068,.066); g.add(heart);
+  const glow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ff4f86"),transparent:true,opacity:.75,blending:T.AdditiveBlending,depthWrite:false})); glow.scale.set(.26,.26,1); glow.position.copy(heart.position); g.add(glow);
+  g.userData.heart=heart; g.userData.glow=glow; return g; }
 const WT={x:10.5,z:HZ+9.5};
 /* 櫻花樹 for the build tools: the same kind of gnarled cherry as the 許願樹 (without its stone ring and wish cards), grown from a seed so every
    tree comes out different — height, lean, how wide and droopy the crown is, how full and how pink the blossom is — and everyone sees the same one */
@@ -2708,7 +2719,7 @@ class Avatar{
     this.amulet=new T.Group(); this.amulet.position.set(0,.27,.2); this.amulet.rotation.x=-.2; this.torso.add(this.amulet);
     const pouch=new T.Mesh(new T.BoxGeometry(.09,.12,.02),mat("#c0261a",{roughness:.5})); this.amulet.add(pouch); const tag=new T.Mesh(new T.BoxGeometry(.05,.05,.022),GOLD()); tag.position.y=.015; this.amulet.add(tag);
     this.amulet.visible=!!this.hasAmulet;
-    this.thread=new T.Mesh(new T.TorusGeometry(.055,.012,6,16),mat("#e0202a",{roughness:.5})); this.thread.rotation.x=Math.PI/2; this.thread.position.y=-.23; this.arms[0].add(this.thread); this.thread.visible=!!this.hasThread;
+    this.thread=makeRedThread(); this.thread.position.y=-.23; this.arms[0].add(this.thread); this.thread.visible=!!this.hasThread;
     refineAvatar(this,l,out,acc);
     window.TempleQuest?.decorateAvatar(this);
     this.applyPose(); if(this.eq&&this.setAcc) this.setAcc(this.eq); if(this.autoBake) try{ bakeAvatar(this); }catch(e){} }
@@ -2878,11 +2889,12 @@ const pickables=[]; scene.traverse(o=>{ if(o.userData&&(o.userData.act||o.userDa
 let pointers=new Map(), dragStart=null, pinchD=0, moved=false;
 canvas.addEventListener("pointerdown",e=>{ canvas.setPointerCapture(e.pointerId); pointers.set(e.pointerId,{x:e.clientX,y:e.clientY}); if(pointers.size===1){ dragStart={x:e.clientX,y:e.clientY,t:performance.now(),yaw:camYaw,pitch:camPitch,pv:pvYaw}; moved=false; rotAnim=null; } else if(pointers.size===2){ const [a,b]=[...pointers.values()]; pinchD=Math.hypot(a.x-b.x,a.y-b.y); moved=true; } });
 canvas.addEventListener("pointermove",e=>{ if(!pointers.has(e.pointerId)) return; pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pointers.size===2&&fwZoomable()){ const [a,b]=[...pointers.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); FW_ZOOM=Math.max(1,Math.min(2.8,FW_ZOOM*d/Math.max(1,pinchD))); pinchD=d; return; } /* watching fireworks: two fingers zoom the lens in and out */
   if(pointers.size===2){ const [a,b]=[...pointers.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); camDist=Math.max(2.4,Math.min(13,camDist*pinchD/d)); pinchD=d; return; }
   if(dragStart){ const dx=e.clientX-dragStart.x, dy=e.clientY-dragStart.y; if(Math.hypot(dx,dy)>7) moved=true; if(moved){ if(customizing){ pvYaw=dragStart.pv-dx*.012; } else { camYaw=dragStart.yaw-dx*.006; camPitch=Math.max(-.9,Math.min(1.15,dragStart.pitch+dy*.004)); /* below .06: the camera stays put and tilts up to look at the sky */ } } } });
 function endPointer(e){ const wasTap=pointers.size===1&&dragStart&&!moved&&performance.now()-dragStart.t<500; pointers.delete(e.pointerId); if(wasTap) onTap(e.clientX,e.clientY); if(pointers.size===0) dragStart=null; }
 canvas.addEventListener("pointerup",endPointer); canvas.addEventListener("pointercancel",e=>{pointers.delete(e.pointerId); dragStart=null;});
-canvas.addEventListener("wheel",e=>{ e.preventDefault(); if(customizing){ pvMode=e.deltaY<0?"face":"full"; syncPvSeg(); return; } camDist=Math.max(2.4,Math.min(13,camDist*(1+e.deltaY*.001))); },{passive:false});
+canvas.addEventListener("wheel",e=>{ e.preventDefault(); if(fwZoomable()){ FW_ZOOM=Math.max(1,Math.min(2.8,FW_ZOOM*(1-e.deltaY*.0015))); return; } if(customizing){ pvMode=e.deltaY<0?"face":"full"; syncPvSeg(); return; } camDist=Math.max(2.4,Math.min(13,camDist*(1+e.deltaY*.001))); },{passive:false});
 
 let pendingStation=null; let nearKey=null;
 const STATION_LABEL={xuantian:"玄天上帝",guangong:"關聖帝君",fountain:"觀音噴泉",cats:"跳舞小貓",lot:"求籤",altar:"媽祖供桌",shop:"服務處",burn:"金爐",donate:"香油錢",lamp:"光明燈",lampR:"光明燈",bell:"敲鐘",drum:"擊鼓",tiangong:"天公爐",caishen:"財神爺",yuelao:"月老",huye:"虎爺",jieqian:"解籤處",wish:"許願樹"};
@@ -4546,11 +4558,14 @@ const fwStreakGeo=new T.InstancedBufferGeometry(); fwStreakGeo.setAttribute("cor
 fwStreakGeo.setAttribute("position",new T.BufferAttribute(new Float32Array(12),3));
 for(const [n,arr,k] of [["iPos",fwPos,3],["iVel",fwV,3],["iCol",fwCol,3],["iA",fwA,1],["iSz",fwSz,1],["iTr",fwTr,1]]) fwStreakGeo.setAttribute(n,new T.InstancedBufferAttribute(arr,k).setUsage(T.DynamicDrawUsage));
 const fwStreakMat=new T.ShaderMaterial({uniforms:{uTrail:{value:.22},uAsp:{value:1},uGain:{value:1}},transparent:true,depthWrite:false,blending:T.AdditiveBlending,
-  vertexShader:"attribute vec2 corner; attribute vec3 iPos; attribute vec3 iVel; attribute vec3 iCol; attribute float iA; attribute float iSz; attribute float iTr; uniform float uTrail; uniform float uAsp; varying vec3 vC; varying float vA; varying vec2 vQ; varying float vL;"+
+  vertexShader:"attribute vec2 corner; attribute vec3 iPos; attribute vec3 iVel; attribute vec3 iCol; attribute float iA; attribute float iSz; attribute float iTr; uniform float uTrail; uniform float uAsp; varying vec3 vC; varying float vA; varying float vS; varying float vT; varying float vLen; varying float vW;"+
    "void main(){ if(iA<=0.003){ gl_Position=vec4(2.,2.,2.,1.); return; } vec4 h=projectionMatrix*modelViewMatrix*vec4(iPos,1.); vec3 tl=iTr>1.5?(length(iVel)>.02?normalize(iVel)*iTr:vec3(0.)):iVel*uTrail*iTr; vec4 t=projectionMatrix*modelViewMatrix*vec4(iPos-tl,1.); /* iTr>1.5: a fixed long silk thread behind the star, hanging up from it as it drifts down */ if(h.w<.2||t.w<.2){ gl_Position=vec4(2.,2.,2.,1.); return; }"+
-   " vec2 A=vec2(uAsp,1.); vec2 hs=h.xy/h.w*A, ts=t.xy/t.w*A; vec2 d=hs-ts; float L=length(d); vec2 dir=L>1e-5?d/L:vec2(0.,1.); vec2 nr=vec2(-dir.y,dir.x); float w=clamp(iSz*(.5+.12*max(0.,1.-iTr))*.38/pow(h.w,.75)*(iTr>1.5?.75:1.),.0014,.0052); /* far shells keep their size, near ones go fine */ /* screen-size cap: sparks right next to the camera (on the roofs) stay thin lines instead of smearing */ vL=L/(L+2.*w);"+
-   " vec2 p=mix(ts,hs,corner.x)+dir*(corner.x*2.-1.)*w+nr*corner.y*w; gl_Position=vec4(p/A*h.w,h.z,h.w); vC=iCol; vA=iA; vQ=corner; }",
-  fragmentShader:"uniform float uGain; varying vec3 vC; varying float vA; varying vec2 vQ; varying float vL; void main(){ float along=mix(1.-abs(vQ.x*2.-1.)*.9,pow(vQ.x,1.3),vL); float across=1.-abs(vQ.y); float a=vA*along*smoothstep(0.,.4,across)*uGain; if(a<=.004) discard; float core=smoothstep(.55,1.,across)*smoothstep(.5,1.,mix(1.-abs(vQ.x*2.-1.),vQ.x,vL)); gl_FragColor=vec4(mix(vC*1.6,vec3(1.),core*.18),a); }"});
+   " vec2 A=vec2(uAsp,1.); vec2 hs=h.xy/h.w*A, ts=t.xy/t.w*A; vec2 d=hs-ts; float L=length(d); vec2 dir=L>1e-5?d/L:vec2(0.,1.); vec2 nr=vec2(-dir.y,dir.x); float w=clamp(iSz*(.5+.12*max(0.,1.-iTr))*.38/pow(h.w,.75)*(iTr>1.5?.75:1.)*.85,.001,.0036); /* far shells keep their size, near ones go fine; capped so sparks never become fat blobs */ vLen=L; vW=w;"+
+   " vec2 p=mix(ts,hs,corner.x)+dir*(corner.x*2.-1.)*w+nr*corner.y*w; gl_Position=vec4(p/A*h.w,h.z,h.w); vC=iCol; vA=iA; vS=corner.x*L+(corner.x*2.-1.)*w; vT=corner.y*w; }",
+  fragmentShader:"uniform float uGain; varying vec3 vC; varying float vA; varying float vS; varying float vT; varying float vLen; varying float vW; void main(){"+
+   /* a round, sharp spark: distance to the trail segment in units of the spark radius; bright round head, tail fading behind it — no square blocks */
+   " float s=clamp(vS,0.,vLen); float d=length(vec2(vS-s,vT))/vW; if(d>1.) discard; float f=vLen>1e-5?s/vLen:1.; float g=exp(-d*d*4.5); float a=vA*uGain*g*(.18+.82*f*f); if(a<=.004) discard;"+
+   " float core=exp(-d*d*14.)*f; gl_FragColor=vec4(mix(vC*1.7,vec3(1.),core*.3),a); }"});
 const fwStreak=new T.Mesh(fwStreakGeo,fwStreakMat); fwStreak.frustumCulled=false; fwStreak.userData.noMerge=1; fwStreak.renderOrder=5; scene.add(fwStreak);
 const fwStreakAsp=()=>{ fwStreakMat.uniforms.uAsp.value=window.innerWidth/Math.max(1,window.innerHeight); }; fwStreakAsp(); window.addEventListener("resize",fwStreakAsp);
 window.addEventListener("resize",()=>{ fwMat.uniforms.scale.value=window.innerHeight*.5; });
@@ -4585,7 +4600,7 @@ function fwHaloTick(dt){ for(const s of FW_HALO){ if(!s.visible) continue; const
   s.material.opacity=u.o*(k<.08?k/.08:Math.pow(1-(k-.08)/.92,1.6)); const g=u.sz*(.75+.45*Math.min(1,k*2.2)); s.scale.set(g,g,1); } }
 function fwBurst(e){ if(e.type==="ring"||e.type==="dring") e.type=Math.random()<.5?"fourcolor":"twotone"; /* the ring shells are gone (the chair didn't like them) */
   FW_TR=FW_TRK[e.type]||0; FW_CC=/^(peony|chrys|twotone|crossette|multi|glitter|rainbow|tail)$/.test(e.type)&&Math.random()<.55; try{ fwBurst0(e); } finally { FW_TR=0; FW_CC=false; }
-  if(e.c&&e.s&&e.type!=="mazu"&&e.type!=="god"&&!FW_GOD_NAMES.includes(e.type)) fwHalo(e.x,e.y,e.z,e.c[0],e.s*(/^giant/.test(e.type)?3.4:2.8),/^giant/.test(e.type)?.2:.14); }
+  if(e.c&&e.s&&e.type!=="mazu"&&e.type!=="god"&&!FW_GOD_NAMES.includes(e.type)) fwHalo(e.x,e.y,e.z,e.c[0],e.s*(/^giant/.test(e.type)?3.2:2.6),/^giant/.test(e.type)?.12:.08); }
 function fwBurst0(e){ const {x,y,z}=e, r=Math.random; const [c1,c2]=e.c, sp=e.s, n=Math.round((e.n||140)*LOW);
   const sph=(cb)=>{ const ga=Math.PI*(3-Math.sqrt(5)); for(let i=0;i<n;i++){ const u=1-2*(i+.5)/n, th=i*ga, q=Math.sqrt(1-u*u); cb(q*Math.cos(th),u,q*Math.sin(th),i); } };
   switch(e.type){
@@ -4619,7 +4634,7 @@ function fwBurst0(e){ const {x,y,z}=e, r=Math.random; const [c1,c2]=e.c, sp=e.s,
       sph((a,b,c)=>fwEmit(x,y,z,a*sp,b*sp,c*sp,A,B,2.8+r()*.5,.95,1.15,1.9)); sph((a,b,c)=>fwEmit(x,y,z,a*sp*.55,b*sp*.55,c*sp*.55,B,A,2.4+r()*.4,.8,1.2,1.9,0,1.4+r()*.3,2)); break; }
     case "giantwillow": { /* 巨型金柳 */ e.type="silkfall"; fwBurst0({...e,s:sp*.9}); fwBurst0({...e,type:"peony",s:sp*.45,n:180,c:[VIVID[e.ci%12],VIVID[(e.ci+6)%12]]}); break; }
     case "giant": { /* 巨型: a huge two-colour peony, a strobing inner crown and a late crackle */ sph((a,b,c,i)=>fwEmit(x,y,z,a*sp,b*sp,c*sp,i%2?c1:c2,i%3?c2:"#ffffff",2.6+r()*.7,.95,1.15,2.0,.05));
-      for(let i=0;i<Math.round(260*LOW);i++){ const u=r()*2-1, th=r()*Math.PI*2, q=Math.sqrt(1-u*u), s2=sp*(.35+r()*.2); fwEmit(x,y,z,q*Math.cos(th)*s2,u*s2,q*Math.sin(th)*s2,"#ffffff",c1,3.2+r(),.55,1.2,1.4,0,0,5); }
+      for(let i=0;i<Math.round(140*LOW);i++){ const u=r()*2-1, th=r()*Math.PI*2, q=Math.sqrt(1-u*u), s2=sp*(.45+r()*.3); fwEmit(x,y,z,q*Math.cos(th)*s2,u*s2,q*Math.sin(th)*s2,i%2?c2:"#fff3c0",c1,3.2+r(),.55,1.2,1.4,0,0,5); } /* the strobing inner crown: fewer, wider and coloured, so it never fills in as a solid white ball */
       setTimeout(()=>{ if(FW.on) fwSound("crackle",x,y,z); },1400); break; }
     case "tail": sph((a,b,c,i)=>{ if(i%3) return; const k=(e.ci+i)%VIVID.length; fwEmit(x,y,z,a*sp,b*sp,c*sp,VIVID[k],VIVID[(k+5)%VIVID.length],2.6+r()*.6,.62,1.25,2.6,0,0,4); }); break; /* 拖尾: each star leaves its own colour behind */
     case "strobe": sph((a,b,c,i)=>{ if(i%2) return; fwEmit(x,y,z,a*sp*.85,b*sp*.85,c*sp*.85,i%4?"#fff8e0":c1,c1,3.2+r()*.8,.36,1.6,.9,0,0,5); }); break; /* 閃爍: stars that hang and blink */
@@ -4907,7 +4922,7 @@ let mySparkler=false, fwView=false;
 function fwFov(){ const asp=Math.max(.3,window.innerWidth/Math.max(1,window.innerHeight)); return Math.max(70,Math.min(112,2*Math.atan(Math.tan(52*Math.PI/180)/asp)*180/Math.PI)); }
 // the fireworks view always renders sharp, even when the phone dropped to 省電 quality (only resolution is raised, other savings stay)
 function setFwView(v){ fwView=v; document.body.classList.toggle("fwview",v); camera.fov=v?fwFov():55; camera.updateProjectionMatrix();
-  DRES.fw=!!v; applyDPR(); resize(); if(TG.g) TG.g.visible=!v; if(v){ camYaw=0; camPitch=.35; toast("拖曳畫面可以左右上下看煙火",2600); } renderSparkBtn(); }
+  DRES.fw=!!v; applyDPR(); resize(); if(TG.g) TG.g.visible=!v; if(v){ camYaw=0; camPitch=.35; toast("拖曳畫面可以左右上下看，兩指拉開／捏合可以放大縮小",3000); } renderSparkBtn(); }
 /* ================= 湖畔賞煙火: a lake in front of the temple, far out, where the temple, the giant statue and the sky show all fit in one
    picture. Taken by "train" (black screen, 搭車中…, three seconds of train sound). The view is framed like a photographer would: blurred
    cherry blossom in the foreground (depth of field), the lake in the middle carrying the reflections, the temple, statue and fireworks behind.
@@ -4961,7 +4976,7 @@ function lakeBuild(){ if(LAKE.built) return; LAKE.built=true; const g=new T.Grou
    經典: across the middle of the lake · 春櫻: from the cherry bank, trees framing the right · 龍騰: low by the water from the left, wide reflections ·
    眾神: from the hill behind the lake, the whole statue and the sky */
 const LAKE_VIEWS=[[[-6,3.6,118],[1,38,-30]],[[28,3.2,117],[-6,38,-30]],[[-32,1.7,106],[6,40,-30]],[[6,15,142],[0,40,-40]]];
-function lakeFrame(){ const asp=window.innerWidth/Math.max(1,window.innerHeight), sp=LAKE.spot; const wide=sp&&sp.fov?sp.fov:(asp<1?75:55); return FW_WIDE?wide:wide/1.6; } /* 廣角 / 標準 */ /* a longer lens: the sky show fills a phone screen */
+function lakeFrame(){ const asp=window.innerWidth/Math.max(1,window.innerHeight), sp=LAKE.spot; const wide=sp&&sp.fov?sp.fov:(asp<1?75:55); return wide/FW_ZOOM; } /* zoomed by pinching (FW_ZOOM 1 = widest) */ /* a longer lens: the sky show fills a phone screen */
 /* render the still scenery's reflection once (and again a moment later when late models have come in) */
 function lakeReflect(){ if(!LAKE.on) return; const cam=camera, mc=new T.PerspectiveCamera(Math.min(150,cam.fov*1.7),1.4,.5,500); const ly=LAKE.ly;
   mc.position.set(cam.position.x,2*ly-cam.position.y,cam.position.z); mc.up.set(0,1,0); mc.lookAt(LAKE.tgt.x,2*ly-LAKE.tgt.y+30,LAKE.tgt.z); mc.updateMatrixWorld(true); mc.updateProjectionMatrix();
@@ -4972,7 +4987,8 @@ function lakeReflect(){ if(!LAKE.on) return; const cam=camera, mc=new T.Perspect
 /* numbered fireworks viewpoints the player steps through with 🎥 切換視角: 0 is your own free camera; the rest are fixed cameras
    (cam, look-at, wide fov) — spots the chair recorded with 記錄視角, and the lake */
 const FW_SPOTS=[{n:"廟頂上空",cam:[0.01,17.55,42.69],tgt:[-0.1,24.75,3.35],fov:95.7},{n:"湖畔",lake:true}];
-let FWV=0, FW_WIDE=true;
+let FWV=0, FW_ZOOM=1;
+function fwZoomable(){ return typeof FW!=="undefined"&&(FW.on||FW.pendingAt||LAKE.on); }
 function lakeSet(on,spot){ spot=spot||FW_SPOTS.find(q=>q.lake); lakeBuild(); LAKE.on=on; LAKE.spot=on?spot:null; const lk=on&&!!spot.lake; LAKE.g.visible=lk; LAKE.fg.visible=lk; document.body.classList.toggle("lakeview",on);
   if(on&&NOFOG.on){ scene.fog.near=NOFOG.near; scene.fog.far=NOFOG.far; } if(on){ if(spot.lake){ const V=LAKE_VIEWS[FW.sh|0]||LAKE_VIEWS[0]; LAKE.cam.set(...V[0]); LAKE.tgt.set(...V[1]); } else { LAKE.cam.set(...spot.cam); LAKE.tgt.set(...spot.tgt); } if(fwView) setFwView(false); LAKE.fog=[scene.fog.near,scene.fog.far]; scene.fog.near=160; scene.fog.far=420; camera.far=520; LAKE.yaw=0; LAKE.pitch=0; camYaw=0; camPitch=0; DRES.fw=true; applyDPR(); resize();
     camera.position.copy(LAKE.cam); if(lk){ setTimeout(lakeReflect,60); setTimeout(lakeReflect,2500); } }
@@ -4997,14 +5013,14 @@ function trainTo(on,spot){ if(trainBusy&&performance.now()-trainBusy<2100){ setT
   setTimeout(()=>{ if(on&&LAKE.on) lakeSet(false); lakeSet(on,spot); },600); setTimeout(()=>{ ov.classList.remove("on"); trainBusy=0; setTimeout(()=>{ ov.hidden=true; },600); },1400); }
 $("#fwViewBtn").onclick=()=>{ ensureAudio(); FWV=FWV%FW_SPOTS.length+1; trainTo(true,FW_SPOTS[FWV-1]); setTimeout(renderSparkBtn,700); };
 function fwLeaveSpot(){ if(LAKE.on){ FWV=0; trainTo(false); } }
-$("#fwWideBtn").onclick=()=>{ FW_WIDE=!FW_WIDE; renderSparkBtn(); };
+
 /* 隱藏介面: every button off the screen to just watch; the faint eye in the corner (or any tap on it) brings them back */
 function fwClean(on){ document.body.classList.toggle("fwclean",on); $("#fwShowBtn").hidden=!on; try{ if(meAv.label) meAv.label.visible=!on; remotes.forEach(r=>{ if(r.label) r.label.visible=!on; }); npcs.forEach(n=>{ if(n.label) n.label.visible=!on; }); }catch(e){} }
 $("#fwCleanBtn").onclick=()=>fwClean(true); $("#fwShowBtn").onclick=()=>fwClean(false);
 $("#fwCloseBtn").onclick=()=>{ sparkDismissed=true; fwLeaveSpot(); FW.endAt=-1e9; if(mySparkler){ mySparkler=false; meAv.sparkler=false; markDirty(); } renderSparkBtn(); };
 let sparkDismissed=false; const sparkAvail=()=>FW.on||(FW.endAt>0&&!sparkDismissed); let sparkLitAt=0;
 let fwFinale=false;
-function renderSparkBtn(){ const b=$("#sparkBtn"), on=sparkAvail(); if(!(on||FW.pendingAt||LAKE.on)&&document.body.classList.contains("fwclean")) fwClean(false); renderSparkBtn.last=on; $("#fwBtns").hidden=!(on||FW.pendingAt||LAKE.on)||(fwFinale&&!LAKE.on); if(!FW.on&&fwView&&!fwFinale) setFwView(false); $("#fwViewBtn").hidden=!(FW.on||FW.pendingAt||LAKE.on); $("#fwViewBtn").textContent=FWV?`🎥 視角 ${FWV}／${FW_SPOTS.length}・${FW_SPOTS[FWV-1].n}`:"🎥 看煙火視角"; $("#fwWideBtn").textContent=FW_WIDE?"🔭 廣角":"🔭 標準"; $("#fwWideBtn").hidden=$("#fwViewBtn").hidden; if(!on&&mySparkler){ mySparkler=false; meAv.sparkler=false; markDirty(); } b.textContent=mySparkler?"熄滅仙女棒":"🎇 拿起仙女棒"; $("#fwCloseBtn").hidden=FW.on; }
+function renderSparkBtn(){ const b=$("#sparkBtn"), on=sparkAvail(); if(!(on||FW.pendingAt||LAKE.on)&&document.body.classList.contains("fwclean")) fwClean(false); renderSparkBtn.last=on; $("#fwBtns").hidden=!(on||FW.pendingAt||LAKE.on)||(fwFinale&&!LAKE.on); if(!FW.on&&fwView&&!fwFinale) setFwView(false); $("#fwViewBtn").hidden=!(FW.on||FW.pendingAt||LAKE.on); $("#fwViewBtn").textContent=FWV?`🎥 視角 ${FWV}／${FW_SPOTS.length}・${FW_SPOTS[FWV-1].n}`:"🎥 看煙火視角"; $("#fwWideBtn").hidden=true; if(!on&&mySparkler){ mySparkler=false; meAv.sparkler=false; markDirty(); } b.textContent=mySparkler?"熄滅仙女棒":"🎇 拿起仙女棒"; $("#fwCloseBtn").hidden=FW.on; }
 $("#sparkBtn").onclick=()=>{ ensureAudio(); mySparkler=!mySparkler; meAv.sparkler=mySparkler; markDirty(); renderSparkBtn(); if(mySparkler){ sparkLitAt=performance.now(); meAv.say("✨","#ffe8a0",1.5); } };
 setInterval(()=>{ if(mySparkler&&performance.now()-sparkLitAt>60000){ mySparkler=false; meAv.sparkler=false; markDirty(); renderSparkBtn(); toast("仙女棒燒完了",2200); } },1000);
 const sparkStickGeo=new T.CylinderGeometry(.006,.006,.36,5); sparkStickGeo.translate(0,.18,0); const sparkStickMat=mat("#8a8f96",{metalness:.6,roughness:.4});
@@ -5992,14 +6008,14 @@ const ACC={qqball:{name:"地瓜球頭飾",cat:"頭飾",slot:"head"},boba:{name:"
   ghost:{name:"小幽靈",cat:"夥伴",slot:"pet",note:"幫地藏王找回 10 段記憶的小幽靈，會飄在你身邊發光"},
   wenbi:{name:"文昌筆",cat:"裝飾品",slot:"hand",note:"文昌帝君賜的毛筆，綁著紅緞帶，身邊飄著紅色圈圈"},
   starwand:{name:"星星法杖",cat:"裝飾品",slot:"hand",note:"斗姥元君賜的法杖，身邊有星星繞著轉"},
-  redthread:{name:"月老紅線",cat:"裝飾品",slot:"wrist",note:"月老賜的紅線，繫在手腕上，身邊飄著愛心"},
+  redthread:{name:"月老紅線",cat:"裝飾品",slot:"wrist",note:"月老賜的紅線，繫在手腕上，掛著一顆會發光的愛心"},
   hat_crown:{name:"金鳳冠",cat:"頭飾",slot:"head"},hat_guanmao:{name:"瓜皮帽",cat:"頭飾",slot:"head"},hat_douli:{name:"竹斗笠",cat:"頭飾",slot:"head"},
   hat_peach:{name:"桃花髮箍",cat:"頭飾",slot:"head"},hat_catbell:{name:"鈴鐺貓耳",cat:"頭飾",slot:"head"},hat_tiger:{name:"虎頭帽",cat:"頭飾",slot:"head"},
   hat_witch:{name:"月亮巫師帽",cat:"頭飾",slot:"head"},hat_jasmine:{name:"茉莉花環",cat:"頭飾",slot:"head"},hat_fu:{name:"福氣帽",cat:"頭飾",slot:"head"},
   hat_fox:{name:"狐狸面具",cat:"頭飾",slot:"head"}};
 /* the ten modelled head pieces (hats.glb, one named node each): w = width on the head, y = height of the bottom of the piece, z/rx/ry to sit it right */
-const HAT_FIT={hat_crown:{w:.6,y:.1},hat_guanmao:{w:.74,y:.12},hat_douli:{w:1.05,y:-.2},hat_peach:{w:.66,y:.12},hat_catbell:{w:.7,y:.1},
-  hat_tiger:{w:.84,y:-.05},hat_witch:{w:.9,y:.08},hat_jasmine:{w:.68,y:.12},hat_fu:{w:.78,y:.06},hat_fox:{w:.62,y:-.05,z:.06,ry:.5}}; /* new ones always go at the end: the order is part of saved codes (15 at most) */
+const HAT_FIT={hat_crown:{w:.6,y:.04},hat_guanmao:{w:.74,y:-.04},hat_douli:{w:1.05,y:-.44},hat_peach:{w:.66,y:.02},hat_catbell:{w:.7,y:0},
+  hat_tiger:{w:.84,y:-.14},hat_witch:{w:.9,y:-.08},hat_jasmine:{w:.68,y:.02},hat_fu:{w:.78,y:-.06},hat_fox:{w:.62,y:-.08,z:.06,ry:.5}}; /* new ones always go at the end: the order is part of saved codes (15 at most) */
 const ACC_IDS=Object.keys(ACC);
 function accState(){ if(!bag.acc||typeof bag.acc!=="object") bag.acc={owned:{},head:0,hand:0,mouth:0,pet:0}; bag.acc.owned=bag.acc.owned||{}; if(bag.acc.mouth===undefined) bag.acc.mouth=0; if(bag.acc.pet===undefined) bag.acc.pet=0; if(bag.redThread&&!bag.acc.owned.redthread){ bag.acc.owned.redthread=1; if(!bag.acc.wrist) bag.acc.wrist="redthread"; } if(bag.acc.wrist===undefined) bag.acc.wrist=0; try{ if(me&&me.sp) Object.keys(ACC).forEach(id=>{ if(!bag.acc.owned[id]) bag.acc.owned[id]=1; }); }catch(e){} /* the chair always has one of every accessory, new ones included */ return bag.acc; }
 function threadOn(){ return !!bag.redThread&&accState().wrist==="redthread"; }
@@ -6123,9 +6139,7 @@ function stinkReact(av,lines=["誰吃大蒜！？","好臭！","蒜頭怪來了�
   who.forEach(n=>{ av.smelled.add(n); n.say(lines[(Math.random()*lines.length)|0],col,2.2); }); }
 function accTick(av,dt){ stinkFlies(av,!!(av.accHand&&av.accHand.userData.stink&&av.root.visible)); if(!av.root.visible) return;
   const near=Math.hypot(av.pos.x-meAv.pos.x,av.pos.y-meAv.pos.y)<25;
-  if(av.hasThread&&near){ av.rtT=(av.rtT||0)-dt; if(av.rtT<0){ av.rtT=.22+Math.random()*.2; const p0=av.root.position; /* 月老紅線: little pink and red hearts drifting up round the wearer */
-      const h=new T.Sprite(new T.SpriteMaterial({map:heartTex,color:new T.Color(["#ff4d6d","#ff8fab","#ff2a4a","#ffb3c6"][(Math.random()*4)|0]),transparent:true,depthWrite:false})); const sz=.07+Math.random()*.08;
-      const a2=Math.random()*6.283, r=.28+Math.random()*.25; h.position.set(p0.x+Math.cos(a2)*r,.4+Math.random()*1.1,p0.z+Math.sin(a2)*r); h.scale.set(sz,sz,1); scene.add(h); parts.push({s:h,vx:rand(-.05,.05),vy:.25+Math.random()*.18,vz:rand(-.05,.05),life:0,max:1.4+Math.random()*.8,grow:.02,op:.95}); } }
+  if(av.hasThread&&near&&av.thread&&av.thread.userData.glow){ av.rtT=(av.rtT||0)+dt; const k=.5+.5*Math.sin(av.rtT*3.2); av.thread.userData.glow.material.opacity=.45+.45*k; const gs=.22+.08*k; av.thread.userData.glow.scale.set(gs,gs,1); av.thread.userData.heart.rotation.y=Math.sin(av.rtT*1.4)*.6; }
   if(av.accHand&&av.accHand.userData.stink&&near){ av.stinkT=(av.stinkT||0)-dt; if(av.stinkT<0){ av.stinkT=.12+Math.random()*.1; const sg=av.accHand.children[1]||av.accHand; sg.getWorldPosition(_v1); spawnSmoke(_v1.x+rand(-.04,.04),_v1.y+rand(-.04,.06),_v1.z+rand(-.04,.04),{mat:stinkMat.clone(),size:.07,grow:.16,life:1.1,op:.5,vy:.22}); } // a steady thin wisp rising from the sausage itself
     av.stinkSay=(av.stinkSay??0)-dt; if(av.stinkSay<0){ av.stinkSay=.5; stinkReact(av); } }
   if(av.accHand&&av.accHand.userData.aroma){ const gl=av.accHand.userData.glow; if(gl){ const k=.42+Math.sin(performance.now()/160)*.06; gl.scale.set(k,k,1); }
@@ -7283,7 +7297,7 @@ function tick(){ if(gameAsleep) return; const _ft0=performance.now(); { const no
     if(jiaoCam.until&&jiaoCam.simT>jiaoCam.until){ jiaoCam.on=false; sheet.classList.remove("peek"); camFocus.set(meAv.pos.x,1,meAv.pos.y); }
   } else {
     camera.clearViewOffset();
-    { /* during a show the normal view goes wide-angle, so even the biggest shells fit on a phone screen */ const want=(FW.on||FW.pendingAt)&&FW_WIDE?Math.min(96,fwFov()):55; if(Math.abs(camera.fov-want)>.3){ camera.fov+=(want-camera.fov)*Math.min(1,dt*2.5); camera.updateProjectionMatrix(); } }
+    { /* during a show the normal view goes wide-angle, so even the biggest shells fit on a phone screen */ const want=(FW.on||FW.pendingAt)?Math.max(30,Math.min(96,fwFov())/FW_ZOOM):55; if(Math.abs(camera.fov-want)>.3){ camera.fov+=(want-camera.fov)*Math.min(1,dt*2.5); camera.updateProjectionMatrix(); } }
     tmpV.set(meAv.pos.x,fy+(meAv.flyCur||0),meAv.pos.y); camFocus.lerp(tmpV,Math.min(1,dt*6));
     // indoors a wall often stops the camera right behind your head: then try it higher up, looking down, and keep the one that stays farthest back
     let want=0, gotD=0; for(const dp of [0,.3,.6,.9]){ const pp=Math.min(1.2,pitch+dp), cx=camFocus.x+Math.sin(yaw)*Math.cos(pp)*dist, cz=camFocus.z+Math.cos(yaw)*Math.cos(pp)*dist, cy=camFocus.y+Math.sin(pp)*dist;
