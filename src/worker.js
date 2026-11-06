@@ -4,7 +4,7 @@ import { DurableObject } from "cloudflare:workers";
 
 const HALLS = 10, CAP = 100, MAX_MSG = 4000;
 const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000, "/puppet": 5000, "/crowd": 5000, "/market": 5000, "/layout": 5000 };
-const LOBBY_PATHS = ["/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc"];
+const LOBBY_PATHS = ["/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather"];
 const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage", "/puppet": "/puppet", "/crowd": "/crowd", "/market": "/market", "/layout": "/layout" }; // a POST here makes that cached list stale
 
 export default {
@@ -84,6 +84,10 @@ export class Hall extends DurableObject {
       let b = {}; try { b = await req.json(); } catch {}
       const out = JSON.stringify({ t: "hb", id: String(b.id || "").slice(0, 16), seed: (b.seed | 0) >>> 0, n: b.n | 0, x: Number(b.x) || 0, z: Number(b.z) || 0, at: Number(b.at) || Date.now() });
       for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
+    }
+    if (url.pathname === "/wx") { // from the lobby: the chair set the weather
+      let b = {}; try { b = await req.json(); } catch {}
+      const out = JSON.stringify({ t: "wx", w: b.w || "", until: Number(b.until) || 0 }); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
     }
     if (url.pathname === "/market") { // from the lobby: the chair opened or closed night-market stalls
       let b = {}; try { b = await req.json(); } catch {}
@@ -229,6 +233,18 @@ export class Lobby extends DurableObject {
     const url = new URL(req.url);
     // 煙火編排器: the chair's own shows. Anyone can read them (every phone needs the show to draw it); saving and deleting need the key.
     // Each: { id, name, song (0–3), len, n, ev: [{ t, ty, x, y, s, c? }] } at "fwc:<id>", with a short list at "fwcList" (20 shows at most).
+    // 天氣: the chair can set one for everyone for a while (the page otherwise follows its own clock-based timetable)
+    if (url.pathname === "/weather") {
+      if (req.method === "POST") {
+        const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
+        let b = {}; try { b = await req.json(); } catch {}
+        const k = ["clear", "cloudy", "windy", "rain", "storm"].includes(b.w) ? b.w : "", until = k ? Date.now() + Math.max(1, Math.min(120, Number(b.min) || 20)) * 60000 : 0;
+        await this.ctx.storage.put("wx", { w: k, until });
+        await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/wx", { method: "POST", body: JSON.stringify({ w: k, until }) }).catch(() => {})));
+        return json({ ok: true, w: k, until });
+      }
+      const wx = (await this.ctx.storage.get("wx")) || { w: "", until: 0 }; return json(wx.until > Date.now() ? wx : { w: "", until: 0 });
+    }
     if (url.pathname === "/fwc") {
       if (req.method === "POST") {
         const auth = await this.checkKey(req); if (!auth.ok) return json(auth);

@@ -220,3 +220,6 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - 11/07 01:00 後：禪院樹色不規則（鄰色、少量綠、內深外淺）＋每棵 2–4 根樹枝；拱橋改木頭；禪堂地板深咖啡（鏡面帶咖啡色）。編排器加「低空扇形噴射」fanjet、「風火輪」wheel（掛在 z=-6）、「沖天線」skyline、「螺旋升空」spiral（引擎新 kind "spiral"：繞圈上升拖尾後開花，R=0 就是直線）；金色瀑布線條加倍；巨型變色更久更亮；星閃變亮會閃。編排器不用瀏覽器 confirm/prompt（測試頁框架會擋，之前「離開」沒反應），改頁內 fwedAsk。禪堂音樂：玩家可選（ZEN_SONGS，按鈕 #zenMusicBtn，track "zen"，存 mz.zenSong，預設後殿音樂）。搖桿卡住防護：整頁 pointerup/touchend 都會放開搖桿，切到背景也會。
 - 11/07 02:30：禪院木橋和禪堂地板原本被 floorsPlain（地板統一換材質＋白色自發光）變灰，加 userData.keepMat 排除；樹往外移（禪堂外圍留 2.6 m 空帶），樹變高（樹幹 1.6–2.4、樹冠拉高）讓窗景仍然滿。
 - 11/07 02:40：禪堂掛軸換成主委的圖 public/zen-scroll.webp（含掛繩，雙面，掛在西側橫樑），測試頁要一起發佈這個檔。
+- 11/07 03:10：天氣（WX，wxTick 在 dayNight 之後）：晴／陰／風大／雨／雷雨，依時間每 6 分鐘自動換（wxAuto，全服一樣不用伺服器），主委工具「🌦️ 天氣」可指定 20 分鐘（Lobby /weather，Hall /wx 廣播 {t:"wx"}，手機每 2 分鐘輪詢）。雨：相機周圍 LineSegments（室內不下）、戶外地板變濕變亮並用一次性 CubeCamera 反射（WX.wetMats）；雨天戶外假人回家、新假人在室內（botSpot）。雷雨：閃電（天空 flash uniform＋燈光）＋合成雷聲（wxThunder）。風大：花瓣樹葉 Points、偶爾報紙／塑膠袋／鋁罐飛過（wxTrash）。聲音全部用一段雜訊 buffer＋濾波器（雨、風有陣風）。測試：window.MZ_WX="storm"。
+- 欄杆外：地面改草皮（outsideGround），種櫻花（SAKURA：近處 87 棵細緻、外圍 230 棵大葉片，共約 9000 片，兩個 instanced draw），g-X 圓球樹與外面的深色錐形樹都拿掉。
+- 禪堂音樂按鈕（#zenMusicBtn）要直接 onclick：data-act 只在 sheet 裡面才會被處理。

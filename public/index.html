@@ -408,7 +408,7 @@ body.hideui .joy,body.customizing .joy,body.hideui .camreset,body.customizing .c
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
 </head>
 <body>
-<canvas id="c" tabindex="0" aria-label="雲端天后宮正殿 3D 場景"></canvas><div id="vig" aria-hidden="true"></div><button id="zenMusicBtn" class="zen-music" data-act="zenMusic" hidden>🎵 禪堂音樂</button>
+<canvas id="c" tabindex="0" aria-label="雲端天后宮正殿 3D 場景"></canvas><div id="vig" aria-hidden="true"></div><button id="zenMusicBtn" class="zen-music" onclick="try{ ensureAudio(); HANDLERS.zenMusic(); }catch(e){}" hidden>🎵 禪堂音樂</button>
 <div class="loading" id="loading">正在點燈</div>
 <div class="dlpack" id="dlPack" hidden role="dialog" aria-label="下載廟宇中"><div class="dl-in"><h2>雲端天后宮</h2><p>正在下載廟宇建築和神尊，第一次進廟會比較久。<br>下載過的會存在手機裡，下次就很快。</p>
   <div class="dl-track"><div class="dl-fill" id="dlFill"></div><div class="dl-run" id="dlRun"></div></div>
@@ -899,9 +899,9 @@ const fontTextures=[plaqueTex,coupletL,coupletR,donateTex,lotSignTex,shopSignTex
 
 /* ---------- environment (sky + reflections) ---------- */
 const SUN=new T.Vector3(1,.11,-.22).normalize();
-const skyMat=new T.ShaderMaterial({side:T.BackSide,depthWrite:false,fog:false,uniforms:{sun:{value:SUN},time:{value:0},night:{value:0},day:{value:0}},
+const skyMat=new T.ShaderMaterial({side:T.BackSide,depthWrite:false,fog:false,uniforms:{sun:{value:SUN},time:{value:0},night:{value:0},day:{value:0},cloudy:{value:0},flash:{value:0}},
   vertexShader:`varying vec3 vD; void main(){ vD=normalize(position); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);} `,
-  fragmentShader:`varying vec3 vD; uniform vec3 sun; uniform float time; uniform float night; uniform float day;
+  fragmentShader:`varying vec3 vD; uniform vec3 sun; uniform float time; uniform float night; uniform float day; uniform float cloudy; uniform float flash;
   float hash(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
   float noise(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f); return mix(mix(hash(i),hash(i+vec2(1.0,0.0)),f.x),mix(hash(i+vec2(0.0,1.0)),hash(i+vec2(1.0,1.0)),f.x),f.y); }
   float fbm(vec2 p){ float v=0.0, a=0.5; for(int i=0;i<5;i++){ v+=a*noise(p); p=p*2.03+vec2(1.7,9.2); a*=0.5; } return v; }
@@ -941,7 +941,9 @@ const skyMat=new T.ShaderMaterial({side:T.BackSide,depthWrite:false,fog:false,un
     if(h<m1) dc=mix(vec3(.42,.52,.5),dc,.25); if(h<m2) dc=vec3(.24,.33,.28); if(h<0.0) dc=vec3(.18,.22,.18);
     dc=mix(dc,vec3(1.,.98,.9)*1.4,smoothstep(.9994,.9998,s)*step(0.,h)); c=mix(c,dc,day);
     c=mix(c,c*vec3(.16,.17,.32)+vec3(.006,.008,.03),night);
-    vec3 sd=floor(normalize(vD)*260.); float st=fract(sin(dot(sd,vec3(12.9898,78.233,37.719)))*43758.5453); c+=vec3(.9,.92,1.)*step(.9975,st)*night*step(m1,h)*(.6+.4*sin(time*2.+st*40.));
+    vec3 sd=floor(normalize(vD)*260.); float st=fract(sin(dot(sd,vec3(12.9898,78.233,37.719)))*43758.5453); c+=vec3(.9,.92,1.)*step(.9975,st)*night*(1.-cloudy)*step(m1,h)*(.6+.4*sin(time*2.+st*40.));
+    { float g=dot(c,vec3(.3,.5,.2)); vec3 oc=vec3(g)*vec3(.86,.9,.97)*(.78+.22*day); if(h>0.0){ vec2 uv3=d.xz/(h+.2); float q3=fbm(uv3*1.4+vec2(time*.02,0.0)); oc*=.82+.3*q3; } c=mix(c,oc,cloudy*.92); } /* overcast: grey, heavy cloud */
+    c+=vec3(.75,.8,1.0)*flash*(.6+.4*step(0.,h));
     gl_FragColor=vec4(c,1.0); }`});
 const sky=new T.Mesh(new T.SphereGeometry(150,32,16),skyMat); scene.add(sky);
 const envTex=cvs(256,128,(x,w,h)=>{ const g=x.createLinearGradient(0,0,0,h); g.addColorStop(0,"#2a1612"); g.addColorStop(.45,"#7a3a22"); g.addColorStop(.52,"#f0a060"); g.addColorStop(.6,"#3a1a10"); g.addColorStop(1,"#120806"); x.fillStyle=g; x.fillRect(0,0,w,h);
@@ -2354,7 +2356,7 @@ function zenWalkable(x,z){ const G=ZEN.GZ;
   function mulberry(a){ return ()=>{ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
   const rr=(a,b)=>a+(b-a)*R();
   const inst=(geo,m,list,parent)=>{ const im=new T.InstancedMesh(geo,m,list.length); list.forEach((e,i)=>{ E3.set(e.rx||0,e.ry||0,e.rz||0); Q4.setFromEuler(E3); S3.set(e.sx||1,e.sy||1,e.sz||1); M4.compose(V3.set(e.x,e.y,e.z),Q4,S3); im.setMatrixAt(i,M4); if(e.c) im.setColorAt(i,C3.set(e.c)); });
-    im.instanceMatrix.needsUpdate=true; if(im.instanceColor) im.instanceColor.needsUpdate=true; im.userData.noMerge=1; (parent||g).add(im); return im; };
+    im.instanceMatrix.needsUpdate=true; if(im.instanceColor) im.instanceColor.needsUpdate=true; im.userData.noMerge=1; im.frustumCulled=false; (parent||g).add(im); return im; };
   const wood=mat(ZL("#3a2418"),{roughness:.55}), darkWood=mat(ZL("#24150e"),{roughness:.5}), red=mat(ZL("#7a5030"),{roughness:.75}), tile=mat(ZL("#3c3f44"),{roughness:.7}), stone=mat(ZL("#9a968c"),{roughness:.9}), paper=mat(ZL("#f2ead8"),{roughness:.9,emissive:"#f6e6c0",emissiveIntensity:.25});
 
   /* ---- the gate in the 後埕 wall (the wall itself is split around it, see the wall code) and a small roofed frame on the outside ---- */
@@ -2479,6 +2481,42 @@ function zenWalkable(x,z){ const G=ZEN.GZ;
   { const n=160, pos=new Float32Array(n*3); for(let i=0;i<n;i++){ pos[i*3]=rr(hl.x0,hl.x1+3); pos[i*3+1]=FY+rr(.3,3.2); pos[i*3+2]=rr(hl.z0,hl.z1); } const pg=new T.BufferGeometry(); pg.setAttribute("position",new T.BufferAttribute(pos,3));
     ZEN.dust=new T.Points(pg,new T.PointsMaterial({color:ZL("#fff0c8"),size:.035,transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false})); g.add(ZEN.dust); }
 }
+/* ================= outside the balustrade: lawn, and cherry trees all round the grounds. Two kinds of tree: near the balustrade a full
+   canopy of many small blossom cards (like the zen garden), further out a few big cards per tree — still 3D, so from the air it is a
+   sea of pink crowns, not a painted wall. Each kind is one instanced draw. ================= */
+const SAKURA={};
+{ const grassTex=cvs(256,256,(x,w,h)=>{ x.fillStyle="#4e6e2c"; x.fillRect(0,0,w,h); for(let i=0;i<4200;i++){ x.fillStyle=`hsla(${78+Math.random()*30},${35+Math.random()*25}%,${22+Math.random()*24}%,.55)`; x.fillRect(Math.random()*w,Math.random()*h,1+Math.random()*2,2+Math.random()*4); }
+    for(let i=0;i<140;i++){ x.fillStyle=Math.random()<.7?"rgba(255,190,210,.8)":"rgba(255,245,248,.8)"; x.beginPath(); x.ellipse(Math.random()*w,Math.random()*h,2.2,1.4,Math.random()*3,0,7); x.fill(); } });
+  outsideGround.material=new T.MeshStandardMaterial({map:texRep(grassTex,70,70),roughness:.95}); outsideGround.userData.keepMat=1;
+  let seed=11; const R=()=>{ seed=(seed*16807)%2147483647; return seed/2147483647; }, rr=(a,b)=>a+(b-a)*R();
+  const BX=25.6, BZ0=-50.5, BZ1=HZ+YX+24; /* the balustrade */
+  const free=(x,z,m)=>{ const ax=Math.abs(x); if(ax<BX+m&&z>BZ0-m&&z<BZ1+m) return false; /* inside the grounds */
+    if(x<-23&&x>-78-m&&z>-52-m&&z<-4+m) return false; /* 靜思禪院 */ if(ax<22&&z>BZ1-2&&z<64) return false; /* the approach to the gate */
+    if(z>60&&ax<75) return false; /* the lake */ if(ax<16&&z<BZ0&&z>-84) return false; /* the big statue */ return true; };
+  const dist=(x,z)=>{ const ax=Math.abs(x); const dx=Math.max(0,ax-BX), dz=Math.max(0,BZ0-z,z-BZ1); return Math.hypot(dx,dz); };
+  const near=[], far=[]; const NN=Q.lite?60:130, NF=Q.lite?110:230;
+  for(let i=0;i<9000&&(near.length<NN||far.length<NF);i++){ const x=rr(-130,130), z=rr(-130,95), d=dist(x,z); if(d<3||d>70) continue; const r=d<15?rr(2.4,3.4):rr(3,4.4), isNear=d<15;
+    if(isNear&&near.length>=NN||!isNear&&far.length>=NF) continue; if(!free(x,z,r*.5+1)) continue; const L=isNear?near:far; if(near.some(s=>Math.hypot(s[0]-x,s[1]-z)<(s[2]+r)*.7)||far.some(s=>Math.hypot(s[0]-x,s[1]-z)<(s[2]+r)*.75)) continue; L.push([x,z,r]); }
+  const blossomTex=cvs(128,128,(x,w,h)=>{ x.clearRect(0,0,w,h); for(let i=0;i<120;i++){ const a=Math.random()*6.28, r=Math.sqrt(Math.random())*50, px=64+Math.cos(a)*r, py=64+Math.sin(a)*r*.85, s=2.5+Math.random()*3.2; x.fillStyle=`rgba(255,255,255,${.8+Math.random()*.2})`;
+      for(let k=0;k<5;k++){ const b=k/5*6.283; x.beginPath(); x.arc(px+Math.cos(b)*s*.6,py+Math.sin(b)*s*.6,s*.55,0,7); x.fill(); } } });
+  blossomTex.encoding=T.LinearEncoding;
+  const PINK=["#f4a6c0","#f8c0d2","#ec8cb0","#fbdce6","#e47aa2","#fff0f4","#f0b0c8"];
+  const M4=new T.Matrix4(), Q4=new T.Quaternion(), E3=new T.Euler(), S3=new T.Vector3(), V3=new T.Vector3(), C3=new T.Color();
+  const cross=(()=>{ const a=new T.PlaneGeometry(1,1), b=new T.PlaneGeometry(1,1); b.rotateY(Math.PI/2); const g=new T.BufferGeometry(); g.setAttribute("position",new T.Float32BufferAttribute([...a.attributes.position.array,...b.attributes.position.array],3)); g.setAttribute("normal",new T.Float32BufferAttribute([...a.attributes.normal.array,...b.attributes.normal.array],3)); g.setAttribute("uv",new T.Float32BufferAttribute([...a.attributes.uv.array,...b.attributes.uv.array],2)); g.setIndex([...a.index.array,...Array.from(b.index.array).map(v=>v+4)]); return g; })();
+  SAKURA.glowU={value:.12};
+  const lm=new T.MeshStandardMaterial({map:blossomTex,alphaTest:.45,side:T.DoubleSide,roughness:.9,color:"#ffffff"}); lm.onBeforeCompile=sh=>{ sh.uniforms.sGlow=SAKURA.glowU; sh.fragmentShader="uniform float sGlow;\n"+sh.fragmentShader.replace("#include <emissivemap_fragment>","#include <emissivemap_fragment>\n totalEmissiveRadiance+=diffuseColor.rgb*sGlow;"); }; lm.customProgramCacheKey=()=>"sakura";
+  const cards=[], trunks=[];
+  const tree=(x,z,r,detail)=>{ const th=rr(1.8,2.8), cy=th+r*.55, tc=C3.set("#3a2620").convertSRGBToLinear().getHex(); trunks.push([x,th/2,z,0,0,0,1,th,1,tc]);
+    const nb=detail?3:2; for(let b=0;b<nb;b++){ const a=rr(0,6.28), tilt=rr(.6,1.0), L=r*rr(.6,.9); trunks.push([x+Math.cos(a)*Math.sin(tilt)*L/2,th*.85+Math.cos(tilt)*L/2,z+Math.sin(a)*Math.sin(tilt)*L/2,0,-a+Math.PI/2,-tilt,.5,L,.5,tc]); }
+    const n=detail?Math.round(36+r*10):Math.round(9+r*1.5), base=PINK[(R()*PINK.length)|0];
+    for(let k=0;k<n;k++){ const a=rr(0,6.28), u=Math.cbrt(R()), y=rr(-.8,.75), s=detail?rr(1,1.45)*(.85+r*.08):rr(2.6,3.4)*(r/3.6); const pc=R()<.6?base:PINK[(R()*PINK.length)|0];
+      cards.push([x+Math.cos(a)*u*r*(detail?1:.75),cy+y*r*(detail?.85:.6),z+Math.sin(a)*u*r*(detail?1:.75),rr(-.5,.5),rr(0,3.14),rr(-.4,.4),s,s,s,C3.set(pc).convertSRGBToLinear().offsetHSL(0,rr(-.05,.05),(y<-.2?-.08:0)+rr(-.07,.06)).getHex()]); } };
+  near.forEach(([x,z,r])=>tree(x,z,r,true)); far.forEach(([x,z,r])=>tree(x,z,r,false));
+  const inst=(geo,m,list)=>{ const im=new T.InstancedMesh(geo,m,list.length); list.forEach((e,i)=>{ E3.set(e[3],e[4],e[5]); Q4.setFromEuler(E3); M4.compose(V3.set(e[0],e[1],e[2]),Q4,S3.set(e[6],e[7],e[8])); im.setMatrixAt(i,M4); im.setColorAt(i,C3.set(e[9])); });
+    im.instanceMatrix.needsUpdate=true; im.instanceColor.needsUpdate=true; im.frustumCulled=false; im.userData.noMerge=1; scene.add(im); return im; };
+  SAKURA.leaves=inst(cross,lm,cards); SAKURA.trunks=inst(new T.CylinderGeometry(.12,.2,1,6),new T.MeshStandardMaterial({roughness:.9,color:"#ffffff"}),trunks);
+  SAKURA.count=[near.length,far.length,cards.length]; }
+
 /* ---- the mirror floor: the garden and hall drawn upside down into a texture each frame while you are inside (only the garden, at low resolution) ---- */
 function zenMirrorInit(){ if(ZEN.refl||Q.lite) return; const res=Q.low?256:512; const rt=new T.WebGLRenderTarget(res,res,{minFilter:T.LinearFilter,magFilter:T.LinearFilter}); rt.texture.encoding=T.sRGBEncoding;
   const texMat={value:new T.Matrix4()}; const p=ZEN.plat;
@@ -2497,9 +2535,98 @@ function zenMirror(){ const Rf=ZEN.refl; if(!Rf) return; const cam=camera, y=ZEN
   Rf.mp.visible=false; const cp=renderer.clippingPlanes; renderer.clippingPlanes=[new T.Plane(new T.Vector3(0,1,0),-y)]; const rt0=renderer.getRenderTarget();
   renderer.setRenderTarget(Rf.rt); renderer.clear(); renderer.render(scene,mc); renderer.setRenderTarget(rt0); renderer.clippingPlanes=cp; Rf.mp.visible=true; }
 /* per frame: show the garden only when you are near it, keep the build-mode trees that used to stand there out of it, light it for the time of day */
+/* ================= 天氣: 晴 / 陰天 / 雨天 / 風大 / 雷雨. Everyone sees the same weather: it follows a fixed 6-minute timetable worked out
+   from the clock (no server traffic), unless the chair has set one (the server passes it to every hall). Everything here is cheap:
+   one line mesh of raindrops and one point cloud of petals around the camera, a little paper or rubbish now and then, lighting and
+   sky tweaks, floor gloss, and sound made from one shared noise buffer through filters (no audio files). ================= */
+const WX_KINDS={clear:{n:"晴天",c:0,r:0,w:.12},cloudy:{n:"陰天",c:.8,r:0,w:.25},windy:{n:"風大",c:.35,r:0,w:1},rain:{n:"雨天",c:.85,r:1,w:.3},storm:{n:"雷雨",c:1,r:1,w:.75,th:1}};
+const WX={c:0,r:0,w:.12,th:0,set:null,setUntil:0,flash:0,nextBolt:0,trashAt:0,trash:null,t:0,dir:new T.Vector2(1,.35).normalize(),au:null,wet:0,wetMats:null,env:null};
+function wxAuto(){ const seg=Math.floor(Date.now()/360000); let h=(seg*2654435761)>>>0; h^=h>>>13; h=Math.imul(h,0x5bd1e995)>>>0; h^=h>>>15; const u=(h%10000)/10000;
+  return u<.42?"clear":u<.62?"cloudy":u<.76?"windy":u<.9?"rain":"storm"; }
+function wxNow(){ if(typeof window.MZ_WX==="string"&&WX_KINDS[window.MZ_WX]) return window.MZ_WX; if(WX.set&&Date.now()<WX.setUntil) return WX.set; return wxAuto(); }
+const wxOutdoor=(x,z)=>{ let r="O"; try{ r=camRoom(x,z); }catch(e){} return r==="O"&&!(typeof zenPlat==="function"&&zenPlat(x,z)); };
+/* ---- rain: short slanted lines falling round the camera, never under a roof ---- */
+const RAIN_N=Q.lite?320:Q.low?700:1300;
+const rainGeo=new T.BufferGeometry(), rainPos=new Float32Array(RAIN_N*6), rainD=new Float32Array(RAIN_N*4); rainGeo.setAttribute("position",new T.BufferAttribute(rainPos,3));
+const rainMat=new T.LineBasicMaterial({color:"#c4cedd",transparent:true,opacity:0,depthWrite:false}); const rainMesh=new T.LineSegments(rainGeo,rainMat); rainMesh.frustumCulled=false; rainMesh.userData.noMerge=1; rainMesh.visible=false; scene.add(rainMesh);
+function rainSpawn(i,c,top){ const x=c.x+(Math.random()-.5)*44, z=c.z+(Math.random()-.5)*44, y=top?c.y+8+Math.random()*10:c.y-6+Math.random()*24; rainD[i*4]=x; rainD[i*4+1]=y; rainD[i*4+2]=z; rainD[i*4+3]=wxOutdoor(x,z)?1:0; }
+/* ---- wind: petals and leaves blowing past ---- */
+const PET_N=Q.lite?80:Q.low?150:260;
+const petTex=cvs(64,64,(x,w,h)=>{ x.clearRect(0,0,w,h); x.fillStyle="#fff"; x.beginPath(); x.ellipse(32,32,26,15,.5,0,7); x.fill(); });
+const petGeo=new T.BufferGeometry(), petPos=new Float32Array(PET_N*3), petCol=new Float32Array(PET_N*3), petV=new Float32Array(PET_N*4);
+{ const P=["#ffb7cf","#ff9ebd","#fff0f4","#f07a2a","#e8b020","#c8261c"]; const C=new T.Color(); for(let i=0;i<PET_N;i++){ C.set(P[i%P.length]); petCol[i*3]=C.r; petCol[i*3+1]=C.g; petCol[i*3+2]=C.b; petV[i*4+3]=Math.random()*6.28; } }
+petGeo.setAttribute("position",new T.BufferAttribute(petPos,3)); petGeo.setAttribute("color",new T.BufferAttribute(petCol,3));
+const petMesh=new T.Points(petGeo,new T.PointsMaterial({size:.24,map:petTex,vertexColors:true,transparent:true,alphaTest:.3,opacity:0,depthWrite:false})); petMesh.frustumCulled=false; petMesh.userData.noMerge=1; petMesh.visible=false; scene.add(petMesh);
+function petSpawn(i,c,edge){ const d=WX.dir; let x=c.x+(Math.random()-.5)*30, z=c.z+(Math.random()-.5)*30; if(edge){ x=c.x-d.x*15+(Math.random()-.5)*20*Math.abs(d.y)+(Math.random()-.5)*4; z=c.z-d.y*15+(Math.random()-.5)*20*Math.abs(d.x)+(Math.random()-.5)*4; }
+  petPos[i*3]=x; petPos[i*3+1]=Math.max(.2,c.y-2+Math.random()*7); petPos[i*3+2]=z; petV[i*4]=3.5+Math.random()*4; petV[i*4+1]=(Math.random()-.5)*.8; petV[i*4+2]=Math.random()*6.28; }
+/* ---- now and then a sheet of newspaper, a plastic bag or a can goes tumbling past ---- */
+const paperTex=cvs(128,96,(x,w,h)=>{ x.fillStyle="#e8e2d4"; x.fillRect(0,0,w,h); x.fillStyle="#3a3a3a"; x.fillRect(8,6,w-16,12); for(let r=0;r<9;r++) for(let c=0;c<3;c++) x.fillRect(8+c*40,26+r*7,34,3); x.fillStyle="#9a9a9a"; x.fillRect(88,26,32,24); });
+function wxTrash(c){ const k=Math.random(), g=new T.Group(); g.userData.noMerge=1;
+  if(k<.5){ const m=new T.Mesh(new T.PlaneGeometry(.62,.46,3,1),new T.MeshStandardMaterial({map:paperTex,side:T.DoubleSide,roughness:.9})); const p=m.geometry.attributes.position; for(let i=0;i<p.count;i++) p.setZ(i,Math.sin(p.getX(i)*5)*.05); m.geometry.computeVertexNormals(); g.add(m); }
+  else if(k<.8){ const m=new T.Mesh(new T.IcosahedronGeometry(.2,1),new T.MeshStandardMaterial({color:"#f2f2ee",roughness:.4,transparent:true,opacity:.85})); m.scale.set(1,.7,1.2); g.add(m); }
+  else { const m=new T.Mesh(new T.CylinderGeometry(.04,.04,.13,10),new T.MeshStandardMaterial({color:"#c8261c",metalness:.6,roughness:.35})); m.rotation.z=Math.PI/2; g.add(m); }
+  const d=WX.dir, side=Math.random()<.5?-1:1, off=3+Math.random()*5; g.position.set(c.x-d.x*16-d.y*off*side,.4+Math.random()*1.4,c.z-d.y*16+d.x*off*side); scene.add(g);
+  WX.trash={g,t:0,spin:new T.Vector3(Math.random()*6-3,Math.random()*6-3,Math.random()*6-3),sp:k>=.8?5:7+Math.random()*3,can:k>=.8}; }
+/* ---- sound: one 2-second noise buffer, looped through filters: rain hiss + patter, wind with gusts; thunder made on the spot ---- */
+function wxAudio(){ if(WX.au) return WX.au; const a=ensureAudio(); if(!a) return null; const len=a.sampleRate*2, b=a.createBuffer(1,len,a.sampleRate), d=b.getChannelData(0); let last=0;
+  for(let i=0;i<len;i++){ const wn=Math.random()*2-1; last=(last+.02*wn)/1.02; d[i]=wn*.6+last*3.2; }
+  const loop=()=>{ const s=a.createBufferSource(); s.buffer=b; s.loop=true; s.start(0,Math.random()*1.9); return s; };
+  const mk=(type,f,q)=>{ const n=a.createBiquadFilter(); n.type=type; n.frequency.value=f; n.Q.value=q; return n; };
+  const rainG=a.createGain(), rainLo=a.createGain(), windG=a.createGain(); rainG.gain.value=rainLo.gain.value=windG.gain.value=0;
+  loop().connect(mk("bandpass",3200,.6)).connect(rainG).connect(a.destination); loop().connect(mk("lowpass",700,.7)).connect(rainLo).connect(a.destination);
+  const wf=mk("bandpass",420,1.4); loop().connect(wf).connect(windG).connect(a.destination);
+  WX.au={a,b,rainG,rainLo,windG,wf}; return WX.au; }
+function wxThunder(near){ const A=wxAudio(); if(!A||document.hidden||!soundOn) return; const a=A.a, t0=a.currentTime+.02, v=sVol()*(near?1:.7);
+  const src=(o)=>{ const s=a.createBufferSource(); s.buffer=A.b; s.start(t0+(o||0),Math.random()*1.5); return s; };
+  if(near){ const s=src(), hp=a.createBiquadFilter(), g=a.createGain(); hp.type="highpass"; hp.frequency.value=1800; g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(.55*v,t0+.008); g.gain.exponentialRampToValueAtTime(.001,t0+.35); s.connect(hp).connect(g).connect(a.destination); s.stop(t0+.4); }
+  const dur=4.5+Math.random()*3, s=src(.05), lp=a.createBiquadFilter(), g=a.createGain(); lp.type="lowpass"; lp.Q.value=.9; lp.frequency.setValueAtTime(near?1400:600,t0); lp.frequency.exponentialRampToValueAtTime(110,t0+dur*.7);
+  g.gain.setValueAtTime(0,t0); let tt=t0; const swells=3+((Math.random()*3)|0); for(let k=0;k<swells;k++){ tt+=.15+Math.random()*(dur/swells); g.gain.linearRampToValueAtTime((.9-k*.15)*v*(.6+Math.random()*.4),tt); tt+=.25; g.gain.linearRampToValueAtTime(.25*v,tt); }
+  g.gain.linearRampToValueAtTime(.001,t0+dur); s.connect(lp).connect(g).connect(a.destination); s.stop(t0+dur+.1);
+  const s2=src(.08), lp2=a.createBiquadFilter(), g2=a.createGain(); lp2.type="lowpass"; lp2.frequency.value=90; g2.gain.setValueAtTime(0,t0); g2.gain.linearRampToValueAtTime(1.1*v,t0+.12); g2.gain.exponentialRampToValueAtTime(.001,t0+dur*.8); s2.connect(lp2).connect(g2).connect(a.destination); s2.stop(t0+dur); }
+/* ---- wet floors: outdoor floors darken and get a glossy, mirror-like sheen (a still picture of the surroundings taken once) ---- */
+function wxWetInit(){ if(WX.wetMats) return; WX.wetMats=[]; const seen=new Set(); scene.traverse(o=>{ if(!o.isMesh||!o.userData||!o.userData.floor||o.userData.keepMat) return; const m=o.material; if(!m||!m.isMeshPhongMaterial||seen.has(m)) return; o.updateMatrixWorld(); const p=new T.Vector3(); o.getWorldPosition(p); if(!wxOutdoor(p.x,p.z)) return; seen.add(m); WX.wetMats.push({m,col:m.color.clone(),spec:m.specular.clone(),sh:m.shininess,em:m.emissive.clone()}); });
+  if(!Q.lite){ try{ const rt=new T.WebGLCubeRenderTarget(128,{generateMipmaps:true,minFilter:T.LinearMipmapLinearFilter}); const cc=new T.CubeCamera(.5,200,rt); cc.position.set(0,1.2,HZ+12); scene.add(cc); const was=[rainMesh.visible,petMesh.visible]; rainMesh.visible=petMesh.visible=false; cc.update(renderer,scene); rainMesh.visible=was[0]; petMesh.visible=was[1]; scene.remove(cc); WX.env=rt.texture;
+    for(const q of WX.wetMats){ q.m.envMap=WX.env; q.m.combine=T.MixOperation; q.m.reflectivity=0; q.m.needsUpdate=true; } }catch(e){} } }
+function wxWet(w){ if(Math.abs(w-WX.wet)<.004) return; WX.wet=w; if(w>.01) wxWetInit(); if(!WX.wetMats) return;
+  for(const q of WX.wetMats){ q.m.color.copy(q.col).multiplyScalar(1-.38*w); q.m.specular.copy(q.spec).lerp(_wc.setRGB(.55,.58,.64),w); q.m.shininess=q.sh+90*w; q.m.emissive.copy(q.em).multiplyScalar(1-.5*w); if(WX.env) q.m.reflectivity=.32*w; } }
+const _wc=new T.Color();
+/* per frame, after dayNight: weather moves gently toward the target; lights, sky, effects and sound follow */
+function wxTick(dt){ WX.t+=dt; const show=(typeof FW!=="undefined"&&(FW.on||FW.pendingAt))||(typeof LAKE!=="undefined"&&LAKE.on)||(typeof FWED!=="undefined"&&FWED.on);
+  const K=WX_KINDS[show?"clear":wxNow()], f=Math.min(1,dt*.08); WX.kind=show?"clear":wxNow(); WX.c+=(K.c-WX.c)*f; WX.r+=(K.r-WX.r)*f; WX.w+=(K.w-WX.w)*f; WX.th=K.th?1:0;
+  const c=WX.c, r=WX.r, w=WX.w, cam=camera.position, ang=WX.t*.05; WX.dir.set(Math.cos(ang*.3)+.8,.35+Math.sin(ang)*.4).normalize();
+  /* lighting and sky */
+  sunLight.intensity*=1-.7*c; if(hemiLight){ hemiLight.intensity*=1-.22*c; hemiLight.color.lerp(_wc.setRGB(.58,.6,.66),.45*c); } scene.fog.color.lerp(_wc.setRGB(.42,.45,.5).multiplyScalar(1-.75*_dn.night),.55*c);
+  skyMat.uniforms.cloudy&&(skyMat.uniforms.cloudy.value=c); try{ MOON_S.sp.material.opacity*=1-c; MOON_S.gl.material.opacity*=1-c; }catch(e){}
+  /* thunder and lightning */
+  if(WX.th&&r>.6){ if(WX.t>WX.nextBolt){ WX.nextBolt=WX.t+7+Math.random()*16; WX.flash=1; WX.flash2=.35+Math.random()*.25; const near=Math.random()<.35; setTimeout(()=>wxThunder(near),(near?.25:.8+Math.random()*2.2)*1000); } }
+  if(WX.flash>0){ const fl=WX.flash*(WX.flash>.55?1:(WX.flash2&&WX.flash<.4&&WX.flash>.25?.8:.35)); if(ambLight) ambLight.intensity+=2.2*fl; if(hemiLight) hemiLight.intensity+=1.4*fl; skyMat.uniforms.flash&&(skyMat.uniforms.flash.value=fl); WX.flash=Math.max(0,WX.flash-dt*2.6); } else if(skyMat.uniforms.flash) skyMat.uniforms.flash.value=0;
+  /* rain */
+  const rainOn=r>.02; rainMesh.visible=rainOn; if(rainOn){ if(!WX.rainInit){ WX.rainInit=1; for(let i=0;i<RAIN_N;i++) rainSpawn(i,cam,false); } rainMat.opacity=.32*r; const sx=WX.dir.x*w*5, sz=WX.dir.y*w*5, L=.75, sp=24;
+    for(let i=0;i<RAIN_N;i++){ let y=rainD[i*4+1]-sp*dt; rainD[i*4]+=sx*dt; rainD[i*4+2]+=sz*dt; if(y<0||Math.abs(rainD[i*4]-cam.x)>24||Math.abs(rainD[i*4+2]-cam.z)>24){ rainSpawn(i,cam,true); y=rainD[i*4+1]; } rainD[i*4+1]=y;
+      const j=i*6, on=rainD[i*4+3]&&i<RAIN_N*r; if(!on){ rainPos[j+1]=rainPos[j+4]=-50; continue; } rainPos[j]=rainD[i*4]; rainPos[j+1]=y; rainPos[j+2]=rainD[i*4+2]; rainPos[j+3]=rainD[i*4]-sx*.03; rainPos[j+4]=y+L; rainPos[j+5]=rainD[i*4+2]-sz*.03; }
+    rainGeo.attributes.position.needsUpdate=true; }
+  wxWet(Math.min(1,r*1.15));
+  /* petals and leaves */
+  const pOn=w>.4; petMesh.visible=pOn; if(pOn){ if(!WX.petInit){ WX.petInit=1; for(let i=0;i<PET_N;i++) petSpawn(i,cam,false); } petMesh.material.opacity=Math.min(1,(w-.4)*2.5); const d=WX.dir;
+    for(let i=0;i<PET_N;i++){ const j=i*3, s=petV[i*4]*(.6+w*.6), ph=petV[i*4+3]+=dt*3; petPos[j]+=(d.x*s+Math.sin(ph)*.6)*dt; petPos[j+2]+=(d.y*s+Math.cos(ph*.7)*.6)*dt; petPos[j+1]+=(petV[i*4+1]+Math.sin(ph*1.3)*.9-.25)*dt;
+      if(Math.hypot(petPos[j]-cam.x,petPos[j+2]-cam.z)>19||petPos[j+1]<.05||petPos[j+1]>cam.y+9) petSpawn(i,cam,true); } petGeo.attributes.position.needsUpdate=true; }
+  /* rubbish on the wind */
+  if(WX.trash){ const T0=WX.trash, g=T0.g; T0.t+=dt; const d=WX.dir; g.position.x+=d.x*T0.sp*dt; g.position.z+=d.y*T0.sp*dt; g.position.y=T0.can?.05+Math.abs(Math.sin(T0.t*3))*.06:Math.max(.05,g.position.y+Math.sin(T0.t*2.2)*1.2*dt-.05*dt);
+    g.rotation.x+=T0.spin.x*dt; g.rotation.y+=T0.spin.y*dt; g.rotation.z+=T0.spin.z*dt; if(T0.t>6){ scene.remove(g); g.traverse(o=>{ if(o.geometry) o.geometry.dispose(); }); WX.trash=null; } }
+  else if(w>.6&&WX.t>WX.trashAt){ WX.trashAt=WX.t+25+Math.random()*35; if(WX.t>8&&wxOutdoor(cam.x,cam.z)) wxTrash(cam); }
+  /* the demo visitors outside go home when it rains (new ones arrive indoors until it stops) */
+  if(r>.5&&WX.t>(WX.homeT||0)){ WX.homeT=WX.t+2; for(const n of npcs){ if(!n.isBot||n.vanishT!=null||n.seat>=0) continue; if(wxOutdoor(n.pos.x,n.pos.y)&&Math.random()<.35) botVanish(n); } }
+  if(typeof SAKURA!=="undefined"&&SAKURA.glowU) SAKURA.glowU.value=.12+.38*_dn.night;
+  /* sound */
+  const A=(r>.02||w>.3)&&soundOn&&!document.hidden?wxAudio():WX.au; if(A){ const out=wxOutdoor(cam.x,cam.z)?1:.45, sv=soundOn&&!document.hidden?sVol():0, gust=.55+.45*Math.sin(WX.t*.7)*Math.sin(WX.t*.23+1), now=A.a.currentTime;
+    A.rainG.gain.setTargetAtTime(.1*r*out*sv,now,.4); A.rainLo.gain.setTargetAtTime(.07*r*out*sv,now,.4); A.windG.gain.setTargetAtTime(Math.max(0,w-.25)*.32*gust*out*sv,now,.3); A.wf.frequency.setTargetAtTime(260+520*gust*w,now,.3); } }
+/* the chair can set the weather for everyone (or put it back on the timetable) */
+async function wxPoll(){ if(!USE_CF) return; try{ const r=await fetch("/weather"); const j=await r.json(); if(j&&j.w!==undefined){ WX.set=j.w||null; WX.setUntil=j.until||0; } }catch(e){} }
+setTimeout(wxPoll,4000); setInterval(wxPoll,120000);
+
 const _zv=new T.Vector3(), _zc=new T.Color();
 /* the round build-mode trees that ended up out where the garden is (they looked odd there): hidden before the static merge, so they are not baked in */
-function zenHideTrees(){ for(const o of scene.children){ if(!(o.userData&&o.userData.buildId&&/^g-X-/.test(o.userData.buildId))) continue; let hit=false; o.updateMatrixWorld(true); o.traverse(m=>{ if(hit||!(m.isMesh||m.isPoints)) return; m.getWorldPosition(_zv); if(_zv.x<-26&&_zv.z<9) hit=true; }); if(hit) o.visible=false; } }
+function zenHideTrees(){ for(const o of scene.children){ if(!(o.userData&&o.userData.buildId&&/^g-X-/.test(o.userData.buildId))) continue; let hit=false; o.updateMatrixWorld(true); o.traverse(m=>{ if(hit||!(m.isMesh||m.isPoints)) return; m.getWorldPosition(_zv); if((_zv.x<-26&&_zv.z<9)||Math.abs(_zv.x)>26.5||_zv.z<-51.5||_zv.z>HZ+YX+25) hit=true; /* (and every one outside the balustrade: the cherry trees stand there now) */ }); if(hit) o.visible=false; } }
 function zenTick(dt){ { const b=$("#zenMusicBtn"), want=!!(meAv&&meAv.pos.x<-23.5); if(b&&b.hidden===want) b.hidden=!want; } const c=camera.position, near=(c.x<-14&&c.z<-8&&c.z>-54)||c.x<-24, me=meAv&&meAv.pos;
   if(ZEN.g.visible!==near){ ZEN.g.visible=near; }
   ZEN.t=(ZEN.t||0)+dt; if((ZEN.hideT=(ZEN.hideT||0)-dt)<0){ ZEN.hideT=3;  }
@@ -2519,7 +2646,7 @@ function zenTick(dt){ { const b=$("#zenMusicBtn"), want=!!(meAv&&meAv.pos.x<-23.
 
 /* outside: dusk silhouettes */
 { const dark=mat("#20120d",{roughness:1}), leaf=mat("#1b2216",{roughness:1}), roof=mat("#2a1610",{roughness:1});
-  let placed=0; for(let i=0;i<120&&placed<18;i++){ const x=rand(30,62), z=rand(-55,55); if(Math.abs(z+.22*x)<14) continue; placed++; const t=new T.Group(); t.position.set(x,0,z); t.scale.setScalar(rand(.7,1.1)); scene.add(t); cyl(.18,.3,3.2,dark,0,1.6,0,t,6);
+  let placed=0; for(let i=0;i<120&&placed<0;i++){ /* (the dark cone trees outside are replaced by the cherry trees) */ const x=rand(30,62), z=rand(-55,55); if(Math.abs(z+.22*x)<14) continue; placed++; const t=new T.Group(); t.position.set(x,0,z); t.scale.setScalar(rand(.7,1.1)); scene.add(t); cyl(.18,.3,3.2,dark,0,1.6,0,t,6);
     for(let k=0;k<3;k++){ const c=mesh(new T.ConeGeometry(rand(1.2,1.7),rand(2.2,3),8),leaf,rand(-.4,.4),2.8+k*1.1,rand(-.4,.4),t); } }
   // low courtyard wall so the horizon reads as a temple yard
   /* grounds boundary: the chair's carved stone balustrade (石欄圍牆), repeated end to end along both sides */
@@ -3239,7 +3366,7 @@ function sitterLimit(){ return !showNpc?0:Q.lite?3:Q.low?6:12; }       // the cl
 function hereCount(){ return FAKE_CROWD?(fakeHalls(Date.now())[HALLS.current()]||0):16; }
 function botWant(){ const lim=botLimit(); if(!lim) return 0; const room=Math.max(0,lim-remotes.size), h=hereCount(); return h<=0?0:Math.min(room,Math.max(2,h)); }
 function sitterWant(){ const lim=sitterLimit(); if(!lim) return 0; return Math.max(Math.min(1,lim),Math.min(lim,Math.round(hereCount()/5))); }
-function botSpot(){ for(let k=0;k<30;k++){ const x=rand(-15,15), z=rand(HZ+2,HZ+YX+16); if(walkable(x,z)) return [x,z]; } return [0,HZ+6]; }
+function botSpot(){ if(typeof WX!=="undefined"&&WX.r>.5) return hallSpot(); for(let k=0;k<30;k++){ const x=rand(-15,15), z=rand(HZ+2,HZ+YX+16); if(walkable(x,z)) return [x,z]; } return [0,HZ+6]; }
 function hallSpot(){ for(let k=0;k<30;k++){ const x=rand(-10,10), z=rand(-6,HZ-1.5); if(walkable(x,z)) return [x,z]; } return [0,4]; }
 // a free spot near a station: people queue around it instead of standing inside each other
 const stNear=k=>{ const s=stations[k]; return [s.approach.x,s.approach.y]; }; // the exact spot a player walks to when tapping it
@@ -3556,6 +3683,7 @@ function initCF(first){
       if(m.t==="puppet"){ ptSet(m); return; }
       if(m.t==="layout"){ if(!BUILD.on) buildFetch(); return; }
       if(m.t==="market"){ mkSet(m.open||{}); return; }
+      if(m.t==="wx"){ WX.set=m.w||null; WX.setUntil=+m.until||0; return; }
       if(m.t==="hb"){ hbStart(m); return; }
       if(m.t==="gift"){ giftFetch(); return; }
       if(m.t==="giftnow"&&m.g&&m.g.g){ const g=m.g; if(!GIFT_SEEN.has(g.g)){ GIFT_SEEN.add(g.g); save("mz.giftSeen",[...GIFT_SEEN].slice(-60)); giftApply({kind:g.kind==="item"?"item":g.kind==="acc"?"acc":"coins",k:String(g.k||""),n:Math.max(1,Math.min(100000,g.n|0)),from:String(g.from||"主委").slice(0,16)}); profSave(true); } return; } /* 只有在線上的人收得到的全服禮物 */
@@ -3817,7 +3945,7 @@ const ctTile=(act,icon,name,note="")=>`<button class="ct" data-act="${act}"><b>$
 function openChair(){ if(!me.sp) return;
   openSheet("chair","主委工具",`<div class="ck-row"><input class="mail-box ck" id="readKey" type="password" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="留言讀取密碼（輸入一次就會記住）" value="${esc(load("mz.rk",""))}"><button class="chip ck-eye" type="button" onclick="const i=document.getElementById('readKey'); i.type=i.type==='password'?'text':'password'; this.textContent=i.type==='password'?'👁':'🙈';">👁</button></div>
   <div class="ct-group"><span class="group-label">訊息</span><div class="ct-grid">${ctTile("msgsOpen","📬","香客留言")}${ctTile("annOpen","📢","全服公告","跑馬燈")}${ctTile("boardOpen","📋","公告欄",board.text?"有公告":"空白")}</div></div>
-  <div class="ct-group"><span class="group-label">活動</span><div class="ct-grid">${ctTile("askFw","🎆","全服煙火","4 場可選")}${ctTile("fwedOpen","🎼","煙火編排器","自己排")}${ctTile("schedOpen","⏰","定時活動","煙火・夜市")}${ctTile("camCode","📷","記錄視角","給 Claude")}${ctTile("noFog","🌫️",NOFOG.on?"恢復霧氣":"除霧",NOFOG.on?"目前無霧":"看清遠方")}${ctTile("askSL","🏮","50 盞天燈")}${ctTile("stageChair","🎭","歌仔戲台",OP.on?"演出中":"")}${ctTile("toggleCats","🐱",CATS.off?"放出貓咪":"收起貓咪",CATS.off?"已收起":"跳舞中")}${ctTile("puppetChair","🎎","布袋戲台",PT.on?"演出中":"")}${ctTile("marketOpen","🏮","夜市",Object.keys(MK.open).length?`${Object.keys(MK.open).length} 攤營業中`:"")}</div></div>
+  <div class="ct-group"><span class="group-label">活動</span><div class="ct-grid">${ctTile("askFw","🎆","全服煙火","4 場可選")}${ctTile("fwedOpen","🎼","煙火編排器","自己排")}${ctTile("wxOpen","🌦️","天氣",WX_KINDS[wxNow()].n)}${ctTile("schedOpen","⏰","定時活動","煙火・夜市")}${ctTile("camCode","📷","記錄視角","給 Claude")}${ctTile("noFog","🌫️",NOFOG.on?"恢復霧氣":"除霧",NOFOG.on?"目前無霧":"看清遠方")}${ctTile("askSL","🏮","50 盞天燈")}${ctTile("stageChair","🎭","歌仔戲台",OP.on?"演出中":"")}${ctTile("toggleCats","🐱",CATS.off?"放出貓咪":"收起貓咪",CATS.off?"已收起":"跳舞中")}${ctTile("puppetChair","🎎","布袋戲台",PT.on?"演出中":"")}${ctTile("marketOpen","🏮","夜市",Object.keys(MK.open).length?`${Object.keys(MK.open).length} 攤營業中`:"")}</div></div>
   <div class="ct-group"><span class="group-label">線上人數</span><div class="crowd-row"><span class="crowd-now"><span>全廟 <b>${shownTotal()}</b> 人</span><small>這殿 ${hallShown(HALLS.current(),Date.now())} 人・${CROWD.real?"真實人數":CROWD.at&&CROWD.target!=null?`目標 ${CROWD.target}`:"自動"}</small></span><input id="crowdIn" type="text" inputmode="numeric" maxlength="3" placeholder="目標"><button class="chip" data-act="crowdSet">設定</button><button class="chip" data-act="crowdAuto">自動</button><button class="chip" data-act="crowdReal" aria-pressed="${!!CROWD.real}">真實人數</button></div>
     <p class="real-count" id="realCount">真實在線：讀取中…</p><p class="note">目標是全廟人數，會依序分到各殿（前一殿快滿才開下一殿）。約 1 分鐘慢慢變到目標，之後在上下 10 人內浮動。「自動」回到依時段變化（凌晨少、白天多）。「真實人數」不加假人，有多少玩家就顯示多少。</p></div>
   <div class="ct-group"><span class="group-label">主委自己</span><div class="ct-grid">${ctTile("chairHide",chairHidden?"👁":"🫥",chairHidden?"解除隱形":"隱形",chairHidden?"隱形中":"")}${ctTile("chairBuild","🏗️","建築模式","移動屋頂與裝飾")}${ctTile("chairSpeed","🏃","移動速度",CHAIR_SPD+"×")}${ctTile("chairFly","🕊️",myFly?"降落":"飛行",myFly?"飛行中":"")}${ctTile("chairCs","💰",myCs?"變回主委":"變身財神爺",myCs?"發金光中":"")}${ctTile("giftList","🎁","送禮","平安幣・道具")}${ctTile("chairReset","🔄","重置今日","測試用")}</div></div>`);
@@ -5170,7 +5298,7 @@ function fwUpdate(dt){ const now=performance.now(); fwHaloTick(dt);
       else { const c="#"+_fc1.setRGB(fwCol[j],fwCol[j+1],fwCol[j+2]).getHexString(); for(let q=0;q<4;q++){ const th=q*Math.PI/2+Math.random()*.3; fwEmit(px,py,pz,Math.cos(th)*5,Math.sin(th)*5,(Math.random()-.5)*2,c,VIVID[(Math.random()*VIVID.length)|0],.9,.5,1.4,2,.2); } }
       fwA[i]=0; } }
   if(any||FW.on){ for(const n of ["iPos","iVel","iCol","iA","iSz","iTr"]) fwStreakGeo.attributes[n].needsUpdate=true; }
-  fwPts.visible=false; fwStreak.visible=any||FW.on; fwStreakMat.uniforms.uGain.value=1; fwStreakMat.uniforms.uMinW.value=.0012*Math.max(1,Math.min(1.8,camera.fov/55)); /* wide/far views: a floor on spark size (round and sharp, so it doesn't blur) */ { const sharp=!!(FW.on||FW.pendingAt||LAKE.on||fwView); if(DRES.fw!==sharp){ DRES.fw=sharp; applyDPR(); } } /* full resolution while a show is on, whatever the view (省電 mode had blurred the sparks) */ /* the streaks draw the stars too (their round heads), so the old point sprites are no longer drawn or uploaded */ dayNight(dt); try{ fwedTick(); }catch(e){} try{ zenTick(dt); }catch(e){ if(!zenTick.err){ zenTick.err=1; console.error(e); } }
+  fwPts.visible=false; fwStreak.visible=any||FW.on; fwStreakMat.uniforms.uGain.value=1; fwStreakMat.uniforms.uMinW.value=.0012*Math.max(1,Math.min(1.8,camera.fov/55)); /* wide/far views: a floor on spark size (round and sharp, so it doesn't blur) */ { const sharp=!!(FW.on||FW.pendingAt||LAKE.on||fwView); if(DRES.fw!==sharp){ DRES.fw=sharp; applyDPR(); } } /* full resolution while a show is on, whatever the view (省電 mode had blurred the sparks) */ /* the streaks draw the stars too (their round heads), so the old point sprites are no longer drawn or uploaded */ dayNight(dt); try{ wxTick(dt); }catch(e){ if(!wxTick.err){ wxTick.err=1; console.error(e); } } try{ fwedTick(); }catch(e){} try{ zenTick(dt); }catch(e){ if(!zenTick.err){ zenTick.err=1; console.error(e); } }
   if(sparkAvail()!==renderSparkBtn.last) renderSparkBtn(); }
 // ---- 仙女棒: anyone can hold one while the show is on (and for two minutes after) ----
 let mySparkler=false, fwView=false;
@@ -5483,6 +5611,11 @@ function fwedTick(){ if(!FWED.on||!FWED.cv) return; const S=FWED.show, now=fwedN
     for(const e of S.ev){ const px=e.t/S.len*W; tx.fillStyle=e.ty==="god"?"#ffd23b":(e.c?e.c[0]:"#ff8a5a"); tx.fillRect(px-1,H*.12,2.2,H*.76); }
     tx.fillStyle="#fff"; tx.fillRect(now/S.len*W-1,0,2.5,H); } }
 
+HANDLERS.wxOpen=()=>{ const cur=wxNow(), manual=WX.set&&Date.now()<WX.setUntil; const left=manual?Math.max(1,Math.round((WX.setUntil-Date.now())/60000)):0;
+  openSheet("contact","天氣",`${backBtn}<p class="lead">現在：${WX_KINDS[cur].n}${manual?`（主委指定，還有 ${left} 分鐘）`:"（自動，每 6 分鐘可能換一次）"}。選一種天氣，全伺服器會一起換，維持 20 分鐘後回到自動。</p>
+    <div class="goods">${Object.entries(WX_KINDS).map(([k,o])=>`<button class="good${cur===k?" on":""}" data-act="wxSet" data-v="${k}"><span class="name">${{clear:"☀️",cloudy:"☁️",windy:"🍃",rain:"🌧️",storm:"⛈️"}[k]} ${o.n}</span></button>`).join("")}<button class="good" data-act="wxSet" data-v=""><span class="name">🔄 回到自動</span></button></div>`); };
+HANDLERS.wxSet=async v=>{ const until=v?Date.now()+20*60000:0; if(!USE_CF){ WX.set=v||null; WX.setUntil=until; HANDLERS.wxOpen(); return; } const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return; }
+  try{ const r=await fetch("/weather",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({w:v,min:20})}); const j=await r.json().catch(()=>({})); forgetKey(r,j); if(j.ok){ WX.set=j.w||null; WX.setUntil=j.until||0; toast(v?`天氣換成${WX_KINDS[v].n}`:"天氣回到自動",2200); HANDLERS.wxOpen(); } else toast(j.locked?"嘗試次數過多，今天先鎖住了":"密碼不對，天氣沒有換",2600); }catch(e){ toast("天氣沒有換，請稍後再試"); } };
 let fwPickSh=1;
 let fwPickCu="";
 HANDLERS.askFw=async()=>{ fwKeyHold=ck()||fwKeyHold; const old=(document.querySelector("#fwTxt")||{}).value; if(!HANDLERS.askFw.listed){ HANDLERS.askFw.listed=1; await fwedList(); }
