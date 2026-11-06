@@ -34,7 +34,7 @@
   color-scheme:dark;
 }
 html,body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;background:#140906;color:var(--ink);font-family:var(--f-ui);-webkit-tap-highlight-color:transparent}
-#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}#vig{position:fixed;inset:0;pointer-events:none;display:none;z-index:0}body.flt-soft #c{filter:contrast(1.07) saturate(1.12)}body.flt-soft #vig{display:block;background:radial-gradient(ellipse 85% 75% at 50% 46%,transparent 58%,rgba(20,8,4,.30) 100%)}body.flt-film #c{filter:contrast(1.13) saturate(1.2) sepia(.07)}body.flt-film #vig{display:block;background:radial-gradient(ellipse 80% 70% at 50% 45%,transparent 50%,rgba(16,6,2,.45) 100%),linear-gradient(180deg,rgba(255,170,90,.06),transparent 40%,rgba(40,20,60,.08))}body.fwclean #vig{display:none}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}#vig{position:fixed;inset:0;pointer-events:none;display:none;z-index:0}#fwEd{position:fixed;inset:0;z-index:60;pointer-events:none;color:#fff;font-size:13px}#fwEd canvas#fwEdSky{position:absolute;inset:0;width:100%;height:100%;pointer-events:auto;touch-action:none}#fwEd .fe-top{position:absolute;left:0;right:0;top:0;display:flex;gap:10px;align-items:center;padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;background:linear-gradient(rgba(0,0,0,.55),transparent);pointer-events:auto}#fwEd .fe-top #fwEdName{font-weight:700;flex:1}#fwEd .fe-x{background:rgba(255,255,255,.18);border:0;color:#fff;border-radius:14px;padding:6px 12px}#fwEd .fe-panel{position:absolute;left:0;right:0;bottom:0;padding:8px 10px calc(env(safe-area-inset-bottom) + 8px);background:rgba(12,8,20,.82);backdrop-filter:blur(6px);pointer-events:auto;display:flex;flex-direction:column;gap:6px}#fwEd .fe-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}#fwEd .fe-play{width:42px;height:34px;border-radius:10px;border:0;background:#ff9a3b;color:#2a1000;font-size:18px;font-weight:700}#fwEdTl{flex:1;height:34px;min-width:120px}#fwEd .fe-types{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}#fwEd .fe-ty{flex:0 0 auto;width:66px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#fff;border-radius:10px;padding:4px 2px;display:flex;flex-direction:column;align-items:center;gap:1px;font-size:11px}#fwEd .fe-ty img{width:40px;height:40px;animation:fePulse 1.8s ease-in-out infinite}#fwEd .fe-ty.on{border-color:#ffcf6b;background:rgba(255,190,90,.22)}#fwEd .fe-ty i{font-style:normal;font-size:10px;color:#ffcf6b;padding:1px 4px}@keyframes fePulse{0%,100%{transform:scale(.82);opacity:.75}50%{transform:scale(1);opacity:1}}#fwEd .fe-ch{border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.07);color:#fff;border-radius:12px;padding:5px 9px;font-size:12px}#fwEd .fe-ch.on{background:#ffcf6b;color:#2a1000;border-color:#ffcf6b}#fwEd .fe-ch:disabled{opacity:.4}#fwEd .fe-lbl{opacity:.7;font-size:11px;margin-left:4px}#fwEd .fe-sw{background:linear-gradient(90deg,var(--a) 50%,var(--b) 50%)!important;color:#fff!important;text-shadow:0 1px 2px #000}#fwEd .fe-save{background:#2bb673;border-color:#2bb673}#fwEd .fe-hint{margin:0;opacity:.75;font-size:11px;line-height:1.4}#fwEdMsg{position:absolute;left:16px;right:16px;top:30%;background:rgba(20,12,30,.95);border:1px solid #ffcf6b;border-radius:14px;padding:14px;pointer-events:auto}#fwEdMsg p{margin:6px 0;font-size:13px;line-height:1.5}body.flt-soft #c{filter:contrast(1.07) saturate(1.12)}body.flt-soft #vig{display:block;background:radial-gradient(ellipse 85% 75% at 50% 46%,transparent 58%,rgba(20,8,4,.30) 100%)}body.flt-film #c{filter:contrast(1.13) saturate(1.2) sepia(.07)}body.flt-film #vig{display:block;background:radial-gradient(ellipse 80% 70% at 50% 45%,transparent 50%,rgba(16,6,2,.45) 100%),linear-gradient(180deg,rgba(255,170,90,.06),transparent 40%,rgba(40,20,60,.08))}body.fwclean #vig{display:none}
 button{font:inherit;color:inherit;cursor:pointer}
 button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .glass{background:var(--glass);border:1px solid var(--gold-soft);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 6px 24px rgba(0,0,0,.35)}
@@ -2336,7 +2336,7 @@ const ZL=h=>"#"+new T.Color(h).convertSRGBToLinear().getHexString(); /* a colour
    coloured maples and flowering trees around a Japanese zen hall with 50 round cushions. The garden only draws while you are near it
    (a tall bamboo fence hides it from the rest of the grounds); the hall floor is a live mirror while you are inside. ================= */
 ZEN.s0=SEATS.length; /* the 50 cushions: 5 rows of 10, everyone facing the alcove on the west wall */
-for(let r=0;r<5;r++) for(let c=0;c<10;c++){ const v=new T.Vector2(-48.4-r*1.75,ZEN.GZ+(c-4.5)*1.22); v.zen=true; v.face=-Math.PI/2; SEATS.push(v); }
+for(let r=0;r<5;r++) for(let c=0;c<10;c++){ const v=new T.Vector2((ZEN.hall.x0+ZEN.hall.x1)/2+(2-r)*1.75,ZEN.GZ+(c-4.5)*1.22); v.zen=true; v.face=-Math.PI/2; SEATS.push(v); }
 function zenIn(x,z){ return x<ZEN.X1+.4&&x>ZEN.X0&&z>ZEN.Z0&&z<ZEN.Z1; }
 function zenPlat(x,z){ const p=ZEN.plat; return x>p.x0&&x<p.x1&&z>p.z0&&z<p.z1; }
 /* height of the ground under a walker: the arched bridge and the raised hall floor (everywhere else 0) */
@@ -2346,7 +2346,7 @@ function zenWalkable(x,z){ const G=ZEN.GZ;
   if(x>-23.9&&x<=-22.6&&Math.abs(z-G)<.95) return true;                                   /* the gate in the wall */
   if(x<=-23.6&&x>=ZEN.BX0-.2&&Math.abs(z-G)<.95) return true;                             /* bridge */
   if(x<ZEN.BX0&&x>=ZEN.plat.x1&&Math.abs(z-G)<1.25) return true;                          /* stone path to the hall steps */
-  const p=ZEN.plat; if(x>p.x0+.3&&x<p.x1+.2&&z>p.z0+.3&&z<p.z1-.3) return !(x<-61.2&&Math.abs(z-G)<2.2); /* hall and veranda, short of the alcove */
+  const p=ZEN.plat; if(x>p.x0+.3&&x<p.x1+.2&&z>p.z0+.3&&z<p.z1-.3) return true; /* hall and veranda */
   return false; }
 { const G=ZEN.GZ, root=new T.Group(); root.userData.noMerge=1; scene.add(root); ZEN.fence=root;
   const g=new T.Group(); g.userData.noMerge=1; g.visible=false; scene.add(g); ZEN.g=g;
@@ -2391,8 +2391,7 @@ function zenWalkable(x,z){ const G=ZEN.GZ;
   /* ---- the hall: raised dark floor, posts, shoji transoms, railings, ceiling, a hipped tile roof and an alcove ---- */
   const hl=ZEN.hall, pl=ZEN.plat, FY=ZEN.FY, H=3.5;
   { const base=box(pl.x1-pl.x0,FY,pl.z1-pl.z0,mat(ZL("#2a1c14"),{roughness:.8}),(pl.x0+pl.x1)/2,FY/2,(pl.z0+pl.z1)/2,g);
-    const fm=new T.MeshStandardMaterial({color:ZL("#170d07"),roughness:.2,metalness:.05}); const fl=mesh(new T.PlaneGeometry(pl.x1-pl.x0,pl.z1-pl.z0),fm,(pl.x0+pl.x1)/2,FY+.004,(pl.z0+pl.z1)/2,g); fl.rotation.x=-Math.PI/2; fl.userData.floor=true; ZEN.pick.push(fl); ZEN.floor=fl;
-    /* plank seams */ const seams=[]; for(let z=pl.z0+.3;z<pl.z1;z+=.3) seams.push({x:(pl.x0+pl.x1)/2,y:FY+.006,z,sx:pl.x1-pl.x0}); inst(new T.BoxGeometry(1,.002,.012),mat(ZL("#140b06")),seams);
+    const fm=new T.MeshStandardMaterial({color:ZL("#2a160b"),roughness:.1,metalness:.1}); const fl=mesh(new T.PlaneGeometry(pl.x1-pl.x0,pl.z1-pl.z0),fm,(pl.x0+pl.x1)/2,FY+.004,(pl.z0+pl.z1)/2,g); fl.rotation.x=-Math.PI/2; fl.userData.floor=true; ZEN.pick.push(fl); ZEN.floor=fl;
     for(let i=0;i<4;i++) box(1.0,.14,3.0,mat(ZL("#2e1f15"),{roughness:.8}),pl.x1+.5+i*.0,FY-.14*(i+1)+.07,G,g).position.x=pl.x1+.4+i*.4; }
   { const posts=[], step=2.0; const nx=Math.round((hl.x1-hl.x0)/step), nz=Math.round((hl.z1-hl.z0)/step);
     for(let i=0;i<=nx;i++) for(const z of [hl.z0,hl.z1]) posts.push({x:hl.x0+(hl.x1-hl.x0)*i/nx,y:FY+H/2,z,sy:H});
@@ -2405,22 +2404,18 @@ function zenWalkable(x,z){ const G=ZEN.GZ;
     const shoji=cvs(256,64,(x,w,h)=>{ x.fillStyle="#f4ecd8"; x.fillRect(0,0,w,h); x.strokeStyle="#3a2416"; x.lineWidth=3; for(let i=0;i<=8;i++){ x.beginPath(); x.moveTo(i*w/8,0); x.lineTo(i*w/8,h); x.stroke(); } for(let j=0;j<=2;j++){ x.beginPath(); x.moveTo(0,j*h/2); x.lineTo(w,j*h/2); x.stroke(); } });
     const sm=new T.MeshStandardMaterial({map:shoji,roughness:.9,emissive:"#fff1d0",emissiveMap:shoji,emissiveIntensity:.35,side:T.DoubleSide});
     for(const z of [hl.z0,hl.z1]){ const p=mesh(new T.PlaneGeometry(hl.x1-hl.x0,.6),sm,(hl.x0+hl.x1)/2,FY+H-.55,z,g); sm.map.repeat.set(4,1); sm.map.wrapS=T.RepeatWrapping; }
-    for(const x of [hl.x1]){ const p=mesh(new T.PlaneGeometry(hl.z1-hl.z0,.6),sm,x,FY+H-.55,(hl.z0+hl.z1)/2,g); p.rotation.y=Math.PI/2; }
+    for(const x of [hl.x0,hl.x1]){ const p=mesh(new T.PlaneGeometry(hl.z1-hl.z0,.6),sm,x,FY+H-.55,(hl.z0+hl.z1)/2,g); p.rotation.y=Math.PI/2; }
     /* low railings round the veranda (open on the east where the steps come up) */
     const rail=(x0,z0,x1,z1)=>{ const L=Math.hypot(x1-x0,z1-z0); const b=box(L,.08,.1,darkWood,(x0+x1)/2,FY+.78,(z0+z1)/2,g); b.rotation.y=-Math.atan2(z1-z0,x1-x0); const b2=box(L,.06,.08,darkWood,(x0+x1)/2,FY+.36,(z0+z1)/2,g); b2.rotation.y=b.rotation.y;
       const n=Math.round(L/.5), sp=[]; for(let i=0;i<=n;i++){ const t=i/n; sp.push({x:x0+(x1-x0)*t,y:FY+.4,z:z0+(z1-z0)*t,sy:.8}); } inst(new T.BoxGeometry(.05,1,.05),darkWood,sp); };
     rail(pl.x0+.15,pl.z0+.15,pl.x1-.15,pl.z0+.15); rail(pl.x0+.15,pl.z1-.15,pl.x1-.15,pl.z1-.15); rail(pl.x0+.15,pl.z0+.15,pl.x0+.15,pl.z1-.15);
-    rail(pl.x1-.15,pl.z0+.15,pl.x1-.15,G-1.6); rail(pl.x1-.15,G+1.6,pl.x1-.15,pl.z1-.15);
+    rail(pl.x1-.15,pl.z0+.15,pl.x1-.15,G-1.6); rail(pl.x1-.15,G+1.6,pl.x1-.15,pl.z1-.15); /* (the west side too, now that there is no wall) */
     /* ceiling with a grid of dark battens */
-    const cl=mesh(new T.PlaneGeometry(pl.x1-pl.x0,pl.z1-pl.z0),mat(ZL("#2a1a10"),{roughness:.85}),(pl.x0+pl.x1)/2,FY+H+.02,(pl.z0+pl.z1)/2,g); cl.rotation.x=Math.PI/2;
-    const bat=[]; for(let x=pl.x0+1;x<pl.x1;x+=1.2) bat.push({x,y:FY+H-.03,z:(pl.z0+pl.z1)/2,sz:pl.z1-pl.z0}); inst(new T.BoxGeometry(.07,.07,1),darkWood,bat);
-    /* west wall with the alcove: a hanging scroll, an incense bowl and a single branch in a vase */
-    box(.3,H,hl.z1-hl.z0,mat(ZL("#9c8a6c"),{roughness:.95}),hl.x0-.05,FY+H/2,(hl.z0+hl.z1)/2,g);
-    box(.9,.12,3.6,darkWood,hl.x0+.5,FY+.06,G,g); box(.06,H-.6,.14,darkWood,hl.x0+.15,FY+(H-.6)/2,G-1.85,g); box(.06,H-.6,.14,darkWood,hl.x0+.15,FY+(H-.6)/2,G+1.85,g);
-    const scroll=cvs(128,384,(x,w,h)=>{ x.fillStyle="#efe6d0"; x.fillRect(0,0,w,h); x.fillStyle="#6a5a3a"; x.fillRect(0,0,w,18); x.fillRect(0,h-18,w,18); x.fillStyle="#1a1410"; x.font="bold 96px serif"; x.textAlign="center"; x.textBaseline="middle"; x.fillText("靜",w/2,h*.42); x.font="40px serif"; x.fillText("心",w/2,h*.72); });
-    const sc=mesh(new T.PlaneGeometry(.75,2.2),new T.MeshStandardMaterial({map:scroll,roughness:.9}),hl.x0+.12,FY+1.9,G,g); sc.rotation.y=Math.PI/2;
-    cyl(.16,.12,.14,mat(ZL("#6a4a2a"),{roughness:.5}),hl.x0+.55,FY+.19,G-.7,g,14); cyl(.1,.14,.42,mat(ZL("#2a3a44"),{roughness:.3,metalness:.2}),hl.x0+.55,FY+.33,G+.9,g,14);
-    for(let i=0;i<5;i++){ const b=cyl(.012,.016,.7,darkWood,hl.x0+.55+rr(-.1,.1),FY+.85,G+.9+rr(-.1,.1),g,5); b.rotation.set(rr(-.5,.5),0,rr(-.5,.5)); const bl=mesh(new T.SphereGeometry(.09,8,6),mat(ZL("#e85a8a"),{roughness:.8,emissive:"#5a1020",emissiveIntensity:.3}),b.position.x+Math.sin(b.rotation.z)*-.3,FY+1.15+rr(0,.15),b.position.z+Math.sin(b.rotation.x)*.3,g); }
+    const cl=mesh(new T.PlaneGeometry(pl.x1-pl.x0,pl.z1-pl.z0),mat(ZL("#1a0f08"),{roughness:.9}),(pl.x0+pl.x1)/2,FY+H+.02,(pl.z0+pl.z1)/2,g); cl.rotation.x=Math.PI/2;
+    /* no walls: the 靜心 scroll hangs from the beam in the middle of the west side, facing the cushions (both faces drawn) */
+    const scroll=cvs(128,384,(x,w,h)=>{ x.fillStyle="#efe6d0"; x.fillRect(0,0,w,h); x.fillStyle="#6a5a3a"; x.fillRect(0,0,w,18); x.fillRect(0,h-18,w,18); x.fillStyle="#1a1410"; x.font="bold 96px serif"; x.textAlign="center"; x.textBaseline="middle"; x.fillText("靜",w/2,h*.38); x.fillText("心",w/2,h*.68); });
+    const sc=mesh(new T.PlaneGeometry(.8,2.3),new T.MeshStandardMaterial({map:scroll,roughness:.9,side:T.DoubleSide,emissive:"#fff4e0",emissiveMap:scroll,emissiveIntensity:.15}),hl.x0+.25,FY+2.05,G,g); sc.rotation.y=Math.PI/2;
+    cyl(.025,.025,.95,darkWood,hl.x0+.25,FY+3.24,G,g,6).rotation.x=Math.PI/2; for(const dz of [-.3,.3]) box(.01,.32,.01,mat(ZL("#3a2a1a")),hl.x0+.25,FY+3.36,G+dz,g);
     /* hipped roof: a raised box-and-pyramid shape with deep eaves */
     const rx0=pl.x0-1.3, rx1=pl.x1+1.3, rz0=pl.z0-1.3, rz1=pl.z1+1.3, ry=FY+H+.15, rh=3.4, cx=(rx0+rx1)/2, cz=(rz0+rz1)/2, w2=(rx1-rx0)/2, d2=(rz1-rz0)/2, rl=w2*.45;
     const rg=new T.BufferGeometry(), V=[]; const A=[cx-w2,ry,cz-d2],B=[cx+w2,ry,cz-d2],C=[cx+w2,ry,cz+d2],D=[cx-w2,ry,cz+d2],E=[cx-rl,ry+rh,cz],F=[cx+rl,ry+rh,cz];
@@ -2439,19 +2434,24 @@ function zenWalkable(x,z){ const G=ZEN.GZ;
       x.beginPath(); for(let k=0;k<10;k++){ const ang=k/10*6.28, rad=k%2?s*.45:s; x.lineTo(Math.cos(ang)*rad,Math.sin(ang)*rad); } x.closePath(); x.fill(); x.restore(); } });
   leafTex.encoding=T.LinearEncoding;
   const PAL=[["#a00a10","#b81414","#880810"],["#c8380a","#d85410","#b02808"],["#c88a06","#d8a010","#b07404"],["#900c2a","#a8143a","#740820"],["#3a6a14","#4a7c1a","#2c5a10"],["#e07898","#e890ac","#d06088"],["#f0e4e8","#e8ccd6","#f4dce4"]], PW=[.26,.2,.2,.12,.1,.08,.04];
-  const keep=(x,z,r)=>{ if(x>ZEN.X1-1.2-r||x<ZEN.X0+1.2+r||z<ZEN.Z0+1.2+r||z>ZEN.Z1-1.2-r) return false; if(Math.abs(x+31.2)<3.4+r*.4) return false; if(x>ZEN.plat.x0-1.2-r*.5&&x<ZEN.plat.x1+2.6+r*.3&&z>ZEN.plat.z0-1.2-r*.5&&z<ZEN.plat.z1+1.2+r*.5) return false; if(Math.abs(z-G)<2.2+r*.6&&x>ZEN.plat.x1) return false; return true; };
+  const PX0=ZEN.plat.x0, PX1=ZEN.plat.x1, PZ0=ZEN.plat.z0, PZ1=ZEN.plat.z1;
+  const keep=(x,z,r)=>{ if(x>ZEN.X1-1-r*.6||x<ZEN.X0+1+r*.6||z<ZEN.Z0+1+r*.6||z>ZEN.Z1-1-r*.6) return false; if(Math.abs(x+31.2)<3.2+r*.3) return false; if(x>PX0-.9-r*.45&&x<PX1+1.4+r*.3&&z>PZ0-.9-r*.45&&z<PZ1+.9+r*.45) return false; if(Math.abs(z-G)<1.9+r*.5&&x>PX1-1) return false; return true; };
   const trunks=[], cards=[], spots=[];
-  for(let i=0;i<400&&spots.length<54;i++){ const r=rr(2.0,3.2), x=rr(ZEN.X0,ZEN.X1), z=rr(ZEN.Z0,ZEN.Z1); if(!keep(x,z,r)) continue; if(spots.some(s=>Math.hypot(s[0]-x,s[1]-z)<(s[2]+r)*.72)) continue; spots.push([x,z,r]); }
+  /* first a tight ring hugging the veranda (what fills the windows), then the rest of the garden */
+  for(let i=0;i<2600&&spots.length<70;i++){ const r=rr(2.2,3.4), side=i%4, t=R(); let x,z; const d=rr(.6,4.5)+r*.45;
+    if(side===0){ x=PX0-d; z=PZ0-3+t*(PZ1-PZ0+6); } else if(side===1){ x=PX0-3+t*(PX1-PX0+6); z=PZ0-d; } else if(side===2){ x=PX0-3+t*(PX1-PX0+6); z=PZ1+d; } else { x=PX1+d; z=PZ0-3+t*(PZ1-PZ0+6); }
+    if(!keep(x,z,r)) continue; if(spots.some(s=>Math.hypot(s[0]-x,s[1]-z)<(s[2]+r)*.62)) continue; spots.push([x,z,r]); }
+  for(let i=0;i<1200&&spots.length<120;i++){ const r=rr(2.0,3.2), x=rr(ZEN.X0,ZEN.X1), z=rr(ZEN.Z0,ZEN.Z1); if(!keep(x,z,r)) continue; if(spots.some(s=>Math.hypot(s[0]-x,s[1]-z)<(s[2]+r)*.7)) continue; spots.push([x,z,r]); }
   /* the near side of the hall (the view the photo has) gets the brightest colours */
-  spots.forEach(([x,z,r],i)=>{ let pi=0; { let u=R(); while(pi<PW.length-1&&u>PW[pi]){ u-=PW[pi]; pi++; } } const pal=PAL[pi], th=rr(2.2,3.4), cy=th+r*.55;
-    trunks.push({x,y:th/2,z,sy:th,c:ZL("#4a3226")}); for(let k=0;k<3;k++){ const a=rr(0,6.28); trunks.push({x:x+Math.cos(a)*.5,y:th*.85,z:z+Math.sin(a)*.5,sy:th*.5,sx:.6,sz:.6,rz:Math.cos(a)*.7,rx:-Math.sin(a)*.7,c:ZL("#4a3226")}); }
-    const n=Math.round(34+r*14); for(let k=0;k<n;k++){ const a=rr(0,6.28), u=Math.cbrt(R()), y=rr(-.55,.7); const s=rr(.85,1.3)*(.8+r*.1);
+  spots.forEach(([x,z,r],i)=>{ let pi=0; { let u=R(); while(pi<PW.length-1&&u>PW[pi]){ u-=PW[pi]; pi++; } } const pal=PAL[pi], th=rr(.9,1.5), cy=th+r*.55;
+    trunks.push({x,y:th/2,z,sy:th,c:ZL("#3a2418")});
+    const n=Math.round(44+r*16); for(let k=0;k<n;k++){ const a=rr(0,6.28), u=Math.cbrt(R()), y=rr(-.95,.75); const s=rr(.9,1.35)*(.8+r*.1);
       cards.push({x:x+Math.cos(a)*u*r,y:cy+y*r*.75,z:z+Math.sin(a)*u*r,ry:rr(0,3.14),rx:rr(-.5,.5),rz:rr(-.4,.4),sx:s,sy:s,sz:s,c:C3.set(ZL(pal[k%3])).offsetHSL(rr(-.015,.015),0,rr(-.06,.06)).getHex()}); } });
   inst(new T.CylinderGeometry(.12,.2,1,6),new T.MeshStandardMaterial({roughness:.9,color:"#ffffff"}),trunks);
   { const cg=new T.PlaneGeometry(1,1), c2=new T.PlaneGeometry(1,1); c2.rotateY(Math.PI/2); const merged=new T.BufferGeometry(); const pa=[...cg.attributes.position.array,...c2.attributes.position.array], na=[...cg.attributes.normal.array,...c2.attributes.normal.array], ua=[...cg.attributes.uv.array,...c2.attributes.uv.array];
     const ia=[...cg.index.array,...Array.from(c2.index.array).map(v=>v+4)]; merged.setAttribute("position",new T.Float32BufferAttribute(pa,3)); merged.setAttribute("normal",new T.Float32BufferAttribute(na,3)); merged.setAttribute("uv",new T.Float32BufferAttribute(ua,2)); merged.setIndex(ia);
     const lm=new T.MeshStandardMaterial({map:leafTex,alphaTest:.45,side:T.DoubleSide,roughness:.85,color:"#ffffff",emissive:"#ffffff",emissiveIntensity:.0}); ZEN.leafMat=lm;
-    lm.onBeforeCompile=sh=>{ sh.fragmentShader=sh.fragmentShader.replace("#include <emissivemap_fragment>","#include <emissivemap_fragment>\n totalEmissiveRadiance+=diffuseColor.rgb*.14;"); }; lm.customProgramCacheKey=()=>"zenleaf";
+    ZEN.glowU={value:.14}; lm.onBeforeCompile=sh=>{ sh.uniforms.zGlow=ZEN.glowU; sh.fragmentShader="uniform float zGlow;\n"+sh.fragmentShader.replace("#include <emissivemap_fragment>","#include <emissivemap_fragment>\n totalEmissiveRadiance+=diffuseColor.rgb*zGlow;"); }; lm.customProgramCacheKey=()=>"zenleaf2";
     ZEN.leaves=inst(merged,lm,cards); }
   /* flower shrubs: azaleas along the fence and round the platform */
   { const fl=[]; const P2=["#c81e5a","#d84a80","#9a2490","#e8e0e4","#d8780c","#c01c1c"]; for(let i=0;i<520;i++){ let x,z; if(i<340){ const side=i%4; const t=R(); x=side<2?ZEN.X0+1+t*(ZEN.X1-ZEN.X0-2):(side===2?ZEN.X0+.9:ZEN.X1-1); z=side<2?(side?ZEN.Z1-.9:ZEN.Z0+.9):ZEN.Z0+1+t*(ZEN.Z1-ZEN.Z0-2); if(side===3&&Math.abs(z-G)<2.5) continue; }
@@ -2476,7 +2476,7 @@ function zenWalkable(x,z){ const G=ZEN.GZ;
 /* ---- the mirror floor: the garden and hall drawn upside down into a texture each frame while you are inside (only the garden, at low resolution) ---- */
 function zenMirrorInit(){ if(ZEN.refl||Q.lite) return; const res=Q.low?256:512; const rt=new T.WebGLRenderTarget(res,res,{minFilter:T.LinearFilter,magFilter:T.LinearFilter}); rt.texture.encoding=T.sRGBEncoding;
   const texMat={value:new T.Matrix4()}; const p=ZEN.plat;
-  const m=new T.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{tex:{value:rt.texture},texMat,op:{value:.55}},
+  const m=new T.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{tex:{value:rt.texture},texMat,op:{value:.72}},
     vertexShader:`uniform mat4 texMat; varying vec4 vU; varying vec3 vW; void main(){ vec4 w=modelMatrix*vec4(position,1.0); vW=w.xyz; vU=texMat*w; gl_Position=projectionMatrix*viewMatrix*w; }`,
     fragmentShader:`uniform sampler2D tex; uniform float op; varying vec4 vU; varying vec3 vW; void main(){ vec3 c=texture2DProj(tex,vU).rgb; float l=dot(c,vec3(.3,.5,.2)); gl_FragColor=vec4(c,op*(.55+.45*smoothstep(.05,.5,l))); }`});
   const mp=mesh(new T.PlaneGeometry(p.x1-p.x0,p.z1-p.z0),m,(p.x0+p.x1)/2,ZEN.FY+.008,(p.z0+p.z1)/2,ZEN.g); mp.rotation.x=-Math.PI/2; mp.userData.noMerge=1; mp.renderOrder=2;
@@ -2491,7 +2491,7 @@ function zenMirror(){ const Rf=ZEN.refl; if(!Rf) return; const cam=camera, y=ZEN
   Rf.mp.visible=false; const cp=renderer.clippingPlanes; renderer.clippingPlanes=[new T.Plane(new T.Vector3(0,1,0),-y)]; const rt0=renderer.getRenderTarget();
   renderer.setRenderTarget(Rf.rt); renderer.clear(); renderer.render(scene,mc); renderer.setRenderTarget(rt0); renderer.clippingPlanes=cp; Rf.mp.visible=true; }
 /* per frame: show the garden only when you are near it, keep the build-mode trees that used to stand there out of it, light it for the time of day */
-const _zv=new T.Vector3();
+const _zv=new T.Vector3(), _zc=new T.Color();
 /* the round build-mode trees that ended up out where the garden is (they looked odd there): hidden before the static merge, so they are not baked in */
 function zenHideTrees(){ for(const o of scene.children){ if(!(o.userData&&o.userData.buildId&&/^g-X-/.test(o.userData.buildId))) continue; let hit=false; o.updateMatrixWorld(true); o.traverse(m=>{ if(hit||!(m.isMesh||m.isPoints)) return; m.getWorldPosition(_zv); if(_zv.x<-26&&_zv.z<9) hit=true; }); if(hit) o.visible=false; } }
 function zenTick(dt){ const c=camera.position, near=(c.x<-14&&c.z<-8&&c.z>-54)||c.x<-24, me=meAv&&meAv.pos;
@@ -2501,6 +2501,12 @@ function zenTick(dt){ const c=camera.position, near=(c.x<-14&&c.z<-8&&c.z>-54)||
   const day=_dn.day, night=_dn.night; for(const s of ZEN.shafts) s.material.opacity=.16*day+.05*(1-day)*(1-night);
   ZEN.dust.material.opacity=.55*day; { const a=ZEN.dust.geometry.attributes.position; for(let i=0;i<a.count;i++){ let y=a.getY(i)+dt*.04*Math.sin(i+ZEN.t*.3); if(y>ZEN.FY+3.3) y=ZEN.FY+.3; a.setY(i,y); } a.needsUpdate=true; }
   for(const gl of ZEN.glows) gl.material.opacity=.15+.75*night;
+  if(ZEN.glowU) ZEN.glowU.value=.14+.75*night; /* after dark the trees glow as if floodlit */
+  /* the colours outside wash over everything here: a warm red-orange cast on the fill light, and darker indoors */
+  { const inG=me&&me.x<-26, want=inG?1:0; ZEN.tk=(ZEN.tk||0)+(want-(ZEN.tk||0))*Math.min(1,dt*1.5); const k=ZEN.tk;
+    if(k>.01){ if(hemiLight){ hemiLight.color.lerp(_zc.setRGB(1,.42,.28),.55*k); }
+      const inH=me&&zenPlat(me.x,me.y); ZEN.hk=(ZEN.hk||0)+((inH?1:0)-(ZEN.hk||0))*Math.min(1,dt*1.5); if(ambLight) ambLight.intensity*=1-.3*ZEN.hk; if(hemiLight) hemiLight.intensity*=1-.2*ZEN.hk; if(sunLight) sunLight.intensity*=1-.2*ZEN.hk;
+      scene.fog.color.lerp(_zc.setRGB(.55,.28,.2),.35*k); } }
   const inside=me&&me.x<ZEN.plat.x1+3&&me.x>ZEN.plat.x0-2&&me.y>ZEN.plat.z0-2&&me.y<ZEN.plat.z1+2&&c.x<ZEN.plat.x1+8;
   if(inside&&!Q.lite){ zenMirrorInit(); if(ZEN.refl){ ZEN.refl.mp.visible=true; zenMirror(); } } else if(ZEN.refl) ZEN.refl.mp.visible=false; }
 
@@ -3548,7 +3554,7 @@ function initCF(first){
       if(m.t==="gift"){ giftFetch(); return; }
       if(m.t==="giftnow"&&m.g&&m.g.g){ const g=m.g; if(!GIFT_SEEN.has(g.g)){ GIFT_SEEN.add(g.g); save("mz.giftSeen",[...GIFT_SEEN].slice(-60)); giftApply({kind:g.kind==="item"?"item":g.kind==="acc"?"acc":"coins",k:String(g.k||""),n:Math.max(1,Math.min(100000,g.n|0)),from:String(g.from||"主委").slice(0,16)}); profSave(true); } return; } /* 只有在線上的人收得到的全服禮物 */
       if(m.t==="sl50"&&Number.isFinite(m.seed)){ massLanterns(m.seed); return; }
-      if(m.t==="fw"&&Number.isFinite(m.seed)){ fwStart(m.seed,+m.el||0,+m.sh||0,m.txt); return; }
+      if(m.t==="fw"&&Number.isFinite(m.seed)){ fwStart(m.seed,+m.el||0,+m.sh||0,m.txt,m.cu||""); return; }
       if(m.t==="st"&&okId(m.id)&&m.p&&typeof m.p==="object"){ peerState.set(m.id,{p:m.p,t:Date.now()}); rebuild(); return; }
       if(m.t==="leave"&&okId(m.id)){ if(peerState.delete(m.id)) rebuild(); } };
     ws.onclose=ev=>{ roomConnected=false; updateCount(); if(ev&&ev.code===4001){ closedByUs=true; toast("你在另一個視窗打開了遊戲，這個視窗先暫停",4000); return; } if(closedByUs) return; retry++; setTimeout(()=>{ if(!closedByUs&&(!ws||ws.readyState>1)) connect(hall); },Math.min(15000,1000*retry*retry)); }; }
@@ -3645,7 +3651,7 @@ function trkPrime(){ const soon=[]; if(meAv&&meAv.pos.y<RY0+14) soon.push("rear"
   for(const n of soon){ const a=trk(n); if(a._primed) continue; a._primed=1; if(n!==curTrack){ const p=a.play(); if(p&&p.then) p.then(()=>{ if(n!==curTrack&&MIX[n]<.01) a.pause(); }).catch(()=>{ a._primed=0; }); } } }
 function playMusic(){ if(!soundOn||document.hidden) return; audioUnlocked=true; setTrack(FW.on?"fw":catMode?"cat":rearZone?"rear":"main"); trkPlay(trk(curTrack)); try{ trkPrime(); }catch(e){} }
 function musicTick(dt){ const z=meAv.pos.y, inRear=z<RY0||meAv.pos.x<-23.5; if(inRear!==rearZone){ rearDwell+=dt; if(rearDwell>2.5){ rearZone=inRear; rearDwell=0; } } else rearDwell=0; /* stay 2.5 s in an area before its song takes over */
-  const want=FW.on?"fw":catMode?"cat":rearZone?"rear":"main"; if(want!==curTrack) setTrack(want);
+  const want=(FW.on&&!(FWED.on&&!FWED.play))?"fw":catMode?"cat":rearZone?"rear":"main"; if(want!==curTrack) setTrack(want);
   const mv=mVol(), near=(OP&&OP.on)?OP.prox:0, live=soundOn&&audioUnlocked&&!document.hidden&&!gameAsleep; duckF+=((duckT>0?.42:1)-duckF)*Math.min(1,dt*(duckT>0?2.5:1));
   for(const n in TRK){ const a=TRK[n], on=n===curTrack; MIX[n]+=((on?1:0)-MIX[n])*Math.min(1,dt*(on?.9:1.4)); /* about a 2-second cross-fade */
     const lv=MIX[n]*TRK_TOP[n]*mv*duckF*(1-near)*(bgmHush?0:1); trkLevel(n,lv<.004?0:lv);
@@ -3796,7 +3802,7 @@ const ctTile=(act,icon,name,note="")=>`<button class="ct" data-act="${act}"><b>$
 function openChair(){ if(!me.sp) return;
   openSheet("chair","主委工具",`<div class="ck-row"><input class="mail-box ck" id="readKey" type="password" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="留言讀取密碼（輸入一次就會記住）" value="${esc(load("mz.rk",""))}"><button class="chip ck-eye" type="button" onclick="const i=document.getElementById('readKey'); i.type=i.type==='password'?'text':'password'; this.textContent=i.type==='password'?'👁':'🙈';">👁</button></div>
   <div class="ct-group"><span class="group-label">訊息</span><div class="ct-grid">${ctTile("msgsOpen","📬","香客留言")}${ctTile("annOpen","📢","全服公告","跑馬燈")}${ctTile("boardOpen","📋","公告欄",board.text?"有公告":"空白")}</div></div>
-  <div class="ct-group"><span class="group-label">活動</span><div class="ct-grid">${ctTile("askFw","🎆","全服煙火","4 場可選")}${ctTile("schedOpen","⏰","定時活動","煙火・夜市")}${ctTile("camCode","📷","記錄視角","給 Claude")}${ctTile("noFog","🌫️",NOFOG.on?"恢復霧氣":"除霧",NOFOG.on?"目前無霧":"看清遠方")}${ctTile("askSL","🏮","50 盞天燈")}${ctTile("stageChair","🎭","歌仔戲台",OP.on?"演出中":"")}${ctTile("toggleCats","🐱",CATS.off?"放出貓咪":"收起貓咪",CATS.off?"已收起":"跳舞中")}${ctTile("puppetChair","🎎","布袋戲台",PT.on?"演出中":"")}${ctTile("marketOpen","🏮","夜市",Object.keys(MK.open).length?`${Object.keys(MK.open).length} 攤營業中`:"")}</div></div>
+  <div class="ct-group"><span class="group-label">活動</span><div class="ct-grid">${ctTile("askFw","🎆","全服煙火","4 場可選")}${ctTile("fwedOpen","🎼","煙火編排器","自己排")}${ctTile("schedOpen","⏰","定時活動","煙火・夜市")}${ctTile("camCode","📷","記錄視角","給 Claude")}${ctTile("noFog","🌫️",NOFOG.on?"恢復霧氣":"除霧",NOFOG.on?"目前無霧":"看清遠方")}${ctTile("askSL","🏮","50 盞天燈")}${ctTile("stageChair","🎭","歌仔戲台",OP.on?"演出中":"")}${ctTile("toggleCats","🐱",CATS.off?"放出貓咪":"收起貓咪",CATS.off?"已收起":"跳舞中")}${ctTile("puppetChair","🎎","布袋戲台",PT.on?"演出中":"")}${ctTile("marketOpen","🏮","夜市",Object.keys(MK.open).length?`${Object.keys(MK.open).length} 攤營業中`:"")}</div></div>
   <div class="ct-group"><span class="group-label">線上人數</span><div class="crowd-row"><span class="crowd-now"><span>全廟 <b>${shownTotal()}</b> 人</span><small>這殿 ${hallShown(HALLS.current(),Date.now())} 人・${CROWD.real?"真實人數":CROWD.at&&CROWD.target!=null?`目標 ${CROWD.target}`:"自動"}</small></span><input id="crowdIn" type="text" inputmode="numeric" maxlength="3" placeholder="目標"><button class="chip" data-act="crowdSet">設定</button><button class="chip" data-act="crowdAuto">自動</button><button class="chip" data-act="crowdReal" aria-pressed="${!!CROWD.real}">真實人數</button></div>
     <p class="real-count" id="realCount">真實在線：讀取中…</p><p class="note">目標是全廟人數，會依序分到各殿（前一殿快滿才開下一殿）。約 1 分鐘慢慢變到目標，之後在上下 10 人內浮動。「自動」回到依時段變化（凌晨少、白天多）。「真實人數」不加假人，有多少玩家就顯示多少。</p></div>
   <div class="ct-group"><span class="group-label">主委自己</span><div class="ct-grid">${ctTile("chairHide",chairHidden?"👁":"🫥",chairHidden?"解除隱形":"隱形",chairHidden?"隱形中":"")}${ctTile("chairBuild","🏗️","建築模式","移動屋頂與裝飾")}${ctTile("chairSpeed","🏃","移動速度",CHAIR_SPD+"×")}${ctTile("chairFly","🕊️",myFly?"降落":"飛行",myFly?"飛行中":"")}${ctTile("chairCs","💰",myCs?"變回主委":"變身財神爺",myCs?"發金光中":"")}${ctTile("giftList","🎁","送禮","平安幣・道具")}${ctTile("chairReset","🔄","重置今日","測試用")}</div></div>`);
@@ -5076,13 +5082,14 @@ let fwCountEl=null;
 function fwCountdown(at){ if(!fwCountEl){ fwCountEl=document.createElement("div"); fwCountEl.className="fw-count"; document.body.appendChild(fwCountEl); } const tick=()=>{ const left=(at-performance.now())/1000; if(left<=0||FW.on){ fwCountEl.hidden=true; return; }
     const a=TRK.fw; let pct=0; try{ if(a&&a.duration>0&&a.buffered.length) pct=Math.min(100,Math.round(a.buffered.end(a.buffered.length-1)/a.duration*100)); }catch(e){} if(a&&a.readyState>=4) pct=100;
     fwCountEl.hidden=false; fwCountEl.innerHTML=`🎆 「${esc(FW_SHOWS[FW.sh].n)}」${Math.ceil(left)} 秒後開始<small>${pct>=100?"音樂已備妥":"正在下載煙火音樂 "+pct+"%"}，請到廟外廣場</small>`; setTimeout(tick,250); }; tick(); }
-function fwStart(seed,elapsedMs,sh,txt){ sh=FW_SHOWS[sh]?(sh|0):0; const S=FW_SHOWS[sh], el=(elapsedMs||0)/1000; if(el>S.len||seed===FW.seed) return; seenOnce("f"+seed);
-  FW.seed=seed; FW.sh=sh; FW.txt=String(txt||"").slice(0,24); FW_LEN=S.len; fwSong(S.song); if(sh) fwGodsLoad();
-  if(el<0){ const at=performance.now()-el*1000; FW.pendingAt=at; fwCountdown(at); setTimeout(renderSparkBtn,0); toast(`主委即將施放「${S.n}」煙火，先幫你下載音樂`,4000); setTimeout(()=>{ if(FW.seed===seed&&!FW.on) fwGo(seed,0); },-el*1000); return; }
+async function fwStart(seed,elapsedMs,sh,txt,cu){ if(FWED.on) fwedExit(true); sh=FW_SHOWS[sh]?(sh|0):0; let S=FW_SHOWS[sh]; const el=(elapsedMs||0)/1000; if(el>S.len+30||seed===FW.seed) return;
+  let cust=null; if(cu){ cust=await fwedGet(cu); if(cust){ sh=cust.song|0; S={...FW_SHOWS[sh],n:cust.name,len:cust.len||FW_SHOWS[sh].len}; } } if(el>S.len||seed===FW.seed) return; seenOnce("f"+seed);
+  FW.seed=seed; FW.sh=sh; FW.cust=cust; FW.txt=String(txt||"").slice(0,24); FW_LEN=S.len; fwSong(S.song); if(sh) fwGodsLoad();
+  if(el<0){ const at=performance.now()-el*1000; FW.pendingAt=at; fwCountdown(at); setTimeout(renderSparkBtn,0); toast(`主委即將施放「${cust?cust.name:S.n}」煙火，先幫你下載音樂`,4000); setTimeout(()=>{ if(FW.seed===seed&&!FW.on) fwGo(seed,0); },-el*1000); return; }
   fwGo(seed,el); }
-function fwGo(seed,el){ /* someone who reloads mid-show picks it up where it is now (already-launched shells are skipped, see fwUpdate) */ sparkDismissed=false; FW.pendingAt=0; FW.endShown=false; FW.ev=FW.sh?fwProgramN(FW.sh,seed):fwProgram(seed); FW.i=0; FW.t0=performance.now()-el*1000; FW.on=true; FW.endAt=FW.t0+(FW_LEN+2)*1000; try{ trk("fw").currentTime=el; }catch(e){} /* the show song starts where the show is */ FW.rockets.length=0; FW.gerbs.length=0; FW.wheels.length=0; FW.sweeps=[]; FW.fanjets=[];
+function fwGo(seed,el){ /* someone who reloads mid-show picks it up where it is now (already-launched shells are skipped, see fwUpdate) */ sparkDismissed=false; FW.pendingAt=0; FW.endShown=false; FW.ev=FW.cust?fwedEngine(FW.cust,seed):FW.sh?fwProgramN(FW.sh,seed):fwProgram(seed); FW.i=0; FW.t0=performance.now()-el*1000; FW.on=true; FW.endAt=FW.t0+(FW_LEN+2)*1000; try{ trk("fw").currentTime=el; }catch(e){} /* the show song starts where the show is */ FW.rockets.length=0; FW.gerbs.length=0; FW.wheels.length=0; FW.sweeps=[]; FW.fanjets=[];
   while(FW.i<FW.ev.length&&FW.ev[FW.i].t<el-.2) FW.i++;
-  showCaption(FW.sh?`煙火秀「${FW_SHOWS[FW.sh].n}」開始！`:"全服煙火秀開始！"); toast("主委施放全服煙火！到廟外廣場看，還可以拿仙女棒",4500); renderSparkBtn(); }
+  showCaption(FW.cust?`煙火秀「${FW.cust.name}」開始！`:FW.sh?`煙火秀「${FW_SHOWS[FW.sh].n}」開始！`:"全服煙火秀開始！"); toast("主委施放全服煙火！到廟外廣場看，還可以拿仙女棒",4500); renderSparkBtn(); }
 function fwUpdate(dt){ const now=performance.now(); fwHaloTick(dt);
   if(FW.on){ const t=(now-FW.t0)/1000;
     while(FW.i<FW.ev.length&&FW.ev[FW.i].t<=t){ const e=FW.ev[FW.i++]; if(t-e.t>1.5) continue;
@@ -5121,7 +5128,7 @@ function fwUpdate(dt){ const now=performance.now(); fwHaloTick(dt);
     if(t>FW_LEN-4.5&&!fwFinale&&FW.i>=FW.ev.length-1){ fwFinale=true; closeSheet(); renderSparkBtn(); } /* the view stays wherever the player is looking */
     if(t>FW_LEN&&!FW.rockets.length){ FW.on=false; if(!FW.endShown){ FW.endShown=true; setTimeout(fwEndMsg,3800); } }
     // everyone hears the show song, kept in step with the fireworks
-    else if(soundOn){ const fa=trk("fw"); if(curTrack!=="fw"){ try{ fa.currentTime=t; }catch(e){} setTrack("fw"); }
+    else if(soundOn&&!(FWED.on&&!FWED.play)){ const fa=trk("fw"); if(curTrack!=="fw"){ try{ fa.currentTime=t; }catch(e){} setTrack("fw"); }
       else if(!fa.paused&&fa.readyState>=3&&!fa.seeking&&Math.abs(fa.currentTime-t)>1.2&&t<(fa.duration||1e9)-1&&now-(FW.lastSync||0)>6000){ FW.lastSync=now; try{ fa.currentTime=t; }catch(e){} } } }
   FW_TR=0; // particles (their own sparks and trails are round)
   let any=false;
@@ -5141,7 +5148,7 @@ function fwUpdate(dt){ const now=performance.now(); fwHaloTick(dt);
       else { const c="#"+_fc1.setRGB(fwCol[j],fwCol[j+1],fwCol[j+2]).getHexString(); for(let q=0;q<4;q++){ const th=q*Math.PI/2+Math.random()*.3; fwEmit(px,py,pz,Math.cos(th)*5,Math.sin(th)*5,(Math.random()-.5)*2,c,VIVID[(Math.random()*VIVID.length)|0],.9,.5,1.4,2,.2); } }
       fwA[i]=0; } }
   if(any||FW.on){ for(const n of ["iPos","iVel","iCol","iA","iSz","iTr"]) fwStreakGeo.attributes[n].needsUpdate=true; }
-  fwPts.visible=false; fwStreak.visible=any||FW.on; fwStreakMat.uniforms.uGain.value=1; fwStreakMat.uniforms.uMinW.value=.0012*Math.max(1,Math.min(1.8,camera.fov/55)); /* wide/far views: a floor on spark size (round and sharp, so it doesn't blur) */ { const sharp=!!(FW.on||FW.pendingAt||LAKE.on||fwView); if(DRES.fw!==sharp){ DRES.fw=sharp; applyDPR(); } } /* full resolution while a show is on, whatever the view (省電 mode had blurred the sparks) */ /* the streaks draw the stars too (their round heads), so the old point sprites are no longer drawn or uploaded */ dayNight(dt); try{ zenTick(dt); }catch(e){ if(!zenTick.err){ zenTick.err=1; console.error(e); } }
+  fwPts.visible=false; fwStreak.visible=any||FW.on; fwStreakMat.uniforms.uGain.value=1; fwStreakMat.uniforms.uMinW.value=.0012*Math.max(1,Math.min(1.8,camera.fov/55)); /* wide/far views: a floor on spark size (round and sharp, so it doesn't blur) */ { const sharp=!!(FW.on||FW.pendingAt||LAKE.on||fwView); if(DRES.fw!==sharp){ DRES.fw=sharp; applyDPR(); } } /* full resolution while a show is on, whatever the view (省電 mode had blurred the sparks) */ /* the streaks draw the stars too (their round heads), so the old point sprites are no longer drawn or uploaded */ dayNight(dt); try{ fwedTick(); }catch(e){} try{ zenTick(dt); }catch(e){ if(!zenTick.err){ zenTick.err=1; console.error(e); } }
   if(sparkAvail()!==renderSparkBtn.last) renderSparkBtn(); }
 // ---- 仙女棒: anyone can hold one while the show is on (and for two minutes after) ----
 let mySparkler=false, fwView=false;
@@ -5273,15 +5280,15 @@ HANDLERS.sendSL=async()=>{ const key=(ck())||slKeyHold; closeSheet();
 const SCHED={items:[],loaded:false};
 const SCHED_K={fw:"煙火",mkOpen:"夜市開張",mkClose:"夜市收攤"};
 const p2=n=>String(n).padStart(2,"0");
-function schedLabel(e){ const d=new Date(e.at); return `${e.daily?"每天":`${d.getMonth()+1}/${d.getDate()}`} ${p2(d.getHours())}:${p2(d.getMinutes())}　${e.k==="fw"?`🎆 ${FW_SHOWS[e.sh]?FW_SHOWS[e.sh].n:"煙火"}${e.txt?`「${esc(e.txt)}」`:""}`:e.k==="mkOpen"?"🏮 夜市開張":"🌙 夜市收攤"}`; }
+function schedLabel(e){ const d=new Date(e.at); const cs=e.cu&&FWED.list.find(c=>c.id===e.cu); return `${e.daily?"每天":`${d.getMonth()+1}/${d.getDate()}`} ${p2(d.getHours())}:${p2(d.getMinutes())}　${e.k==="fw"?`🎆 ${cs?"🎼 "+esc(cs.name):e.cu?"自己排的煙火":FW_SHOWS[e.sh]?FW_SHOWS[e.sh].n:"煙火"}${e.txt?`「${esc(e.txt)}」`:""}`:e.k==="mkOpen"?"🏮 夜市開張":"🌙 夜市收攤"}`; }
 async function schedLoad(){ if(!USE_CF){ SCHED.items=load("mz.sched",[]); SCHED.loaded=true; return; } const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return; }
   try{ const r=await fetch("/schedule",{headers:{"x-key":key}}); const j=await r.json().catch(()=>({})); forgetKey(r,j); if(j.ok){ SCHED.items=j.items||[]; SCHED.loaded=true; } else toast(j.locked?"嘗試次數過多，今天先鎖住了":"密碼不對，讀不到排程",2600); }catch(e){ toast("讀不到排程，請稍後再試"); } }
 async function schedSave(){ SCHED.items.sort((a,b)=>a.at-b.at); if(!USE_CF){ save("mz.sched",SCHED.items); return true; } const key=ck();
   try{ const r=await fetch("/schedule",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({items:SCHED.items})}); const j=await r.json().catch(()=>({})); forgetKey(r,j); if(j.ok){ SCHED.items=j.items; return true; } toast(j.locked?"嘗試次數過多，今天先鎖住了":"密碼不對，排程沒有存起來",2600); }catch(e){ toast("排程沒有存起來，請稍後再試"); } return false; }
 let schedKind="fw:3";
-HANDLERS.schedOpen=async()=>{ if(!SCHED.loaded) await schedLoad(); const now=new Date(Date.now()+3600000), dv=`${now.getFullYear()}-${p2(now.getMonth()+1)}-${p2(now.getDate())}`, tv=`${p2(now.getHours())}:00`;
+HANDLERS.schedOpen=async()=>{ if(!SCHED.loaded) await schedLoad(); await fwedList(); const now=new Date(Date.now()+3600000), dv=`${now.getFullYear()}-${p2(now.getMonth()+1)}-${p2(now.getDate())}`, tv=`${p2(now.getHours())}:00`;
   const list=SCHED.items.length?SCHED.items.map(e=>`<div class="sched-row"><span>${schedLabel(e)}</span><button class="chip" data-act="schedDel" data-v="${e.id}">刪除</button></div>`).join(""):`<p class="note">還沒有排程。</p>`;
-  const opts=[...FW_SHOWS.map((S,i)=>[`fw:${i}`,`🎆 煙火：${S.n}`]),["mkOpen","🏮 夜市開張（全部攤位）"],["mkClose","🌙 夜市收攤"]];
+  const opts=[...FW_SHOWS.map((S,i)=>[`fw:${i}`,`🎆 煙火：${S.n}`]),...FWED.list.map(c=>[`fwc:${c.id}`,`🎼 自己排的：${c.name}`]),["mkOpen","🏮 夜市開張（全部攤位）"],["mkClose","🌙 夜市收攤"]];
   openSheet("contact","定時活動",`${backBtn}<p class="lead">設定好時間，時間一到伺服器就會自動施放煙火或開關夜市，不用有人在線上。</p><div class="sched-list">${list}</div>
     <span class="group-label">新增一項</span><div class="sched-form"><select id="schK" class="mail-box">${opts.map(([v,t])=>`<option value="${v}"${v===schedKind?" selected":""}>${t}</option>`).join("")}</select>
     <div class="sched-when"><input id="schD" class="mail-box" type="date" value="${dv}"><input id="schT" class="mail-box" type="time" value="${tv}"></div>
@@ -5289,25 +5296,171 @@ HANDLERS.schedOpen=async()=>{ if(!SCHED.loaded) await schedLoad(); const now=new
     <input id="schTxt" class="mail-box" maxlength="24" placeholder="煙火結束後的字（可空白）"><button class="primary" data-act="schedAdd">加入排程</button></div>`); };
 HANDLERS.schedAdd=async()=>{ const k=$("#schK").value, d=$("#schD").value, t=$("#schT").value; if(!d||!t){ toast("請選日期和時間"); return; } schedKind=k;
   let at=new Date(`${d}T${t}:00`).getTime(); const daily=$("#schDaily").checked; if(daily) while(at<Date.now()) at+=86400000; if(!(at>Date.now()-30000)){ toast("這個時間已經過了"); return; }
-  const e={id:Math.random().toString(36).slice(2,10),at,k:k.startsWith("fw")?"fw":k,sh:k.startsWith("fw")?+k.split(":")[1]:0,txt:k.startsWith("fw")?($("#schTxt").value||"").trim().slice(0,24):"",daily};
+  const cu=k.startsWith("fwc:")?k.slice(4):"", cs=cu&&FWED.list.find(c=>c.id===cu);
+  const e={id:Math.random().toString(36).slice(2,10),at,k:k.startsWith("fw")?"fw":k,sh:cs?cs.song|0:k.startsWith("fw:")?+k.split(":")[1]:0,txt:k.startsWith("fw")?($("#schTxt").value||"").trim().slice(0,24):"",daily}; if(cu) e.cu=cu;
   SCHED.items.push(e); if(await schedSave()){ toast("已加入：" + schedLabel(e).replace(/<[^>]+>/g,""),2600); HANDLERS.schedOpen(); } else SCHED.items=SCHED.items.filter(x=>x!==e); };
 HANDLERS.schedDel=async id=>{ const keep=SCHED.items; SCHED.items=SCHED.items.filter(e=>e.id!==id); if(await schedSave()) HANDLERS.schedOpen(); else SCHED.items=keep; };
 /* test page only: run the timetable on this phone */
 setInterval(()=>{ if(USE_CF) return; const L=load("mz.sched",[]); if(!L.length) return; const now=Date.now(); let ch=false; const keep=[];
-  for(const e of L){ if(e.at>now){ keep.push(e); continue; } ch=true; if(now-e.at<120000){ if(e.k==="fw"){ const seed=(Math.random()*1e9)|0; myFwShow=[seed,now+10000,e.sh,e.txt]; markDirty(); fwStart(seed,-10000,e.sh,e.txt); toast("⏰ 定時煙火開始了",2600); } else mkSet(e.k==="mkOpen"?Object.fromEntries(NM_STALLS.map((s,i)=>[s.k,now+i])):{}); }
+  for(const e of L){ if(e.at>now){ keep.push(e); continue; } ch=true; if(now-e.at<120000){ if(e.k==="fw"){ const seed=(Math.random()*1e9)|0; myFwShow=[seed,now+10000,e.sh,e.txt]; markDirty(); fwStart(seed,-10000,e.sh,e.txt,e.cu); toast("⏰ 定時煙火開始了",2600); } else mkSet(e.k==="mkOpen"?Object.fromEntries(NM_STALLS.map((s,i)=>[s.k,now+i])):{}); }
     if(e.daily){ let a=e.at; while(a<=now) a+=86400000; keep.push({...e,at:a}); } }
   if(ch){ save("mz.sched",keep); SCHED.items=keep; } },5000);
+/* ================= 🎼 煙火編排器: the chair builds a show of their own. Pick a song, play it, and tap the sky where and when each shell
+   should burst (the tap is the moment of the burst, the rocket is sent up ahead of it). Shows are saved on the server and can be fired for
+   everyone or put in the timetable like the four built-in shows. A show: {id,name,song,len,ev:[{t,ty,x,y,s,c}]} — t burst time, ty kind,
+   x/y on the sky plane above the temple, s size 0–3, c two colours (or none: random vivid pair). ================= */
+const FWED_TYPES=[
+  {ty:"peony",n:"牡丹",ic:"round"},{ty:"chrys",n:"菊花",ic:"lines"},{ty:"willow",n:"金柳",ic:"droop",c:["#ffc400","#ff6a00"]},{ty:"kamuro",n:"銀柳",ic:"droop",c:["#fff2c8","#ffc400"]},
+  {ty:"kamuroPink",n:"粉紅銀柳",ic:"droop",c:["#ff4f8b","#ff1fbf"]},{ty:"senrin",n:"彩千輪",ic:"multi"},{ty:"crossette",n:"十字分裂",ic:"split"},{ty:"palm",n:"椰子樹",ic:"palm"},
+  {ty:"fourcolor",n:"四色變色",ic:"quad"},{ty:"multi",n:"多彩",ic:"round"},{ty:"rainbow",n:"彩虹",ic:"round"},{ty:"tail",n:"彩尾",ic:"lines"},{ty:"meteor",n:"流星",ic:"lines"},
+  {ty:"glitter",n:"閃亮",ic:"spark"},{ty:"crackle",n:"爆裂",ic:"spark"},{ty:"strobe",n:"閃爍",ic:"spark"},{ty:"twinkle",n:"星閃",ic:"spark"},{ty:"bees",n:"亂飛",ic:"bees"},
+  {ty:"silkfall",n:"金色瀑布",ic:"droop",c:["#ffc400","#ff6a00"]},{ty:"giant",n:"巨型菊花",ic:"round",big:1},{ty:"giantcc",n:"巨型變色",ic:"quad",big:1},{ty:"giantduo",n:"巨型雙層",ic:"multi",big:1},
+  {ty:"giantwillow",n:"巨型垂柳",ic:"droop",big:1},{ty:"god",n:"神明",ic:"god"},{ty:"mine",n:"屋頂花束",ic:"mine",roof:1},{ty:"fan",n:"屋頂扇形",ic:"fan",roof:1}];
+const FWED_T=Object.fromEntries(FWED_TYPES.map(o=>[o.ty,o]));
+const FWED_SZ=[{n:"小",s:14,k:240},{n:"中",s:20,k:320},{n:"大",s:28,k:520},{n:"巨",s:40,k:700}];
+const FWED_Z=-28; /* the sky plane the chair taps on: above and behind the temple, where the built-in shows burst */
+const FWED={on:false,show:null,ty:"peony",sz:1,col:null,mirror:false,play:false,t:0,sel:-1,undo:[],dirty:false,list:[],cv:null,tl:null,drag:null};
+/* a tiny picture of each kind (drawn once, then gently pulsing in its button) */
+function fwedIcon(o){ const c=document.createElement("canvas"); c.width=c.height=56; const x=c.getContext("2d"), C=o.c||["#ff4f8b","#ffc400"], m=28; x.lineCap="round";
+  const dots=(n,r,col,s=2.2)=>{ for(let i=0;i<n;i++){ const a=i/n*6.283; x.fillStyle=col; x.beginPath(); x.arc(m+Math.cos(a)*r,m+Math.sin(a)*r,s,0,7); x.fill(); } };
+  const rays=(n,r0,r1,col,w=2)=>{ x.strokeStyle=col; x.lineWidth=w; for(let i=0;i<n;i++){ const a=i/n*6.283; x.beginPath(); x.moveTo(m+Math.cos(a)*r0,m+Math.sin(a)*r0); x.lineTo(m+Math.cos(a)*r1,m+Math.sin(a)*r1); x.stroke(); } };
+  switch(o.ic){
+    case "round": dots(14,20,C[0],2.6); dots(9,12,C[1],2.2); break;
+    case "lines": rays(16,6,23,C[0],2); dots(16,24,C[1],1.6); break;
+    case "droop": x.strokeStyle=C[0]; x.lineWidth=1.8; for(let i=0;i<12;i++){ const a=i/12*6.283, ex=m+Math.cos(a)*16, ey=m-8+Math.sin(a)*10; x.beginPath(); x.moveTo(m,m-10); x.quadraticCurveTo(ex,ey-6,ex+Math.cos(a)*3,ey+18); x.stroke(); } break;
+    case "multi": for(const [dx,dy,k] of [[-11,-9,0],[11,-7,1],[0,11,0],[-12,10,1],[12,11,0]]){ x.save(); x.translate(dx,dy); dots(7,6,C[k],1.8); x.restore(); } break;
+    case "split": rays(4,4,13,C[0],2.4); for(let i=0;i<4;i++){ const a=i/4*6.283+.78, ex=m+Math.cos(a)*15, ey=m+Math.sin(a)*15; x.strokeStyle=C[1]; for(const d of [-.6,.6]){ x.beginPath(); x.moveTo(ex,ey); x.lineTo(ex+Math.cos(a+d)*9,ey+Math.sin(a+d)*9); x.stroke(); } } break;
+    case "palm": x.strokeStyle=C[0]; x.lineWidth=3; for(let i=0;i<7;i++){ const a=-Math.PI/2+(i-3)*.42; x.beginPath(); x.moveTo(m,m+4); x.quadraticCurveTo(m+Math.cos(a)*14,m+4+Math.sin(a)*14,m+Math.cos(a)*20,m+12+Math.sin(a)*12); x.stroke(); } break;
+    case "quad": ["#ff1a1a","#ffc400","#2b6bff","#00ff6a"].forEach((col,q)=>{ for(let i=0;i<5;i++){ const a=(q+i/5)*1.5708; x.fillStyle=col; x.beginPath(); x.arc(m+Math.cos(a)*19,m+Math.sin(a)*19,2.6,0,7); x.fill(); } }); break;
+    case "spark": for(let i=0;i<26;i++){ const a=Math.random()*6.283, r=Math.random()*22; x.fillStyle=i%3?C[0]:"#fff7d0"; x.fillRect(m+Math.cos(a)*r,m+Math.sin(a)*r,2,2); } break;
+    case "bees": x.strokeStyle=C[0]; x.lineWidth=1.5; for(let i=0;i<6;i++){ x.beginPath(); let px=m,py=m; x.moveTo(px,py); for(let k=0;k<5;k++){ px+=(Math.random()-.5)*16; py+=(Math.random()-.5)*16; x.lineTo(px,py); } x.stroke(); } break;
+    case "god": x.font="30px serif"; x.textAlign="center"; x.textBaseline="middle"; x.fillText("🙏",m,m+2); dots(18,25,"#ffd23b",1.6); break;
+    case "mine": x.fillStyle="#6a3a20"; x.fillRect(m-12,m+16,24,6); rays(9,0,22,C[0],2); break;
+    case "fan": for(let i=0;i<7;i++){ const a=-Math.PI/2+(i-3)*.32; x.strokeStyle=i%2?C[0]:C[1]; x.lineWidth=2.4; x.beginPath(); x.moveTo(m,m+20); x.lineTo(m+Math.cos(a)*30,m+20+Math.sin(a)*30); x.stroke(); } break; }
+  if(o.big){ x.fillStyle="#fff"; x.font="bold 13px sans-serif"; x.textAlign="right"; x.fillText("巨",54,52); } return c.toDataURL(); }
+/* the show's events as the engine's own launches (each one sent up so it bursts at its tap time) */
+function fwedEngine(show,seed){ const r=fwRng(seed||7), out=[]; const len=show.len;
+  for(const e of show.ev){ const T=FWED_T[e.ty]; if(!T) continue; const pair=e.c&&e.c.length===2?e.c:FWC[(r()*FWC.length)|0], S=FWED_SZ[e.s|0]||FWED_SZ[1];
+    if(e.ty==="god"){ const fl=1.9; out.push({t:Math.max(0,e.t-fl),kind:"shell",type:"god",x:0,y:80,z:-80,big:true,s:15,n:460,c:pair,ci:0,fl,gs:1.35,keep:1,god:FW_GOD_NAMES[(r()*FW_GOD_NAMES.length)|0],pal:(r()*FW_GOD_PAL.length)|0}); continue; }
+    if(e.ty==="mine"){ const z=-2, y=fwRoofY(e.x,z)+.2; out.push({t:e.t,kind:"mine",x:e.x,y,z,c:pair,keep:1}); continue; }
+    if(e.ty==="fan"){ const z=-2, y0=fwRoofY(e.x,z)+.2, fl=.8; for(let k=0;k<11;k++){ const ang=(k/10*2-1)*1.05, h=9+r()*2; out.push({t:Math.max(0,e.t-fl),kind:"comet",sx:e.x,sy:y0,sz:z,ex:e.x+Math.sin(ang)*h,ey:y0+Math.cos(ang)*h,ez:z+.6,c:[pair[k%2],pair[(k+1)%2]],fl,keep:1}); } continue; }
+    const y=Math.max(16,e.y), fl=1.2+y/45, big=!!T.big||(e.s|0)>=2;
+    const o={t:Math.max(0,e.t-fl),kind:"shell",type:e.ty==="kamuroPink"?"kamuro":e.ty,x:e.x,y,z:FWED_Z,big,s:T.big?Math.max(S.s,34):S.s,n:T.big?Math.max(S.k,620):S.k,c:pair,ci:(r()*12)|0,fl,keep:1};
+    if(e.ty==="kamuroPink") o.pink=1; if(/^giant/.test(e.ty)&&!(e.c&&e.c.length===2)){ o.c=[VIVID[o.ci],VIVID[(o.ci+6)%12]]; } out.push(o); }
+  out.sort((a,b)=>a.t-b.t); return out.filter(e=>e.t<len); }
+/* the chair's four rules for a show, checked before saving */
+function fwedCheck(show){ const W=[], ev=show.ev.slice().sort((a,b)=>a.t-b.t), len=show.len; if(!ev.length) return ["還沒有放任何煙火。"];
+  const last=ev[ev.length-1].t; if(last>len-3) W.push(`最後一發在 ${last.toFixed(1)} 秒，音樂 ${len} 秒就結束了：煙火要在音樂結束時結束。`);
+  const gods=ev.filter(e=>e.ty==="god"); for(const g of gods){ const n=ev.filter(e=>e!==g&&e.ty!=="mine"&&e.ty!=="fan"&&e.t>g.t-4&&e.t<g.t+8).length; if(n) W.push(`神明（${g.t.toFixed(1)} 秒）前 4 秒到後 8 秒內還有 ${n} 發，會擋住神明。`); }
+  const busy=t=>gods.some(g=>t>g.t-4&&t<g.t+8); const gaps=[]; for(let t=ev[0].t;t<last-3;t+=1){ if(busy(t)) continue; const k=ev.filter(e=>e.t>=t&&e.t<t+3).length; if(k<2&&!gaps.some(g=>t-g<6)) gaps.push(t); }
+  if(gaps.length) W.push(`這幾個時間附近 3 秒內不到兩發，天空會空掉：${gaps.slice(0,6).map(t=>t.toFixed(0)+" 秒").join("、")}${gaps.length>6?"…":""}`);
+  const hi=ev.filter(e=>!FWED_T[e.ty]||!FWED_T[e.ty].roof), mid=hi.filter(e=>Math.abs(e.x)<12).length; if(hi.length>=6&&mid/hi.length<.25) W.push("中間太空：大部分煙火都在兩側，正中間也放一些。");
+  const white=ev.filter(e=>e.c&&e.c.some(h=>{ const c=new T.Color(h), hsl={}; c.getHSL(hsl); return hsl.l>.8&&hsl.s<.35; })).length; if(white) W.push(`有 ${white} 發用了接近白色的顏色，畫面會過曝。`);
+  return W; }
+/* ---- storage: the server keeps the chair's shows (on the single-machine test page, this phone does) ---- */
+async function fwedList(){ if(!USE_CF){ FWED.list=load("mz.fwc",[]); return FWED.list; } try{ const r=await fetch("/fwc"); const j=await r.json(); FWED.list=j.items||[]; }catch(e){ FWED.list=FWED.list||[]; } return FWED.list; }
+const FWED_CACHE={};
+async function fwedGet(id){ if(FWED_CACHE[id]) return FWED_CACHE[id]; if(!USE_CF){ const s=load("mz.fwc",[]).find(x=>x.id===id); if(s) FWED_CACHE[id]=s; return s||null; }
+  try{ const r=await fetch("/fwc?id="+encodeURIComponent(id)); const j=await r.json(); if(j.ok&&j.show){ FWED_CACHE[id]=j.show; return j.show; } }catch(e){} return null; }
+async function fwedSave(show){ show.ev.sort((a,b)=>a.t-b.t); if(!USE_CF){ const L=load("mz.fwc",[]).filter(x=>x.id!==show.id); L.unshift(show); save("mz.fwc",L.slice(0,20)); FWED_CACHE[show.id]=show; return true; }
+  const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return false; }
+  try{ const r=await fetch("/fwc",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({show})}); const j=await r.json().catch(()=>({})); forgetKey(r,j); if(j.ok){ if(j.id) show.id=j.id; FWED_CACHE[show.id]=show; return true; } toast(j.locked?"嘗試次數過多，今天先鎖住了":j.full?"最多存 20 場，請先刪掉一場":"密碼不對，沒有存起來",2800); }catch(e){ toast("沒有存起來，請稍後再試"); } return false; }
+async function fwedDelete(id){ if(!USE_CF){ save("mz.fwc",load("mz.fwc",[]).filter(x=>x.id!==id)); return true; } const key=ck();
+  try{ const r=await fetch("/fwc",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({del:id})}); const j=await r.json().catch(()=>({})); forgetKey(r,j); return !!j.ok; }catch(e){ return false; } }
+/* ---- the list of the chair's shows ---- */
+HANDLERS.fwedOpen=async()=>{ await fwedList(); const rows=FWED.list.length?FWED.list.map(s=>`<div class="sched-row"><span>🎼 ${esc(s.name)}<small style="opacity:.7">　${esc((FW_SHOWS[s.song]||{}).n||"")}・${s.n??(s.ev||[]).length} 發</small></span><span><button class="chip" data-act="fwedEdit" data-v="${s.id}">編輯</button><button class="chip" data-act="fwedDel" data-v="${s.id}">刪除</button></span></div>`).join(""):`<p class="note">還沒有自己排的煙火。</p>`;
+  openSheet("contact","煙火編排器",`${backBtn}<p class="lead">自己排一場煙火：選一首歌，播放時點天空哪裡，那一拍就在那裡炸開。存好後會出現在「全服煙火」和「定時活動」裡。</p><div class="sched-list">${rows}</div>
+    <span class="group-label">新增一場（選歌）</span><div class="fw-pick">${FW_SHOWS.map((S,i)=>`<button class="secondary" data-act="fwedNew" data-v="${i}">${esc(S.n)}<small>${Math.floor(S.len/60)} 分 ${S.len%60} 秒</small></button>`).join("")}</div>`); };
+HANDLERS.fwedNew=v=>{ const S=FW_SHOWS[+v]||FW_SHOWS[0]; fwedEnter({id:"",name:"",song:+v,len:S.len,ev:[]}); };
+HANDLERS.fwedEdit=async id=>{ const s=await fwedGet(id); if(!s){ toast("讀不到這場煙火"); return; } fwedEnter(JSON.parse(JSON.stringify(s))); };
+HANDLERS.fwedDel=async id=>{ if(!confirm("確定刪除這場煙火？")) return; if(await fwedDelete(id)){ delete FWED_CACHE[id]; HANDLERS.fwedOpen(); } else toast("刪不掉，請稍後再試"); };
+/* ---- the editor itself ---- */
+function fwedEnter(show){ if(FW.on||FW.pendingAt){ toast("現在正在放煙火，放完再編排"); return; } closeSheet(); FWED.on=true; FWED.show=show; FWED.t=0; FWED.play=false; FWED.sel=-1; FWED.undo=[]; FWED.dirty=false;
+  fwSong(FW_SHOWS[show.song].song); fwGodsLoad(); lakeSet(true,FW_SPOTS[0]); document.body.classList.add("fwed","fwclean");
+  let el=$("#fwEd"); if(!el){ el=document.createElement("div"); el.id="fwEd"; document.body.appendChild(el); }
+  el.innerHTML=`<canvas id="fwEdSky"></canvas><div class="fe-top"><span id="fwEdName">${esc(show.name||"新的煙火")}</span><span id="fwEdTime">0:00.0</span><button class="fe-x" data-fe="exit">離開</button></div>
+    <div class="fe-panel"><div class="fe-row"><button class="fe-play" data-fe="play">▶</button><canvas id="fwEdTl"></canvas></div>
+    <div class="fe-types">${FWED_TYPES.map(o=>`<button class="fe-ty${o.ty===FWED.ty?" on":""}" data-fe="ty" data-v="${o.ty}"><img src="${fwedIcon(o)}" alt=""><span>${o.n}</span><i data-fe="try" data-v="${o.ty}">▶試放</i></button>`).join("")}</div>
+    <div class="fe-row fe-opts"><span class="fe-lbl">大小</span>${FWED_SZ.map((z,i)=>`<button class="fe-ch${i===FWED.sz?" on":""}" data-fe="sz" data-v="${i}">${z.n}</button>`).join("")}
+      <span class="fe-lbl">顏色</span><button class="fe-ch${FWED.col?"":" on"}" data-fe="colR">隨機</button><button class="fe-ch fe-sw${FWED.col?" on":""}" data-fe="col0" style="--a:${(FWED.col||VIVID.slice(0,2))[0]};--b:${(FWED.col||VIVID.slice(0,2))[1]}">配色</button>
+      <button class="fe-ch${FWED.mirror?" on":""}" data-fe="mir">左右對稱</button></div>
+    <div class="fe-row fe-acts"><button class="fe-ch" data-fe="undo">↶ 復原</button><button class="fe-ch" data-fe="del" id="fwEdDel" disabled>🗑 刪除這發</button><button class="fe-ch" data-fe="check">✔ 檢查</button><button class="fe-ch fe-save" data-fe="save">💾 存檔</button></div>
+    <p class="fe-hint" id="fwEdHint">按 ▶ 播放音樂，在想要的那一拍點天空，煙火就在那裡炸開。點圓圈可以選取、拖動或刪除。</p></div>`;
+  FWED.cv=$("#fwEdSky"); FWED.tl=$("#fwEdTl"); fwedResize(); el.onclick=fwedClick; fwedPointer(); }
+function fwedExit(force){ if(FWED.dirty&&!force&&!confirm("還沒存檔，確定離開？")) return; fwedStop(); FWED.on=false; document.body.classList.remove("fwed","fwclean"); const el=$("#fwEd"); if(el) el.remove(); lakeSet(false); HANDLERS.fwedOpen(); }
+function fwedResize(){ for(const c of [FWED.cv,FWED.tl]){ if(!c) continue; const r=c.getBoundingClientRect(), d=Math.min(2,window.devicePixelRatio||1); c.width=Math.max(1,r.width*d); c.height=Math.max(1,r.height*d); } }
+addEventListener("resize",()=>{ if(FWED.on) setTimeout(fwedResize,50); });
+/* play: the real engine runs the show from the playhead, with the song */
+function fwedPlay(){ const S=FWED.show; FW.ev=fwedEngine(S,1); FW.i=0; const el=FWED.t; while(FW.i<FW.ev.length&&FW.ev[FW.i].t<el-.05) FW.i++;
+  FW_LEN=S.len; FW.sh=S.song; FW.t0=performance.now()-el*1000; FW.endShown=true; FW.on=true; FW.endAt=FW.t0+(S.len+2)*1000; fwFinale=false; FW.rockets.length=0; FW.gerbs.length=0; FW.wheels.length=0; FW.sweeps=[]; FW.fanjets=[];
+  try{ const a=trk("fw"); a.currentTime=el; }catch(e){} FWED.play=true; const b=document.querySelector('[data-fe="play"]'); if(b) b.textContent="⏸"; }
+function fwedStop(){ FWED.play=false; FW.on=false; FW.endAt=-1e9; try{ trk("fw").pause(); }catch(e){} const b=document.querySelector('[data-fe="play"]'); if(b) b.textContent="▶"; }
+/* one shell of a kind, right now, at the middle of the sky (or where it was tapped) */
+function fwedTry(ty,x,y){ const e={t:0,ty,x:x??0,y:y??46,s:FWED.sz,c:FWED.col}; const ev=fwedEngine({len:999,ev:[{...e,t:3}]},(Math.random()*1e9)|0); const shift=ev.length?ev[0].t:0; ev.forEach(q=>q.t-=shift);
+  if(!FWED.play){ FW.ev=ev; FW.i=0; FW.t0=performance.now(); FW.on=true; FW.endShown=true; FW_LEN=1e6; FW.endAt=FW.t0+1e9; fwFinale=false; clearTimeout(fwedTry.tm); fwedTry.tm=setTimeout(()=>{ if(!FWED.play){ FW.on=false; } },12000); }
+  else { const now=(performance.now()-FW.t0)/1000; ev.forEach(q=>{ q.t+=now; FW.ev.splice(FW.i,0,q); }); FW.ev.sort((a,b)=>a.t-b.t); } }
+/* sky tap → a point on the show's sky plane */
+const _fr=new T.Raycaster(), _fn=new T.Vector2();
+function fwedSkyPoint(cx,cy){ const r=FWED.cv.getBoundingClientRect(); _fn.set((cx-r.left)/r.width*2-1,-(cy-r.top)/r.height*2+1); _fr.setFromCamera(_fn,camera); const o=_fr.ray.origin, d=_fr.ray.direction; if(Math.abs(d.z)<1e-4) return null; const k=(FWED_Z-o.z)/d.z; if(k<0) return null;
+  return {x:Math.max(-60,Math.min(60,o.x+d.x*k)),y:Math.max(4,Math.min(95,o.y+d.y*k))}; }
+function fwedScreen(e){ let p; if(e.ty==="god") p=_v1.set(0,80,-80); else if(FWED_T[e.ty]&&FWED_T[e.ty].roof) p=_v1.set(e.x,Math.max(4,fwRoofY(e.x,-2)+3),-2); else p=_v1.set(e.x,Math.max(16,e.y),FWED_Z); p.project(camera); const r=FWED.cv.getBoundingClientRect(); return [(p.x+1)/2*r.width,(1-p.y)/2*r.height,p.z<1]; }
+function fwedNow(){ return FWED.play?(performance.now()-FW.t0)/1000:FWED.t; }
+function fwedAdd(x,y){ const t=fwedNow(), S=FWED.show; if(t>S.len){ toast("音樂已經結束了"); return; } const T0=FWED_T[FWED.ty]; FWED.undo.push(JSON.stringify(S.ev));
+  const base={t:+t.toFixed(2),ty:FWED.ty,x:+x.toFixed(1),y:+(T0.roof?8:y).toFixed(1),s:FWED.sz}; if(FWED.col) base.c=FWED.col.slice();
+  if(FWED.ty==="god"){ base.x=0; base.y=80; S.ev=S.ev.filter(e=>e.ty!=="god"); S.ev.push(base); toast("神明只放一位：已放在最後的位置（天空正中央）",2600); }
+  else { S.ev.push(base); if(FWED.mirror&&Math.abs(x)>1.5) S.ev.push({...base,x:-base.x}); }
+  S.ev.sort((a,b)=>a.t-b.t); FWED.dirty=true; FWED.sel=S.ev.indexOf(base); fwedSelUi(); if(!FWED.play) fwedTry(FWED.ty,base.x,base.y); else if(FW.on){ const one=fwedEngine({len:999,ev:[{...base,t:t+.01}]},(Math.random()*1e9)|0).filter(q=>q.t>=t-.05); one.forEach(q=>FW.ev.splice(FW.i,0,q)); FW.ev.sort((a,b)=>a.t-b.t); } }
+function fwedHit(cx,cy){ const r=FWED.cv.getBoundingClientRect(), now=fwedNow(); let best=-1, bd=30; FWED.show.ev.forEach((e,i)=>{ if(Math.abs(e.t-now)>6) return; const [sx,sy,ok]=fwedScreen(e); if(!ok) return; const d=Math.hypot(sx-(cx-r.left),sy-(cy-r.top)); if(d<bd){ bd=d; best=i; } }); return best; }
+function fwedSelUi(){ const d=$("#fwEdDel"); if(d) d.disabled=FWED.sel<0; const h=$("#fwEdHint"); if(h&&FWED.sel>=0){ const e=FWED.show.ev[FWED.sel]; if(e) h.textContent=`選取：${FWED_T[e.ty].n}・${e.t.toFixed(1)} 秒・${FWED_SZ[e.s|0].n}。拖動可以移位置，按「刪除這發」可以刪掉。`; } }
+function fwedPointer(){ const c=FWED.cv; let down=null;
+  c.onpointerdown=ev=>{ ev.preventDefault(); ensureAudio(); const i=fwedHit(ev.clientX,ev.clientY); down={x:ev.clientX,y:ev.clientY,i,moved:false}; if(i>=0){ FWED.sel=i; fwedSelUi(); FWED.undo.push(JSON.stringify(FWED.show.ev)); } try{ c.setPointerCapture(ev.pointerId); }catch(e){} };
+  c.onpointermove=ev=>{ if(!down) return; if(Math.hypot(ev.clientX-down.x,ev.clientY-down.y)>6) down.moved=true; if(down.i>=0&&down.moved){ const p=fwedSkyPoint(ev.clientX,ev.clientY), e=FWED.show.ev[down.i]; if(p&&e&&e.ty!=="god"){ e.x=+p.x.toFixed(1); if(!FWED_T[e.ty].roof) e.y=+p.y.toFixed(1); FWED.dirty=true; } } };
+  c.onpointerup=ev=>{ if(!down) return; const d=down; down=null; if(d.i>=0){ if(!d.moved) FWED.undo.pop(); return; } if(d.moved) return; const p=fwedSkyPoint(ev.clientX,ev.clientY); if(p) fwedAdd(p.x,p.y); };
+  const tl=FWED.tl; let sk=false; const seek=ev=>{ const r=tl.getBoundingClientRect(); const t=Math.max(0,Math.min(1,(ev.clientX-r.left)/r.width))*FWED.show.len; const was=FWED.play; if(was) fwedStop(); FWED.t=t; if(was) fwedPlay(); };
+  tl.onpointerdown=ev=>{ sk=true; try{ tl.setPointerCapture(ev.pointerId); }catch(e){} seek(ev); }; tl.onpointermove=ev=>{ if(sk&&!FWED.play) seek(ev); }; tl.onpointerup=()=>{ sk=false; }; }
+function fwedClick(ev){ const b=ev.target.closest("[data-fe]"); if(!b) return; const a=b.dataset.fe, v=b.dataset.v; ev.stopPropagation();
+  if(a==="try"){ fwedTry(v); return; }
+  if(a==="ty"){ FWED.ty=v; document.querySelectorAll(".fe-ty").forEach(x=>x.classList.toggle("on",x.dataset.v===v)); const T0=FWED_T[v]; $("#fwEdHint").textContent=v==="god"?"神明整場只放一位，放在最後收尾；前 4 秒到後 8 秒不要放別的煙火。":T0.roof?"屋頂煙火：點天空左右的位置，會從那一段屋頂噴出。":`${T0.n}：點天空放一發。`; return; }
+  if(a==="sz"){ FWED.sz=+v; document.querySelectorAll('[data-fe="sz"]').forEach(x=>x.classList.toggle("on",x.dataset.v===v)); return; }
+  if(a==="colR"){ FWED.col=null; b.classList.add("on"); document.querySelector('[data-fe="col0"]').classList.remove("on"); return; }
+  if(a==="col0"){ const i=FWED.col?(VIVID.indexOf(FWED.col[0])+1)%VIVID.length:0; FWED.col=[VIVID[i],VIVID[(i+5)%VIVID.length]]; b.style.setProperty("--a",FWED.col[0]); b.style.setProperty("--b",FWED.col[1]); b.classList.add("on"); document.querySelector('[data-fe="colR"]').classList.remove("on"); toast("再按一次換下一組配色",1600); return; }
+  if(a==="mir"){ FWED.mirror=!FWED.mirror; b.classList.toggle("on",FWED.mirror); return; }
+  if(a==="play"){ if(FWED.play){ FWED.t=fwedNow(); fwedStop(); } else { if(FWED.t>=FWED.show.len-.5) FWED.t=0; fwedPlay(); } return; }
+  if(a==="undo"){ const u=FWED.undo.pop(); if(u){ FWED.show.ev=JSON.parse(u); FWED.sel=-1; FWED.dirty=true; fwedSelUi(); } return; }
+  if(a==="del"){ if(FWED.sel>=0){ FWED.undo.push(JSON.stringify(FWED.show.ev)); FWED.show.ev.splice(FWED.sel,1); FWED.sel=-1; FWED.dirty=true; fwedSelUi(); $("#fwEdHint").textContent="刪掉了。"; } return; }
+  if(a==="check"){ const W=fwedCheck(FWED.show); alertBox(W.length?"還可以更好":"沒有問題",W.length?W:["四條規則都過關：神明沒被擋、沒有過曝、中間不空、跟音樂一起結束。"]); return; }
+  if(a==="save"){ fwedSaveAsk(); return; }
+  if(a==="exit"){ fwedExit(); return; } }
+function alertBox(title,lines){ let el=$("#fwEdMsg"); if(!el){ el=document.createElement("div"); el.id="fwEdMsg"; $("#fwEd").appendChild(el); } el.innerHTML=`<b>${esc(title)}</b>${lines.map(l=>`<p>${esc(l)}</p>`).join("")}<button class="fe-ch on" onclick="this.parentNode.remove()">知道了</button>`; }
+async function fwedSaveAsk(){ const S=FWED.show; if(!S.ev.length){ toast("還沒有放任何煙火"); return; } if(FWED.play){ FWED.t=fwedNow(); fwedStop(); }
+  const name=prompt("這場煙火的名字（最多 12 字）",S.name||"我的煙火"); if(name==null) return; S.name=name.trim().slice(0,12)||"我的煙火"; if(!S.id) S.id=Math.random().toString(36).slice(2,10);
+  const W=fwedCheck(S); S.n=S.ev.length; if(await fwedSave(S)){ FWED.dirty=false; $("#fwEdName").textContent=S.name; alertBox("已存檔：「"+S.name+"」",(W.length?["存好了，不過檢查發現：",...W]:["四條規則都過關。"]).concat(["可以到「全服煙火」或「定時活動」選這一場施放。"])); } }
+/* per frame while editing: the circles on the sky and the timeline */
+function fwedTick(){ if(!FWED.on||!FWED.cv) return; const S=FWED.show, now=fwedNow(); if(FWED.play&&now>S.len+1){ FWED.t=0; fwedStop(); }
+  const tm=$("#fwEdTime"); if(tm){ const m=Math.floor(now/60), s=now-m*60; tm.textContent=`${m}:${s<10?"0":""}${s.toFixed(1)} / ${Math.floor(S.len/60)}:${p2(S.len%60)}・${S.ev.length} 發`; }
+  const c=FWED.cv, x=c.getContext("2d"), d=c.width/c.getBoundingClientRect().width; x.setTransform(d,0,0,d,0,0); x.clearRect(0,0,c.width,c.height);
+  S.ev.forEach((e,i)=>{ const dt=e.t-now; if(dt<-3||dt>6) return; const [sx,sy,ok]=fwedScreen(e); if(!ok) return; const T0=FWED_T[e.ty], near=Math.abs(dt)<.6, a=near?1:dt>0?.55*(1-dt/6)+.15:.35*(1+dt/3);
+    const R=(6+(e.s|0)*4+(T0.big?6:0))*(near?1.5:1); x.globalAlpha=a; const col=e.c?e.c[0]:"#ffd27a"; x.lineWidth=i===FWED.sel?4:2; x.strokeStyle=i===FWED.sel?"#ffffff":col; x.fillStyle=col+"55";
+    x.beginPath(); x.arc(sx,sy,R,0,7); x.fill(); x.stroke(); if(dt>0){ x.font="11px sans-serif"; x.fillStyle="#fff"; x.textAlign="center"; x.fillText(dt.toFixed(1),sx,sy-R-4); } });
+  x.globalAlpha=1;
+  const t=FWED.tl; if(t){ const tx=t.getContext("2d"), dd=t.width/t.getBoundingClientRect().width, W=t.width/dd, H=t.height/dd; tx.setTransform(dd,0,0,dd,0,0); tx.clearRect(0,0,W,H); tx.fillStyle="rgba(255,255,255,.12)"; tx.fillRect(0,H*.3,W,H*.4);
+    for(let s=0;s<=S.len;s+=10){ const px=s/S.len*W; tx.fillStyle="rgba(255,255,255,.35)"; tx.fillRect(px,H*.25,1,H*.5); }
+    for(const e of S.ev){ const px=e.t/S.len*W; tx.fillStyle=e.ty==="god"?"#ffd23b":(e.c?e.c[0]:"#ff8a5a"); tx.fillRect(px-1,H*.12,2.2,H*.76); }
+    tx.fillStyle="#fff"; tx.fillRect(now/S.len*W-1,0,2.5,H); } }
+
 let fwPickSh=1;
-HANDLERS.askFw=()=>{ fwKeyHold=ck()||fwKeyHold; const old=(document.querySelector("#fwTxt")||{}).value;
+let fwPickCu="";
+HANDLERS.askFw=async()=>{ fwKeyHold=ck()||fwKeyHold; const old=(document.querySelector("#fwTxt")||{}).value; if(!HANDLERS.askFw.listed){ HANDLERS.askFw.listed=1; await fwedList(); }
   openSheet("contact","施放全服煙火",`<p class="lead">選一場煙火，每一殿的所有香客都會同時看到，背景音樂也會換成那一場的煙火歌。按下施放後會先倒數 10 秒讓大家下載音樂。上一場沒放完前不能再放。</p>
-    <div class="fw-pick">${FW_SHOWS.map((S,i)=>`<button class="${i===fwPickSh?"primary":"secondary"}" data-act="fwPick" data-v="${i}">${esc(S.n)}<small>${esc(S.d)}</small></button>`).join("")}</div>
+    <div class="fw-pick">${FW_SHOWS.map((S,i)=>`<button class="${i===fwPickSh&&!fwPickCu?"primary":"secondary"}" data-act="fwPick" data-v="${i}">${esc(S.n)}<small>${esc(S.d)}</small></button>`).join("")}${FWED.list.map(c=>`<button class="${fwPickCu===c.id?"primary":"secondary"}" data-act="fwPickCu" data-v="${c.id}">🎼 ${esc(c.name)}<small>自己排的・${esc((FW_SHOWS[c.song]||{}).n||"")}</small></button>`).join("")}</div>
     <label class="group-label" for="fwTxt">煙火結束後天空出現的字（最多 24 字，空白就用「${FW_END0}」）</label><input id="fwTxt" class="mail-box" maxlength="24" placeholder="${FW_END0}" value="${esc(old!=null?old:load("mz.fwTxt",""))}">
     <div class="row"><button class="secondary" data-act="fwCancel">先不要</button><button class="primary" data-act="sendFw">確定施放 🎆</button></div>`); };
-HANDLERS.fwPick=v=>{ fwPickSh=+v; HANDLERS.askFw(); };
+HANDLERS.fwPick=v=>{ fwPickSh=+v; fwPickCu=""; HANDLERS.askFw(); };
+HANDLERS.fwPickCu=v=>{ fwPickCu=v; HANDLERS.askFw(); };
 HANDLERS.fwCancel=()=>openChair();
-HANDLERS.sendFw=async()=>{ const key=(ck())||fwKeyHold, txt=((document.querySelector("#fwTxt")||{}).value||"").trim().slice(0,24), sh=fwPickSh; save("mz.fwTxt",txt);
-  if(!USE_CF){ const seed=(Math.random()*1e9)|0, at=Date.now()+10000; myFwShow=[seed,at,sh,txt]; markDirty(); fwStart(seed,-10000,sh,txt); closeSheet(); return; } if(!key){ toast("請先輸入留言讀取密碼"); return; }
-  try{ const r=await fetch("/fireworks",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({sh,txt})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
+HANDLERS.sendFw=async()=>{ const key=(ck())||fwKeyHold, txt=((document.querySelector("#fwTxt")||{}).value||"").trim().slice(0,24), cu=fwPickCu, cs=cu&&FWED.list.find(c=>c.id===cu), sh=cs?cs.song|0:fwPickSh; save("mz.fwTxt",txt);
+  if(!USE_CF){ const seed=(Math.random()*1e9)|0, at=Date.now()+10000; myFwShow=[seed,at,sh,txt]; markDirty(); fwStart(seed,-10000,sh,txt,cu); closeSheet(); return; } if(!key){ toast("請先輸入留言讀取密碼"); return; }
+  try{ const r=await fetch("/fireworks",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({sh,txt,cu})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
     if(j.ok){ save("mz.rk",key); closeSheet(); toast("全服煙火施放中！",3000); } else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.busy?"上一場煙火還沒放完":j.locked?"嘗試次數過多，今天先鎖住了":j.unset?"伺服器讀不到密碼設定（不是你打錯）":"密碼不對，煙火沒有施放",3200); }catch(e){ toast("煙火沒有施放，請稍後再試"); } };
 
 function openFountain(){ openSheet("fountain","觀音菩薩噴泉",`<p class="lead">觀音菩薩手持淨瓶，甘露常流。可以投錢許願，也可以喝一口聖水祈求身體健康。</p>

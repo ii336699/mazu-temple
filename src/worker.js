@@ -4,7 +4,7 @@ import { DurableObject } from "cloudflare:workers";
 
 const HALLS = 10, CAP = 100, MAX_MSG = 4000;
 const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000, "/puppet": 5000, "/crowd": 5000, "/market": 5000, "/layout": 5000 };
-const LOBBY_PATHS = ["/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule"];
+const LOBBY_PATHS = ["/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc"];
 const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage", "/puppet": "/puppet", "/crowd": "/crowd", "/market": "/market", "/layout": "/layout" }; // a POST here makes that cached list stale
 
 export default {
@@ -63,8 +63,8 @@ export class Hall extends DurableObject {
     const url = new URL(req.url);
     if (url.pathname === "/fireworks") { // from the lobby: everyone here starts the same seeded 3-minute show
       let b = {}; try { b = await req.json(); } catch {}
-      const fw = { seed: (b.seed | 0) >>> 0, at: Number(b.at) || Date.now(), sh: b.sh | 0, txt: String(b.txt || "").slice(0, 24), len: Number(b.len) || 218 }; await this.ctx.storage.put("fw", fw);
-      const out = JSON.stringify({ t: "fw", seed: fw.seed, el: Date.now() - fw.at, sh: fw.sh, txt: fw.txt }); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
+      const fw = { seed: (b.seed | 0) >>> 0, at: Number(b.at) || Date.now(), sh: b.sh | 0, txt: String(b.txt || "").slice(0, 24), len: Number(b.len) || 218, cu: String(b.cu || "").replace(/[^a-z0-9]/g, "").slice(0, 12) }; await this.ctx.storage.put("fw", fw);
+      const out = JSON.stringify({ t: "fw", seed: fw.seed, el: Date.now() - fw.at, sh: fw.sh, txt: fw.txt, cu: fw.cu }); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
     }
     if (url.pathname === "/lanterns") { let b = {}; try { b = await req.json(); } catch {} const out = JSON.stringify({ t: "sl50", seed: (b.seed | 0) >>> 0 }); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok"); }
     if (url.pathname === "/announce") { // from the lobby: push the chair's announcement to everyone in this hall
@@ -115,7 +115,7 @@ export class Hall extends DurableObject {
     const ann = await this.ctx.storage.get("ann"); if (ann && Date.now() - ann.at < 5 * 60 * 1000) server.send(JSON.stringify(ann));
     const stage = await this.ctx.storage.get("stage"); if (stage && stage.on) server.send(JSON.stringify(stage));
     const puppet = await this.ctx.storage.get("puppet"); if (puppet && puppet.on) server.send(JSON.stringify(puppet));
-    const fw = await this.ctx.storage.get("fw"); if (fw && Date.now() - fw.at < (fw.len || 218) * 1000) server.send(JSON.stringify({ t: "fw", seed: fw.seed, el: Date.now() - fw.at, sh: fw.sh | 0, txt: fw.txt || "" }));
+    const fw = await this.ctx.storage.get("fw"); if (fw && Date.now() - fw.at < (fw.len || 218) * 1000) server.send(JSON.stringify({ t: "fw", seed: fw.seed, el: Date.now() - fw.at, sh: fw.sh | 0, txt: fw.txt || "", cu: fw.cu || "" }));
     this.report(h);
     return new Response(null, { status: 101, webSocket: client });
   }
@@ -192,11 +192,12 @@ export class Lobby extends DurableObject {
   }
 
   // 全服煙火 (from the chair, or from the timetable): starts 10 s from now so every phone can fetch the song first; not while one is still running
-  async runFw(shIn, txtIn) {
-    const LENS = [218, 97, 126, 186], sh = LENS[shIn | 0] ? shIn | 0 : 0, txt = plain(txtIn, 24), len = LENS[sh];
+  async runFw(shIn, txtIn, cuIn) {
+    const LENS = [218, 97, 126, 186], txt = plain(txtIn, 24); let sh = LENS[shIn | 0] ? shIn | 0 : 0, len = LENS[sh], cu = "";
+    if (cuIn) { cu = String(cuIn).replace(/[^a-z0-9]/g, "").slice(0, 12); const show = cu && await this.ctx.storage.get("fwc:" + cu); if (!show) return { ok: false, gone: true }; sh = show.song | 0; len = show.len || LENS[sh]; }
     const last = (await this.ctx.storage.get("fwAt")) || 0, lastLen = (await this.ctx.storage.get("fwLen")) || 218; if (Date.now() - last < (lastLen + 16) * 1000) return { ok: false, busy: true };
     const at = Date.now() + 10000; await this.ctx.storage.put("fwAt", at); await this.ctx.storage.put("fwLen", len); const seed = (Math.random() * 4294967295) >>> 0;
-    await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/fireworks", { method: "POST", body: JSON.stringify({ seed, at, sh, txt, len }) }).catch(() => {})));
+    await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/fireworks", { method: "POST", body: JSON.stringify({ seed, at, sh, txt, len, cu }) }).catch(() => {})));
     return { ok: true };
   }
   // 夜市: open or close one stall or all of them, and tell every hall
@@ -218,7 +219,7 @@ export class Lobby extends DurableObject {
     const list = (await this.ctx.storage.get("sched")) || [], now = Date.now(), keep = [];
     for (const e of list) {
       if (e.at > now + 1500) { keep.push(e); continue; }
-      try { if (e.k === "fw") await this.runFw(e.sh, e.txt); else if (e.k === "mkOpen") await this.runMarket({ all: true }); else if (e.k === "mkClose") await this.runMarket({ all: false }); } catch {}
+      try { if (e.k === "fw") await this.runFw(e.sh, e.txt, e.cu); else if (e.k === "mkOpen") await this.runMarket({ all: true }); else if (e.k === "mkClose") await this.runMarket({ all: false }); } catch {}
       if (e.daily) { let a = e.at; while (a <= now) a += 86400000; keep.push({ ...e, at: a }); }
     }
     await this.ctx.storage.put("sched", keep); await this.schedArm(keep);
@@ -226,11 +227,33 @@ export class Lobby extends DurableObject {
 
   async fetch(req) {
     const url = new URL(req.url);
+    // 煙火編排器: the chair's own shows. Anyone can read them (every phone needs the show to draw it); saving and deleting need the key.
+    // Each: { id, name, song (0–3), len, n, ev: [{ t, ty, x, y, s, c? }] } at "fwc:<id>", with a short list at "fwcList" (20 shows at most).
+    if (url.pathname === "/fwc") {
+      if (req.method === "POST") {
+        const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
+        let b = {}; try { b = await req.json(); } catch {}
+        const list = (await this.ctx.storage.get("fwcList")) || [];
+        if (b.del) { const id = String(b.del).replace(/[^a-z0-9]/g, "").slice(0, 12); await this.ctx.storage.delete("fwc:" + id); const keep = list.filter(e => e.id !== id); await this.ctx.storage.put("fwcList", keep); return json({ ok: true, items: keep }); }
+        const sh = b.show || {}, LENS = [218, 97, 126, 186], song = LENS[sh.song | 0] ? sh.song | 0 : 0;
+        const TY = /^(peony|chrys|willow|kamuro|kamuroPink|senrin|crossette|palm|fourcolor|multi|rainbow|tail|meteor|glitter|crackle|strobe|twinkle|bees|silkfall|giant|giantcc|giantduo|giantwillow|god|mine|fan)$/, HEX = /^#[0-9a-f]{6}$/i;
+        const num = (v, lo, hi) => { v = Number(v); return Number.isFinite(v) ? Math.max(lo, Math.min(hi, Math.round(v * 100) / 100)) : lo; };
+        const ev = (Array.isArray(sh.ev) ? sh.ev : []).slice(0, 900).filter(e => e && TY.test(e.ty)).map(e => { const o = { t: num(e.t, 0, LENS[song]), ty: e.ty, x: num(e.x, -60, 60), y: num(e.y, 0, 95), s: num(e.s, 0, 3) | 0 }; if (Array.isArray(e.c) && e.c.length === 2 && e.c.every(h => HEX.test(h))) o.c = [e.c[0], e.c[1]]; return o; }).sort((a, b) => a.t - b.t);
+        if (!ev.length) return json({ ok: false, empty: true });
+        let id = String(sh.id || "").replace(/[^a-z0-9]/g, "").slice(0, 12); if (!id) id = Math.random().toString(36).slice(2, 10);
+        if (!list.some(e => e.id === id) && list.length >= 20) return json({ ok: false, full: true });
+        const show = { id, name: clean(sh.name, 12) || "我的煙火", song, len: LENS[song], n: ev.length, ev, at: Date.now() };
+        await this.ctx.storage.put("fwc:" + id, show); const keep = [{ id, name: show.name, song, len: show.len, n: show.n, at: show.at }, ...list.filter(e => e.id !== id)];
+        await this.ctx.storage.put("fwcList", keep); return json({ ok: true, id, items: keep });
+      }
+      const id = url.searchParams.get("id"); if (id) { const show = await this.ctx.storage.get("fwc:" + String(id).replace(/[^a-z0-9]/g, "").slice(0, 12)); return json({ ok: !!show, show: show || null }); }
+      return json({ ok: true, items: (await this.ctx.storage.get("fwcList")) || [] });
+    }
     if (url.pathname === "/schedule") {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
       if (req.method === "POST") {
         let b = {}; try { b = await req.json(); } catch {} const now = Date.now();
-        const list = (Array.isArray(b.items) ? b.items : []).slice(0, 30).map(e => ({ id: clean(e.id, 12) || Math.random().toString(36).slice(2, 10), at: Number(e.at) || 0, k: ["fw", "mkOpen", "mkClose"].includes(e.k) ? e.k : "fw", sh: (e.sh | 0) & 3, txt: plain(e.txt, 24), daily: !!e.daily }))
+        const list = (Array.isArray(b.items) ? b.items : []).slice(0, 30).map(e => ({ id: clean(e.id, 12) || Math.random().toString(36).slice(2, 10), at: Number(e.at) || 0, k: ["fw", "mkOpen", "mkClose"].includes(e.k) ? e.k : "fw", sh: (e.sh | 0) & 3, txt: plain(e.txt, 24), daily: !!e.daily, cu: String(e.cu || "").replace(/[^a-z0-9]/g, "").slice(0, 12) }))
           .filter(e => e.at > now - 60000 && e.at < now + 31 * 86400000);
         await this.ctx.storage.put("sched", list); await this.schedArm(list); return json({ ok: true, items: list });
       }
@@ -463,7 +486,7 @@ export class Lobby extends DurableObject {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
       // which show (0 classic 218 s, 1 春櫻 97 s, 2 龍騰 126 s, 3 眾神 186 s) and the chair's closing words; it starts 10 s from now so every phone can fetch the song first
       let b = {}; try { b = await req.json(); } catch {}
-      return json(await this.runFw(b.sh, b.txt));
+      return json(await this.runFw(b.sh, b.txt, b.cu));
     }
     if (url.pathname === "/msgs") {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
