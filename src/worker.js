@@ -236,7 +236,7 @@ export class Lobby extends DurableObject {
         const list = (await this.ctx.storage.get("fwcList")) || [];
         if (b.del) { const id = String(b.del).replace(/[^a-z0-9]/g, "").slice(0, 12); await this.ctx.storage.delete("fwc:" + id); const keep = list.filter(e => e.id !== id); await this.ctx.storage.put("fwcList", keep); return json({ ok: true, items: keep }); }
         const sh = b.show || {}, LENS = [218, 97, 126, 186], song = LENS[sh.song | 0] ? sh.song | 0 : 0;
-        const TY = /^(peony|chrys|willow|kamuro|kamuroPink|senrin|crossette|palm|fourcolor|multi|rainbow|tail|meteor|glitter|crackle|strobe|twinkle|bees|silkfall|giant|giantcc|giantduo|giantwillow|god|mine|fan)$/, HEX = /^#[0-9a-f]{6}$/i;
+        const TY = /^(peony|chrys|willow|kamuro|kamuroPink|senrin|crossette|palm|fourcolor|multi|rainbow|tail|meteor|glitter|crackle|strobe|twinkle|bees|silkfall|giant|giantcc|giantduo|giantwillow|god|mine|fan|fanjet|wheel|skyline|spiral)$/, HEX = /^#[0-9a-f]{6}$/i;
         const num = (v, lo, hi) => { v = Number(v); return Number.isFinite(v) ? Math.max(lo, Math.min(hi, Math.round(v * 100) / 100)) : lo; };
         const ev = (Array.isArray(sh.ev) ? sh.ev : []).slice(0, 900).filter(e => e && TY.test(e.ty)).map(e => { const o = { t: num(e.t, 0, LENS[song]), ty: e.ty, x: num(e.x, -60, 60), y: num(e.y, 0, 95), s: num(e.s, 0, 3) | 0 }; if (Array.isArray(e.c) && e.c.length === 2 && e.c.every(h => HEX.test(h))) o.c = [e.c[0], e.c[1]]; return o; }).sort((a, b) => a.t - b.t);
         if (!ev.length) return json({ ok: false, empty: true });
