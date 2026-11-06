@@ -3358,6 +3358,7 @@ function initCF(first){
       if(m.t==="market"){ mkSet(m.open||{}); return; }
       if(m.t==="hb"){ hbStart(m); return; }
       if(m.t==="gift"){ giftFetch(); return; }
+      if(m.t==="giftnow"&&m.g&&m.g.g){ const g=m.g; if(!GIFT_SEEN.has(g.g)){ GIFT_SEEN.add(g.g); save("mz.giftSeen",[...GIFT_SEEN].slice(-60)); giftApply({kind:g.kind==="item"?"item":g.kind==="acc"?"acc":"coins",k:String(g.k||""),n:Math.max(1,Math.min(100000,g.n|0)),from:String(g.from||"主委").slice(0,16)}); profSave(true); } return; } /* 只有在線上的人收得到的全服禮物 */
       if(m.t==="sl50"&&Number.isFinite(m.seed)){ massLanterns(m.seed); return; }
       if(m.t==="fw"&&Number.isFinite(m.seed)){ fwStart(m.seed,+m.el||0,+m.sh||0,m.txt); return; }
       if(m.t==="st"&&okId(m.id)&&m.p&&typeof m.p==="object"){ peerState.set(m.id,{p:m.p,t:Date.now()}); rebuild(); return; }
@@ -3786,8 +3787,10 @@ async function giftFetch(){ if(!NET_ME()) return; try{ const r=await fetch("/gif
     (j.gifts||[]).forEach(g=>{ if(!g) return; if(g.all){ if(GAS.has(g.g)) return; GAS.add(g.g); bag.gaSeen=[...GAS].slice(-40); } else { if(GIFT_SEEN.has(g.g)) return; GIFT_SEEN.add(g.g); } any=true; giftApply({kind:g.kind,k:g.k,n:Math.max(1,g.n|0),from:g.from}); });
     if(any){ save("mz.giftSeen",[...GIFT_SEEN].slice(-60)); saveBag(); profSave(true); } }catch(e){} }
 let GIFT_TO=null; // [peer id, name]
+let GIFT_ONLINE=false;
+HANDLERS.giftWho=v=>{ GIFT_ONLINE=v==="1"; openGift("all","全伺服器所有玩家"); };
 function openGift(id,name){ if(!me.sp) return; GIFT_TO=[id,name]; const ALL=id==="all"; const it=GIFT_ITEMS.map(([k,n])=>`<button class="chip" data-act="giftItem" data-v="${k}" aria-pressed="false">${n}</button>`).join("");
-  openSheet("gift","送禮",`<p class="lead">送給：<b>${esc(name)}</b></p>${ALL?`<p class="note">全伺服器每一位玩家都會收到一份，現在不在線上的人（14 天內進來）也會收到，每人只領一次。</p>`:""}
+  openSheet("gift","送禮",`<p class="lead">送給：<b>${esc(name)}</b></p>${ALL?`<div class="chips"><button class="chip" data-act="giftWho" data-v="0" aria-pressed="${!GIFT_ONLINE}">🌐 所有玩家（14 天內進來的也有）</button><button class="chip" data-act="giftWho" data-v="1" aria-pressed="${GIFT_ONLINE}">🟢 只有現在在線上的人</button></div><p class="note">${GIFT_ONLINE?"只有按下送出這一刻在線上的玩家會收到，之後才進來的人不會有。":"每一位玩家都會收到一份，現在不在線上的人（14 天內進來）也會收到，每人只領一次。"}</p>`:""}
     <div class="group"><span class="group-label">平安幣</span><div class="chips">${[50,100,500,1000].map(v=>`<button class="chip" data-act="giftAmt" data-v="${v}">${v}</button>`).join("")}</div>
       <div class="mail-row"><input class="mail-box" id="giftCoins" type="text" inputmode="numeric" maxlength="6" placeholder="輸入金額"><button class="primary" data-act="giftSend" data-v="coins">送平安幣</button></div></div>
     <div class="group"><span class="group-label">道具</span><div class="chips" id="giftItems">${it}</div>
@@ -3806,8 +3809,8 @@ HANDLERS.giftSend=async v=>{ if(!me.sp||!GIFT_TO) return; if(v==="acc"){ if(!GIF
 async function giftGo(g){
   if(!NET_ME()||(GIFT_TO[0]==="me"&&!window.MZ_SIM)){ giftApply(g); toast("單機測試：送給自己預覽",2600); return; }
   const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return; }
-  try{ const r=await fetch("/gift",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({to:GIFT_TO[0],...g})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
-    if(j.ok){ save("mz.rk",key); toast(GIFT_TO[0]==="all"?"🎁 已送給全伺服器所有玩家":`🎁 已送給 ${GIFT_TO[1]}`,2600); if(window.MZ_SIM) setTimeout(giftFetch,900); /* no hall to ping in the test page */ } else toast(j.nouser?"這位香客還沒有存檔（剛進來的話等一分鐘再送）":j.locked?"嘗試次數過多，今天先鎖住了":j.unset?"伺服器讀不到密碼設定（不是你打錯）":"密碼不對，沒有送出",3200); }catch(e){ toast("沒有送出，請稍後再試"); } };
+  try{ const r=await fetch("/gift",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({to:GIFT_TO[0],...g,online:GIFT_TO[0]==="all"&&GIFT_ONLINE})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
+    if(j.ok){ save("mz.rk",key); toast(GIFT_TO[0]==="all"?(GIFT_ONLINE?"🎁 已送給現在在線上的所有玩家":"🎁 已送給全伺服器所有玩家"):`🎁 已送給 ${GIFT_TO[1]}`,2600); if(window.MZ_SIM) setTimeout(giftFetch,900); /* no hall to ping in the test page */ } else toast(j.nouser?"這位香客還沒有存檔（剛進來的話等一分鐘再送）":j.locked?"嘗試次數過多，今天先鎖住了":j.unset?"伺服器讀不到密碼設定（不是你打錯）":"密碼不對，沒有送出",3200); }catch(e){ toast("沒有送出，請稍後再試"); } };
 HANDLERS.giftList=()=>{ if(!me.sp) return; const list=[...remotes.entries()].filter(([id,av])=>!av.sp).map(([id,av])=>[id,av.name||"香客"]);
   const rows=list.length?list.map(([id,n])=>`<button class="good" data-act="giftPick" data-v="${esc(id)}"><span class="name">${esc(n)}</span><span class="meta">點這位送禮</span></button>`).join(""):`<p class="note">這一殿現在沒有其他真人玩家（假香客不能收禮）。${USE_CF?"":"單機測試版可以送給自己預覽。"}</p>`;
   openSheet("gift","送禮",`<p class="lead">選一位這一殿的玩家，也可以直接在畫面上點他。</p><div class="goods"><button class="good" data-act="giftPick" data-v="all" style="border-color:var(--gold)"><span class="name">🌐 送給全伺服器</span><span class="meta">每位玩家各一份（平安幣・道具・飾品）</span></button>${rows}${USE_CF?"":`<button class="good" data-act="giftPick" data-v="me"><span class="name">送給自己（預覽字卡）</span></button>`}</div>${backBtn}`); };

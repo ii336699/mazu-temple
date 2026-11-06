@@ -74,7 +74,7 @@ export class Hall extends DurableObject {
     }
     if (url.pathname === "/giftping") { // from the lobby: a gift is waiting for this player; their page fetches it
       let b = {}; try { b = await req.json(); } catch {} const to = String(b.to || "").replace(/[^a-z0-9]/g, "").slice(0, 16);
-      if (b.all) { for (const w of this.ctx.getWebSockets()) { try { w.send(JSON.stringify({ t: "gift" })); } catch {} } return new Response("ok"); } /* a gift for everyone */
+      if (b.all) { const m = JSON.stringify(b.gift ? { t: "giftnow", g: b.gift } : { t: "gift" }); for (const w of this.ctx.getWebSockets()) { try { w.send(m); } catch {} } return new Response("ok"); } /* a gift for everyone (giftnow: only whoever is connected right now) */
       if (to) for (const w of this.ctx.getWebSockets(to)) { try { w.send(JSON.stringify({ t: "gift" })); } catch {} } return new Response("ok");
     }
     if (url.pathname === "/layout") { // from the lobby: the chair saved a new building layout; pages fetch it again
@@ -431,6 +431,11 @@ export class Lobby extends DurableObject {
         let b = {}; try { b = await req.json(); } catch {} const to = clean(b.to, 16).replace(/[^a-z0-9]/g, ""), kind = b.kind === "item" ? "item" : b.kind === "acc" ? "acc" : "coins";
         const k = kind !== "coins" ? String(b.k || "").replace(/[^a-z_]/g, "").slice(0, 16) : "", n = kind === "acc" ? 1 : Math.max(1, Math.min(kind === "item" ? 99 : 100000, Math.floor(Number(b.n) || 0)));
         if (!to || (kind !== "coins" && !k)) return json({ ok: false });
+        if (to === "all" && b.online) { /* 只有現在在線上的人: sent straight down every open connection, not stored */
+          const gift = { g: "n" + Math.random().toString(36).slice(2, 10), kind, k, n, from: clean(b.from, 16) || "主委", at: Date.now() };
+          await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/giftping", { method: "POST", body: JSON.stringify({ all: 1, gift }) }).catch(() => {})));
+          return json({ ok: true });
+        }
         if (to === "all") { /* 全伺服器: every player picks it up once (anyone who comes in within 14 days too) */
           const now = Date.now(), GA = ((await this.ctx.storage.get("GA")) || []).filter(g => now - g.at < 14 * 86400000);
           GA.push({ g: "a" + Math.random().toString(36).slice(2, 10), kind, k, n, from: clean(b.from, 16) || "主委", at: now, all: 1 }); await this.ctx.storage.put("GA", GA.slice(-20));
