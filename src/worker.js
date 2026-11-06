@@ -4,7 +4,7 @@ import { DurableObject } from "cloudflare:workers";
 
 const HALLS = 10, CAP = 100, MAX_MSG = 4000;
 const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000, "/puppet": 5000, "/crowd": 5000, "/market": 5000, "/layout": 5000 };
-const LOBBY_PATHS = ["/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout"];
+const LOBBY_PATHS = ["/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule"];
 const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage", "/puppet": "/puppet", "/crowd": "/crowd", "/market": "/market", "/layout": "/layout" }; // a POST here makes that cached list stale
 
 export default {
@@ -190,8 +190,51 @@ export class Lobby extends DurableObject {
     return { ok: true };
   }
 
+  // 全服煙火 (from the chair, or from the timetable): starts 10 s from now so every phone can fetch the song first; not while one is still running
+  async runFw(shIn, txtIn) {
+    const LENS = [218, 97, 126, 186], sh = LENS[shIn | 0] ? shIn | 0 : 0, txt = plain(txtIn, 24), len = LENS[sh];
+    const last = (await this.ctx.storage.get("fwAt")) || 0, lastLen = (await this.ctx.storage.get("fwLen")) || 218; if (Date.now() - last < (lastLen + 16) * 1000) return { ok: false, busy: true };
+    const at = Date.now() + 10000; await this.ctx.storage.put("fwAt", at); await this.ctx.storage.put("fwLen", len); const seed = (Math.random() * 4294967295) >>> 0;
+    await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/fireworks", { method: "POST", body: JSON.stringify({ seed, at, sh, txt, len }) }).catch(() => {})));
+    return { ok: true };
+  }
+  // 夜市: open or close one stall or all of them, and tell every hall
+  async runMarket(b) {
+    const KEYS = ["qq", "sausage", "bbq", "fish", "pachinko", "boba", "balloon"], st = (await this.ctx.storage.get("market")) || { open: {} }, now = Date.now();
+    if (b.all != null) KEYS.forEach((k, i) => { if (b.all) st.open[k] = st.open[k] || now + i; else delete st.open[k]; });
+    else if (KEYS.includes(b.k)) { if (b.on) st.open[b.k] = now; else delete st.open[b.k]; }
+    await this.ctx.storage.put("market", st);
+    await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/market", { method: "POST", body: JSON.stringify(st) }).catch(() => {})));
+    return st;
+  }
+  // 定時活動: the chair's timetable (a show of fireworks, the night market opening or closing), run by this object's alarm even when nobody is online.
+  // Each entry: { id, at (ms), k: "fw" | "mkOpen" | "mkClose", sh, txt, daily }. A daily entry moves on to the next day after it runs.
+  async schedArm(list) {
+    const next = list.reduce((m, e) => Math.min(m, e.at), Infinity);
+    if (next < Infinity) await this.ctx.storage.setAlarm(Math.max(Date.now() + 1000, next)); else await this.ctx.storage.deleteAlarm();
+  }
+  async alarm() {
+    const list = (await this.ctx.storage.get("sched")) || [], now = Date.now(), keep = [];
+    for (const e of list) {
+      if (e.at > now + 1500) { keep.push(e); continue; }
+      try { if (e.k === "fw") await this.runFw(e.sh, e.txt); else if (e.k === "mkOpen") await this.runMarket({ all: true }); else if (e.k === "mkClose") await this.runMarket({ all: false }); } catch {}
+      if (e.daily) { let a = e.at; while (a <= now) a += 86400000; keep.push({ ...e, at: a }); }
+    }
+    await this.ctx.storage.put("sched", keep); await this.schedArm(keep);
+  }
+
   async fetch(req) {
     const url = new URL(req.url);
+    if (url.pathname === "/schedule") {
+      const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
+      if (req.method === "POST") {
+        let b = {}; try { b = await req.json(); } catch {} const now = Date.now();
+        const list = (Array.isArray(b.items) ? b.items : []).slice(0, 30).map(e => ({ id: clean(e.id, 12) || Math.random().toString(36).slice(2, 10), at: Number(e.at) || 0, k: ["fw", "mkOpen", "mkClose"].includes(e.k) ? e.k : "fw", sh: (e.sh | 0) & 3, txt: plain(e.txt, 24), daily: !!e.daily }))
+          .filter(e => e.at > now - 60000 && e.at < now + 31 * 86400000);
+        await this.ctx.storage.put("sched", list); await this.schedArm(list); return json({ ok: true, items: list });
+      }
+      return json({ ok: true, items: (await this.ctx.storage.get("sched")) || [] });
+    }
     // 聯絡作者: private messages. Reading needs the ADMIN_KEY secret (set in the Cloudflare dashboard, never in this public repo);
     // wrong keys are limited to 10 per day so the short code cannot be guessed.
     if (url.pathname === "/msg" && req.method === "POST") {
@@ -261,12 +304,7 @@ export class Lobby extends DurableObject {
     if (url.pathname === "/market" && req.method === "POST") {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
       let b = {}; try { b = await req.json(); } catch {}
-      const KEYS = ["qq", "sausage", "bbq", "fish", "pachinko", "boba", "balloon"], st = (await this.ctx.storage.get("market")) || { open: {} }, now = Date.now();
-      if (b.all != null) KEYS.forEach((k, i) => { if (b.all) st.open[k] = st.open[k] || now + i; else delete st.open[k]; });
-      else if (KEYS.includes(b.k)) { if (b.on) st.open[b.k] = now; else delete st.open[b.k]; }
-      await this.ctx.storage.put("market", st);
-      await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/market", { method: "POST", body: JSON.stringify(st) }).catch(() => {})));
-      return json({ ok: true, ...st });
+      return json({ ok: true, ...(await this.runMarket(b)) });
     }
     if (url.pathname === "/market") return json((await this.ctx.storage.get("market")) || { open: {} });
     // 夜市紀錄保持者: best results per stall since it was last put out; lower is better for times
@@ -412,11 +450,8 @@ export class Lobby extends DurableObject {
     if (url.pathname === "/fireworks" && req.method === "POST") {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
       // which show (0 classic 218 s, 1 春櫻 97 s, 2 龍騰 126 s, 3 眾神 186 s) and the chair's closing words; it starts 10 s from now so every phone can fetch the song first
-      let b = {}; try { b = await req.json(); } catch {} const LENS = [218, 97, 126, 186], sh = LENS[b.sh | 0] ? b.sh | 0 : 0, txt = plain(b.txt, 24), len = LENS[sh];
-      const last = (await this.ctx.storage.get("fwAt")) || 0, lastLen = (await this.ctx.storage.get("fwLen")) || 218; if (Date.now() - last < (lastLen + 16) * 1000) return json({ ok: false, busy: true });
-      const at = Date.now() + 10000; await this.ctx.storage.put("fwAt", at); await this.ctx.storage.put("fwLen", len); const seed = (Math.random() * 4294967295) >>> 0;
-      await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/fireworks", { method: "POST", body: JSON.stringify({ seed, at, sh, txt, len }) }).catch(() => {})));
-      return json({ ok: true });
+      let b = {}; try { b = await req.json(); } catch {}
+      return json(await this.runFw(b.sh, b.txt));
     }
     if (url.pathname === "/msgs") {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
