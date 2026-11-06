@@ -34,7 +34,7 @@
   color-scheme:dark;
 }
 html,body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;background:#140906;color:var(--ink);font-family:var(--f-ui);-webkit-tap-highlight-color:transparent}
-#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}#vig{position:fixed;inset:0;pointer-events:none;display:none;z-index:0}body.flt-soft #c{filter:contrast(1.07) saturate(1.12)}body.flt-soft #vig{display:block;background:radial-gradient(ellipse 85% 75% at 50% 46%,transparent 58%,rgba(20,8,4,.30) 100%)}body.flt-film #c{filter:contrast(1.13) saturate(1.2) sepia(.07)}body.flt-film #vig{display:block;background:radial-gradient(ellipse 80% 70% at 50% 45%,transparent 50%,rgba(16,6,2,.45) 100%),linear-gradient(180deg,rgba(255,170,90,.06),transparent 40%,rgba(40,20,60,.08))}body.fwclean #vig{display:none}
 button{font:inherit;color:inherit;cursor:pointer}
 button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .glass{background:var(--glass);border:1px solid var(--gold-soft);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 6px 24px rgba(0,0,0,.35)}
@@ -408,7 +408,7 @@ body.hideui .joy,body.customizing .joy,body.hideui .camreset,body.customizing .c
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
 </head>
 <body>
-<canvas id="c" tabindex="0" aria-label="雲端天后宮正殿 3D 場景"></canvas>
+<canvas id="c" tabindex="0" aria-label="雲端天后宮正殿 3D 場景"></canvas><div id="vig" aria-hidden="true"></div>
 <div class="loading" id="loading">正在點燈</div>
 <div class="dlpack" id="dlPack" hidden role="dialog" aria-label="下載廟宇中"><div class="dl-in"><h2>雲端天后宮</h2><p>正在下載廟宇建築和神尊，第一次進廟會比較久。<br>下載過的會存在手機裡，下次就很快。</p>
   <div class="dl-track"><div class="dl-fill" id="dlFill"></div><div class="dl-run" id="dlRun"></div></div>
@@ -3904,8 +3904,12 @@ function openGfx(){ const opt=(v,t,d)=>`<button class="good" data-act="quality" 
   /* order: what players change most (畫質) first, then smoothness, then saving the temple to the phone; the testing tools only for the chair */
   openSheet("gfx","設定",`<div class="group"><span class="group-label">畫質</span><p class="lead">畫面卡頓或手機發燙時，可以改用省電畫質。</p></div><div class="goods">${opt("auto","自動","進場後自動偵測，太卡會切到省電")}${opt("high","高畫質","光束、灰塵、全部燈光，最漂亮")}${opt("low","省電","降低解析度與特效，舊手機也順")}${opt("lite","低配","最省：模型減面、小貼圖、關閉抗鋸齒，給比較舊的手機（會重新載入）")}</div><p class="note">目前：${Q.lite?"低配":Q.low?"省電畫質":"高畫質"}</p>`
     +`<div class="group"><span class="group-label">流暢度</span><div class="chips"><button class="chip" data-act="fps60" aria-pressed="${PACE.smooth}">流暢模式（一直 60 格，較耗電）</button></div><p class="note">關閉時：操作和走路時 60 格，站著看時 30 格，半分鐘沒碰螢幕 20 格，比較省電。</p></div>`
+    +(()=>{ const f=fltApply(); const c=(v,t)=>`<button class="chip" data-act="flt" data-v="${v}" aria-pressed="${f===v}">${t}</button>`; return `<div class="group"><span class="group-label">畫面濾鏡</span><div class="chips">${c("off","關閉")}${c("soft","柔和")}${c("film","電影感")}</div><p class="note">讓顏色更有層次、四周微微變暗。</p></div>`; })()
     +`<div class="group"><span class="group-label">下載到手機</span><p class="lead">先把模型、音樂和圖片存進手機，之後進廟更快、更省流量。</p><div class="chips"><button class="chip" data-act="preDl">${PREDL.done?"✓ 已預先下載":"📥 預先下載全部"}</button></div></div>${installBlock()}`
     +(me.sp?`<div class="group"><span class="group-label">主委測試工具</span><div class="chips"><button class="chip" data-act="perfPanel" aria-pressed="${PERF.on}">效能面板</button></div></div>${dbgHTML()}`:"")); }
+/* 畫面濾鏡: a light colour grade (contrast, saturation) on the canvas plus a soft vignette — done by the browser, no extra 3D pass */
+const FLT={v:load("mz.flt",null)}; function fltApply(){ let v=FLT.v; if(v==null) v=Q.lite?"off":"soft"; document.body.classList.toggle("flt-soft",v==="soft"); document.body.classList.toggle("flt-film",v==="film"); return v; }
+HANDLERS.flt=(v)=>{ FLT.v=v; save("mz.flt",v); fltApply(); openGfx(); }; try{ fltApply(); }catch(e){}
 /* 綠點測試: switches to find which part of the lighting makes the green/dark speckles some phones show. They only change this screen. */
 const DBG={point:0,spot:0,tone:0,env:0}; let DBG_ENV=null;
 function dbgApply(){ scene.traverse(o=>{ if(o.isPointLight) o.visible=!DBG.point; else if(o.isSpotLight) o.visible=!DBG.spot; });
