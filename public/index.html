@@ -3240,7 +3240,7 @@ class Avatar{
       if(ph===1){ A0=-1.45; A1=1.45; hop=Math.abs(Math.sin(tt*7))*.08; bZ=Math.sin(tt*7)*.08; bY=(cyc%P)/P*Math.PI*2; }
       if(ph===2){ A1=2.6+Math.sin(tt*9)*.2; A0=-.35-Math.sin(tt*6)*.15; bZ=Math.sin(tt*6)*.18; bY=Math.sin(tt*3)*.25; hop=Math.abs(Math.sin(tt*6))*.04; }
       this.arms[0].rotation.set(-.4,0,A0); this.arms[1].rotation.set(-.4,0,A1); this.torso.rotation.y=bY; this.torso.rotation.z=bZ; this.hips.position.y+=hop;
-      if(this.danceStart==null) this.danceStart=CATS.t; const nc=Math.floor((CATS.t-this.danceStart)/12); if(nc>(this.danceCycles||0)){ this.danceCycles=nc; fxArrows(this); if(this.isMe) toast("跳完一輪，股市飆漲！",2600); }
+      if(this.danceStart==null) this.danceStart=CATS.t; const nc=Math.floor((CATS.t-this.danceStart)/12); if(nc>(this.danceCycles||0)){ this.danceCycles=nc; if(this.danceBusk&&typeof buskHappy==="function") buskHappy(this); else fxArrows(this); /* at 玖玖's it is happiness, not the stock market */ if(this.isMe) toast("跳完一輪，股市飆漲！",2600); }
       if(this.isMe&&Math.hypot(this.pos.x-CATS.c.x,this.pos.y-CATS.c.z)>7) this.danceT=0; }
     else if(this.danceStart!=null){ this.danceStart=null; this.danceCycles=0; }
     else if(this.torso.rotation.y){ this.torso.rotation.y*=.85; this.torso.rotation.z*=.85; }
@@ -3587,7 +3587,7 @@ function botStart(n,st){ n.step=st; n.st=0; n.anim=null; n.afk=!!st.afk;
   else if(st.shake){ n.anim="shake"; n.limit=st.shake; }
   else if(st.read){ n.anim="read"; n.limit=st.read; }
   else if(st.fx){ n.limit=1; if(st.fx==="burn"){ n.burnT=0; if(botNear(n,10)) burnFx(); } else if(st.fx==="coin") fxCoin(n); else fxDrink(n); }
-  else if(st.dance){ n.danceT=1e9; n.limit=st.dance; }
+  else if(st.dance){ n.danceT=1e9; n.limit=st.dance; n.danceBusk=!!st.busk; }
   else if(st.sit!=null){ const S=SEATS[st.sit], p=planPath(n.pos.x,n.pos.y,S.x,S.y); n.hold=0; n.faceGoal=null; n.seat=st.sit; n.goalSeat=true; n.target.set(p[0][0],p[0][1]); n.path=p.slice(1); n.limit=st.dur+60; n.bowIn=rand(6,14); }
   else if(st.leave){ botWalk(n,st.leave[0],st.leave[1]); n.limit=80; }
   else if(st.plant){ if(CENSERS[st.plant]) addIncenseTo(st.plant,1); n.burnT=0; n.limit=1; }
@@ -3607,7 +3607,7 @@ function botStep(n,dt){ const st=n.step; n.st+=dt;
   if(st.sit!=null){ if(n.seat<0) return true; if(botArrived(n)){ n.sat=(n.sat||0)+dt; n.bowIn-=dt; if(n.bowIn<0){ n.bowIn=rand(15,30); n.bow(); } if(n.sat>st.dur){ n.sat=0; n.seat=-1; n.target.set(n.pos.x,n.pos.y+.9); return true; } } return n.st>n.limit; }
   if(st.look){ n.lookIn-=dt; if(n.lookIn<0){ n.lookIn=rand(1.5,4); n.headGoal=rand(-.9,.9); if(Math.random()<.35) n.faceGoal=(n.faceGoal??n.rotY)+rand(-.8,.8); } }
   if(st.jiao){ n.nextThrow-=dt; if(n.nextThrow<0){ if(n.left<=0) return true; n.left--; n.burnT=0; const res=["sheng","sheng","xiao","yin"][(Math.random()*4)|0]; throwJiao(n,res,()=>n.say(RESULT[res].t,RESULT[res].c)); n.nextThrow=rand(6,9); if(res==="sheng"&&Math.random()<.5) n.left=0; } return false; }
-  if(st.dance&&n.st>n.limit){ n.danceT=0; if(st.busk){ n.buskD=0; n.buskSpot=null; } return true; }
+  if(st.dance&&n.st>n.limit){ n.danceT=0; n.danceBusk=false; if(st.busk){ n.buskD=0; n.buskSpot=null; } return true; }
   return n.st>n.limit; }
 function botPose(n){ if(n.anim==="shake"){ const k=Math.sin(n.st*13)*.16, rest=(n.st%9)>7; for(const a of n.arms){ a.rotation.x=rest?-.7:-1.2+k; a.rotation.z=a===n.arms[0]?.42:-.42; } n.torso.rotation.x=.12; }
   else if(n.step&&n.step.watch){ n.head.rotation.x=-.5-Math.sin(n.st*.7)*.08; }
