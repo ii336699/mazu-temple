@@ -3145,7 +3145,7 @@ const ACTS=[{n:"我不依",i:"😤",d:3.2},{n:"伸懶腰",i:"🥱",d:3.2},{n:"�
   {n:"趴下",i:"🐢",loop:1},{n:"坐下",i:"🧘",loop:1},{n:"哭泣",i:"😭",loop:1},{n:"芭蕾轉圈",i:"🩰",loop:1}]; /* (new ones only ever go at the end: the number is what other players receive) */
 function startAct(av,id){ av.act=id; av.actT=0; av.danceT=0; actReset(av); }
 function stopAct(av){ av.act=-1; actReset(av); }
-function actReset(av){ if(av.parts){ av.parts.rotation.set(0,0,0); av.parts.position.set(0,0,0); } }
+function actReset(av){ if(av.parts){ av.parts.rotation.set(0,0,0); av.parts.position.set(0,0,0); } if(av.legs) av.legs.forEach(l=>l.rotation.set(0,0,0)); if(av.torso) av.torso.rotation.set(0,0,0); if(av.head) av.head.rotation.set(0,0,0); } /* (the walk only swings the legs forward and back: a sideways tilt left by 坐下 or 芭蕾 used to stay, and you walked with crooked legs) */
 function actPose(av,dt){ const a=ACTS[av.act]; av.actT+=dt; const t=av.actT; if(!a.loop&&t>a.d){ stopAct(av); return; }
   const L=av.legs, A=av.arms, P=av.parts, B=av.torso, H=av.head, s=Math.sin, cl=v=>Math.max(0,Math.min(1,v)), ez=v=>{ v=cl(v); return v*v*(3-2*v); };
   P.rotation.set(0,0,0); P.position.set(0,0,0); B.rotation.set(0,0,0); H.rotation.set(0,0,0); av.hips.position.y=.3; L[0].rotation.set(0,0,0); L[1].rotation.set(0,0,0);
