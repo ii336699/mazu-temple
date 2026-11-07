@@ -3178,7 +3178,7 @@ class Avatar{
   setSp(v){ v=!!v; if(v===!!this.sp) return; this.sp=v; this.setLook(this.look); this.setName(this.lastNameArg); }
   setName(n){ this.lastNameArg=n; if(this.label){ this.root.remove(this.label); if(this.label.material.map) this.label.material.map.dispose(); } if(this.glow){ this.root.remove(this.glow); this.glow=null; }
     if(this.sp){ this.label=spLabel(); this.label.position.y=1.46+(this.accLift||0); this.root.add(this.label); this.glow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffd27a"),transparent:true,blending:T.AdditiveBlending,depthWrite:false})); this.glow.scale.set(1.1,.45,1); this.glow.position.y=1.46; this.root.add(this.glow); return; }
-    if(!n){ this.label=null; return; } this.label=textSprite(n,{fs:30,h:.17,color:this.isMe?"#ffe2a0":"#fff"}); this.label.position.y=1.42+(this.accLift||0); this.root.add(this.label); }
+    if(!n){ this.label=null; return; } this.label=this.story?textSprite(n,{fs:28,h:.19,color:"#ffe9b0",bg:"rgba(90,20,14,.88)",border:"#d9aa3d",pad:16}):textSprite(n,{fs:30,h:.17,color:this.isMe?"#ffe2a0":"#fff"}); /* story characters: a dark-red pill with a gold edge, so nobody takes them for players */ this.label.position.y=1.42+(this.accLift||0); this.root.add(this.label); }
   say(text,color,secs){ if(this.bubble){ this.root.remove(this.bubble); this.bubble.material.map.dispose(); } this.bubble=bubbleSprite(text,color||"#ffe2a0"); this.bubble.position.y=1.62+(this.accLift||0)+this.bubble.scale.y/2; this.root.add(this.bubble); this.bubbleT=secs||3.2; }
   sitAt(i){ this.seat=i; const s=SEATS[i]; this.target.copy(s); this.goalSeat=true; }
   moveTo(x,z){ this.seat=-1; this.goalSeat=false; this.target.set(x,z); this.path=[]; }
@@ -3237,6 +3237,7 @@ class Avatar{
     if(fwLook){ this.rotY=lerpAngle(this.rotY,Math.atan2(-this.pos.x*.3,HZ+YX+38-this.pos.y),Math.min(1,dt*3)); this.root.rotation.y=this.rotY; }
     this.headTilt=(this.headTilt||0)+((fwLook?-.5:0)-(this.headTilt||0))*Math.min(1,dt*3); this.head.rotation.x=this.headTilt;
     const hg=(this.bowT>=0||walking||fwLook)?0:this.headGoal; this.headYaw+=(hg-this.headYaw)*Math.min(1,dt*7); this.head.rotation.y=this.headYaw; this.head.rotation.z=-this.headYaw*.08;
+    if(this.custPose) this.custPose(dt); /* (a story character's own moves, e.g. the busker playing) */
     if(this.act>=0){ if(walking||this.seat>=0||this.bowT>=0){ stopAct(this); if(this.isMe){ myAct=[-1,Math.random().toString(36).slice(2,8)]; markDirty(); } } else actPose(this,dt); }
     this.incense.visible=!!this.hold&&this.root.visible;
     if(this.incense.visible){ this.root.updateMatrixWorld(true);
@@ -3923,7 +3924,7 @@ function sfxBus(a){ if(!AU.bus){ AU.bus=a.createGain(); AU.bus.connect(a.destina
 function cutSfx(){ if(AU.bus){ try{ AU.bus.disconnect(); }catch(e){} AU.bus=null; } if(typeof OP!=="undefined"&&OP&&OP.voiceGain){ try{ OP.voiceGain.disconnect(); }catch(e){} OP.voiceGain=null; } }
 /* Background music: one player per song (temple, 後殿, cats, fireworks), each with its own gain. Changing area cross-fades between
    players that keep their place, so nothing reloads or jumps back to an old spot; a watchdog nudges a song that stalls. */
-const ZEN_SONGS=[["rearsong.mp3","後殿音樂"],["music.mp3","廟裡音樂"],["catsong.mp3","貓咪歌"],["fwsong.mp3","經典煙火歌"],["fw1.mp3","春櫻"],["fw2.mp3","龍騰"],["fw3.mp3","眾神"]];
+const ZEN_SONGS=[["rearsong.mp3","後殿音樂"],["busk/b01.m4a","玖玖・第 1 首"],["busk/b02.m4a","玖玖・第 2 首"],["busk/b03.m4a","玖玖・第 3 首"],["busk/b04.m4a","玖玖・第 4 首"],["busk/b05.m4a","玖玖・第 5 首"],["busk/b06.m4a","玖玖・第 6 首"],["busk/b07.m4a","玖玖・第 7 首"],["busk/b08.m4a","玖玖・第 8 首"],["busk/b09.m4a","玖玖・第 9 首"],["busk/b10.m4a","玖玖・第 10 首"],["busk/b11.m4a","玖玖・第 11 首"],["music.mp3","廟裡音樂"],["catsong.mp3","貓咪歌"],["fwsong.mp3","經典煙火歌"],["fw1.mp3","春櫻"],["fw2.mp3","龍騰"],["fw3.mp3","眾神"]];
 const TRK_SRC={main:"music.mp3",rear:"rearsong.mp3",cat:"catsong.mp3",fw:"fwsong.mp3",zen:(()=>{ try{ const v=JSON.parse(localStorage.getItem("mz.zenSong")); if(ZEN_SONGS.some(q=>q[0]===v)) return v; }catch(e){} return "rearsong.mp3"; })()}, TRK_TOP={main:.38,rear:.38,cat:.55,fw:.6,zen:.4};
 const TRK={main:bgm}, TRG={}, MIX={main:1,rear:0,cat:0,fw:0,zen:0}, STALL={t:0,last:-1,n:0}; let duckF=1;
 function trkRoute(n){ if(!ac||TRG[n]!==undefined||!TRK[n]) return; try{ const sN=ac.createMediaElementSource(TRK[n]), g=ac.createGain(); g.gain.value=0; sN.connect(g).connect(ac.destination); TRK[n].volume=1; TRG[n]=g; }catch(e){ TRG[n]=null; } }
@@ -3945,7 +3946,7 @@ function trkPrime(){ const soon=[]; if(meAv&&meAv.pos.y<RY0+14) soon.push("rear"
 function playMusic(){ if(!soundOn||document.hidden) return; audioUnlocked=true; setTrack(FW.on?"fw":catMode?"cat":rearZone?"rear":"main"); trkPlay(trk(curTrack)); try{ trkPrime(); }catch(e){} }
 function musicTick(dt){ const z=meAv.pos.y, inRear=z<RY0||meAv.pos.x<-23.5; if(inRear!==rearZone){ rearDwell+=dt; if(rearDwell>2.5){ rearZone=inRear; rearDwell=0; } } else rearDwell=0; /* stay 2.5 s in an area before its song takes over */
   const want=(FW.on&&!(FWED.on&&!FWED.play))?"fw":catMode?"cat":(meAv.pos.x<-23.5)?"zen":rearZone?"rear":"main"; if(want!==curTrack) setTrack(want);
-  const mv=mVol(), near=(OP&&OP.on)?OP.prox:0, live=soundOn&&audioUnlocked&&!document.hidden&&!gameAsleep; duckF+=((duckT>0?.42:1)-duckF)*Math.min(1,dt*(duckT>0?2.5:1));
+  const mv=mVol(), near=Math.max((OP&&OP.on)?OP.prox:0,(typeof BUSK!=="undefined"?BUSK.prox*.9:0)), live=soundOn&&audioUnlocked&&!document.hidden&&!gameAsleep; duckF+=((duckT>0?.42:1)-duckF)*Math.min(1,dt*(duckT>0?2.5:1));
   for(const n in TRK){ const a=TRK[n], on=n===curTrack; MIX[n]+=((on?1:0)-MIX[n])*Math.min(1,dt*(on?.9:1.4)); /* about a 2-second cross-fade */
     const lv=MIX[n]*TRK_TOP[n]*mv*duckF*(1-near)*(bgmHush?0:1); trkLevel(n,lv<.004?0:lv);
     if(!on&&MIX[n]<.01&&!a.paused) a.pause(); }
@@ -4970,7 +4971,7 @@ HANDLERS.zhan=()=>playZhan();
 const SJ={g:[{x:-13.6,z:FZ+3.2,look:[0,11,2,1,8,4,0,1,1,0,1,1,0]},{x:-13.6,z:FZ+6.2,look:[1,2,2,1,8,4,0,1,3,0,0,5,0]}].map(o=>({...o,q:[],serving:null,t0:0}))};
 const sjCam={on:false,i:0}; let mySj=null; // {g, at}
 const sjSlot=(g,k)=>[g.x+1.05+k*.85,g.z];
-SJ.g.forEach((g,i)=>{ const av=new Avatar(g.look,{npc:true,x:g.x,z:g.z,r:Math.PI/2}); av.faceGoal=Math.PI/2; av.hold=1; av.setName("收驚阿嬤"); av.sjBusy=1; g.av=av;
+SJ.g.forEach((g,i)=>{ const av=new Avatar(g.look,{npc:true,x:g.x,z:g.z,r:Math.PI/2}); av.faceGoal=Math.PI/2; av.hold=1; av.story=1; av.setName("收驚阿嬤"); av.sjBusy=1; g.av=av;
   const hm=av.head.children[0]; g.faceA=hm.material.map; const lo=g.look.slice(); lo[9]=2; g.faceB=faceTexture(lo); g.headMat=hm.material;
   addHit("sj:"+i,g.x,0,g.z,.5,1.7); });
 function sjBuild(){ SJ.g.forEach((g,i)=>{ const q=[]; if(mySj&&mySj.g===i) q.push({key:"me",me:true,av:meAv,at:mySj.at});
@@ -5470,7 +5471,7 @@ function fwUpdate(dt){ const now=performance.now(); fwHaloTick(dt);
       else { const c="#"+_fc1.setRGB(fwCol[j],fwCol[j+1],fwCol[j+2]).getHexString(); for(let q=0;q<4;q++){ const th=q*Math.PI/2+Math.random()*.3; fwEmit(px,py,pz,Math.cos(th)*5,Math.sin(th)*5,(Math.random()-.5)*2,c,VIVID[(Math.random()*VIVID.length)|0],.9,.5,1.4,2,.2); } }
       fwA[i]=0; } }
   if(any||FW.on){ for(const n of ["iPos","iVel","iCol","iA","iSz","iTr"]) fwStreakGeo.attributes[n].needsUpdate=true; }
-  fwPts.visible=false; fwStreak.visible=any||FW.on; fwStreakMat.uniforms.uGain.value=1; fwStreakMat.uniforms.uMinW.value=.0012*Math.max(1,Math.min(1.8,camera.fov/55)); /* wide/far views: a floor on spark size (round and sharp, so it doesn't blur) */ { const sharp=!!(FW.on||FW.pendingAt||LAKE.on||fwView); if(DRES.fw!==sharp){ DRES.fw=sharp; applyDPR(); } } /* full resolution while a show is on, whatever the view (省電 mode had blurred the sparks) */ /* the streaks draw the stars too (their round heads), so the old point sprites are no longer drawn or uploaded */ dayNight(dt); try{ shadowTick(dt); }catch(e){} try{ innTick(dt); }catch(e){ if(!innTick.err){ innTick.err=1; console.error(e); } } try{ incTick(dt); }catch(e){ if(!incTick.err){ incTick.err=1; console.error(e); } } try{ wxTick(dt); }catch(e){ if(!wxTick.err){ wxTick.err=1; console.error(e); } } try{ fwedTick(); }catch(e){} try{ zenTick(dt); }catch(e){ if(!zenTick.err){ zenTick.err=1; console.error(e); } }
+  fwPts.visible=false; fwStreak.visible=any||FW.on; fwStreakMat.uniforms.uGain.value=1; fwStreakMat.uniforms.uMinW.value=.0012*Math.max(1,Math.min(1.8,camera.fov/55)); /* wide/far views: a floor on spark size (round and sharp, so it doesn't blur) */ { const sharp=!!(FW.on||FW.pendingAt||LAKE.on||fwView); if(DRES.fw!==sharp){ DRES.fw=sharp; applyDPR(); } } /* full resolution while a show is on, whatever the view (省電 mode had blurred the sparks) */ /* the streaks draw the stars too (their round heads), so the old point sprites are no longer drawn or uploaded */ dayNight(dt); try{ shadowTick(dt); }catch(e){} try{ innTick(dt); }catch(e){ if(!innTick.err){ innTick.err=1; console.error(e); } } try{ incTick(dt); }catch(e){ if(!incTick.err){ incTick.err=1; console.error(e); } } try{ buskTick(dt); }catch(e){ if(!buskTick.err){ buskTick.err=1; console.error(e); } } try{ wxTick(dt); }catch(e){ if(!wxTick.err){ wxTick.err=1; console.error(e); } } try{ fwedTick(); }catch(e){} try{ zenTick(dt); }catch(e){ if(!zenTick.err){ zenTick.err=1; console.error(e); } }
   if(sparkAvail()!==renderSparkBtn.last) renderSparkBtn(); }
 // ---- 仙女棒: anyone can hold one while the show is on (and for two minutes after) ----
 let mySparkler=false, fwView=false;
@@ -6068,7 +6069,7 @@ const FT_ELC={木:"#4fae6a",火:"#e0533a",土:"#c99a3c",金:"#cfc8b8",水:"#4a8f
   for(const s of [-1,1]) mk(H,new T.BoxGeometry(.11,.025,.02),white,s*.06,-.085,.25,0,0,s*.35); // drooping moustache
   for(const s of [-1,1]) mk(H,new T.TorusGeometry(.06,.011,6,18),ink,s*.085,.02,.245); mk(H,new T.BoxGeometry(.06,.012,.012),ink,0,.03,.255);
   for(const [x,len] of [[0,.36],[-.06,.26],[.06,.26]]) mk(H,new T.BoxGeometry(.07,len,.015),white,x,-.12-len/2,.22,-.15);
-  FTB.av=av; }
+  av.story=1; av.setName("鐵口直斷 老師傅"); FTB.av=av; }
 station("fortune",[FTB.x+1.9,FTB.z],-Math.PI/2);
 setTimeout(()=>addHit("fortune",FTB.x-.2,0,FTB.z,1.3,2.4),0);
 STATION_LABEL.fortune="鐵口直斷"; STATION_HINT.fortune="走向算命攤";
@@ -8494,7 +8495,7 @@ for(let i=INN_SEAT0;i<SEATS.length;i++) SEATS[i].x+=INN.DX; INN.shower.forEach(s
   for(const z of [-37,-25,-22]) lamp(31.4,4.2,z); for(const z of [-25,-20,-16]) lamp(54.6,4.2,z); for(const x of [43,47.5,52]) lamp(x,4.3,-27.4); INN.suites.forEach(S=>{ lamp(S.xb-.4,INN.F2+2.6,S.s0+3); }); }
 
 /* the auntie at the front desk */
-{ const av=new Avatar([1,7,0,2,6,3,0,4,2,0,1,0,0],{npc:true,x:39.6+INN.DX,z:-28.2}); av.sjBusy=1; av.rotY=-Math.PI/2; av.faceGoal=-Math.PI/2; av.setName("櫃台阿姨"); av.gy=0; av.root.scale.setScalar(1.2); INN.aunt=av; /* a bit bigger than the guests: she stands behind the counter */ addHit("innDesk",38.6+INN.DX,0,-28.2,1.3,1.6); }
+{ const av=new Avatar([1,7,0,2,6,3,0,4,2,0,1,0,0],{npc:true,x:39.6+INN.DX,z:-28.2}); av.sjBusy=1; av.rotY=-Math.PI/2; av.faceGoal=-Math.PI/2; av.story=1; av.setName("櫃台阿姨"); av.gy=0; av.root.scale.setScalar(1.2); INN.aunt=av; /* a bit bigger than the guests: she stands behind the counter */ addHit("innDesk",38.6+INN.DX,0,-28.2,1.3,1.6); }
 station("innDesk",[37.3+INN.DX,-28.2],Math.PI/2);
 for(const [k,o] of Object.entries(INN.seats)){ const S=SEATS[o]; addHit("iseat:"+o,S.x,S.gy,S.y,S.kind==="bed"?1.1:.45,S.kind==="bed"?.9:.8); }
 INN.futon.forEach(o=>{ const S=SEATS[o.i]; addHit("iseat:"+o.i,S.x,0,S.y,.55,.3); });
@@ -8661,6 +8662,48 @@ function dlRunner(){ try{ const W=150, H=110, dpr=Math.min(2,window.devicePixelR
     if(!shown&&now-t0>1200){ shown=true; el.hidden=false; stopRun=dlRunner(); }
     show+=(Math.min(.97,want)-show)*.08; render(); requestAnimationFrame(step); };
   requestAnimationFrame(step); setTimeout(close,300000); } /* no way in while downloading; every model gives up after 30 s, so this only guards against something stuck */
+/* (街頭藝人玖玖) */
+/* ================= 街頭藝人玖玖: a rock star by the left side of the courtyard, singing the chair's songs (busk/b01–b11.m4a) one after
+   another. Where the playlist is follows the clock, so everyone nearby hears the same song at the same moment. The songs stream (64 kbps,
+   1.5–2.3 MB each) only when you come within ~55 m, the next one is fetched 20 s before the current one ends, and two players swap so
+   there's no gap. The temple music fades down as he gets louder. ================= */
+const BUSK={x:-13.46,z:36.82,dur:[182.42,217.62,188.74,201.22,182.82,248.42,284.82,187.82,274.38,224.42,259.22],el:[null,null],which:0,prox:0,on:false,notes:[],noteT:0,lastI:-1};
+BUSK.total=BUSK.dur.reduce((a,b)=>a+b,0); BUSK.file=i=>"busk/b"+String(i+1).padStart(2,"0")+".m4a";
+function buskNow(){ let t=(Date.now()/1000)%BUSK.total; for(let i=0;i<BUSK.dur.length;i++){ if(t<BUSK.dur[i]) return [i,t]; t-=BUSK.dur[i]; } return [0,0]; }
+function buskEl(k){ let a=BUSK.el[k]; if(a) return a; if(!ac) return null; a=new Audio(); a.preload="auto"; a.track=-1; try{ const s=ac.createMediaElementSource(a), g=ac.createGain(); g.gain.value=0; s.connect(g).connect(ac.destination); a._g=g; }catch(e){ a._g=null; } BUSK.el[k]=a; return a; }
+/* the man himself: spiky silver hair, sunglasses, black jacket with red trim, gold chain; a red electric guitar, a mic stand and an amp */
+{ const av=new Avatar([1,13,2,5,0,1,0,2,2,2,0,4,3],{npc:true,x:BUSK.x,z:BUSK.z}); av.sjBusy=1; av.rotY=Math.PI/2; av.faceGoal=Math.PI/2; av.story=1; av.setName("街頭藝人玖玖"); BUSK.av=av;
+  const red=mat("#c0201a",{roughness:.35,metalness:.2}), blk=mat("#141414",{roughness:.5}), chrome=mat("#cfcfd4",{roughness:.2,metalness:.9}), wood=mat("#6a4224",{roughness:.6});
+  const gt=new T.Group(); av.torso.add(gt); gt.position.set(.02,.22,.2); gt.rotation.set(0,0,-.55);
+  { const b=new T.Mesh(new T.CylinderGeometry(.17,.19,.07,20),red); b.rotation.x=Math.PI/2; b.scale.set(1,1,1.25); gt.add(b); const b2=new T.Mesh(new T.CylinderGeometry(.12,.13,.071,18),red); b2.rotation.x=Math.PI/2; b2.position.y=.2; gt.add(b2);
+    const pg=new T.Mesh(new T.BoxGeometry(.12,.16,.075),mat("#f2f2f2",{roughness:.4})); pg.position.set(.04,-.02,0); gt.add(pg);
+    const nk=new T.Mesh(new T.BoxGeometry(.05,.62,.035),wood); nk.position.y=.55; gt.add(nk); const hd=new T.Mesh(new T.BoxGeometry(.08,.14,.035),blk); hd.position.y=.92; gt.add(hd);
+    for(let k=0;k<3;k++){ const s=new T.Mesh(new T.CylinderGeometry(.006,.006,.8,4),chrome); s.position.set(-.012+k*.012,.42,.02); gt.add(s); } }
+  const stand=new T.Group(); stand.position.set(BUSK.x+.75,0,BUSK.z); scene.add(stand); stand.userData.isAvatar=1; /* (kept out of build mode) */
+  stand.add((m=>{ m.position.set(0,.72,0); return m; })(new T.Mesh(new T.CylinderGeometry(.02,.02,1.45,8),chrome))); stand.add((m=>{ m.position.set(0,.015,0); return m; })(new T.Mesh(new T.CylinderGeometry(.18,.2,.03,16),blk)));
+  { const mic=new T.Mesh(new T.SphereGeometry(.045,12,10),chrome); mic.position.set(-.12,1.47,0); stand.add(mic); const mh=new T.Mesh(new T.CylinderGeometry(.018,.024,.14,8),blk); mh.position.set(-.06,1.45,0); mh.rotation.z=1.2; stand.add(mh); }
+  const amp=new T.Group(); amp.position.set(BUSK.x-.2,0,BUSK.z+1.05); amp.rotation.y=Math.PI/2+.4; scene.add(amp); amp.userData.isAvatar=1;
+  amp.add((m=>{ m.position.set(0,.3,0); return m; })(new T.Mesh(new T.BoxGeometry(.7,.6,.36),blk))); amp.add((m=>{ m.position.set(0,.28,.181); return m; })(new T.Mesh(new T.PlaneGeometry(.58,.4),mat("#2a2a2a",{roughness:.95})))); amp.add((m=>{ m.position.set(0,.53,.182); return m; })(new T.Mesh(new T.BoxGeometry(.6,.05,.02),mat("#d9aa3d",{metalness:.7,roughness:.3}))));
+  /* singing: strumming hand, the other on the neck, a bob to the beat, the odd head-bang and a rock-star kick */
+  av.custPose=dt=>{ if(!BUSK.on) return; const t=av.t, A=av.arms; A[0].rotation.set(-1.25,0,.35); A[1].rotation.set(-.7+Math.sin(t*15)*.22,0,-.15); av.torso.rotation.z=Math.sin(t*4.2)*.07; av.head.rotation.x=Math.sin(t*8.4)*.09+(Math.sin(t*.7)>.93?.25:0);
+    av.legs[0].rotation.x=Math.max(0,Math.sin(t*4.2))*.25; av.root.position.y=Math.abs(Math.sin(t*4.2))*.04; };
+  /* ♪ notes drifting up round him */
+  BUSK.noteTex=["♪","♫","♬"].map((ch,k)=>cvs(64,64,(x,w,h)=>{ x.font='700 48px serif'; x.textAlign="center"; x.textBaseline="middle"; x.fillStyle=["#ffd27a","#ff8fb6","#9fe8ff"][k]; x.shadowColor="rgba(0,0,0,.6)"; x.shadowBlur=4; x.fillText(ch,w/2,h/2); })); }
+function buskTick(dt){ const B=BUSK, me=meAv; if(!me||!B.av) return; const d=Math.hypot(me.pos.x-B.x,me.pos.y-B.z), live=soundOn&&audioUnlocked&&!document.hidden&&!gameAsleep;
+  const prox=live?Math.pow(Math.max(0,Math.min(1,1-(d-3)/30)),1.6):0; B.prox+=(prox-B.prox)*Math.min(1,dt*2);
+  const want=live&&d<55&&ac;
+  if(want){ const [i,t]=buskNow(); let A=buskEl(B.which), Bn=buskEl(1-B.which); if(!A) return;
+    if(A.track!==i){ if(Bn&&Bn.track===i){ B.which=1-B.which; [A,Bn]=[Bn,A]; } else { A.src=B.file(i); A.track=i; A.load(); } A.wantSeek=t; }
+    if(A.wantSeek!=null&&A.readyState>=1){ if(Math.abs(A.currentTime-A.wantSeek)>1.5) try{ A.currentTime=A.wantSeek; }catch(e){} A.wantSeek=null; }
+    if(A.paused&&A.readyState>=2) A.play().catch(()=>{});
+    if(B.dur[i]-t<20&&Bn){ const nx=(i+1)%B.dur.length; if(Bn.track!==nx){ Bn.src=B.file(nx); Bn.track=nx; Bn.preload="auto"; Bn.load(); } } /* next song ready before this one ends */
+    const v=B.prox*mVol()*.6; for(const a of B.el) if(a&&a._g) a._g.gain.setTargetAtTime(a===A?v:0,ac.currentTime,.15); else if(a) a.volume=a===A?Math.min(1,v):0;
+    for(const a of B.el) if(a&&a!==A&&!a.paused&&a.currentTime>1) a.pause();
+    B.on=!A.paused&&B.prox>.01; }
+  else { for(const a of B.el) if(a){ if(a._g&&ac) a._g.gain.setTargetAtTime(0,ac.currentTime,.2); if(!a.paused&&B.prox<.01) a.pause(); } B.on=false; }
+  /* notes */ if(B.on&&(B.noteT-=dt)<0){ B.noteT=.35+Math.random()*.3; const s=new T.Sprite(new T.SpriteMaterial({map:B.noteTex[(Math.random()*3)|0],transparent:true,depthWrite:false})); s.position.set(B.x+(Math.random()-.5)*.9,1.3+Math.random()*.4,B.z+(Math.random()-.5)*.9); s.scale.set(.26,.26,1); scene.add(s); B.notes.push({s,t:0,vx:(Math.random()-.5)*.3,vz:(Math.random()-.5)*.3}); }
+  for(let k=B.notes.length-1;k>=0;k--){ const n=B.notes[k]; n.t+=dt; n.s.position.y+=dt*.55; n.s.position.x+=n.vx*dt+Math.sin(n.t*3)*.004; n.s.position.z+=n.vz*dt; n.s.material.opacity=Math.max(0,1-n.t/2.4); if(n.t>2.4){ scene.remove(n.s); n.s.material.dispose(); B.notes.splice(k,1); } } }
+
 /* ---- 新聞事件: a named happening the newspaper can write about (server keeps today's list) ---- */
 function newsEv(k,v){ if(!USE_CF) { (STATQ.ev=STATQ.ev||[]).push({k,n:(me.name||"香客").slice(0,10),v:v||0}); return; } try{ fetch("/nev",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({k,v:v||0,id:load("mz.id",""),name:(me.name||"香客").slice(0,10)}),keepalive:true}).catch(()=>{}); }catch(e){} }
 /* ---- today's incidents, the same for everyone (formulas shared with public/paper-gen.js — keep in sync): on some sunny days one 收驚阿嬤
