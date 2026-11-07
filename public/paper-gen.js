@@ -6,11 +6,23 @@
 
 export const wxHash = n => { let t = (n * 2654435761 + 0x6D2B79F5) >>> 0; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 export const wxDay = d => { const u = wxHash(d * 7 + 3); return u < .4 ? "clear" : u < .6 ? "cloudy" : u < .75 ? "windy" : u < .9 ? "rain" : "storm"; };
-export const evHeat = d => wxDay(d) === "clear" && wxHash(d * 31 + 5) < .45;
-/* rain or storm: 玖玖 usually packs up; about one rainy day in four he stays and sings in the rain (keep in sync with index.html) */
-export const evBuskRain = d => (wxDay(d) === "rain" || wxDay(d) === "storm") && wxHash(d * 41 + 7) < .28;
-export const evStall = d => wxDay(d) === "windy" && wxHash(d * 37 + 9) < .6;
+/* the weather changes with the GAME day (24 real minutes, turning over at dawn), not the calendar day — keep in sync with index.html */
+export const GD = 1440;
+export const gDay = ms => Math.floor(ms / 1000 / GD + .08);
+export const gStart = g => (g - .08) * GD * 1000;
+export const wxG = g => wxDay(g * 3 + 1000003);
+export const gRange = dn => { const s = dn * 864e5 - 8 * 3600e3; return [gDay(s), gDay(s + 864e5) - 1]; };
+/* one word for a whole calendar day (for the paper): a stormy day if it stormed a few times, rainy if it rained a lot, else what it mostly was */
+export const dayWx = dn => { const [a, b] = gRange(dn), n = {}; for (let g = a; g <= b; g++) { const k = wxG(g); n[k] = (n[k] || 0) + 1; }
+  if ((n.storm || 0) >= 10) return "storm"; if ((n.rain || 0) + (n.storm || 0) >= 20) return "rain"; return Object.entries(n).sort((x, y) => y[1] - x[1])[0][0]; };
+/* incidents still go by the calendar day: on a heat day one granny is off whenever it is sunny; on a stall day the stall blows away in the
+   first windy spell after the afternoon hour, and stays gone till midnight */
+export const evHeat = d => wxHash(d * 31 + 5) < .3;
 export const stallHour = d => 12 + wxHash(d * 41 + 2) * 6;
+export const stallG = d => { const [a, b] = gRange(d); for (let g = a; g <= b; g++) { if (((gStart(g) + 8 * 3600e3) % 864e5) / 36e5 < stallHour(d)) continue; if (wxG(g) === "windy") return g; } return null; };
+export const evStall = d => wxHash(d * 37 + 9) < .3 && stallG(d) != null;
+export const buskStayG = g => (wxG(g) === "rain" || wxG(g) === "storm") && wxHash(g * 41 + 7) < .28;
+export const evBuskRain = d => { if (wxHash(d * 43 + 1) >= .4) return false; const [a, b] = gRange(d); for (let g = a; g <= b; g++) if (buskStayG(g)) return true; return false; };
 export const dayNum = dateStr => Math.floor(Date.parse(dateStr + "T00:00:00Z") / 864e5);
 const WXN = { clear: "晴", cloudy: "陰", windy: "風大", rain: "雨", storm: "雷雨" }, WXI = { clear: "☀️", cloudy: "☁️", windy: "🍃", rain: "🌧️", storm: "⛈️" };
 const LB_NAME = { wenchang: "文昌帝君挑戰", tudi: "土地公挑戰", guanyin: "觀音菩薩挑戰", zhusheng: "註生娘娘挑戰", doumu: "斗姥元君挑戰", jiutian: "九天玄女挑戰", dizang: "地藏王挑戰" };
@@ -125,12 +137,12 @@ export function buildPaper(data) {
   /* people: the paper uses what players saw on screen (real players plus the temple's regulars), so the numbers match what everyone remembers;
      visits ≈ the hourly peaks added up (people stay a while), never fewer than the real visitors, and capped so a busy day cannot run away */
   let shownSum = 0; for (let h = 0; h < 24; h++) shownSum += mx["s" + String(h).padStart(2, "0")] || 0;
-  const wx = wxDay(dn), visitors = Math.max(c.visitors || 0, Math.min(Math.round(shownSum * 1.3), (c.visitors || 0) * 3 + 400)), peakShown = Math.max(mx.sp || 0, mx.peak || 0);
+  const wx = dayWx(dn), visitors = Math.max(c.visitors || 0, Math.min(Math.round(shownSum * 1.3), (c.visitors || 0) * 3 + 400)), peakShown = Math.max(mx.sp || 0, mx.peak || 0);
   const top = key => { let best = null; for (const [id, e] of Object.entries(P)) { const v = e.c && e.c[key] || 0; if (v > 0 && (!best || v > best.v)) best = { id, n: e.n || "香客", v }; } return best; };
   /* incidents and weather */
   const heat = evHeat(dn) || F.has("heat"), stall = evStall(dn) || F.has("stall"), wxF = F.has("storm") ? "storm" : F.has("rain") ? "rain" : F.has("clear") ? "clear" : wx;
   if (heat) add("heat", 95, {}, "社會", "🥵");
-  if (stall) add("stall", 96, { x: Math.floor(stallHour(dn)) }, "社會", "🌪️");
+  if (stall) { const sg = stallG(dn); add("stall", 96, { x: sg != null ? Math.floor(((gStart(sg) + 8 * 3600e3) % 864e5) / 36e5) : Math.floor(stallHour(dn)) }, "社會", "🌪️"); }
   if (wxF === "storm") add("storm", 60, { v: visitors }, "天氣", "⛈️"); else if (wxF === "rain") add("rain", 45, { v: visitors }, "天氣", "🌧️"); else if (wxF === "windy" && !stall) add("windy", 35, {}, "天氣", "🍃");
   /* records */
   const recs = ev.filter(e => e.k === "lb" || e.k === "nm"); const seenRec = new Set();
@@ -170,7 +182,7 @@ export function buildPaper(data) {
   let regH = 0; for (let h = 0; h < 24; h++) { const k = String(h).padStart(2, "0"); regH += Math.max(0, (mx["s" + k] || 0) - (mx["h" + k] || 0)); }
   const reg = rate => Math.round(regH * rate * (.85 + R() * .3));
   const box = [["香客人次", visitors], ["最高同時在線", peakShown], ["參拜", (c.b_bowBtn || 0) + reg(2.4)], ["擲筊", (c.b_jiaoBtn || 0) + reg(1.1)], ["求籤", (c.b_lotBtn || 0) + reg(.5)], ["許願", (c.wish || ws.length || 0) + reg(.08)]];
-  const today = dn + 1, fc = wxDay(today);
+  const today = dn + 1, fc = dayWx(today);
   return { v: 1, d, no: data.no || 1, wx, wxn: WXN[wx], wxi: WXI[wx], fc, fcn: WXN[fc], fci: WXI[fc], busyHour: hm > 0 ? hrs.indexOf(hm) : -1,
     head: { t: head.t, b: head.b, tag: head.tag, art: head.art, kind: head.kind, who: head.who }, items: items.map(s => ({ t: s.t, b: s.b, tag: s.tag, art: s.art, kind: s.kind, who: s.who })),
     box, ads, used: [...used].slice(-80) };
