@@ -3801,7 +3801,7 @@ function placeBot(){ const role=pickRole(); let a;
   a.role=role; return a; }
 function buildNpcs(){ npcs.forEach(n=>n.dispose()); npcs.length=0;
   // the original demo worshippers, exactly as before: no name, always kneeling on the mats in the hall and bowing now and then
-  if(showNpc) for(let i=0;i<12;i++){ const s=freeSeat(); if(s<0) break; const a=new Avatar(randomLook(),{npc:true,x:SEATS[s].x,z:SEATS[s].y}); if(Math.random()<.4) try{ a.setAcc([["qqball","boba","afro"][(Math.random()*3)|0],0,0,0]); }catch(e){} try{ bakeAvatar(a); }catch(e){}
+  if(showNpc) for(let i=0;i<12;i++){ const s=freeSeat(); if(s<0) break; const a=new Avatar(randomLook(),{npc:true,x:SEATS[s].x,z:SEATS[s].y}); /* (the nameless kneelers wear no game prizes: only the named demo players do) */ try{ bakeAvatar(a); }catch(e){}
     a.classic=true; a.seat=s; a.kneel=1; a.next=rand(2,18); a.steps=[]; a.step=null; if(customizing) a.root.visible=false; npcs.push(a); }
   const want=Math.min(40,botWant()); for(let i=0;i<want;i++) placeBot();
   BOT.nextAdjust=performance.now()+rand(1500,4000); }
