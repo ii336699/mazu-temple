@@ -2081,8 +2081,8 @@ setTimeout(()=>{ Object.assign(CENSER_INFO,{guanyin:["觀世音菩薩","後殿�
   loadShared("decor",m=>{ const piece=(n,h)=>{ if(n==="lantern") return ylanternObj(h); const o=m.getObjectByName(n); if(!o) return null; const c=o.clone(); c.position.set(0,0,0); const w=fitModel(c,h); w.userData.pn=n; return w; }; let dn=0;
     const put=(o,x,y,z,ry=0)=>{ if(!o) return; o.position.set(x,y,z); o.rotation.y=ry; REAR_G.add(o); const nm=BUILD_NAME["decor:"+o.userData.pn]||"裝飾"; const k=++dn, id="rdec"+k; setTimeout(()=>regEdit(id,"後殿 "+nm+" "+k,o),0); return o; };
     for(const s of [-1,1]){ { const pl=put(piece("pillar",RH.H-.55),s*2.5,0,RH.z0+1.1); if(pl){ pl.scale.set(.72*(s<0?-1:1),1,.72); if(s<0) pl.traverse(o=>{ if(o.isMesh){ o.material=o.material.clone(); o.material.side=T.DoubleSide; } }); } } // the pair mirror each other cyl(.4,.42,.3,stoneB,s*2.5,.15,RH.z0+1.1,scene,14);
-      put(piece("win",1.5),s*8.3,1.75,RH.z0+.22); put(piece(s>0?"panel":"panel2",.95),s*8.3,.72,RH.z0+.23);
-      put(piece("win",1.25),s*RH.x+s*-.22,1.8,RH.z0-3.2,-s*Math.PI/2);
+      ++dn; /* square carved window taken out (it stuck out round the 八角花窗 there); its number is still used up so the saved layout ids stay the same */ put(piece(s>0?"panel":"panel2",.95),s*8.3,.72,RH.z0+.23);
+      ++dn; /* (the square carved window on each side wall: taken out too) */
       for(const x of [3.7,7.2]){ const l=put(piece("lantern",.95),s*x,4.6,RH.z0+1.0); }
       put(piece("lantern",.8),s*(RS.cx+0),3.3,RS.z0+.75);
       put(piece("panel",.8),s*(RS.cx-2.9),.5,RS.z0+.22); put(piece("panel2",.8),s*(RS.cx+2.9),.5,RS.z0+.22); }
@@ -8809,7 +8809,7 @@ function dlRunner(){ try{ const W=150, H=110, dpr=Math.min(2,window.devicePixelR
    another. Where the playlist is follows the clock, so everyone nearby hears the same song at the same moment. The songs stream (64 kbps,
    1.5–2.3 MB each) only when you come within ~55 m, the next one is fetched 20 s before the current one ends, and two players swap so
    there's no gap. The temple music fades down as he gets louder. ================= */
-const BUSK={x:-13.46,z:36.82,dur:[182.51,217.71,188.81,201.31,182.91,248.51,284.91,187.91,274.41,224.51,259.31,243.21],order:[0,10,9,8,11,7,6,5,4,3,2,1],names:["記得我忘記","慢慢欣賞","可鹽可甜","妳沒有說","龜毛先生","詩情難忘","一個人的旅程","禁止正常","撲火","晚安以前","那個我","城市停電了"],el:[null,null],which:0,prox:0,on:false,notes:[],noteT:0,lastI:-1};
+const BUSK={x:-13.46,z:36.82,ex:-22.5,dur:[182.51,217.71,188.81,201.31,182.91,248.51,284.91,187.91,274.41,224.51,259.31,243.21],order:[0,10,9,8,11,7,6,5,4,3,2,1],names:["記得我忘記","慢慢欣賞","可鹽可甜","妳沒有說","龜毛先生","詩情難忘","一個人的旅程","禁止正常","撲火","晚安以前","那個我","城市停電了"],el:[null,null],which:0,prox:0,on:false,notes:[],noteT:0,lastI:-1};
 BUSK.total=BUSK.dur.reduce((a,b)=>a+b,0); BUSK.file=i=>"busk/b"+String(i+1).padStart(2,"0")+".m4a";
 function buskNow(){ let t=(Date.now()/1000)%BUSK.total; for(const i of BUSK.order){ if(t<BUSK.dur[i]) return [i,t]; t-=BUSK.dur[i]; } return [BUSK.order[0],0]; } /* played in the chair's order: 1, 11, 10, 9, 12, 8 … 2 */
 const buskNext=i=>BUSK.order[(BUSK.order.indexOf(i)+1)%BUSK.order.length];
@@ -8852,7 +8852,17 @@ setTimeout(()=>{ HANDLERS.buskCheer=()=>{ closeSheet(); ensureAudio(); const B=B
 function buskRainStay(){ return wxHash(gDay(Date.now())*41+7)<.28; } /* this game day only: about one rainy day in four he stays */
 function buskAway(){ const k=wxNow(); return (k==="rain"||k==="storm")&&!buskRainStay(); }
 function buskTick(dt){ const B=BUSK, me=meAv; if(!me||!B.av) return;
-  { const away=buskAway(); if(away!==!!B.away){ B.away=away; for(const o of [B.av.root,B.stand,B.amp]) if(o) o.visible=!away; if(B.hit){ const i=pickables.indexOf(B.hit); if(away&&i>=0) pickables.splice(i,1); else if(!away&&i<0) pickables.push(B.hit); } } /* gone home: nothing left to tap there */ if(away){ for(const a of B.el) if(a){ if(a._g&&ac) a._g.gain.setTargetAtTime(0,ac.currentTime,.2); if(!a.paused) a.pause(); } B.on=false; B.prox=0; return; } } const d=Math.hypot(me.pos.x-B.x,me.pos.y-B.z); if(d<45){ const av=B.av; av.pos.set(B.x,B.z); av.target.copy(av.pos); av.faceGoal=Math.PI/2; av.update(dt); } /* (he was never animated: nobody called his update) */ const live=soundOn&&audioUnlocked&&!document.hidden&&!gameAsleep;
+  { const away=buskAway(), av=B.av; if(B.away==null){ B.away=away; B.wk=away?"gone":""; if(away){ av.root.visible=false; for(const o of [B.stand,B.amp]) if(o) o.visible=false; } } /* (already raining when you arrive: he is simply not there) */
+    if(away!==B.away){ B.away=away; if(B.hit){ const i=pickables.indexOf(B.hit); if(away&&i>=0) pickables.splice(i,1); else if(!away&&i<0) pickables.push(B.hit); }
+      if(away){ B.wk="pack"; B.wkT=0; av.target.copy(av.pos); av.path=[]; av.say("下雨了，今天先收攤囉！","#cfe8ff",2.2); } /* stops, packs the stand and amp, then walks off like the grannies */
+      else { B.wk="back"; av.root.visible=true; av.pos.set(B.ex,B.z); av.target.set(B.x,B.z); av.path=[]; av.faceGoal=null; av.moveSpeed=1.5; } }
+    if(B.wk){ B.wkT=(B.wkT||0)+dt;
+      if(B.wk==="pack"&&B.wkT>1.4){ for(const o of [B.stand,B.amp]) if(o) o.visible=false; B.wk="out"; av.target.set(B.ex,B.z); av.path=[]; av.faceGoal=null; av.moveSpeed=1.5; }
+      else if(B.wk==="out"&&Math.hypot(av.pos.x-B.ex,av.pos.y-B.z)<.4){ av.root.visible=false; B.wk="gone"; }
+      else if(B.wk==="back"&&Math.hypot(av.pos.x-B.x,av.pos.y-B.z)<.08){ B.wk=""; av.faceGoal=Math.PI/2; for(const o of [B.stand,B.amp]) if(o) o.visible=true; }
+      if(B.wk==="out"||B.wk==="back"||B.wk==="pack"){ if(Math.hypot(me.pos.x-av.pos.x,me.pos.y-av.pos.y)<45) av.update(dt); } }
+    if(away||B.wk){ for(const a of B.el) if(a){ if(a._g&&ac) a._g.gain.setTargetAtTime(0,ac.currentTime,.2); if(!a.paused) a.pause(); } B.on=false; B.prox=0;
+      for(const n of B.notes){ scene.remove(n.s); n.s.material.dispose(); } B.notes.length=0; /* no music, no notes */ return; } } const d=Math.hypot(me.pos.x-B.x,me.pos.y-B.z); if(d<45){ const av=B.av; av.pos.set(B.x,B.z); av.target.copy(av.pos); av.faceGoal=Math.PI/2; av.update(dt); } /* (he was never animated: nobody called his update) */ const live=soundOn&&audioUnlocked&&!document.hidden&&!gameAsleep;
   const prox=live?Math.pow(Math.max(0,Math.min(1,1-(d-1.5)/15)),1.6):0; /* heard from about 16 m */ B.prox+=(prox-B.prox)*Math.min(1,dt*2);
   const want=live&&d<28&&ac;
   if(want){ const [i,t]=buskNow(); let A=buskEl(B.which), Bn=buskEl(1-B.which); if(!A) return;
