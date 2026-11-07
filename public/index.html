@@ -3574,7 +3574,9 @@ function botFps(){ const now=performance.now(), dt=BOT.lastF?(now-BOT.lastF)/100
   else { BOT.slow=0; if(cap!==60) BOT.fast=0; } }
 function sitterLimit(){ return !showNpc?0:Q.lite?3:Q.low?6:12; }       // the classic ones on the cushions
 function hereCount(){ return FAKE_CROWD?(fakeHalls(Date.now())[HALLS.current()]||0):16; }
-function botWant(){ const lim=botLimit(); if(!lim) return 0; const room=Math.max(0,lim-remotes.size), h=hereCount(); return h<=0?0:Math.min(room,Math.max(2,h)); }
+function botWant(){ const lim=botLimit(); if(!lim) return 0; const floor=Q.lite?6:Q.low?12:20, room=Math.max(floor,lim-remotes.size), h=hereCount(); return h<=0?0:Math.min(room,Math.max(2,h)); }
+/* (real players used to take up the whole drawing budget: with 45 of them in the hall, and the budget lowered a little because so many
+   people were walking about, not one demo visitor was left even though the count said 89. Now a floor of them always stays.) */
 function sitterWant(){ const lim=sitterLimit(); if(!lim) return 0; return Math.max(Math.min(1,lim),Math.min(lim,Math.round(hereCount()/5))); }
 function botSpot(){ if(typeof WX!=="undefined"&&WX.r>.5) return hallSpot(); for(let k=0;k<30;k++){ const x=rand(-15,15), z=rand(HZ+2,HZ+YX+16); if(walkable(x,z)) return [x,z]; } return [0,HZ+6]; }
 function hallSpot(){ for(let k=0;k<30;k++){ const x=rand(-10,10), z=rand(-6,HZ-1.5); if(walkable(x,z)) return [x,z]; } return [0,4]; }
