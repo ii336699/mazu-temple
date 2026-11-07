@@ -2597,7 +2597,7 @@ const wxHash=n=>{ let t=(n*2654435761+0x6D2B79F5)>>>0; t=Math.imul(t^t>>>15,t|1)
 function wxDay(d){ const u=wxHash(d*7+3); return u<.4?"clear":u<.6?"cloudy":u<.75?"windy":u<.9?"rain":"storm"; }
 function wxAuto(){ const loc=Date.now()+8*3600e3, d=Math.floor(loc/864e5), changeAt=d*864e5+(6+5*wxHash(d*13+1))*3600e3; return wxDay(loc<changeAt?d-1:d); }
 function wxNow(){ if(typeof window.MZ_WX==="string"&&WX_KINDS[window.MZ_WX]) return window.MZ_WX; if(WX.set&&Date.now()<WX.setUntil) return WX.set; return wxAuto(); }
-const wxOutdoor=(x,z)=>{ let r="O"; try{ r=camRoom(x,z); }catch(e){} return r==="O"&&!(typeof zenPlat==="function"&&zenPlat(x,z)); };
+const wxOutdoor=(x,z)=>{ let r="O"; try{ r=camRoom(x,z); }catch(e){} return r==="O"&&!(typeof zenPlat==="function"&&zenPlat(x,z))&&!(typeof INN!=="undefined"&&INN.g&&innIn(x,z)); }; /* (inside the 禪房 is indoors, cut-away view or not) */
 /* ---- rain: short slanted lines falling round the camera, never under a roof ---- */
 const RAIN_N=Q.lite?320:Q.low?700:1300;
 const rainGeo=new T.BufferGeometry(), rainPos=new Float32Array(RAIN_N*6), rainD=new Float32Array(RAIN_N*4); rainGeo.setAttribute("position",new T.BufferAttribute(rainPos,3));
@@ -2637,15 +2637,17 @@ function wxThunder(near){ const A=wxAudio(); if(!A||document.hidden||!soundOn) r
   g.gain.linearRampToValueAtTime(.001,t0+dur); s.connect(lp).connect(g).connect(a.destination); s.stop(t0+dur+.1);
   const s2=src(.08), lp2=a.createBiquadFilter(), g2=a.createGain(); lp2.type="lowpass"; lp2.frequency.value=90; g2.gain.setValueAtTime(0,t0); g2.gain.linearRampToValueAtTime(1.1*v,t0+.12); g2.gain.exponentialRampToValueAtTime(.001,t0+dur*.8); s2.connect(lp2).connect(g2).connect(a.destination); s2.stop(t0+dur); }
 /* ---- wet floors: outdoor floors darken and get a glossy, mirror-like sheen (a still picture of the surroundings taken once) ---- */
-function wxWetInit(){ if(WX.wetMats) return; WX.wetMats=[]; const seen=new Set(); scene.traverse(o=>{ if(!o.isMesh||!o.userData||!o.userData.floor||o.userData.keepMat) return; const m=o.material; if(!m||!m.isMeshPhongMaterial||seen.has(m)) return; o.updateMatrixWorld(); const p=new T.Vector3(); o.getWorldPosition(p); if(!wxOutdoor(p.x,p.z)) return; seen.add(m); WX.wetMats.push({m,col:m.color.clone(),spec:m.specular.clone(),sh:m.shininess,em:m.emissive.clone()}); });
+function wxWetInit(){ if(WX.wetMats) return; WX.wetMats=[]; const seen=new Set(); scene.traverse(o=>{ if(!o.isMesh||!o.userData||!o.userData.floor||o.userData.keepMat) return; const m=o.material; if(!m||!m.isMeshPhongMaterial||seen.has(m)) return; o.updateMatrixWorld(); /* merged floors often reach from a hall out into the open: wet when a good part of it is outdoors */ const bb=new T.Box3().setFromObject(o); let n=0, out=0; for(let i=0;i<5;i++) for(let j=0;j<5;j++){ n++; if(wxOutdoor(bb.min.x+(bb.max.x-bb.min.x)*(i+.5)/5,bb.min.z+(bb.max.z-bb.min.z)*(j+.5)/5)) out++; } if(out/n<.34) return; seen.add(m); WX.wetMats.push({m,col:m.color.clone(),spec:m.specular.clone(),sh:m.shininess,em:m.emissive.clone()}); });
   if(!Q.lite){ try{ const rt=new T.WebGLCubeRenderTarget(64,{generateMipmaps:true,minFilter:T.LinearMipmapLinearFilter}); const cc=new T.CubeCamera(.5,200,rt); cc.position.set(0,1.2,HZ+12); cc.updateMatrixWorld(true); WX.cube={rt,cc,face:0,done:false}; WX.env=rt.texture;
-    for(const q of WX.wetMats){ q.m.envMap=WX.env; q.m.combine=T.MixOperation; q.m.reflectivity=0; q.m.needsUpdate=true; } }catch(e){} } }
+    for(const q of WX.wetMats){ q.m.envMap=WX.env; q.m.combine=T.MixOperation; q.m.reflectivity=0; q.m.needsUpdate=true; } }catch(e){} }
+  /* the lawn: a wet sheen over the grass (smoother, darker, reflecting the sky) */ const g=outsideGround.material; WX.grass={m:g,col:g.color.clone(),r:g.roughness,mt:g.metalness||0}; if(WX.env){ g.envMap=WX.env; g.envMapIntensity=0; g.needsUpdate=true; } }
 /* one face of the reflection picture per frame, only while it is wet and not yet taken */
 function wxCubeStep(){ const C=WX.cube; if(!C||C.done) return; const i=C.face, cams=C.cc.children; const rt0=renderer.getRenderTarget(), was=[rainMesh.visible,petMesh.visible]; rainMesh.visible=petMesh.visible=false;
   C.rt.texture.generateMipmaps=i===5; renderer.setRenderTarget(C.rt,i); renderer.render(scene,cams[i]); renderer.setRenderTarget(rt0); rainMesh.visible=was[0]; petMesh.visible=was[1]; C.face++; if(C.face>5) C.done=true; }
 setTimeout(()=>{ try{ wxWetInit(); }catch(e){} },9000); /* compile the shiny-floor shader early, while nothing is happening */
 function wxWet(w){ if(Math.abs(w-WX.wet)<.004) return; WX.wet=w; if(w>.01) wxWetInit(); if(!WX.wetMats) return;
-  for(const q of WX.wetMats){ q.m.color.copy(q.col).multiplyScalar(1-.38*w); q.m.specular.copy(q.spec).lerp(_wc.setRGB(.55,.58,.64),w); q.m.shininess=q.sh+90*w; q.m.emissive.copy(q.em).multiplyScalar(1-.5*w); if(WX.env) q.m.reflectivity=.32*w; } }
+  for(const q of WX.wetMats){ q.m.color.copy(q.col).multiplyScalar(1-.38*w); q.m.specular.copy(q.spec).lerp(_wc.setRGB(.55,.58,.64),w); q.m.shininess=q.sh+90*w; q.m.emissive.copy(q.em).multiplyScalar(1-.5*w); if(WX.env) q.m.reflectivity=.32*w; }
+  const G=WX.grass; if(G){ G.m.color.copy(G.col).multiplyScalar(1-.3*w); G.m.roughness=G.r-(G.r-.32)*w; G.m.metalness=G.mt+.12*w; if(WX.env) G.m.envMapIntensity=.9*w; } }
 const _wc=new T.Color(), _wv2=new T.Vector2();
 /* per frame, after dayNight: weather moves gently toward the target; lights, sky, effects and sound follow */
 function wxTick(dt){ WX.t+=dt; const show=(typeof FW!=="undefined"&&(FW.on||FW.pendingAt))||(typeof LAKE!=="undefined"&&LAKE.on)||(typeof FWED!=="undefined"&&FWED.on);
@@ -2703,24 +2705,39 @@ function umbTick(av,wet){ if(!av||!av.root) return; const need=wet&&av.root.visi
    cherry trees get the same kind of soft shadow on the lawn; the sun light itself swings round with them. Fades out at dusk. */
 const SHD={dir:new T.Vector3(),len:0,op:0,t:0,b:null};
 /* buildings, the burners and the wish tree cast a soft shadow on the ground away from the sun (no shadow maps: one soft quad each) */
+/* shadows of everything that stands outdoors (stone lamps, lions, censers, flagpoles, trees, the furnace …): every object group of the
+   build mode that stands in the open gets a soft shadow that starts at its foot and points away from the sun — one instanced draw.
+   Collected when the scenery is merged (the groups still exist then). Shadow length is capped (SHD_MAXL × height) so the evening
+   ones do not run across the whole courtyard; people use the same cap and direction. */
+const SHD_MAXL=1.5, SHD_Y=.065; /* (above the courtyard tiles, which sit a little higher than the ground) */
+function shdCollect(){ const L=[], bb=new T.Box3(), c=new T.Vector3(), sz=new T.Vector3();
+  for(const o of scene.children){ const id=o.userData&&o.userData.buildId; if(!id||!/^g-(C|B|P-L|P-R|F)-/.test(id)||!o.visible) continue; bb.setFromObject(o); if(bb.isEmpty()) continue; bb.getCenter(c); bb.getSize(sz);
+    const h=bb.max.y-Math.max(0,bb.min.y), w=Math.max(sz.x,sz.z); if(h<.5||h>12||w>7||bb.min.y>1.2) continue; if(camRoom(c.x,c.z)!=="O") continue;
+    if(Math.hypot(c.x-FX,c.z-FZ)<2||Math.hypot(c.x-WT.x,c.z-WT.z)<3||Math.hypot(c.x-TG.x,c.z-TG.z)<1.5) continue; /* (these three have their own) */
+    L.push([c.x,c.z,Math.min(sz.x,sz.z)*.9+.15,w*.9+.15,h]); }
+  if(SHD.obj){ scene.remove(SHD.obj); SHD.obj.dispose(); SHD.obj=null; } if(!L.length) return; if(!SHD.b) shdBuild();
+  SHD.objMat=SHD.matR.clone(); const g=new T.PlaneGeometry(1,1); g.rotateX(-Math.PI/2); const im=new T.InstancedMesh(g,SHD.objMat,L.length); im.frustumCulled=false; im.renderOrder=1; im.userData.noMerge=1; im.userData.noBuild=1; im.position.y=SHD_Y+.002; scene.add(im);
+  SHD.obj=im; SHD.objL=L; SHD.t=0; }
+function shdObjPlace(ux,uz){ const im=SHD.obj; if(!im) return; const M=new T.Matrix4(), Qt=new T.Quaternion().setFromAxisAngle(new T.Vector3(0,1,0),Math.atan2(ux,uz)), S=new T.Vector3(), P=new T.Vector3(), F=Math.min(SHD.len,SHD_MAXL);
+  SHD.objL.forEach(([x,z,wd,dp,h],i)=>{ const l=h*F*.8; M.compose(P.set(x+ux*l*.5,0,z+uz*l*.5),Qt,S.set(wd,1,dp*.8+l)); im.setMatrixAt(i,M); }); im.instanceMatrix.needsUpdate=true; }
 function shdBuild(){ const tex=cvs(64,64,(x,w,h)=>{ const g=x.createRadialGradient(32,32,8,32,32,34); g.addColorStop(0,"rgba(0,0,0,.85)"); g.addColorStop(.6,"rgba(0,0,0,.6)"); g.addColorStop(1,"rgba(0,0,0,0)"); x.fillStyle=g; x.fillRect(0,0,w,h); });
   const rect=cvs(64,64,(x,w,h)=>{ x.fillStyle="#000"; x.fillRect(0,0,w,h); const d=x.getImageData(0,0,w,h); for(let j=0;j<h;j++) for(let i=0;i<w;i++){ const e=Math.min(i,j,w-1-i,h-1-j)/10; d.data[(j*w+i)*4+3]=Math.round(255*Math.min(1,e)*.8); } x.putImageData(d,0,0); });
   SHD.mat=new T.MeshBasicMaterial({map:rect,transparent:true,depthWrite:false,opacity:0,polygonOffset:true,polygonOffsetFactor:-1}); SHD.matR=new T.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,opacity:0,polygonOffset:true,polygonOffsetFactor:-1});
   const C=[]; const add=(x0,x1,z0,z1,h,round)=>{ const g=new T.PlaneGeometry(1,1); g.rotateX(-Math.PI/2); const m=new T.Mesh(g,round?SHD.matR:SHD.mat); m.position.y=.024; m.renderOrder=1; m.userData.noMerge=1; m.userData.noBuild=1; scene.add(m); C.push({x0,x1,z0,z1,h,round,m}); };
   add(-HX,HX,-HZ,HZ,HH); for(const s of [-1,1]){ const a=s>0?SHX0:-SHX1, b=s>0?SHX1:-SHX0; add(a,b,SHZ0,SHZ1,SHH); add(s>0?GH.x0:-GH.x1,s>0?GH.x1:-GH.x0,GH.z0,GH.z1,GH.H); add(s>0?RS.x0:-RS.x1,s>0?RS.x1:-RS.x0,RS.z1,RS.z0,RS.H); }
   add(-RH.x,RH.x,RH.z1,RH.z0,RH.H); add(FX-1.4,FX+1.4,FZ-1.4,FZ+1.4,FURN_H,true); add(TG.x-1.1,TG.x+1.1,TG.z-1.1,TG.z+1.1,3.4,true); add(WT.x-3,WT.x+3,WT.z-3,WT.z+3,6.5,true); SHD.b=C; }
-function shdPlace(ux,uz){ if(!SHD.b) shdBuild(); const L=SHD.len*.85;
+function shdPlace(ux,uz){ if(!SHD.b) shdBuild(); const L=Math.min(SHD.len,SHD_MAXL)*.8; shdObjPlace(ux,uz);
   for(const c of SHD.b){ const w=c.x1-c.x0, d=c.z1-c.z0, cx=(c.x0+c.x1)/2, cz=(c.z0+c.z1)/2, l=c.h*L;
-    if(c.round){ c.m.position.set(cx+ux*l*.5,.024,cz+uz*l*.5); c.m.rotation.y=Math.atan2(ux,uz); c.m.scale.set(w*1.1,1,d*1.1+l); continue; }
-    /* the part outside the footprint, mostly: the footprint pushed along the sun direction */ const sx=w+Math.abs(ux)*l, sz=d+Math.abs(uz)*l; c.m.rotation.y=0; c.m.position.set(cx+ux*l*.5,.024,cz+uz*l*.5); c.m.scale.set(sx,1,sz); } }
+    if(c.round){ c.m.position.set(cx+ux*l*.5,SHD_Y,cz+uz*l*.5); c.m.rotation.y=Math.atan2(ux,uz); c.m.scale.set(w*1.1,1,d*1.1+l); continue; }
+    /* the part outside the footprint, mostly: the footprint pushed along the sun direction */ const sx=w+Math.abs(ux)*l, sz=d+Math.abs(uz)*l; c.m.rotation.y=0; c.m.position.set(cx+ux*l*.5,SHD_Y,cz+uz*l*.5); c.m.scale.set(sx,1,sz); } }
 function shadowTick(dt){ let p=(Date.now()/1000%TOD_LEN)/TOD_LEN; if(typeof window.MZ_TOD==="number") p=window.MZ_TOD; const day=_dn.day, k=Math.max(0,Math.min(1,p<.5?p/.42:1)); const el=(58-50*k*k)*Math.PI/180, az=-2.2+2.9*k;
   SHD.dir.set(Math.cos(az)*Math.cos(el),Math.sin(el),Math.sin(az)*Math.cos(el)); SHD.len=Math.min(4,1/Math.tan(el)); SHD.op=day*(1-.6*(typeof WX!=="undefined"?WX.c:0));
   if(day>.02) sunLight.position.copy(SHD.dir).multiplyScalar(40).lerp(_zv.copy(SUN).multiplyScalar(40).setY(16),1-day);
-  const sx=-SHD.dir.x, sz=-SHD.dir.z, sl=Math.hypot(sx,sz)||1, ux=sx/sl, uz=sz/sl, L=SHD.len*SHD.op, stretch=1+L*1.1, off=L*.5; shadowMat.opacity=.75+.25*SHD.op;
+  const sx=-SHD.dir.x, sz=-SHD.dir.z, sl=Math.hypot(sx,sz)||1, ux=sx/sl, uz=sz/sl, L=Math.min(SHD.len,SHD_MAXL)*SHD.op, stretch=1+L*1.1, off=L*.5; shadowMat.opacity=.75+.25*SHD.op;
   const each=av=>{ const sh=av&&av.shadow; if(!sh) return; const r=av.root.rotation.y, c=Math.cos(r), s=Math.sin(r), lx=ux*c-uz*s, lz=ux*s+uz*c; sh.rotation.y=Math.atan2(lx,lz); sh.scale.set(1,1,stretch); sh.position.x=lx*off; sh.position.z=lz*off; };
   const wet=typeof WX!=="undefined"&&WX.r>.45; const all=[meAv,...npcs]; if(typeof remotes!=="undefined") remotes.forEach(a=>all.push(a));
   for(const av of all){ each(av); umbTick(av,wet); }
-  if(SHD.op>.01){ if(!SHD.b||SHD.t<=0) shdPlace(ux,uz); } if(SHD.b){ SHD.mat.opacity=.42*SHD.op; SHD.matR.opacity=.5*SHD.op; for(const c of SHD.b) c.m.visible=SHD.op>.01; }
+  if(SHD.op>.01){ if(!SHD.b||SHD.t<=0) shdPlace(ux,uz); } if(SHD.b){ SHD.mat.opacity=.42*SHD.op; SHD.matR.opacity=.5*SHD.op; for(const c of SHD.b) c.m.visible=SHD.op>.01; } if(SHD.obj){ SHD.obj.visible=SHD.op>.01; SHD.objMat.opacity=.5*SHD.op; }
   if(typeof SAKURA!=="undefined"&&SAKURA.sh){ SAKURA.shMat.opacity=.55*SHD.op; SHD.t-=dt; if(SHD.t<=0&&SHD.op>.01){ SHD.t=3; const M=new T.Matrix4(), Qt=new T.Quaternion().setFromAxisAngle(_zv.set(0,1,0),Math.atan2(ux,uz)), S=new T.Vector3(), P=new T.Vector3();
       SAKURA.spots.forEach(([x,z,r],i)=>{ const h=r*1.6+2; M.compose(P.set(x+ux*h*SHD.len*.35,0,z+uz*h*SHD.len*.35),Qt,S.set(r*2.1,1,r*2.1+h*SHD.len*.55)); SAKURA.sh.setMatrixAt(i,M); }); SAKURA.sh.instanceMatrix.needsUpdate=true; } SAKURA.sh.visible=false; } else if(SHD.t<=0) SHD.t=3; }
 /* the round build-mode trees that ended up out where the garden is (they looked odd there): hidden before the static merge, so they are not baked in */
@@ -3189,10 +3206,12 @@ class Avatar{
       this.hips.position.y=.3-.13*z; for(let i=0;i<2;i++){ const L=this.legs[i]; if(L.rotation.order!=="YXZ") L.rotation.order="YXZ"; const sd=Math.sign(L.position.x)||(i?1:-1); L.rotation.x=-1.42*z; L.rotation.y=-sd*.95*z; L.rotation.z=0; }
       this.arms[0].rotation.x=-.75*z; this.arms[1].rotation.x=-.75*z; this.arms[0].rotation.z=.5*z; this.arms[1].rotation.z=-.5*z; this.torso.rotation.x=0; this.head.rotation.x=.12*z; }
     else if(innK>.01){ const z=innK, kd=ST.kind; /* 禪房: lying on a bed or futon, or sitting on the toilet / in the bath */
-      if(kd==="bed"||kd==="futon"){ this.parts.rotation.x=-Math.PI/2*z; this.parts.position.set(0,.12*z,.55*z); /* body centred on the mattress, head on the pillow */ this.hips.position.y=.3; this.legs[0].rotation.x=this.legs[1].rotation.x=0; this.arms[0].rotation.x=this.arms[1].rotation.x=.1; this.arms[0].rotation.z=-.15; this.arms[1].rotation.z=.15; this.torso.rotation.x=0; this.innLie=1; }
+      if(kd==="bed"||kd==="futon"){ this.parts.rotation.x=-Math.PI/2*z; this.parts.position.set(0,.12*z,.55*z); /* body centred on the mattress, head on the pillow */ this.hips.position.y=.3; this.legs[0].rotation.x=this.legs[1].rotation.x=0; this.arms[0].rotation.x=this.arms[1].rotation.x=.1; this.arms[0].rotation.z=-.15; this.arms[1].rotation.z=.15; this.torso.rotation.x=0; this.innLie=1;
+        if(!this.quilt){ const q=new T.Group(); const qm=mat("#efe6d2",{roughness:.95}), qb=new T.Mesh(new T.BoxGeometry(.78,.13,1.0),qm); q.add(qb); const fold=new T.Mesh(new T.BoxGeometry(.8,.14,.16),mat("#ffffff",{roughness:.95})); fold.position.set(0,.01,-.52); q.add(fold); this.root.add(q); this.quilt=q; }
+        this.quilt.visible=z>.6; this.quilt.position.set(0,.3,.18); } /* a quilt over you, up to the chin */
       else { this.hips.position.y=.3; this.legs[0].rotation.x=this.legs[1].rotation.x=-1.5*z; this.arms[0].rotation.x=this.arms[1].rotation.x=-.3; this.torso.rotation.x=0; } }
     else if(this.legs[0].rotation.y||this.legs[1].rotation.y){ this.legs[0].rotation.y=this.legs[1].rotation.y=0; }
-    if(!(innK>.01)&&this.innLie){ this.innLie=0; this.parts.rotation.set(0,0,0); this.parts.position.set(0,0,0); }
+    if(!(innK>.01)&&this.innLie){ this.innLie=0; this.parts.rotation.set(0,0,0); this.parts.position.set(0,0,0); if(this.quilt) this.quilt.visible=false; }
     if(this.umb&&this.umb.visible&&!holding){ const a=this.arms[this.umbArm||1], sd=Math.sign(a.position.x)||1; a.rotation.x=-2.3; a.rotation.z=-sd*.25; } /* holding the umbrella up */
     if(this.danceT>0&&!holding){ // same timeline as the cats, so everyone moves together
       const P=4, cyc=CATS.t%(P*3), ph=Math.floor(cyc/P), tt=CATS.t*1.25;
@@ -3230,7 +3249,7 @@ function dirArrowTick(close){ if(!meAv) return; if(!dirArrow){ const tex=cvs(128
     dirArrow=new T.Mesh(new T.PlaneGeometry(1.1,1.1),new T.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,opacity:.3})); dirArrow.rotation.set(-Math.PI/2,0,Math.PI); dirArrow.position.y=.03; dirArrow.renderOrder=2; meAv.root.add(dirArrow); }
   if(dirArrow.parent!==meAv.root) meAv.root.add(dirArrow); dirArrow.material.opacity=.22+.6*close; dirArrow.visible=!customizing&&!(meAv.flyCur>.3); }
 function camOK(x,y,z){ if(y<.35) return false; const ax=Math.abs(x);
-  if(x>23.3&&z>-52&&z<-4){ if(INN.cutMode) return y>(INN.cutMode==="2"?INN.F2+.8:.4)&&y<18; const up=(meAv.gy||0)>2.3, lx=x-INN.DX; if(innIn(x,z)){ if(up) return lx<INN.SX1?(y>INN.F2+.7&&y<INN.F2+INN.H2-.2):(y>INN.F2+.7&&y<16); return y<INN.H1-.2; } if(up&&lx>=INN.RX0) return y>INN.F2+.5&&y<16; return y<20; }
+  if(x>23.3&&z>-52&&z<-4){ if(INN.cutMode){ if(INN.cutMode==="2"){ const S=INN.suites[INN.cutSi]; if(S&&(z<S.s0+.2||z>S.s1-.2)) return false; /* the camera stays over your own room, so the party walls never stand between */ return y>INN.F2+.8&&y<18; } return y>.4&&y<18; } const up=(meAv.gy||0)>2.3, lx=x-INN.DX; if(innIn(x,z)){ if(up) return lx<INN.SX1?(y>INN.F2+.7&&y<INN.F2+INN.H2-.2):(y>INN.F2+.7&&y<16); return y<INN.H1-.2; } if(up&&lx>=INN.RX0) return y>INN.F2+.5&&y<16; return y<20; }
   if(x<-23.3&&z>ZEN.Z0-1&&z<ZEN.Z1+1){ if(zenPlat(x,z)&&x>ZEN.hall.x0&&x<ZEN.hall.x1&&z>ZEN.hall.z0&&z<ZEN.hall.z1) return y<ZEN.FY+3.3; return y<20; }
   if(ax>22.4&&ax<24.2&&Math.abs(z-ZEN.GZ)<1.0) return y<2.5; /* the gates to the 禪院 and the 禪房 */
   if(z<-15.25){ // 後埕 (open sky), then the 後殿 and its 側殿
@@ -3355,7 +3374,7 @@ function onTap(cx,cy){ ensureAudio(); if(customizing) return; if(sheetKind){ clo
   if(act&&act.startsWith("sj:")){ sjTap(+act.slice(3)); return; }
   if(act&&act.startsWith("thanks:")){ openThanks(+act.split(":")[1]); return; }
   if(act&&act.startsWith("iseat:")){ trySit(+act.slice(6)); return; }
-  if(act&&act.startsWith("innTv:")){ const t=INN.tv[+act.slice(6)]; if(t){ t.on=!t.on; if(t.on){ t.m.material.color.set("#ffffff"); innTvDraw(t); t.at=INN.t||0; toast("電視打開了：小幽靈輪播",1800); } else { t.m.material.color.set("#222222"); toast("電視關了",1200); } } return; }
+  if(act&&act.startsWith("innTv:")){ const t=INN.tv[+act.slice(6)]; if(t){ t.on=!t.on; if(t.on){ t.m.material.color.set("#ffffff"); innTvDraw(t); t.at=INN.t||0; toast("電視打開了：小幽靈輪播",1800); } else { const x=t.c.getContext("2d"); x.fillStyle="#000"; x.fillRect(0,0,256,144); t.t.needsUpdate=true; t.m.material.color.set("#ffffff"); toast("電視關了",1200); } } return; }
   if(act&&act.startsWith("innShower:")){ const sh=INN.shower[+act.slice(10)]; if(sh){ if(innLockedBy(sh.i)==="other"&&innSuiteAt(meAv.pos.x,meAv.pos.y)!==sh.i){ toast("這間套房有人鎖門了",2400); return; } tapGy=INN.F2; walkTo(sh.x,sh.z); sh.on=12; toast("嘩啦啦～洗個熱水澡",2200); } return; }
   if(act==="altar") act="altar";
   if(act&&stations[act]||act==="altar"){ goStation(act); return; }
@@ -8128,7 +8147,7 @@ function unifyBricks(){ const S=2.0, seen=new Set(), p=new T.Vector3(), n=new T.
     for(let i=0;i<P.count;i++){ p.fromBufferAttribute(P,i).applyMatrix4(o.matrixWorld); n.fromBufferAttribute(N,i).applyMatrix3(nm).normalize(); const ax=Math.abs(n.x), ay=Math.abs(n.y), az=Math.abs(n.z);
       let u,v; if(ay>ax&&ay>az){ u=p.x; v=p.z; } else if(ax>=az){ u=n.x>0?-p.z:p.z; v=p.y; } else { u=n.z>0?p.x:-p.x; v=p.y; } U.setXY(i,u/S,v/S); }
     U.needsUpdate=true; m.map.repeat.set(1,1); m.map.offset.set(0,0); }); }
-function mergeStatic(){ const buckets=new Map(); scene.updateMatrixWorld(true); try{ zenHideTrees(); }catch(e){}
+function mergeStatic(){ const buckets=new Map(); scene.updateMatrixWorld(true); try{ zenHideTrees(); }catch(e){} try{ shdCollect(); }catch(e){ console.warn(e); }
   const skip=o=>{ for(let p=o;p;p=p.parent){ if(p.userData&&p.userData.noMerge) return true; if(!p.visible) return true; if(p===scene) return false; } return false; };
   const region=o=>{ for(let p=o.parent;p&&p!==scene;p=p.parent) if(p.userData&&p.userData.region) return p; return scene; }; // merged per region, so a region can be hidden as a whole
   scene.traverse(o=>{ if(!o.isMesh||o.isInstancedMesh||o.isSkinnedMesh||!o.visible||Array.isArray(o.material)) return; if(o===sky||o===floor||o===outsideGround) return;
@@ -8256,11 +8275,11 @@ const INN_SEAT0=SEATS.length;
   floorP(SX1,X1,Z0,Z1,F2,mat(L("#8a8f86"),{roughness:.9}));                                         /* roof terrace */
   { const cl=mesh(new T.PlaneGeometry(X1-X0,Z1-Z0),mat(L("#f2efe8"),{roughness:.95}),(X0+X1)/2,H1-.01,(Z0+Z1)/2,root); cl.rotation.x=Math.PI/2; }
   /* upper floor box */
-  const y2=F2; wallZ(SX1,Z0,Z1,y2,H2,white,[]); wallX(Z0,X0,SX1,y2,H2,white); wallX(Z1,X0,SX1,y2,H2,white);
-  const doorGaps=INN.suites.map(S=>[S.dz-.6,S.dz+.6,2.5]); wallZ(X0,Z0,Z1,y2,H2,white,doorGaps);
-  B(SX1-X0+.6,.4,Z1-Z0+.6,dark,(X0+SX1)/2,y2+H2+.2,(Z0+Z1)/2); /* roof */
+  const y2=F2; const sCut=INN.suites.slice(1).map(S=>[S.s0,S.s0,0]); /* (walls split at each suite boundary, so each room's walls drop on their own) */ wallZ(SX1,Z0,Z1,y2,H2,white,sCut); wallX(Z0,X0,SX1,y2,H2,white); wallX(Z1,X0,SX1,y2,H2,white);
+  const doorGaps=INN.suites.map(S=>[S.dz-.6,S.dz+.6,2.5]).concat(sCut); wallZ(X0,Z0,Z1,y2,H2,white,doorGaps);
+  INN.roofs=INN.suites.map(S=>{ const r=B(SX1-X0+.6,.4,S.s1-S.s0+(S.i===0||S.i===3?.3:0),dark,(X0+SX1)/2,y2+H2+.2,(S.s0+S.s1)/2+(S.i===0?-.15:S.i===3?.15:0)); r.userData.suiteRoof=S.i; return r; }); /* roof, one piece over each suite */
   for(const S of INN.suites){ const wz=mesh(new T.PlaneGeometry(INN.sw-1.2,2.6),glass,SX1+.14,y2+1.8,(S.s0+S.s1)/2,root); wz.rotation.y=Math.PI/2; } /* each suite's big window onto the terrace */
-  for(let i=0;i<14;i++) B(.12,H2,.08,slat,X0-.18,y2+H2/2,Z0+1+i*.18*1.0+(i>6?16:0)); /* slat screens */
+  for(let i=0;i<14;i++) B(.12,H2,.08,slat,X0-.18,y2+H2/2,Z0+3.6+i*.18+(i>6?8.4:0)); /* slat screens (between the doors, not over them) */
   for(let z=Z0+.6;z<Z1;z+=.22) if(Math.abs(z-G)>2) B(.06,1.6,.1,slat,X0-.14,H1-1.2,z);               /* slatted fascia over the ground floor */
   /* terrace planters */ for(let x=SX1+1.5;x<X1-1;x+=3) { B(1.6,.5,.8,grey,x,y2+.25,Z1-1); B(1.6,.5,.8,grey,x,y2+.25,Z0+1); }
   /* sign */ { const st=cvs(512,128,(x,w,h)=>{ x.fillStyle="#2e3034"; x.fillRect(0,0,w,h); x.fillStyle="#f4efe6"; x.font='600 74px "Noto Sans TC",sans-serif'; x.textAlign="center"; x.textBaseline="middle"; x.fillText("禪 房",w/2,h/2+4); x.fillStyle="#c8a46a"; x.fillRect(w*.2,h-14,w*.6,4); });
@@ -8325,8 +8344,11 @@ const INN_SEAT0=SEATS.length;
     /* bathroom */ wallX(S.s1-2.95,INN.CX1,34.45,y,H2,white,[]); wallZ(34.45,S.s1-2.95,S.s1,y,H2,white,[[S.s1-1.65,S.s1-.75,2.3]]);
     floorP(INN.CX1,34.45,S.s1-2.95,S.s1,y+.01,mat(L("#e6e4e0"),{roughness:.3}));
     const porc=mat(L("#f6f6f4"),{roughness:.2});
-    B(1.8,.55,.8,porc,32.1,y+.28,S.s1-2.5); const tw=mesh(new T.PlaneGeometry(1.6,.6),new T.MeshStandardMaterial({color:L("#8fd0dc"),roughness:.05,transparent:true,opacity:.75}),32.1,y+.5,S.s1-2.5,root); tw.rotation.x=-Math.PI/2; /* bathtub */
-    B(.42,.42,.55,porc,33.85,y+.21,S.s1-2.45); B(.42,.5,.18,porc,33.85,y+.5,S.s1-2.8); /* toilet */
+    { const tz=S.s1-2.5; B(1.8,.12,.8,porc,32.1,y+.06,tz); B(1.8,.55,.1,porc,32.1,y+.28,tz-.35); B(1.8,.55,.1,porc,32.1,y+.28,tz+.35); B(.1,.55,.8,porc,31.25,y+.28,tz); B(.1,.55,.8,porc,32.95,y+.28,tz); /* bathtub: a hollow shell */
+      const tw=mesh(new T.PlaneGeometry(1.6,.6),new T.MeshStandardMaterial({color:L("#7cc4d4"),roughness:.05,metalness:.1,transparent:true,opacity:.72,emissive:L("#1a4650"),emissiveIntensity:.35}),32.1,y+.42,tz,root); tw.rotation.x=-Math.PI/2; } /* the water */
+    B(.42,.4,.55,porc,33.85,y+.2,S.s1-2.45); B(.42,.5,.18,porc,33.85,y+.5,S.s1-2.8); /* toilet */
+    { const wt=mesh(new T.CircleGeometry(.15,16),new T.MeshStandardMaterial({color:L("#8fcfe0"),roughness:.05,emissive:L("#20505a"),emissiveIntensity:.3}),33.85,y+.405,S.s1-2.42,root); wt.rotation.x=-Math.PI/2; wt.scale.y=1.25;
+      const rg=mesh(new T.TorusGeometry(.17,.035,6,18),porc,33.85,y+.41,S.s1-2.42,root); rg.rotation.x=-Math.PI/2; rg.scale.y=1.2; } /* bowl water and seat ring */
     B(.55,.08,.4,porc,31.45,y+.85,S.s1-.4); B(.04,.6,.5,mat(L("#cfe6ee"),{roughness:.05,metalness:.6}),31.12,y+1.5,S.s1-.4); /* basin and mirror */
     { const gl=new T.MeshStandardMaterial({color:L("#d8eef4"),transparent:true,opacity:.28,roughness:.05}); const p1=mesh(new T.PlaneGeometry(1.0,2.0),gl,33.85,y+1.0,S.s1-1.15,root); const p2=mesh(new T.PlaneGeometry(1.1,2.0),gl,33.3,y+1.0,S.s1-.6,root); p2.rotation.y=Math.PI/2;
       cyl(.12,.12,.03,mat(L("#c8c8c8"),{metalness:.8,roughness:.2}),33.9,y+2.3,S.s1-.5,root,12); } /* shower */
@@ -8335,14 +8357,14 @@ const INN_SEAT0=SEATS.length;
     B(2.17,.06,1.3,mat(L(["#3a4a6a","#6a3a3a","#3a5a4a","#5a4a3a"][S.i]),{roughness:.9}),37.5,y+.62,S.s0+1.75); for(const dx of [-.5,.5]) B(.7,.16,.4,sheet,37.5+dx,y+.66,S.s0+.45);
     for(const dx of [-1.6,1.6]){ B(.55,.5,.45,frame,37.5+dx,y+.25,S.s0+.35); cyl(.06,.1,.35,mat(L("#d8c8a8")),37.5+dx,y+.68,S.s0+.35,root,10); const lg=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffd9a0"),transparent:true,opacity:.5,blending:T.AdditiveBlending,depthWrite:false})); lg.position.set(37.5+dx,y+.95,S.s0+.35); lg.scale.set(.9,.9,1); root.add(lg); }
     B(1.8,.5,.4,frame,37.5,y+.25,S.s1-.25); B(1.9,1.1,.08,mat("#111111",{roughness:.3}),37.5,y+1.6,S.s1-.12);
-    const tvc=document.createElement("canvas"); tvc.width=256; tvc.height=144; const tvt=new T.CanvasTexture(tvc); tvt.encoding=T.sRGBEncoding; const scr=mesh(new T.PlaneGeometry(1.76,.99),new T.MeshBasicMaterial({map:tvt,color:"#222222"}),37.5,y+1.6,S.s1-.17,root); scr.rotation.y=Math.PI;
+    const tvc=document.createElement("canvas"); tvc.width=256; tvc.height=144; { const x=tvc.getContext("2d"); x.fillStyle="#000"; x.fillRect(0,0,256,144); } const tvt=new T.CanvasTexture(tvc); tvt.encoding=T.sRGBEncoding; const scr=mesh(new T.PlaneGeometry(1.76,.99),new T.MeshBasicMaterial({map:tvt,color:"#222222"}),37.5,y+1.6,S.s1-.17,root); scr.rotation.y=Math.PI;
     INN.tv.push({c:tvc,t:tvt,m:scr,on:false,k:0,at:0,i:S.i});
     B(.9,.45,.9,mat(L("#a8b4a0"),{roughness:.9}),40.8,y+.23,S.s0+4.2); B(.9,.6,.15,mat(L("#a8b4a0"),{roughness:.9}),41.2,y+.6,S.s0+4.2);
     /* door (shown shut when someone has locked it) */ const dr=B(.08,2.5,1.15,mat(L("#6a4a30"),{roughness:.6}),INN.CX1+.02,y+1.25,S.dz); S.door=dr; dr.userData.base=dr.position.z;
     const ns=cvs(128,64,(x,w,h)=>{ x.fillStyle="#2e3034"; x.fillRect(0,0,w,h); x.fillStyle="#f4efe6"; x.font='600 34px sans-serif'; x.textAlign="center"; x.textBaseline="middle"; x.fillText("20"+(S.i+1),w/2,h/2); });
     const np=mesh(new T.PlaneGeometry(.4,.2),new T.MeshBasicMaterial({map:ns}),INN.CX1-.14,y+2.0,S.dz+.85,root); np.rotation.y=-Math.PI/2;
     /* seats: the bed (lie down), the toilet, the bath */
-    for(const [x,z,kind,lift,face] of [[37.5,S.s0+1.2,"bed",.5,0],[33.85,S.s1-2.38,"toilet",.42,Math.PI],[32.1,S.s1-2.5,"tub",.12,Math.PI/2]]){ const v=new T.Vector2(x,z); v.inn=1; v.kind=kind; v.lift=lift; v.face=face; v.gy=F2; v.suite=S.i; SEATS.push(v); INN.seats[S.i+kind]=SEATS.length-1; }
+    for(const [x,z,kind,lift,face] of [[37.5,S.s0+1.2,"bed",.5,0],[33.85,S.s1-2.42,"toilet",.13,0],[32.1,S.s1-2.5,"tub",-.16,Math.PI/2]]){ const v=new T.Vector2(x,z); v.inn=1; v.kind=kind; v.lift=lift; v.face=face; v.gy=F2; v.suite=S.i; SEATS.push(v); INN.seats[S.i+kind]=SEATS.length-1; }
     INN.shower.push({x:33.85,z:S.s1-.55,y,i:S.i,on:0}); }
   /* night: windows glow */
   INN.lights=[]; for(const [x,yy,z] of [[36,3.6,-28],[48,3.6,-21],[48,3.6,-34]]){ const s=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffd9a0"),transparent:true,opacity:.35,blending:T.AdditiveBlending,depthWrite:false})); s.position.set(x,yy,z); s.scale.set(6,4,1); root.add(s); INN.lights.push(s); }
@@ -8368,7 +8390,12 @@ HANDLERS.innOnsen=()=>{ INN.aunt.say("泡湯前先沖洗身體，毛巾放頭上
 /* lock / unlock button while inside your suite */
 { const b=document.createElement("button"); b.id="innLockBtn"; b.className="zen-music"; b.style.top="calc(env(safe-area-inset-top) + 128px)"; b.hidden=true; b.onclick=()=>{ const i=innSuiteAt(meAv.pos.x,meAv.pos.y); if(i<0) return; if(INN.lock===i+1){ INN.lock=0; toast("房門開了",1600); } else { if(innLockedBy(i)==="other") return; INN.lock=i+1; toast("房門鎖上了，別人進不來；你離開房間就會自動解鎖",3200); } markDirty(); }; document.body.appendChild(b); INN.lockBtn=b; }
 /* the little ghost slideshow on the TVs */
-function innTvDraw(t){ const x=t.c.getContext("2d"), w=256, h=144, k=t.k%5; const bg=["#2a3a6a","#5a2a4a","#2a5a4a","#6a4a2a","#3a2a5a"][k]; x.fillStyle=bg; x.fillRect(0,0,w,h);
+/* the 小幽靈 puzzle pictures, small (one 4×4 sheet, tv-ghosts.webp, loaded the first time a TV is switched on) */
+const INN_TVIMG={img:null,ok:false}; const INN_TVCAP=["小幽靈出門散步","小幽靈賞櫻花","小幽靈吃糰子","小幽靈放氣球","小幽靈看星星","小幽靈去海邊","小幽靈拜拜","小幽靈逛夜市","小幽靈睡午覺","小幽靈看煙火","小幽靈過年","小幽靈放天燈","小幽靈去禪院","小幽靈泡溫泉"];
+function innTvDraw(t){ if(!INN_TVIMG.img){ const im=new Image(); im.onload=()=>{ INN_TVIMG.ok=true; INN.tv.forEach(q=>{ if(q.on) innTvDraw(q); }); }; im.src="tv-ghosts.webp"; INN_TVIMG.img=im; }
+  if(INN_TVIMG.ok){ const x=t.c.getContext("2d"), i=t.k%14; x.drawImage(INN_TVIMG.img,(i%4)*256,Math.floor(i/4)*144,256,144,0,0,256,144); x.fillStyle="rgba(0,0,0,.45)"; x.fillRect(0,118,256,26); x.fillStyle="#fff"; x.font="600 15px sans-serif"; x.fillText(INN_TVCAP[i],10,136); t.t.needsUpdate=true; return; }
+  innTvDraw0(t); }
+function innTvDraw0(t){ const x=t.c.getContext("2d"), w=256, h=144, k=t.k%5; const bg=["#2a3a6a","#5a2a4a","#2a5a4a","#6a4a2a","#3a2a5a"][k]; x.fillStyle=bg; x.fillRect(0,0,w,h);
   const gx=w/2+[0,-40,40,-20,20][k], gy=h/2+[0,6,-6,10,-4][k]; x.fillStyle="#fbfbff"; x.beginPath(); x.arc(gx,gy-10,30,Math.PI,0); x.lineTo(gx+30,gy+26); for(let i=0;i<4;i++){ x.quadraticCurveTo(gx+30-i*15-7.5,gy+36,gx+30-(i+1)*15,gy+26); } x.closePath(); x.fill();
   x.fillStyle="#222"; x.beginPath(); x.arc(gx-10,gy-12,4,0,7); x.arc(gx+10,gy-12,4,0,7); x.fill(); x.fillStyle="#ff9ab8"; x.beginPath(); x.arc(gx-16,gy-2,4,0,7); x.arc(gx+16,gy-2,4,0,7); x.fill();
   x.strokeStyle="#222"; x.lineWidth=2; x.beginPath(); x.arc(gx,gy-4,5,0,Math.PI); x.stroke();
@@ -8402,16 +8429,19 @@ INN.cut=[]; INN.cutMode=""; INN.cutKey="";
     if(tall&&(thinX||thinZ)&&lvl){ if(thinX&&near(c.x,INN.X0)) face="W"; else if(thinX&&lvl===1&&near(c.x,INN.X1)) face="E"; else if(thinX&&lvl===2&&near(c.x,INN.SX1)) face="E"; else if(thinZ&&near(c.z,INN.Z0)) face="N"; else if(thinZ&&near(c.z,INN.Z1)) face="S";
       else if(thinX&&thinZ) face=""; else face="I"; }
     if(!roof&&!up&&!face) return; if(face&&thinX&&thinZ&&face!=="W") return; /* (bamboo canes are not walls) */
-    INN.cut.push({o,roof,up,face,lvl,y0:bb.min.y,h:sz.y,py:o.position.y,sy:o.scale.y,vis:o.visible}); }); }
+    const party=lvl===2&&thinZ&&INN.suites.some(S=>S.i>0&&Math.abs(c.z-S.s0)<.3);
+    INN.cut.push({o,roof,up,face,lvl,party,cz:c.z,sr:o.userData.suiteRoof,y0:bb.min.y,h:sz.y,py:o.position.y,sy:o.scale.y,vis:o.visible}); }); }
 function innCutTick(){ const me=meAv; if(!me) return; const x=me.pos.x-INN.DX, z=me.pos.y, gy=me.gy||0; let m="";
-  if(gy>2.3&&x>INN.RX0-.2&&z>INN.LZ0-.6&&z<INN.Z1+.6) m="2"; else if(gy<1&&innInL(x,z)) m="1";
+  const si=gy>2.3&&x>INN.CX1+.1?innSuiteAtL(x,z):-1; if(si>=0) m="2"; else if(gy<1&&innInL(x,z)) m="1"; INN.cutSi=si; /* upstairs only inside a suite (the walkway is outdoors) */
   const cx=camera.position.x-INN.DX, cz=camera.position.z, dx=cx-x, dz=cz-z, L=Math.hypot(dx,dz)*.3, XE=m==="2"?INN.SX1:INN.X1, cross=(p,c,w)=>(c-w)*(p-w)<0; /* a wall drops when the camera is on its outer side, or when it stands between the camera and you */
   const tw={W:-dx>L||cross(x,cx,INN.X0),E:dx>L||cross(x,cx,XE),N:-dz>L||cross(z,cz,INN.Z0),S:dz>L||cross(z,cz,INN.Z1)};
-  const key=m?m+(tw.W?1:0)+(tw.E?1:0)+(tw.N?1:0)+(tw.S?1:0):""; INN.cutMode=m; if(key===INN.cutKey) return; INN.cutKey=key;
+  const key=m?m+si+(tw.W?1:0)+(tw.E?1:0)+(tw.N?1:0)+(tw.S?1:0):""; INN.cutMode=m; if(key===INN.cutKey) return; INN.cutKey=key;
   const fb=m==="2"?INN.F2:0;
   for(const e of INN.cut){ const o=e.o; o.visible=e.vis; o.scale.y=e.sy; o.position.y=e.py; if(!m) continue;
-    if(e.roof||(m==="1"&&e.up)){ o.visible=false; continue; }
-    if(!e.face||e.lvl!==+m) continue; const top=fb+(e.face==="I"?1.1:(tw[e.face]?.5:99)); if(top>=e.y0+e.h) continue;
+    if(m==="1"&&(e.roof||e.up)){ o.visible=false; continue; }
+    if(m==="2"&&e.roof){ if(e.sr==null||e.sr===si) o.visible=false; continue; } /* only your own room opens up; the others keep their roofs */
+    if(!e.face||e.lvl!==+m) continue;
+    if(m==="2"){ const S=INN.suites[si]; if(e.party||e.cz<S.s0-.2||e.cz>S.s1+.2) continue; } /* party walls stay full height: you never look into the next room */ const top=fb+(e.face==="I"?1.1:(tw[e.face]?.5:99)); if(top>=e.y0+e.h) continue;
     if(top<=e.y0+.05){ o.visible=false; continue; } const k=(top-e.y0)/e.h; o.scale.y=e.sy*k; o.position.y=e.py-e.h*(1-k)/2; } }
 /* the tatami room: with bedding in your bag, "睡在這裡" lays a futon right where you stand (the nearest free spot) and you lie down on it */
 { const b=document.createElement("button"); b.id="innSleepBtn"; b.className="zen-music"; b.style.top="calc(env(safe-area-inset-top) + 128px)"; b.hidden=true; b.textContent="🛏️ 睡在這裡";
