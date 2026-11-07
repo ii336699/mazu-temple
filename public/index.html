@@ -2528,8 +2528,14 @@ function zenWalkable(x,z){ const G=ZEN.GZ;
   const shaftTex=cvs(64,256,(x,w,h)=>{ const gr=x.createLinearGradient(0,0,0,h); gr.addColorStop(0,"rgba(255,240,200,0)"); gr.addColorStop(.25,"rgba(255,236,190,.9)"); gr.addColorStop(1,"rgba(255,226,170,0)"); x.fillStyle=gr; x.fillRect(0,0,w,h);
     const g2=x.createLinearGradient(0,0,w,0); g2.addColorStop(0,"rgba(0,0,0,1)"); g2.addColorStop(.3,"rgba(0,0,0,0)"); g2.addColorStop(.7,"rgba(0,0,0,0)"); g2.addColorStop(1,"rgba(0,0,0,1)"); x.globalCompositeOperation="destination-out"; x.fillStyle=g2; x.fillRect(0,0,w,h); });
   ZEN.shafts=[]; const shM=new T.MeshBasicMaterial({map:shaftTex,transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide,fog:false});
-  for(let i=0;i<14;i++){ const inside=i<6; const x=inside?rr(hl.x0+2,hl.x1-1):rr(ZEN.X0+4,ZEN.X1-6), z=inside?rr(hl.z0+1,hl.z1-1):rr(ZEN.Z0+4,ZEN.Z1-4); const L=inside?6:rr(10,14);
-    const s=mesh(new T.PlaneGeometry(inside?rr(.8,1.4):rr(1.2,2.4),L),shM,x,(inside?FY:0)+L*.42,z,g); s.rotation.set(0,rr(-.4,.4)+Math.PI/2,.5); s.userData.noMerge=1; ZEN.shafts.push(s); }
+  /* in the hall the light comes in sideways, low through the open sides under the eaves (south and west), and falls in a slant across the floor */
+  for(let i=0;i<7;i++){ const west=i>=4, wv=rr(.9,1.5), E=new T.Vector3(), F=new T.Vector3();
+    if(!west){ const x=hl.x0+1.5+(hl.x1-hl.x0-3)*(i+rr(.2,.8))/4; E.set(x,FY+2.5,hl.z1+.8); F.set(x+rr(-.4,.4),FY,hl.z1-rr(3,4.6)); }
+    else { const z=hl.z0+2+(hl.z1-hl.z0-4)*(i-4+rr(.2,.8))/3; E.set(hl.x0-.8,FY+2.5,z); F.set(hl.x0+rr(3,4.6),FY,z+rr(-.4,.4)); }
+    const d=E.clone().sub(F), L=d.length(); d.normalize(); const geo=new T.PlaneGeometry(wv,L); if(west) geo.rotateY(Math.PI/2);
+    const s=new T.Mesh(geo,shM); s.position.copy(E).add(F).multiplyScalar(.5); s.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),d); g.add(s); s.userData.noMerge=1; ZEN.shafts.push(s); }
+  for(let i=0;i<8;i++){ const x=rr(ZEN.X0+4,ZEN.X1-6), z=rr(ZEN.Z0+4,ZEN.Z1-4); if(x>hl.x0-3&&x<hl.x1+3&&z>hl.z0-3&&z<hl.z1+3) continue; const L=rr(10,14); /* out in the garden: down through the trees */
+    const s=mesh(new T.PlaneGeometry(rr(1.2,2.4),L),shM,x,L*.42,z,g); s.rotation.set(0,rr(-.4,.4)+Math.PI/2,.5); s.userData.noMerge=1; ZEN.shafts.push(s); }
   { const n=160, pos=new Float32Array(n*3); for(let i=0;i<n;i++){ pos[i*3]=rr(hl.x0,hl.x1+3); pos[i*3+1]=FY+rr(.3,3.2); pos[i*3+2]=rr(hl.z0,hl.z1); } const pg=new T.BufferGeometry(); pg.setAttribute("position",new T.BufferAttribute(pos,3));
     ZEN.dust=new T.Points(pg,new T.PointsMaterial({color:ZL("#fff0c8"),size:.035,transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false})); g.add(ZEN.dust); }
 }
@@ -2758,6 +2764,8 @@ function zenTick(dt){ { const b=$("#zenMusicBtn"), want=!!(meAv&&meAv.pos.x<-23.
   if(!ZEN.g.visible) ZEN.g.visible=true; /* always drawn: from the courtyard it used to look like an empty field until you got close */
   ZEN.t=(ZEN.t||0)+dt; if((ZEN.hideT=(ZEN.hideT||0)-dt)<0){ ZEN.hideT=3;  }
   if(!near) return;
+  if(!ZEN.cube&&!Q.lite&&ZEN.water&&camera.position.x<-24){ try{ const rt=new T.WebGLCubeRenderTarget(128,{generateMipmaps:true,minFilter:T.LinearMipmapLinearFilter}); const cc=new T.CubeCamera(.2,160,rt); cc.position.set(-31.2,.5,ZEN.GZ); scene.add(cc); ZEN.water.visible=false; cc.update(renderer,scene); ZEN.water.visible=true; scene.remove(cc);
+      const m=ZEN.water.material; m.envMap=rt.texture; m.envMapIntensity=1.5; m.metalness=.85; m.roughness=.04; m.color.set(ZL("#5f8e90")); m.needsUpdate=true; ZEN.cube=rt; }catch(e){ ZEN.cube=1; } } /* the stream mirrors the bridge, the trees and the sky */
   const day=_dn.day, night=_dn.night; for(const s of ZEN.shafts) s.material.opacity=.16*day+.05*(1-day)*(1-night);
   ZEN.dust.material.opacity=.55*day; { const a=ZEN.dust.geometry.attributes.position; for(let i=0;i<a.count;i++){ let y=a.getY(i)+dt*.04*Math.sin(i+ZEN.t*.3); if(y>ZEN.FY+3.3) y=ZEN.FY+.3; a.setY(i,y); } a.needsUpdate=true; }
   for(const gl of ZEN.glows) gl.material.opacity=.15+.75*night;
@@ -3254,7 +3262,7 @@ class Avatar{
     return walking; }
   dispose(){ scene.remove(this.root); if(this.npcId) npcRelease(this.npcId); if(this.flies) stinkFlies(this,false); }
 }
-const _v1=new T.Vector3(), _v2=new T.Vector3(); let sheetOff=0; const _camTry=new T.Vector3(), _camBest=new T.Vector3(); let camNear=1, camLift=0;
+const _v1=new T.Vector3(), _v2=new T.Vector3(); let sheetOff=0; const _camTry=new T.Vector3(), _camBest=new T.Vector3(); let camNear=1, camLift=0, camSeatK=0;
 /* a gold arrow on the floor under your own character, pointing the way you face; clearer when the camera is squeezed in close indoors */
 let dirArrow=null;
 function dirArrowTick(close){ if(!meAv) return; if(!dirArrow){ const tex=cvs(128,128,(x,w,h)=>{ x.strokeStyle="rgba(255,214,120,.95)"; x.lineWidth=6; x.beginPath(); x.arc(64,64,44,0,Math.PI*2); x.stroke();
@@ -3389,6 +3397,7 @@ function onTap(cx,cy){ ensureAudio(); if(customizing) return; if(sheetKind){ clo
   if(act&&act.startsWith("sj:")){ sjTap(+act.slice(3)); return; }
   if(act&&act.startsWith("thanks:")){ openThanks(+act.split(":")[1]); return; }
   if(act&&act.startsWith("iseat:")){ trySit(+act.slice(6)); return; }
+  if(act==="buskTip"){ openBuskTip(); return; }
   if(act&&act.startsWith("innCurt:")){ const c=(INN.curt||[]).find(c=>c.i===+act.slice(8)); if(c){ c.open=c.open?0:1; tone(c.open?520:440,.06,.03,"triangle"); } return; }
   if(act&&act.startsWith("innTv:")){ const t=INN.tv[+act.slice(6)]; if(t){ t.on=!t.on; if(t.on){ t.m.material.color.set("#ffffff"); innTvDraw(t); t.at=INN.t||0; toast("電視打開了：小幽靈輪播",1800); } else { const x=t.c.getContext("2d"); x.fillStyle="#000"; x.fillRect(0,0,256,144); t.t.needsUpdate=true; t.m.material.color.set("#ffffff"); toast("電視關了",1200); } } return; }
   if(act&&act.startsWith("innShower:")){ const sh=INN.shower[+act.slice(10)]; if(sh){ if(innLockedBy(sh.i)==="other"&&innSuiteAt(meAv.pos.x,meAv.pos.y)!==sh.i){ toast("這間套房有人鎖門了",2400); return; } tapGy=INN.F2; walkTo(sh.x,sh.z); sh.on=12; toast("嘩啦啦～洗個熱水澡",2200); } return; }
@@ -3932,20 +3941,35 @@ function sfxBus(a){ if(!AU.bus){ AU.bus=a.createGain(); AU.bus.connect(a.destina
 function cutSfx(){ if(AU.bus){ try{ AU.bus.disconnect(); }catch(e){} AU.bus=null; } if(typeof OP!=="undefined"&&OP&&OP.voiceGain){ try{ OP.voiceGain.disconnect(); }catch(e){} OP.voiceGain=null; } }
 /* Background music: one player per song (temple, 後殿, cats, fireworks), each with its own gain. Changing area cross-fades between
    players that keep their place, so nothing reloads or jumps back to an old spot; a watchdog nudges a song that stalls. */
-const ZEN_SONGS=[["rearsong.mp3","後殿音樂"],["busk/b01.m4a","玖玖・第 1 首"],["busk/b02.m4a","玖玖・第 2 首"],["busk/b03.m4a","玖玖・第 3 首"],["busk/b04.m4a","玖玖・第 4 首"],["busk/b05.m4a","玖玖・第 5 首"],["busk/b06.m4a","玖玖・第 6 首"],["busk/b07.m4a","玖玖・第 7 首"],["busk/b08.m4a","玖玖・第 8 首"],["busk/b09.m4a","玖玖・第 9 首"],["busk/b10.m4a","玖玖・第 10 首"],["busk/b11.m4a","玖玖・第 11 首"],["music.mp3","廟裡音樂"],["catsong.mp3","貓咪歌"],["fwsong.mp3","經典煙火歌"],["fw1.mp3","春櫻"],["fw2.mp3","龍騰"],["fw3.mp3","眾神"]];
+const ZEN_SONGS=[["music.mp3","廟裡音樂","廟裡音樂"],["rearsong.mp3","後殿音樂","廟裡音樂"],["catsong.mp3","貓咪歌","廟裡音樂"],
+  ["fwsong.mp3","經典煙火歌","煙火"],["fw1.mp3","春櫻","煙火"],["fw2.mp3","龍騰","煙火"],["fw3.mp3","眾神","煙火"],
+  ...[0,10,9,8,11,7,6,5,4,3,2,1].map(i=>["busk/b"+String(i+1).padStart(2,"0")+".m4a",["記得我忘記","慢慢欣賞","可鹽可甜","妳沒有說","龜毛先生","詩情難忘","一個人的旅程","禁止正常","撲火","晚安以前","那個我","城市停電了"][i],"街頭藝人玖玖"])];
 const TRK_SRC={main:"music.mp3",rear:"rearsong.mp3",cat:"catsong.mp3",fw:"fwsong.mp3",zen:(()=>{ try{ const v=JSON.parse(localStorage.getItem("mz.zenSong")); if(ZEN_SONGS.some(q=>q[0]===v)) return v; }catch(e){} return "rearsong.mp3"; })()}, TRK_TOP={main:.38,rear:.38,cat:.55,fw:.6,zen:.4};
 const TRK={main:bgm}, TRG={}, MIX={main:1,rear:0,cat:0,fw:0,zen:0}, STALL={t:0,last:-1,n:0}; let duckF=1;
 function trkRoute(n){ if(!ac||TRG[n]!==undefined||!TRK[n]) return; try{ const sN=ac.createMediaElementSource(TRK[n]), g=ac.createGain(); g.gain.value=0; sN.connect(g).connect(ac.destination); TRK[n].volume=1; TRG[n]=g; }catch(e){ TRG[n]=null; } }
-function trk(n){ let a=TRK[n]; if(!a){ a=new Audio(); a.loop=true; a.preload="auto"; a.src=TRK_SRC[n]; a.volume=0; TRK[n]=a; trkRoute(n); } return a; }
+function trk(n){ let a=TRK[n]; if(!a){ a=new Audio(); a.loop=n!=="zen"||ZM.mode==="one"; if(n==="zen") a.addEventListener("ended",zenNext); a.preload="auto"; a.src=TRK_SRC[n]; a.volume=0; TRK[n]=a; trkRoute(n); } return a; }
 function musicRoute(){ if(!ac) return; for(const n in TRK) trkRoute(n); }
 function trkLevel(n,v){ const a=TRK[n]; if(!a) return; v=Math.max(0,Math.min(1,v)); const g=TRG[n]; if(g&&ac){ g.gain.setTargetAtTime(v,ac.currentTime,.05); if(a.volume!==1) a.volume=1; } else if(Math.abs(a.volume-v)>.004) a.volume=v; }
 function trkPlay(a){ if(a&&a.paused){ const p=a.play(); if(p&&p.catch) p.catch(()=>{}); } }
 function stopAllSound(){ for(const n in TRK) try{ TRK[n].pause(); }catch(e){} if(typeof OP!=="undefined"&&OP&&OP.aud) try{ OP.aud.pause(); }catch(e){} cutSfx(); }
-function zenSongSet(src){ TRK_SRC.zen=src; try{ localStorage.setItem("mz.zenSong",JSON.stringify(src)); }catch(e){} const a=TRK.zen; if(a){ try{ a.src=src; a.load(); a.loop=true; if(curTrack==="zen"&&audioUnlocked&&soundOn) trkPlay(a); }catch(e){} } }
-setTimeout(()=>{ /* (HANDLERS is declared further down the page) */ HANDLERS.zenMusic=()=>{ openSheet("contact","禪堂音樂",`<p class="lead">在靜思禪院裡聽哪一首？（只有你自己聽得到，會記住）</p><div class="goods">${ZEN_SONGS.map(([f,n])=>`<button class="good${TRK_SRC.zen===f?" on":""}" data-act="zenSong" data-v="${f}"><span class="name">${TRK_SRC.zen===f?"🎵 ":""}${n}</span></button>`).join("")}</div>`); };
+/* 禪堂音樂 play mode: 單曲循環 (one), 循環播放 (loop through the category), 隨機播放 (shuffle in the category) */
+const ZM=(()=>{ try{ const v=JSON.parse(localStorage.getItem("mz.zenMode")); if(v&&["one","loop","shuffle"].includes(v.mode)) return v; }catch(e){} return {mode:"one",cat:""}; })();
+const zmSave=()=>{ try{ localStorage.setItem("mz.zenMode",JSON.stringify(ZM)); }catch(e){} };
+const zenCatOf=f=>{ const q=ZEN_SONGS.find(q=>q[0]===f); return q?q[2]:""; };
+function zenNext(){ const L=ZEN_SONGS.filter(q=>q[2]===(ZM.cat||zenCatOf(TRK_SRC.zen))); if(!L.length) return; const i=L.findIndex(q=>q[0]===TRK_SRC.zen); let j;
+  if(ZM.mode==="shuffle"&&L.length>1){ do{ j=(Math.random()*L.length)|0; }while(j===i); } else j=(i+1)%L.length; zenSongSet(L[j][0]); }
+function zenSongSet(src){ TRK_SRC.zen=src; try{ localStorage.setItem("mz.zenSong",JSON.stringify(src)); }catch(e){} const a=TRK.zen; if(a){ try{ a.src=src; a.load(); a.loop=ZM.mode==="one"; if(curTrack==="zen"&&audioUnlocked&&soundOn) trkPlay(a); }catch(e){} } }
+setTimeout(()=>{ /* (HANDLERS is declared further down the page) */ HANDLERS.zenMusic=cat=>{ const ICON={"廟裡音樂":"🏮","煙火":"🎆","街頭藝人玖玖":"🎸"}, now=ZEN_SONGS.find(q=>q[0]===TRK_SRC.zen), MN={one:"🔂 單曲循環",loop:"🔁 循環播放",shuffle:"🔀 隨機播放"};
+  if(!cat){ openSheet("contact","禪堂音樂",`<p class="lead">在靜思禪院裡聽什麼？（只有你自己聽得到，會記住）<br>現在：${now?now[1]:"—"}・${MN[ZM.mode]}</p><div class="goods">${Object.keys(ICON).map(c=>`<button class="good${now&&now[2]===c?" on":""}" data-act="zenMusic" data-v="${c}"><span class="name">${ICON[c]} ${c}</span><span class="meta">${ZEN_SONGS.filter(q=>q[2]===c).length} 首</span></button>`).join("")}</div>`); return; }
+  openSheet("contact",ICON[cat]+" "+cat,`<div class="goods">${Object.keys(MN).map(m=>`<button class="good${ZM.mode===m&&(ZM.cat===cat||m==="one")&&now&&now[2]===cat?" on":""}" data-act="zenMode" data-v="${m}|${cat}"><span class="name">${MN[m]}</span></button>`).join("")}</div>
+    <div class="goods" style="margin-top:10px">${ZEN_SONGS.filter(q=>q[2]===cat).map(([f,n])=>`<button class="good${TRK_SRC.zen===f?" on":""}" data-act="zenSong" data-v="${f}"><span class="name">${TRK_SRC.zen===f?"🎵 ":""}${n}</span></button>`).join("")}</div>
+    <div class="goods" style="margin-top:10px"><button class="good" data-act="zenMusic" data-v=""><span class="name">← 回到分類</span></button></div>`); };
 /* the page script is not global, so inline onclick="…" cannot see ensureAudio/HANDLERS/ZEN — wire the two zen buttons here */
   $("#zenMusicBtn").onclick=e=>{ e.stopPropagation(); ensureAudio(); HANDLERS.zenMusic(); };
-HANDLERS.zenSong=v=>{ zenSongSet(v); ensureAudio(); HANDLERS.zenMusic(); toast("禪院音樂換好了",1600); }; },0);
+HANDLERS.zenSong=v=>{ ZM.cat=zenCatOf(v); zmSave(); zenSongSet(v); ensureAudio(); HANDLERS.zenMusic(ZM.cat); toast("禪院音樂換好了",1600); };
+HANDLERS.zenMode=v=>{ const [m,cat]=String(v).split("|"); ZM.mode=m; ZM.cat=cat; zmSave(); ensureAudio(); const L=ZEN_SONGS.filter(q=>q[2]===cat);
+  if(zenCatOf(TRK_SRC.zen)!==cat&&L.length) zenSongSet(m==="shuffle"?L[(Math.random()*L.length)|0][0]:L[0][0]); else if(TRK.zen) TRK.zen.loop=m==="one";
+  HANDLERS.zenMusic(cat); toast({one:"單曲循環",loop:"循環播放",shuffle:"隨機播放"}[m]+"：「"+cat+"」",1600); }; },0);
 function setTrack(name){ if(name===curTrack) return; curTrack=name; const a=trk(name); if(audioUnlocked&&soundOn&&!document.hidden) trkPlay(a); }
 /* phones only let a player start inside a tap, so a song that is about to be needed (walking toward the 後殿 or the cats, fireworks on)
    is started silently on the next tap and parked */
@@ -5796,7 +5820,7 @@ HANDLERS.wxOpen=()=>{ const cur=wxNow(), manual=WX.set&&Date.now()<WX.setUntil; 
   openSheet("contact","天氣",`${backBtn}<p class="lead">現在：${WX_KINDS[cur].n}${manual?`（主委指定，還有 ${left} 分鐘）`:"（自動：每天上午隨機一個時間換一次，一整天同一種天氣）"}。選一種天氣，全伺服器會一起換，維持 20 分鐘後回到自動。</p>
     <div class="goods">${Object.entries(WX_KINDS).map(([k,o])=>`<button class="good${cur===k?" on":""}" data-act="wxSet" data-v="${k}"><span class="name">${{clear:"☀️",cloudy:"☁️",windy:"🍃",rain:"🌧️",storm:"⛈️"}[k]} ${o.n}</span></button>`).join("")}<button class="good" data-act="wxSet" data-v=""><span class="name">🔄 回到自動</span></button></div>`); };
 /* 主委工具 → 每日統計: today's counters, the last 14 days of the main ones, busiest hours, and today's wishes */
-const STAT_NAME={visitors:"今日訪客",sessions:"進場次數",peak:"最高同時在線",minOnline:"在線總分鐘",minFront:"前殿・廟埕分鐘",minRear:"後殿分鐘",minZen:"靜思禪院分鐘",minInn:"禪房分鐘",minSitting:"坐著的分鐘",minInRain:"淋雨中的分鐘",
+const STAT_NAME={buskTip:"打賞玖玖",buskCheer:"幫玖玖應援",visitors:"今日訪客",sessions:"進場次數",peak:"最高同時在線",minOnline:"在線總分鐘",minFront:"前殿・廟埕分鐘",minRear:"後殿分鐘",minZen:"靜思禪院分鐘",minInn:"禪房分鐘",minSitting:"坐著的分鐘",minInRain:"淋雨中的分鐘",
   wish:"許願卡",lamp:"點燈",msg:"給主委留言",zhan:"沾喜氣",lanterns:"放天燈",reply:"回覆",letter:"寫信",hongbao:"發紅包",hbclaim:"搶紅包",nightMarket:"夜市紀錄",b_bowBtn:"拜拜",b_jiaoBtn:"擲筊",b_lotBtn:"求籤",b_holdBtn:"持香",b_bagBtn:"打開背包",b_hallBtn:"換殿",
   sit_mat:"跪拜墊",sit_zen:"禪坐",sit_futon:"通鋪睡覺",sit_bed:"套房躺床",sit_tub:"泡澡",sit_toilet:"上廁所",st_innDesk:"找櫃台阿姨",st_fortune:"走到鐵口直斷攤",st_cats:"找貓咪",st_lot:"求籤處",sjDone:"完成收驚",ftDone:"鐵口直斷算命",paperOpen:"看報紙",innBedding:"買通鋪床具",innRoom:"買套房房卡",pkCash:"彈珠台換出的平安幣",pkBuy:"買彈珠花的平安幣",sit_sofa:"坐禪房沙發",st_treasure:"土地公挖寶",b_zenMusicBtn:"換禪堂音樂",b_innLockBtn:"鎖房門",b_innSleepBtn:"通鋪睡覺",b_camReset:"鏡頭回正",b_foldBtn:"收起按鈕",b_chairBtn:"打開主委工具"};
 const statName=k=>{ if(STAT_NAME[k]) return STAT_NAME[k]; if(k.startsWith("b_")){ const el=document.getElementById(k.slice(2)); const t=el&&((el.getAttribute("aria-label")||"")||(el.querySelector(".cap")||{}).textContent||el.textContent||"").trim(); if(t&&/[\u4e00-\u9fff]/.test(t)) return "按「"+t.replace(/\s+/g," ").slice(0,12)+"」"; }
@@ -8084,7 +8108,9 @@ function tick(){ if(gameAsleep) return; const _ft0=performance.now(); { const no
     { /* during a show the normal view goes wide-angle, so even the biggest shells fit on a phone screen */ const zx=meAv.pos.x<-23.5?(ZEN.fovX||0):0; camWideX+=((zx+camTight)-camWideX)*Math.min(1,dt*2); const want=(FW.on||FW.pendingAt)?Math.max(30,Math.min(96,fwFov())/FW_ZOOM):55+camWideX; if(Math.abs(camera.fov-want)>.3){ camera.fov+=(want-camera.fov)*Math.min(1,dt*2.5); camera.updateProjectionMatrix(); } }
     { /* seated or lying: aim at the body (not 1 m above the seat), and once settled swing round behind the character */ const ST=meAv.seat>=0?SEATS[meAv.seat]:null, lie=ST&&(ST.kind==="bed"||ST.kind==="futon");
       if(ST&&!customizing){ fy=lie?.35:.75; if(meAv.kneel>.9&&CAMSEAT.done!==meAv.seat){ CAMSEAT.done=meAv.seat; rotAnim={to:camYaw+wrapA(meAv.rotY+Math.PI-camYaw)}; if(lie&&camPitch<.75) camPitch=.75; } } else CAMSEAT.done=-1; }
-    tmpV.set(meAv.pos.x,fy+((meAv.flyCur||0)>.02?meAv.flyCur:meAv.root.position.y),meAv.pos.y); camFocus.lerp(tmpV,Math.min(1,dt*6));
+    tmpV.set(meAv.pos.x,fy+((meAv.flyCur||0)>.02?meAv.flyCur:meAv.root.position.y),meAv.pos.y);
+    { const sat=meAv.seat>=0&&!customizing&&meAv.kneel>.5; camSeatK+=((sat?1:0)-camSeatK)*Math.min(1,dt*3); if(sat&&meAv.torso){ meAv.torso.getWorldPosition(_v1); tmpV.set(_v1.x,_v1.y,_v1.z); } } /* sitting or lying: aim at the body itself (lying, it is not over the seat point) */
+    camFocus.lerp(tmpV,Math.min(1,dt*6));
     // indoors a wall often stops the camera right behind your head: then try it higher up, looking down, and keep the one that stays farthest back
     let want=0, gotD=0; for(const dp of [0,.3,.6,.9]){ const pp=Math.min(1.2,pitch+dp), cx=camFocus.x+Math.sin(yaw)*Math.cos(pp)*dist, cz=camFocus.z+Math.cos(yaw)*Math.cos(pp)*dist, cy=camFocus.y+Math.sin(pp)*dist;
       camLimit(camFocus,_v2.set(cx,cy,cz),_camTry); const d=_camTry.distanceTo(camFocus); if(d>gotD+.25){ gotD=d; want=dp; } if(d>dist*.8) break; }
@@ -8092,7 +8118,7 @@ function tick(){ if(gameAsleep) return; const _ft0=performance.now(); { const no
     { const pp=Math.min(1.2,pitch+camLift), cx=camFocus.x+Math.sin(yaw)*Math.cos(pp)*dist, cz=camFocus.z+Math.cos(yaw)*Math.cos(pp)*dist, cy=camFocus.y+Math.sin(pp)*dist; camLimit(camFocus,_v2.set(cx,cy,cz),_camBest); gotD=_camBest.distanceTo(camFocus); camTight=Math.max(0,Math.min(24,(1-gotD/dist)*36)); }
     tmpV.copy(_camBest); camera.position.lerp(tmpV,Math.min(1,dt*6)); camNear+=(Math.max(0,Math.min(1,(gotD-1.3)/2.4))-camNear)*Math.min(1,dt*3);
     { const sh=(sheetKind&&!wide&&sheet.classList.contains("open")&&!sheet.classList.contains("peek"))?sheet.getBoundingClientRect().height:0; sheetOff+=(sh*.42-sheetOff)*Math.min(1,dt*6); if(sheetOff>1) camera.setViewOffset(W,H,0,sheetOff,W,H); }
-    { const k=camNear; camera.lookAt(camFocus.x-Math.sin(yaw)*3.5*k,camFocus.y+.15+.75*k,camFocus.z-Math.cos(yaw)*3.5*k); if(tiltUp>0) camera.rotateX(tiltUp*1.35); } // close up: look at yourself, not past you
+    { const k=camNear*(1-camSeatK); camera.lookAt(camFocus.x-Math.sin(yaw)*3.5*k,camFocus.y+.15+.75*k,camFocus.z-Math.cos(yaw)*3.5*k); if(tiltUp>0&&camSeatK<.5) camera.rotateX(tiltUp*1.35); } /* (seated or lying you stay in the middle of the screen) */ // close up: look at yourself, not past you
     dirArrowTick(1-camNear);
   }
   if(window.__mzCam){ camera.clearViewOffset(); camera.position.fromArray(window.__mzCam.p); camera.lookAt(...window.__mzCam.l); }
@@ -8379,7 +8405,7 @@ const INN_SEAT0=SEATS.length;
 
   INN.roofs=INN.suites.map(S=>{ const j=S.i%4, ext=(j===0?-.15:j===3?.15:0), w=S.xb-S.xa+(S.e?.3:.6), cx=S.e?(S.xa+S.xb)/2+.15:(X0+SX1)/2; const r=B(w,.4,S.s1-S.s0+(j===0||j===3?.3:0),dark,cx,y2+H2+.2,(S.s0+S.s1)/2+ext); r.userData.suiteRoof=S.i; return r; }); /* roof, one piece over each suite */
   { const r=B(KX1-SX1,.4,Z1-Z0+.3,dark,(SX1+KX1)/2,y2+H2+.2,(Z0+Z1)/2); r.userData.suiteRoof=8; INN.roofs.push(r); } /* and one over the inside corridor */
-  { const clear=new T.MeshStandardMaterial({color:L("#9fb8c0"),roughness:.05,transparent:true,opacity:.2,side:T.DoubleSide}), frost=new T.MeshStandardMaterial({color:L("#eef2f2"),roughness:.6,transparent:true,opacity:.75,side:T.DoubleSide});
+  { const clear=new T.MeshStandardMaterial({color:L("#9fb8c0"),roughness:.05,transparent:true,opacity:.2,side:T.DoubleSide}), frost=new T.MeshStandardMaterial({color:L("#eef2f2"),roughness:.6,transparent:true,opacity:.75,side:T.DoubleSide}); for(const m of [clear,frost]){ m.emissive=new T.Color(L("#ffc880")); m.emissiveIntensity=0; m.userData.op0=m.opacity; } INN.glass2=[clear,frost]; /* lit from inside at night */
     for(const S of INN.suites){ if(S.e){ const wz=mesh(new T.PlaneGeometry(INN.sw-2.2,2.2),clear,X1,y2+1.9,(S.s0+S.s1)/2,root); wz.rotation.y=Math.PI/2; }
       else { const a=mesh(new T.PlaneGeometry(.9,1.7),clear,X0,y2+1.75,S.s0+2.8,root); a.rotation.y=Math.PI/2; const b=mesh(new T.PlaneGeometry(2.4,1.7),frost,X0,y2+1.75,S.s1-1.5,root); b.rotation.y=Math.PI/2; } } } /* windows */
   for(let i=0;i<14;i++) B(.12,H2,.08,slat,X0-.18,y2+H2/2,Z0+3.6+i*.18+(i>6?10.9:0)); /* slat screens (between the doors, not over them: 201/202 and 203/204) */
@@ -8447,7 +8473,7 @@ const INN_SEAT0=SEATS.length;
     { const bk=new T.MeshStandardMaterial({color:L("#141416"),roughness:.35}); /* the bath's own walls are black (a skin on the bath side of the white walls) */ B(.04,INN.H1,5.3,bk,41.2,INN.H1/2,-37.35); B(.04,INN.H1,5.8,bk,41.2,INN.H1/2,-30.4); B(.04,INN.H1-2.5,1.4,bk,41.2,2.5+(INN.H1-2.5)/2,-34); B(13.8,INN.H1,.04,bk,48.1,INN.H1/2,-27.65); /* (a gap for the door) */ B(.04,INN.H1-3.9,12.2,bk,INN.X1-.15,3.9+(INN.H1-3.9)/2,-33.75); B(13.9,INN.H1-3.9,.04,bk,48.1,3.9+(INN.H1-3.9)/2,INN.Z0+.15); for(const [x,w] of [[41.17,.3],[54.86,.3]]) B(w,INN.H1,.04,bk,x,INN.H1/2,INN.Z0+.15); for(const z of [-39.85,-27.73]) B(.04,INN.H1,.3,bk,INN.X1-.15,INN.H1/2,z); /* the window walls too: black above the glass and at the corners */ }
     const rocks=[]; for(let k=0;k<44;k++){ const t=k/44*Math.PI*2; rocks.push([PX+Math.cos(t)*(PRX+.12),PZ+Math.sin(t)*(PRZ+.12),.24+Math.random()*.22]); }
     rocks.forEach(([x,z,s])=>{ const r=mesh(new T.DodecahedronGeometry(s,0),mat(L("#3a3836"),{roughness:.8}),x,s*.35,z,root); r.rotation.set(Math.random(),Math.random(),Math.random()); r.scale.y=.55; });
-    INN.steam=[]; for(let k=0;k<10;k++){ const sp=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffffff"),transparent:true,opacity:.12,depthWrite:false})); sp.position.set(45+Math.random()*7,.4,-37+Math.random()*6); sp.scale.set(2.5,2.5,1); sp.userData.s=Math.random()*6; root.add(sp); INN.steam.push(sp); }
+    INN.steam=[]; for(let k=0;k<18;k++){ const sp=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffffff"),transparent:true,opacity:.12,depthWrite:false})); { const t=Math.random()*6.28, r=Math.sqrt(Math.random())*.85; sp.position.set(48.5+Math.cos(t)*4.35*r,.4,-34.25+Math.sin(t)*3.55*r); } sp.scale.set(3,3,1); sp.userData.s=Math.random()*6; root.add(sp); INN.steam.push(sp); }
 
     { const lx=53.6,lz=-29; B(.4,.1,.4,stone,lx,.05,lz); cyl(.08,.1,.8,stone,lx,.5,lz,root,8); B(.46,.36,.46,stone,lx,1.08,lz); mesh(new T.ConeGeometry(.42,.32,4),stone,lx,1.42,lz,root).rotation.y=Math.PI/4; }
     for(let k=0;k<6;k++){ cyl(.18,.16,.25,wood,42+k*.6,.13,-39.4,root,12); } /* wooden buckets and stools at the washing place */
@@ -8522,7 +8548,20 @@ for(let i=INN_SEAT0;i<SEATS.length;i++) SEATS[i].x+=INN.DX; INN.shower.forEach(s
     const cm=new T.MeshStandardMaterial({map:ct,roughness:.95,side:T.DoubleSide}), rodM=mat(L("#6a4a30"),{roughness:.5}); INN.curt=[];
     INN.suites.filter(S=>!S.e).forEach(S=>{ const zc=S.s1-1.5, x=INN.X0+.16, y=INN.F2+1.75; const rod=cyl(.025,.025,2.8,rodM,x,y+1.0,zc,root,6); rod.rotation.x=Math.PI/2;
       const P=[-1,1].map(sd=>{ const g=new T.Group(); g.position.set(x,y,zc+sd*1.3); root.add(g); const m=new T.Mesh(new T.PlaneGeometry(1.3,2.0),cm); m.rotation.y=Math.PI/2; m.position.z=-sd*.65; g.add(m); return g; }); /* each panel hangs from its outer end */
-      INN.curt.push({i:S.i,P,open:0,k:0}); }); } }
+      INN.curt.push({i:S.i,P,open:0,k:0}); }); }
+  /* wall lamps outside, both floors: a dark back plate, a warm glass box, a soft glow that comes up at dusk */
+  { const bp=mat(L("#2a2a2c"),{roughness:.5}); INN.scM=new T.MeshStandardMaterial({color:L("#fff0d0"),emissive:L("#ffbe6a"),emissiveIntensity:.4,roughness:.5}); INN.scG=[]; const gm=new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffb860"),transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false});
+    const sc=(x,y,z,nx,nz)=>{ const g=new T.Group(); g.position.set(x+nx*.13,y,z+nz*.13); g.rotation.y=Math.atan2(nx,nz); root.add(g); const b=new T.Mesh(new T.BoxGeometry(.16,.4,.05),bp); b.position.z=-.03; g.add(b); const l=new T.Mesh(new T.BoxGeometry(.14,.26,.12),INN.scM); l.position.z=.06; g.add(l); const c=new T.Mesh(new T.BoxGeometry(.18,.03,.16),bp); c.position.set(0,.145,.06); g.add(c);
+      const gl=new T.Sprite(gm.clone()); gl.position.set(x+nx*.3,y,z+nz*.3); gl.scale.set(1.5,1.5,1); root.add(gl); INN.scG.push(gl); };
+    const X0=INN.X0, X1=INN.X1, Z1=INN.Z1, F2=INN.F2;
+    for(const z of [-38,-24,-17.5]) sc(X0,2.6,z,-1,0); INN.suites.filter(S=>!S.e).forEach(S=>sc(X0,F2+2.3,S.dz+.95,-1,0)); /* front: ground floor, and beside each upstairs door */
+    for(const z of [-24,-18]) sc(X1,2.6,z,1,0); for(const z of [-39.6,-33.75,-27.5,-21.25,-15.4]) sc(X1,F2+2.5,z,1,0); /* back: between the big windows */
+    for(const x of [36.1,40.7,45.3,49.9]) sc(x,2.7,Z1,0,1); for(const x of [33,38,47,52]) sc(x,F2+2.5,Z1,0,1); /* the street side */ }
+  /* 暖簾 over the two doors off the lobby: 湯 for the bath, ZZ for the dorm — two cloth panels each, split up the middle */
+  { const nr=(z,txt,bg)=>{ const c=cvs(256,192,(x,w,h)=>{ x.fillStyle=bg; x.fillRect(0,0,w,h); x.fillStyle="rgba(255,255,255,.12)"; x.fillRect(0,0,w,16); x.fillStyle="#f6f0e2"; x.font=txt==="湯"?'700 120px "LXGW WenKai TC","Noto Serif TC",serif':'800 104px sans-serif'; x.textAlign="center"; x.textBaseline="middle"; x.fillText(txt,w/2,h/2+10); });
+      [0,1].forEach(k=>{ const t=c.clone(); t.needsUpdate=true; t.repeat.set(.5,1); t.offset.set(k*.5,0); const m=new T.Mesh(new T.PlaneGeometry(.66,1.0),new T.MeshStandardMaterial({map:t,roughness:.95,side:T.DoubleSide})); m.position.set(40.88,1.95,z+(k?.35:-.35)); m.rotation.y=-Math.PI/2; m.userData.noMerge=1; root.add(m); });
+      const rod=cyl(.02,.02,1.5,mat(L("#5a3e28"),{roughness:.5}),40.88,2.47,z,root,6); rod.rotation.x=Math.PI/2; };
+    nr(-34,"湯","#1f2f5a"); nr(-21,"ZZ","#2a5a3a"); } }
 
 /* the auntie at the front desk */
 { const av=new Avatar([1,7,0,2,6,3,0,4,2,0,1,0,0],{npc:true,x:39.6+INN.DX,z:-28.2}); av.sjBusy=1; av.rotY=-Math.PI/2; av.faceGoal=-Math.PI/2; av.root.rotation.y=-Math.PI/2; av.story=1; av.setName("櫃台阿姨"); av.gy=0; av.root.scale.setScalar(1.2); INN.aunt=av; /* a bit bigger than the guests: she stands behind the counter */ addHit("innDesk",38.6+INN.DX,0,-28.2,1.3,1.6); }
@@ -8572,10 +8611,10 @@ function innTick(dt){ const me=meAv; if(!me) return; INN.t=(INN.t||0)+dt;
   if(INN.eaveM){ const lx=me.pos.x-INN.DX, under=(me.gy||0)>2.3&&innEave(lx,me.pos.y), want=under&&camera.position.y>INN.F2+INN.H2-.2?.18:1; if(Math.abs(INN.eaveM.opacity-want)>.01){ INN.eaveM.opacity+=(want-INN.eaveM.opacity)*Math.min(1,dt*5); INN.eaveM.depthWrite=INN.eaveM.opacity>.9; } }
   if(INN.aunt&&INN.aunt.root.rotation.y!==-Math.PI/2) INN.aunt.root.rotation.y=-Math.PI/2; /* she faces the front door, always */
   for(const c of (INN.curt||[])){ c.k+=(c.open-c.k)*Math.min(1,dt*4); c.P.forEach(g=>{ g.scale.z=1-.75*c.k; }); }
-  for(const s of INN.steam){ s.userData.s+=dt*.4; const k=s.userData.s%1; s.position.y=.3+k*2.4; s.material.opacity=.07*(1-k)*(k*4>1?1:k*4); }
+  for(const s of INN.steam){ s.userData.s+=dt*.4; const k=s.userData.s%1; s.position.y=.3+k*2.4; s.material.opacity=.2*(1-k)*(k*4>1?1:k*4); s.scale.setScalar(2.4+k*1.6); } /* a soft, slow mist off the water */
   const all=[me,...npcs]; if(typeof remotes!=="undefined") remotes.forEach(a=>all.push(a));
   for(const av of all){ const want=!!(av.root&&av.root.visible&&(av.gy||0)<1&&innPool(av.pos.x,av.pos.y)); innSwim(av,want); if(want&&(!av.towel||!av.towel.parent)){ const tw=new T.Group(); const m=new T.Mesh(new T.BoxGeometry(.34,.07,.22),mat(L_TOWEL,{roughness:1})); tw.add(m); const f=new T.Mesh(new T.BoxGeometry(.34,.03,.08),mat(L_TOWEL,{roughness:1})); f.position.set(0,.05,-.03); tw.add(f); tw.position.set(0,.34,0); av.head.add(tw); av.towel=tw; } if(av.towel) av.towel.visible=want; }
-  INN.glass.emissiveIntensity=.45*_dn.night; for(const l of INN.lights){ l.visible=!INN.cutMode&&_dn.night>.05; l.material.opacity=.35*_dn.night; }
+  INN.glass.emissiveIntensity=.45*_dn.night; if(INN.glass2) for(const m of INN.glass2){ m.emissiveIntensity=.9*_dn.night; m.opacity=m.userData.op0+.25*_dn.night; } if(INN.scM){ INN.scM.emissiveIntensity=.35+1.3*_dn.night; for(const g of INN.scG) g.material.opacity=.5*_dn.night; } for(const l of INN.lights){ l.visible=!INN.cutMode&&_dn.night>.05; l.material.opacity=.35*_dn.night; }
   innCutTick(); innSleepBtnTick();
   for(const t of INN.tv){ if(!t.on) continue; if(INN.t-t.at>3){ t.at=INN.t; t.k++; innTvDraw(t); } }
   for(const s of INN.shower){ if(s.on>0){ s.on-=dt; if(Math.random()<.9) for(let q=0;q<3;q++) spawnSmoke(s.x+(Math.random()-.5)*.25,s.y+2.2-Math.random()*1.8,s.z+(Math.random()-.5)*.25,{size:.04,grow:.02,life:.5,op:.35,vy:-3}); } } }
@@ -8717,12 +8756,13 @@ function dlRunner(){ try{ const W=150, H=110, dpr=Math.min(2,window.devicePixelR
    another. Where the playlist is follows the clock, so everyone nearby hears the same song at the same moment. The songs stream (64 kbps,
    1.5–2.3 MB each) only when you come within ~55 m, the next one is fetched 20 s before the current one ends, and two players swap so
    there's no gap. The temple music fades down as he gets louder. ================= */
-const BUSK={x:-13.46,z:36.82,dur:[182.42,217.62,188.74,201.22,182.82,248.42,284.82,187.82,274.38,224.42,259.22],el:[null,null],which:0,prox:0,on:false,notes:[],noteT:0,lastI:-1};
+const BUSK={x:-13.46,z:36.82,dur:[182.51,217.71,188.81,201.31,182.91,248.51,284.91,187.91,274.41,224.51,259.31,243.21],order:[0,10,9,8,11,7,6,5,4,3,2,1],names:["記得我忘記","慢慢欣賞","可鹽可甜","妳沒有說","龜毛先生","詩情難忘","一個人的旅程","禁止正常","撲火","晚安以前","那個我","城市停電了"],el:[null,null],which:0,prox:0,on:false,notes:[],noteT:0,lastI:-1};
 BUSK.total=BUSK.dur.reduce((a,b)=>a+b,0); BUSK.file=i=>"busk/b"+String(i+1).padStart(2,"0")+".m4a";
-function buskNow(){ let t=(Date.now()/1000)%BUSK.total; for(let i=0;i<BUSK.dur.length;i++){ if(t<BUSK.dur[i]) return [i,t]; t-=BUSK.dur[i]; } return [0,0]; }
+function buskNow(){ let t=(Date.now()/1000)%BUSK.total; for(const i of BUSK.order){ if(t<BUSK.dur[i]) return [i,t]; t-=BUSK.dur[i]; } return [BUSK.order[0],0]; } /* played in the chair's order: 1, 11, 10, 9, 12, 8 … 2 */
+const buskNext=i=>BUSK.order[(BUSK.order.indexOf(i)+1)%BUSK.order.length];
 function buskEl(k){ let a=BUSK.el[k]; if(a) return a; if(!ac) return null; a=new Audio(); a.preload="auto"; a.track=-1; try{ const s=ac.createMediaElementSource(a), g=ac.createGain(); g.gain.value=0; s.connect(g).connect(ac.destination); a._g=g; }catch(e){ a._g=null; } BUSK.el[k]=a; return a; }
 /* the man himself: spiky black hair, sunglasses, black jacket with red trim, gold chain; a red electric guitar, a mic stand and an amp */
-{ const av=new Avatar([1,13,0,5,0,1,0,2,2,2,0,4,3],{npc:true,x:BUSK.x,z:BUSK.z}); av.sjBusy=1; av.rotY=Math.PI/2; av.faceGoal=Math.PI/2; av.story=1; av.setName("街頭藝人玖玖"); BUSK.av=av; { let c=null; av.head.traverse(o=>{ const m=o.isMesh&&o.material; if(m&&m.color&&m.color.getHexString()==="1c1512"){ if(!c){ c=m.clone(); c.color.set("#060606"); c.roughness=.45; } o.material=c; } }); } /* jet-black hair (the darkest hair colour still reads brown in the sun) */
+{ const av=new Avatar([1,13,0,5,0,1,0,2,2,2,0,4,3],{npc:true,x:BUSK.x,z:BUSK.z}); av.sjBusy=1; av.rotY=Math.PI/2; av.faceGoal=Math.PI/2; av.story=1; av.setName("街頭藝人玖玖"); BUSK.av=av; addHit("buskTip",BUSK.x,0,BUSK.z,.55,1.9); { let c=null; av.head.traverse(o=>{ const m=o.isMesh&&o.material; if(m&&m.color&&m.color.getHexString()==="1c1512"){ if(!c){ c=m.clone(); c.color.set("#060606"); c.roughness=.45; } o.material=c; } }); } /* jet-black hair (the darkest hair colour still reads brown in the sun) */
   const red=mat("#c0201a",{roughness:.35,metalness:.2}), blk=mat("#141414",{roughness:.5}), chrome=mat("#cfcfd4",{roughness:.2,metalness:.9}), wood=mat("#6a4224",{roughness:.6});
   const gt=new T.Group(); av.torso.add(gt); gt.position.set(.02,.22,.2); gt.rotation.set(0,0,-.55);
   { const b=new T.Mesh(new T.CylinderGeometry(.17,.19,.07,20),red); b.rotation.x=Math.PI/2; b.scale.set(1,1,1.25); gt.add(b); const b2=new T.Mesh(new T.CylinderGeometry(.12,.13,.071,18),red); b2.rotation.x=Math.PI/2; b2.position.y=.2; gt.add(b2);
@@ -8746,6 +8786,15 @@ function buskEl(k){ let a=BUSK.el[k]; if(a) return a; if(!ac) return null; a=new
     av.legs[0].rotation.x=Math.max(0,sway)*.12*k; av.legs[1].rotation.x=Math.max(0,-sway)*.12*k; av.root.position.y=Math.abs(beat)*.025*k; };
   /* ♪ notes drifting up round him */
   BUSK.noteTex=["♪","♫","♬"].map((ch,k)=>cvs(64,64,(x,w,h)=>{ x.font='700 48px serif'; x.textAlign="center"; x.textBaseline="middle"; x.fillStyle=["#ffd27a","#ff8fb6","#9fe8ff"][k]; x.shadowColor="rgba(0,0,0,.6)"; x.shadowBlur=4; x.fillText(ch,w/2,h/2); })); }
+/* tap 玖玖: tip him 50 or 100 平安幣 and he thanks you by name (the chair tips for free) */
+function openBuskTip(){ ensureAudio(); const [i]=buskNow(); openSheet("contact","街頭藝人玖玖",`<p class="lead">現在唱的是〈${BUSK.names[i]}〉。喜歡的話，打賞一下吧！</p><div class="goods">${[50,100].map(v=>`<button class="good" data-act="buskPay" data-v="${v}"><span class="name">🎸 打賞 ${v} 平安幣</span></button>`).join("")}<button class="good" data-act="buskCheer"><span class="name">📣 應援：到他身邊跳一段</span></button></div>`); }
+/* 應援: you go to a free spot by him, dance one round (12 s), and come away 幸福感 UP — hearts float up round you */
+const HEART_TEX=cvs(64,64,(x,w,h)=>{ x.font='48px serif'; x.textAlign="center"; x.textBaseline="middle"; x.fillText("💗",w/2,h/2+3); });
+function buskHappy(av){ for(let i=0;i<18;i++) setTimeout(()=>{ const s=new T.Sprite(new T.SpriteMaterial({map:HEART_TEX,transparent:true,depthWrite:false})); const a=rand(0,Math.PI*2), r=rand(.2,.9); s.position.set(av.pos.x+Math.cos(a)*r,rand(.3,1.1),av.pos.y+Math.sin(a)*r); const sc=rand(.2,.34); s.scale.set(sc,sc,1); scene.add(s); parts.push({s,vx:0,vy:rand(1.0,1.8),vz:0,life:0,max:rand(1.4,2.2),grow:.12,op:1}); },i*80);
+  av.say("幸福感 UP！","#ff8fb6",3.5); if(av===meAv){ tone(784,.12,.05,"triangle"); tone(1046,.18,.05,"triangle",.12); toast("💗 應援完成，幸福感 UP！",2600); } }
+setTimeout(()=>{ HANDLERS.buskCheer=()=>{ closeSheet(); ensureAudio(); const B=BUSK; let spot=null; for(let t=0;t<30&&!spot;t++){ const a=rand(-1.25,1.25), r=rand(1.6,3.0), x=B.x+Math.cos(a)*r, z=B.z+Math.sin(a)*r; if(walkable(x,z)&&!npcs.some(o=>o.buskSpot&&Math.hypot(o.buskSpot[0]-x,o.buskSpot[1]-z)<.9)) spot=[x,z]; }
+    if(!spot){ toast("他身邊擠滿人了，等一下再來",2000); return; } if(meAv.seat>=0){ meAv.seat=-1; updateStandBtn(); } walkTo(spot[0],spot[1]); B.cheer={x:spot[0],z:spot[1],ph:0,t:0}; statInc("buskCheer"); };
+  HANDLERS.buskPay=v=>{ v=+v; if(!me||!me.sp){ if(bag.coins<v){ toast("平安幣不夠了",1800); return; } bag.coins-=v; saveBag(); } sfx.coin(); closeSheet(); statInc("buskTip"); const nm=(me&&me.name)||"朋友"; BUSK.av.say(`${nm}謝謝你！愛你！`,"#ffd27a",4); toast(`打賞玖玖 ${v} 平安幣`,1800); }; },0);
 function buskTick(dt){ const B=BUSK, me=meAv; if(!me||!B.av) return; const d=Math.hypot(me.pos.x-B.x,me.pos.y-B.z); if(d<45){ const av=B.av; av.pos.set(B.x,B.z); av.target.copy(av.pos); av.faceGoal=Math.PI/2; av.update(dt); } /* (he was never animated: nobody called his update) */ const live=soundOn&&audioUnlocked&&!document.hidden&&!gameAsleep;
   const prox=live?Math.pow(Math.max(0,Math.min(1,1-(d-1.5)/15)),1.6):0; /* heard from about 16 m */ B.prox+=(prox-B.prox)*Math.min(1,dt*2);
   const want=live&&d<28&&ac;
@@ -8753,11 +8802,14 @@ function buskTick(dt){ const B=BUSK, me=meAv; if(!me||!B.av) return; const d=Mat
     if(A.track!==i){ if(Bn&&Bn.track===i){ B.which=1-B.which; [A,Bn]=[Bn,A]; } else { A.src=B.file(i); A.track=i; A.load(); } A.wantSeek=t; }
     if(A.wantSeek!=null&&A.readyState>=1){ if(Math.abs(A.currentTime-A.wantSeek)>1.5) try{ A.currentTime=A.wantSeek; }catch(e){} A.wantSeek=null; }
     if(A.paused&&A.readyState>=2) A.play().catch(()=>{});
-    if(B.dur[i]-t<20&&Bn){ const nx=(i+1)%B.dur.length; if(Bn.track!==nx){ Bn.src=B.file(nx); Bn.track=nx; Bn.preload="auto"; Bn.load(); } } /* next song ready before this one ends */
+    if(B.dur[i]-t<20&&Bn){ const nx=buskNext(i); if(Bn.track!==nx){ Bn.src=B.file(nx); Bn.track=nx; Bn.preload="auto"; Bn.load(); } } /* next song ready before this one ends */
     const v=B.prox*mVol()*.6; for(const a of B.el) if(a&&a._g) a._g.gain.setTargetAtTime(a===A?v:0,ac.currentTime,.15); else if(a) a.volume=a===A?Math.min(1,v):0;
     for(const a of B.el) if(a&&a!==A&&!a.paused&&a.currentTime>1) a.pause();
     B.on=!A.paused&&B.prox>.01; }
   else { for(const a of B.el) if(a){ if(a._g&&ac) a._g.gain.setTargetAtTime(0,ac.currentTime,.2); if(!a.paused&&B.prox<.01) a.pause(); } B.on=false; }
+  { const C=B.cheer; if(C){ C.t+=dt; if(C.ph===0){ if(Math.hypot(me.pos.x-C.x,me.pos.y-C.z)<.3&&!(me.path&&me.path.length)){ me.rotY=Math.atan2(B.x-me.pos.x,B.z-me.pos.y); me.root.rotation.y=me.rotY; HANDLERS.doAct([5,6,7,8][(Math.random()*4)|0]); C.ph=1; C.t=0; } else if(C.t>30) B.cheer=null; }
+      else if(me.act<0||Math.hypot(me.pos.x-C.x,me.pos.y-C.z)>.6) B.cheer=null; /* walked off: no reward */
+      else if(C.t>12){ HANDLERS.doAct(-1); buskHappy(me); B.cheer=null; } } }
   /* notes */ if(B.on&&(B.noteT-=dt)<0){ B.noteT=.35+Math.random()*.3; const s=new T.Sprite(new T.SpriteMaterial({map:B.noteTex[(Math.random()*3)|0],transparent:true,depthWrite:false})); s.position.set(B.x+(Math.random()-.5)*.9,1.3+Math.random()*.4,B.z+(Math.random()-.5)*.9); s.scale.set(.26,.26,1); scene.add(s); B.notes.push({s,t:0,vx:(Math.random()-.5)*.3,vz:(Math.random()-.5)*.3}); }
   for(let k=B.notes.length-1;k>=0;k--){ const n=B.notes[k]; n.t+=dt; n.s.position.y+=dt*.55; n.s.position.x+=n.vx*dt+Math.sin(n.t*3)*.004; n.s.position.z+=n.vz*dt; n.s.material.opacity=Math.max(0,1-n.t/2.4); if(n.t>2.4){ scene.remove(n.s); n.s.material.dispose(); B.notes.splice(k,1); } } }
 
