@@ -97,7 +97,10 @@ export function buildPaper(data) {
   const d = data.d, dn = dayNum(d), R = rng(dn * 9973 + 17), used = new Set(data.used || []), st = data.st || { c: {}, mx: {}, p: {} }, c = st.c || {}, mx = st.mx || {}, P = st.p || {}, ev = data.ev || [];
   const pickT = kind => { const L = T[kind], fresh = L.filter(x => !used.has(x.id)), pool = fresh.length ? fresh : L, x = pool[Math.floor(R() * pool.length)]; used.add(x.id); return x; };
   const stories = []; const add = (kind, pri, o, tag, art) => { const w = pickT(kind); stories.push({ pri: pri + R() * 5, tag, art, t: fill(w.t, o), b: fill(w.b, o), id: w.id, kind, who: o.n || "" }); };
-  const wx = wxDay(dn), visitors = c.visitors || 0;
+  /* people: the paper uses what players saw on screen (real players plus the temple's regulars), so the numbers match what everyone remembers;
+     visits ≈ the hourly peaks added up (people stay a while), never fewer than the real visitors, and capped so a busy day cannot run away */
+  let shownSum = 0; for (let h = 0; h < 24; h++) shownSum += mx["s" + String(h).padStart(2, "0")] || 0;
+  const wx = wxDay(dn), visitors = Math.max(c.visitors || 0, Math.min(Math.round(shownSum * 1.3), (c.visitors || 0) * 3 + 400)), peakShown = Math.max(mx.sp || 0, mx.peak || 0);
   const top = key => { let best = null; for (const [id, e] of Object.entries(P)) { const v = e.c && e.c[key] || 0; if (v > 0 && (!best || v > best.v)) best = { id, n: e.n || "香客", v }; } return best; };
   /* incidents and weather */
   if (evHeat(dn)) add("heat", 95, {}, "社會", "🥵");
@@ -127,8 +130,12 @@ export function buildPaper(data) {
   const head = stories[0], items = stories.slice(1, 6);
   /* ads: two different ones */
   const ai = Math.floor(R() * ADS.length); const ads = [ADS[ai], ADS[(ai + 1 + Math.floor(R() * (ADS.length - 1))) % ADS.length]];
-  const hrs = []; for (let h = 0; h < 24; h++) hrs.push(mx["h" + String(h).padStart(2, "0")] || 0); const hm = Math.max(...hrs);
-  const box = [["香客", visitors], ["最高同時在線", mx.peak || 0], ["參拜", c.b_bowBtn || 0], ["擲筊", c.b_jiaoBtn || 0], ["求籤", c.b_lotBtn || 0], ["許願", c.wish || ws.length || 0]];
+  const hrs = []; for (let h = 0; h < 24; h++) { const k = String(h).padStart(2, "0"); hrs.push(Math.max(mx["s" + k] || 0, mx["h" + k] || 0)); } const hm = Math.max(...hrs);
+  /* the temple's regulars (the people on screen who are not real players) pray too: their share is estimated from how many of them were
+     shown each hour, so a busy-looking day never reports only a handful of bows */
+  let regH = 0; for (let h = 0; h < 24; h++) { const k = String(h).padStart(2, "0"); regH += Math.max(0, (mx["s" + k] || 0) - (mx["h" + k] || 0)); }
+  const reg = rate => Math.round(regH * rate * (.85 + R() * .3));
+  const box = [["香客人次", visitors], ["最高同時在線", peakShown], ["參拜", (c.b_bowBtn || 0) + reg(2.4)], ["擲筊", (c.b_jiaoBtn || 0) + reg(1.1)], ["求籤", (c.b_lotBtn || 0) + reg(.5)], ["許願", (c.wish || ws.length || 0) + reg(.08)]];
   const today = dn + 1, fc = wxDay(today);
   return { v: 1, d, no: data.no || 1, wx, wxn: WXN[wx], wxi: WXI[wx], fc, fcn: WXN[fc], fci: WXI[fc], busyHour: hm > 0 ? hrs.indexOf(hm) : -1,
     head: { t: head.t, b: head.b, tag: head.tag, art: head.art, kind: head.kind, who: head.who }, items: items.map(s => ({ t: s.t, b: s.b, tag: s.tag, art: s.art, kind: s.kind, who: s.who })),

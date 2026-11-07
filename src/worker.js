@@ -293,7 +293,9 @@ export class Lobby extends DurableObject {
         let b = {}; try { b = await req.json(); } catch {}
         const id = String(b.id || "").slice(0, 16); this.stLast = this.stLast || new Map(); const now = Date.now();
         if (id && now - (this.stLast.get(id) || 0) < 20000) return json({ ok: false, slow: true }); if (id) this.stLast.set(id, now); if (this.stLast.size > 5000) this.stLast.clear();
-        const c = {}; Object.entries(b.c || {}).slice(0, 40).forEach(([k, v]) => { c[k] = v; }); if (id) await this.stPlayer(id, clean(b.name, 10), c); await this.stAdd(c, 200); return json({ ok: true });
+        const c = {}; Object.entries(b.c || {}).slice(0, 40).forEach(([k, v]) => { c[k] = v; }); if (id) await this.stPlayer(id, clean(b.name, 10), c); await this.stAdd(c, 200);
+        for (const [k, v] of Object.entries(b.m || {}).slice(0, 30)) if (/^(sp|s\d\d)$/.test(k)) await this.stMax(k, Math.max(0, Math.min(2000, Math.floor(Number(v) || 0)))); /* what the players saw on screen (real + fake), for the paper */
+        return json({ ok: true });
       }
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
       await this.stSave(true); const days = ((await this.ctx.storage.get("stDays")) || []).slice(-14), today = await this.stGet();
