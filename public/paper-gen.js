@@ -17,7 +17,7 @@ export const dayWx = dn => { const [a, b] = gRange(dn), n = {}; for (let g = a; 
   if ((n.storm || 0) >= 10) return "storm"; if ((n.rain || 0) + (n.storm || 0) >= 20) return "rain"; return Object.entries(n).sort((x, y) => y[1] - x[1])[0][0]; };
 /* incidents still go by the calendar day: on a heat day one granny is off whenever it is sunny; on a stall day the stall blows away in the
    first windy spell after the afternoon hour, and stays gone till midnight */
-export const evHeat = d => wxHash(d * 31 + 5) < .3;
+export const evHeat = d => { const w = Math.floor((d + 4) / 7); return d === w * 7 - 4 + Math.floor(wxHash(w * 31 + 5) * 7); }; /* once a week */
 export const stallHour = d => 12 + wxHash(d * 41 + 2) * 6;
 export const stallG = d => { const [a, b] = gRange(d); for (let g = a; g <= b; g++) { if (((gStart(g) + 8 * 3600e3) % 864e5) / 36e5 < stallHour(d)) continue; if (wxG(g) === "windy") return g; } return null; };
 export const evStall = d => wxHash(d * 37 + 9) < .3 && stallG(d) != null;

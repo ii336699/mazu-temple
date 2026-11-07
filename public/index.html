@@ -8835,7 +8835,7 @@ function newsEv(k,v){ if(!USE_CF) { (STATQ.ev=STATQ.ev||[]).push({k,n:(me.name||
 /* ---- today's incidents, the same for everyone (formulas shared with public/paper-gen.js — keep in sync): on some sunny days one 收驚阿嬤
    is off with heatstroke; on some windy days the fortune teller's stall is blown away in the afternoon. The paper reports them the next day. ---- */
 const INC={heat:false,stall:false,fly:-1};
-const incHeat=d=>wxHash(d*31+5)<.3, incStallH=d=>12+wxHash(d*41+2)*6;
+const incHeat=d=>{ const w=Math.floor((d+4)/7); return d===w*7-4+Math.floor(wxHash(w*31+5)*7); }, /* once a week (same as paper-gen.js) */ incStallH=d=>12+wxHash(d*41+2)*6;
 function incStallG(d){ const s0=d*864e5-8*3600e3, a=gDay(s0), b=gDay(s0+864e5)-1; for(let g=a;g<=b;g++){ if(((gStart(g)+8*3600e3)%864e5)/36e5<incStallH(d)) continue; if(wxG(g)==="windy") return g; } return null; }
 const incStall=d=>wxHash(d*37+9)<.3&&incStallG(d)!=null;
 function incTick(dt){ if(typeof SJ==="undefined"||typeof FTB==="undefined") return; const now=Date.now(), d=Math.floor((now+8*3600e3)/864e5), auto=!(WX.set&&now<WX.setUntil)&&!window.MZ_WX, sg=incStallG(d);
