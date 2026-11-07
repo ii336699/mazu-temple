@@ -78,6 +78,12 @@ const T = {
     { id: "c2", t: "廟裡一切安好", b: "昨天沒有大新聞，就是最好的新聞。共有 {v} 位香客來參拜，祝大家平安。" },
   ],
 };
+/* copy for the ten engraving-style ad pictures (ads/b01–b10.webp, in this order) */
+const BADS = [["跪太久？痠痛貼布", "拜拜擲筊一整天，腰酸背痛貼一片。媽祖前跪得久，回家睡得好。"], ["廟後良田出售", "背山面水，香火加持，風水師看過都說好。意者洽廟口阿伯。"],
+  ["廟口新公寓招租", "下樓就是廟埕，早上聞香、晚上看煙火，生活機能一級棒。"], ["涼風牌電風扇", "金爐旁也不怕熱，連收驚阿嬤都說讚。三段風速，靜音好眠。"],
+  ["桃花乳霜", "月老前擦一擦，桃花朵朵開。限量供應，售完為止。"], ["平安騎士機車行", "新車交車免費過爐，平安符貼好貼滿，騎得穩心也穩。"],
+  ["小幽靈電視台", "禪房套房獨家播出，小幽靈天天陪你看星星、吃糰子。"], ["一針一線縫平安", "平安符袋、香包、廟會旗，手工縫製，接受訂做。"],
+  ["廟口透天老屋", "一樓可開香舖、二樓可住人，祖傳好地段，誠可議。"], ["十全大補湯", "斬完小人補元氣，熬夜看煙火也不怕。老店傳承三代。"]];
 const ADS = [
   { t: "禪房開幕！", b: "一樓日式溫泉・榻榻米通鋪，二樓套房可鎖門。櫃台阿姨親切服務。" },
   { t: "夜市攤位招商中", b: "地瓜球、烤肉、撈金魚、彈珠台⋯⋯請洽主委。" },
@@ -129,8 +135,9 @@ export function buildPaper(data) {
   if (stories.length < 2) add("calm", 20, { v: visitors }, "廟務", "🏮");
   stories.sort((a, b) => b.pri - a.pri);
   const head = stories[0], items = stories.slice(1, 6);
-  /* ads: two different ones */
-  const ai = Math.floor(R() * ADS.length); const ads = [ADS[ai], ADS[(ai + 1 + Math.floor(R() * (ADS.length - 1))) % ADS.length]];
+  /* ads: one illustrated poster (ads/pNN.webp, the chair's) and one old-style engraving with our own copy (ads/bNN.webp), plus a small text ad */
+  const pi = 1 + Math.floor(R() * 10), bi = Math.floor(R() * BADS.length), ti = Math.floor(R() * ADS.length);
+  const ads = [{ img: `ads/p${String(pi).padStart(2, "0")}.webp`, poster: 1 }, { img: `ads/b${String(bi + 1).padStart(2, "0")}.webp`, t: BADS[bi][0], b: BADS[bi][1] }, ADS[ti]];
   const hrs = []; for (let h = 0; h < 24; h++) { const k = String(h).padStart(2, "0"); hrs.push(Math.max(mx["s" + k] || 0, mx["h" + k] || 0)); } const hm = Math.max(...hrs);
   /* the temple's regulars (the people on screen who are not real players) pray too: their share is estimated from how many of them were
      shown each hour, so a busy-looking day never reports only a handful of bows */

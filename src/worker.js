@@ -252,7 +252,7 @@ export class Lobby extends DurableObject {
   }
   // per player (by id, with the name they go by) — only the counters the newspaper writes about; at most 400 players a day
   async stPlayer(id, name, map) {
-    const KEEP = ["b_bowBtn", "b_jiaoBtn", "b_lotBtn", "minOnline", "minZen", "minInn", "sit_futon", "sit_bed", "sit_tub", "sit_zen", "pkCash", "pkBuy", "minInRain"];
+    const KEEP = ["b_bowBtn", "b_jiaoBtn", "b_lotBtn", "minOnline", "minZen", "minInn", "sit_futon", "sit_bed", "sit_tub", "sit_zen", "pkCash", "pkBuy", "minInRain", "sjDone", "ftDone", "paperOpen"];
     const st = await this.stGet(); st.p = st.p || {}; let e = st.p[id]; if (!e) { if (Object.keys(st.p).length >= 400) return; e = st.p[id] = { n: name, c: {} }; } if (name) e.n = name;
     for (const k of KEEP) { const x = Math.floor(Number(map && map[k])); if (x > 0) e.c[k] = (e.c[k] || 0) + Math.min(x, /^pk/.test(k) ? 1000 : 200); }
     this.stDirty = true;
@@ -302,7 +302,8 @@ export class Lobby extends DurableObject {
       const list = []; for (const d of days) list.push(d === today.day ? today : ((await this.ctx.storage.get("st:" + d)) || { day: d, c: {}, mx: {} }));
       if (!days.includes(today.day)) list.push(today);
       const t0 = Date.parse(today.day + "T00:00:00+08:00"), ws = ((await this.ctx.storage.get("wishes")) || []).filter(w => w.at >= t0);
-      return json({ ok: true, days: list, wishesToday: ws.length, wishSample: ws.slice(0, 8).map(w => w.text) });
+      const uniq = {}; for (const e of Object.values(today.p || {})) for (const [k, v] of Object.entries(e.c || {})) if (v > 0) uniq[k] = (uniq[k] || 0) + 1; /* how many different players did each thing today */
+      return json({ ok: true, days: list, uniq, wishesToday: ws.length, wishSample: ws.slice(0, 8).map(w => w.text) });
     }
     // 煙火編排器: the chair's own shows. Anyone can read them (every phone needs the show to draw it); saving and deleting need the key.
     // Each: { id, name, song (0–3), len, n, ev: [{ t, ty, x, y, s, c? }] } at "fwc:<id>", with a short list at "fwcList" (20 shows at most).

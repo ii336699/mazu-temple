@@ -305,7 +305,10 @@ input,textarea{-webkit-user-select:text;user-select:text}
 .np-item h3{margin:4px 0 4px;font-size:16px;line-height:1.3;font-weight:800} .np-item p{margin:0;font-size:13px;line-height:1.6;text-align:justify}
 .np-box{border:1.5px solid #2a2018;padding:8px} .np-box h3{margin:0 0 6px;font-size:14px;text-align:center;letter-spacing:.2em}
 .np-box div{display:flex;justify-content:space-between;font-size:13px;border-bottom:1px dotted #b8a888;padding:2px 0} .np-box b{font-family:ui-monospace,monospace}
-.np-ads{display:grid;grid-template-columns:1fr 1fr;gap:8px;border-top:3px double #2a2018;padding-top:8px}
+.np-ads{display:grid;grid-template-columns:.9fr 1.1fr;grid-template-rows:auto auto;gap:8px;border-top:3px double #2a2018;padding-top:8px}
+.np-ad.poster{grid-row:span 2;padding:3px} .np-ad.poster img{width:100%;display:block}
+.np-ad.pic{display:grid;grid-template-columns:38% 1fr;gap:8px;align-items:center} .np-ad.pic img{width:100%;display:block} .np-ad.pic div{display:flex;flex-direction:column;gap:2px}
+.np-thumb{float:right;width:44%;margin:2px 0 4px 8px;border:1px solid #333;filter:grayscale(1) contrast(1.1)}
 .np-ad{border:1px dashed #6a5a40;padding:6px 8px;display:flex;flex-direction:column;gap:2px} .np-ad b{font-size:15px;color:#7a1d14} .np-ad span{font-size:12px;line-height:1.45}
 .np-foot{margin-top:8px;font-size:10px;text-align:center;color:#7a6a50}
 .np-close{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));transform:translateX(-50%);padding:11px 26px;border-radius:999px;border:1px solid #c8a46a;background:#3a1810;color:#f4e6c4;font-size:16px;font-family:var(--f-display);box-shadow:0 4px 18px rgba(0,0,0,.5)}
@@ -3347,7 +3350,7 @@ const raycaster=new T.Raycaster(); const ndc=new T.Vector2();
 { const redGlow=new T.SpriteMaterial({map:glowTex,color:new T.Color("#ff3a26"),transparent:true,opacity:.8,blending:T.AdditiveBlending,depthWrite:false});
   scene.traverse(o=>{ if(o.isSprite&&o.material===glowMat&&(o.parent&&o.parent.children.some(c=>c.material===lanternMat)||o.userData.lanternGlow)) o.material=redGlow; }); }
 const pickables=[]; scene.traverse(o=>{ if(o.userData&&(o.userData.act||o.userData.seats||o.userData.floor)) pickables.push(o); }); ZEN.pick.forEach(o=>{ if(!pickables.includes(o)) pickables.push(o); });
-let pointers=new Map(), dragStart=null, pinchD=0, moved=false, camWideX=0, camTight=0;
+let pointers=new Map(), dragStart=null, pinchD=0, moved=false, camWideX=0, camTight=0; const CAMSEAT={done:-1};
 canvas.addEventListener("pointerdown",e=>{ canvas.setPointerCapture(e.pointerId); pointers.set(e.pointerId,{x:e.clientX,y:e.clientY}); if(pointers.size===1){ dragStart={x:e.clientX,y:e.clientY,t:performance.now(),yaw:camYaw,pitch:camPitch,pv:pvYaw}; moved=false; rotAnim=null; } else if(pointers.size===2){ const [a,b]=[...pointers.values()]; pinchD=Math.hypot(a.x-b.x,a.y-b.y); moved=true; } });
 canvas.addEventListener("pointermove",e=>{ if(!pointers.has(e.pointerId)) return; pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(pointers.size===2&&fwZoomable()){ const [a,b]=[...pointers.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); FW_ZOOM=Math.max(1,Math.min(2.8,FW_ZOOM*d/Math.max(1,pinchD))); pinchD=d; return; } /* watching fireworks: two fingers zoom the lens in and out */
@@ -5011,7 +5014,7 @@ function sjUpdate(dt){ sjBuild();
     if(g.serving){ const tt=(performance.now()-g.t0)/1000; // right hand waves the incense over the visitor like drawing a talisman
       const a=av.arms[1], ph=tt*5.2; a.rotation.x=-1.9+Math.sin(ph)*.35; a.rotation.z=-.25+Math.sin(ph*.5+Math.sin(ph*1.7)*.8)*.45; av.arms[0].rotation.x=-.9; av.arms[0].rotation.z=.5; av.torso.rotation.x=.08+Math.sin(ph*.5)*.05;
       av.root.updateMatrixWorld(true); av.hands[1].getWorldPosition(_v1); av.root.worldToLocal(_v1); av.incense.position.copy(_v1); av.incense.rotation.set(.3+Math.sin(ph)*.35,0,Math.sin(ph*.5)*.5);
-      if(g.serving.key==="me"&&tt>5.2){ sjStopRitual(g); g.serving=null; mySj=null; markDirty(); sjBuild(); fxSpirit(meAv); g.av.say("好了，精神百倍！","#ffe2a0",2.4); meAv.faceGoal=null; toast("收驚完成，精神 UP！",3000); }
+      if(g.serving.key==="me"&&tt>5.2){ statInc("sjDone"); sjStopRitual(g); g.serving=null; mySj=null; markDirty(); sjBuild(); fxSpirit(meAv); g.av.say("好了，精神百倍！","#ffe2a0",2.4); meAv.faceGoal=null; toast("收驚完成，精神 UP！",3000); }
       else if(g.serving.key!=="me"&&tt>9){ sjStopRitual(g); g.serving=null; } } });
   const b=$("#sjBanner"); const ff=sjFind();
   if(ff){ const g=SJ.g[ff[0]]; b.hidden=false; b.textContent=(g.serving&&g.serving.key==="me")?"阿嬤收驚中…":ff[1]===0?"走到阿嬤面前…":`收驚排隊中・前面還有 ${ff[1]} 人`; } else b.hidden=true; }
@@ -5782,20 +5785,25 @@ HANDLERS.wxOpen=()=>{ const cur=wxNow(), manual=WX.set&&Date.now()<WX.setUntil; 
 /* 主委工具 → 每日統計: today's counters, the last 14 days of the main ones, busiest hours, and today's wishes */
 const STAT_NAME={visitors:"今日訪客",sessions:"進場次數",peak:"最高同時在線",minOnline:"在線總分鐘",minFront:"前殿・廟埕分鐘",minRear:"後殿分鐘",minZen:"靜思禪院分鐘",minInn:"禪房分鐘",minSitting:"坐著的分鐘",minInRain:"淋雨中的分鐘",
   wish:"許願卡",lamp:"點燈",msg:"給主委留言",zhan:"沾喜氣",lanterns:"放天燈",reply:"回覆",letter:"寫信",hongbao:"發紅包",hbclaim:"搶紅包",nightMarket:"夜市紀錄",b_bowBtn:"拜拜",b_jiaoBtn:"擲筊",b_lotBtn:"求籤",b_holdBtn:"持香",b_bagBtn:"打開背包",b_hallBtn:"換殿",
-  sit_mat:"跪拜墊",sit_zen:"禪坐",sit_futon:"通鋪睡覺",sit_bed:"套房躺床",sit_tub:"泡澡",sit_toilet:"上廁所",st_innDesk:"找櫃台阿姨",st_fortune:"找鐵口直斷",st_cats:"找貓咪",st_lot:"求籤處"};
-const statName=k=>STAT_NAME[k]||(k.startsWith("a_")?"選單："+k.slice(2):k.startsWith("b_")?"按鈕："+k.slice(2).replace(/Btn$/,""):k.startsWith("st_")?"去 "+k.slice(3):k.startsWith("sit_")?"坐 "+k.slice(4):k);
+  sit_mat:"跪拜墊",sit_zen:"禪坐",sit_futon:"通鋪睡覺",sit_bed:"套房躺床",sit_tub:"泡澡",sit_toilet:"上廁所",st_innDesk:"找櫃台阿姨",st_fortune:"走到鐵口直斷攤",st_cats:"找貓咪",st_lot:"求籤處",sjDone:"完成收驚",ftDone:"鐵口直斷算命",paperOpen:"看報紙",innBedding:"買通鋪床具",innRoom:"買套房房卡",pkCash:"彈珠台換出的平安幣",pkBuy:"買彈珠花的平安幣",sit_sofa:"坐禪房沙發",st_treasure:"土地公挖寶",b_zenMusicBtn:"換禪堂音樂",b_innLockBtn:"鎖房門",b_innSleepBtn:"通鋪睡覺",b_camReset:"鏡頭回正",b_foldBtn:"收起按鈕",b_chairBtn:"打開主委工具"};
+const statName=k=>{ if(STAT_NAME[k]) return STAT_NAME[k]; if(k.startsWith("b_")){ const el=document.getElementById(k.slice(2)); const t=el&&((el.getAttribute("aria-label")||"")||(el.querySelector(".cap")||{}).textContent||el.textContent||"").trim(); if(t&&/[\u4e00-\u9fff]/.test(t)) return "按「"+t.replace(/\s+/g," ").slice(0,12)+"」"; }
+  if(k.startsWith("st_")){ const n=(typeof STATION_HINT!=="undefined"&&STATION_HINT[k.slice(3)])||""; if(n) return String(n).slice(0,12); } return null; }; /* null: no Chinese name — counted under 其他操作 */
 HANDLERS.statOpen=async()=>{ let j=null;
   if(!USE_CF){ const d=new Date(Date.now()+288e5).toISOString().slice(0,10); j={ok:true,days:[{day:d,c:{...STATQ.q},mx:{}}],wishesToday:0,wishSample:[],local:1}; }
   else { const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return; } openSheet("contact","每日統計",`${backBtn}<p class="lead">讀取中…</p>`);
     try{ const r=await fetch("/stat",{headers:{"x-key":key},cache:"no-store"}); j=await r.json().catch(()=>({})); forgetKey(r,j); }catch(e){ j=null; } }
   if(!j||!j.ok){ openSheet("contact","每日統計",`${backBtn}<p class="lead">讀不到統計（密碼不對或網路不穩）。</p>`); return; }
   const days=j.days||[], T=days[days.length-1]||{c:{},mx:{}}, all={...T.c}; if(T.mx&&T.mx.peak) all.peak=T.mx.peak;
-  const rows=Object.entries(all).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<tr><td>${esc(statName(k))}</td><td style="text-align:right"><b>${v}</b></td></tr>`).join("")||`<tr><td>今天還沒有資料</td><td></td></tr>`;
+  const U=j.uniq||{}, pp=k=>U[k]?`<small style="opacity:.7">（${U[k]} 人）</small>`:"";
+  const MAIN0=[["b_bowBtn","拜拜"],["b_jiaoBtn","擲筊"],["b_lotBtn","求籤"],["sjDone","收驚"],["ftDone","鐵口直斷算命"],["lamp","點光明燈"],["wish","許願卡"],["visitors","訪客"],["peak","最高同時在線"]];
+  const worship=MAIN0.map(([k,n])=>`<tr><td>${n}</td><td style="text-align:right"><b>${all[k]||0}</b> ${pp(k)}</td></tr>`).join("");
+  let other=0; const rows=Object.entries(all).filter(([k])=>!MAIN0.some(m=>m[0]===k)).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{ const n=statName(k); if(!n){ other+=v; return ""; } return `<tr><td>${esc(n)}</td><td style="text-align:right"><b>${v}</b> ${pp(k)}</td></tr>`; }).join("")+(other?`<tr><td>其他操作</td><td style="text-align:right"><b>${other}</b></td></tr>`:"")||`<tr><td>今天還沒有其他資料</td><td></td></tr>`;
   const MAIN=["visitors","peak","wish","b_bowBtn","b_jiaoBtn","minOnline"], hist=days.slice(-14).map(d=>`<tr><td>${d.day.slice(5)}</td>${MAIN.map(k=>`<td style="text-align:right">${k==="peak"?(d.mx&&d.mx.peak)||0:(d.c&&d.c[k])||0}</td>`).join("")}</tr>`).join("");
   const hrs=[]; for(let h=0;h<24;h++){ const v=(T.mx&&T.mx["h"+String(h).padStart(2,"0")])||0; hrs.push(v); } const hm=Math.max(1,...hrs), busy=hrs.indexOf(Math.max(...hrs));
   const bars=`<div style="display:flex;align-items:flex-end;gap:2px;height:60px">${hrs.map((v,h)=>`<div title="${h} 點：${v} 人" style="flex:1;background:${h===busy&&v?"#e0a040":"#8a6a4a"};height:${Math.max(2,v/hm*100)}%"></div>`).join("")}</div><p class="note">每小時最多同時在線（0–23 點）${hrs.some(v=>v)?`，今天最熱鬧是 ${busy} 點（${hrs[busy]} 人）`:""}</p>`;
   openSheet("contact","每日統計",`${backBtn}<p class="lead">${esc(T.day||"")}（台灣時間）${j.local?"・測試頁只顯示你自己這一頁還沒送出的數字":""}。只記次數，不記名字。之後 NPC 會拿這些來跟大家聊天。</p>
-    <div class="ct-group"><span class="group-label">今天</span><table style="width:100%;font-size:13px">${rows}</table></div>
+    <div class="ct-group"><span class="group-label">今天的參拜</span><table style="width:100%;font-size:14px">${worship}</table><p class="note">括號是有做這件事的不同玩家人數。</p></div>
+    <div class="ct-group"><span class="group-label">今天的其他活動</span><table style="width:100%;font-size:13px">${rows}</table></div>
     <div class="ct-group"><span class="group-label">熱鬧時段</span>${bars}</div>
     <div class="ct-group"><span class="group-label">今天的許願（${j.wishesToday||0} 張）</span>${(j.wishSample||[]).map(t=>`<p class="note">・${esc(t)}</p>`).join("")||`<p class="note">還沒有人許願</p>`}</div>
     <div class="ct-group"><span class="group-label">近 14 天</span><table style="width:100%;font-size:12px"><tr><td>日期</td><td>訪客</td><td>最高在線</td><td>許願</td><td>拜拜</td><td>擲筊</td><td>在線分</td></tr>${hist}</table></div>`); };
@@ -6088,7 +6096,7 @@ HANDLERS.ftGo=async(v,b,quiet)=>{ const out=$("#ftOut"); if(!out) return; const 
   out.innerHTML=`<p class="lead ft-wait">老師傅掐指一算……</p>`; if(!quiet){ ftMumble(2.6); FTB.av&&FTB.av.say("嗯…讓我看看…","#ffe2a0",2.6); }
   try{ await ftLib(); }catch(e){ out.innerHTML=`<p class="lead">萬年曆沒有載入成功，請稍後再試一次。</p>`; return; }
   await new Promise(r=>setTimeout(r,quiet?0:2400)); save("mz.bazi",{y,m:mo,d,hh:hh==null?-1:hh});
-  let r; try{ r=ftReading(y,mo,d,h,new Date()); }catch(e){ out.innerHTML=`<p class="lead">這個日期排不出來，請換個日期試試。</p>`; return; }
+  let r; try{ r=ftReading(y,mo,d,h,new Date()); statInc("ftDone"); }catch(e){ out.innerHTML=`<p class="lead">這個日期排不出來，請換個日期試試。</p>`; return; }
   if(!quiet&&FTB.av){ FTB.av.say("鐵口直斷！","#ffe2a0",3); ftMumble(1.4); }
   const T=r.text, L=r.luck, D=ftToday(r,new Date()), mon=a=>a.length?a.map(n=>n+"月").join("、"):"沒有特別要避開的", st=n=>`<span class="ft-st">${"★".repeat(n)}<i>${"★".repeat(5-n)}</i></span>`;
   out.innerHTML=`<p class="ft-warn">這是趣味性小遊戲，沒有根據，僅供參考。</p>
@@ -8063,6 +8071,8 @@ function tick(){ if(gameAsleep) return; const _ft0=performance.now(); { const no
   } else {
     camera.clearViewOffset();
     { /* during a show the normal view goes wide-angle, so even the biggest shells fit on a phone screen */ const zx=meAv.pos.x<-23.5?(ZEN.fovX||0):0; camWideX+=((zx+camTight)-camWideX)*Math.min(1,dt*2); const want=(FW.on||FW.pendingAt)?Math.max(30,Math.min(96,fwFov())/FW_ZOOM):55+camWideX; if(Math.abs(camera.fov-want)>.3){ camera.fov+=(want-camera.fov)*Math.min(1,dt*2.5); camera.updateProjectionMatrix(); } }
+    { /* seated or lying: aim at the body (not 1 m above the seat), and once settled swing round behind the character */ const ST=meAv.seat>=0?SEATS[meAv.seat]:null, lie=ST&&(ST.kind==="bed"||ST.kind==="futon");
+      if(ST&&!customizing){ fy=lie?.35:.75; if(meAv.kneel>.9&&CAMSEAT.done!==meAv.seat){ CAMSEAT.done=meAv.seat; rotAnim={to:camYaw+wrapA(meAv.rotY+Math.PI-camYaw)}; if(lie&&camPitch<.75) camPitch=.75; } } else CAMSEAT.done=-1; }
     tmpV.set(meAv.pos.x,fy+((meAv.flyCur||0)>.02?meAv.flyCur:meAv.root.position.y),meAv.pos.y); camFocus.lerp(tmpV,Math.min(1,dt*6));
     // indoors a wall often stops the camera right behind your head: then try it higher up, looking down, and keep the one that stays farthest back
     let want=0, gotD=0; for(const dp of [0,.3,.6,.9]){ const pp=Math.min(1.2,pitch+dp), cx=camFocus.x+Math.sin(yaw)*Math.cos(pp)*dist, cz=camFocus.z+Math.cos(yaw)*Math.cos(pp)*dist, cy=camFocus.y+Math.sin(pp)*dist;
@@ -8217,7 +8227,7 @@ try{ floorsPlain(); }catch(e){}
    Ceilings are high so the camera has room. Positions are 2D, so each person also carries a level (gy: 0 ground, 4.6 upstairs). ================= */
 /* everything below is in the house's own coordinates; the house stands DX further out (world x = local x + DX). The stairs go up along the
    front, north of the door path (foot at z -30.4, top -40.2), onto a landing past the north wall (LZ0) and the 2F walkway along the front. */
-const INN={DX:6,X0:31,X1:55,Z0:-40,Z1:-15,G:ZEN.GZ,F2:4.96,H1:4.6,H2:4.0,RX0:26.0,RX1:28.2,RZB:-30.4,RZT:-40.2,LZ0:-42.4,CX0:28.6,CX1:31,SX1:42,lock:0,suites:[],seats:{},tv:[],shower:[],g:null};
+const INN={DX:6,X0:31,X1:55,Z0:-40,Z1:-15,G:ZEN.GZ,F2:5.96,H1:5.6,H2:4.0,RX0:26.0,RX1:28.2,RZB:-30.4,RZT:-40.2,LZ0:-42.4,CX0:28.6,CX1:31,SX1:42,lock:0,suites:[],seats:{},tv:[],shower:[],g:null};
 INN.sw=(INN.Z1-INN.Z0)/4; for(let i=0;i<4;i++){ const s0=INN.Z0+i*INN.sw, s1=s0+INN.sw; INN.suites.push({i,s0,s1,dz:s0+1.6}); }
 const innInL=(x,z)=>x>INN.X0&&x<INN.X1&&z>INN.Z0&&z<INN.Z1;
 const innRampH=z=>INN.F2*Math.max(0,Math.min(1,(INN.RZB-z)/(INN.RZB-INN.RZT)));
@@ -8299,11 +8309,12 @@ const INN_SEAT0=SEATS.length;
   /* upper floor box */
   const y2=F2; const sCut=INN.suites.slice(1).map(S=>[S.s0,S.s0,0]); /* (walls split at each suite boundary, so each room's walls drop on their own) */ wallZ(SX1,Z0,Z1,y2,H2,white,sCut.concat(INN.suites.map(S=>[S.s0+1.1,S.s1-1.1,3.0]))); for(const S of INN.suites) B(.25,.8,S.s1-S.s0-2.2,white,SX1,y2+.4,(S.s0+S.s1)/2); /* a window in each suite, sill to 3 m */ wallX(Z0,X0,SX1,y2,H2,white); wallX(Z1,X0,SX1,y2,H2,white);
   const doorGaps=INN.suites.map(S=>[S.dz-.6,S.dz+.6,2.5]).concat(sCut); wallZ(X0,Z0,Z1,y2,H2,white,doorGaps);
+  { const ev=B(1.8,.14,Z1-Z0,dark,SX1+.9,y2+H2-.05,(Z0+Z1)/2); ev.userData.eave=1; for(let z=Z0+1;z<Z1;z+=3.1) B(.1,H2-.1,.1,grey,SX1+1.7,y2+(H2-.1)/2,z); } /* an eave over the terrace outside the suites, on thin posts */
   INN.roofs=INN.suites.map(S=>{ const r=B(SX1-X0+.6,.4,S.s1-S.s0+(S.i===0||S.i===3?.3:0),dark,(X0+SX1)/2,y2+H2+.2,(S.s0+S.s1)/2+(S.i===0?-.15:S.i===3?.15:0)); r.userData.suiteRoof=S.i; return r; }); /* roof, one piece over each suite */
   for(const S of INN.suites){ const wz=mesh(new T.PlaneGeometry(INN.sw-2.2,2.2),new T.MeshStandardMaterial({color:L("#9fb8c0"),roughness:.05,transparent:true,opacity:.2,side:T.DoubleSide}),SX1,y2+1.9,(S.s0+S.s1)/2,root); wz.rotation.y=Math.PI/2; } /* each suite's window onto the terrace */
-  for(let i=0;i<14;i++) B(.12,H2,.08,slat,X0-.18,y2+H2/2,Z0+3.6+i*.18+(i>6?8.4:0)); /* slat screens (between the doors, not over them) */
+  for(let i=0;i<14;i++) B(.12,H2,.08,slat,X0-.18,y2+H2/2,Z0+3.6+i*.18+(i>6?10.9:0)); /* slat screens (between the doors, not over them: 201/202 and 203/204) */
   for(let z=Z0+.6;z<Z1;z+=.22) if(Math.abs(z-G)>2) B(.06,1.6,.1,slat,X0-.14,H1-1.2,z);               /* slatted fascia over the ground floor */
-  /* terrace planters */ for(let x=SX1+1.5;x<X1-1;x+=3) { B(1.6,.5,.8,grey,x,y2+.25,Z1-1); B(1.6,.5,.8,grey,x,y2+.25,Z0+1); }
+  /* terrace: a raised flower bed outside each suite window (the trees are added with the bath's trees) */ INN.beds=[]; for(const S of INN.suites){ const z=(S.s0+S.s1)/2; B(2.2,.9,4.2,grey,SX1+3.4,y2+.45,z); B(2.0,.06,4.0,mat(L("#3a2a1c"),{roughness:1}),SX1+3.4,y2+.92,z); INN.beds.push([SX1+3.4,z]); }
   /* sign */ { const st=cvs(512,128,(x,w,h)=>{ x.fillStyle="#2e3034"; x.fillRect(0,0,w,h); x.fillStyle="#f4efe6"; x.font='600 74px "Noto Sans TC",sans-serif'; x.textAlign="center"; x.textBaseline="middle"; x.fillText("禪 房",w/2,h/2+4); x.fillStyle="#c8a46a"; x.fillRect(w*.2,h-14,w*.6,4); });
     const sg=mesh(new T.PlaneGeometry(2.4,.6),new T.MeshStandardMaterial({map:st,roughness:.6,emissive:"#ffffff",emissiveMap:st,emissiveIntensity:.3}),X0-.2,3.5,G,root); sg.rotation.y=-Math.PI/2; }
   /* entrance canopy */ B(1.6,.12,3.4,dark,X0-.7,2.9,G);
@@ -8327,11 +8338,11 @@ const INN_SEAT0=SEATS.length;
     rail(INN.RX0+.05,INN.RZB,INN.RX0+.05,INN.RZT,0,F2); rail(INN.RX1-.05,INN.RZB,INN.RX1-.05,INN.RZT+.3,0,F2*(INN.RZB-INN.RZT-.3)/(INN.RZB-INN.RZT));   /* both sides of the stairs */
     rail(INN.RX0+.05,INN.RZT,INN.RX0+.05,INN.LZ0+.05,F2,F2); rail(INN.RX0+.05,INN.LZ0+.05,INN.CX1-.05,INN.LZ0+.05,F2,F2); rail(INN.CX1-.05,INN.LZ0+.05,INN.CX1-.05,INN.Z0-.15,F2,F2); /* landing */
     rail(INN.RX1-.05,INN.RZT+.3,INN.CX0+.05,INN.RZT+.3,F2,F2); rail(INN.CX0+.05,INN.RZT+.3,INN.CX0+.05,INN.Z1-.05,F2,F2); rail(INN.CX0+.05,INN.Z1-.05,INN.CX1,INN.Z1-.05,F2,F2); /* walkway */
-    B(.25,H2+.6,INN.Z1-INN.LZ0,dark,INN.CX0-.4,F2+H2+.04,(INN.LZ0+INN.Z1)/2).scale.set(.4,.08,1); }
+  }
   /* ---- lobby: front desk, the auntie, a little indoor garden of white gravel and rock ---- */
-  { const desk=mat(L("#7a5a3a"),{roughness:.5}); B(1.2,1.05,6.6,desk,38.55,.53,-28.2); B(1.4,.06,6.8,mat(L("#e8e2d6"),{roughness:.3}),38.55,1.08,-28.2);
+  { const desk=mat(L("#7a5a3a"),{roughness:.5}); B(1.2,.82,6.6,desk,38.55,.41,-28.2); B(1.4,.06,6.8,mat(L("#e8e2d6"),{roughness:.3}),38.55,.85,-28.2); /* a lower counter, so the auntie shows over it */
     const ds=cvs(512,128,(x,w,h)=>{ x.fillStyle="#7a5a3a"; x.fillRect(0,0,w,h); x.fillStyle="#f6eedd"; x.font='600 64px "Noto Sans TC",sans-serif'; x.textAlign="center"; x.textBaseline="middle"; x.fillText("櫃 台 RECEPTION",w/2,h/2); }); /* 512 wide so the words fit */
-    const dp=mesh(new T.PlaneGeometry(2.4,.6),new T.MeshStandardMaterial({map:ds,roughness:.6}),37.93,.7,-28.2,root); dp.rotation.y=-Math.PI/2;
+    const dp=mesh(new T.PlaneGeometry(2.4,.6),new T.MeshStandardMaterial({map:ds,roughness:.6}),37.93,.5,-28.2,root); dp.rotation.y=-Math.PI/2;
     B(.15,2.2,4,wood,40.85,2.6,-28.2); /* wood panel behind the desk */
     /* the wall behind the desk: lobby | dorm and bath (a door to each), and the wall between dorm and bath */ wallZ(41.05,Z0,Z1,0,H1,white,[[-21.7,-20.3,2.5],[-34.7,-33.3,2.5]]); wallX(-27.5,41.05,X1,0,H1,white);
     for(const [z,t,c] of [[-21,"通 鋪","#2a5a3a"],[-34,"♨ 溫 泉","#8a2a2a"]]){ const pc=cvs(256,96,(x,w,h)=>{ x.fillStyle=c; x.fillRect(0,0,w,h); x.fillStyle="#f6eedd"; x.font='600 50px "Noto Sans TC",sans-serif'; x.textAlign="center"; x.textBaseline="middle"; x.fillText(t,w/2,h/2+2); }); const pl=mesh(new T.PlaneGeometry(1.1,.4),new T.MeshStandardMaterial({map:pc,roughness:.7}),40.9,2.85,z,root); pl.rotation.y=-Math.PI/2; }
@@ -8359,6 +8370,7 @@ const INN_SEAT0=SEATS.length;
     const wa=new T.Mesh(new T.CircleGeometry(1,48),INN.waterMat); wa.rotation.x=-Math.PI/2; wa.scale.set(PRX,PRZ,1); wa.position.set(PX,.01,PZ); root.add(wa); INN.water=wa;
     { const pit=new T.Mesh(new T.CylinderGeometry(1,1,.55,40,1,true),new T.MeshStandardMaterial({color:L("#121214"),roughness:.6,side:T.BackSide})); pit.scale.set(PRX,1,PRZ); pit.position.set(PX,-.26,PZ); root.add(pit); const bt=new T.Mesh(new T.CircleGeometry(1,40),pit.material); bt.rotation.x=-Math.PI/2; bt.scale.set(PRX,PRZ,1); bt.position.set(PX,-.52,PZ); root.add(bt); }
 
+    { const bk=new T.MeshStandardMaterial({color:L("#141416"),roughness:.35}); /* the bath's own walls are black (a skin on the bath side of the white walls) */ B(.04,INN.H1,5.3,bk,41.2,INN.H1/2,-37.35); B(.04,INN.H1,5.8,bk,41.2,INN.H1/2,-30.4); B(.04,INN.H1-2.5,1.4,bk,41.2,2.5+(INN.H1-2.5)/2,-34); B(13.8,INN.H1,.04,bk,48.1,INN.H1/2,-27.65); /* (a gap for the door) */ }
     const rocks=[]; for(let k=0;k<44;k++){ const t=k/44*Math.PI*2; rocks.push([PX+Math.cos(t)*(PRX+.12),PZ+Math.sin(t)*(PRZ+.12),.24+Math.random()*.22]); }
     rocks.forEach(([x,z,s])=>{ const r=mesh(new T.DodecahedronGeometry(s,0),mat(L("#3a3836"),{roughness:.8}),x,s*.35,z,root); r.rotation.set(Math.random(),Math.random(),Math.random()); r.scale.y=.55; });
     INN.steam=[]; for(let k=0;k<10;k++){ const sp=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffffff"),transparent:true,opacity:.12,depthWrite:false})); sp.position.set(45+Math.random()*7,.4,-37+Math.random()*6); sp.scale.set(2.5,2.5,1); sp.userData.s=Math.random()*6; root.add(sp); INN.steam.push(sp); }
@@ -8387,7 +8399,8 @@ const INN_SEAT0=SEATS.length;
     B(1.8,.5,.4,frame,37.5,y+.25,S.s1-.25); B(1.9,1.1,.08,mat("#111111",{roughness:.3}),37.5,y+1.6,S.s1-.12);
     const tvc=document.createElement("canvas"); tvc.width=256; tvc.height=144; { const x=tvc.getContext("2d"); x.fillStyle="#000"; x.fillRect(0,0,256,144); } const tvt=new T.CanvasTexture(tvc); tvt.encoding=T.sRGBEncoding; const scr=mesh(new T.PlaneGeometry(1.76,.99),new T.MeshBasicMaterial({map:tvt,color:"#222222"}),37.5,y+1.6,S.s1-.17,root); scr.rotation.y=Math.PI;
     INN.tv.push({c:tvc,t:tvt,m:scr,on:false,k:0,at:0,i:S.i});
-    B(.9,.45,.9,mat(L("#a8b4a0"),{roughness:.9}),40.8,y+.23,S.s0+4.2); B(.9,.6,.15,mat(L("#a8b4a0"),{roughness:.9}),41.2,y+.6,S.s0+4.2);
+    { const tb=mat(L("#5a3e28"),{roughness:.5}), ch=mat(L("#a8b4a0"),{roughness:.9}); cyl(.42,.42,.05,tb,40.7,y+.72,S.s0+3.6,root,20); cyl(.05,.05,.7,tb,40.7,y+.36,S.s0+3.6,root,8); /* table by the window */
+      for(const [dz,f] of [[-.95,0],[.95,Math.PI]]){ B(.6,.42,.55,ch,40.7,y+.21,S.s0+3.6+dz); B(.6,.6,.1,ch,40.7,y+.62,S.s0+3.6+dz+(dz<0?-.25:.25)); const v=new T.Vector2(40.7,S.s0+3.6+dz); v.inn=1; v.kind="sofa"; v.lift=.14; v.face=f; v.gy=F2; v.suite=S.i; SEATS.push(v); INN.seats[S.i+"chair"+dz]=SEATS.length-1; } }
     /* door (shown shut when someone has locked it) */ const dr=B(.08,2.5,1.15,mat(L("#6a4a30"),{roughness:.6}),INN.CX1+.02,y+1.25,S.dz); S.door=dr; dr.userData.base=dr.position.z;
     const ns=cvs(128,64,(x,w,h)=>{ x.fillStyle="#2e3034"; x.fillRect(0,0,w,h); x.fillStyle="#f4efe6"; x.font='600 34px sans-serif'; x.textAlign="center"; x.textBaseline="middle"; x.fillText("20"+(S.i+1),w/2,h/2); });
     const np=mesh(new T.PlaneGeometry(.4,.2),new T.MeshBasicMaterial({map:ns}),INN.CX1-.14,y+2.0,S.dz+.85,root); np.rotation.y=-Math.PI/2;
@@ -8402,9 +8415,10 @@ for(let i=INN_SEAT0;i<SEATS.length;i++) SEATS[i].x+=INN.DX; INN.shower.forEach(s
 /* ---- 禪房 extras: colourful trees outside the bath's window (same leaves as the zen garden), lobby sofa corner, the paintings, warm lamps ---- */
 { const root=INN.g, L=h=>ZL(h); let seed=77; const R=()=>{ seed=(seed*16807)%2147483647; return seed/2147483647; }, rr=(a,b)=>a+(b-a)*R();
   const PAL=[["#a00a10","#b81414","#880810"],["#c8380a","#d85410","#b02808"],["#c88a06","#d8a010","#b07404"],["#900c2a","#a8143a","#740820"],["#3a6a14","#4a7c1a","#2c5a10"],["#e07898","#e890ac","#d06088"]];
-  const spots=[]; for(let i=0;i<600&&spots.length<16;i++){ const r=rr(1.8,2.6); let x,z; if(i%2){ x=rr(41,57.5); z=rr(-47,-42.2); } else { x=rr(57.2,61.5); z=rr(-45,-25); } if(spots.some(s=>Math.hypot(s[0]-x,s[1]-z)<(s[2]+r)*.75)) continue; spots.push([x,z,r]); }
+  const spots=[]; (INN.beds||[]).forEach(([x,z])=>{ for(const dz of [-1,1]) spots.push([x,z+dz,1.3,INN.F2+.95]); }); /* small trees in the terrace beds, at window height */
+  for(let i=0;i<600&&spots.length<24;i++){ const r=rr(1.8,2.6); let x,z; if(i%2){ x=rr(41,57.5); z=rr(-47,-42.2); } else { x=rr(57.2,61.5); z=rr(-45,-25); } if(spots.some(s=>Math.hypot(s[0]-x,s[1]-z)<(s[2]+r)*.75)) continue; spots.push([x,z,r]); }
   const cards=[], trunks=[], M4=new T.Matrix4(), Q4=new T.Quaternion(), E3=new T.Euler(), S3=new T.Vector3(), V3=new T.Vector3(), C3=new T.Color();
-  spots.forEach(([x,z,r],i)=>{ const pal=PAL[i%PAL.length], th=rr(1.6,2.2), cy=th+r*.6; trunks.push([x,th/2,z,th]); const n=Math.round(46+r*16);
+  spots.forEach(([x,z,r,y0],i)=>{ y0=y0||0; const pal=PAL[i%PAL.length], th=y0?rr(.8,1.1):rr(1.6,2.2), cy=y0+th+r*.6; trunks.push([x,y0+th/2,z,th]); const n=Math.round(46+r*16);
     for(let k=0;k<n;k++){ const a=rr(0,6.28), u=Math.cbrt(R()), y=rr(-.9,.75), s=rr(.9,1.3)*(.8+r*.1), src=R()<.1?PAL[4]:pal; cards.push([x+Math.cos(a)*u*r,cy+y*r,z+Math.sin(a)*u*r,rr(-.5,.5),rr(0,3.14),rr(-.4,.4),s,C3.set(ZL(src[k%3])).offsetHSL(0,rr(-.05,.05),(y<-.2?-.08:0)+rr(-.1,.08)).getHex()]); } });
   if(typeof ZEN!=="undefined"&&ZEN.leafMat&&ZEN.leaves){ const im=new T.InstancedMesh(ZEN.leaves.geometry,ZEN.leafMat,cards.length); cards.forEach((e,i)=>{ E3.set(e[3],e[4],e[5]); Q4.setFromEuler(E3); M4.compose(V3.set(e[0],e[1],e[2]),Q4,S3.set(e[6],e[6],e[6])); im.setMatrixAt(i,M4); im.setColorAt(i,C3.set(e[7])); }); im.instanceMatrix.needsUpdate=true; im.instanceColor.needsUpdate=true; im.frustumCulled=false; root.add(im);
     const tm=new T.InstancedMesh(new T.CylinderGeometry(.12,.2,1,6),mat(L("#3a2418"),{roughness:.9}),trunks.length); trunks.forEach((e,i)=>{ M4.compose(V3.set(e[0],e[1],e[2]),Q4.identity(),S3.set(1,e[3],1)); tm.setMatrixAt(i,M4); }); tm.frustumCulled=false; root.add(tm); }
@@ -8419,16 +8433,17 @@ for(let i=INN_SEAT0;i<SEATS.length;i++) SEATS[i].x+=INN.DX; INN.shower.forEach(s
   /* the paintings (10, from inn-art.webp): lobby, dorm, both corridors upstairs, each suite */
   const artClones=[], art=new T.TextureLoader().load("inn-art.webp",()=>artClones.forEach(t=>{ t.image=art.image; t.needsUpdate=true; })); art.encoding=T.sRGBEncoding; const ASP=[1,1,1,1.145,1.149,.788,.796,.796,1.204,1.246];
   const pic=(i,x,y,z,ry,h)=>{ const t=art.clone(); artClones.push(t); if(art.image) t.needsUpdate=true; t.repeat.set(.2,.5); t.offset.set((i%5)*.2,i<5?.5:0); const w=h*ASP[i]; const m=new T.Mesh(new T.PlaneGeometry(w,h),new T.MeshStandardMaterial({map:t,roughness:.6,emissive:"#ffffff",emissiveMap:t,emissiveIntensity:.18})); m.position.set(x,y,z); m.rotation.y=ry; root.add(m); };
-  pic(0,40.85,2.6,-21,-Math.PI/2,1.3); pic(2,40.85,2.6,-35,-Math.PI/2,1.3); pic(1,31.16,2.3,-22.5,Math.PI/2,1.1); pic(4,31.16,2.3,-33.5,Math.PI/2,1.0); /* lobby */
-  pic(3,47,2.4,-27.38,Math.PI,1.1); pic(6,52,2.4,-27.38,Math.PI,1.3); /* dorm wall */
-  INN.suites.forEach((S,k)=>{ pic([5,7,8,9][k],37.5,INN.F2+1.85,S.s0+.18,0,1.0); }); /* over each bed */
+  /* only on bare wall: big landscape ones in the lobby (over the sofa, by the garden, either side of the two doors), two in the dorm */
+  pic(8,31.14,2.9,-19.2,Math.PI/2,1.7); pic(9,31.14,2.9,-31.6,Math.PI/2,1.5); pic(3,40.9,2.9,-17.6,-Math.PI/2,1.4); pic(4,40.9,2.9,-37.6,-Math.PI/2,1.4);
+  pic(0,45,2.7,-27.35,0,1.2); pic(2,50,2.7,-27.35,0,1.2); /* dorm side of the dorm / bath wall */
+  INN.suites.forEach((S,k)=>{ pic([5,7,6,1][k],37.5,INN.F2+2.45,S.s0+.18,0,1.0); }); /* over each bed, above the headboard */
   /* warm light: paper lamps on the walls with a soft glow (no real lights — cheap) */
   const lampM=new T.MeshStandardMaterial({color:L("#fff1d6"),emissive:L("#ffc070"),emissiveIntensity:1.1,roughness:.9}), glowM=new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffb860"),transparent:true,opacity:.28,blending:T.AdditiveBlending,depthWrite:false});
   const lamp=(x,y,z)=>{ mesh(new T.CylinderGeometry(.16,.16,.36,10),lampM,x,y,z,root); const g=new T.Sprite(glowM); g.position.set(x,y,z); g.scale.set(1.6,1.6,1); root.add(g); };
-  for(const z of [-37,-30,-24,-18]) lamp(31.4,3.2,z); for(const z of [-25,-20,-16]) lamp(54.6,3.2,z); for(const x of [43,47,51]) lamp(x,3.4,-27.75); INN.suites.forEach(S=>{ lamp(41.6,INN.F2+2.6,S.s0+3); }); }
+  for(const z of [-37,-25,-22]) lamp(31.4,4.2,z); for(const z of [-25,-20,-16]) lamp(54.6,4.2,z); for(const x of [43,47.5,52]) lamp(x,4.3,-27.4); INN.suites.forEach(S=>{ lamp(41.6,INN.F2+2.6,S.s0+3); }); }
 
 /* the auntie at the front desk */
-{ const av=new Avatar([1,7,0,2,6,3,0,4,2,0,1,0,0],{npc:true,x:39.6+INN.DX,z:-28.2}); av.sjBusy=1; av.rotY=-Math.PI/2; av.faceGoal=-Math.PI/2; av.setName("櫃台阿姨"); av.gy=0; INN.aunt=av; addHit("innDesk",38.6+INN.DX,0,-28.2,1.3,1.6); }
+{ const av=new Avatar([1,7,0,2,6,3,0,4,2,0,1,0,0],{npc:true,x:39.6+INN.DX,z:-28.2}); av.sjBusy=1; av.rotY=-Math.PI/2; av.faceGoal=-Math.PI/2; av.setName("櫃台阿姨"); av.gy=0; av.root.scale.setScalar(1.2); INN.aunt=av; /* a bit bigger than the guests: she stands behind the counter */ addHit("innDesk",38.6+INN.DX,0,-28.2,1.3,1.6); }
 station("innDesk",[37.3+INN.DX,-28.2],Math.PI/2);
 for(const [k,o] of Object.entries(INN.seats)){ const S=SEATS[o]; addHit("iseat:"+o,S.x,S.gy,S.y,S.kind==="bed"?1.1:.45,S.kind==="bed"?.9:.8); }
 INN.futon.forEach(o=>{ const S=SEATS[o.i]; addHit("iseat:"+o.i,S.x,0,S.y,.55,.3); });
@@ -8450,7 +8465,7 @@ HANDLERS.innOnsen=()=>{ INN.aunt.say("泡湯前先沖洗身體，毛巾放頭上
 /* the 小幽靈 puzzle pictures, small (one 4×4 sheet, tv-ghosts.webp, loaded the first time a TV is switched on) */
 const INN_TVIMG={img:null,ok:false}; const INN_TVCAP=["小幽靈出門散步","小幽靈賞櫻花","小幽靈吃糰子","小幽靈放氣球","小幽靈看星星","小幽靈去海邊","小幽靈拜拜","小幽靈逛夜市","小幽靈睡午覺","小幽靈看煙火","小幽靈過年","小幽靈放天燈","小幽靈去禪院","小幽靈泡溫泉"];
 function innTvDraw(t){ if(!INN_TVIMG.img){ const im=new Image(); im.onload=()=>{ INN_TVIMG.ok=true; INN.tv.forEach(q=>{ if(q.on) innTvDraw(q); }); }; im.src="tv-ghosts.webp"; INN_TVIMG.img=im; }
-  if(INN_TVIMG.ok){ const x=t.c.getContext("2d"), i=t.k%14; x.drawImage(INN_TVIMG.img,(i%4)*256,Math.floor(i/4)*144,256,144,0,0,256,144); x.fillStyle="rgba(0,0,0,.45)"; x.fillRect(0,118,256,26); x.fillStyle="#fff"; x.font="600 15px sans-serif"; x.fillText(INN_TVCAP[i],10,136); t.t.needsUpdate=true; return; }
+  if(INN_TVIMG.ok){ const x=t.c.getContext("2d"), i=t.k%14; x.drawImage(INN_TVIMG.img,(i%4)*256,Math.floor(i/4)*144,256,144,0,0,256,144); t.t.needsUpdate=true; return; }
   innTvDraw0(t); }
 function innTvDraw0(t){ const x=t.c.getContext("2d"), w=256, h=144, k=t.k%5; const bg=["#2a3a6a","#5a2a4a","#2a5a4a","#6a4a2a","#3a2a5a"][k]; x.fillStyle=bg; x.fillRect(0,0,w,h);
   const gx=w/2+[0,-40,40,-20,20][k], gy=h/2+[0,6,-6,10,-4][k]; x.fillStyle="#fbfbff"; x.beginPath(); x.arc(gx,gy-10,30,Math.PI,0); x.lineTo(gx+30,gy+26); for(let i=0;i<4;i++){ x.quadraticCurveTo(gx+30-i*15-7.5,gy+36,gx+30-(i+1)*15,gy+26); } x.closePath(); x.fill();
@@ -8507,7 +8522,7 @@ INN.cut=[]; INN.cutMode=""; INN.cutKey="";
     const G=new T.BufferGeometry(); G.setAttribute("position",new T.BufferAttribute(P,3)); G.setAttribute("normal",new T.BufferAttribute(N,3)); G.setAttribute("uv",new T.BufferAttribute(U,2)); G.setIndex(new T.BufferAttribute(I,1)); G.computeBoundingSphere();
     const M=new T.Mesh(G,list[0].material); M.raycast=()=>{}; INN.g.add(M); list.forEach(o=>INN.g.remove(o)); n+=list.length; }); INN.merged=n; })();
 function innCutTick(){ const me=meAv; if(!me) return; const x=me.pos.x-INN.DX, z=me.pos.y, gy=me.gy||0; let m="";
-  const si=gy>2.3&&x>INN.CX1+.1?innSuiteAtL(x,z):-1; if(si>=0) m="2"; else if(gy<1&&innInL(x,z)) m="1"; INN.cutSi=si; /* upstairs only inside a suite (the walkway is outdoors) */
+  const si=gy>2.3&&x>INN.CX1+.1?innSuiteAtL(x,z):-1; if(si>=0) m="2"; INN.cutSi=si; /* (the ground floor is 5.6 m high now and keeps its roof and walls) */ /* upstairs only inside a suite (the walkway is outdoors) */
   const cx=camera.position.x-INN.DX, cz=camera.position.z, dx=cx-x, dz=cz-z, L=Math.hypot(dx,dz)*.3, XE=m==="2"?INN.SX1:INN.X1, cross=(p,c,w)=>(c-w)*(p-w)<0; /* a wall drops when the camera is on its outer side, or when it stands between the camera and you */
   const tw={W:-dx>L||cross(x,cx,INN.X0),E:dx>L||cross(x,cx,XE),N:-dz>L||cross(z,cz,INN.Z0),S:dz>L||cross(z,cz,INN.Z1)};
   const key=m?m+si+(tw.W?1:0)+(tw.E?1:0)+(tw.N?1:0)+(tw.S?1:0):""; INN.cutMode=m; if(key===INN.cutKey) return; INN.cutKey=key;
@@ -8619,19 +8634,25 @@ async function paperFetch(){ if(PAPER.p) return PAPER.p;
     else { PAPER.p=await paperDemo({}); } }catch(e){ console.warn("paper",e); }
   return PAPER.p; }
 /* a sample paper (test page, and the chair's 報紙測試): made up numbers plus whatever this page did today; sc picks the stories */
-async function paperDemo(sc){ const G=await import("./paper-gen.js"); const d=new Date(Date.now()+8*3600e3-864e5).toISOString().slice(0,10); const n=(me.name||"香客").slice(0,10); const pk=sc.pk===false?{pkCash:120,pkBuy:900}:{pkCash:1340,pkBuy:980};
-  const ev=[]; if(sc.rec!==false) ev.push({k:"lb",g:"tudi",n,v:6400}); if(sc.tudi!==false) ev.push({k:"tudi500",n:"阿明"}); if(sc.calm){ ev.length=0; }
-  return G.buildPaper({d,no:sc.no||1,seed:sc.seed||0,force:sc.force||[],st:{c:sc.calm?{visitors:12,b_bowBtn:30}:{visitors:37,b_bowBtn:212,b_jiaoBtn:96,b_lotBtn:41,wish:12,sit_futon:6,...pk},mx:{peak:23,sp:58,h20:23,s20:58,s21:51,s19:44,s14:30},p:sc.calm?{}:{me:{n,c:{b_bowBtn:31,b_jiaoBtn:14,minOnline:96,minZen:18,pkCash:600}},x1:{n:"阿明",c:{b_bowBtn:12,sit_futon:3}}}},
-    ev:ev.concat(sc.calm?[]:(STATQ.ev||[])),wishes:sc.calm?[]:[{name:"小美",text:"希望明天考試順利"},{name:"阿明",text:"阿嬤身體健康"}]}); }
+async function paperDemo(sc){ const G=await import("./paper-gen.js"); const back=sc.seed?1+Math.floor(Math.random()*40):1, d=new Date(Date.now()+8*3600e3-back*864e5).toISOString().slice(0,10); const NAMES=["阿明","小美","怕癢的傑克","開心凱文","跑很快的小龍","溫柔的松鼠","阿嬤的乖孫","夜市小王子","拜拜達人","甜甜圈"], pickN=()=>NAMES[(Math.random()*NAMES.length)|0]; const n=sc.seed?pickN():(me.name||"香客").slice(0,10); const pkr=sc.pk===undefined&&sc.seed?Math.random():(sc.pk===false?.9:0); const pk=pkr<.4?{pkCash:1340,pkBuy:980}:pkr<.7?{pkCash:120,pkBuy:900}:{pkCash:60,pkBuy:80};
+  const ev=[]; const G7=["wenchang","tudi","guanyin","zhusheng","doumu","jiutian","dizang"], NM=["qq","bbq","fish","pachinko","boba","balloon"]; const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+  if(sc.rec!==false&&(!sc.seed||Math.random()<.7)){ const g=G7[rnd(0,6)]; ev.push({k:"lb",g,n:sc.seed?pickN():n,v:g==="wenchang"?rnd(700,1200):rnd(3000,20000)}); } if(sc.seed&&Math.random()<.5){ const g=NM[rnd(0,5)]; ev.push({k:"nm",g,n:pickN(),v:rnd(5,60)}); }
+  if(sc.tudi!==false&&(!sc.seed||Math.random()<.5)) ev.push({k:"tudi500",n:pickN()}); if(sc.calm){ ev.length=0; }
+  const R2=sc.seed?rnd:(a,b2)=>a; /* the "換一份" samples get random numbers and people; the first sample stays fixed */
+  const p={}; if(!sc.calm){ const k=sc.seed?rnd(2,5):2; for(let i=0;i<k;i++){ const nm=i===0?n:pickN(); p["u"+i]={n:nm,c:{b_bowBtn:R2(5,40),b_jiaoBtn:R2(5,25),minOnline:R2(30,180),minZen:R2(0,30),pkCash:R2(0,700),sit_futon:R2(0,4)}}; } }
+  const WISH=["希望明天考試順利","阿嬤身體健康","找到好工作","家人平安","今年脫單","店裡生意興隆","貓咪長命百歲","出國比賽順利"], wishes=sc.calm?[]:Array.from({length:sc.seed?rnd(1,6):2},()=>({name:pickN(),text:WISH[rnd(0,WISH.length-1)]}));
+  const sp=sc.seed?rnd(25,90):58;
+  return G.buildPaper({d,no:sc.no||1+(sc.seed?rnd(1,99):0),seed:sc.seed||0,force:sc.force||[],st:{c:sc.calm?{visitors:12,b_bowBtn:30}:{visitors:R2(20,90),b_bowBtn:R2(80,400),b_jiaoBtn:R2(40,200),b_lotBtn:R2(10,90),wish:wishes.length,sit_futon:R2(2,12),...pk},mx:{peak:Math.round(sp*.4),sp,h20:Math.round(sp*.4),s20:sp,s21:Math.round(sp*.85),s19:Math.round(sp*.7),s14:Math.round(sp*.5)},p},
+    ev:ev.concat(sc.calm?[]:(STATQ.ev||[])),wishes}); }
 function paperHTML(p){ const E=esc, it=p.items||[], dt=p.d.split("-"), wk="日一二三四五六"[new Date(p.d+"T12:00:00+08:00").getDay()];
   const art=(s,i)=>PAPER.ph&&PAPER.ph[i]?`<figure class="np-photo"><img src="${PAPER.ph[i]}" alt=""><figcaption>本報記者攝</figcaption></figure>`:`<div class="np-art"><span>${s.art||"📰"}</span></div>`;
   return `<div class="np-page" role="document">
     <header class="np-mast"><div class="np-side">第 ${p.no} 期<br>${+dt[1]} 月 ${+dt[2]} 日（${wk}）</div><h1>天后宮日報</h1><div class="np-side r">昨日 ${p.wxi} ${p.wxn}<br>今日 ${p.fci} ${p.fcn}</div></header>
     <div class="np-rule"></div>
     <article class="np-head"><span class="np-tag">${E(p.head.tag)}</span><h2>${E(p.head.t)}</h2>${art(p.head,0)}<p>${E(p.head.b)}</p></article>
-    <div class="np-cols">${it.map((s,k)=>`<article class="np-item${k===0?" np-wide":""}"><span class="np-tag">${E(s.tag)}</span><h3>${E(s.t)}</h3>${k===0?art(s,1):""}<p>${E(s.b)}</p></article>`).join("")}
+    <div class="np-cols">${it.map((s,k)=>`<article class="np-item"><span class="np-tag">${E(s.tag)}</span><h3>${E(s.t)}</h3>${k===0&&PAPER.ph&&PAPER.ph[1]?`<img class="np-thumb" src="${PAPER.ph[1]}" alt="">`:""}<p>${E(s.b)}</p></article>`).join("")}
       <aside class="np-box"><h3>昨日數字</h3>${p.box.map(([k,v])=>`<div><span>${E(k)}</span><b>${v}</b></div>`).join("")}${p.busyHour>=0?`<div><span>最熱鬧</span><b>${p.busyHour} 點</b></div>`:""}</aside></div>
-    <div class="np-ads">${p.ads.map(a=>`<div class="np-ad"><b>${E(a.t)}</b><span>${E(a.b)}</span></div>`).join("")}</div>
+    <div class="np-ads">${(p.ads||[]).map(a=>a.poster?`<div class="np-ad poster"><img src="${E(a.img)}" alt="廣告"></div>`:a.img?`<div class="np-ad pic"><img src="${E(a.img)}" alt=""><div><b>${E(a.t)}</b><span>${E(a.b)}</span></div></div>`:`<div class="np-ad"><b>${E(a.t)}</b><span>${E(a.b)}</span></div>`).join("")}</div>
     <footer class="np-foot">天后宮日報社・本報內容由廟方記者（和一隻貓）採訪撰寫</footer></div>`; }
 function paperDing(){ const a=soundOn?ensureAudio():null, v=sVol(); if(!a||v<=0) return; const t0=a.currentTime+.05;
   [[0,1568],[.32,1318]].forEach(([dt,f])=>{ for(const [m,g] of [[1,.22],[2.76,.06],[5.4,.03]]){ const o=a.createOscillator(), out=a.createGain(); o.type="sine"; o.frequency.value=f*m; out.gain.setValueAtTime(0,t0+dt); out.gain.linearRampToValueAtTime(g*v,t0+dt+.006); out.gain.exponentialRampToValueAtTime(.0001,t0+dt+1.4/m); o.connect(out); out.connect(sfxBus(a)); o.start(t0+dt); o.stop(t0+dt+1.5); } }); }
@@ -8645,9 +8666,12 @@ function paperSpot(kind){ const C=[0,3.2,HZ+YX+16,0,2.6,HZ];
     record:[TG.x+4,2.6,TG.z+5,TG.x,1.8,TG.z],wishes:[WT.x+7,3,WT.z+6,WT.x,3,WT.z],pious:[0,2.2,HZ-1.5,0,1.8,-6],jiao:[0,2.2,HZ-1.5,0,1.8,-6],
     zen:[ZEN.plat.x1+7,3.4,ZEN.GZ+5,(ZEN.plat.x0+ZEN.plat.x1)/2,1.6,ZEN.GZ],sleep:[INN.DX+21,5,-12,INN.DX+40,2.5,-28],storm:C,rain:C,windy:C,calm:C,online:C,pkBroke:[FX+6,3,FZ+9,FX,1.5,FZ],pkWin:[FX+6,3,FZ+9,FX,1.5,FZ]};
   return S[kind]||C; }
-function paperShoot(kind){ try{ const W=480,H=300, cam=new T.PerspectiveCamera(50,W/H,.1,600), v=paperSpot(kind); cam.position.set(v[0],v[1],v[2]); cam.lookAt(v[3],v[4],v[5]); cam.updateMatrixWorld();
+function paperShoot(kind){ try{ const W=480,H=300, cam=new T.PerspectiveCamera(50,W/H,.1,600), v=paperSpot(kind).slice(); { const a=Math.random()*1.2-.6, dx=v[0]-v[3], dz=v[2]-v[5], c=Math.cos(a), s2=Math.sin(a); v[0]=v[3]+dx*c-dz*s2; v[2]=v[5]+dx*s2+dz*c; v[1]+=Math.random()*.8; } cam.position.set(v[0],v[1],v[2]); cam.lookAt(v[3],v[4],v[5]); cam.updateMatrixWorld();
     const rt=new T.WebGLRenderTarget(W,H); const prev=renderer.getRenderTarget(); renderer.setRenderTarget(rt); renderer.render(scene,cam); const px=new Uint8Array(W*H*4); renderer.readRenderTargetPixels(rt,0,0,W,H,px); renderer.setRenderTarget(prev); rt.dispose();
-    const c=document.createElement("canvas"); c.width=W; c.height=H; const x=c.getContext("2d"), id=x.createImageData(W,H); for(let y=0;y<H;y++) id.data.set(px.subarray((H-1-y)*W*4,(H-y)*W*4),y*W*4); x.putImageData(id,0,0); return c.toDataURL("image/jpeg",.82); }catch(e){ return null; } }
+    const c=document.createElement("canvas"); c.width=W; c.height=H; const x=c.getContext("2d"), id=x.createImageData(W,H); for(let y=0;y<H;y++) id.data.set(px.subarray((H-1-y)*W*4,(H-y)*W*4),y*W*4);
+    { /* auto levels: stretch the darkest 2% to black and the brightest 1% to white, then lift the mid-tones (night photos came out nearly black) */ const d=id.data, hist=new Uint32Array(256); for(let i=0;i<d.length;i+=4) hist[(d[i]*.3+d[i+1]*.59+d[i+2]*.11)|0]++; const N=W*H; let lo=0, hi=255, acc=0; for(;lo<255&&(acc+=hist[lo])<N*.02;lo++); acc=0; for(;hi>0&&(acc+=hist[hi])<N*.01;hi--);
+      const sc=255/Math.max(30,hi-lo), LUT=new Uint8ClampedArray(256); for(let v=0;v<256;v++) LUT[v]=255*Math.pow(Math.max(0,Math.min(1,(v-lo)*sc/255)),.7); for(let i=0;i<d.length;i+=4){ d[i]=LUT[d[i]]; d[i+1]=LUT[d[i+1]]; d[i+2]=LUT[d[i+2]]; } }
+    x.putImageData(id,0,0); return c.toDataURL("image/jpeg",.82); }catch(e){ return null; } }
 function paperPhotos(){ const p=PAPER.p; if(!p) return; PAPER.ph=[paperShoot(p.head.kind),p.items[0]?paperShoot(p.items[0].kind):null]; }
 function paperOpen(intro){ const p=PAPER.p; if(!p) return; if(!intro) paperPhotos(); let el=$("#paper"); if(!el){ el=document.createElement("div"); el.id="paper"; document.body.appendChild(el); }
   el.innerHTML=`<div class="np-call" aria-live="polite"><div class="np-icon">📰</div><div class="np-big">報紙到囉！</div><div class="np-hint">點一下打開報紙</div></div><div class="np-wrap">${paperHTML(p)}<button class="np-close" type="button">收起報紙</button></div>`;
