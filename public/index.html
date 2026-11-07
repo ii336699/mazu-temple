@@ -408,7 +408,7 @@ body.hideui .joy,body.customizing .joy,body.hideui .camreset,body.customizing .c
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
 </head>
 <body>
-<canvas id="c" tabindex="0" aria-label="雲端天后宮正殿 3D 場景"></canvas><div id="vig" aria-hidden="true"></div><button id="zenMusicBtn" class="zen-music" hidden>🎵 禪堂音樂</button><button id="zenWideBtn" class="zen-music" style="top:calc(env(safe-area-inset-top) + 128px)" hidden>📐 廣角</button>
+<canvas id="c" tabindex="0" aria-label="雲端天后宮正殿 3D 場景"></canvas><div id="vig" aria-hidden="true"></div><button id="zenMusicBtn" class="zen-music" hidden>🎵 禪堂音樂</button>
 <div class="loading" id="loading">正在點燈</div>
 <div class="dlpack" id="dlPack" hidden role="dialog" aria-label="下載廟宇中"><div class="dl-in"><h2>雲端天后宮</h2><p>正在下載廟宇建築和神尊，第一次進廟會比較久。<br>下載過的會存在手機裡，下次就很快。</p>
   <div class="dl-track"><div class="dl-fill" id="dlFill"></div><div class="dl-run" id="dlRun"></div></div>
@@ -2695,8 +2695,7 @@ function shadowTick(dt){ let p=(Date.now()/1000%TOD_LEN)/TOD_LEN; if(typeof wind
       SAKURA.spots.forEach(([x,z,r],i)=>{ const h=r*1.6+2; M.compose(P.set(x+ux*h*SHD.len*.35,0,z+uz*h*SHD.len*.35),Qt,S.set(r*2.1,1,r*2.1+h*SHD.len*.55)); SAKURA.sh.setMatrixAt(i,M); }); SAKURA.sh.instanceMatrix.needsUpdate=true; } SAKURA.sh.visible=false; } else if(SHD.t<=0) SHD.t=3; }
 /* the round build-mode trees that ended up out where the garden is (they looked odd there): hidden before the static merge, so they are not baked in */
 function zenHideTrees(){ for(const o of scene.children){ if(!(o.userData&&o.userData.buildId&&/^g-X-/.test(o.userData.buildId))) continue; let hit=false; o.updateMatrixWorld(true); o.traverse(m=>{ if(hit||!(m.isMesh||m.isPoints)) return; m.getWorldPosition(_zv); if((_zv.x<-26&&_zv.z<9)||Math.abs(_zv.x)>26.5||_zv.z<-51.5||_zv.z>HZ+YX+25) hit=true; /* (and every one outside the balustrade: the cherry trees stand there now) */ }); if(hit) o.visible=false; } }
-function zenTick(dt){ { const b=$("#zenMusicBtn"), want=!!(meAv&&meAv.pos.x<-23.5); if(b&&b.hidden===want) b.hidden=!want; const w=$("#zenWideBtn"); if(w&&w.hidden===want) w.hidden=!want;
-    if(!LAKE.on&&!fwView&&!FWED.on){ const base=window.innerWidth<window.innerHeight?62:52, f=(want&&ZEN.wide)?base+26:base; if(Math.abs(camera.fov-f)>.2){ camera.fov+=(f-camera.fov)*Math.min(1,dt*4); camera.updateProjectionMatrix(); } } } const c=camera.position, near=(c.x<-14&&c.z<-8&&c.z>-54)||c.x<-24, me=meAv&&meAv.pos;
+function zenTick(dt){ { const b=$("#zenMusicBtn"), want=!!(meAv&&meAv.pos.x<-23.5); if(b&&b.hidden===want) b.hidden=!want; } const c=camera.position, near=(c.x<-14&&c.z<-8&&c.z>-54)||c.x<-24, me=meAv&&meAv.pos;
   if(ZEN.g.visible!==near){ ZEN.g.visible=near; }
   ZEN.t=(ZEN.t||0)+dt; if((ZEN.hideT=(ZEN.hideT||0)-dt)<0){ ZEN.hideT=3;  }
   if(!near) return;
@@ -3201,8 +3200,9 @@ function dirArrowTick(close){ if(!meAv) return; if(!dirArrow){ const tex=cvs(128
     dirArrow=new T.Mesh(new T.PlaneGeometry(1.1,1.1),new T.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,opacity:.3})); dirArrow.rotation.set(-Math.PI/2,0,Math.PI); dirArrow.position.y=.03; dirArrow.renderOrder=2; meAv.root.add(dirArrow); }
   if(dirArrow.parent!==meAv.root) meAv.root.add(dirArrow); dirArrow.material.opacity=.22+.6*close; dirArrow.visible=!customizing&&!(meAv.flyCur>.3); }
 function camOK(x,y,z){ if(y<.35) return false; const ax=Math.abs(x);
-  if(x>23.3&&z>-52&&z<-4){ const up=(meAv.gy||0)>2.3; if(innIn(x,z)){ if(up) return x<INN.SX1?(y>INN.F2+.7&&y<INN.F2+.36+INN.H2-.2):(y>INN.F2+.7&&y<16); return y<INN.H1-.2; } if(up&&x>=INN.RX0) return y>INN.F2+.5&&y<16; return y<20; }
+  if(x>23.3&&z>-52&&z<-4){ if(INN.cutMode) return y>(INN.cutMode==="2"?INN.F2+.8:.4)&&y<18; const up=(meAv.gy||0)>2.3; if(innIn(x,z)){ if(up) return x<INN.SX1?(y>INN.F2+.7&&y<INN.F2+.36+INN.H2-.2):(y>INN.F2+.7&&y<16); return y<INN.H1-.2; } if(up&&x>=INN.RX0) return y>INN.F2+.5&&y<16; return y<20; }
   if(x<-23.3&&z>ZEN.Z0-1&&z<ZEN.Z1+1){ if(zenPlat(x,z)&&x>ZEN.hall.x0&&x<ZEN.hall.x1&&z>ZEN.hall.z0&&z<ZEN.hall.z1) return y<ZEN.FY+3.3; return y<20; }
+  if(ax>22.4&&ax<24.2&&Math.abs(z-ZEN.GZ)<1.0) return y<2.5; /* the gates to the 禪院 and the 禪房 */
   if(z<-15.25){ // 後埕 (open sky), then the 後殿 and its 側殿
     if(z>RH.z0+.25) return ax<RS.x1-.15&&y<15&&!(ax<2.6&&z>-17.9&&y<4);
     if(z>RH.z0-.3){ if(ax<RH.x) return (Math.abs(ax-RH.door)<.85&&y<3.2)||(ax<1.4&&y>1.1&&y<3.9); return Math.abs(ax-RS.cx)<.75&&y<2.5; }      // through the front door / a moon gate
@@ -3219,7 +3219,7 @@ function camOK(x,y,z){ if(y<.35) return false; const ax=Math.abs(x);
   if(ax>GH.x0-.1&&z>SHZ1+.3&&z<GH.z1+.3){ if(z>GH.z1-.25) return Math.abs(ax-SHXC)<1.0&&y<2.8; return ax>GH.x0+.3&&ax<GH.x1-.3&&y<GH.H-.3; } // the joined garden-path hall
   return ax<25.5&&y<16; }
 // which room a point is in ("O" = outdoors); indoors the camera never leaves your room through a doorway
-function camRoom(x,z){ const ax=Math.abs(x); if(x>23.3&&z>-52&&z<-4){ if((typeof meAv!=="undefined"&&meAv&&(meAv.gy||0)>2.3)){ const i=innSuiteAt(x,z); return i>=0&&x>INN.CX1+.1?"RS"+i:"O"; } if(innIn(x,z)) return x<41?"RL":(z>-27.5?"RD":"RO"); return "O"; }
+function camRoom(x,z){ const ax=Math.abs(x); if(x>23.3&&z>-52&&z<-4){ if(typeof INN!=="undefined"&&INN.cutMode) return "O"; if((typeof meAv!=="undefined"&&meAv&&(meAv.gy||0)>2.3)){ const i=innSuiteAt(x,z); return i>=0&&x>INN.CX1+.1?"RS"+i:"O"; } if(innIn(x,z)) return x<41?"RL":(z>-27.5?"RD":"RO"); return "O"; }
   if(ax<HX&&z>-HZ&&z<HZ) return "M"; if(ax>SHX0&&ax<SHX1+.2&&z>SHZ0&&z<SHZ1) return "S"+Math.sign(x); if(ax>GH.x0&&ax<GH.x1+.2&&z>SHZ1&&z<GH.z1) return "G"+Math.sign(x);
   if(ax<RH.x&&z<RH.z0&&z>RH.z1) return "H"; if(ax>RS.x0&&ax<RS.x1+.2&&z<RS.z0&&z>RS.z1) return "Q"+Math.sign(x); return "O"; }
 function camLimit(from,to,out){ if(myFly) return out.copy(to); let lo=0; const N=24; const room0=camRoom(from.x,from.z); // inside a 偏殿 the camera stays indoors (it used to slip out the garden door and end up behind the trees)
@@ -3292,15 +3292,16 @@ const raycaster=new T.Raycaster(); const ndc=new T.Vector2();
 { const redGlow=new T.SpriteMaterial({map:glowTex,color:new T.Color("#ff3a26"),transparent:true,opacity:.8,blending:T.AdditiveBlending,depthWrite:false});
   scene.traverse(o=>{ if(o.isSprite&&o.material===glowMat&&(o.parent&&o.parent.children.some(c=>c.material===lanternMat)||o.userData.lanternGlow)) o.material=redGlow; }); }
 const pickables=[]; scene.traverse(o=>{ if(o.userData&&(o.userData.act||o.userData.seats||o.userData.floor)) pickables.push(o); }); ZEN.pick.forEach(o=>{ if(!pickables.includes(o)) pickables.push(o); });
-let pointers=new Map(), dragStart=null, pinchD=0, moved=false;
+let pointers=new Map(), dragStart=null, pinchD=0, moved=false, camWideX=0, camTight=0;
 canvas.addEventListener("pointerdown",e=>{ canvas.setPointerCapture(e.pointerId); pointers.set(e.pointerId,{x:e.clientX,y:e.clientY}); if(pointers.size===1){ dragStart={x:e.clientX,y:e.clientY,t:performance.now(),yaw:camYaw,pitch:camPitch,pv:pvYaw}; moved=false; rotAnim=null; } else if(pointers.size===2){ const [a,b]=[...pointers.values()]; pinchD=Math.hypot(a.x-b.x,a.y-b.y); moved=true; } });
 canvas.addEventListener("pointermove",e=>{ if(!pointers.has(e.pointerId)) return; pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(pointers.size===2&&fwZoomable()){ const [a,b]=[...pointers.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); FW_ZOOM=Math.max(1,Math.min(2.8,FW_ZOOM*d/Math.max(1,pinchD))); pinchD=d; return; } /* watching fireworks: two fingers zoom the lens in and out */
+  if(pointers.size===2&&meAv&&meAv.pos.x<-23.5){ const [a,b]=[...pointers.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); ZEN.fovX=Math.max(0,Math.min(34,(ZEN.fovX||0)+(pinchD-d)*.12)); pinchD=d; return; } /* 禪院: two fingers widen / narrow the lens */
   if(pointers.size===2){ const [a,b]=[...pointers.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); camDist=Math.max(2.4,Math.min(13,camDist*pinchD/d)); pinchD=d; return; }
   if(dragStart){ const dx=e.clientX-dragStart.x, dy=e.clientY-dragStart.y; if(Math.hypot(dx,dy)>7) moved=true; if(moved){ if(customizing){ pvYaw=dragStart.pv-dx*.012; } else { camYaw=dragStart.yaw-dx*.006; camPitch=Math.max(-.9,Math.min(1.15,dragStart.pitch+dy*.004)); /* below .06: the camera stays put and tilts up to look at the sky */ } } } });
 function endPointer(e){ const wasTap=pointers.size===1&&dragStart&&!moved&&performance.now()-dragStart.t<500; pointers.delete(e.pointerId); if(wasTap) onTap(e.clientX,e.clientY); if(pointers.size===0) dragStart=null; }
 canvas.addEventListener("pointerup",endPointer); canvas.addEventListener("pointercancel",e=>{pointers.delete(e.pointerId); dragStart=null;});
-canvas.addEventListener("wheel",e=>{ e.preventDefault(); if(fwZoomable()){ FW_ZOOM=Math.max(1,Math.min(2.8,FW_ZOOM*(1-e.deltaY*.0015))); return; } if(customizing){ pvMode=e.deltaY<0?"face":"full"; syncPvSeg(); return; } camDist=Math.max(2.4,Math.min(13,camDist*(1+e.deltaY*.001))); },{passive:false});
+canvas.addEventListener("wheel",e=>{ e.preventDefault(); if(fwZoomable()){ FW_ZOOM=Math.max(1,Math.min(2.8,FW_ZOOM*(1-e.deltaY*.0015))); return; } if(customizing){ pvMode=e.deltaY<0?"face":"full"; syncPvSeg(); return; } if(meAv&&meAv.pos.x<-23.5){ ZEN.fovX=Math.max(0,Math.min(34,(ZEN.fovX||0)+e.deltaY*.03)); return; } camDist=Math.max(2.4,Math.min(13,camDist*(1+e.deltaY*.001))); },{passive:false});
 
 let pendingStation=null; let nearKey=null;
 const STATION_LABEL={xuantian:"玄天上帝",guangong:"關聖帝君",fountain:"觀音噴泉",cats:"跳舞小貓",lot:"求籤",altar:"媽祖供桌",shop:"服務處",burn:"金爐",donate:"香油錢",lamp:"光明燈",lampR:"光明燈",bell:"敲鐘",drum:"擊鼓",tiangong:"天公爐",caishen:"財神爺",yuelao:"月老",huye:"虎爺",jieqian:"解籤處",wish:"許願樹"};
@@ -3695,6 +3696,7 @@ function syncPeers(peers){ const seen=new Set();
   for(const p of peers){ if(p.sameTab||p.kind!=="viewer") continue; const pr=p.presence||{}; if(pr.v!==1||pr.u===0) continue; seen.add(p.peer);
     let av=remotes.get(p.peer); const look=sanitizeLook(pr.l,pr.q===1); if(av) av.setSp(pr.q===1);
     if(!av){ av=new Avatar(look,{sp:pr.q===1,x:num(pr.x,-78,60,0),z:num(pr.z,-43,HZ+YX+18,HZ+12)}); av.autoBake=true; try{ bakeAvatar(av); }catch(e){} if(!othersShown) av.root.visible=false; av.lastBow=pr.b; av.lastJ=Array.isArray(pr.j)?pr.j[1]:""; av.lastF=pr.f; av.offerGroup=new T.Group(); scene.add(av.offerGroup); remotes.set(p.peer,av); if(customizing) av.root.visible=false; }
+    else if(av.swim&&av.swimSave){ if(look.join()!==av.swimSave.join()) av.swimSave=look.slice(); } /* in the hot spring: keep the swimsuit, remember the new clothes for afterwards */
     else if(look.join()!==av.look.join()) av.setLook(look);
     const pno=Number.isInteger(pr.k)&&pr.k>0&&pr.k<1e8?pr.k:0; let nm=cleanName(pr.n)||(pno?`香客${pno}`:"香客"); if(pr.q!==1&&[SP_NAME,SP_OLD].includes(nm)) nm=pno?`香客${pno}`:"香客"; if(nm!==av.name){ av.name=nm; av.setName(nm); }
     av.setSp(pr.q===1); if(pr.q===1) av.name=SP_NAME; av.flyGoal=pr.q===1&&pr.fl?Math.max(.6,Math.min(40,+pr.fl||FLY_H)):0; csForm(av,pr.q===1&&pr.cs===1);
@@ -3870,7 +3872,6 @@ function zenSongSet(src){ TRK_SRC.zen=src; try{ localStorage.setItem("mz.zenSong
 setTimeout(()=>{ /* (HANDLERS is declared further down the page) */ HANDLERS.zenMusic=()=>{ openSheet("contact","禪堂音樂",`<p class="lead">在靜思禪院裡聽哪一首？（只有你自己聽得到，會記住）</p><div class="goods">${ZEN_SONGS.map(([f,n])=>`<button class="good${TRK_SRC.zen===f?" on":""}" data-act="zenSong" data-v="${f}"><span class="name">${TRK_SRC.zen===f?"🎵 ":""}${n}</span></button>`).join("")}</div>`); };
 /* the page script is not global, so inline onclick="…" cannot see ensureAudio/HANDLERS/ZEN — wire the two zen buttons here */
   $("#zenMusicBtn").onclick=e=>{ e.stopPropagation(); ensureAudio(); HANDLERS.zenMusic(); };
-  $("#zenWideBtn").onclick=e=>{ e.stopPropagation(); ZEN.wide=!ZEN.wide; e.currentTarget.textContent=ZEN.wide?"📐 一般視角":"📐 廣角"; };
 HANDLERS.zenSong=v=>{ zenSongSet(v); ensureAudio(); HANDLERS.zenMusic(); toast("禪院音樂換好了",1600); }; },0);
 function setTrack(name){ if(name===curTrack) return; curTrack=name; const a=trk(name); if(audioUnlocked&&soundOn&&!document.hidden) trkPlay(a); }
 /* phones only let a player start inside a tap, so a song that is about to be needed (walking toward the 後殿 or the cats, fireworks on)
@@ -7970,6 +7971,7 @@ function tick(){ if(gameAsleep) return; const _ft0=performance.now(); { const no
     const rel=Math.max(-1.15,Math.min(1.15,headFront?d:wrapA(camYaw+Math.PI-meAv.rotY))); if(Math.abs(rel-meAv.headGoal)>.02){ meAv.headGoal=rel; if(Math.abs(rel-lastSentHead)>.12){ lastSentHead=rel; markDirty(); } } }
   else meAv.headGoal=0;
   let yaw=camYaw, pitch=Math.max(.06,camPitch), dist=camDist, fy=1.0; const tiltUp=Math.max(0,.06-camPitch);
+  if(INN.cutMode&&!customizing){ pitch=Math.max(pitch,.66); dist=Math.max(dist,6.5); } /* 禪房: look down into the cut-open rooms */
   const W=window.innerWidth, H=window.innerHeight, wide=W>=820;
   if(customizing){
     if(pvSpin>0){ const st=Math.min(pvSpin,dt*2.2); pvSpin-=st; pvYaw+=st; }
@@ -8000,13 +8002,13 @@ function tick(){ if(gameAsleep) return; const _ft0=performance.now(); { const no
     if(jiaoCam.until&&jiaoCam.simT>jiaoCam.until){ jiaoCam.on=false; sheet.classList.remove("peek"); camFocus.set(meAv.pos.x,1,meAv.pos.y); }
   } else {
     camera.clearViewOffset();
-    { /* during a show the normal view goes wide-angle, so even the biggest shells fit on a phone screen */ const want=(FW.on||FW.pendingAt)?Math.max(30,Math.min(96,fwFov())/FW_ZOOM):55; if(Math.abs(camera.fov-want)>.3){ camera.fov+=(want-camera.fov)*Math.min(1,dt*2.5); camera.updateProjectionMatrix(); } }
-    tmpV.set(meAv.pos.x,fy+(meAv.flyCur||0),meAv.pos.y); camFocus.lerp(tmpV,Math.min(1,dt*6));
+    { /* during a show the normal view goes wide-angle, so even the biggest shells fit on a phone screen */ const zx=meAv.pos.x<-23.5?(ZEN.fovX||0):0; camWideX+=((zx+camTight)-camWideX)*Math.min(1,dt*2); const want=(FW.on||FW.pendingAt)?Math.max(30,Math.min(96,fwFov())/FW_ZOOM):55+camWideX; if(Math.abs(camera.fov-want)>.3){ camera.fov+=(want-camera.fov)*Math.min(1,dt*2.5); camera.updateProjectionMatrix(); } }
+    tmpV.set(meAv.pos.x,fy+((meAv.flyCur||0)>.02?meAv.flyCur:meAv.root.position.y),meAv.pos.y); camFocus.lerp(tmpV,Math.min(1,dt*6));
     // indoors a wall often stops the camera right behind your head: then try it higher up, looking down, and keep the one that stays farthest back
     let want=0, gotD=0; for(const dp of [0,.3,.6,.9]){ const pp=Math.min(1.2,pitch+dp), cx=camFocus.x+Math.sin(yaw)*Math.cos(pp)*dist, cz=camFocus.z+Math.cos(yaw)*Math.cos(pp)*dist, cy=camFocus.y+Math.sin(pp)*dist;
       camLimit(camFocus,_v2.set(cx,cy,cz),_camTry); const d=_camTry.distanceTo(camFocus); if(d>gotD+.25){ gotD=d; want=dp; } if(d>dist*.8) break; }
     camLift+=(want-camLift)*Math.min(1,dt*(want>camLift?2.2:1.2)); // eases up and down instead of snapping
-    { const pp=Math.min(1.2,pitch+camLift), cx=camFocus.x+Math.sin(yaw)*Math.cos(pp)*dist, cz=camFocus.z+Math.cos(yaw)*Math.cos(pp)*dist, cy=camFocus.y+Math.sin(pp)*dist; camLimit(camFocus,_v2.set(cx,cy,cz),_camBest); gotD=_camBest.distanceTo(camFocus); }
+    { const pp=Math.min(1.2,pitch+camLift), cx=camFocus.x+Math.sin(yaw)*Math.cos(pp)*dist, cz=camFocus.z+Math.cos(yaw)*Math.cos(pp)*dist, cy=camFocus.y+Math.sin(pp)*dist; camLimit(camFocus,_v2.set(cx,cy,cz),_camBest); gotD=_camBest.distanceTo(camFocus); camTight=Math.max(0,Math.min(24,(1-gotD/dist)*36)); }
     tmpV.copy(_camBest); camera.position.lerp(tmpV,Math.min(1,dt*6)); camNear+=(Math.max(0,Math.min(1,(gotD-1.3)/2.4))-camNear)*Math.min(1,dt*3);
     { const sh=(sheetKind&&!wide&&sheet.classList.contains("open")&&!sheet.classList.contains("peek"))?sheet.getBoundingClientRect().height:0; sheetOff+=(sh*.42-sheetOff)*Math.min(1,dt*6); if(sheetOff>1) camera.setViewOffset(W,H,0,sheetOff,W,H); }
     { const k=camNear; camera.lookAt(camFocus.x-Math.sin(yaw)*3.5*k,camFocus.y+.15+.75*k,camFocus.z-Math.cos(yaw)*3.5*k); if(tiltUp>0) camera.rotateX(tiltUp*1.35); } // close up: look at yourself, not past you
@@ -8242,6 +8244,8 @@ function innRoute(fx,fz,fg,tx,tz,tg){ const G=INN.G, a=innArea(fx,fz,fg), b=innA
     const ds=cvs(512,128,(x,w,h)=>{ x.fillStyle="#7a5a3a"; x.fillRect(0,0,w,h); x.fillStyle="#f6eedd"; x.font='600 64px "Noto Sans TC",sans-serif'; x.textAlign="center"; x.textBaseline="middle"; x.fillText("櫃 台 RECEPTION",w/2,h/2); }); /* 512 wide so the words fit */
     const dp=mesh(new T.PlaneGeometry(2.4,.6),new T.MeshStandardMaterial({map:ds,roughness:.6}),37.93,.7,-28.2,root); dp.rotation.y=-Math.PI/2;
     B(.15,2.2,4,wood,40.85,2.6,-28.2); /* wood panel behind the desk */
+    /* the wall behind the desk: lobby | dorm and bath (a door to each), and the wall between dorm and bath */ wallZ(41.05,Z0,Z1,0,H1,white,[[-21.7,-20.3,2.5],[-34.7,-33.3,2.5]]); wallX(-27.5,41.05,X1,0,H1,white);
+    for(const [z,t,c] of [[-21,"通 鋪","#2a5a3a"],[-34,"♨ 溫 泉","#8a2a2a"]]){ const pc=cvs(256,96,(x,w,h)=>{ x.fillStyle=c; x.fillRect(0,0,w,h); x.fillStyle="#f6eedd"; x.font='600 50px "Noto Sans TC",sans-serif'; x.textAlign="center"; x.textBaseline="middle"; x.fillText(t,w/2,h/2+2); }); const pl=mesh(new T.PlaneGeometry(1.1,.4),new T.MeshStandardMaterial({map:pc,roughness:.7}),40.9,2.85,z,root); pl.rotation.y=-Math.PI/2; }
     floorP(31,36.2,-40,-33.8,.05,mat(L("#e6e2d8"),{roughness:1}));
     for(const [x,z,s] of [[33,-37,.8],[34.6,-35.6,.5],[32.4,-35,.4]]){ const r=mesh(new T.DodecahedronGeometry(s,0),stone,x,s*.5,z,root); r.scale.y=.6; }
     for(let i=0;i<9;i++) cyl(.04,.05,3.2+Math.random()*.8,mat(L("#6a9a4a"),{roughness:.6}),31.5+Math.random()*1.2,1.8,-39.4+Math.random()*1.2,root,6);
@@ -8254,7 +8258,7 @@ function innRoute(fx,fz,fg,tx,tz,tg){ const G=INN.G, a=innArea(fx,fz,fg), b=innA
     const shm=new T.MeshStandardMaterial({map:sh,roughness:.9,emissive:"#fff2d8",emissiveMap:sh,emissiveIntensity:.2}); for(let x=42;x<55;x+=1.6){ mesh(new T.PlaneGeometry(1.5,2.6),shm,x+.75,1.4,-15.2,root).rotation.y=Math.PI; }
     B(1.6,.35,.9,mat(L("#5a3a22"),{roughness:.5}),48,.18,-21);
     INN.futon=[]; const ft=new T.Group(); root.add(ft); const fm=mat(L("#f4f2ec"),{roughness:.95}), fb=[L("#4a6aa8"),L("#c85a5a"),L("#5a8a5a"),L("#d8a040")].map(c=>mat(c,{roughness:.95}));
-    for(let r=0;r<4;r++) for(let c=0;c<5;c++){ const x=43+c*2.4, z=-25.8+r*2.6; const f=new T.Group(); f.position.set(x,.06,z); const m1=new T.Mesh(new T.BoxGeometry(1.0,.1,2.0),fm); m1.position.y=.05; f.add(m1);
+    for(let r=0;r<5;r++) for(let c=0;c<10;c++){ const x=41.95+c*1.3, z=-26.1+r*2.3; if(Math.abs(x-48)<1.4&&Math.abs(z+21)<1.6) continue; /* (the low table) */ const f=new T.Group(); f.position.set(x,.06,z); const m1=new T.Mesh(new T.BoxGeometry(1.0,.1,2.0),fm); m1.position.y=.05; f.add(m1);
       const bl=new T.Mesh(new T.BoxGeometry(1.02,.08,1.3),fb[(r+c)%4]); bl.position.set(0,.13,.3); f.add(bl); const pl=new T.Mesh(new T.BoxGeometry(.5,.12,.3),fm); pl.position.set(0,.14,-.78); f.add(pl); f.visible=false; ft.add(f);
       const v=new T.Vector2(x,z+.05); v.inn=1; v.kind="futon"; v.face=0; v.lift=.16; v.gy=0; SEATS.push(v); INN.futon.push({f,i:SEATS.length-1}); } }
   /* ---- hot spring: stone deck, a rock-edged pool with steam, bamboo, a stone lantern and a small maple ---- */
@@ -8293,7 +8297,7 @@ function innRoute(fx,fz,fg,tx,tz,tg){ const G=INN.G, a=innArea(fx,fz,fg), b=innA
     for(const [x,z,kind,lift,face] of [[37.5,S.s0+1.35,"bed",.56,0],[33.85,S.s1-2.38,"toilet",.42,Math.PI],[32.1,S.s1-2.5,"tub",.12,Math.PI/2]]){ const v=new T.Vector2(x,z); v.inn=1; v.kind=kind; v.lift=lift; v.face=face; v.gy=F2; v.suite=S.i; SEATS.push(v); INN.seats[S.i+kind]=SEATS.length-1; }
     INN.shower.push({x:33.85,z:S.s1-.55,y,i:S.i,on:0}); }
   /* night: windows glow */
-  INN.lights=[]; for(const [x,yy,z] of [[36,3.6,-28],[48,3.6,-21],[48,3.6,-34]]){ const s=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffd9a0"),transparent:true,opacity:.35,blending:T.AdditiveBlending,depthWrite:false})); s.position.set(x,yy,z); s.scale.set(6,4,1); root.add(s); }
+  INN.lights=[]; for(const [x,yy,z] of [[36,3.6,-28],[48,3.6,-21],[48,3.6,-34]]){ const s=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffd9a0"),transparent:true,opacity:.35,blending:T.AdditiveBlending,depthWrite:false})); s.position.set(x,yy,z); s.scale.set(6,4,1); root.add(s); INN.lights.push(s); }
   root.traverse(o=>{ if(o.isMesh){ o.userData.noMerge=1; if(o.userData.floor) pickables.push(o); } });
 }
 /* the auntie at the front desk */
@@ -8326,13 +8330,47 @@ function innTick(dt){ const me=meAv; if(!me) return; INN.t=(INN.t||0)+dt;
   const si=(me.gy||0)>2.3?innSuiteAt(me.pos.x,me.pos.y):-1; if(INN.lock&&si!==INN.lock-1){ INN.lock=0; markDirty(); } if(INN.lockBtn){ const show=si>=0&&me.pos.x>INN.CX1+.3; INN.lockBtn.hidden=!show; if(show) INN.lockBtn.textContent=INN.lock===si+1?"🔓 開門":"🔒 鎖門"; }
   for(const S of INN.suites){ const lk=!!innLockedBy(S.i); S.door.position.z=lk?S.dz:S.dz+1.1; }
   if((INN.ft=(INN.ft||0)-dt)<0){ INN.ft=.5; const taken=new Set([me.seat]); if(typeof remotes!=="undefined") remotes.forEach(r=>taken.add(r.seat)); npcs.forEach(n=>taken.add(n.seat)); INN.futon.forEach(o=>{ o.f.visible=taken.has(o.i); }); }
-  for(const s of INN.steam){ s.userData.s+=dt*.4; const k=s.userData.s%1; s.position.y=.3+k*2.4; s.material.opacity=.14*(1-k)*(k*4>1?1:k*4); }
+  for(const s of INN.steam){ s.userData.s+=dt*.4; const k=s.userData.s%1; s.position.y=.3+k*2.4; s.material.opacity=.07*(1-k)*(k*4>1?1:k*4); }
   const all=[me,...npcs]; if(typeof remotes!=="undefined") remotes.forEach(a=>all.push(a));
-  for(const av of all){ const want=!!(av.root&&av.root.visible&&(av.gy||0)<1&&innPool(av.pos.x,av.pos.y)); if(want&&!av.towel){ const tw=new T.Group(); const m=new T.Mesh(new T.BoxGeometry(.34,.07,.22),mat(L_TOWEL,{roughness:1})); tw.add(m); const f=new T.Mesh(new T.BoxGeometry(.34,.03,.08),mat(L_TOWEL,{roughness:1})); f.position.set(0,.05,-.03); tw.add(f); tw.position.set(0,.34,0); av.head.add(tw); av.towel=tw; } if(av.towel) av.towel.visible=want; }
-  INN.glass.emissiveIntensity=.45*_dn.night;
+  for(const av of all){ const want=!!(av.root&&av.root.visible&&(av.gy||0)<1&&innPool(av.pos.x,av.pos.y)); innSwim(av,want); if(want&&(!av.towel||!av.towel.parent)){ const tw=new T.Group(); const m=new T.Mesh(new T.BoxGeometry(.34,.07,.22),mat(L_TOWEL,{roughness:1})); tw.add(m); const f=new T.Mesh(new T.BoxGeometry(.34,.03,.08),mat(L_TOWEL,{roughness:1})); f.position.set(0,.05,-.03); tw.add(f); tw.position.set(0,.34,0); av.head.add(tw); av.towel=tw; } if(av.towel) av.towel.visible=want; }
+  INN.glass.emissiveIntensity=.45*_dn.night; for(const l of INN.lights){ l.visible=!INN.cutMode&&_dn.night>.05; l.material.opacity=.35*_dn.night; }
+  innCutTick(); innSleepBtnTick();
   for(const t of INN.tv){ if(!t.on) continue; if(INN.t-t.at>3){ t.at=INN.t; t.k++; innTvDraw(t); } }
   for(const s of INN.shower){ if(s.on>0){ s.on-=dt; if(Math.random()<.9) for(let q=0;q<3;q++) spawnSmoke(s.x+(Math.random()-.5)*.25,s.y+2.2-Math.random()*1.8,s.z+(Math.random()-.5)*.25,{size:.04,grow:.02,life:.5,op:.35,vy:-3}); } } }
 const L_TOWEL="#f8f6f0";
+/* hot spring: in the water everyone wears a plain black swimsuit (style 9 = T-shirt and shorts, colour 0 = black, no gear); out again, their own clothes */
+function innSwim(av,want){ if(!av||!av.look) return; const suit=l=>l[3]===9&&l[4]===0&&!l[12];
+  if(want){ if(!suit(av.look)){ if(!av.swim) av.swimSave=av.look.slice(); const l=av.look.slice(); l[3]=9; l[4]=0; l[12]=0; try{ av.setLook(l); }catch(e){} av.towel=null; } av.swim=1; }
+  else if(av.swim){ av.swim=0; const l=av.swimSave; av.swimSave=null; if(l){ try{ av.setLook(l); }catch(e){} } av.towel=null; } }
+/* ---- 模擬市民 cutaway: inside the 禪房 the roof goes, the walls on the camera's side drop to a low stub, the walls inside to half height,
+   and on the ground floor the whole upper floor disappears. The camera is then free (no room limits) and looks down from above. ---- */
+INN.cut=[]; INN.cutMode=""; INN.cutKey="";
+{ const bb=new T.Box3(), c=new T.Vector3(), sz=new T.Vector3(), F2b=INN.F2+.36, near=(a,b)=>Math.abs(a-b)<.5; INN.g.updateMatrixWorld(true);
+  INN.g.traverse(o=>{ if(!o.isMesh) return; bb.setFromObject(o); bb.getCenter(c); bb.getSize(sz);
+    const roof=bb.min.y>F2b+INN.H2-.35&&c.x>INN.RX0-1&&c.z>INN.Z0-1&&c.z<INN.Z1+1, foot=c.x>INN.X0-.9&&c.x<INN.X1+.4&&c.z>INN.Z0-.4&&c.z<INN.Z1+.4;
+    if(!roof&&!foot) return; const up=bb.min.y>INN.H1-.45, lvl=bb.min.y<1?1:(bb.min.y>INN.F2-.2?2:0);
+    const thinX=sz.x<.45, thinZ=sz.z<.45, tall=sz.y>1.15; let face="";
+    if(tall&&(thinX||thinZ)&&lvl){ if(thinX&&near(c.x,INN.X0)) face="W"; else if(thinX&&lvl===1&&near(c.x,INN.X1)) face="E"; else if(thinX&&lvl===2&&near(c.x,INN.SX1)) face="E"; else if(thinZ&&near(c.z,INN.Z0)) face="N"; else if(thinZ&&near(c.z,INN.Z1)) face="S";
+      else if(thinX&&thinZ) face=""; else face="I"; }
+    if(!roof&&!up&&!face) return; if(face&&thinX&&thinZ&&face!=="W") return; /* (bamboo canes are not walls) */
+    INN.cut.push({o,roof,up,face,lvl,y0:bb.min.y,h:sz.y,py:o.position.y,sy:o.scale.y,vis:o.visible}); }); }
+function innCutTick(){ const me=meAv; if(!me) return; const x=me.pos.x, z=me.pos.y, gy=me.gy||0; let m="";
+  if(gy>2.3&&x>INN.RX0-.2&&z>INN.Z0-.6&&z<INN.Z1+.6) m="2"; else if(gy<1&&innIn(x,z)) m="1";
+  const cx=camera.position.x, cz=camera.position.z, dx=cx-x, dz=cz-z, L=Math.hypot(dx,dz)*.3, XE=m==="2"?INN.SX1:INN.X1, cross=(p,c,w)=>(c-w)*(p-w)<0; /* a wall drops when the camera is on its outer side, or when it stands between the camera and you */
+  const tw={W:-dx>L||cross(x,cx,INN.X0),E:dx>L||cross(x,cx,XE),N:-dz>L||cross(z,cz,INN.Z0),S:dz>L||cross(z,cz,INN.Z1)};
+  const key=m?m+(tw.W?1:0)+(tw.E?1:0)+(tw.N?1:0)+(tw.S?1:0):""; INN.cutMode=m; if(key===INN.cutKey) return; INN.cutKey=key;
+  const fb=m==="2"?INN.F2+.36:0;
+  for(const e of INN.cut){ const o=e.o; o.visible=e.vis; o.scale.y=e.sy; o.position.y=e.py; if(!m) continue;
+    if(e.roof||(m==="1"&&e.up)){ o.visible=false; continue; }
+    if(!e.face||e.lvl!==+m) continue; const top=fb+(e.face==="I"?1.1:(tw[e.face]?.5:99)); if(top>=e.y0+e.h) continue;
+    if(top<=e.y0+.05){ o.visible=false; continue; } const k=(top-e.y0)/e.h; o.scale.y=e.sy*k; o.position.y=e.py-e.h*(1-k)/2; } }
+/* the tatami room: with bedding in your bag, "睡在這裡" lays a futon right where you stand (the nearest free spot) and you lie down on it */
+{ const b=document.createElement("button"); b.id="innSleepBtn"; b.className="zen-music"; b.style.top="calc(env(safe-area-inset-top) + 128px)"; b.hidden=true; b.textContent="🛏️ 睡在這裡";
+  b.onclick=e=>{ e.stopPropagation(); ensureAudio(); if(!(bag.gd&&bag.gd.bedding)){ toast("先到櫃台跟阿姨領床具，才能鋪床睡覺喔",3000); return; }
+    let best=-1, bd=1e9; for(const o of INN.futon){ const S=SEATS[o.i]; if(seatTakenByPeer(o.i)||npcs.some(n=>n.seat===o.i)) continue; const d=Math.hypot(S.x-meAv.pos.x,S.y-meAv.pos.y); if(d<bd){ bd=d; best=o.i; } }
+    if(best<0){ toast("通鋪睡滿了",2000); return; } trySit(best); };
+  document.body.appendChild(b); INN.sleepBtn=b; }
+function innSleepBtnTick(){ const me=meAv, b=INN.sleepBtn; if(!b) return; const show=(me.gy||0)<1&&me.seat<0&&me.pos.x>41.3&&me.pos.x<INN.X1&&me.pos.y>-27.3&&me.pos.y<INN.Z1; if(b.hidden===show) b.hidden=!show; }
 
 
 /* ---- 建築模式: everything becomes editable. Just before the scenery is merged, loose pieces are gathered into one unit per area
