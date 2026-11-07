@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="雲端天后宮：免費、免下載的多人線上 3D 廟宇。遊戲介紹與香油錢贊助。">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)} body{margin:0} img{max-width:100%} [hidden]{display:none!important}</style>
+<title>雲端天后宮</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* Layout: a lacquer-red temple gate as the opening band, then the page reads like a temple notice board — plain paper panels, a 添油香 slip for sponsorship. */
+:root{
+  --paper:#fbf7f3; --panel:#ffffff; --ink:#2a1a14; --ink-soft:#6b5248; --line:#e8d9cf;
+  --lacquer:#9e1b16; --lacquer-deep:#6e0f0c; --gold:#c8952e; --gold-soft:#f3e2bc; --todo:#fff1b8; --todo-ink:#7a5200;
+  --f-display:"LXGW WenKai TC","Noto Serif TC","Songti TC",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --paper:#17100e; --panel:#221714; --ink:#f3e7df; --ink-soft:#c2aa9e; --line:#3a2a24;
+  --lacquer:#c23a2c; --lacquer-deep:#5a0e0b; --gold:#e0b453; --gold-soft:#3b2c14; --todo:#4a3a0a; --todo-ink:#ffe28a; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --paper:#17100e; --panel:#221714; --ink:#f3e7df; --ink-soft:#c2aa9e; --line:#3a2a24;
+  --lacquer:#c23a2c; --lacquer-deep:#5a0e0b; --gold:#e0b453; --gold-soft:#3b2c14; --todo:#4a3a0a; --todo-ink:#ffe28a; color-scheme:dark }
+html{scroll-behavior:smooth}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.75}
+.wrap{max-width:1040px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.25;margin:0}
+h2{font-size:clamp(26px,4.4vw,36px)} h3{font-size:20px}
+p{margin:0}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--gold);outline-offset:3px;border-radius:4px}
+.todo{background:var(--todo);color:var(--todo-ink);padding:0 .35em;border-radius:3px;font-weight:500}
+
+/* gate band */
+.gate{background:radial-gradient(120% 90% at 80% 0%,#c8352a 0%,transparent 60%),linear-gradient(160deg,#a71d17,#6e0f0c);color:#fbefd8}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-size:20px;text-decoration:none}
+.seal{width:34px;height:34px;border-radius:6px;background:#f6d98a;color:#7a1410;display:grid;place-items:center;font-size:20px;font-weight:700;box-shadow:inset 0 0 0 2px #7a1410}
+.nav{display:flex;gap:4px 18px;flex-wrap:wrap;font-size:14px}
+.nav a{text-decoration:none;opacity:.85} .nav a:hover{opacity:1;text-decoration:underline;text-underline-offset:4px}
+.hero{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:center;padding-block:28px 48px}
+.hero > div{min-width:0}
+.eyebrow{font-size:13px;letter-spacing:.18em;color:#f3d48a}
+.hero h1{font-size:clamp(34px,6.4vw,58px);margin-top:10px}
+.hero p.lead{margin-top:16px;font-size:18px;max-width:34em;color:#f6e3cf}
+.facts{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.facts span{border:1px solid rgba(246,217,138,.5);border-radius:999px;padding:3px 12px;font-size:13px;color:#f8e7c4}
+.cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:24px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:999px;font-weight:700;text-decoration:none;font-size:16px;border:0;cursor:pointer;font-family:inherit}
+.btn-gold{background:#f6d98a;color:#5a0e0b} .btn-gold:hover{background:#ffe6a6}
+.btn-line{border:1.5px solid #f6d98a;color:#fbefd8;background:transparent} .btn-line:hover{background:rgba(246,217,138,.12)}
+.hero-shot{margin:0;display:grid;gap:6px} .hero-shot img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,.45);border:2px solid rgba(246,217,138,.35);display:block} .hero-shot figcaption{font-size:12.5px;color:#f3d48a;text-align:right}
+.phone{justify-self:center;width:min(250px,70vw);aspect-ratio:9/17;border-radius:34px;padding:10px;background:#1a0b08;box-shadow:0 20px 50px rgba(0,0,0,.45),inset 0 0 0 2px #3a1a12;max-width:100%}
+.phone img{width:100%;height:100%;object-fit:cover;border-radius:26px;display:block}
+
+section{padding-block:56px}
+.sec-head{display:grid;gap:8px;margin-bottom:24px;max-width:40em}
+.sec-head .kicker{font-size:13px;letter-spacing:.18em;color:var(--lacquer);font-weight:700}
+.sec-head p{color:var(--ink-soft)}
+
+.about{display:grid;grid-template-columns:1.2fr .8fr;gap:32px}
+.about > *{min-width:0}
+.about .text{display:grid;gap:14px;max-width:36em}
+.spec{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:18px 20px;display:grid;gap:0;align-self:start}
+.spec div{display:grid;grid-template-columns:5.5em 1fr;gap:12px;padding-block:9px;border-bottom:1px dashed var(--line);font-size:15px}
+.spec div:last-child{border-bottom:0}
+.spec dt,.spec b{color:var(--ink-soft);font-weight:500}
+
+.feats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.feat{background:var(--panel);padding:18px;display:grid;gap:6px;align-content:start;min-width:0}
+.feat h3{font-size:18px;color:var(--lacquer)}
+.feat p{font-size:14.5px;color:var(--ink-soft);line-height:1.65}
+
+.gallery{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-flow:dense;gap:12px}
+.g{margin:0;position:relative;border-radius:12px;overflow:hidden;background:#1a0b08;min-width:0}
+.g.w{grid-column:span 2} .g img{display:block;width:100%;height:100%;object-fit:cover;aspect-ratio:3/4} .g.w img{aspect-ratio:auto}
+.g figcaption{position:absolute;left:0;right:0;bottom:0;padding:28px 12px 10px;background:linear-gradient(transparent,rgba(10,4,2,.82));color:#f8ead2;font-size:12.5px;line-height:1.45;display:grid}
+.g figcaption b{font-family:var(--f-display);font-size:16px;font-weight:700;color:#fff3da}
+.sub{margin-top:28px;margin-bottom:12px;font-size:20px}
+.games{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.gm{margin:0;display:grid;gap:4px;min-width:0} .gm img{width:100%;aspect-ratio:9/16;object-fit:cover;object-position:top;border-radius:10px;border:1px solid var(--line);display:block;background:#1a0b08} .gm figcaption{font-size:12.5px;text-align:center;color:var(--ink-soft)}
+.shots{display:flex;gap:16px;overflow-x:auto;padding-bottom:10px;scroll-snap-type:x mandatory}
+.shot{flex:0 0 190px;scroll-snap-align:start;display:grid;gap:8px}
+.shot img{width:100%;aspect-ratio:360/676;object-fit:cover;border-radius:14px;border:1px solid var(--line);display:block}
+.shot figcaption{font-size:13.5px;color:var(--ink-soft);text-align:center}
+figure{margin:0}
+
+/* sponsorship: the temple's 添油香 slip */
+.sponsor-band{background:linear-gradient(180deg,var(--paper),var(--gold-soft))}
+.tiers{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.tier{background:var(--panel);border:1px solid var(--line);border-top:4px solid var(--lacquer);border-radius:6px;padding:18px;display:grid;gap:8px;align-content:start;min-width:0}
+.tier .name{font-family:var(--f-display);font-size:20px}
+.tier .amt{font-family:var(--f-display);font-size:30px;color:var(--lacquer);font-variant-numeric:tabular-nums}
+.tier .amt small{font-size:14px;color:var(--ink-soft);font-family:var(--f-body)}
+.tier ul{margin:0;padding-left:1.1em;font-size:14.5px;color:var(--ink-soft);display:grid;gap:4px}
+.slip{margin-top:22px;display:grid;grid-template-columns:1fr auto;gap:16px 24px;align-items:center;background:var(--panel);border:1.5px dashed var(--gold);border-radius:10px;padding:20px 22px}
+.slip > div{min-width:0}
+.slip .pay{display:grid;gap:6px;justify-items:end}
+.btn-pay{background:var(--lacquer);color:#fff8ec}
+.btn-pay[aria-disabled="true"]{opacity:.55;cursor:not-allowed}
+.pm{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.pm span{font-size:13px;border:1px solid var(--line);border-radius:4px;padding:1px 8px;color:var(--ink-soft)}
+.note{font-size:13.5px;color:var(--ink-soft)}
+
+.policy{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.policy article{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 20px;display:grid;gap:8px;min-width:0}
+.policy h3{font-size:18px}
+.policy p,.policy li{font-size:15px;color:var(--ink-soft)}
+.policy ul{margin:0;padding-left:1.1em;display:grid;gap:4px}
+
+.faq{display:grid;gap:10px;max-width:46em}
+details{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 16px}
+summary{cursor:pointer;font-weight:700}
+details p{margin-top:8px;color:var(--ink-soft);font-size:15px}
+
+.contact{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+.contact > *{min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 20px}
+.row{display:grid;grid-template-columns:6.5em 1fr auto;gap:10px;align-items:center;padding-block:11px;border-bottom:1px dashed var(--line);font-size:15px}
+.row:last-child{border-bottom:0}
+.row .k{color:var(--ink-soft)}
+.row .v{min-width:0;overflow-wrap:anywhere}
+.copy{font:inherit;font-size:12.5px;border:1px solid var(--line);background:transparent;color:var(--ink-soft);border-radius:999px;padding:2px 10px;cursor:pointer}
+footer{border-top:1px solid var(--line);padding-block:24px 36px;font-size:13px;color:var(--ink-soft)}
+footer .wrap{display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:space-between}
+.legend{display:inline-flex;gap:8px;align-items:center;font-size:13px;color:var(--ink-soft);margin-top:10px}
+
+@media (max-width:860px){ .games{grid-template-columns:repeat(4,1fr)}  .gallery{grid-template-columns:repeat(2,1fr)}  .hero,.about,.contact{grid-template-columns:1fr} .feats{grid-template-columns:repeat(2,1fr)} .tiers{grid-template-columns:repeat(2,1fr)} .policy{grid-template-columns:1fr} .phone{width:min(230px,62vw)} }
+@media (max-width:520px){ .games{grid-template-columns:repeat(3,1fr)}  .g.w{grid-column:span 2}  .feats,.tiers{grid-template-columns:1fr} .slip{grid-template-columns:1fr} .slip .pay{justify-items:start} .row{grid-template-columns:5.5em 1fr} .row .copy{grid-column:2;justify-self:start} }
+@media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} }
+</style>
+</head>
+<body>
+
+
+<header class="gate">
+  <div class="wrap">
+    <div class="topbar">
+      <a class="brand" href="#top" aria-label="雲端天后宮"><span class="seal" aria-hidden="true">媽</span>雲端天后宮</a>
+      <nav class="nav" aria-label="頁面導覽"><a href="#about">遊戲介紹</a><a href="#play">玩法</a><a href="#sponsor">贊助香油錢</a><a href="#policy">交易說明</a><a href="#contact">聯絡我們</a></nav>
+    </div>
+    <div class="hero" id="top">
+      <div>
+        <p class="eyebrow">免費・免下載・手機就能玩</p>
+        <h1>在手機上，走進一座天后宮。</h1>
+        <p class="lead">雲端天后宮是一座可以多人同時走進去的 3D 線上廟宇。跟著參拜指引拿香、拜拜、擲筊、求籤，點一盞光明燈，在許願樹掛上心願；也能逛夜市、看煙火、在禪院靜坐。</p>
+        <div class="facts"><span>瀏覽器直接開啟</span><span>手機與電腦皆可</span><span>所有功能免費</span><span>多人同殿</span></div>
+        <div class="cta"><a class="btn btn-gold" href="https://mazu-temple.harper88888.workers.dev/" target="_blank" rel="noopener">進入天后宮</a><a class="btn btn-line" href="#sponsor">贊助香油錢</a></div>
+      </div>
+      <figure class="hero-shot"><img src="about/night_front.jpg" alt="遊戲畫面：夜晚的天后宮"><figcaption>夜晚的天后宮・遊戲實際畫面</figcaption></figure>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section id="about">
+    <div class="wrap about">
+      <div class="text">
+        <div class="sec-head"><span class="kicker">遊戲介紹</span><h2>把廟口的日常，搬到網路上</h2></div>
+        <p>很多人離家工作、出國讀書，或年紀大了不方便出門，想拜拜卻走不到廟裡。雲端天后宮把一座台灣傳統廟宇做成 3D 場景：正殿、偏殿、後殿、金爐、廟埕，一樣的動線、一樣的參拜順序。</p>
+        <p>進廟的人會看到彼此。有人在擲筊，有人在排隊收驚，有人坐在廟埕看煙火。每天早上，廟裡還會送來一份「天后宮日報」，報導昨天廟裡發生的大小事。</p>
+        <p>遊戲完全免費，沒有付費才能用的功能。香油錢贊助是自願的，用來支付伺服器、美術與音樂的費用，讓這座廟能一直開著。</p>
+      </div>
+      <dl class="spec" aria-label="基本資料">
+        <div><dt>名稱</dt><dd>雲端天后宮</dd></div>
+        <div><dt>類型</dt><dd>多人線上 3D 廟宇（文化休閒）</dd></div>
+        <div><dt>平台</dt><dd>手機與電腦瀏覽器，免安裝</dd></div>
+        <div><dt>費用</dt><dd>免費遊玩；贊助為自願</dd></div>
+        <div><dt>網址</dt><dd style="overflow-wrap:anywhere">mazu-temple.harper88888.workers.dev</dd></div>
+        <div><dt>對象</dt><dd>一般大眾，不限年齡</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section id="play" style="padding-top:0">
+    <div class="wrap">
+      <div class="sec-head"><span class="kicker">玩法</span><h2>廟裡可以做的事</h2><p>參拜照著台灣廟宇的習俗走，其餘的就像在廟口散步。</p></div>
+      <div class="feats">
+        <div class="feat"><h3>參拜指引</h3><p>從服務處請香、金紙、供品開始，一步一步帶你拜完全廟。</p></div>
+        <div class="feat"><h3>擲筊・求籤</h3><p>聖筊、笑筊、陰筊照真實機率；求到籤可以看籤詩解說。</p></div>
+        <div class="feat"><h3>光明燈・許願樹</h3><p>點一盞光明燈，在許願樹掛上心願，大家都看得到。</p></div>
+        <div class="feat"><h3>收驚・鐵口直斷</h3><p>金爐旁的阿嬤幫你收驚，老師傅幫你看看運勢。</p></div>
+        <div class="feat"><h3>神明小遊戲</h3><p>文昌帝君、土地公、觀音等神明各有一個小挑戰與排行榜。</p></div>
+        <div class="feat"><h3>夜市</h3><p>地瓜球、烤肉、撈金魚、彈珠台，晚上廟口最熱鬧。</p></div>
+        <div class="feat"><h3>靜思禪院・禪房</h3><p>五十個蒲團的禪堂，溫泉和可以睡覺的房間。</p></div>
+        <div class="feat"><h3>天后宮日報</h3><p>每天一份，報導昨天的紀錄、天氣和廟裡的趣事。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding-top:0" aria-label="遊戲畫面">
+    <div class="wrap">
+      <div class="sec-head"><span class="kicker">遊戲畫面</span><h2>白天、夜晚、節慶</h2><p>以下全部是遊戲裡的實際畫面。</p></div>
+      <div class="gallery">
+        <figure class="g w"><img src="about/day_front.jpg" alt="白天的廟埕：藍天下的正殿與天公爐" loading="lazy"><figcaption><b>白天的廟埕</b>藍天下的正殿與天公爐</figcaption></figure>
+        <figure class="g w"><img src="about/lantern.jpg" alt="天燈：五十盞天燈從廟埕升空" loading="lazy"><figcaption><b>天燈</b>五十盞天燈從廟埕升空</figcaption></figure>
+        <figure class="g t"><img src="about/hall.jpg" alt="正殿：媽祖神像與拜墊" loading="lazy"><figcaption><b>正殿</b>媽祖神像與拜墊</figcaption></figure>
+        <figure class="g t"><img style="object-position:50% 58%" src="about/market.jpg" alt="夜市：烤肉串、撈金魚、打彈珠、珍奶、射氣球" loading="lazy"><figcaption><b>夜市</b>烤肉串、撈金魚、打彈珠、珍奶、射氣球</figcaption></figure>
+        <figure class="g w"><img src="about/fw.jpg" alt="煙火夜景：全服一起看的煙火秀" loading="lazy"><figcaption><b>煙火夜景</b>全服一起看的煙火秀</figcaption></figure>
+        <figure class="g t"><img src="about/puppet.jpg" alt="布袋戲台：廟埕上的布袋戲，橫幅會感謝捐贈的信眾" loading="lazy"><figcaption><b>布袋戲台</b>廟埕上的布袋戲，橫幅會感謝捐贈的信眾</figcaption></figure>
+        <figure class="g t"><img src="about/night_tall.jpg" alt="夜晚的正殿：燈籠點亮的天后宮" loading="lazy"><figcaption><b>夜晚的正殿</b>燈籠點亮的天后宮</figcaption></figure>
+        <figure class="g w"><img src="about/sunset.jpg" alt="黃昏：夕陽下的許願櫻花樹" loading="lazy"><figcaption><b>黃昏</b>夕陽下的許願櫻花樹</figcaption></figure>
+        <figure class="g t"><img src="about/wish.jpg" alt="許願樹：掛滿心願卡的櫻花樹" loading="lazy"><figcaption><b>許願樹</b>掛滿心願卡的櫻花樹</figcaption></figure>
+        <figure class="g t"><img src="about/zen.jpg" alt="靜思禪院：五十個蒲團，窗外是彩色楓樹" loading="lazy"><figcaption><b>靜思禪院</b>五十個蒲團，窗外是彩色楓樹</figcaption></figure>
+        <figure class="g t"><img src="about/onsen.jpg" alt="禪房溫泉：落地窗外的楓紅" loading="lazy"><figcaption><b>禪房溫泉</b>落地窗外的楓紅</figcaption></figure>
+        <figure class="g t"><img src="about/paper.jpg" alt="天后宮日報：每天一份的廟裡新聞" loading="lazy"><figcaption><b>天后宮日報</b>每天一份的廟裡新聞</figcaption></figure>
+      </div>
+      <h3 class="sub">夜市與神明小遊戲</h3>
+      <div class="games">
+        <figure class="gm"><img src="about/g_bbq.jpg" alt="烤肉" loading="lazy"><figcaption>烤肉</figcaption></figure>
+        <figure class="gm"><img src="about/g_pachinko.jpg" alt="打彈珠" loading="lazy"><figcaption>打彈珠</figcaption></figure>
+        <figure class="gm"><img src="about/g_fish.jpg" alt="撈金魚" loading="lazy"><figcaption>撈金魚</figcaption></figure>
+        <figure class="gm"><img src="about/g_boba.jpg" alt="珍珠奶茶" loading="lazy"><figcaption>珍珠奶茶</figcaption></figure>
+        <figure class="gm"><img src="about/g_balloon.jpg" alt="射氣球" loading="lazy"><figcaption>射氣球</figcaption></figure>
+        <figure class="gm"><img src="about/g_qq.jpg" alt="地瓜球" loading="lazy"><figcaption>地瓜球</figcaption></figure>
+        <figure class="gm"><img src="about/g_wenchang.jpg" alt="文昌帝君・寫字" loading="lazy"><figcaption>文昌帝君・寫字</figcaption></figure>
+        <figure class="gm"><img src="about/g_fushui.jpg" alt="觀音菩薩・接福水" loading="lazy"><figcaption>觀音菩薩・接福水</figcaption></figure>
+        <figure class="gm"><img src="about/g_lullaby.jpg" alt="註生娘娘・哄寶寶" loading="lazy"><figcaption>註生娘娘・哄寶寶</figcaption></figure>
+        <figure class="gm"><img src="about/g_maze.jpg" alt="月老・牽紅線" loading="lazy"><figcaption>月老・牽紅線</figcaption></figure>
+        <figure class="gm"><img src="about/g_zhan.jpg" alt="斬小人" loading="lazy"><figcaption>斬小人</figcaption></figure>
+        <figure class="gm"><img src="about/g_gold.jpg" alt="財神・接黃金" loading="lazy"><figcaption>財神・接黃金</figcaption></figure>
+      </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="sponsor" class="sponsor-band">
+    <div class="wrap">
+      <div class="sec-head"><span class="kicker">贊助香油錢</span><h2>添一份香油，讓廟一直開著</h2><p>贊助是自願支持營運，不會換得遊戲內的優勢。每一位贊助者都會在隔天的《天后宮日報》頭版受到感謝（也可以選擇匿名）。</p></div>
+      <div class="tiers">
+        <div class="tier"><span class="name">隨喜</span><span class="amt">NT$<span class="todo">100</span></span><ul><li>隔天日報頭版致謝</li></ul></div>
+        <div class="tier"><span class="name">添油香</span><span class="amt">NT$<span class="todo">300</span></span><ul><li>隔天日報頭版致謝</li><li>名字列在感謝名單</li></ul></div>
+        <div class="tier"><span class="name">點燈護持</span><span class="amt">NT$<span class="todo">600</span></span><ul><li>隔天日報頭版致謝</li><li>頭版與主委的紅包合照</li></ul></div>
+        <div class="tier"><span class="name">護廟大德</span><span class="amt">NT$<span class="todo">1,200</span></span><ul><li>隔天日報頭版大幅感謝</li><li>頭版與主委的紅包合照</li><li>感謝名單置頂一個月</li></ul></div>
+      </div>
+      <div class="slip">
+        <div>
+          <h3>付款方式</h3>
+          <p class="note">由合作金流公司處理付款，本站不會經手或儲存你的信用卡資料。</p>
+          <div class="pm"><span>信用卡</span><span>ATM 轉帳</span><span>超商代碼</span><span class="todo">依金流開通項目調整</span></div>
+        </div>
+        <div class="pay">
+          <a class="btn btn-pay" id="payBtn" href="#sponsor" aria-disabled="true">前往付款</a>
+          <span class="note">金流審核通過後開放</span>
+        </div>
+      </div>
+      <p class="legend"><span class="todo">黃底</span>為待確認的內容（贊助金額、付款方式），上線前請確認。</p>
+    </div>
+  </section>
+
+  <section id="policy">
+    <div class="wrap">
+      <div class="sec-head"><span class="kicker">交易說明</span><h2>贊助與退款</h2></div>
+      <div class="policy">
+        <article><h3>贊助性質</h3><ul><li>贊助為自願支持遊戲營運，不是購買商品或虛擬點數。</li><li>沒有實體商品，不需要配送。</li><li>贊助完成後，致謝會在隔天的《天后宮日報》出現。</li></ul></article>
+        <article><h3>退款</h3><ul><li>重複付款、金額輸入錯誤：付款後 7 日內來信客服信箱，確認後全額退款。</li><li>退款會退回原付款方式，作業時間依金流與銀行規定。</li><li>其他情況，請先聯絡客服說明。</li></ul></article>
+        <article><h3>發票與收據</h3><p>贊助為自願支持，不開立發票，也不開立收據。如需付款紀錄，請參考付款時的付款通知或來信客服信箱。</p></article>
+        <article><h3>個人資料</h3><p>遊戲只使用玩家自己取的遊戲暱稱與遊玩紀錄（例如參拜次數），不需要也不收集真實姓名。付款資料由金流公司依其隱私政策處理。</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding-top:0">
+    <div class="wrap">
+      <div class="sec-head"><span class="kicker">常見問題</span><h2>常見問題</h2></div>
+      <div class="faq">
+        <details><summary>一定要贊助才能玩嗎？</summary><p>不用。所有功能都免費，贊助完全自願。</p></details>
+        <details><summary>贊助會讓我在遊戲裡比較厲害嗎？</summary><p>不會。贊助只會換來日報上的致謝，不影響排行榜、機率或任何玩法。</p></details>
+        <details><summary>可以匿名贊助嗎？</summary><p>可以。付款時在備註寫「匿名」，日報上會寫成「善心香客」。</p></details>
+        <details><summary>需要下載 App 嗎？</summary><p>不需要。用手機或電腦的瀏覽器打開網址就能進廟。</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact" style="padding-top:0">
+    <div class="wrap contact">
+      <div class="sec-head"><span class="kicker">聯絡我們</span><h2>客服信箱</h2><p>對贊助、退款或遊戲有任何問題，請來信，我們會盡快回覆。</p></div>
+      <div class="card" aria-label="聯絡方式">
+        <div class="row"><span class="k">客服信箱</span><span class="v" id="mail">brianofdidi@gmail.com</span><button class="copy" type="button" data-copy="mail">複製</button></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap"><span>© <span id="yr">2026</span> 雲端天后宮</span><span>遊戲網址：mazu-temple.harper88888.workers.dev</span></div>
+</footer>
+
+<script>
+document.getElementById("yr").textContent=new Date().getFullYear();
+document.getElementById("payBtn").addEventListener("click",e=>{ if(e.currentTarget.getAttribute("aria-disabled")==="true") e.preventDefault(); });
+document.querySelectorAll(".copy").forEach(b=>b.addEventListener("click",()=>{ const el=document.getElementById(b.dataset.copy), t=el.textContent.trim();
+  const done=()=>{ b.textContent="已複製"; setTimeout(()=>{ b.textContent="複製"; },1500); };
+  try{ navigator.clipboard.writeText(t).then(done,()=>{ const r=document.createRange(); r.selectNodeContents(el); const s=getSelection(); s.removeAllRanges(); s.addRange(r); }); }catch(err){ const r=document.createRange(); r.selectNodeContents(el); const s=getSelection(); s.removeAllRanges(); s.addRange(r); } }));
+</script>
+
+</body>
+</html>
