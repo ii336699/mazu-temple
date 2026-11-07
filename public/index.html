@@ -4106,11 +4106,14 @@ function renderChairBtn(){ const b=$("#chairBtn"); if(b) b.hidden=!me.sp; if(me.
 const ctTile=(act,icon,name,note="")=>`<button class="ct" data-act="${act}"><b>${icon}</b><span>${name}</span>${note?`<small>${note}</small>`:""}</button>`;
 function openChair(){ if(!me.sp) return;
   openSheet("chair","主委工具",`<div class="ck-row"><input class="mail-box ck" id="readKey" type="password" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="留言讀取密碼（輸入一次就會記住）" value="${esc(load("mz.rk",""))}"><button class="chip ck-eye" type="button" onclick="const i=document.getElementById('readKey'); i.type=i.type==='password'?'text':'password'; this.textContent=i.type==='password'?'👁':'🙈';">👁</button></div>
-  <div class="ct-group"><span class="group-label">訊息</span><div class="ct-grid">${ctTile("msgsOpen","📬","香客留言")}${ctTile("annOpen","📢","全服公告","跑馬燈")}${ctTile("boardOpen","📋","公告欄",board.text?"有公告":"空白")}${ctTile("statOpen","📊","每日統計","今天・近 14 天")}</div></div>
-  <div class="ct-group"><span class="group-label">活動</span><div class="ct-grid">${ctTile("askFw","🎆","全服煙火","4 場可選")}${ctTile("fwedOpen","🎼","煙火編排器","自己排")}${ctTile("wxOpen","🌦️","天氣",WX_KINDS[wxNow()].n)}${ctTile("schedOpen","⏰","定時活動","煙火・夜市")}${ctTile("camCode","📷","記錄視角","給 Claude")}${ctTile("noFog","🌫️",NOFOG.on?"恢復霧氣":"除霧",NOFOG.on?"目前無霧":"看清遠方")}${ctTile("askSL","🏮","50 盞天燈")}${ctTile("stageChair","🎭","歌仔戲台",OP.on?"演出中":"")}${ctTile("toggleCats","🐱",CATS.off?"放出貓咪":"收起貓咪",CATS.off?"已收起":"跳舞中")}${ctTile("puppetChair","🎎","布袋戲台",PT.on?"演出中":"")}${ctTile("marketOpen","🏮","夜市",Object.keys(MK.open).length?`${Object.keys(MK.open).length} 攤營業中`:"")}</div></div>
+  <div class="ct-group"><span class="group-label">訊息</span><div class="ct-grid">${ctTile("msgsOpen","📬","香客留言")}${ctTile("annOpen","📢","全服公告","跑馬燈")}${ctTile("boardOpen","📋","公告欄",board.text?"有公告":"空白")}</div></div>
+  <div class="ct-group"><span class="group-label">報紙與統計</span><div class="ct-grid">${ctTile("paperTest","📰","報紙測試","開場・範例・預覽")}${ctTile("statOpen","📊","每日統計","今天・近 14 天")}</div></div>
+  <div class="ct-group"><span class="group-label">表演與活動</span><div class="ct-grid">${ctTile("askFw","🎆","全服煙火","4 場可選")}${ctTile("fwedOpen","🎼","煙火編排器","自己排")}${ctTile("schedOpen","⏰","定時活動","煙火・夜市")}${ctTile("askSL","🏮","50 盞天燈")}${ctTile("stageChair","🎭","歌仔戲台",OP.on?"演出中":"")}${ctTile("puppetChair","🎎","布袋戲台",PT.on?"演出中":"")}${ctTile("marketOpen","🏮","夜市",Object.keys(MK.open).length?`${Object.keys(MK.open).length} 攤營業中`:"")}</div></div>
+  <div class="ct-group"><span class="group-label">環境</span><div class="ct-grid">${ctTile("wxOpen","🌦️","天氣",WX_KINDS[wxNow()].n)}${ctTile("noFog","🌫️",NOFOG.on?"恢復霧氣":"除霧",NOFOG.on?"目前無霧":"看清遠方")}${ctTile("toggleCats","🐱",CATS.off?"放出貓咪":"收起貓咪",CATS.off?"已收起":"跳舞中")}</div></div>
   <div class="ct-group"><span class="group-label">線上人數</span><div class="crowd-row"><span class="crowd-now"><span>全廟 <b>${shownTotal()}</b> 人</span><small>這殿 ${hallShown(HALLS.current(),Date.now())} 人・${CROWD.real?"真實人數":CROWD.at&&CROWD.target!=null?`目標 ${CROWD.target}`:"自動"}</small></span><input id="crowdIn" type="text" inputmode="numeric" maxlength="3" placeholder="目標"><button class="chip" data-act="crowdSet">設定</button><button class="chip" data-act="crowdAuto">自動</button><button class="chip" data-act="crowdReal" aria-pressed="${!!CROWD.real}">真實人數</button></div>
     <p class="real-count" id="realCount">真實在線：讀取中…</p><p class="note">目標是全廟人數，會依序分到各殿（前一殿快滿才開下一殿）。約 1 分鐘慢慢變到目標，之後在上下 10 人內浮動。「自動」：真實玩家超過 60 人時只顯示真實玩家；60 人以下會再加上約 20 位假人（上下浮動）。「真實人數」不加假人，有多少玩家就顯示多少。</p></div>
-  <div class="ct-group"><span class="group-label">主委自己</span><div class="ct-grid">${ctTile("chairHide",chairHidden?"👁":"🫥",chairHidden?"解除隱形":"隱形",chairHidden?"隱形中":"")}${ctTile("chairBuild","🏗️","建築模式","移動屋頂與裝飾")}${ctTile("chairSpeed","🏃","移動速度",CHAIR_SPD+"×")}${ctTile("chairFly","🕊️",myFly?"降落":"飛行",myFly?"飛行中":"")}${ctTile("chairCs","💰",myCs?"變回主委":"變身財神爺",myCs?"發金光中":"")}${ctTile("giftList","🎁","送禮","平安幣・道具")}${ctTile("chairReset","🔄","重置今日","測試用")}</div></div>`);
+  <div class="ct-group"><span class="group-label">主委自己</span><div class="ct-grid">${ctTile("chairHide",chairHidden?"👁":"🫥",chairHidden?"解除隱形":"隱形",chairHidden?"隱形中":"")}${ctTile("chairBuild","🏗️","建築模式","移動屋頂與裝飾")}${ctTile("chairSpeed","🏃","移動速度",CHAIR_SPD+"×")}${ctTile("chairFly","🕊️",myFly?"降落":"飛行",myFly?"飛行中":"")}${ctTile("chairCs","💰",myCs?"變回主委":"變身財神爺",myCs?"發金光中":"")}${ctTile("giftList","🎁","送禮","平安幣・道具")}</div></div>
+  <div class="ct-group"><span class="group-label">測試工具</span><div class="ct-grid">${ctTile("chairReset","🔄","重置今日","測試用")}${ctTile("camCode","📷","記錄視角","給 Claude")}</div></div>`);
   const k=$("#readKey"); const keep=()=>{ save("mz.rk",k.value.trim()); }; k.addEventListener("input",keep); k.addEventListener("change",keep); realStats(); }
 // real players only (no demo worshippers, no added numbers), straight from the server's hall counts
 async function realStats(){ const el=$("#realCount"); if(!el) return; let c=null; if(USE_CF){ const j=await probeCF(); if(j) c=j.counts; } else if(room) c=(HALLS.counts||[]).slice();
@@ -8613,10 +8616,13 @@ function incTick(dt){ if(typeof SJ==="undefined"||typeof FTB==="undefined") retu
 const PAPER={p:null,shown:false};
 async function paperFetch(){ if(PAPER.p) return PAPER.p;
   try{ if(USE_CF){ const r=await fetch("/paper",{cache:"no-store"}); const j=await r.json(); if(j&&j.ok&&j.paper) PAPER.p=j.paper; }
-    else { const G=await import("./paper-gen.js"); const d=new Date(Date.now()+8*3600e3-864e5).toISOString().slice(0,10); const n=(me.name||"香客").slice(0,10);
-      PAPER.p=G.buildPaper({d,no:1,st:{c:{visitors:37,b_bowBtn:212,b_jiaoBtn:96,b_lotBtn:41,wish:12,pkCash:1340,pkBuy:980,sit_futon:6},mx:{peak:23,h20:23,h21:19},p:{me:{n,c:{b_bowBtn:31,b_jiaoBtn:14,minOnline:96,minZen:18,pkCash:600}},x1:{n:"阿明",c:{b_bowBtn:12,sit_futon:3}}}},
-        ev:[{k:"lb",g:"tudi",n,v:6400},{k:"tudi500",n:"阿明"}].concat(STATQ.ev||[]),wishes:[{name:"小美",text:"希望明天考試順利"},{name:"阿明",text:"阿嬤身體健康"}]}); } }catch(e){ console.warn("paper",e); }
+    else { PAPER.p=await paperDemo({}); } }catch(e){ console.warn("paper",e); }
   return PAPER.p; }
+/* a sample paper (test page, and the chair's 報紙測試): made up numbers plus whatever this page did today; sc picks the stories */
+async function paperDemo(sc){ const G=await import("./paper-gen.js"); const d=new Date(Date.now()+8*3600e3-864e5).toISOString().slice(0,10); const n=(me.name||"香客").slice(0,10); const pk=sc.pk===false?{pkCash:120,pkBuy:900}:{pkCash:1340,pkBuy:980};
+  const ev=[]; if(sc.rec!==false) ev.push({k:"lb",g:"tudi",n,v:6400}); if(sc.tudi!==false) ev.push({k:"tudi500",n:"阿明"}); if(sc.calm){ ev.length=0; }
+  return G.buildPaper({d,no:sc.no||1,seed:sc.seed||0,force:sc.force||[],st:{c:sc.calm?{visitors:12,b_bowBtn:30}:{visitors:37,b_bowBtn:212,b_jiaoBtn:96,b_lotBtn:41,wish:12,sit_futon:6,...pk},mx:{peak:23,sp:58,h20:23,s20:58,s21:51,s19:44,s14:30},p:sc.calm?{}:{me:{n,c:{b_bowBtn:31,b_jiaoBtn:14,minOnline:96,minZen:18,pkCash:600}},x1:{n:"阿明",c:{b_bowBtn:12,sit_futon:3}}}},
+    ev:ev.concat(sc.calm?[]:(STATQ.ev||[])),wishes:sc.calm?[]:[{name:"小美",text:"希望明天考試順利"},{name:"阿明",text:"阿嬤身體健康"}]}); }
 function paperHTML(p){ const E=esc, it=p.items||[], dt=p.d.split("-"), wk="日一二三四五六"[new Date(p.d+"T12:00:00+08:00").getDay()];
   const art=(s,i)=>PAPER.ph&&PAPER.ph[i]?`<figure class="np-photo"><img src="${PAPER.ph[i]}" alt=""><figcaption>本報記者攝</figcaption></figure>`:`<div class="np-art"><span>${s.art||"📰"}</span></div>`;
   return `<div class="np-page" role="document">
@@ -8650,6 +8656,23 @@ function paperOpen(intro){ const p=PAPER.p; if(!p) return; if(!intro) paperPhoto
   el.querySelector(".np-close").onclick=e=>{ e.stopPropagation(); close(); };
   if(intro){ el.onclick=()=>{ if(el.className!=="intro") return; el.onclick=null; el.className="calling"; paperDing(); paperCall(); setTimeout(()=>{ paperPhotos(); const w=el.querySelector(".np-wrap"); if(w){ const b=w.querySelector(".np-close"); w.innerHTML=paperHTML(p); w.appendChild(b); } el.className="open"; },1700); }; }
   else el.onclick=null; }
+/* 主委工具 → 報紙測試 */
+HANDLERS.paperTest=()=>{ const seen=load("mz.paperSeen","");
+  openSheet("contact","報紙測試",`${backBtn}<p class="lead">試看報紙的各種樣子。範例報紙用假數字，不會存到伺服器。</p>
+    <div class="goods"><button class="good" data-act="paperTry" data-v="intro"><span class="name">🎬 播放開場</span><span class="meta">黑畫面 → 點一下 → 叮叮＋「報紙到囉！」→ 報紙打開</span></button>
+    <button class="good" data-act="paperTry" data-v="real"><span class="name">📰 昨天的報紙</span><span class="meta">${USE_CF?"大家今天看到的那一份":"測試頁沒有伺服器，會用範例"}</span></button>
+    ${USE_CF?`<button class="good" data-act="paperTry" data-v="live"><span class="name">📡 預覽今天的報紙</span><span class="meta">用今天到目前為止的資料寫（明天大家才看得到）</span></button>`:""}
+    <button class="good" data-act="paperTry" data-v="shuffle"><span class="name">🔀 換一份範例</span><span class="meta">同樣的資料換不同寫法</span></button></div>
+    <div class="group"><span class="group-label">範例情境</span><div class="chips">${[["heat","🥵 阿嬤中暑"],["stall","🌪️ 攤子被吹走"],["storm","⛈️ 雷雨天"],["rain","🌧️ 下雨天"],["pk","⚪ 彈珠台破產"],["calm","🏮 平靜的一天"]].map(([k,t])=>`<button class="chip" data-act="paperTry" data-v="sc:${k}">${t}</button>`).join("")}</div></div>
+    <p class="note">開場每天只會自動出現一次${seen?`（這支手機已看過 ${esc(seen)} 的報紙）`:""}。<button class="chip" data-act="paperTry" data-v="reset">讓下次進遊戲再出現一次</button></p>`); };
+HANDLERS.paperTry=async v=>{ PAPER.seed=(PAPER.seed||0)+1;
+  if(v==="reset"){ save("mz.paperSeen",""); toast("好了，下次進遊戲會再出現報紙",2200); return; }
+  if(v==="live"){ const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return; } try{ const r=await fetch("/paper?live=1",{headers:{"x-key":key},cache:"no-store"}); const j=await r.json().catch(()=>({})); forgetKey(r,j); if(!j.ok){ toast("讀不到（密碼？）",2000); return; } PAPER.p=j.paper; }catch(e){ toast("網路不穩",2000); return; } closeSheet(); paperOpen(false); return; }
+  if(v==="real"){ PAPER.p=null; if(!(await paperFetch())){ toast("今天的報紙還沒送來",2200); return; } closeSheet(); paperOpen(false); return; }
+  const sc={seed:PAPER.seed*7919};
+  if(v.startsWith("sc:")){ const k=v.slice(3); if(k==="heat"||k==="stall"||k==="storm"||k==="rain") sc.force=[k]; if(k==="pk"){ sc.rec=false; sc.tudi=false; } if(k==="calm"){ sc.calm=true; sc.force=["clear"]; } if(k!=="pk") sc.pk=false; }
+  try{ PAPER.p=await paperDemo(sc); }catch(e){ toast("範例報紙載入失敗",2000); return; }
+  closeSheet(); paperOpen(v==="intro"); };
 HANDLERS.paperOpen=async()=>{ closeSheet(); if(!(await paperFetch())){ toast("今天的報紙還沒送來",2200); return; } paperOpen(false); };
 /* once a day, when the page has loaded (not on someone's very first visit, while they make their character) */
 setTimeout(async()=>{ if(firstVisitPending) return; const p=await paperFetch(); if(!p||load("mz.paperSeen","")===p.d) return; save("mz.paperSeen",p.d); paperOpen(true); },300);

@@ -94,7 +94,7 @@ const fill = (s, o) => s.replace(/\{(\w)\}/g, (_, k) => o[k] != null ? String(o[
 
 /* data: { d:"YYYY-MM-DD", st:{c,mx,p}, ev:[{k,n,v,g,at}], wishes:[{name,text}], used:[ids], no } */
 export function buildPaper(data) {
-  const d = data.d, dn = dayNum(d), R = rng(dn * 9973 + 17), used = new Set(data.used || []), st = data.st || { c: {}, mx: {}, p: {} }, c = st.c || {}, mx = st.mx || {}, P = st.p || {}, ev = data.ev || [];
+  const d = data.d, dn = dayNum(d), R = rng(dn * 9973 + 17 + (data.seed || 0)), F = new Set(data.force || []), /* force: test-only story kinds (heat, stall, storm, rain) */ used = new Set(data.used || []), st = data.st || { c: {}, mx: {}, p: {} }, c = st.c || {}, mx = st.mx || {}, P = st.p || {}, ev = data.ev || [];
   const pickT = kind => { const L = T[kind], fresh = L.filter(x => !used.has(x.id)), pool = fresh.length ? fresh : L, x = pool[Math.floor(R() * pool.length)]; used.add(x.id); return x; };
   const stories = []; const add = (kind, pri, o, tag, art) => { const w = pickT(kind); stories.push({ pri: pri + R() * 5, tag, art, t: fill(w.t, o), b: fill(w.b, o), id: w.id, kind, who: o.n || "" }); };
   /* people: the paper uses what players saw on screen (real players plus the temple's regulars), so the numbers match what everyone remembers;
@@ -103,9 +103,10 @@ export function buildPaper(data) {
   const wx = wxDay(dn), visitors = Math.max(c.visitors || 0, Math.min(Math.round(shownSum * 1.3), (c.visitors || 0) * 3 + 400)), peakShown = Math.max(mx.sp || 0, mx.peak || 0);
   const top = key => { let best = null; for (const [id, e] of Object.entries(P)) { const v = e.c && e.c[key] || 0; if (v > 0 && (!best || v > best.v)) best = { id, n: e.n || "香客", v }; } return best; };
   /* incidents and weather */
-  if (evHeat(dn)) add("heat", 95, {}, "社會", "🥵");
-  if (evStall(dn)) add("stall", 96, { x: Math.floor(stallHour(dn)) }, "社會", "🌪️");
-  if (wx === "storm") add("storm", 60, { v: visitors }, "天氣", "⛈️"); else if (wx === "rain") add("rain", 45, { v: visitors }, "天氣", "🌧️"); else if (wx === "windy" && !evStall(dn)) add("windy", 35, {}, "天氣", "🍃");
+  const heat = evHeat(dn) || F.has("heat"), stall = evStall(dn) || F.has("stall"), wxF = F.has("storm") ? "storm" : F.has("rain") ? "rain" : F.has("clear") ? "clear" : wx;
+  if (heat) add("heat", 95, {}, "社會", "🥵");
+  if (stall) add("stall", 96, { x: Math.floor(stallHour(dn)) }, "社會", "🌪️");
+  if (wxF === "storm") add("storm", 60, { v: visitors }, "天氣", "⛈️"); else if (wxF === "rain") add("rain", 45, { v: visitors }, "天氣", "🌧️"); else if (wxF === "windy" && !stall) add("windy", 35, {}, "天氣", "🍃");
   /* records */
   const recs = ev.filter(e => e.k === "lb" || e.k === "nm"); const seenRec = new Set();
   for (const e of recs.slice().reverse()) { const key = e.k + e.g; if (seenRec.has(key)) continue; seenRec.add(key);
