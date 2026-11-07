@@ -2597,11 +2597,11 @@ function zenMirrorInit(){ if(ZEN.refl||Q.lite) return; const res=Q.low?256:512; 
   const mc=new T.PerspectiveCamera(); ZEN.refl={rt,texMat,mp,mc,frame:0};
   ZEN.g.traverse(o=>{ if(o!==mp) o.layers.enable(3); }); }
 function zenMirror(){ const Rf=ZEN.refl; if(!Rf) return; const cam=camera, y=ZEN.FY+.008, mc=Rf.mc;
-  if((Rf.frame++)%(Q.low?2:1)) return;
+  if((Rf.frame++)%(Q.low?3:2)) return; /* every other frame is plenty for a floor reflection (every third on 低配) */
   mc.fov=cam.fov; mc.aspect=cam.aspect; mc.near=.1; mc.far=120; mc.updateProjectionMatrix();
   mc.position.set(cam.position.x,2*y-cam.position.y,cam.position.z); const dir=new T.Vector3(); cam.getWorldDirection(dir); dir.y=-dir.y; mc.up.set(0,1,0); mc.lookAt(mc.position.x+dir.x,mc.position.y+dir.y,mc.position.z+dir.z); mc.updateMatrixWorld(true);
   Rf.texMat.value.set(.5,0,0,.5, 0,.5,0,.5, 0,0,.5,.5, 0,0,0,1).multiply(mc.projectionMatrix).multiply(mc.matrixWorldInverse);
-  mc.layers.set(3); scene.traverse(o=>{ if(o.isLight) o.layers.enable(3); }); sky.layers.enable(3);
+  mc.layers.set(3); if(!Rf.lit||Rf.frame%120<2){ Rf.lit=1; scene.traverse(o=>{ if(o.isLight) o.layers.enable(3); }); sky.layers.enable(3); } /* (walking the whole scene every frame was costly: now about every two seconds, for lights added later) */
   Rf.mp.visible=false; const cp=renderer.clippingPlanes; renderer.clippingPlanes=[new T.Plane(new T.Vector3(0,1,0),-y)]; const rt0=renderer.getRenderTarget();
   renderer.setRenderTarget(Rf.rt); renderer.clear(); renderer.render(scene,mc); renderer.setRenderTarget(rt0); renderer.clippingPlanes=cp; Rf.mp.visible=true; }
 /* per frame: show the garden only when you are near it, keep the build-mode trees that used to stand there out of it, light it for the time of day */
@@ -2767,8 +2767,10 @@ function zenTick(dt){ { const b=$("#zenMusicBtn"), want=!!(meAv&&meAv.pos.x<-23.
   if(!ZEN.g.visible) ZEN.g.visible=true; /* always drawn: from the courtyard it used to look like an empty field until you got close */
   ZEN.t=(ZEN.t||0)+dt; if((ZEN.hideT=(ZEN.hideT||0)-dt)<0){ ZEN.hideT=3;  }
   if(!near) return;
-  if(!ZEN.cube&&!Q.lite&&ZEN.water&&camera.position.x<-24){ try{ const rt=new T.WebGLCubeRenderTarget(128,{generateMipmaps:true,minFilter:T.LinearMipmapLinearFilter}); const cc=new T.CubeCamera(.2,160,rt); cc.position.set(-31.2,.5,ZEN.GZ); scene.add(cc); ZEN.water.visible=false; cc.update(renderer,scene); ZEN.water.visible=true; scene.remove(cc);
-      const m=ZEN.water.material; m.envMap=rt.texture; m.envMapIntensity=1.5; m.metalness=.85; m.roughness=.04; m.color.set(ZL("#5f8e90")); m.needsUpdate=true; ZEN.cube=rt; }catch(e){ ZEN.cube=1; } } /* the stream mirrors the bridge, the trees and the sky */
+  /* the stream mirrors the bridge, the trees and the sky: the picture is taken one face per frame as you come near (no single big stall) */
+  if(!ZEN.cube&&!Q.lite&&ZEN.water&&camera.position.x<-18){ try{ const rt=new T.WebGLCubeRenderTarget(96,{generateMipmaps:true,minFilter:T.LinearMipmapLinearFilter}); const cc=new T.CubeCamera(.2,160,rt); cc.position.set(-31.2,.5,ZEN.GZ); cc.updateMatrixWorld(true); ZEN.cube={rt,cc,face:0}; }catch(e){ ZEN.cube={done:1}; } }
+  if(ZEN.cube&&!ZEN.cube.done&&ZEN.cube.cc){ const C=ZEN.cube, i=C.face, rt0=renderer.getRenderTarget(); ZEN.water.visible=false; C.rt.texture.generateMipmaps=i===5; renderer.setRenderTarget(C.rt,i); renderer.render(scene,C.cc.children[i]); renderer.setRenderTarget(rt0); ZEN.water.visible=true; C.face++;
+    if(C.face>5){ C.done=1; const m=ZEN.water.material; m.envMap=C.rt.texture; m.envMapIntensity=1.5; m.metalness=.85; m.roughness=.04; m.color.set(ZL("#5f8e90")); m.needsUpdate=true; } }
   const day=_dn.day, night=_dn.night; for(const s of ZEN.shafts) s.material.opacity=.16*day+.05*(1-day)*(1-night);
   ZEN.dust.material.opacity=.3*day; { const a=ZEN.dust.geometry.attributes.position, b=ZEN.dust0; for(let i=0;i<a.count;i++){ const t=ZEN.t*.25+i*1.7; a.setXYZ(i,b[i*3]+Math.sin(t)*.06,b[i*3+1]+Math.sin(t*.7+i)*.08,b[i*3+2]+Math.cos(t*.8)*.06); } a.needsUpdate=true; } /* drifting gently in place */
   for(const gl of ZEN.glows) gl.material.opacity=.15+.75*night;
@@ -3296,8 +3298,8 @@ function camRoom(x,z){ const ax=Math.abs(x); if(x>23.3&&z>-52&&z<-4){ if(typeof 
   if(ax<HX&&z>-HZ&&z<HZ) return "M"; if(ax>SHX0&&ax<SHX1+.2&&z>SHZ0&&z<SHZ1) return "S"+Math.sign(x); if(ax>GH.x0&&ax<GH.x1+.2&&z>SHZ1&&z<GH.z1) return "G"+Math.sign(x);
   if(ax<RH.x&&z<RH.z0&&z>RH.z1) return "H"; if(ax>RS.x0&&ax<RS.x1+.2&&z<RS.z0&&z>RS.z1) return "Q"+Math.sign(x); return "O"; }
 function camLimit(from,to,out){ if(myFly) return out.copy(to); let lo=0; const N=24; const room0=camRoom(from.x,from.z); // inside a 偏殿 the camera stays indoors (it used to slip out the garden door and end up behind the trees)
-  const inSide=Math.abs(from.x)>12.5&&from.z<SHZ1-.3;
-  for(let i=1;i<=N;i++){ const t=i/N, px=from.x+(to.x-from.x)*t, pz=from.z+(to.z-from.z)*t; if(!camOK(px,from.y+(to.y-from.y)*t,pz)||(inSide&&pz>SHZ1-.9)||camRoom(px,pz)!==room0) break; lo=t; } const k=Math.max(.15,lo-.04); return out.set(from.x+(to.x-from.x)*k,from.y+(to.y-from.y)*k,from.z+(to.z-from.z)*k); }
+  const inSide=Math.abs(from.x)>12.5&&from.z<SHZ1-.3, hl=ZEN.hall, inZen=from.x>hl.x0&&from.x<hl.x1&&from.z>hl.z0&&from.z<hl.z1; /* in the 禪堂 the camera stays under its roof, however wide the lens */
+  for(let i=1;i<=N;i++){ const t=i/N, px=from.x+(to.x-from.x)*t, pz=from.z+(to.z-from.z)*t, py=from.y+(to.y-from.y)*t; if(!camOK(px,py,pz)||(inSide&&pz>SHZ1-.9)||camRoom(px,pz)!==room0||(inZen&&(px<hl.x0+.4||px>hl.x1-.4||pz<hl.z0+.4||pz>hl.z1-.4||py>ZEN.FY+3.2))) break; lo=t; } const k=Math.max(.15,lo-.04); return out.set(from.x+(to.x-from.x)*k,from.y+(to.y-from.y)*k,from.z+(to.z-from.z)*k); }
 function wrapA(a){ return ((a+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI; }
 function lerpAngle(a,b,t){ let d=((b-a+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI; return a+d*t; }
 
@@ -8608,8 +8610,9 @@ function innTvDraw0(t){ const x=t.c.getContext("2d"), w=256, h=144, k=t.k%5; con
 /* per frame: lock state, doors, futons, steam, towels, TV, shower */
 function innTick(dt){ const me=meAv; if(!me) return; INN.t=(INN.t||0)+dt;
   /* the hot-spring water mirrors the room and the trees outside: one reflection picture, taken the first time you come near */
-  if(!INN.cube&&!Q.lite&&Math.hypot(camera.position.x-(INN.DX+48.5),camera.position.z+34.25)<30){ try{ const rt=new T.WebGLCubeRenderTarget(128,{generateMipmaps:true,minFilter:T.LinearMipmapLinearFilter}); const cc=new T.CubeCamera(.2,120,rt); cc.position.set(INN.DX+48.5,.6,-34.25); scene.add(cc);
-      INN.water.visible=false; cc.update(renderer,scene); INN.water.visible=true; scene.remove(cc); INN.waterMat.envMap=rt.texture; INN.waterMat.envMapIntensity=1.2; INN.waterMat.needsUpdate=true; INN.cube=rt; }catch(e){ INN.cube=1; } }
+  if(!INN.cube&&!Q.lite&&Math.hypot(camera.position.x-(INN.DX+48.5),camera.position.z+34.25)<34){ try{ const rt=new T.WebGLCubeRenderTarget(96,{generateMipmaps:true,minFilter:T.LinearMipmapLinearFilter}); const cc=new T.CubeCamera(.2,120,rt); cc.position.set(INN.DX+48.5,.6,-34.25); cc.updateMatrixWorld(true); INN.cube={rt,cc,face:0}; }catch(e){ INN.cube={done:1}; } }
+  if(INN.cube&&!INN.cube.done&&INN.cube.cc){ const C=INN.cube, i=C.face, rt0=renderer.getRenderTarget(); INN.water.visible=false; C.rt.texture.generateMipmaps=i===5; renderer.setRenderTarget(C.rt,i); renderer.render(scene,C.cc.children[i]); renderer.setRenderTarget(rt0); INN.water.visible=true; C.face++;
+    if(C.face>5){ C.done=1; INN.waterMat.envMap=C.rt.texture; INN.waterMat.envMapIntensity=1.2; INN.waterMat.needsUpdate=true; } } /* (one face per frame, so walking in never stalls) */
   { bag.gd=bag.gd||{}; const si0=(me.gy||0)>2.3?innSuiteAt(me.pos.x,me.pos.y):-1, inRoom=si0>=0&&me.pos.x-INN.DX>INN.suites[si0].xa+.3;
     if(inRoom&&!bag.gd.roomKey&&!me.sp&&!INN.kicked){ INN.kicked=1; const S=INN.suites[si0]; me.pos.set(INN.DX+(S.e?42.8:29.8),S.dz); me.target.copy(me.pos); me.path=[]; toast("要先到一樓櫃台買房卡（一次 100 平安幣）才能進套房喔",3200); setTimeout(()=>{ INN.kicked=0; },1500); }
     if(inRoom) INN.wasIn=1; else if(INN.wasIn){ INN.wasIn=0; if(bag.gd.roomKey&&!me.sp){ bag.gd.roomKey=0; saveBag(); toast("退房了，歡迎再來",1800); } }
@@ -8855,7 +8858,7 @@ async function paperFetch(){ if(PAPER.p) return PAPER.p;
     else { PAPER.p=await paperDemo({}); } }catch(e){ console.warn("paper",e); }
   return PAPER.p; }
 /* a sample paper (test page, and the chair's 報紙測試): made up numbers plus whatever this page did today; sc picks the stories */
-async function paperDemo(sc){ const G=await import("./paper-gen.js"); const back=sc.seed?1+Math.floor(Math.random()*40):1, d=new Date(Date.now()+8*3600e3-back*864e5).toISOString().slice(0,10); const NAMES=["阿明","小美","怕癢的傑克","開心凱文","跑很快的小龍","溫柔的松鼠","阿嬤的乖孫","夜市小王子","拜拜達人","甜甜圈"], pickN=()=>NAMES[(Math.random()*NAMES.length)|0]; const n=sc.seed?pickN():(me.name||"香客").slice(0,10); const pkr=sc.pk===undefined&&sc.seed?Math.random():(sc.pk===false?.9:0); const pk=pkr<.4?{pkCash:1340,pkBuy:980}:pkr<.7?{pkCash:120,pkBuy:900}:{pkCash:60,pkBuy:80};
+async function paperDemo(sc){ const G=await import("./paper-gen.js?v=20261107c"); const back=sc.seed?1+Math.floor(Math.random()*40):1, d=new Date(Date.now()+8*3600e3-back*864e5).toISOString().slice(0,10); const NAMES=["阿明","小美","怕癢的傑克","開心凱文","跑很快的小龍","溫柔的松鼠","阿嬤的乖孫","夜市小王子","拜拜達人","甜甜圈"], pickN=()=>NAMES[(Math.random()*NAMES.length)|0]; const n=sc.seed?pickN():(me.name||"香客").slice(0,10); const pkr=sc.pk===undefined&&sc.seed?Math.random():(sc.pk===false?.9:0); const pk=pkr<.4?{pkCash:1340,pkBuy:980}:pkr<.7?{pkCash:120,pkBuy:900}:{pkCash:60,pkBuy:80};
   const ev=[]; const G7=["wenchang","tudi","guanyin","zhusheng","doumu","jiutian","dizang"], NM=["qq","bbq","fish","pachinko","boba","balloon"]; const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
   if(sc.rec!==false&&(!sc.seed||Math.random()<.7)){ const g=G7[rnd(0,6)]; ev.push({k:"lb",g,n:sc.seed?pickN():n,v:g==="wenchang"?rnd(700,1200):rnd(3000,20000)}); } if(sc.seed&&Math.random()<.5){ const g=NM[rnd(0,5)]; ev.push({k:"nm",g,n:pickN(),v:rnd(5,60)}); }
   if(sc.tudi!==false&&(!sc.seed||Math.random()<.5)) ev.push({k:"tudi500",n:pickN()}); if(sc.calm){ ev.length=0; }

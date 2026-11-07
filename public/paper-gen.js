@@ -22,7 +22,7 @@ export const stallHour = d => 12 + wxHash(d * 41 + 2) * 6;
 export const stallG = d => { const [a, b] = gRange(d); for (let g = a; g <= b; g++) { if (((gStart(g) + 8 * 3600e3) % 864e5) / 36e5 < stallHour(d)) continue; if (wxG(g) === "windy") return g; } return null; };
 export const evStall = d => { const w = Math.floor((d + 4) / 7); return d === w * 7 - 4 + Math.floor(wxHash(w * 37 + 9) * 7) && stallG(d) != null; }; /* once a week */
 export const buskStayG = g => (wxG(g) === "rain" || wxG(g) === "storm") && wxHash(g * 41 + 7) < .28;
-export const evBuskRain = d => { if (wxHash(d * 43 + 1) >= .4) return false; const [a, b] = gRange(d); for (let g = a; g <= b; g++) if (buskStayG(g)) return true; return false; };
+export const evBuskRain = d => { if (wxHash(d * 43 + 1) >= .15) return false; /* (a headline about once a week) */ const [a, b] = gRange(d); for (let g = a; g <= b; g++) if (buskStayG(g)) return true; return false; };
 export const dayNum = dateStr => Math.floor(Date.parse(dateStr + "T00:00:00Z") / 864e5);
 const WXN = { clear: "晴", cloudy: "陰", windy: "風大", rain: "雨", storm: "雷雨" }, WXI = { clear: "☀️", cloudy: "☁️", windy: "🍃", rain: "🌧️", storm: "⛈️" };
 const LB_NAME = { wenchang: "文昌帝君挑戰", tudi: "土地公挑戰", guanyin: "觀音菩薩挑戰", zhusheng: "註生娘娘挑戰", doumu: "斗姥元君挑戰", jiutian: "九天玄女挑戰", dizang: "地藏王挑戰" };
