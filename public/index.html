@@ -8512,19 +8512,24 @@ const INN_SEAT0=SEATS.length;
       const v=new T.Vector2(x,z+.05); v.inn=1; v.kind="futon"; v.face=0; v.lift=.16; v.gy=0; SEATS.push(v); INN.futon.push({f,i:SEATS.length-1}); } }
   /* ---- hot spring: stone deck, a rock-edged pool with steam, bamboo, a stone lantern and a small maple ---- */
   { const PX=48.5, PZ=-34.25, PRX=4.35, PRZ=3.55; /* the pool is an oval; the rocks sit right on its rim */
-    const dk=new T.MeshStandardMaterial({color:L("#18181a"),roughness:.22,metalness:.15}); /* black polished stone floor */
+    const dk=new T.MeshStandardMaterial({color:L("#18181a"),roughness:.22,metalness:.15,emissive:L("#261b10")}); /* black polished stone floor (a faint warm glow so it is not pitch dark) */
     { const sh=new T.Shape(); sh.moveTo(41.05,27.5); sh.lineTo(55,27.5); sh.lineTo(55,40); sh.lineTo(41.05,40); sh.lineTo(41.05,27.5); const hole=new T.Path(); hole.absellipse(PX,-PZ,PRX,PRZ,0,Math.PI*2,true); sh.holes.push(hole); /* (shape y = -z) */
       const g=new T.ShapeGeometry(sh,48); g.rotateX(-Math.PI/2); const f=new T.Mesh(g,dk); f.position.y=.05; root.add(f); f.userData.floor=true; f.userData.keepMat=1; INN.deck=f; }
-    INN.waterMat=new T.MeshStandardMaterial({color:L("#1d3a40"),roughness:.03,metalness:.85,transparent:true,opacity:.9,emissive:L("#0e2a30"),emissiveIntensity:.4});
+    INN.waterMat=new T.MeshStandardMaterial({color:L("#1d3a40"),roughness:.03,metalness:.85,transparent:true,opacity:.9,emissive:L("#1a4650"),emissiveIntensity:.55}); /* (a little brighter: lit from under the water) */
     const wa=new T.Mesh(new T.CircleGeometry(1,48),INN.waterMat); wa.rotation.x=-Math.PI/2; wa.scale.set(PRX,PRZ,1); wa.position.set(PX,.01,PZ); root.add(wa); INN.water=wa;
     { const pit=new T.Mesh(new T.CylinderGeometry(1,1,.55,40,1,true),new T.MeshStandardMaterial({color:L("#121214"),roughness:.6,side:T.BackSide})); pit.scale.set(PRX,1,PRZ); pit.position.set(PX,-.26,PZ); root.add(pit); const bt=new T.Mesh(new T.CircleGeometry(1,40),pit.material); bt.rotation.x=-Math.PI/2; bt.scale.set(PRX,PRZ,1); bt.position.set(PX,-.52,PZ); root.add(bt); }
 
     { const bk=new T.MeshStandardMaterial({color:L("#141416"),roughness:.35}); /* the bath's own walls are black (a skin on the bath side of the white walls) */ B(.04,INN.H1,5.3,bk,41.2,INN.H1/2,-37.35); B(.04,INN.H1,5.8,bk,41.2,INN.H1/2,-30.4); B(.04,INN.H1-2.5,1.4,bk,41.2,2.5+(INN.H1-2.5)/2,-34); B(13.8,INN.H1,.04,bk,48.1,INN.H1/2,-27.65); /* (a gap for the door) */ B(.04,INN.H1-3.9,12.2,bk,INN.X1-.15,3.9+(INN.H1-3.9)/2,-33.75); B(13.9,INN.H1-3.9,.04,bk,48.1,3.9+(INN.H1-3.9)/2,INN.Z0+.15); for(const [x,w] of [[41.17,.3],[54.86,.3]]) B(w,INN.H1,.04,bk,x,INN.H1/2,INN.Z0+.15); for(const z of [-39.85,-27.73]) B(.04,INN.H1,.3,bk,INN.X1-.15,INN.H1/2,z); /* the window walls too: black above the glass and at the corners */ }
     const rocks=[]; for(let k=0;k<44;k++){ const t=k/44*Math.PI*2; rocks.push([PX+Math.cos(t)*(PRX+.12),PZ+Math.sin(t)*(PRZ+.12),.24+Math.random()*.22]); }
-    rocks.forEach(([x,z,s])=>{ const r=mesh(new T.DodecahedronGeometry(s,0),mat(L("#3a3836"),{roughness:.8}),x,s*.35,z,root); r.rotation.set(Math.random(),Math.random(),Math.random()); r.scale.y=.55; });
+    rocks.forEach(([x,z,s])=>{ const r=mesh(new T.DodecahedronGeometry(s,0),(INN.rockM||(INN.rockM=mat(L("#3a3836"),{roughness:.8,emissive:L("#17120d")}))),x,s*.35,z,root); r.rotation.set(Math.random(),Math.random(),Math.random()); r.scale.y=.55; });
     INN.steam=[]; for(let k=0;k<9;k++){ const sp=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffffff"),transparent:true,opacity:.12,depthWrite:false})); { const t=Math.random()*6.28, r=Math.sqrt(Math.random())*.85; sp.position.set(48.5+Math.cos(t)*4.35*r,.4,-34.25+Math.sin(t)*3.55*r); } sp.scale.set(3,3,1); sp.userData.s=Math.random()*6; root.add(sp); INN.steam.push(sp); }
 
-    { const lx=53.6,lz=-29; B(.4,.1,.4,stone,lx,.05,lz); cyl(.08,.1,.8,stone,lx,.5,lz,root,8); B(.46,.36,.46,stone,lx,1.08,lz); mesh(new T.ConeGeometry(.42,.32,4),stone,lx,1.42,lz,root).rotation.y=Math.PI/4; }
+    { const lx=53.6,lz=-29; B(.4,.1,.4,stone,lx,.05,lz); cyl(.08,.1,.8,stone,lx,.5,lz,root,8); B(.46,.36,.46,stone,lx,1.08,lz); B(.3,.22,.47,new T.MeshBasicMaterial({color:L("#ffc070")}),lx,1.08,lz); B(.47,.22,.3,new T.MeshBasicMaterial({color:L("#ffc070")}),lx,1.08,lz); /* the stone lantern's little windows are lit */ mesh(new T.ConeGeometry(.42,.32,4),stone,lx,1.42,lz,root).rotation.y=Math.PI/4; }
+    { /* 微光: soft warm glows (pictures only, no extra lamps — a new lamp makes every material rebuild, a big spike on phones) */
+      const gl=(x,y,z,sc,c,op)=>{ const sp=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color(c),transparent:true,opacity:op,blending:T.AdditiveBlending,depthWrite:false})); sp.position.set(x,y,z); sp.scale.set(sc,sc*.8,1); root.add(sp); return sp; };
+      gl(53.6,1.1,-29,1.6,"#ffb860",.5); /* the stone lantern */
+      for(const [x,z] of [[47,-33.6],[50.4,-35]]) gl(x,.12,z,3.4,"#7fd8e0",.16); /* light under the water */
+      for(const [x,z] of [[41.6,-38.6],[41.6,-30.2],[45,-39.6],[50.5,-39.6],[54.6,-37],[47.5,-28.1]]) gl(x,.5,z,2.2,"#ffcf8a",.2); /* low lights along the walls */ }
     for(let k=0;k<6;k++){ cyl(.18,.16,.25,wood,42+k*.6,.13,-39.4,root,12); } /* wooden buckets and stools at the washing place */
     const mp=new T.Group(); mp.position.set(52.6,0,-38.4); root.add(mp); cyl(.08,.12,1.6,mat(L("#4a3226")),0,.8,0,mp,6); for(let k=0;k<14;k++) mesh(new T.IcosahedronGeometry(.35,0),mat(L(["#c4161c","#d8281e","#e0501a"][k%3]),{roughness:.8}),(Math.random()-.5)*1.4,1.6+Math.random()*.8,(Math.random()-.5)*1.4,mp); }
   /* ---- the suites upstairs ---- */
