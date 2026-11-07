@@ -1,10 +1,11 @@
 // 雲端天后宮 multiplayer: one Durable Object per hall relays player state over WebSockets.
 // Outgoing WebSocket messages are free; incoming ones are billed at 20:1, so the server only relays.
 import { DurableObject } from "cloudflare:workers";
+import { buildPaper } from "../public/paper-gen.js";
 
 const HALLS = 10, CAP = 100, MAX_MSG = 4000;
 const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000, "/puppet": 5000, "/crowd": 5000, "/market": 5000, "/layout": 5000 };
-const LOBBY_PATHS = ["/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather", "/stat"];
+const LOBBY_PATHS = ["/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather", "/stat", "/nev", "/paper"];
 const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage", "/puppet": "/puppet", "/crowd": "/crowd", "/market": "/market", "/layout": "/layout" }; // a POST here makes that cached list stale
 
 export default {
@@ -246,8 +247,30 @@ export class Lobby extends DurableObject {
   async stAdd(map, max) {
     const st = await this.stGet(); let n = Object.keys(st.c).length;
     for (const [k, v] of Object.entries(map || {})) { if (!/^[a-z][a-zA-Z0-9_]{0,23}$/.test(k)) continue; const x = Math.floor(Number(v)); if (!(x > 0)) continue;
-      if (st.c[k] == null) { if (n >= 300) continue; n++; } st.c[k] = (st.c[k] || 0) + Math.min(x, max || 200); }
+      if (st.c[k] == null) { if (n >= 300) continue; n++; } st.c[k] = (st.c[k] || 0) + Math.min(x, /^pk/.test(k) ? 1000 : max || 200); }
     this.stDirty = true; await this.stSave();
+  }
+  // per player (by id, with the name they go by) — only the counters the newspaper writes about; at most 400 players a day
+  async stPlayer(id, name, map) {
+    const KEEP = ["b_bowBtn", "b_jiaoBtn", "b_lotBtn", "minOnline", "minZen", "minInn", "sit_futon", "sit_bed", "sit_tub", "sit_zen", "pkCash", "pkBuy", "minInRain"];
+    const st = await this.stGet(); st.p = st.p || {}; let e = st.p[id]; if (!e) { if (Object.keys(st.p).length >= 400) return; e = st.p[id] = { n: name, c: {} }; } if (name) e.n = name;
+    for (const k of KEEP) { const x = Math.floor(Number(map && map[k])); if (x > 0) e.c[k] = (e.c[k] || 0) + Math.min(x, /^pk/.test(k) ? 1000 : 200); }
+    this.stDirty = true;
+  }
+  // 新聞事件: named happenings for the newspaper ("nw:YYYY-MM-DD", at most 300 a day)
+  async newsAdd(e) { const day = this.stDay(), key = "nw:" + day; const L = (await this.ctx.storage.get(key)) || []; if (L.length >= 300) return; L.push({ ...e, at: Date.now() }); await this.ctx.storage.put(key, L);
+    const days = (await this.ctx.storage.get("nwDays")) || []; if (!days.includes(day)) { days.push(day); while (days.length > 30) await this.ctx.storage.delete("nw:" + days.shift()); await this.ctx.storage.put("nwDays", days); } }
+  // 天后宮日報: yesterday's paper, written once (the first time anyone asks after midnight Taiwan time) and kept
+  async paper(day, live) {
+    if (!live) { const got = await this.ctx.storage.get("paper:" + day); if (got) return got; }
+    await this.stSave(true); const st = (day === this.stDay() ? await this.stGet() : await this.ctx.storage.get("st:" + day)) || { c: {}, mx: {}, p: {} };
+    const ev = (await this.ctx.storage.get("nw:" + day)) || [], t0 = Date.parse(day + "T00:00:00+08:00"), t1 = t0 + 864e5;
+    const wishes = ((await this.ctx.storage.get("wishes")) || []).filter(w => w.at >= t0 && w.at < t1).map(w => ({ name: w.name, text: w.text }));
+    const meta = (await this.ctx.storage.get("paperMeta")) || { no: 0, used: [] };
+    const p = buildPaper({ d: day, st, ev, wishes, used: meta.used, no: meta.no + 1 });
+    if (!live) { await this.ctx.storage.put("paper:" + day, p); await this.ctx.storage.put("paperMeta", { no: meta.no + 1, used: p.used });
+      const keep = (await this.ctx.storage.get("paperDays")) || []; keep.push(day); while (keep.length > 30) await this.ctx.storage.delete("paper:" + keep.shift()); await this.ctx.storage.put("paperDays", keep); }
+    return p;
   }
   async stMax(k, v) { const st = await this.stGet(); if (!(v > (st.mx[k] || 0))) return; st.mx[k] = v; this.stDirty = true; await this.stSave(); }
 
@@ -256,12 +279,21 @@ export class Lobby extends DurableObject {
     // 每日統計: things only the server sees are counted here; the pages send their own tallies to POST /stat
     const SRV_ST = { "/wish": "wish", "/lamp": "lamp", "/msg": "msg", "/zhan": "zhan", "/lanterns": "lanterns", "/reply": "reply", "/letters": "letter", "/hongbao": "hongbao", "/hbclaim": "hbclaim", "/nmrec": "nightMarket" };
     if (req.method === "POST" && SRV_ST[url.pathname]) { try { await this.stAdd({ [SRV_ST[url.pathname]]: 1 }); } catch {} }
+    if (url.pathname === "/nev" && req.method === "POST") { // a named happening from a page (only these kinds, one per player per 10 s)
+      let b = {}; try { b = await req.json(); } catch {} const k = String(b.k || ""), id = clean(b.id, 16), name = clean(b.name, 10) || "香客", v = Math.max(0, Math.min(1e6, Math.floor(Number(b.v) || 0)));
+      if (!["tudi500", "pkBig"].includes(k) || !id) return json({ ok: false }); this.nvLast = this.nvLast || new Map(); const now = Date.now(); if (now - (this.nvLast.get(id) || 0) < 10000) return json({ ok: false, slow: true }); this.nvLast.set(id, now);
+      await this.newsAdd({ k, n: name, v }); return json({ ok: true });
+    }
+    if (url.pathname === "/paper") { // yesterday's paper for everyone; ?live=1 (chair only) previews today's so far
+      const live = url.searchParams.get("live") === "1"; if (live) { const auth = await this.checkKey(req); if (!auth.ok) return json(auth); }
+      const day = live ? this.stDay() : this.stDay(Date.now() - 864e5); return json({ ok: true, paper: await this.paper(day, live) });
+    }
     if (url.pathname === "/stat") {
       if (req.method === "POST") {
         let b = {}; try { b = await req.json(); } catch {}
         const id = String(b.id || "").slice(0, 16); this.stLast = this.stLast || new Map(); const now = Date.now();
         if (id && now - (this.stLast.get(id) || 0) < 20000) return json({ ok: false, slow: true }); if (id) this.stLast.set(id, now); if (this.stLast.size > 5000) this.stLast.clear();
-        const c = {}; Object.entries(b.c || {}).slice(0, 40).forEach(([k, v]) => { c[k] = v; }); await this.stAdd(c, 200); return json({ ok: true });
+        const c = {}; Object.entries(b.c || {}).slice(0, 40).forEach(([k, v]) => { c[k] = v; }); if (id) await this.stPlayer(id, clean(b.name, 10), c); await this.stAdd(c, 200); return json({ ok: true });
       }
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
       await this.stSave(true); const days = ((await this.ctx.storage.get("stDays")) || []).slice(-14), today = await this.stGet();
@@ -397,7 +429,8 @@ export class Lobby extends DurableObject {
         let r = all[k]; if (!r || r.s !== st.open[k]) r = all[k] = { s: st.open[k], list: [] };
         const better = (a, c) => LOW[k] ? a < c : a > c; const cur = r.list.find(e => e.id === id);
         if (!cur) r.list.push({ id, name, v, at: Date.now() }); else if (better(v, cur.v)) { cur.v = v; cur.name = name; cur.at = Date.now(); }
-        r.list.sort((a, c) => LOW[k] ? a.v - c.v || a.at - c.at : c.v - a.v || a.at - c.at); r.list = r.list.slice(0, 10);
+        const was = r.list[0] && r.list[0].id; r.list.sort((a, c) => LOW[k] ? a.v - c.v || a.at - c.at : c.v - a.v || a.at - c.at); r.list = r.list.slice(0, 10);
+        if (r.list[0] && r.list[0].id === id && (was !== id || !cur)) { try { await this.newsAdd({ k: "nm", g: k, n: name, v }); } catch {} }
         await this.ctx.storage.put("nmrec", all); return json({ ok: true });
       }
       const k = url.searchParams.get("k") || "", r = all[k];
@@ -425,8 +458,9 @@ export class Lobby extends DurableObject {
         if (req.method === "POST") {
           const t = Math.round(Number(b.t) || 0), s = Math.round(Number(b.s)), a = Math.round(Number(b.a)), name = clean(b.name, 10) || "香客", id = clean(b.id, 16) || "anon";
           this.lastLb = this.lastLb || new Map(); const now = Date.now(); const ok = s >= 0 && s <= 1240 && a >= 0 && a <= 100 && s <= a * 10 + 240 && t >= 3000 && t <= 600000 && now - (this.lastLb.get(id + g) || 0) > 4000; this.lastLb.set(id + g, now);
-          if (ok) { const cur = top.find(e => e.id === id); if (!cur) top.push({ id, name, s, a, t, at: now }); else { cur.name = name; if (s > cur.s || (s === cur.s && t < cur.t)) { cur.s = s; cur.a = a; cur.t = t; cur.at = now; } }
-            top.sort((a, c) => c.s - a.s || a.t - c.t || a.at - c.at); top = top.slice(0, 20); await this.ctx.storage.put("lb:wenchang:c", top); }
+          if (ok) { const was = top[0] && top[0].id + ":" + top[0].s; const cur = top.find(e => e.id === id); if (!cur) top.push({ id, name, s, a, t, at: now }); else { cur.name = name; if (s > cur.s || (s === cur.s && t < cur.t)) { cur.s = s; cur.a = a; cur.t = t; cur.at = now; } }
+            top.sort((a, c) => c.s - a.s || a.t - c.t || a.at - c.at); top = top.slice(0, 20); await this.ctx.storage.put("lb:wenchang:c", top);
+            if (top[0] && top[0].id === id && was !== id + ":" + top[0].s) { try { await this.newsAdd({ k: "lb", g, n: name, v: top[0].s }); } catch {} } }
         }
         return json({ ok: true, top: top.slice(0, 10) });
       }
@@ -434,8 +468,9 @@ export class Lobby extends DurableObject {
       if (req.method === "POST") {
         const t = Math.round(Number(b.t) || 0), name = clean(b.name, 10) || "香客", id = clean(b.id, 16) || "anon";
         this.lastLb = this.lastLb || new Map(); const now = Date.now(); const ok = t >= 1500 && t <= 600000 && now - (this.lastLb.get(id + g) || 0) > 4000; this.lastLb.set(id + g, now);
-        if (ok) { const cur = top.find(e => e.id === id); if (!cur) top.push({ id, name, t, at: now }); else { cur.name = name; if (t < cur.t) { cur.t = t; cur.at = now; } }
-          top.sort((a, c) => a.t - c.t || a.at - c.at); top = top.slice(0, 20); await this.ctx.storage.put("lb:" + g, top); }
+        if (ok) { const was = top[0] && top[0].id + ":" + top[0].t; const cur = top.find(e => e.id === id); if (!cur) top.push({ id, name, t, at: now }); else { cur.name = name; if (t < cur.t) { cur.t = t; cur.at = now; } }
+          top.sort((a, c) => a.t - c.t || a.at - c.at); top = top.slice(0, 20); await this.ctx.storage.put("lb:" + g, top);
+          if (top[0] && top[0].id === id && was !== id + ":" + top[0].t) { try { await this.newsAdd({ k: "lb", g, n: name, v: top[0].t }); } catch {} } }
       }
       return json({ ok: true, top: top.slice(0, 10) });
     }

@@ -279,6 +279,36 @@ input,textarea{-webkit-user-select:text;user-select:text}
 .dl-skip{margin-top:22px}.dl-skip[hidden]{display:none}
 .loading{position:fixed;inset:0;display:grid;place-items:center;background:#140906;z-index:20;font-family:var(--f-display);font-size:20px;letter-spacing:.2em;color:var(--gold);transition:opacity .6s}
 .loading[data-done]{opacity:0;pointer-events:none}
+#paper{position:fixed;inset:0;z-index:60;display:grid;place-items:start center;background:#000;transition:background .5s}
+#paper[hidden]{display:none}
+#paper .np-call{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:14px;color:#f4e6c4;font-family:var(--f-display);text-align:center;pointer-events:none}
+#paper .np-icon{font-size:64px;transition:transform .5s}
+#paper .np-big{font-size:46px;letter-spacing:.12em;opacity:0;transform:scale(.6);transition:all .35s cubic-bezier(.3,1.6,.5,1)}
+#paper .np-hint{font-size:15px;opacity:.75;animation:npBlink 1.4s infinite}
+@keyframes npBlink{50%{opacity:.25}}
+#paper.calling .np-big{opacity:1;transform:scale(1)} #paper.calling .np-hint{display:none} #paper.calling .np-icon{transform:rotate(-12deg) scale(1.15)}
+#paper .np-wrap{position:relative;width:min(100vw,620px);max-height:100dvh;overflow:auto;transform:scale(.05) rotate(-540deg);opacity:0;transition:transform .9s cubic-bezier(.2,.9,.25,1),opacity .4s;padding:max(10px,env(safe-area-inset-top)) 10px calc(64px + env(safe-area-inset-bottom))}
+#paper.open{background:rgba(10,6,4,.82)} #paper.open .np-call{display:none} #paper.open .np-wrap{transform:none;opacity:1}
+#paper.closing .np-wrap{transform:scale(.9) translateY(30px);opacity:0} #paper.closing{background:transparent}
+.np-page{background:#f3ead6;color:#2a2018;padding:14px 14px 10px;border-radius:3px;box-shadow:0 12px 40px rgba(0,0,0,.6);font-family:"Noto Serif TC","Songti TC",serif;background-image:radial-gradient(rgba(120,90,50,.07) 1px,transparent 1px);background-size:5px 5px}
+.np-mast{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:6px}
+.np-mast h1{margin:0;font-family:var(--f-display);font-size:clamp(30px,9vw,46px);letter-spacing:.08em;line-height:1;color:#7a1d14}
+.np-side{font-size:11px;line-height:1.5;color:#5a4a3a} .np-side.r{text-align:right}
+.np-rule{border-top:3px double #2a2018;border-bottom:1px solid #2a2018;height:3px;margin:8px 0 10px}
+.np-head h2{margin:4px 0 8px;font-size:clamp(22px,6.4vw,30px);line-height:1.2;font-weight:900}
+.np-head p{margin:8px 0 0;font-size:15px;line-height:1.65;text-align:justify}
+.np-art{aspect-ratio:16/9;background:#d9cdb2;border:1px solid #8a7a60;display:grid;place-items:center;filter:sepia(.4)} .np-art span{font-size:clamp(60px,20vw,110px)}
+.np-tag{display:inline-block;background:#7a1d14;color:#f3ead6;font-size:11px;padding:1px 6px;border-radius:2px;letter-spacing:.1em}
+.np-cols{columns:2;column-gap:14px;column-rule:1px solid #b8a888;margin-top:12px;border-top:1px solid #2a2018;padding-top:10px}
+.np-item,.np-box{break-inside:avoid;margin:0 0 12px}
+.np-item h3{margin:4px 0 4px;font-size:16px;line-height:1.3;font-weight:800} .np-item p{margin:0;font-size:13px;line-height:1.6;text-align:justify}
+.np-box{border:1.5px solid #2a2018;padding:8px} .np-box h3{margin:0 0 6px;font-size:14px;text-align:center;letter-spacing:.2em}
+.np-box div{display:flex;justify-content:space-between;font-size:13px;border-bottom:1px dotted #b8a888;padding:2px 0} .np-box b{font-family:ui-monospace,monospace}
+.np-ads{display:grid;grid-template-columns:1fr 1fr;gap:8px;border-top:3px double #2a2018;padding-top:8px}
+.np-ad{border:1px dashed #6a5a40;padding:6px 8px;display:flex;flex-direction:column;gap:2px} .np-ad b{font-size:15px;color:#7a1d14} .np-ad span{font-size:12px;line-height:1.45}
+.np-foot{margin-top:8px;font-size:10px;text-align:center;color:#7a6a50}
+.np-close{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));transform:translateX(-50%);padding:11px 26px;border-radius:999px;border:1px solid #c8a46a;background:#3a1810;color:#f4e6c4;font-size:16px;font-family:var(--f-display);box-shadow:0 4px 18px rgba(0,0,0,.5)}
+@media (max-width:380px){.np-cols{columns:1}}
 @media (prefers-reduced-motion:reduce){.sheet,.toast{transition:none}}
 /* 公告 button: glows yellow until this device has read the newest board, grey afterwards */
 .icon-btn.board.fresh{background:radial-gradient(circle at 35% 30%,#ffeaa0,#f2bb35 58%,#b97f12);border-color:#ffe7a0;animation:boardGlow 1.6s ease-in-out infinite}
@@ -4005,7 +4035,7 @@ sheetBody.addEventListener("click",e=>{ const b=e.target.closest("[data-act]"); 
    can talk about it ("今天已經有 300 人擲筊了"). Only counts, never names or text. ---- */
 const STATQ={q:{},id:Math.random().toString(36).slice(2,12)};
 function statInc(k,n){ k=String(k).replace(/[^a-zA-Z0-9_]/g,"").slice(0,24); if(!k) return; if(!/^[a-z]/.test(k)) k=("x"+k).slice(0,24); STATQ.q[k]=(STATQ.q[k]||0)+(n||1); }
-function statFlush(beacon){ const ks=Object.keys(STATQ.q); if(!ks.length||!USE_CF) return; const c={}; ks.slice(0,40).forEach(k=>{ c[k]=STATQ.q[k]; delete STATQ.q[k]; }); const body=JSON.stringify({id:STATQ.id,c});
+function statFlush(beacon){ const ks=Object.keys(STATQ.q); if(!ks.length||!USE_CF) return; const c={}; ks.slice(0,40).forEach(k=>{ c[k]=STATQ.q[k]; delete STATQ.q[k]; }); const body=JSON.stringify({id:load("mz.id","")||STATQ.id,name:(typeof me!=="undefined"&&me.name||"").slice(0,10),c});
   try{ if(beacon&&navigator.sendBeacon) navigator.sendBeacon("/stat",new Blob([body],{type:"application/json"})); else fetch("/stat",{method:"POST",headers:{"content-type":"application/json"},body,keepalive:true}).catch(()=>{}); }catch(e){} }
 setInterval(()=>statFlush(),300000); document.addEventListener("visibilitychange",()=>{ if(document.hidden) statFlush(true); });
 sheetBody.addEventListener("click",e=>{ const b=e.target.closest("[data-act]"); if(b) statInc("a_"+b.dataset.act); },true);
@@ -4084,7 +4114,7 @@ function openBoard(){ if(board.at) save("mz.boardSeen",board.at); { const read=l
     ${l.q?`<p class="lq">你的留言：${esc(l.q)}</p>`:""}<p class="lto">${esc(msgName())}　您好：</p><div class="lbody">${esc(l.text)}</div>
     <p class="lsign">天后宮 主委 敬上<small>${fmtT(l.at)}</small></p>
     <div class="lfoot"><span>這封信約 ${h} 小時後自動消失</span><button data-act="delLetter" data-v="${l.at}">刪除這封信</button></div></div>`; }).join("")}</div>`:"";
-  openSheet("board","公告與訊息",`${me.sp?backBtn:""}<div class="group"><span class="group-label">📢 公告</span>${board.text?`<div class="board-text">${esc(board.text)}</div><p class="note">更新於 ${fmtT(board.at)}</p>`:`<p class="lead">目前沒有公告。</p>`}</div>${mail}
+  openSheet("board","公告與訊息",`${me.sp?backBtn:""}<button class="good" data-act="paperOpen" style="width:100%;margin-bottom:10px"><span class="name">📰 天后宮日報</span><span class="meta">昨天廟裡發生了什麼事</span></button><div class="group"><span class="group-label">📢 公告</span>${board.text?`<div class="board-text">${esc(board.text)}</div><p class="note">更新於 ${fmtT(board.at)}</p>`:`<p class="lead">目前沒有公告。</p>`}</div>${mail}
   <div class="group" style="margin-top:10px"><span class="group-label">✉️ 聯絡作者</span><p class="lead">有建議、發現問題或想對作者說的話，留言只有作者看得到；作者回信會出現在這裡。</p><button class="secondary" data-act="contactOpen" style="width:100%">寫留言給作者</button></div>
   ${me.sp?`<div class="group" style="margin-top:8px"><span class="group-label">✏️ 修改公告（主委）</span><textarea class="msg-box" id="boardEdit" maxlength="1000" placeholder="公告內容，1000 字以內，可以換行">${esc(board.text)}</textarea>
   <input class="mail-box" id="boardKey" type="password" autocomplete="off" oninput="try{localStorage.setItem('mz.rk',JSON.stringify(this.value.trim()))}catch(e){}" placeholder="留言讀取密碼" value="${esc(load("mz.rk",""))}">
@@ -4371,7 +4401,7 @@ HANDLERS.toggleNpc=(v,b)=>{ showNpc=!showNpc; save("mz.npc",showNpc); b.setAttri
 HANDLERS.showPoem=v=>openPoem(+v,true);
 
 /* ---- stations ---- */
-function openStation(k){ statInc("st_"+k); if(k==="innDesk"){ HANDLERS.innDeskOpen(); return; } if(typeof WX!=="undefined"&&WX.shut&&(k==="fortune"||k==="cats")){ toast("下雨了，老師傅收攤躲雨去了，天晴再來",2600); return; } if(k==="treasure"){ thDig(); return; } if(k.startsWith("nm:")){ openStall(k.slice(3)); return; } if(k==="puppet"){ ptOpen(); return; } if(k==="fortune"){ openFortune(); return; } if(k==="cats"){ openCats(); return; } if(k==="fountain"){ openFountain(); return; } if(k==="wish"){ openWish(); return; } if(CENSER_INFO[k]){ openCenser(k); return; } if(k==="jieqian"){ openJieqian(); return; } if(k==="shop") openShop(); if(k==="altar") openAltar(); if(k==="burn") openBurn(); if(k==="donate") openDonate(); if(k==="lot") openLot("ask"); if(k==="lamp"||k==="lampR") openLamp(); if(k==="bell"){ meAv.burnT=0; ringBell(); toast("咚——鐘聲迴盪（只有你聽得到）"); } if(k==="drum"){ meAv.burnT=0; hitDrum(); toast("咚！鼓聲響起（只有你聽得到）"); } }
+function openStation(k){ statInc("st_"+k); if(k==="innDesk"){ HANDLERS.innDeskOpen(); return; } if(typeof WX!=="undefined"&&WX.shut&&(k==="fortune"||k==="cats")){ toast("下雨了，老師傅收攤躲雨去了，天晴再來",2600); return; } if(k==="fortune"&&INC.stall){ toast("攤子被風吹走了！老師傅：「我早就算到了…」今天先休息",3200); return; } if(k==="treasure"){ thDig(); return; } if(k.startsWith("nm:")){ openStall(k.slice(3)); return; } if(k==="puppet"){ ptOpen(); return; } if(k==="fortune"){ openFortune(); return; } if(k==="cats"){ openCats(); return; } if(k==="fountain"){ openFountain(); return; } if(k==="wish"){ openWish(); return; } if(CENSER_INFO[k]){ openCenser(k); return; } if(k==="jieqian"){ openJieqian(); return; } if(k==="shop") openShop(); if(k==="altar") openAltar(); if(k==="burn") openBurn(); if(k==="donate") openDonate(); if(k==="lot") openLot("ask"); if(k==="lamp"||k==="lampR") openLamp(); if(k==="bell"){ meAv.burnT=0; ringBell(); toast("咚——鐘聲迴盪（只有你聽得到）"); } if(k==="drum"){ meAv.burnT=0; hitDrum(); toast("咚！鼓聲響起（只有你聽得到）"); } }
 function openThanks(i){ const th=THANKS[i]; if(!th) return; sfx.coin(); openSheet("thanks","感謝贊助",`<img class="thanks-img" src="${th.img}" alt="感謝看板" width="1024" height="768"><p class="thanks-text">${esc(th.text)}</p>`); }
 function openShop(){ const html=`<p class="lead">拜拜順序：天公爐 → 媽祖 → 玄天上帝 → 武財神 → 文昌帝君 → 關聖帝君 → 月老 → 土地公 → 觀音菩薩 → 註生娘娘 → 斗姥元君 → 九天玄女 → 地藏王 → 虎爺。十四爐都插好香，再到廟埕金爐燒金紙。</p>
   <div class="goods">${GOODS.map(g=>`<button class="good" data-act="buy" data-v="${g.k}" ${bag.coins<g.price?"disabled":""}><span class="name">${g.name}</span><span class="meta">${g.meta}</span><span class="price">${g.price} 平安幣</span><span class="own">持有 ${bag.items[g.k]||0}</span></button>`).join("")}</div>
@@ -4917,7 +4947,7 @@ function sjGuard(proceed){ if(!mySj) return false; sjAsk=proceed; const g=SJ.g[m
 HANDLERS.sjStay=()=>{ sjAsk=null; closeSheet(); };
 HANDLERS.sjLeave=()=>{ sjLeaveQueue(); toast("已離開收驚隊伍"); const go=sjAsk; sjAsk=null; closeSheet(); if(go) go(); };
 function sjLeaveQueue(){ if(!mySj) return; const g=SJ.g[mySj.g]; if(g.serving&&g.serving.key==="me"){ sjStopRitual(g); g.serving=null; } mySj=null; sjCam.on=false; sjBuild(); markDirty(); }
-function sjTap(i){ if(typeof WX!=="undefined"&&WX.shut){ toast("下雨了，收驚阿嬤先進去躲雨，天晴再來",2600); return; } const g=SJ.g[i];
+function sjTap(i){ if(i===1&&INC.heat){ toast("這位收驚阿嬤今天中暑，回家吹電風扇了，找另一位阿嬤吧",3000); return; } if(typeof WX!=="undefined"&&WX.shut){ toast("下雨了，收驚阿嬤先進去躲雨，天晴再來",2600); return; } const g=SJ.g[i];
   if(mySj){ toast(mySj.g===i?(g.serving&&g.serving.key==="me"?"阿嬤正在幫你收驚":"你已經在排隊了"):"你已經在另一位阿嬤那邊排隊"); return; }
   closeSheet(); mySj={g:i,at:Date.now()}; sjBuild(); markDirty(); const k=g.q.findIndex(e=>e.me); const [x,z]=sjSlot(g,k);
   if(meAv.seat>=0) meAv.seat=-1; pendingStation=null; { const pth=planPath(meAv.pos.x,meAv.pos.y,x,z); meAv.moveTo(pth[0][0],pth[0][1]); meAv.path=pth.slice(1); } meAv.faceGoal=-Math.PI/2;
@@ -5403,7 +5433,7 @@ function fwUpdate(dt){ const now=performance.now(); fwHaloTick(dt);
       else { const c="#"+_fc1.setRGB(fwCol[j],fwCol[j+1],fwCol[j+2]).getHexString(); for(let q=0;q<4;q++){ const th=q*Math.PI/2+Math.random()*.3; fwEmit(px,py,pz,Math.cos(th)*5,Math.sin(th)*5,(Math.random()-.5)*2,c,VIVID[(Math.random()*VIVID.length)|0],.9,.5,1.4,2,.2); } }
       fwA[i]=0; } }
   if(any||FW.on){ for(const n of ["iPos","iVel","iCol","iA","iSz","iTr"]) fwStreakGeo.attributes[n].needsUpdate=true; }
-  fwPts.visible=false; fwStreak.visible=any||FW.on; fwStreakMat.uniforms.uGain.value=1; fwStreakMat.uniforms.uMinW.value=.0012*Math.max(1,Math.min(1.8,camera.fov/55)); /* wide/far views: a floor on spark size (round and sharp, so it doesn't blur) */ { const sharp=!!(FW.on||FW.pendingAt||LAKE.on||fwView); if(DRES.fw!==sharp){ DRES.fw=sharp; applyDPR(); } } /* full resolution while a show is on, whatever the view (省電 mode had blurred the sparks) */ /* the streaks draw the stars too (their round heads), so the old point sprites are no longer drawn or uploaded */ dayNight(dt); try{ shadowTick(dt); }catch(e){} try{ innTick(dt); }catch(e){ if(!innTick.err){ innTick.err=1; console.error(e); } } try{ wxTick(dt); }catch(e){ if(!wxTick.err){ wxTick.err=1; console.error(e); } } try{ fwedTick(); }catch(e){} try{ zenTick(dt); }catch(e){ if(!zenTick.err){ zenTick.err=1; console.error(e); } }
+  fwPts.visible=false; fwStreak.visible=any||FW.on; fwStreakMat.uniforms.uGain.value=1; fwStreakMat.uniforms.uMinW.value=.0012*Math.max(1,Math.min(1.8,camera.fov/55)); /* wide/far views: a floor on spark size (round and sharp, so it doesn't blur) */ { const sharp=!!(FW.on||FW.pendingAt||LAKE.on||fwView); if(DRES.fw!==sharp){ DRES.fw=sharp; applyDPR(); } } /* full resolution while a show is on, whatever the view (省電 mode had blurred the sparks) */ /* the streaks draw the stars too (their round heads), so the old point sprites are no longer drawn or uploaded */ dayNight(dt); try{ shadowTick(dt); }catch(e){} try{ innTick(dt); }catch(e){ if(!innTick.err){ innTick.err=1; console.error(e); } } try{ incTick(dt); }catch(e){ if(!incTick.err){ incTick.err=1; console.error(e); } } try{ wxTick(dt); }catch(e){ if(!wxTick.err){ wxTick.err=1; console.error(e); } } try{ fwedTick(); }catch(e){} try{ zenTick(dt); }catch(e){ if(!zenTick.err){ zenTick.err=1; console.error(e); } }
   if(sparkAvail()!==renderSparkBtn.last) renderSparkBtn(); }
 // ---- 仙女棒: anyone can hold one while the show is on (and for two minutes after) ----
 let mySparkler=false, fwView=false;
@@ -6955,7 +6985,7 @@ function thChest(ms){ const g=new T.Group(); g.position.set(TH.x,-.6,TH.z); g.ro
   const lock=new T.Mesh(new T.BoxGeometry(.1,.12,.04),gold); lock.position.set(0,.36,.24); g.add(lock);
   /* what's inside */ bag.gd=bag.gd||{}; let r=Math.random(), pick=TH_LOOT[0]; for(const L of TH_LOOT){ if(r<L[2]){ pick=L; break; } r-=L[2]; }
   if(pick[0]==="gacha"&&bag.gd.tudiG===twDay()) pick=TH_LOOT[1]; thLeft(); bag.gd.tudiN.n++; const left=Math.max(0,TH_MAX-bag.gd.tudiN.n);
-  let text; if(pick[0]==="big"){ bag.coins+=500; text="挖到大寶藏：500 平安幣！土地公保佑！"; }
+  let text; if(pick[0]==="big"){ bag.coins+=500; text="挖到大寶藏：500 平安幣！土地公保佑！"; newsEv("tudi500",500); }
   else if(pick[0]==="coins"){ const amt=30+Math.round(Math.random()*9)*10; bag.coins+=amt; text=`挖到一袋平安幣：${amt} 幣！`; }
   else if(pick[0]==="gacha"){ bag.gd.tudiG=twDay(); bag.gacha=(bag.gacha||0)+1; text="挖到扭蛋幣 1 枚！（扭蛋機尚未開放，先存著）"; }
   else if(pick[0]==="sock"){ text="挖到一隻臭襪子……土地公說這不是他的。"; } else { text="挖到一根魚骨頭……應該是廟裡的貓藏的。"; }
@@ -7730,8 +7760,8 @@ function playPachinko(){ const L=gameLayer("打彈珠","押好彈珠按「發射
   layout(); const onRs=()=>layout(); window.addEventListener("resize",onRs);
   const btns={buy10:{h:42},buy100:{h:42},bet:{h:42},cash:{h:42},fire:{h:50}};
   const say=t=>{ msg=t; msgAt=performance.now(); };
-  const buy=n=>{ if(bag.coins<n){ say("平安幣不夠"); return; } bag.coins-=n; marbles+=n; peak=Math.max(peak,marbles); saveBag(); tone(900,.06,.06); };
-  const cash=()=>{ if(!marbles){ say("沒有彈珠可換"); return; } const room=Math.max(0,1000-d.pCash), n=Math.min(marbles,room); if(!n){ say("今天已換滿 1000 幣，明天再來"); return; } marbles-=n; d.pCash+=n; bag.coins+=n; saveBag(); say(`換了 ${n} 平安幣${marbles?`，剩 ${marbles} 顆今天換不了`:""}`); sfx.coin&&sfx.coin(); };
+  const buy=n=>{ if(bag.coins<n){ say("平安幣不夠"); return; } bag.coins-=n; marbles+=n; peak=Math.max(peak,marbles); saveBag(); statInc("pkBuy",n); tone(900,.06,.06); };
+  const cash=()=>{ if(!marbles){ say("沒有彈珠可換"); return; } const room=Math.max(0,1000-d.pCash), n=Math.min(marbles,room); if(!n){ say("今天已換滿 1000 幣，明天再來"); return; } marbles-=n; d.pCash+=n; bag.coins+=n; saveBag(); statInc("pkCash",n); if(n>=300) newsEv("pkBig",n); say(`換了 ${n} 平安幣${marbles?`，剩 ${marbles} 顆今天換不了`:""}`); sfx.coin&&sfx.coin(); };
   const fire=()=>{ if(ball){ say("等這顆落下"); return; } if(marbles<bet){ say(marbles?`彈珠不夠押 ${bet} 顆`:"先買彈珠"); return; } marbles-=bet;
     ball={phase:"rail",t:0,bet,img:MC[(Math.random()*MC.length)|0],x:0,y:0,vx:0,vy:0}; tone(520,.12,.06,"triangle"); noiseBurst(.25,.05,3000); };
   cv.addEventListener("pointerdown",e=>{ const px=e.clientX, py=e.clientY;
@@ -8460,6 +8490,58 @@ function dlRunner(){ try{ const W=150, H=110, dpr=Math.min(2,window.devicePixelR
     if(!shown&&now-t0>1200){ shown=true; el.hidden=false; stopRun=dlRunner(); }
     show+=(Math.min(.97,want)-show)*.08; render(); requestAnimationFrame(step); };
   requestAnimationFrame(step); setTimeout(close,300000); } /* no way in while downloading; every model gives up after 30 s, so this only guards against something stuck */
+/* ---- 新聞事件: a named happening the newspaper can write about (server keeps today's list) ---- */
+function newsEv(k,v){ if(!USE_CF) { (STATQ.ev=STATQ.ev||[]).push({k,n:(me.name||"香客").slice(0,10),v:v||0}); return; } try{ fetch("/nev",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({k,v:v||0,id:load("mz.id",""),name:(me.name||"香客").slice(0,10)}),keepalive:true}).catch(()=>{}); }catch(e){} }
+/* ---- today's incidents, the same for everyone (formulas shared with public/paper-gen.js — keep in sync): on some sunny days one 收驚阿嬤
+   is off with heatstroke; on some windy days the fortune teller's stall is blown away in the afternoon. The paper reports them the next day. ---- */
+const INC={heat:false,stall:false,fly:-1};
+const incHeat=d=>wxDay(d)==="clear"&&wxHash(d*31+5)<.45, incStall=d=>wxDay(d)==="windy"&&wxHash(d*37+9)<.6, incStallH=d=>12+wxHash(d*41+2)*6;
+function incWd(){ const loc=Date.now()+8*3600e3, d=Math.floor(loc/864e5), changeAt=d*864e5+(6+5*wxHash(d*13+1))*3600e3; return {d:loc<changeAt?d-1:d,today:d,h:(loc%864e5)/3600e3}; }
+function incTick(dt){ if(typeof SJ==="undefined"||typeof FTB==="undefined") return; const w=incWd(), auto=!(WX.set&&Date.now()<WX.setUntil);
+  const heat=auto&&incHeat(w.d), stall=auto&&incStall(w.d)&&(w.d<w.today||w.h>=incStallH(w.d));
+  if(heat!==INC.heat){ INC.heat=heat; const g=SJ.g[1]; if(g&&g.av) g.av.root.visible=!heat; }
+  if(heat){ const g=SJ.g[1]; if(g&&g.av&&g.av.root.visible) g.av.root.visible=false; }
+  if(stall!==INC.stall){ INC.stall=stall; if(FTB.g){ if(stall){ INC.fly=(w.d===w.today&&w.h-incStallH(w.d)<.01)?0:-1; if(INC.fly<0) FTB.g.visible=false; INC.base=INC.base||{x:FTB.g.position.x,y:FTB.g.position.y,z:FTB.g.position.z,ry:FTB.g.rotation.y}; }
+      else { const B=INC.base; if(B){ FTB.g.position.set(B.x,B.y,B.z); FTB.g.rotation.set(0,B.ry,0); } FTB.g.visible=!WX.shut; INC.fly=-1; } } }
+  if(INC.stall&&INC.fly>=0&&FTB.g){ INC.fly+=dt; const t=INC.fly, B=INC.base; FTB.g.visible=true; FTB.g.position.set(B.x+t*t*1.6,B.y+t*t*1.1,B.z-t*2.2); FTB.g.rotation.set(t*1.3,B.ry+t*2.4,t*.7); if(t>6){ FTB.g.visible=false; INC.fly=-1; } if(t<dt*1.5) toast("一陣怪風把鐵口直斷的攤子吹走了！",3200); }
+  else if(INC.stall&&FTB.g&&FTB.g.visible) FTB.g.visible=false; }
+
+/* ================= 天后宮日報: once a day, before you start — a black screen, a tap, ding-ding, the granny calls "報紙到囉！",
+   and the paper unfolds full screen (the game keeps loading behind it). Reopen it from the 公告 sheet. ================= */
+const PAPER={p:null,shown:false};
+async function paperFetch(){ if(PAPER.p) return PAPER.p;
+  try{ if(USE_CF){ const r=await fetch("/paper",{cache:"no-store"}); const j=await r.json(); if(j&&j.ok&&j.paper) PAPER.p=j.paper; }
+    else { const G=await import("./paper-gen.js"); const d=new Date(Date.now()+8*3600e3-864e5).toISOString().slice(0,10); const n=(me.name||"香客").slice(0,10);
+      PAPER.p=G.buildPaper({d,no:1,st:{c:{visitors:37,b_bowBtn:212,b_jiaoBtn:96,b_lotBtn:41,wish:12,pkCash:1340,pkBuy:980,sit_futon:6},mx:{peak:23,h20:23,h21:19},p:{me:{n,c:{b_bowBtn:31,b_jiaoBtn:14,minOnline:96,minZen:18,pkCash:600}},x1:{n:"阿明",c:{b_bowBtn:12,sit_futon:3}}}},
+        ev:[{k:"lb",g:"tudi",n,v:6400},{k:"tudi500",n:"阿明"}].concat(STATQ.ev||[]),wishes:[{name:"小美",text:"希望明天考試順利"},{name:"阿明",text:"阿嬤身體健康"}]}); } }catch(e){ console.warn("paper",e); }
+  return PAPER.p; }
+function paperHTML(p){ const E=esc, it=p.items||[], dt=p.d.split("-"), wk="日一二三四五六"[new Date(p.d+"T12:00:00+08:00").getDay()];
+  const art=s=>`<div class="np-art"><span>${s.art||"📰"}</span></div>`;
+  return `<div class="np-page" role="document">
+    <header class="np-mast"><div class="np-side">第 ${p.no} 期<br>${+dt[1]} 月 ${+dt[2]} 日（${wk}）</div><h1>天后宮日報</h1><div class="np-side r">昨日 ${p.wxi} ${p.wxn}<br>今日 ${p.fci} ${p.fcn}</div></header>
+    <div class="np-rule"></div>
+    <article class="np-head"><span class="np-tag">${E(p.head.tag)}</span><h2>${E(p.head.t)}</h2>${art(p.head)}<p>${E(p.head.b)}</p></article>
+    <div class="np-cols">${it.map(s=>`<article class="np-item"><span class="np-tag">${E(s.tag)}</span><h3>${E(s.t)}</h3><p>${E(s.b)}</p></article>`).join("")}
+      <aside class="np-box"><h3>昨日數字</h3>${p.box.map(([k,v])=>`<div><span>${E(k)}</span><b>${v}</b></div>`).join("")}${p.busyHour>=0?`<div><span>最熱鬧</span><b>${p.busyHour} 點</b></div>`:""}</aside></div>
+    <div class="np-ads">${p.ads.map(a=>`<div class="np-ad"><b>${E(a.t)}</b><span>${E(a.b)}</span></div>`).join("")}</div>
+    <footer class="np-foot">天后宮日報社・本報內容由廟方記者（和一隻貓）採訪撰寫</footer></div>`; }
+function paperDing(){ const a=soundOn?ensureAudio():null, v=sVol(); if(!a||v<=0) return; const t0=a.currentTime+.05;
+  [[0,1568],[.32,1318]].forEach(([dt,f])=>{ for(const [m,g] of [[1,.22],[2.76,.06],[5.4,.03]]){ const o=a.createOscillator(), out=a.createGain(); o.type="sine"; o.frequency.value=f*m; out.gain.setValueAtTime(0,t0+dt); out.gain.linearRampToValueAtTime(g*v,t0+dt+.006); out.gain.exponentialRampToValueAtTime(.0001,t0+dt+1.4/m); o.connect(out); out.connect(sfxBus(a)); o.start(t0+dt); o.stop(t0+dt+1.5); } }); }
+function paperCall(){ const a=soundOn?ensureAudio():null, v=sVol(); if(!a||v<=0) return; /* the 收驚阿嬤's squeaky voice: four syllables, 報・紙・到・囉 */
+  const F=[[800,1200],[400,2200],[300,2700],[500,900]]; let t=a.currentTime+.75; [[.16,1.0,1.25],[.14,1.1,.9],[.15,1.2,1.3],[.32,1.25,.8]].forEach(([d,k,glide],i)=>{ const f0=430*k, o=a.createOscillator(), out=a.createGain(), fm=F[i%F.length];
+    o.type="sawtooth"; o.frequency.setValueAtTime(f0,t); o.frequency.linearRampToValueAtTime(f0*glide,t+d); out.gain.setValueAtTime(0,t); out.gain.linearRampToValueAtTime(.16*v,t+.015); out.gain.linearRampToValueAtTime(0,t+d);
+    for(const fr of fm){ const bp=a.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=fr; bp.Q.value=6; o.connect(bp); bp.connect(out); } out.connect(sfxBus(a)); o.start(t); o.stop(t+d+.05); t+=d+.06; }); }
+function paperOpen(intro){ const p=PAPER.p; if(!p) return; let el=$("#paper"); if(!el){ el=document.createElement("div"); el.id="paper"; document.body.appendChild(el); }
+  el.innerHTML=`<div class="np-call" aria-live="polite"><div class="np-icon">📰</div><div class="np-big">報紙到囉！</div><div class="np-hint">點一下打開報紙</div></div><div class="np-wrap">${paperHTML(p)}<button class="np-close" type="button">收起報紙</button></div>`;
+  el.className=intro?"intro":"open"; el.hidden=false; PAPER.shown=true; statInc("paperOpen");
+  const close=()=>{ el.className="closing"; setTimeout(()=>{ el.hidden=true; el.className=""; },420); };
+  el.querySelector(".np-close").onclick=e=>{ e.stopPropagation(); close(); };
+  if(intro){ el.onclick=()=>{ if(el.className!=="intro") return; el.onclick=null; el.className="calling"; paperDing(); paperCall(); setTimeout(()=>{ el.className="open"; },1700); }; }
+  else el.onclick=null; }
+HANDLERS.paperOpen=async()=>{ closeSheet(); if(!(await paperFetch())){ toast("今天的報紙還沒送來",2200); return; } paperOpen(false); };
+/* once a day, when the page has loaded (not on someone's very first visit, while they make their character) */
+setTimeout(async()=>{ if(firstVisitPending) return; const p=await paperFetch(); if(!p||load("mz.paperSeen","")===p.d) return; save("mz.paperSeen",p.d); paperOpen(true); },300);
+
 if(firstVisit) setTimeout(async()=>{ if(await profRestore()){ firstVisitPending=false; toast("歡迎回來！已自動找回你的角色",3600); return; } openLook(true); },600); else setTimeout(()=>toast(guideStep().n===1?"先到大殿入口右手邊的服務處，請清香、金紙和供品":(matchMedia("(pointer:fine)").matches?"WASD 走動・拖曳滑鼠轉視角":"點地板走動・拖曳畫面轉視角"),4200),900);
 // ---- in-app browser hint (Threads / Instagram / Facebook / LINE / other app web views) ----
 { const ua=navigator.userAgent||"", SITE="https://mazu-temple.harper88888.workers.dev/";

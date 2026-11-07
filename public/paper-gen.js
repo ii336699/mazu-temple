@@ -1,0 +1,136 @@
+/* 天后宮日報 — writes one day's newspaper from that day's numbers and events.
+   Used by the server (src/worker.js builds yesterday's paper once a day) and by the single-player test page (demo data).
+   Pure function, no network. Every story kind has several wordings; a seeded random pick per date plus a list of recently
+   used wordings keeps it from repeating. Weather and the two "incidents" (a granny's heatstroke on a hot day, the fortune
+   teller's stall blown away on a windy day) use the same formulas as the game (keep in sync with public/index.html). */
+
+export const wxHash = n => { let t = (n * 2654435761 + 0x6D2B79F5) >>> 0; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+export const wxDay = d => { const u = wxHash(d * 7 + 3); return u < .4 ? "clear" : u < .6 ? "cloudy" : u < .75 ? "windy" : u < .9 ? "rain" : "storm"; };
+export const evHeat = d => wxDay(d) === "clear" && wxHash(d * 31 + 5) < .45;
+export const evStall = d => wxDay(d) === "windy" && wxHash(d * 37 + 9) < .6;
+export const stallHour = d => 12 + wxHash(d * 41 + 2) * 6;
+export const dayNum = dateStr => Math.floor(Date.parse(dateStr + "T00:00:00Z") / 864e5);
+const WXN = { clear: "晴", cloudy: "陰", windy: "風大", rain: "雨", storm: "雷雨" }, WXI = { clear: "☀️", cloudy: "☁️", windy: "🍃", rain: "🌧️", storm: "⛈️" };
+const LB_NAME = { wenchang: "文昌帝君挑戰", tudi: "土地公挑戰", guanyin: "觀音菩薩挑戰", zhusheng: "註生娘娘挑戰", doumu: "斗姥元君挑戰", jiutian: "九天玄女挑戰", dizang: "地藏王挑戰" };
+const NM_NAME = { qq: ["地瓜球攤", "最多讚", "下"], bbq: ["烤肉攤", "最快烤完", "秒"], fish: ["撈金魚攤", "撈金魚最高分", "幣"], pachinko: ["彈珠台", "最多彈珠", "顆"], boba: ["珍奶攤", "最快做完三杯", "秒"], balloon: ["射氣球攤", "最快全破", "秒"] };
+
+/* wordings: {id, t: title, b: body}; {n} name, {v} number, {x} extra */
+const T = {
+  heat: [
+    { id: "h1", t: "天后宮驚傳廟方人員中暑！", b: "昨日艷陽高照，金爐旁的收驚阿嬤之一疑似中暑，下午提早回家休息，只剩一位阿嬤撐場。廟方呼籲：大家記得多喝水，收驚也要排隊喝水。" },
+    { id: "h2", t: "太陽太大 收驚阿嬤熱到請假", b: "據目擊香客表示，阿嬤一邊搧扇子一邊說「今天太熱了，阿嬤先回去吹電風扇」。收驚隊伍昨天一度排到金爐後面。" },
+    { id: "h3", t: "熱浪來襲！金爐旁少了一位阿嬤", b: "昨天的太陽比金爐還燙，一位收驚阿嬤不敵高溫回家休息。另一位阿嬤表示：「她沒事啦，睡一覺就好，明天繼續收。」" },
+  ],
+  stall: [
+    { id: "s1", t: "強風來襲 鐵口直斷攤位被吹走！", b: "昨日下午約 {x} 點，一陣怪風把鐵口直斷的攤位整個捲上天，老師傅只來得及抱住籤筒。目前攤位下落不明，老師傅表示：「我早就算到了，只是沒說。」" },
+    { id: "s2", t: "算命攤飛了 老師傅：這也在我算中", b: "風大的一天，{x} 點左右鐵口直斷的攤子被風吹走，香客目擊攤位越過廟埕往天上飛。老師傅站在原地摸鬍子，堅持今天照常營業（站著算）。" },
+    { id: "s3", t: "「我的攤子呢？」鐵口直斷攤位遭強風吹走", b: "昨天 {x} 點，廟埕刮起強風，鐵口直斷的整個攤子連同招牌飛走。據悉老師傅事前曾算出「今日不宜擺攤」，但他自己沒有聽。" },
+  ],
+  storm: [
+    { id: "w1", t: "雷雨夜！廟埕水花四濺", b: "昨天雷雨交加，貓咪全躲起來，收驚阿嬤和鐵口直斷也收攤回家。仍有 {v} 位香客撐著傘來拜拜，誠心可嘉。" },
+    { id: "w2", t: "轟隆隆！天后宮雷雨一整天", b: "閃電照亮了正殿屋脊，雷聲大到連媽祖前的香都抖了一下。廟方提醒：雷雨天記得撐傘，不要站在旗桿旁邊。" },
+  ],
+  rain: [
+    { id: "r1", t: "下雨天的天后宮", b: "昨天細雨綿綿，廟埕一片濕亮的倒影，香客撐著五顏六色的傘進廟。貓咪們全部躲雨去了，據說都擠在後殿屋簷下。" },
+    { id: "r2", t: "雨中參拜 傘花朵朵開", b: "雨下了一整天，收驚阿嬤和鐵口直斷都回家躲雨，但香客熱情不減，共有 {v} 位冒雨前來。" },
+  ],
+  windy: [
+    { id: "f1", t: "風大！櫻花瓣滿天飛", b: "昨天風很大，園區外的櫻花瓣一路飄進廟埕，還有香客看到報紙從天上飛過去。（不是本報。）" },
+  ],
+  record: [
+    { id: "k1", t: "{n} 刷新{x}紀錄！", b: "{n} 昨天在{x}拿下第一名，成績 {v}，把原本的紀錄保持者擠了下來。本報記者趕到時，{n} 只淡淡地說：「運氣好啦。」" },
+    { id: "k2", t: "新紀錄誕生：{x}由 {n} 稱王", b: "{x}排行榜昨天換人了！{n} 以 {v} 的成績登上榜首，現場香客掌聲不斷。下一個挑戰者是你嗎？" },
+    { id: "k3", t: "{n} 一戰成名", b: "昨天{x}出現驚人成績：{v}！{n} 創下新紀錄，據說連土地公都探出頭來看。" },
+  ],
+  pkBroke: [
+    { id: "p1", t: "彈珠台老闆差點破產！", b: "昨天香客們在彈珠台一共換走 {v} 平安幣，老闆一邊數錢一邊擦汗：「再這樣下去我要去跟財神爺借錢了。」{x}" },
+    { id: "p2", t: "彈珠台大失血 老闆：今天先休息", b: "彈珠台昨天被香客打到吐出 {v} 平安幣，老闆表示珠子太會跑、倍率太好心，「明天要把釘子調一調」。{x}" },
+  ],
+  pkWin: [
+    { id: "q1", t: "彈珠台老闆笑呵呵", b: "昨天香客們買了 {v} 顆彈珠，換回的平安幣不到一半，老闆心情大好，還請隔壁攤吃地瓜球。" },
+  ],
+  tudi: [
+    { id: "t1", t: "{n} 在土地公那裡挖到 500 平安幣！", b: "福德正神顯靈！{n} 昨天在土地公旁挖寶，一鏟下去挖出一大袋平安幣。旁邊挖到臭襪子的香客表示羨慕。" },
+    { id: "t2", t: "土地公發大財 {n} 中頭獎", b: "只有 5% 機會的大袋平安幣昨天被 {n} 挖到了！{n} 表示：「我只是隨便挖挖。」" },
+  ],
+  pious: [
+    { id: "v1", t: "最虔誠香客：{n} 一天拜了 {v} 次", b: "{n} 昨天一共參拜 {v} 次，是全廟最勤快的香客。廟方特別感謝，並提醒拜完記得插香。" },
+    { id: "v2", t: "{n} 拜好拜滿 {v} 次", b: "據本報統計，{n} 昨天參拜了 {v} 次，膝蓋應該很需要休息。" },
+  ],
+  jiao: [
+    { id: "j1", t: "{n} 昨天擲筊 {v} 次", b: "擲筊冠軍是 {n}，一天擲了 {v} 次。媽祖到底答應了沒，只有 {n} 自己知道。" },
+  ],
+  online: [
+    { id: "o1", t: "最長待在廟裡：{n}", b: "{n} 昨天在天后宮待了 {v} 分鐘，幾乎把廟當家。廟方表示：歡迎，但記得回家吃飯。" },
+  ],
+  zen: [
+    { id: "z1", t: "禪院最靜的人：{n}", b: "{n} 昨天在靜思禪院坐了 {v} 分鐘，心如止水。據說連禪院外的樹都不太敢搖。" },
+  ],
+  sleep: [
+    { id: "e1", t: "禪房通鋪大爆滿", b: "昨天一共有 {v} 人次在禪房通鋪鋪床睡覺，櫃台阿姨洗床單洗到手軟。最愛睡的是 {n}。" },
+  ],
+  wishes: [
+    { id: "x1", t: "昨天許願卡 {v} 張", b: "許願樹上又多了 {v} 張卡。本報摘錄一則：「{x}」" },
+    { id: "x2", t: "許願樹又重了一點", b: "昨天有 {v} 位香客掛上許願卡，其中一張寫著：「{x}」。願媽祖保佑大家心想事成。" },
+  ],
+  calm: [
+    { id: "c1", t: "平靜的一天", b: "昨天天后宮風平浪靜，香客 {v} 位，香火裊裊。本報記者在廟埕晃了一整天，只看到貓咪在跳舞。" },
+    { id: "c2", t: "廟裡一切安好", b: "昨天沒有大新聞，就是最好的新聞。共有 {v} 位香客來參拜，祝大家平安。" },
+  ],
+};
+const ADS = [
+  { t: "禪房開幕！", b: "一樓日式溫泉・榻榻米通鋪，二樓套房可鎖門。櫃台阿姨親切服務。" },
+  { t: "夜市攤位招商中", b: "地瓜球、烤肉、撈金魚、彈珠台⋯⋯請洽主委。" },
+  { t: "土地公挖寶", b: "每天三次，5% 機會挖到大袋平安幣！臭襪子不退換。" },
+  { t: "靜思禪院", b: "五十個蒲團，自選音樂，雙指滑動就能看更廣。" },
+  { t: "鐵口直斷", b: "老師傅坐鎮金爐旁，不準不收錢（其實本來就不收錢）。" },
+  { t: "收驚服務", b: "金爐旁兩位阿嬤，排隊就有，雨天公休。" },
+  { t: "許願樹", b: "寫下心願掛上樹，讓大家一起祝福你。" },
+  { t: "彈珠台", b: "一顆一塊，打到賺到。每天最多換 1000 幣。" },
+];
+
+function rng(seed) { let s = seed >>> 0 || 1; return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const fill = (s, o) => s.replace(/\{(\w)\}/g, (_, k) => o[k] != null ? String(o[k]) : "");
+
+/* data: { d:"YYYY-MM-DD", st:{c,mx,p}, ev:[{k,n,v,g,at}], wishes:[{name,text}], used:[ids], no } */
+export function buildPaper(data) {
+  const d = data.d, dn = dayNum(d), R = rng(dn * 9973 + 17), used = new Set(data.used || []), st = data.st || { c: {}, mx: {}, p: {} }, c = st.c || {}, mx = st.mx || {}, P = st.p || {}, ev = data.ev || [];
+  const pickT = kind => { const L = T[kind], fresh = L.filter(x => !used.has(x.id)), pool = fresh.length ? fresh : L, x = pool[Math.floor(R() * pool.length)]; used.add(x.id); return x; };
+  const stories = []; const add = (kind, pri, o, tag, art) => { const w = pickT(kind); stories.push({ pri: pri + R() * 5, tag, art, t: fill(w.t, o), b: fill(w.b, o), id: w.id, kind, who: o.n || "" }); };
+  const wx = wxDay(dn), visitors = c.visitors || 0;
+  const top = key => { let best = null; for (const [id, e] of Object.entries(P)) { const v = e.c && e.c[key] || 0; if (v > 0 && (!best || v > best.v)) best = { id, n: e.n || "香客", v }; } return best; };
+  /* incidents and weather */
+  if (evHeat(dn)) add("heat", 95, {}, "社會", "🥵");
+  if (evStall(dn)) add("stall", 96, { x: Math.floor(stallHour(dn)) }, "社會", "🌪️");
+  if (wx === "storm") add("storm", 60, { v: visitors }, "天氣", "⛈️"); else if (wx === "rain") add("rain", 45, { v: visitors }, "天氣", "🌧️"); else if (wx === "windy" && !evStall(dn)) add("windy", 35, {}, "天氣", "🍃");
+  /* records */
+  const recs = ev.filter(e => e.k === "lb" || e.k === "nm"); const seenRec = new Set();
+  for (const e of recs.slice().reverse()) { const key = e.k + e.g; if (seenRec.has(key)) continue; seenRec.add(key);
+    const x = e.k === "lb" ? LB_NAME[e.g] || "小遊戲" : (NM_NAME[e.g] ? NM_NAME[e.g][0] + "「" + NM_NAME[e.g][1] + "」" : "夜市");
+    const v = e.k === "lb" ? (e.g === "wenchang" ? e.v + " 分" : (e.v / 1000).toFixed(1) + " 秒") : e.v + " " + (NM_NAME[e.g] ? NM_NAME[e.g][2] : "");
+    add("record", 80, { n: e.n, x, v }, "遊戲", "🏆"); }
+  /* night market: the pachinko owner's day */
+  const pkCash = c.pkCash || 0, pkBuy = c.pkBuy || 0;
+  if (pkCash >= 300 && pkCash > pkBuy * .85) { const w = top("pkCash"); add("pkBroke", 82, { v: pkCash, x: w ? `其中 ${w.n} 一個人就換走 ${w.v} 幣。` : "" }, "夜市", "⚪"); }
+  else if (pkBuy >= 300 && pkCash < pkBuy * .5) add("pkWin", 40, { v: pkBuy }, "夜市", "⚪");
+  /* lucky diggers */
+  const big = ev.filter(e => e.k === "tudi500"); if (big.length) add("tudi", 70, { n: big[big.length - 1].n }, "福氣", "💰");
+  /* people */
+  const pb = top("b_bowBtn"); if (pb && pb.v >= 5) add("pious", 52, pb, "人物", "🙏");
+  const pj = top("b_jiaoBtn"); if (pj && pj.v >= 5) add("jiao", 46, pj, "人物", "🌙");
+  const po = top("minOnline"); if (po && po.v >= 30) add("online", 44, po, "人物", "⏰");
+  const pz = top("minZen"); if (pz && pz.v >= 5) add("zen", 42, pz, "人物", "🧘");
+  if ((c.sit_futon || 0) >= 3) { const s = top("sit_futon"); add("sleep", 38, { v: c.sit_futon, n: s ? s.n : "神秘人" }, "生活", "🛏️"); }
+  const ws = data.wishes || []; if (ws.length) { const w = ws[Math.floor(R() * ws.length)]; add("wishes", 36, { v: ws.length, x: w.text }, "許願", "🎋"); }
+  if (stories.length < 2) add("calm", 20, { v: visitors }, "廟務", "🏮");
+  stories.sort((a, b) => b.pri - a.pri);
+  const head = stories[0], items = stories.slice(1, 6);
+  /* ads: two different ones */
+  const ai = Math.floor(R() * ADS.length); const ads = [ADS[ai], ADS[(ai + 1 + Math.floor(R() * (ADS.length - 1))) % ADS.length]];
+  const hrs = []; for (let h = 0; h < 24; h++) hrs.push(mx["h" + String(h).padStart(2, "0")] || 0); const hm = Math.max(...hrs);
+  const box = [["香客", visitors], ["最高同時在線", mx.peak || 0], ["參拜", c.b_bowBtn || 0], ["擲筊", c.b_jiaoBtn || 0], ["求籤", c.b_lotBtn || 0], ["許願", c.wish || ws.length || 0]];
+  const today = dn + 1, fc = wxDay(today);
+  return { v: 1, d, no: data.no || 1, wx, wxn: WXN[wx], wxi: WXI[wx], fc, fcn: WXN[fc], fci: WXI[fc], busyHour: hm > 0 ? hrs.indexOf(hm) : -1,
+    head: { t: head.t, b: head.b, tag: head.tag, art: head.art, kind: head.kind, who: head.who }, items: items.map(s => ({ t: s.t, b: s.b, tag: s.tag, art: s.art, kind: s.kind, who: s.who })),
+    box, ads, used: [...used].slice(-80) };
+}
