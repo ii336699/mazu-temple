@@ -442,7 +442,7 @@ body.hideui .joy,body.customizing .joy,body.hideui .camreset,body.customizing .c
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
 </head>
 <body>
-<canvas id="c" tabindex="0" aria-label="雲端天后宮正殿 3D 場景"></canvas><div id="vig" aria-hidden="true"></div><button id="zenMusicBtn" class="zen-music" hidden>🎵 禪堂音樂</button>
+<canvas id="c" tabindex="0" aria-label="雲端天后宮正殿 3D 場景"></canvas><div id="vig" aria-hidden="true"></div><button id="zenMusicBtn" class="spark-btn glass act-mid" hidden>🎵 禪堂音樂</button>
 <div class="loading" id="loading">正在點燈</div>
 <div class="dlpack" id="dlPack" hidden role="dialog" aria-label="下載廟宇中"><div class="dl-in"><h2>雲端天后宮</h2><p>正在下載廟宇建築和神尊，第一次進廟會比較久。<br>下載過的會存在手機裡，下次就很快。</p>
   <div class="dl-track"><div class="dl-fill" id="dlFill"></div><div class="dl-run" id="dlRun"></div></div>
@@ -3370,7 +3370,7 @@ const meAv=new Avatar(me.look,{isMe:true,sp:!!me.sp,x:(Math.random()<.5?-1:1)*ra
 meAv.setName(myLabel());
 let camYaw=0, camPitch=.3, camDist=4.6, camTarget=new T.Vector3(); let customizing=false; let pvYaw=0, pvMode="full", pvSpin=0, rotAnim=null;
 const camFocus=new T.Vector3(meAv.pos.x,1.0,meAv.pos.y); camTarget.copy(camFocus);
-function resize(){ const w=window.innerWidth,h=window.innerHeight; renderer.setSize(w,h,false); if(LBL.r) LBL.r.setSize(w,h,false); camera.aspect=w/h; camera.fov=w<h?62:52; camera.updateProjectionMatrix(); }
+function resize(){ const w=window.innerWidth,h=window.innerHeight; renderer.setSize(w,h,false); if(LBL.r) LBL.r.setSize(w,h,false); camera.aspect=w/h; if(!resize.done){ resize.done=1; camera.fov=w<h?62:52; } /* (after the first time the lens is the camera code's alone: a resize — or a sharpness change — used to snap it and the view jumped) */ camera.updateProjectionMatrix(); }
 window.addEventListener("resize",resize); resize();
 
 const raycaster=new T.Raycaster(); const ndc=new T.Vector2();
@@ -3956,8 +3956,7 @@ const bgm=$("#bgm"); bgm.volume=.38*mVol(); let audioUnlocked=false, catMode=fal
 const AU={bus:null,src:null,music:null,lv:-1};
 const AUQ={until:0,frame:0}; // other players' actions are not replayed while hidden or for a moment after coming back
 const quietFx=()=>document.hidden||performance.now()<AUQ.until||(AUQ.frame>0&&performance.now()-AUQ.frame>800);
-/* every sound goes through one gentle limiter on its way out: when music, the busker, rain and effects pile up, the sum no longer clips (that was the crackle) */
-function audioOut(c){ if(!audioOut.k||audioOut.k.context!==c){ const k=c.createDynamicsCompressor(); k.threshold.value=-6; k.knee.value=6; k.ratio.value=10; k.attack.value=.003; k.release.value=.25; k.connect(c.destination); audioOut.k=k; } return audioOut.k; }
+function audioOut(c){ if(!audioOut.k||audioOut.k.context!==c){ const g=c.createGain(); g.gain.value=.85; g.connect(c.destination); audioOut.k=g; } return audioOut.k; } /* a plain master volume, a touch under full (the limiter that was here squashed the music and made it sound close to breaking up) */
 function sfxBus(a){ if(!AU.bus){ AU.bus=a.createGain(); AU.bus.connect(audioOut(a)); } return AU.bus; }
 function cutSfx(){ if(AU.bus){ try{ AU.bus.disconnect(); }catch(e){} AU.bus=null; } if(typeof OP!=="undefined"&&OP&&OP.voiceGain){ try{ OP.voiceGain.disconnect(); }catch(e){} OP.voiceGain=null; } }
 /* Background music: one player per song (temple, 後殿, cats, fireworks), each with its own gain. Changing area cross-fades between
@@ -8138,7 +8137,7 @@ function tick(){ if(gameAsleep) return; const _ft0=performance.now(); { const no
       camLimit(camFocus,_v2.set(cx,cy,cz),_camTry); const d=_camTry.distanceTo(camFocus); if(d>gotD+.25){ gotD=d; want=dp; } if(d>dist*.8) break; } if(camSeatK>.05||CAMSEAT.upT>0) want=0;
     camLift+=(want-camLift)*Math.min(1,dt*(want>camLift?2.2:1.2)); // eases up and down instead of snapping
     { const pp=Math.min(1.2,pitch+camLift), cx=camFocus.x+Math.sin(yaw)*Math.cos(pp)*dist, cz=camFocus.z+Math.cos(yaw)*Math.cos(pp)*dist, cy=camFocus.y+Math.sin(pp)*dist; camLimit(camFocus,_v2.set(cx,cy,cz),_camBest); gotD=_camBest.distanceTo(camFocus); camTight=Math.max(0,Math.min(24,(1-gotD/dist)*36)); }
-    tmpV.copy(_camBest); camera.position.lerp(tmpV,Math.min(1,dt*6)); camNear+=(Math.max(0,Math.min(1,(gotD-1.3)/2.4))-camNear)*Math.min(1,dt*3);
+    tmpV.copy(_camBest); { const jump=camera.position.distanceTo(tmpV); camera.position.lerp(tmpV,Math.min(1,dt*(jump>1.2?2.5:5))); } /* a big sudden change of where the camera should be (a wall, a gate, the lens) is eased in slowly instead of snapping */ camNear+=(Math.max(0,Math.min(1,(gotD-1.3)/2.4))-camNear)*Math.min(1,dt*3);
     { const sh=(sheetKind&&!wide&&sheet.classList.contains("open")&&!sheet.classList.contains("peek"))?sheet.getBoundingClientRect().height:0; sheetOff+=(sh*.42-sheetOff)*Math.min(1,dt*6); if(sheetOff>1) camera.setViewOffset(W,H,0,sheetOff,W,H); }
     { const k=camNear*(1-camSeatK); camera.lookAt(camFocus.x-Math.sin(yaw)*3.5*k,camFocus.y+.15+.75*k,camFocus.z-Math.cos(yaw)*3.5*k); if(tiltUp>0&&camSeatK<.5) camera.rotateX(tiltUp*1.35); } /* (seated or lying you stay in the middle of the screen) */ // close up: look at yourself, not past you
     dirArrowTick(1-camNear);
