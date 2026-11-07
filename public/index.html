@@ -2751,7 +2751,7 @@ function shdPlace(ux,uz){ if(!SHD.b) shdBuild(); const L=Math.min(SHD.len,SHD_MA
   for(const c of SHD.b){ const w=c.x1-c.x0, d=c.z1-c.z0, cx=(c.x0+c.x1)/2, cz=(c.z0+c.z1)/2, l=c.h*L;
     if(c.round){ c.m.position.set(cx+ux*l*.5,SHD_Y,cz+uz*l*.5); c.m.rotation.y=Math.atan2(ux,uz); c.m.scale.set(w*1.1,1,d*1.1+l); continue; }
     /* the part outside the footprint, mostly: the footprint pushed along the sun direction */ const sx=w+Math.abs(ux)*l, sz=d+Math.abs(uz)*l; c.m.rotation.y=0; c.m.position.set(cx+ux*l*.5,SHD_Y,cz+uz*l*.5); c.m.scale.set(sx,1,sz); } }
-function shadowTick(dt){ let p=(Date.now()/1000%TOD_LEN)/TOD_LEN; if(typeof window.MZ_TOD==="number") p=window.MZ_TOD; const day=_dn.day, k=Math.max(0,Math.min(1,p<.5?p/.42:1)); const el=(58-50*k*k)*Math.PI/180, az=-2.2+2.9*k;
+function shadowTick(dt){ let p=(Date.now()/1000%TOD_LEN)/TOD_LEN; if(typeof window.MZ_TOD==="number") p=window.MZ_TOD; const day=_dn.day, k=p>=.86?(()=>{ const t=Math.min(1,(p-.86)/.14); return 1-t*t*(3-2*t); })():Math.max(0,Math.min(1,p<.5?p/.42:1)); /* dawn: the sun climbs back smoothly (it used to jump from low in the evening sky to high noon at the turn of the day, and everything lit up at once) */ const el=(58-50*k*k)*Math.PI/180, az=-2.2+2.9*k;
   SHD.dir.set(Math.cos(az)*Math.cos(el),Math.sin(el),Math.sin(az)*Math.cos(el)); SHD.len=Math.min(4,1/Math.tan(el)); SHD.op=day*(1-.6*(typeof WX!=="undefined"?WX.c:0));
   if(day>.02) sunLight.position.copy(SHD.dir).multiplyScalar(40).lerp(_zv.copy(SUN).multiplyScalar(40).setY(16),1-day);
   const sx=-SHD.dir.x, sz=-SHD.dir.z, sl=Math.hypot(sx,sz)||1, ux=sx/sl, uz=sz/sl, L=Math.min(SHD.len,SHD_MAXL)*SHD.op, stretch=1+L*1.1, off=L*.5; shadowMat.opacity=.75+.25*SHD.op;
