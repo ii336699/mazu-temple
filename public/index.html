@@ -841,10 +841,13 @@ function saveBag(){ save("mz.bag",bag); renderWallet(); }
 function sanitizeLook(l,allowChair=false){ const out=[]; for(let i=0;i<LOOK_RANGE.length;i++){ const v=Array.isArray(l)?l[i]|0:0; out.push(Math.max(0,Math.min(LOOK_RANGE[i]-1, Number.isFinite(v)?v:0))); } if(!allowChair&&out[3]===16) out[3]=0; return out; }
 
 /* ================= quality ================= */
-const Q={mode:load("mz.q","auto")}; Q.lite=Q.mode==="lite"; Q.low=Q.mode==="low"||Q.lite; // 低配 (lite) = 省電 plus lighter models, small textures and no anti-aliasing
+const Q={mode:load("mz.q","auto")}; Q.lite=Q.mode==="lite"; Q.low=Q.mode==="low"||Q.lite; Q.phone=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Mac/.test(navigator.userAgent)); Q.safe=Date.now()-(+load("mz.crash",0)||0)<20*60e3; if(Q.safe&&Q.mode==="auto") Q.low=true; /* the 3D drawing crashed in the last 20 minutes: run lighter for a while */ // 低配 (lite) = 省電 plus lighter models, small textures and no anti-aliasing
 /* ================= renderer & scene ================= */
 const canvas=$("#c");
 const renderer=new T.WebGLRenderer({canvas,antialias:!Q.lite,powerPreference:"high-performance"});
+/* If the phone runs out of graphics memory the browser takes the 3D drawing away (it would freeze or close the page). Remember it,
+   reload, and run lighter for 20 minutes instead of crashing again. */
+canvas.addEventListener("webglcontextlost",e=>{ e.preventDefault(); try{ save("mz.crash",Date.now()); }catch(_){ } try{ toast("畫面記憶體不足，自動重新整理並改用較省的畫質",2500); }catch(_){ } setTimeout(()=>location.reload(),1200); },false);
 /* 解析度 (DPR): never the phone's full native density. Each setting has a ladder of steps; 自動 / 高畫質 step down when frames keep
    coming late and back up when it is smooth again (see dresTick). 省電 and 低配 stay fixed. */
 const DRES={lvl:0,ema:1,slow:0,fast:0,cool:0,last:0,fw:false};
@@ -2588,7 +2591,7 @@ const SAKURA={};
   SAKURA.sh=new T.InstancedMesh(sg,SAKURA.shMat,SAKURA.spots.length); SAKURA.sh.frustumCulled=false; SAKURA.sh.userData.noMerge=1; SAKURA.sh.userData.noBuild=1; SAKURA.sh.position.y=.03; scene.add(SAKURA.sh); }
 
 /* ---- the mirror floor: the garden and hall drawn upside down into a texture each frame while you are inside (only the garden, at low resolution) ---- */
-function zenMirrorInit(){ if(ZEN.refl||Q.lite) return; const res=Q.low?256:512; const rt=new T.WebGLRenderTarget(res,res,{minFilter:T.LinearFilter,magFilter:T.LinearFilter}); rt.texture.encoding=T.sRGBEncoding;
+function zenMirrorInit(){ if(ZEN.refl||Q.lite) return; const res=Q.low||Q.phone?256:512; const rt=new T.WebGLRenderTarget(res,res,{minFilter:T.LinearFilter,magFilter:T.LinearFilter}); rt.texture.encoding=T.sRGBEncoding;
   const texMat={value:new T.Matrix4()}; const p=ZEN.plat;
   const m=new T.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{tex:{value:rt.texture},texMat,op:{value:.62}},
     vertexShader:`uniform mat4 texMat; varying vec4 vU; varying vec3 vW; void main(){ vec4 w=modelMatrix*vec4(position,1.0); vW=w.xyz; vU=texMat*w; gl_Position=projectionMatrix*viewMatrix*w; }`,
@@ -2597,13 +2600,19 @@ function zenMirrorInit(){ if(ZEN.refl||Q.lite) return; const res=Q.low?256:512; 
   const mc=new T.PerspectiveCamera(); ZEN.refl={rt,texMat,mp,mc,frame:0};
   ZEN.g.traverse(o=>{ if(o!==mp) o.layers.enable(3); }); }
 function zenMirror(){ const Rf=ZEN.refl; if(!Rf) return; const cam=camera, y=ZEN.FY+.008, mc=Rf.mc;
-  if((Rf.frame++)%(Q.low?3:2)) return; /* every other frame is plenty for a floor reflection (every third on 低配) */
+  if((Rf.frame++)%(Q.low||Q.phone?3:2)) return; /* every other frame is plenty for a floor reflection (every third on 低配) */
   mc.fov=cam.fov; mc.aspect=cam.aspect; mc.near=.1; mc.far=120; mc.updateProjectionMatrix();
   mc.position.set(cam.position.x,2*y-cam.position.y,cam.position.z); const dir=new T.Vector3(); cam.getWorldDirection(dir); dir.y=-dir.y; mc.up.set(0,1,0); mc.lookAt(mc.position.x+dir.x,mc.position.y+dir.y,mc.position.z+dir.z); mc.updateMatrixWorld(true);
   Rf.texMat.value.set(.5,0,0,.5, 0,.5,0,.5, 0,0,.5,.5, 0,0,0,1).multiply(mc.projectionMatrix).multiply(mc.matrixWorldInverse);
+  { /* cut away everything under the floor by tilting the reflection camera's near plane onto the floor (no clipping plane: that made every
+       material in sight build a second shader the first time you entered, a big memory and time spike on phones) */
+    const P=Rf.pl||(Rf.pl=new T.Plane()), V=Rf.v4||(Rf.v4=new T.Vector4()), C4=Rf.c4||(Rf.c4=new T.Vector4()), e=mc.projectionMatrix.elements;
+    P.set(Rf.up||(Rf.up=new T.Vector3(0,1,0)),-y).applyMatrix4(mc.matrixWorldInverse); C4.set(P.normal.x,P.normal.y,P.normal.z,P.constant);
+    V.set((Math.sign(C4.x)+e[8])/e[0],(Math.sign(C4.y)+e[9])/e[5],-1,(1+e[10])/e[14]); C4.multiplyScalar(2/C4.dot(V));
+    e[2]=C4.x; e[6]=C4.y; e[10]=C4.z+1; e[14]=C4.w; mc.projectionMatrixInverse.copy(mc.projectionMatrix).invert(); }
   mc.layers.set(3); if(!Rf.lit||Rf.frame%120<2){ Rf.lit=1; scene.traverse(o=>{ if(o.isLight) o.layers.enable(3); }); sky.layers.enable(3); } /* (walking the whole scene every frame was costly: now about every two seconds, for lights added later) */
-  Rf.mp.visible=false; const cp=renderer.clippingPlanes; renderer.clippingPlanes=[new T.Plane(new T.Vector3(0,1,0),-y)]; const rt0=renderer.getRenderTarget();
-  renderer.setRenderTarget(Rf.rt); renderer.clear(); renderer.render(scene,mc); renderer.setRenderTarget(rt0); renderer.clippingPlanes=cp; Rf.mp.visible=true; }
+  Rf.mp.visible=false; const rt0=renderer.getRenderTarget();
+  renderer.setRenderTarget(Rf.rt); renderer.clear(); renderer.render(scene,mc); renderer.setRenderTarget(rt0); Rf.mp.visible=true; }
 /* per frame: show the garden only when you are near it, keep the build-mode trees that used to stand there out of it, light it for the time of day */
 /* ================= 天氣: 晴 / 陰天 / 雨天 / 風大 / 雷雨. Everyone sees the same weather: it follows a fixed 6-minute timetable worked out
    from the clock (no server traffic), unless the chair has set one (the server passes it to every hall). Everything here is cheap:
@@ -2768,7 +2777,7 @@ function zenTick(dt){ { const b=$("#zenMusicBtn"), want=!!(meAv&&meAv.pos.x<-23.
   ZEN.t=(ZEN.t||0)+dt; if((ZEN.hideT=(ZEN.hideT||0)-dt)<0){ ZEN.hideT=3;  }
   if(!near) return;
   /* the stream mirrors the bridge, the trees and the sky: the picture is taken one face per frame as you come near (no single big stall) */
-  if(!ZEN.cube&&!Q.lite&&ZEN.water&&camera.position.x<-18){ try{ const rt=new T.WebGLCubeRenderTarget(96,{generateMipmaps:true,minFilter:T.LinearMipmapLinearFilter}); const cc=new T.CubeCamera(.2,160,rt); cc.position.set(-31.2,.5,ZEN.GZ); cc.updateMatrixWorld(true); ZEN.cube={rt,cc,face:0}; }catch(e){ ZEN.cube={done:1}; } }
+  if(!ZEN.cube&&!Q.lite&&ZEN.water&&camera.position.x<-18){ try{ const rt=new T.WebGLCubeRenderTarget(Q.low||Q.phone?64:96,{generateMipmaps:true,minFilter:T.LinearMipmapLinearFilter}); const cc=new T.CubeCamera(.2,160,rt); cc.position.set(-31.2,.5,ZEN.GZ); cc.updateMatrixWorld(true); ZEN.cube={rt,cc,face:0}; }catch(e){ ZEN.cube={done:1}; } }
   if(ZEN.cube&&!ZEN.cube.done&&ZEN.cube.cc){ const C=ZEN.cube, i=C.face, rt0=renderer.getRenderTarget(); ZEN.water.visible=false; C.rt.texture.generateMipmaps=i===5; renderer.setRenderTarget(C.rt,i); renderer.render(scene,C.cc.children[i]); renderer.setRenderTarget(rt0); ZEN.water.visible=true; C.face++;
     if(C.face>5){ C.done=1; const m=ZEN.water.material; m.envMap=C.rt.texture; m.envMapIntensity=1.5; m.metalness=.85; m.roughness=.04; m.color.set(ZL("#5f8e90")); m.needsUpdate=true; } }
   const day=_dn.day, night=_dn.night; for(const s of ZEN.shafts) s.material.opacity=.16*day+.05*(1-day)*(1-night);
@@ -3119,17 +3128,27 @@ function spLabel(){ const c=document.createElement("canvas"); c.width=320; c.hei
 /* names and speech bubbles are drawn by a second, small renderer on top at the screen's full sharpness, so when the 3D view drops
    resolution to keep things smooth the words stay crisp. Each label keeps its place in the scene (layer 7, not drawn by the main
    camera); a proxy in a tiny scene of its own follows it every frame. */
-const LBL={set:new Set(),sc:new T.Scene(),r:null,_q:new T.Quaternion()};
+const LBL={set:new Set(),r:null,x:null,dpr:1,drew:0,_p:new T.Vector3(),_q:new T.Quaternion(),_s:new T.Vector3(),_v:new T.Vector3(),list:[]};
+/* Names and bubbles are drawn as plain 2D pictures on a see-through layer above the 3D view (sharp text, never blurred by the 3D resolution).
+   (It used to be a second 3D drawing surface; on phones two of those plus the hall reflections ran out of memory and the page crashed.) */
 function lblReg(s){ s.layers.set(7); LBL.set.add(s); return s; }
+function lblSize(){ if(!LBL.r) return; const d=Math.min(window.devicePixelRatio||1,2), w=window.innerWidth, h=window.innerHeight; LBL.dpr=d; LBL.r.width=Math.round(w*d); LBL.r.height=Math.round(h*d); LBL.drew=1; }
 function lblInit(){ if(LBL.r!==null) return; try{ const cv=document.createElement("canvas"); cv.id="lblc"; cv.setAttribute("aria-hidden","true"); cv.style.cssText="position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:1"; canvas.after(cv);
-    const r=new T.WebGLRenderer({canvas:cv,alpha:true,antialias:false}); r.outputEncoding=renderer.outputEncoding; r.setClearColor(0x000000,0); r.setPixelRatio(Math.min(window.devicePixelRatio||1,2)); r.setSize(window.innerWidth,window.innerHeight,false); LBL.r=r; }catch(e){ LBL.r=false; for(const s of LBL.set) s.layers.set(0); } }
-function lblRender(){ lblInit(); if(!LBL.r){ return; } LBL.camRm=camRoom(camera.position.x,camera.position.z); for(const s of LBL.set){ let px=s.userData.px;
-    if(!s.parent){ if(px){ LBL.sc.remove(px); s.userData.px=null; } LBL.set.delete(s); continue; }
-    let p=s, v=true; while(p&&p!==scene){ if(!p.visible){ v=false; break; } p=p.parent; } if(p!==scene) v=false;
-    if(!px){ if(!v) continue; px=new T.Sprite(s.material); px.center.copy(s.center); px.renderOrder=s.renderOrder; LBL.sc.add(px); s.userData.px=px; }
-    if(px.material!==s.material) px.material=s.material; if(v){ s.matrixWorld.decompose(px.position,LBL._q,px.scale); const rm=camRoom(px.position.x,px.position.z); if(rm!=="O"&&rm!==LBL.camRm) v=false; /* someone inside a hall you are not in: the wall hides their name */ } px.visible=v; }
-  LBL.r.render(LBL.sc,camera); }
-function lblClear(){ if(LBL.r) LBL.r.clear(); }
+    const x=cv.getContext("2d"); if(!x) throw 0; LBL.r=cv; LBL.x=x; lblSize(); }catch(e){ LBL.r=false; for(const s of LBL.set) s.layers.set(0); } }
+function lblRender(){ lblInit(); if(!LBL.r) return; const X=LBL.x, W=LBL.r.width, H=LBL.r.height, L=LBL.list; L.length=0;
+  LBL.camRm=camRoom(camera.position.x,camera.position.z); const th=Math.tan(camera.fov*Math.PI/360)*2, ar=camera.aspect;
+  for(const s of LBL.set){ if(!s.parent){ LBL.set.delete(s); continue; }
+    let p=s, v=true; while(p&&p!==scene){ if(!p.visible){ v=false; break; } p=p.parent; } if(p!==scene||!v) continue;
+    const m=s.material; if(!m||!m.map||!m.map.image||m.opacity<=.01) continue;
+    s.matrixWorld.decompose(LBL._p,LBL._q,LBL._s); const rm=camRoom(LBL._p.x,LBL._p.z); if(rm!=="O"&&rm!==LBL.camRm) continue; /* someone inside a hall you are not in: the wall hides their name */
+    const q=LBL._v.copy(LBL._p).applyMatrix4(camera.matrixWorldInverse); const dz=-q.z; if(dz<camera.near) continue;
+    const ph=LBL._s.y/(dz*th)*H, pw=LBL._s.x/(dz*th*ar)*W; if(ph<1.5||ph>H*3) continue;
+    const sx=(q.x/(dz*th*ar)+.5)*W, sy=(.5-q.y/(dz*th))*H, x0=sx-s.center.x*pw, y0=sy-(1-s.center.y)*ph;
+    if(x0>W||y0>H||x0+pw<0||y0+ph<0) continue; L.push({s,dz,x0,y0,pw,ph}); }
+  if(!L.length&&!LBL.drew) return; X.setTransform(1,0,0,1,0,0); X.clearRect(0,0,W,H); LBL.drew=L.length;
+  L.sort((a,b)=>b.dz-a.dz||a.s.renderOrder-b.s.renderOrder); X.imageSmoothingEnabled=true; X.imageSmoothingQuality="high";
+  for(const o of L){ X.globalAlpha=Math.min(1,o.s.material.opacity); try{ X.drawImage(o.s.material.map.image,o.x0,o.y0,o.pw,o.ph); }catch(e){} } X.globalAlpha=1; }
+function lblClear(){ if(LBL.x&&LBL.drew){ LBL.x.setTransform(1,0,0,1,0,0); LBL.x.clearRect(0,0,LBL.r.width,LBL.r.height); LBL.drew=0; } }
 function textSprite(text,o={}){ const c=document.createElement("canvas"); const fs=o.fs||34, pad=o.pad??14; const x=c.getContext("2d"); x.font=`${o.weight||600} ${fs}px ${o.font||UI_FONT}`;
   const tw=Math.ceil(x.measureText(text).width); c.width=tw+pad*2; c.height=fs+pad*1.3; x.font=`${o.weight||600} ${fs}px ${o.font||UI_FONT}`;
   if(o.bg){ x.fillStyle=o.bg; const r=c.height/2; x.beginPath(); x.moveTo(r,0); x.lineTo(c.width-r,0); x.arc(c.width-r,r,r,-Math.PI/2,Math.PI/2); x.lineTo(r,c.height); x.arc(r,r,r,Math.PI/2,Math.PI*1.5); x.fill(); if(o.border){ x.strokeStyle=o.border; x.lineWidth=3; x.stroke(); } }
@@ -3376,7 +3395,7 @@ const meAv=new Avatar(me.look,{isMe:true,sp:!!me.sp,x:(Math.random()<.5?-1:1)*ra
 meAv.setName(myLabel());
 let camYaw=0, camPitch=.3, camDist=4.6, camTarget=new T.Vector3(); let customizing=false; let pvYaw=0, pvMode="full", pvSpin=0, rotAnim=null;
 const camFocus=new T.Vector3(meAv.pos.x,1.0,meAv.pos.y); camTarget.copy(camFocus);
-function resize(){ const w=window.innerWidth,h=window.innerHeight; renderer.setSize(w,h,false); if(LBL.r) LBL.r.setSize(w,h,false); camera.aspect=w/h; if(!resize.done){ resize.done=1; camera.fov=w<h?62:52; } /* (after the first time the lens is the camera code's alone: a resize — or a sharpness change — used to snap it and the view jumped) */ camera.updateProjectionMatrix(); }
+function resize(){ const w=window.innerWidth,h=window.innerHeight; renderer.setSize(w,h,false); lblSize(); camera.aspect=w/h; if(!resize.done){ resize.done=1; camera.fov=w<h?62:52; } /* (after the first time the lens is the camera code's alone: a resize — or a sharpness change — used to snap it and the view jumped) */ camera.updateProjectionMatrix(); }
 window.addEventListener("resize",resize); resize();
 
 const raycaster=new T.Raycaster(); const ndc=new T.Vector2();
@@ -8631,7 +8650,7 @@ function innTvDraw0(t){ const x=t.c.getContext("2d"), w=256, h=144, k=t.k%5; con
 /* per frame: lock state, doors, futons, steam, towels, TV, shower */
 function innTick(dt){ const me=meAv; if(!me) return; INN.t=(INN.t||0)+dt;
   /* the hot-spring water mirrors the room and the trees outside: one reflection picture, taken the first time you come near */
-  if(!INN.cube&&!Q.lite&&Math.hypot(camera.position.x-(INN.DX+48.5),camera.position.z+34.25)<34){ try{ const rt=new T.WebGLCubeRenderTarget(96,{generateMipmaps:true,minFilter:T.LinearMipmapLinearFilter}); const cc=new T.CubeCamera(.2,120,rt); cc.position.set(INN.DX+48.5,.6,-34.25); cc.updateMatrixWorld(true); INN.cube={rt,cc,face:0}; }catch(e){ INN.cube={done:1}; } }
+  if(!INN.cube&&!Q.lite&&Math.hypot(camera.position.x-(INN.DX+48.5),camera.position.z+34.25)<34){ try{ const rt=new T.WebGLCubeRenderTarget(Q.low||Q.phone?64:96,{generateMipmaps:true,minFilter:T.LinearMipmapLinearFilter}); const cc=new T.CubeCamera(.2,120,rt); cc.position.set(INN.DX+48.5,.6,-34.25); cc.updateMatrixWorld(true); INN.cube={rt,cc,face:0}; }catch(e){ INN.cube={done:1}; } }
   if(INN.cube&&!INN.cube.done&&INN.cube.cc){ const C=INN.cube, i=C.face, rt0=renderer.getRenderTarget(); INN.water.visible=false; C.rt.texture.generateMipmaps=i===5; renderer.setRenderTarget(C.rt,i); renderer.render(scene,C.cc.children[i]); renderer.setRenderTarget(rt0); INN.water.visible=true; C.face++;
     if(C.face>5){ C.done=1; INN.waterMat.envMap=C.rt.texture; INN.waterMat.envMapIntensity=1.2; INN.waterMat.needsUpdate=true; } } /* (one face per frame, so walking in never stalls) */
   { bag.gd=bag.gd||{}; const si0=(me.gy||0)>2.3?innSuiteAt(me.pos.x,me.pos.y):-1, inRoom=si0>=0&&me.pos.x-INN.DX>INN.suites[si0].xa+.3;
