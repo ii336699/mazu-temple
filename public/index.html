@@ -3258,7 +3258,7 @@ function dirArrowTick(close){ if(!meAv) return; if(!dirArrow){ const tex=cvs(128
     dirArrow=new T.Mesh(new T.PlaneGeometry(1.1,1.1),new T.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,opacity:.3})); dirArrow.rotation.set(-Math.PI/2,0,Math.PI); dirArrow.position.y=.03; dirArrow.renderOrder=2; meAv.root.add(dirArrow); }
   if(dirArrow.parent!==meAv.root) meAv.root.add(dirArrow); dirArrow.material.opacity=.22+.6*close; dirArrow.visible=!customizing&&!(meAv.flyCur>.3); }
 function camOK(x,y,z){ if(y<.35) return false; const ax=Math.abs(x);
-  if(x>23.3&&z>-52&&z<-4){ if(INN.cutMode){ if(INN.cutMode==="2"){ const S=INN.suites[INN.cutSi]; if(S&&(z<S.s0+.2||z>S.s1-.2)) return false; /* the camera stays over your own room, so the party walls never stand between */ return y>INN.F2+.8&&y<18; } return y>.4&&y<18; } const up=(meAv.gy||0)>2.3, lx=x-INN.DX; if(innIn(x,z)){ if(up) return lx<INN.SX1?(y>INN.F2+.7&&y<INN.F2+INN.H2-.2):(y>INN.F2+.7&&y<16); return y<INN.H1-.2; } if(up&&lx>=INN.RX0) return y>INN.F2+.5&&y<16; return y<20; }
+  if(x>23.3&&z>-52&&z<-4){ if(INN.cutMode){ if(INN.cutMode==="2"){ const S=INN.suites[INN.cutSi], lx=x-INN.DX; if(S&&(z<S.s0+.2||z>S.s1-.2||(S.e?lx<INN.KX1+.2:lx>INN.SX1-.2))) return false; if(INN.cutSi===8&&(lx<INN.SX1+.1||lx>INN.KX1-.1)) return false; /* the camera stays over your own room, so the party walls never stand between */ return y>INN.F2+.8&&y<18; } return y>.4&&y<18; } const up=(meAv.gy||0)>2.3, lx=x-INN.DX; if(innIn(x,z)){ if(up) return y>INN.F2+.7&&y<INN.F2+INN.H2-.2; return y<INN.H1-.2; } if(up&&lx>=INN.RX0) return y>INN.F2+.5&&y<16; return y<20; }
   if(x<-23.3&&z>ZEN.Z0-1&&z<ZEN.Z1+1){ if(zenPlat(x,z)&&x>ZEN.hall.x0&&x<ZEN.hall.x1&&z>ZEN.hall.z0&&z<ZEN.hall.z1) return y<ZEN.FY+3.3; return y<20; }
   if(ax>22.4&&ax<24.2&&z<-4&&z>-52){ if(Math.abs(z-ZEN.GZ)<1.0&&y<2.5) return true; if(y>3.9&&y<16) return true; } /* the gates to the 禪院 and the 禪房, and over the side walls */
   if(z<-15.25){ // 後埕 (open sky), then the 後殿 and its 側殿
@@ -8227,14 +8227,17 @@ try{ floorsPlain(); }catch(e){}
    Ceilings are high so the camera has room. Positions are 2D, so each person also carries a level (gy: 0 ground, 4.6 upstairs). ================= */
 /* everything below is in the house's own coordinates; the house stands DX further out (world x = local x + DX). The stairs go up along the
    front, north of the door path (foot at z -30.4, top -40.2), onto a landing past the north wall (LZ0) and the 2F walkway along the front. */
-const INN={DX:6,X0:31,X1:55,Z0:-40,Z1:-15,G:ZEN.GZ,F2:5.96,H1:5.6,H2:4.0,RX0:26.0,RX1:28.2,RZB:-30.4,RZT:-40.2,LZ0:-42.4,CX0:28.6,CX1:31,SX1:42,lock:0,suites:[],seats:{},tv:[],shower:[],g:null};
-INN.sw=(INN.Z1-INN.Z0)/4; for(let i=0;i<4;i++){ const s0=INN.Z0+i*INN.sw, s1=s0+INN.sw; INN.suites.push({i,s0,s1,dz:s0+1.6}); }
+const INN={DX:6,X0:31,X1:55,Z0:-40,Z1:-15,G:ZEN.GZ,F2:5.96,H1:5.6,H2:4.0,RX0:26.0,RX1:28.2,RZB:-30.4,RZT:-40.2,LZ0:-42.4,CX0:28.6,CX1:31,SX1:42,KX1:43.6,lock:0,suites:[],seats:{},tv:[],shower:[],g:null};
+/* upstairs: west suites 201–204 (door on the outside walkway, x 31–42), an inside corridor (x 42–43.6) reached from a north balcony,
+   east suites 205–208 (door on that corridor, x 43.6–55). Every east suite is the west one moved 12.6 m east (ox). */
+INN.sw=(INN.Z1-INN.Z0)/4; for(let k=0;k<8;k++){ const j=k%4, e=k>3, s0=INN.Z0+j*INN.sw, s1=s0+INN.sw; INN.suites.push({i:k,s0,s1,dz:s0+1.6,e,xa:e?INN.KX1:INN.CX1,xb:e?INN.X1:INN.SX1,ox:e?INN.KX1-INN.CX1:0}); }
 const innInL=(x,z)=>x>INN.X0&&x<INN.X1&&z>INN.Z0&&z<INN.Z1;
 const innRampH=z=>INN.F2*Math.max(0,Math.min(1,(INN.RZB-z)/(INN.RZB-INN.RZT)));
 const innOnRampStrip=(x,z)=>x>INN.RX0&&x<INN.RX1&&z<INN.RZB+.4&&z>INN.RZT-.1;
-const innUp=(x,z)=>(x>INN.RX0&&x<INN.CX1&&z>INN.LZ0&&z<INN.RZT+.3)||(x>=INN.CX0&&x<INN.CX1&&z>INN.Z0-.4&&z<INN.Z1)||(x>=INN.CX1&&x<INN.SX1&&z>INN.Z0&&z<INN.Z1); /* landing, walkway, suites */
+const innUp=(x,z)=>(x>INN.RX0&&x<INN.KX1&&z>INN.LZ0&&z<INN.RZT+.3)||(x>=INN.CX0&&x<INN.CX1&&z>INN.Z0-.4&&z<INN.Z1)||(x>=INN.CX1&&x<INN.X1&&z>INN.Z0-.4&&z<INN.Z1); /* landing + north balcony, walkway, the whole upper floor */
 const innPoolL=(x,z)=>((x-48.5)/4.2)**2+((z+34.25)/3.4)**2<1;
-function innSuiteAtL(x,z){ if(!(x>INN.CX1-.05&&x<INN.SX1&&z>INN.Z0&&z<INN.Z1)) return -1; return Math.min(3,Math.floor((z-INN.Z0)/INN.sw)); }
+function innSuiteAtL(x,z){ if(!(z>INN.Z0&&z<INN.Z1)) return -1; const j=Math.min(3,Math.floor((z-INN.Z0)/INN.sw)); if(x>INN.CX1-.05&&x<INN.SX1) return j; if(x>INN.KX1-.05&&x<INN.X1) return 4+j; return -1; }
+const innCorr=(x,z)=>x>INN.SX1&&x<INN.KX1&&z>INN.Z0-.4&&z<INN.Z1; /* the inside corridor upstairs */
 /* level under a walker: keeps to the floor it is on, and only climbs the ramp from its foot (so you can walk under the ramp) */
 function groundAt(av,x,z){ let g=av.gy||0; if(av.gyInit==null&&av.wantGy!=null){ g=av.wantGy; av.gyInit=1; }
   if(x>23.3){ x-=INN.DX; if(innOnRampStrip(x,z)){ const h=innRampH(z); if(Math.abs(h-g)<.8) g=h; else if(g>2.3&&z<INN.RZT+.3) g=INN.F2; }
@@ -8245,10 +8248,12 @@ function innLockedBy(i){ if(INN.lock===i+1) return "me"; if(typeof remotes!=="un
 function innWalkableL(x,z,gy){ const G=INN.G; gy=gy==null?(meAv.gy||0):gy;
   if(z<-51||z>-5) return false;
   if(gy>2.3||(innOnRampStrip(x,z)&&Math.abs(innRampH(z)-gy)<.8)){ /* upstairs (or on the ramp) */
-    if(innOnRampStrip(x,z)) return x>INN.RX0+.2&&x<INN.RX1-.2; if(x>INN.RX0+.25&&x<INN.CX1-.25&&z>INN.LZ0+.25&&z<INN.RZT+.35) return true; if(x>=INN.CX0+.25&&x<INN.CX1-.05&&z>INN.Z0-.4&&z<INN.Z1-.25) return true; /* stairs, landing, walkway — all inside their railings */
+    if(innOnRampStrip(x,z)) return x>INN.RX0+.2&&x<INN.RX1-.2; if(x>INN.RX0+.25&&x<INN.KX1-.25&&z>INN.LZ0+.25&&z<INN.Z0-.1&&(x<INN.CX1-.25||z<INN.Z0-.15)) return true; /* landing and north balcony */
+    if(x>INN.SX1+.25&&x<INN.KX1-.25&&z>INN.Z0-.5&&z<INN.Z1-.25) return true; /* the inside corridor (and its door off the balcony) */
+    if(x>=INN.KX1-.25&&x<INN.KX1+.05&&INN.suites.some(S=>S.e&&Math.abs(z-S.dz)<.6)) return true; /* stepping from the corridor into a doorway */ if(x>=INN.CX0+.25&&x<INN.CX1-.05&&z>INN.Z0-.4&&z<INN.Z1-.25) return true; /* stairs, landing, walkway — all inside their railings */
     const i=innSuiteAtL(x,z); if(i<0) return false; const S=INN.suites[i];
-    if(x<INN.CX1+.25){ if(!(z>S.dz-.6&&z<S.dz+.6)) return false; return innLockedBy(i)!=="other"; }                  /* the suite door */
-    if(x>INN.SX1-.25||z<S.s0+.2||z>S.s1-.2) return false;
+    if(x<S.xa+.25){ if(!(z>S.dz-.6&&z<S.dz+.6)) return false; return innLockedBy(i)!=="other"; }                  /* the suite door */
+    if(x>S.xb-.25||z<S.s0+.2||z>S.s1-.2) return false; x-=S.ox; /* (the east suites are laid out like the west ones) */
     if(x<34.6&&z>S.s1-3.1&&z<S.s1-2.75) return false; if(x>34.25&&x<34.6&&z>S.s1-3.1&&!(z>S.s1-1.7&&z<S.s1-.7)) return false; /* bathroom walls, its door */
     if(x>36.3&&x<38.7&&z<S.s0+2.4) return x<36.5||x>38.5?false:z>S.s0+2.2;                                              /* the bed */
     return true; }
@@ -8264,12 +8269,13 @@ function innWalkableL(x,z,gy){ const G=INN.G; gy=gy==null?(meAv.gy||0):gy;
   if(innOnRampStrip(x,z)&&innRampH(z)<1.9) return false;                                                               /* too low to walk under */
   if(x>INN.X1+3||z<INN.Z0-8||z>INN.Z1+8) return false; return true; }
 /* routes inside the grounds of the guest house (both levels): area → area through doors and up the ramp */
-function innArea(x,z,gy){ if(gy>2.3||innUp(x,z)&&gy>2.3){ const i=innSuiteAtL(x,z); return i>=0&&x>INN.CX1+.1?"s"+i:"c"; } if(innInL(x,z)){ if(x<41) return "l"; return z>-27.5?"d":"o"; } return "out"; }
+function innArea(x,z,gy){ if(gy>2.3||innUp(x,z)&&gy>2.3){ const i=innSuiteAtL(x,z); if(i>=0&&x>INN.suites[i].xa+.1) return "s"+i; if(innCorr(x,z)&&z>INN.Z0-.1) return "k"; if(x>INN.CX1&&z<INN.Z0) return "b"; return "c"; } if(innInL(x,z)){ if(x<41) return "l"; return z>-27.5?"d":"o"; } return "out"; }
 function innRouteL(fx,fz,fg,tx,tz,tg){ const G=INN.G, a=innArea(fx,fz,fg), b=innArea(tx,tz,tg); if(a===b) return [[tx,tz]];
   const E={"out>l":[[30.4,G],[31.8,G]],"l>out":[[31.8,G],[30.4,G]],"l>d":[[40.4,-21],[41.7,-21]],"d>l":[[41.7,-21],[40.4,-21]],"l>o":[[40.4,-34],[41.7,-34]],"o>l":[[41.7,-34],[40.4,-34]],
     "out>c":[[27.1,-29.4],[27.1,-30.6],[27.1,-40.6],[29.8,-41.3],[29.8,-39.6]],"c>out":[[29.8,-39.6],[29.8,-41.3],[27.1,-40.6],[27.1,-30.6],[27.1,-29.4]]};
-  for(const S of INN.suites){ E["c>s"+S.i]=[[29.8,S.dz],[31.7,S.dz]]; E["s"+S.i+">c"]=[[31.7,S.dz],[29.8,S.dz]]; }
-  const N={out:["l","c"],l:["out","d","o"],d:["l"],o:["l"],c:["out","s0","s1","s2","s3"],s0:["c"],s1:["c"],s2:["c"],s3:["c"]};
+  E["c>b"]=[[29.8,-41.2],[31.6,-41.2]]; E["b>c"]=[[31.6,-41.2],[29.8,-41.2]]; E["b>k"]=[[42.8,-41.2],[42.8,-39.4]]; E["k>b"]=[[42.8,-39.4],[42.8,-41.2]];
+  for(const S of INN.suites){ const hub=S.e?"k":"c", hx=S.e?42.8:29.8, ix=S.xa+.7; E[hub+">s"+S.i]=[[hx,S.dz],[ix,S.dz]]; E["s"+S.i+">"+hub]=[[ix,S.dz],[hx,S.dz]]; }
+  const N={out:["l","c"],l:["out","d","o"],d:["l"],o:["l"],c:["out","b","s0","s1","s2","s3"],b:["c","k"],k:["b","s4","s5","s6","s7"]}; for(let i=0;i<8;i++) N["s"+i]=[i>3?"k":"c"];
   const prev={[a]:null}, q=[a]; while(q.length){ const z=q.shift(); if(z===b) break; for(const n of N[z]||[]) if(!(n in prev)){ prev[n]=z; q.push(n); } }
   const chain=[]; for(let z=b;z!=null;z=prev[z]) chain.unshift(z); const pts=[]; for(let k=0;k<chain.length-1;k++) pts.push(...(E[chain[k]+">"+chain[k+1]]||[])); pts.push([tx,tz]); return pts; }
 /* world-coordinate versions used by the rest of the game */
@@ -8303,18 +8309,25 @@ const INN_SEAT0=SEATS.length;
   /* big glass on the street side and the back, grey frame bands, wood slats */
   for(const z of [Z0+.14,Z1-.14]) for(let x=X0+1;x<X1-1;x+=4.6){ if(z<Z0+1&&x>39) continue; /* (the bath has its big window there) */ const gw=mesh(new T.PlaneGeometry(3.6,2.4),glass,x+1.8,1.9,z,root); if(z>Z0+1) gw.rotation.y=Math.PI; }
   B(X1-X0+.4,.35,Z1-Z0+.4,grey,(X0+X1)/2,H1+.17,(Z0+Z1)/2);                                          /* slab between the floors (= 1F ceiling, 2F floor, terrace) */
-  floorP(X0,SX1,Z0,Z1,F2,innWood(L("#b88454"),(SX1-X0)/1.6,(Z1-Z0)/1.6),true);                                 /* 2F wood floor */
-  floorP(SX1,X1,Z0,Z1,F2,mat(L("#8a8f86"),{roughness:.9}));                                         /* roof terrace */
+  floorP(X0,X1,Z0,Z1,F2,innWood(L("#b88454"),(X1-X0)/1.6,(Z1-Z0)/1.6),true);                                 /* 2F wood floor, all of it (suites and the inside corridor) */
+
   { const cl=mesh(new T.PlaneGeometry(X1-X0,Z1-Z0),mat(L("#f2efe8"),{roughness:.95}),(X0+X1)/2,H1-.01,(Z0+Z1)/2,root); cl.rotation.x=Math.PI/2; }
   /* upper floor box */
-  const y2=F2; const sCut=INN.suites.slice(1).map(S=>[S.s0,S.s0,0]); /* (walls split at each suite boundary, so each room's walls drop on their own) */ wallZ(SX1,Z0,Z1,y2,H2,white,sCut.concat(INN.suites.map(S=>[S.s0+1.1,S.s1-1.1,3.0]))); for(const S of INN.suites) B(.25,.8,S.s1-S.s0-2.2,white,SX1,y2+.4,(S.s0+S.s1)/2); /* a window in each suite, sill to 3 m */ wallX(Z0,X0,SX1,y2,H2,white); wallX(Z1,X0,SX1,y2,H2,white);
-  const doorGaps=INN.suites.map(S=>[S.dz-.6,S.dz+.6,2.5]).concat(sCut); wallZ(X0,Z0,Z1,y2,H2,white,doorGaps);
-  { const ev=B(1.8,.14,Z1-Z0,dark,SX1+.9,y2+H2-.05,(Z0+Z1)/2); ev.userData.eave=1; for(let z=Z0+1;z<Z1;z+=3.1) B(.1,H2-.1,.1,grey,SX1+1.7,y2+(H2-.1)/2,z); } /* an eave over the terrace outside the suites, on thin posts */
-  INN.roofs=INN.suites.map(S=>{ const r=B(SX1-X0+.6,.4,S.s1-S.s0+(S.i===0||S.i===3?.3:0),dark,(X0+SX1)/2,y2+H2+.2,(S.s0+S.s1)/2+(S.i===0?-.15:S.i===3?.15:0)); r.userData.suiteRoof=S.i; return r; }); /* roof, one piece over each suite */
-  for(const S of INN.suites){ const wz=mesh(new T.PlaneGeometry(INN.sw-2.2,2.2),new T.MeshStandardMaterial({color:L("#9fb8c0"),roughness:.05,transparent:true,opacity:.2,side:T.DoubleSide}),SX1,y2+1.9,(S.s0+S.s1)/2,root); wz.rotation.y=Math.PI/2; } /* each suite's window onto the terrace */
+  const y2=F2, KX1=INN.KX1; const sCut=INN.suites.slice(1,4).map(S=>[S.s0,S.s0,0]); /* (walls split at each suite boundary, so each room's walls drop on their own) */
+  wallZ(SX1,Z0,Z1,y2,H2,white,sCut); wallZ(KX1,Z0,Z1,y2,H2,white,INN.suites.filter(S=>S.e).map(S=>[S.dz-.6,S.dz+.6,2.5]).concat(sCut)); /* the inside corridor's walls (doors of 205–208) */
+  wallZ(X1,Z0,Z1,y2,H2,white,sCut.concat(INN.suites.filter(S=>S.e).map(S=>[S.s0+1.1,S.s1-1.1,3.0]))); for(const S of INN.suites.filter(S=>S.e)) B(.25,.8,S.s1-S.s0-2.2,white,X1,y2+.4,(S.s0+S.s1)/2); /* east suites: a big window each, sill to 3 m */
+  wallX(Z0,X0,X1,y2,H2,white,[[SX1,SX1,0],[SX1+.15,KX1-.15,2.5],[KX1,KX1,0]]); wallX(Z1,X0,X1,y2,H2,white,[[SX1,SX1,0],[KX1,KX1,0]]); /* north wall: the corridor's door off the balcony */
+  const doorGaps=INN.suites.filter(S=>!S.e).flatMap(S=>[[S.dz-.6,S.dz+.6,2.5],[S.s0+2.35,S.s0+3.25,2.6],[S.s1-2.7,S.s1-.3,2.6]]).concat(sCut); wallZ(X0,Z0,Z1,y2,H2,white,doorGaps); /* west suites: door, a small window, a frosted bathroom window */
+  for(const S of INN.suites.filter(S=>!S.e)){ B(.25,.9,.9,white,X0,y2+.45,S.s0+2.8); B(.25,.9,2.4,white,X0,y2+.45,S.s1-1.5); }
+
+  INN.roofs=INN.suites.map(S=>{ const j=S.i%4, ext=(j===0?-.15:j===3?.15:0), w=S.xb-S.xa+(S.e?.3:.6), cx=S.e?(S.xa+S.xb)/2+.15:(X0+SX1)/2; const r=B(w,.4,S.s1-S.s0+(j===0||j===3?.3:0),dark,cx,y2+H2+.2,(S.s0+S.s1)/2+ext); r.userData.suiteRoof=S.i; return r; }); /* roof, one piece over each suite */
+  { const r=B(KX1-SX1,.4,Z1-Z0+.3,dark,(SX1+KX1)/2,y2+H2+.2,(Z0+Z1)/2); r.userData.suiteRoof=8; INN.roofs.push(r); } /* and one over the inside corridor */
+  { const clear=new T.MeshStandardMaterial({color:L("#9fb8c0"),roughness:.05,transparent:true,opacity:.2,side:T.DoubleSide}), frost=new T.MeshStandardMaterial({color:L("#eef2f2"),roughness:.6,transparent:true,opacity:.75,side:T.DoubleSide});
+    for(const S of INN.suites){ if(S.e){ const wz=mesh(new T.PlaneGeometry(INN.sw-2.2,2.2),clear,X1,y2+1.9,(S.s0+S.s1)/2,root); wz.rotation.y=Math.PI/2; }
+      else { const a=mesh(new T.PlaneGeometry(.9,1.7),clear,X0,y2+1.75,S.s0+2.8,root); a.rotation.y=Math.PI/2; const b=mesh(new T.PlaneGeometry(2.4,1.7),frost,X0,y2+1.75,S.s1-1.5,root); b.rotation.y=Math.PI/2; } } } /* windows */
   for(let i=0;i<14;i++) B(.12,H2,.08,slat,X0-.18,y2+H2/2,Z0+3.6+i*.18+(i>6?10.9:0)); /* slat screens (between the doors, not over them: 201/202 and 203/204) */
   for(let z=Z0+.6;z<Z1;z+=.22) if(Math.abs(z-G)>2) B(.06,1.6,.1,slat,X0-.14,H1-1.2,z);               /* slatted fascia over the ground floor */
-  /* terrace: a raised flower bed outside each suite window (the trees are added with the bath's trees) */ INN.beds=[]; for(const S of INN.suites){ const z=(S.s0+S.s1)/2; B(2.2,.9,4.2,grey,SX1+3.4,y2+.45,z); B(2.0,.06,4.0,mat(L("#3a2a1c"),{roughness:1}),SX1+3.4,y2+.92,z); INN.beds.push([SX1+3.4,z]); }
+  /* outside the east suites' windows: tall raised flower beds on the ground, so the trees in them reach the window */ INN.beds=[]; for(const S of INN.suites.filter(S=>S.e)){ const z=(S.s0+S.s1)/2; B(2.4,2.6,4.6,stone,X1+2.4,1.3,z); B(2.2,.06,4.4,mat(L("#3a2a1c"),{roughness:1}),X1+2.4,2.62,z); INN.beds.push([X1+2.4,z,2.65]); }
   /* sign */ { const st=cvs(512,128,(x,w,h)=>{ x.fillStyle="#2e3034"; x.fillRect(0,0,w,h); x.fillStyle="#f4efe6"; x.font='600 74px "Noto Sans TC",sans-serif'; x.textAlign="center"; x.textBaseline="middle"; x.fillText("禪 房",w/2,h/2+4); x.fillStyle="#c8a46a"; x.fillRect(w*.2,h-14,w*.6,4); });
     const sg=mesh(new T.PlaneGeometry(2.4,.6),new T.MeshStandardMaterial({map:st,roughness:.6,emissive:"#ffffff",emissiveMap:st,emissiveIntensity:.3}),X0-.2,3.5,G,root); sg.rotation.y=-Math.PI/2; }
   /* entrance canopy */ B(1.6,.12,3.4,dark,X0-.7,2.9,G);
@@ -8325,7 +8338,7 @@ const INN_SEAT0=SEATS.length;
     const n=Math.round(F2/.22); for(let k=0;k<n;k++){ const za=INN.RZB-k*len/n, zb=za-len/n, top=F2*(k+.5)/n; B(sw,.2,len/n+.02,stepM,xm,top-.08,(za+zb)/2); } /* the steps */
     for(let z=INN.RZB-2;z>INN.RZT;z-=2.6){ const h=innRampH(z); cyl(.09,.09,h,grey,INN.RX0+.15,h/2,z,root,8); cyl(.09,.09,h,grey,INN.RX1-.15,h/2,z,root,8); }
     /* landing and walkway */
-    floorP(INN.RX0,INN.CX1,INN.LZ0,INN.RZT+.3,F2,cm,true); floorP(INN.CX0,INN.CX1,INN.RZT+.3,INN.Z1,F2,cm,true);
+    floorP(INN.RX0,INN.CX1,INN.LZ0,INN.RZT+.3,F2,cm,true); floorP(INN.CX1,INN.KX1,INN.LZ0,INN.Z0,F2,cm,true); B(INN.KX1-INN.CX1,.3,INN.Z0-INN.LZ0,grey,(INN.CX1+INN.KX1)/2,F2-.16,(INN.LZ0+INN.Z0)/2); for(const x of [36.5,INN.KX1-.2]) cyl(.12,.12,F2-.3,grey,x,(F2-.3)/2,INN.LZ0+.2,root,8); /* the north balcony to the inside corridor */ floorP(INN.CX0,INN.CX1,INN.RZT+.3,INN.Z1,F2,cm,true);
     B(INN.CX1-INN.RX0,.3,INN.RZT+.3-INN.LZ0,grey,(INN.RX0+INN.CX1)/2,F2-.16,(INN.LZ0+INN.RZT+.3)/2); B(INN.CX1-INN.CX0,.3,INN.Z1-INN.RZT-.3,grey,(INN.CX0+INN.CX1)/2,F2-.16,(INN.RZT+.3+INN.Z1)/2);
     for(const [x,z] of [[INN.RX0+.2,INN.LZ0+.2],[INN.CX1-.2,INN.LZ0+.2],[INN.CX0+.2,-34],[INN.CX0+.2,-27.6+2.2],[INN.CX0+.2,-20],[INN.CX0+.2,INN.Z1-.3]]) cyl(.12,.12,F2-.3,grey,x,(F2-.3)/2,z,root,8);
     /* railing: white posts, a wooden handrail, glass between */
@@ -8336,7 +8349,7 @@ const INN_SEAT0=SEATS.length;
       const h=new T.Mesh(new T.BoxGeometry(.07,.06,LL),hand); h.rotation.order="YXZ"; h.rotation.set(-tilt,ang,0); h.position.set(mx,my+1.07,mz); root.add(h);
       const g=new T.Mesh(new T.PlaneGeometry(LL,.85),glassR); g.rotation.order="YXZ"; g.rotation.set(0,ang-Math.PI/2,tilt); g.position.set(mx,my+.55,mz); root.add(g); };
     rail(INN.RX0+.05,INN.RZB,INN.RX0+.05,INN.RZT,0,F2); rail(INN.RX1-.05,INN.RZB,INN.RX1-.05,INN.RZT+.3,0,F2*(INN.RZB-INN.RZT-.3)/(INN.RZB-INN.RZT));   /* both sides of the stairs */
-    rail(INN.RX0+.05,INN.RZT,INN.RX0+.05,INN.LZ0+.05,F2,F2); rail(INN.RX0+.05,INN.LZ0+.05,INN.CX1-.05,INN.LZ0+.05,F2,F2); rail(INN.CX1-.05,INN.LZ0+.05,INN.CX1-.05,INN.Z0-.15,F2,F2); /* landing */
+    rail(INN.RX0+.05,INN.RZT,INN.RX0+.05,INN.LZ0+.05,F2,F2); rail(INN.RX0+.05,INN.LZ0+.05,INN.KX1-.05,INN.LZ0+.05,F2,F2); rail(INN.KX1-.05,INN.LZ0+.05,INN.KX1-.05,INN.Z0-.1,F2,F2); /* landing and north balcony */
     rail(INN.RX1-.05,INN.RZT+.3,INN.CX0+.05,INN.RZT+.3,F2,F2); rail(INN.CX0+.05,INN.RZT+.3,INN.CX0+.05,INN.Z1-.05,F2,F2); rail(INN.CX0+.05,INN.Z1-.05,INN.CX1,INN.Z1-.05,F2,F2); /* walkway */
   }
   /* ---- lobby: front desk, the auntie, a little indoor garden of white gravel and rock ---- */
@@ -8380,33 +8393,33 @@ const INN_SEAT0=SEATS.length;
     const mp=new T.Group(); mp.position.set(52.6,0,-38.4); root.add(mp); cyl(.08,.12,1.6,mat(L("#4a3226")),0,.8,0,mp,6); for(let k=0;k<14;k++) mesh(new T.IcosahedronGeometry(.35,0),mat(L(["#c4161c","#d8281e","#e0501a"][k%3]),{roughness:.8}),(Math.random()-.5)*1.4,1.6+Math.random()*.8,(Math.random()-.5)*1.4,mp); }
   /* ---- the suites upstairs ---- */
   const y=y2; INN.tvTex=[];
-  for(const S of INN.suites){ if(S.i>0) wallX(S.s0,INN.CX1,SX1,y,H2,white,[]);
-    /* bathroom */ wallX(S.s1-2.95,INN.CX1,34.45,y,H2,white,[]); wallZ(34.45,S.s1-2.95,S.s1,y,H2,white,[[S.s1-1.65,S.s1-.75,2.3]]);
-    floorP(INN.CX1,34.45,S.s1-2.95,S.s1,y+.01,mat(L("#e6e4e0"),{roughness:.3}));
+  for(const S of INN.suites){ const o=S.ox; if(S.i%4>0) wallX(S.s0,S.xa,S.xb,y,H2,white,[]);
+    /* bathroom */ wallX(S.s1-2.95,S.xa,(34.45+o),y,H2,white,[]); wallZ((34.45+o),S.s1-2.95,S.s1,y,H2,white,[[S.s1-1.65,S.s1-.75,2.3]]);
+    floorP(S.xa,(34.45+o),S.s1-2.95,S.s1,y+.01,mat(L("#e6e4e0"),{roughness:.3}));
     const porc=mat(L("#f6f6f4"),{roughness:.2});
-    { const tz=S.s1-2.5; B(1.8,.12,.8,porc,32.1,y+.06,tz); B(1.8,.55,.1,porc,32.1,y+.28,tz-.35); B(1.8,.55,.1,porc,32.1,y+.28,tz+.35); B(.1,.55,.8,porc,31.25,y+.28,tz); B(.1,.55,.8,porc,32.95,y+.28,tz); /* bathtub: a hollow shell */
-      const tw=mesh(new T.PlaneGeometry(1.6,.6),new T.MeshStandardMaterial({color:L("#7cc4d4"),roughness:.05,metalness:.1,transparent:true,opacity:.72,emissive:L("#1a4650"),emissiveIntensity:.35}),32.1,y+.42,tz,root); tw.rotation.x=-Math.PI/2; } /* the water */
-    B(.42,.4,.55,porc,33.85,y+.2,S.s1-2.45); B(.42,.5,.18,porc,33.85,y+.5,S.s1-2.8); /* toilet */
-    { const wt=mesh(new T.CircleGeometry(.15,16),new T.MeshStandardMaterial({color:L("#8fcfe0"),roughness:.05,emissive:L("#20505a"),emissiveIntensity:.3}),33.85,y+.405,S.s1-2.42,root); wt.rotation.x=-Math.PI/2; wt.scale.y=1.25;
-      const rg=mesh(new T.TorusGeometry(.17,.035,6,18),porc,33.85,y+.41,S.s1-2.42,root); rg.rotation.x=-Math.PI/2; rg.scale.y=1.2; } /* bowl water and seat ring */
-    B(.55,.08,.4,porc,31.45,y+.85,S.s1-.4); B(.04,.6,.5,mat(L("#cfe6ee"),{roughness:.05,metalness:.6}),31.12,y+1.5,S.s1-.4); /* basin and mirror */
-    { const gl=new T.MeshStandardMaterial({color:L("#d8eef4"),transparent:true,opacity:.28,roughness:.05}); const p1=mesh(new T.PlaneGeometry(1.0,2.0),gl,33.85,y+1.0,S.s1-1.15,root); const p2=mesh(new T.PlaneGeometry(1.1,2.0),gl,33.3,y+1.0,S.s1-.6,root); p2.rotation.y=Math.PI/2;
-      cyl(.12,.12,.03,mat(L("#c8c8c8"),{metalness:.8,roughness:.2}),33.9,y+2.3,S.s1-.5,root,12); } /* shower */
+    { const tz=S.s1-2.5; B(1.8,.12,.8,porc,(32.1+o),y+.06,tz); B(1.8,.55,.1,porc,(32.1+o),y+.28,tz-.35); B(1.8,.55,.1,porc,(32.1+o),y+.28,tz+.35); B(.1,.55,.8,porc,(31.25+o),y+.28,tz); B(.1,.55,.8,porc,(32.95+o),y+.28,tz); /* bathtub: a hollow shell */
+      const tw=mesh(new T.PlaneGeometry(1.6,.6),new T.MeshStandardMaterial({color:L("#7cc4d4"),roughness:.05,metalness:.1,transparent:true,opacity:.72,emissive:L("#1a4650"),emissiveIntensity:.35}),(32.1+o),y+.42,tz,root); tw.rotation.x=-Math.PI/2; } /* the water */
+    B(.42,.4,.55,porc,(33.85+o),y+.2,S.s1-2.45); B(.42,.5,.18,porc,(33.85+o),y+.5,S.s1-2.8); /* toilet */
+    { const wt=mesh(new T.CircleGeometry(.15,16),new T.MeshStandardMaterial({color:L("#8fcfe0"),roughness:.05,emissive:L("#20505a"),emissiveIntensity:.3}),(33.85+o),y+.405,S.s1-2.42,root); wt.rotation.x=-Math.PI/2; wt.scale.y=1.25;
+      const rg=mesh(new T.TorusGeometry(.17,.035,6,18),porc,(33.85+o),y+.41,S.s1-2.42,root); rg.rotation.x=-Math.PI/2; rg.scale.y=1.2; } /* bowl water and seat ring */
+    B(.55,.08,.4,porc,(31.45+o),y+.85,S.s1-.4); B(.04,.6,.5,mat(L("#cfe6ee"),{roughness:.05,metalness:.6}),(31.12+o),y+1.5,S.s1-.4); /* basin and mirror */
+    { const gl=new T.MeshStandardMaterial({color:L("#d8eef4"),transparent:true,opacity:.28,roughness:.05}); const p1=mesh(new T.PlaneGeometry(1.0,2.0),gl,(33.85+o),y+1.0,S.s1-1.15,root); const p2=mesh(new T.PlaneGeometry(1.1,2.0),gl,(33.3+o),y+1.0,S.s1-.6,root); p2.rotation.y=Math.PI/2;
+      cyl(.12,.12,.03,mat(L("#c8c8c8"),{metalness:.8,roughness:.2}),(33.9+o),y+2.3,S.s1-.5,root,12); } /* shower */
     /* bedroom: king bed against the south wall, bedside tables and lamps, TV on the north wall, an armchair by the window */
-    const sheet=mat(L("#f4f2ee"),{roughness:.9}), frame=mat(L("#6a4a30"),{roughness:.6}); B(2.3,.35,2.3,frame,37.5,y+.18,S.s0+1.25); B(2.15,.25,2.15,sheet,37.5,y+.48,S.s0+1.3); B(2.2,1.1,.12,frame,37.5,y+.9,S.s0+.1);
-    B(2.17,.06,1.3,mat(L(["#3a4a6a","#6a3a3a","#3a5a4a","#5a4a3a"][S.i]),{roughness:.9}),37.5,y+.62,S.s0+1.75); for(const dx of [-.5,.5]) B(.7,.16,.4,sheet,37.5+dx,y+.66,S.s0+.45);
-    for(const dx of [-1.6,1.6]){ B(.55,.5,.45,frame,37.5+dx,y+.25,S.s0+.35); cyl(.06,.1,.35,mat(L("#d8c8a8")),37.5+dx,y+.68,S.s0+.35,root,10); const lg=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffd9a0"),transparent:true,opacity:.5,blending:T.AdditiveBlending,depthWrite:false})); lg.position.set(37.5+dx,y+.95,S.s0+.35); lg.scale.set(.9,.9,1); root.add(lg); }
-    B(1.8,.5,.4,frame,37.5,y+.25,S.s1-.25); B(1.9,1.1,.08,mat("#111111",{roughness:.3}),37.5,y+1.6,S.s1-.12);
-    const tvc=document.createElement("canvas"); tvc.width=256; tvc.height=144; { const x=tvc.getContext("2d"); x.fillStyle="#000"; x.fillRect(0,0,256,144); } const tvt=new T.CanvasTexture(tvc); tvt.encoding=T.sRGBEncoding; const scr=mesh(new T.PlaneGeometry(1.76,.99),new T.MeshBasicMaterial({map:tvt,color:"#222222"}),37.5,y+1.6,S.s1-.17,root); scr.rotation.y=Math.PI;
+    const sheet=mat(L("#f4f2ee"),{roughness:.9}), frame=mat(L("#6a4a30"),{roughness:.6}); B(2.3,.35,2.3,frame,(37.5+o),y+.18,S.s0+1.25); B(2.15,.25,2.15,sheet,(37.5+o),y+.48,S.s0+1.3); B(2.2,1.1,.12,frame,(37.5+o),y+.9,S.s0+.1);
+    B(2.17,.06,1.3,mat(L(["#3a4a6a","#6a3a3a","#3a5a4a","#5a4a3a","#4a3a6a","#3a5a5a","#6a5a3a","#5a3a4a"][S.i]),{roughness:.9}),(37.5+o),y+.62,S.s0+1.75); for(const dx of [-.5,.5]) B(.7,.16,.4,sheet,(37.5+o)+dx,y+.66,S.s0+.45);
+    for(const dx of [-1.6,1.6]){ B(.55,.5,.45,frame,(37.5+o)+dx,y+.25,S.s0+.35); cyl(.06,.1,.35,mat(L("#d8c8a8")),(37.5+o)+dx,y+.68,S.s0+.35,root,10); const lg=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffd9a0"),transparent:true,opacity:.5,blending:T.AdditiveBlending,depthWrite:false})); lg.position.set((37.5+o)+dx,y+.95,S.s0+.35); lg.scale.set(.9,.9,1); root.add(lg); }
+    B(1.8,.5,.4,frame,(37.5+o),y+.25,S.s1-.25); B(1.9,1.1,.08,mat("#111111",{roughness:.3}),(37.5+o),y+1.6,S.s1-.12);
+    const tvc=document.createElement("canvas"); tvc.width=256; tvc.height=144; { const x=tvc.getContext("2d"); x.fillStyle="#000"; x.fillRect(0,0,256,144); } const tvt=new T.CanvasTexture(tvc); tvt.encoding=T.sRGBEncoding; const scr=mesh(new T.PlaneGeometry(1.76,.99),new T.MeshBasicMaterial({map:tvt,color:"#222222"}),(37.5+o),y+1.6,S.s1-.17,root); scr.rotation.y=Math.PI;
     INN.tv.push({c:tvc,t:tvt,m:scr,on:false,k:0,at:0,i:S.i});
-    { const tb=mat(L("#5a3e28"),{roughness:.5}), ch=mat(L("#a8b4a0"),{roughness:.9}); cyl(.42,.42,.05,tb,40.7,y+.72,S.s0+3.6,root,20); cyl(.05,.05,.7,tb,40.7,y+.36,S.s0+3.6,root,8); /* table by the window */
-      for(const [dz,f] of [[-.95,0],[.95,Math.PI]]){ B(.6,.42,.55,ch,40.7,y+.21,S.s0+3.6+dz); B(.6,.6,.1,ch,40.7,y+.62,S.s0+3.6+dz+(dz<0?-.25:.25)); const v=new T.Vector2(40.7,S.s0+3.6+dz); v.inn=1; v.kind="sofa"; v.lift=.14; v.face=f; v.gy=F2; v.suite=S.i; SEATS.push(v); INN.seats[S.i+"chair"+dz]=SEATS.length-1; } }
-    /* door (shown shut when someone has locked it) */ const dr=B(.08,2.5,1.15,mat(L("#6a4a30"),{roughness:.6}),INN.CX1+.02,y+1.25,S.dz); S.door=dr; dr.userData.base=dr.position.z;
+    { const tb=mat(L("#5a3e28"),{roughness:.5}), ch=mat(L("#a8b4a0"),{roughness:.9}); cyl(.42,.42,.05,tb,(40.7+o),y+.72,S.s0+3.6,root,20); cyl(.05,.05,.7,tb,(40.7+o),y+.36,S.s0+3.6,root,8); /* table by the window */
+      for(const [dz,f] of [[-.95,0],[.95,Math.PI]]){ B(.6,.42,.55,ch,(40.7+o),y+.21,S.s0+3.6+dz); B(.6,.6,.1,ch,(40.7+o),y+.62,S.s0+3.6+dz+(dz<0?-.25:.25)); const v=new T.Vector2((40.7+o),S.s0+3.6+dz); v.inn=1; v.kind="sofa"; v.lift=.14; v.face=f; v.gy=F2; v.suite=S.i; SEATS.push(v); INN.seats[S.i+"chair"+dz]=SEATS.length-1; } }
+    /* door (shown shut when someone has locked it) */ const dr=B(.08,2.5,1.15,mat(L("#6a4a30"),{roughness:.6}),S.xa+.02,y+1.25,S.dz); S.door=dr; dr.userData.base=dr.position.z;
     const ns=cvs(128,64,(x,w,h)=>{ x.fillStyle="#2e3034"; x.fillRect(0,0,w,h); x.fillStyle="#f4efe6"; x.font='600 34px sans-serif'; x.textAlign="center"; x.textBaseline="middle"; x.fillText("20"+(S.i+1),w/2,h/2); });
-    const np=mesh(new T.PlaneGeometry(.4,.2),new T.MeshBasicMaterial({map:ns}),INN.CX1-.14,y+2.0,S.dz+.85,root); np.rotation.y=-Math.PI/2;
+    const np=mesh(new T.PlaneGeometry(.4,.2),new T.MeshBasicMaterial({map:ns}),S.xa-.14,y+2.0,S.dz+.85,root); np.rotation.y=-Math.PI/2;
     /* seats: the bed (lie down), the toilet, the bath */
-    for(const [x,z,kind,lift,face] of [[37.5,S.s0+1.2,"bed",.5,0],[33.85,S.s1-2.42,"toilet",.13,0],[32.1,S.s1-2.5,"tub",-.16,Math.PI/2]]){ const v=new T.Vector2(x,z); v.inn=1; v.kind=kind; v.lift=lift; v.face=face; v.gy=F2; v.suite=S.i; SEATS.push(v); INN.seats[S.i+kind]=SEATS.length-1; }
-    INN.shower.push({x:33.85,z:S.s1-.55,y,i:S.i,on:0}); }
+    for(const [x,z,kind,lift,face] of [[(37.5+o),S.s0+1.2,"bed",.5,0],[(33.85+o),S.s1-2.42,"toilet",.13,0],[(32.1+o),S.s1-2.5,"tub",-.16,Math.PI/2]]){ const v=new T.Vector2(x,z); v.inn=1; v.kind=kind; v.lift=lift; v.face=face; v.gy=F2; v.suite=S.i; SEATS.push(v); INN.seats[S.i+kind]=SEATS.length-1; }
+    INN.shower.push({x:(33.85+o),z:S.s1-.55,y,i:S.i,on:0}); }
   /* night: windows glow */
   INN.lights=[]; for(const [x,yy,z] of [[36,3.6,-28],[48,3.6,-21],[48,3.6,-34]]){ const s=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffd9a0"),transparent:true,opacity:.35,blending:T.AdditiveBlending,depthWrite:false})); s.position.set(x,yy,z); s.scale.set(6,4,1); root.add(s); INN.lights.push(s); }
   root.traverse(o=>{ if(o.isMesh){ o.userData.noMerge=1; if(o.userData.floor) pickables.push(o); } });
@@ -8415,7 +8428,7 @@ for(let i=INN_SEAT0;i<SEATS.length;i++) SEATS[i].x+=INN.DX; INN.shower.forEach(s
 /* ---- 禪房 extras: colourful trees outside the bath's window (same leaves as the zen garden), lobby sofa corner, the paintings, warm lamps ---- */
 { const root=INN.g, L=h=>ZL(h); let seed=77; const R=()=>{ seed=(seed*16807)%2147483647; return seed/2147483647; }, rr=(a,b)=>a+(b-a)*R();
   const PAL=[["#a00a10","#b81414","#880810"],["#c8380a","#d85410","#b02808"],["#c88a06","#d8a010","#b07404"],["#900c2a","#a8143a","#740820"],["#3a6a14","#4a7c1a","#2c5a10"],["#e07898","#e890ac","#d06088"]];
-  const spots=[]; (INN.beds||[]).forEach(([x,z])=>{ for(const dz of [-1,1]) spots.push([x,z+dz,1.3,INN.F2+.95]); }); /* small trees in the terrace beds, at window height */
+  const spots=[]; (INN.beds||[]).forEach(([x,z,y0])=>{ for(const dz of [-1.1,1.1]) spots.push([x,z+dz,1.5,y0]); }); /* small trees in the terrace beds, at window height */
   for(let i=0;i<600&&spots.length<24;i++){ const r=rr(1.8,2.6); let x,z; if(i%2){ x=rr(41,57.5); z=rr(-47,-42.2); } else { x=rr(57.2,61.5); z=rr(-45,-25); } if(spots.some(s=>Math.hypot(s[0]-x,s[1]-z)<(s[2]+r)*.75)) continue; spots.push([x,z,r]); }
   const cards=[], trunks=[], M4=new T.Matrix4(), Q4=new T.Quaternion(), E3=new T.Euler(), S3=new T.Vector3(), V3=new T.Vector3(), C3=new T.Color();
   spots.forEach(([x,z,r,y0],i)=>{ y0=y0||0; const pal=PAL[i%PAL.length], th=y0?rr(.8,1.1):rr(1.6,2.2), cy=y0+th+r*.6; trunks.push([x,y0+th/2,z,th]); const n=Math.round(46+r*16);
@@ -8436,18 +8449,18 @@ for(let i=INN_SEAT0;i<SEATS.length;i++) SEATS[i].x+=INN.DX; INN.shower.forEach(s
   /* only on bare wall: big landscape ones in the lobby (over the sofa, by the garden, either side of the two doors), two in the dorm */
   pic(8,31.14,2.9,-19.2,Math.PI/2,1.7); pic(9,31.14,2.9,-31.6,Math.PI/2,1.5); pic(3,40.9,2.9,-17.6,-Math.PI/2,1.4); pic(4,40.9,2.9,-37.6,-Math.PI/2,1.4);
   pic(0,45,2.7,-27.35,0,1.2); pic(2,50,2.7,-27.35,0,1.2); /* dorm side of the dorm / bath wall */
-  INN.suites.forEach((S,k)=>{ pic([5,7,6,1][k],37.5,INN.F2+2.45,S.s0+.18,0,1.0); }); /* over each bed, above the headboard */
+  INN.suites.forEach((S,k)=>{ pic([5,7,6,1,9,0,2,3][k],37.5+S.ox,INN.F2+2.45,S.s0+.18,0,1.0); }); /* over each bed, above the headboard */
   /* warm light: paper lamps on the walls with a soft glow (no real lights — cheap) */
   const lampM=new T.MeshStandardMaterial({color:L("#fff1d6"),emissive:L("#ffc070"),emissiveIntensity:1.1,roughness:.9}), glowM=new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffb860"),transparent:true,opacity:.28,blending:T.AdditiveBlending,depthWrite:false});
   const lamp=(x,y,z)=>{ mesh(new T.CylinderGeometry(.16,.16,.36,10),lampM,x,y,z,root); const g=new T.Sprite(glowM); g.position.set(x,y,z); g.scale.set(1.6,1.6,1); root.add(g); };
-  for(const z of [-37,-25,-22]) lamp(31.4,4.2,z); for(const z of [-25,-20,-16]) lamp(54.6,4.2,z); for(const x of [43,47.5,52]) lamp(x,4.3,-27.4); INN.suites.forEach(S=>{ lamp(41.6,INN.F2+2.6,S.s0+3); }); }
+  for(const z of [-37,-25,-22]) lamp(31.4,4.2,z); for(const z of [-25,-20,-16]) lamp(54.6,4.2,z); for(const x of [43,47.5,52]) lamp(x,4.3,-27.4); INN.suites.forEach(S=>{ lamp(S.xb-.4,INN.F2+2.6,S.s0+3); }); }
 
 /* the auntie at the front desk */
 { const av=new Avatar([1,7,0,2,6,3,0,4,2,0,1,0,0],{npc:true,x:39.6+INN.DX,z:-28.2}); av.sjBusy=1; av.rotY=-Math.PI/2; av.faceGoal=-Math.PI/2; av.setName("櫃台阿姨"); av.gy=0; av.root.scale.setScalar(1.2); INN.aunt=av; /* a bit bigger than the guests: she stands behind the counter */ addHit("innDesk",38.6+INN.DX,0,-28.2,1.3,1.6); }
 station("innDesk",[37.3+INN.DX,-28.2],Math.PI/2);
 for(const [k,o] of Object.entries(INN.seats)){ const S=SEATS[o]; addHit("iseat:"+o,S.x,S.gy,S.y,S.kind==="bed"?1.1:.45,S.kind==="bed"?.9:.8); }
 INN.futon.forEach(o=>{ const S=SEATS[o.i]; addHit("iseat:"+o.i,S.x,0,S.y,.55,.3); });
-INN.tv.forEach(t=>addHit("innTv:"+t.i,37.5+INN.DX,INN.F2+1.1,INN.suites[t.i].s1-.3,.9,1.0));
+INN.tv.forEach(t=>addHit("innTv:"+t.i,37.5+INN.suites[t.i].ox+INN.DX,INN.F2+1.1,INN.suites[t.i].s1-.3,.9,1.0));
 INN.shower.forEach(s=>addHit("innShower:"+s.i,s.x,s.y,s.z,.45,2.2));
 const INN_SAY=["歡迎光臨禪房！今天住宿嗎？","通鋪的床具在這邊領喔，枕頭被子都洗好了。","溫泉在左手邊，進去記得先沖洗身體。","套房在二樓，從外面的坡道上去。","晚安，祝您好眠。","有需要再叫我喔！","退房時間是中午十二點喔。","泡完溫泉記得多喝水。"];
 HANDLERS.innDeskOpen=()=>{ const has=!!bag.gd&&bag.gd.bedding; INN.aunt.say(INN_SAY[(Math.random()*INN_SAY.length)|0],"#ffe2a0",3);
@@ -8478,11 +8491,11 @@ function innTick(dt){ const me=meAv; if(!me) return; INN.t=(INN.t||0)+dt;
   /* the hot-spring water mirrors the room and the trees outside: one reflection picture, taken the first time you come near */
   if(!INN.cube&&!Q.lite&&Math.hypot(camera.position.x-(INN.DX+48.5),camera.position.z+34.25)<30){ try{ const rt=new T.WebGLCubeRenderTarget(128,{generateMipmaps:true,minFilter:T.LinearMipmapLinearFilter}); const cc=new T.CubeCamera(.2,120,rt); cc.position.set(INN.DX+48.5,.6,-34.25); scene.add(cc);
       INN.water.visible=false; cc.update(renderer,scene); INN.water.visible=true; scene.remove(cc); INN.waterMat.envMap=rt.texture; INN.waterMat.envMapIntensity=1.2; INN.waterMat.needsUpdate=true; INN.cube=rt; }catch(e){ INN.cube=1; } }
-  { bag.gd=bag.gd||{}; const si0=(me.gy||0)>2.3?innSuiteAt(me.pos.x,me.pos.y):-1, inRoom=si0>=0&&me.pos.x-INN.DX>INN.CX1+.3;
-    if(inRoom&&!bag.gd.roomKey&&!me.sp&&!INN.kicked){ INN.kicked=1; const S=INN.suites[si0]; me.pos.set(INN.DX+29.8,S.dz); me.target.copy(me.pos); me.path=[]; toast("要先到一樓櫃台買房卡（一次 100 平安幣）才能進套房喔",3200); setTimeout(()=>{ INN.kicked=0; },1500); }
+  { bag.gd=bag.gd||{}; const si0=(me.gy||0)>2.3?innSuiteAt(me.pos.x,me.pos.y):-1, inRoom=si0>=0&&me.pos.x-INN.DX>INN.suites[si0].xa+.3;
+    if(inRoom&&!bag.gd.roomKey&&!me.sp&&!INN.kicked){ INN.kicked=1; const S=INN.suites[si0]; me.pos.set(INN.DX+(S.e?42.8:29.8),S.dz); me.target.copy(me.pos); me.path=[]; toast("要先到一樓櫃台買房卡（一次 100 平安幣）才能進套房喔",3200); setTimeout(()=>{ INN.kicked=0; },1500); }
     if(inRoom) INN.wasIn=1; else if(INN.wasIn){ INN.wasIn=0; if(bag.gd.roomKey&&!me.sp){ bag.gd.roomKey=0; saveBag(); toast("退房了，歡迎再來",1800); } }
     const onFuton=me.seat>=0&&SEATS[me.seat]&&SEATS[me.seat].kind==="futon"; if(onFuton) INN.slept=1; else if(INN.slept){ INN.slept=0; if(bag.gd.bedding&&!me.sp){ bag.gd.bedding=0; saveBag(); toast("床具還給櫃台了",1600); } } }
-  const si=(me.gy||0)>2.3?innSuiteAt(me.pos.x,me.pos.y):-1; if(INN.lock&&si!==INN.lock-1){ INN.lock=0; markDirty(); } if(INN.lockBtn){ const show=si>=0&&me.pos.x-INN.DX>INN.CX1+.3; INN.lockBtn.hidden=!show; if(show) INN.lockBtn.textContent=INN.lock===si+1?"🔓 開門":"🔒 鎖門"; }
+  const si=(me.gy||0)>2.3?innSuiteAt(me.pos.x,me.pos.y):-1; if(INN.lock&&si!==INN.lock-1){ INN.lock=0; markDirty(); } if(INN.lockBtn){ const show=si>=0&&me.pos.x-INN.DX>INN.suites[si].xa+.3; INN.lockBtn.hidden=!show; if(show) INN.lockBtn.textContent=INN.lock===si+1?"🔓 開門":"🔒 鎖門"; }
   for(const S of INN.suites){ const lk=!!innLockedBy(S.i); S.door.position.z=lk?S.dz:S.dz+1.1; }
   if((INN.ft=(INN.ft||0)-dt)<0){ INN.ft=.5; const taken=new Set([me.seat]); if(typeof remotes!=="undefined") remotes.forEach(r=>taken.add(r.seat)); npcs.forEach(n=>taken.add(n.seat)); INN.futon.forEach(o=>{ o.f.visible=taken.has(o.i); }); }
   for(const s of INN.steam){ s.userData.s+=dt*.4; const k=s.userData.s%1; s.position.y=.3+k*2.4; s.material.opacity=.07*(1-k)*(k*4>1?1:k*4); }
@@ -8505,11 +8518,11 @@ INN.cut=[]; INN.cutMode=""; INN.cutKey="";
     const roof=bb.min.y>F2b+INN.H2-.35&&c.x>INN.RX0-1&&c.z>INN.LZ0-1&&c.z<INN.Z1+1, foot=c.x>INN.X0-.9&&c.x<INN.X1+.4&&c.z>INN.Z0-.4&&c.z<INN.Z1+.4;
     if(!roof&&!foot) return; const up=bb.min.y>INN.H1-.45, lvl=bb.min.y<1?1:(bb.min.y>INN.F2-.2?2:0);
     const thinX=sz.x<.45, thinZ=sz.z<.45, tall=sz.y>1.15; let face="";
-    if(tall&&(thinX||thinZ)&&lvl){ if(thinX&&near(c.x,INN.X0)) face="W"; else if(thinX&&lvl===1&&near(c.x,INN.X1)) face="E"; else if(thinX&&lvl===2&&near(c.x,INN.SX1)) face="E"; else if(thinZ&&near(c.z,INN.Z0)) face="N"; else if(thinZ&&near(c.z,INN.Z1)) face="S";
+    if(tall&&(thinX||thinZ)&&lvl){ if(thinX&&near(c.x,INN.X0)) face="W"; else if(thinX&&lvl===1&&near(c.x,INN.X1)) face="E"; else if(thinX&&lvl===2&&near(c.x,INN.X1)) face="E"; else if(thinZ&&near(c.z,INN.Z0)) face="N"; else if(thinZ&&near(c.z,INN.Z1)) face="S";
       else if(thinX&&thinZ) face=""; else face="I"; }
     if(!roof&&!up&&!face) return; if(face&&thinX&&thinZ&&face!=="W") return; /* (bamboo canes are not walls) */
-    const party=lvl===2&&thinZ&&INN.suites.some(S=>S.i>0&&Math.abs(c.z-S.s0)<.3);
-    INN.cut.push({o,roof,up,face,lvl,party,cz:c.z,sr:o.userData.suiteRoof,y0:bb.min.y,h:sz.y,py:o.position.y,sy:o.scale.y,vis:o.visible}); }); }
+    const party=lvl===2&&thinZ&&INN.suites.some(S=>S.i%4>0&&Math.abs(c.z-S.s0)<.3);
+    INN.cut.push({o,roof,up,face,lvl,party,cz:c.z,cx:c.x,sr:o.userData.suiteRoof,y0:bb.min.y,h:sz.y,py:o.position.y,sy:o.scale.y,vis:o.visible}); }); }
 /* fewer draw calls: everything in the 禪房 that never changes (furniture, posts, steps, rocks, railings …) is merged per look (colour,
    roughness, texture) into one mesh each; walls the cut-away view moves, floors you tap, doors, water and TVs stay separate */
 (function innMerge(){ const keep=new Set(INN.cut.map(e=>e.o)); INN.suites.forEach(S=>keep.add(S.door)); [INN.water,INN.deck].forEach(o=>o&&keep.add(o)); INN.tv.forEach(t=>keep.add(t.m));
@@ -8522,7 +8535,7 @@ INN.cut=[]; INN.cutMode=""; INN.cutKey="";
     const G=new T.BufferGeometry(); G.setAttribute("position",new T.BufferAttribute(P,3)); G.setAttribute("normal",new T.BufferAttribute(N,3)); G.setAttribute("uv",new T.BufferAttribute(U,2)); G.setIndex(new T.BufferAttribute(I,1)); G.computeBoundingSphere();
     const M=new T.Mesh(G,list[0].material); M.raycast=()=>{}; INN.g.add(M); list.forEach(o=>INN.g.remove(o)); n+=list.length; }); INN.merged=n; })();
 function innCutTick(){ const me=meAv; if(!me) return; const x=me.pos.x-INN.DX, z=me.pos.y, gy=me.gy||0; let m="";
-  const si=gy>2.3&&x>INN.CX1+.1?innSuiteAtL(x,z):-1; if(si>=0) m="2"; INN.cutSi=si; /* (the ground floor is 5.6 m high now and keeps its roof and walls) */ /* upstairs only inside a suite (the walkway is outdoors) */
+  let si=gy>2.3?innSuiteAtL(x,z):-1; if(si>=0&&x<INN.suites[si].xa+.1) si=-1; if(si<0&&gy>2.3&&innCorr(x,z)&&z>INN.Z0-.1) si=8; /* 8 = the inside corridor */ if(si>=0) m="2"; INN.cutSi=si; /* (the ground floor is 5.6 m high now and keeps its roof and walls) */ /* upstairs only inside a suite (the walkway is outdoors) */
   const cx=camera.position.x-INN.DX, cz=camera.position.z, dx=cx-x, dz=cz-z, L=Math.hypot(dx,dz)*.3, XE=m==="2"?INN.SX1:INN.X1, cross=(p,c,w)=>(c-w)*(p-w)<0; /* a wall drops when the camera is on its outer side, or when it stands between the camera and you */
   const tw={W:-dx>L||cross(x,cx,INN.X0),E:dx>L||cross(x,cx,XE),N:-dz>L||cross(z,cz,INN.Z0),S:dz>L||cross(z,cz,INN.Z1)};
   const key=m?m+si+(tw.W?1:0)+(tw.E?1:0)+(tw.N?1:0)+(tw.S?1:0):""; INN.cutMode=m; if(key===INN.cutKey) return; INN.cutKey=key;
@@ -8531,7 +8544,7 @@ function innCutTick(){ const me=meAv; if(!me) return; const x=me.pos.x-INN.DX, z
     if(m==="1"&&(e.roof||e.up)){ o.visible=false; continue; }
     if(m==="2"&&e.roof){ if(e.sr==null||e.sr===si) o.visible=false; continue; } /* only your own room opens up; the others keep their roofs */
     if(!e.face||e.lvl!==+m) continue;
-    if(m==="2"){ const S=INN.suites[si]; if(e.party||e.cz<S.s0-.2||e.cz>S.s1+.2) continue; } /* party walls stay full height: you never look into the next room */ const top=fb+(e.face==="I"?1.1:(tw[e.face]?.5:99)); if(top>=e.y0+e.h) continue;
+    if(m==="2"){ const S=INN.suites[si]; if(!S||e.party||e.cz<S.s0-.2||e.cz>S.s1+.2||e.cx<S.xa-.5||e.cx>S.xb+.5) continue; } /* party walls stay full height: you never look into the next room */ const top=fb+(e.face==="I"?1.1:(tw[e.face]?.5:99)); if(top>=e.y0+e.h) continue;
     if(top<=e.y0+.05){ o.visible=false; continue; } const k=(top-e.y0)/e.h; o.scale.y=e.sy*k; o.position.y=e.py-e.h*(1-k)/2; } }
 /* the tatami room: with bedding in your bag, "睡在這裡" lays a futon right where you stand (the nearest free spot) and you lie down on it */
 { const b=document.createElement("button"); b.id="innSleepBtn"; b.className="zen-music"; b.style.top="calc(env(safe-area-inset-top) + 128px)"; b.hidden=true; b.textContent="🛏️ 睡在這裡";
