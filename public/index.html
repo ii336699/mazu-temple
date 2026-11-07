@@ -3413,7 +3413,7 @@ function doorPts(a,b,fx,tx,fz){ const key=a+">"+b, s=(a+b).includes("-")?-1:1; c
   if(a==="M") return [[s*11,BGZ],[s*13.2,BGZ]]; if(b==="M") return [[s*13.2,BGZ],[s*11,BGZ]];
   if(a[0]==="S") return [[s*SHXC,-2.1],[s*SHXC,-.5]]; if(b[0]==="S") return [[s*SHXC,-.5],[s*SHXC,-2.1]];
   if(a[0]==="P") return [[s*SHXC,HZ+.2],[s*SHXC,HZ+1.2]]; return [[s*SHXC,HZ+1.2],[s*SHXC,HZ+.2]]; }
-function walkable(x,z){ if(x<-22.6) return zenWalkable(x,z); if(x>22.75) return innWalkable(x,z); if(opInside(x,z)||ptInside(x,z)) return false; if(Math.hypot(x-WT.x,z-WT.z)<2.4) return false; /* the cherry tree's stone ring */ const ax=Math.abs(x);
+function walkable(x,z){ if(colBlocked(x,z)&&!(x>22.75&&typeof meAv!=="undefined"&&meAv&&(meAv.gy||0)>2.3)) return false; /* (solid things on the ground; upstairs in the 禪房 the ground grid does not apply) */ if(x<-22.6) return zenWalkable(x,z); if(x>22.75) return innWalkable(x,z); if(opInside(x,z)||ptInside(x,z)) return false; if(Math.hypot(x-WT.x,z-WT.z)<2.4) return false; /* the cherry tree's stone ring */ const ax=Math.abs(x);
   if(ax<=11&&z>=-9.5&&z<=HZ-.6) return true; if(Math.abs(ax-FD.x)<.8&&z>HZ-.7&&z<HZ+.8) return true; if(ax<=22&&z>=HZ+.7&&z<=HZ+YX+18) return true; if(ax>=4.5&&ax<=17&&z>HZ+YX+18&&z<=HZ+YX+20.6) return true;
   if(ax>10.9&&ax<13&&Math.abs(z-BGZ)<1.1) return true; if(ax>=12.9&&ax<=SHX1-3.2&&z>=SHZ0+.7&&z<=-2) return true;
   if(Math.abs(ax-SHXC)<=.9&&z>=-2.2&&z<=HZ+.8) return true;
@@ -3428,7 +3428,11 @@ function walkable(x,z){ if(x<-22.6) return zenWalkable(x,z); if(x>22.75) return 
   return false; }
 function clampSpot(x,z){ if(Math.abs(x)<4.5&&z>HZ+YX+17.8) z=HZ+YX+17.8; if(z<RY0&&z>RH.z0&&Math.abs(x)<2.65&&z>-18.1) z=-18.2; for(const [px,pz] of RPINE){ const d=Math.hypot(x-px,z-pz); if(z<RY0&&d<1.05){ x=px+(x-px)/(d||1)*1.1; z=pz+(z-pz)/(d||1)*1.1; } } // in front of the fountain, not into it
   if(opInside(x,z)){ const o=opRect(); z=z<OP.z?o.z0-.3:o.z1+.3; } if(ptInside(x,z)){ const o=ptRect(); z=z<PT.z?o.z0-.3:o.z1+.3; } const r=ZRECT[zoneOf(x,z)]; return [Math.max(r[0],Math.min(r[1],x)),Math.max(r[2],Math.min(r[3],z))]; }
-function planPath(fx,fz,tx,tz,fg,tg){ const a0=zoneOf(fx,fz), b0=zoneOf(tx,tz); fg=fg||0; tg=tg||0; const G=INN.G;
+/* the zone router plus collision: legs that cross a solid thing get a detour round it */
+function planPath(fx,fz,tx,tz,fg,tg){ const p=planPath0(fx,fz,tx,tz,fg,tg); if(!COL.g||(fg||0)>2.3||(tg||0)>2.3) return p; const out=[]; let ax=fx, az=fz;
+  for(const [bx,bz] of p){ if(!colClear(ax,az,bx,bz)){ const d=colDetour(ax,az,bx,bz); if(d&&d.length){ out.push(...d); const last=d[d.length-1]; if(colBlocked(bx,bz)){ ax=last[0]; az=last[1]; continue; } } } out.push([bx,bz]); ax=bx; az=bz; }
+  return out.length?out:p; }
+function planPath0(fx,fz,tx,tz,fg,tg){ const a0=zoneOf(fx,fz), b0=zoneOf(tx,tz); fg=fg||0; tg=tg||0; const G=INN.G;
   if(a0==="R"||b0==="R"){ /* the guest house: through the right gate, then along its own routes (both levels) */
     if(a0==="R"&&b0==="R") return innRoute(fx,fz,fg,tx,tz,tg);
     if(a0==="R") return innRoute(fx,fz,fg,24.3,G,0).concat([[23.6,G],[22.1,G]],planPath(22.1,G,tx,tz));
@@ -8118,6 +8122,40 @@ function applyQuality(mode,auto){ if(!auto){ Q.mode=mode; save("mz.q",mode); } Q
 meAv.setAmulet(!!bag.items.fu); meAv.setThread(threadOn()); syncLamps(); setInterval(syncLamps,300000); if(me.sp) meAv.setSp(true); if(Q.low) setTimeout(()=>applyQuality(Q.lite?"lite":"low",true),0); refreshLamps();
 /* ---- merge static scenery by material: hundreds of draw calls become a few dozen ---- */
 const MERGED=[];
+/* ================= 碰撞: every solid thing standing on the ground (statues, censers, lions, lamps, tables, stalls' models, furniture …)
+   is stamped into a 25 cm grid from its own outline, so players can't walk through it. Floors, things overhead, flat things and very
+   big pieces (whole buildings — their walls are in the walk map already) are left out; the spots where people sit, kneel or stand to
+   use something stay open. Built once the scenery exists and again as late models arrive. Tapped walks route round obstacles. ================= */
+const COL={cs:.25,x0:-90,z0:-100,nx:640,nz:800,g:null,n:0};
+function colBuild(){ const C=COL, g=new Uint8Array(C.nx*C.nz), bb=new T.Box3(), keep=[]; let n=0; scene.updateMatrixWorld(true);
+  const skip=o=>{ for(let p=o;p&&p!==scene;p=p.parent){ const u=p.userData||{}; if(u.isAvatar||u.noCol) return true; if(!p.visible&&!u.mergedOff) return true; } return false; };
+  scene.traverse(o=>{ if(!o.isMesh||o.isInstancedMesh||o.isSkinnedMesh||(o.userData&&(o.userData.floor||o.userData.innPick))||MERGED.includes(o)) return; if(skip(o)) return;
+    const m=o.material; if(m&&(Array.isArray(m)?false:(m.transparent&&m.opacity<.5))) return; bb.setFromObject(o); if(bb.isEmpty()) return;
+    const h=bb.max.y-bb.min.y, w=bb.max.x-bb.min.x, d=bb.max.z-bb.min.z; if(bb.min.y>1.0||bb.max.y<.3||h<.3) return; if(w>6||d>6||w*d>12) return;
+    let x0=bb.min.x, x1=bb.max.x, z0=bb.min.z, z1=bb.max.z; if(h>3&&w*d>5){ const cx=(x0+x1)/2, cz=(z0+z1)/2; x0=cx-w*.3; x1=cx+w*.3; z0=cz-d*.3; z1=cz+d*.3; } /* (a tree's canopy is not in the way: only its middle) */
+    const pad=.2; const i0=Math.max(0,Math.floor((x0-pad-C.x0)/C.cs)), i1=Math.min(C.nx-1,Math.floor((x1+pad-C.x0)/C.cs)), j0=Math.max(0,Math.floor((z0-pad-C.z0)/C.cs)), j1=Math.min(C.nz-1,Math.floor((z1+pad-C.z0)/C.cs));
+    for(let j=j0;j<=j1;j++) for(let i=i0;i<=i1;i++){ if(!g[j*C.nx+i]) n++; g[j*C.nx+i]=1; } });
+  /* keep open: every seat / kneeling mat / bed, every spot people stand to use something, the hot spring */
+  const open=(x,z,r)=>{ const i0=Math.floor((x-r-C.x0)/C.cs), i1=Math.floor((x+r-C.x0)/C.cs), j0=Math.floor((z-r-C.z0)/C.cs), j1=Math.floor((z+r-C.z0)/C.cs); for(let j=Math.max(0,j0);j<=Math.min(C.nz-1,j1);j++) for(let i=Math.max(0,i0);i<=Math.min(C.nx-1,i1);i++){ const cx=C.x0+(i+.5)*C.cs, cz=C.z0+(j+.5)*C.cs; if(Math.hypot(cx-x,cz-z)<=r&&g[j*C.nx+i]){ g[j*C.nx+i]=0; n--; } } };
+  SEATS.forEach(s=>{ if(!(s.gy>2)) open(s.x,s.y,.6); }); for(const k in stations){ const a=stations[k].approach; open(a.x,a.y,.6); }
+  if(typeof SJ!=="undefined") SJ.g.forEach(gr=>{ for(let q=0;q<8;q++){ try{ const [x,z]=sjSlot(gr,q); open(x,z,.45); }catch(e){} } });
+  if(typeof INN!=="undefined"&&INN.g){ for(let a=0;a<6.3;a+=.3) open(INN.DX+48.5+Math.cos(a)*3.2,-34.25+Math.sin(a)*2.6,1.4); }
+  C.g=g; C.n=n; }
+[8000,20000,45000].forEach(t=>setTimeout(()=>{ try{ colBuild(); }catch(e){} },t)); /* again as late models arrive */
+function colBlocked(x,z){ const C=COL; if(!C.g) return false; const i=Math.floor((x-C.x0)/C.cs), j=Math.floor((z-C.z0)/C.cs); if(i<0||j<0||i>=C.nx||j>=C.nz) return false; return C.g[j*C.nx+i]===1; }
+/* a tapped walk: where a straight leg would pass through something, find a way round it on the grid (A*, a few thousand cells at most) */
+function colDetour(ax,az,bx,bz){ const C=COL, cs=C.cs, ci=x=>Math.floor((x-C.x0)/cs), cj=z=>Math.floor((z-C.z0)/cs), cx=i=>C.x0+(i+.5)*cs, cz=j=>C.z0+(j+.5)*cs;
+  const si=ci(ax), sj=cj(az); let ti=ci(bx), tj=cj(bz); const free=(i,j)=>i>=0&&j>=0&&i<C.nx&&j<C.nz&&!C.g[j*C.nx+i]&&walkable(cx(i),cz(j));
+  if(!free(ti,tj)){ let best=null, bd=1e9; for(let r=1;r<8&&!best;r++) for(let dj=-r;dj<=r;dj++) for(let di=-r;di<=r;di++){ if(free(ti+di,tj+dj)){ const dd=di*di+dj*dj; if(dd<bd){ bd=dd; best=[ti+di,tj+dj]; } } } if(!best) return null; ti=best[0]; tj=best[1]; }
+  const key=(i,j)=>j*C.nx+i, open=[[si,sj,0,Math.hypot(ti-si,tj-sj)]], gs=new Map([[key(si,sj),0]]), from=new Map(); let it=0;
+  while(open.length&&it++<5000){ let bi=0; for(let k=1;k<open.length;k++) if(open[k][3]<open[bi][3]) bi=k; const [i,j,gc]=open.splice(bi,1)[0];
+    if(i===ti&&j===tj){ const pts=[]; let k=key(i,j); while(from.has(k)){ pts.unshift([cx(k%C.nx),cz(Math.floor(k/C.nx))]); k=from.get(k); }
+      const out=[]; let px=ax, pz=az; for(let q=0;q<pts.length;q++){ const nxt=pts[q+1]; if(!nxt||!colClear(px,pz,nxt[0],nxt[1])){ out.push(pts[q]); px=pts[q][0]; pz=pts[q][1]; } } return out; }
+    for(let dj=-1;dj<=1;dj++) for(let di=-1;di<=1;di++){ if(!di&&!dj) continue; const ni=i+di, nj=j+dj; if(!free(ni,nj)) continue; if(di&&dj&&(!free(i+di,j)||!free(i,j+dj))) continue;
+      const ng=gc+(di&&dj?1.414:1), k=key(ni,nj); if(ng<(gs.get(k)??1e9)){ gs.set(k,ng); from.set(k,key(i,j)); open.push([ni,nj,ng,ng+Math.hypot(ti-ni,tj-nj)]); } } }
+  return null; }
+function colClear(ax,az,bx,bz){ const L=Math.hypot(bx-ax,bz-az), n=Math.ceil(L/.15); for(let k=1;k<=n;k++){ const t=k/n; if(colBlocked(ax+(bx-ax)*t,az+(bz-az)*t)) return false; } return true; }
+
 function unmergeAll(){ MERGED.splice(0).forEach(M=>{ if(M.parent) M.parent.remove(M); M.geometry.dispose(); }); scene.traverse(o=>{ if(o.userData&&o.userData.mergedOff){ o.visible=true; delete o.userData.mergedOff; } }); }
 function remerge(){ try{ unmergeAll(); mergeStatic(); }catch(e){} holeKey=""; try{ holesRefresh(); }catch(e){} }
 function floorLayers(){ const L=[outsideGround]; scene.traverse(o=>{ if(o.isMesh&&o.userData.floor) L.push(o); });
@@ -8168,7 +8206,7 @@ function unifyBricks(){ const S=2.0, seen=new Set(), p=new T.Vector3(), n=new T.
     for(let i=0;i<P.count;i++){ p.fromBufferAttribute(P,i).applyMatrix4(o.matrixWorld); n.fromBufferAttribute(N,i).applyMatrix3(nm).normalize(); const ax=Math.abs(n.x), ay=Math.abs(n.y), az=Math.abs(n.z);
       let u,v; if(ay>ax&&ay>az){ u=p.x; v=p.z; } else if(ax>=az){ u=n.x>0?-p.z:p.z; v=p.y; } else { u=n.z>0?p.x:-p.x; v=p.y; } U.setXY(i,u/S,v/S); }
     U.needsUpdate=true; m.map.repeat.set(1,1); m.map.offset.set(0,0); }); }
-function mergeStatic(){ const buckets=new Map(); scene.updateMatrixWorld(true); try{ zenHideTrees(); }catch(e){} try{ shdCollect(); }catch(e){ console.warn(e); }
+function mergeStatic(){ const buckets=new Map(); scene.updateMatrixWorld(true); try{ zenHideTrees(); }catch(e){} try{ shdCollect(); }catch(e){ console.warn(e); } try{ colBuild(); }catch(e){ console.warn(e); }
   const skip=o=>{ for(let p=o;p;p=p.parent){ if(p.userData&&p.userData.noMerge) return true; if(!p.visible) return true; if(p===scene) return false; } return false; };
   const region=o=>{ for(let p=o.parent;p&&p!==scene;p=p.parent) if(p.userData&&p.userData.region) return p; return scene; }; // merged per region, so a region can be hidden as a whole
   scene.traverse(o=>{ if(!o.isMesh||o.isInstancedMesh||o.isSkinnedMesh||!o.visible||Array.isArray(o.material)) return; if(o===sky||o===floor||o===outsideGround) return;
