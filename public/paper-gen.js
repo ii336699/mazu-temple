@@ -7,6 +7,8 @@
 export const wxHash = n => { let t = (n * 2654435761 + 0x6D2B79F5) >>> 0; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 export const wxDay = d => { const u = wxHash(d * 7 + 3); return u < .4 ? "clear" : u < .6 ? "cloudy" : u < .75 ? "windy" : u < .9 ? "rain" : "storm"; };
 export const evHeat = d => wxDay(d) === "clear" && wxHash(d * 31 + 5) < .45;
+/* rain or storm: 玖玖 usually packs up; about one rainy day in four he stays and sings in the rain (keep in sync with index.html) */
+export const evBuskRain = d => (wxDay(d) === "rain" || wxDay(d) === "storm") && wxHash(d * 41 + 7) < .28;
 export const evStall = d => wxDay(d) === "windy" && wxHash(d * 37 + 9) < .6;
 export const stallHour = d => 12 + wxHash(d * 41 + 2) * 6;
 export const dayNum = dateStr => Math.floor(Date.parse(dateStr + "T00:00:00Z") / 864e5);
@@ -45,6 +47,23 @@ const T = {
   pkBroke: [
     { id: "p1", t: "彈珠台老闆差點破產！", b: "昨天香客們在彈珠台一共換走 {v} 平安幣，老闆一邊數錢一邊擦汗：「再這樣下去我要去跟財神爺借錢了。」{x}" },
     { id: "p2", t: "彈珠台大失血 老闆：今天先休息", b: "彈珠台昨天被香客打到吐出 {v} 平安幣，老闆表示珠子太會跑、倍率太好心，「明天要把釘子調一調」。{x}" },
+  ],
+  buskRain: [
+    { id: "r1", t: "街頭藝人雨中深情開唱", b: "昨天大雨，廟口攤販早早收攤，只有玖玖沒走。他站在雨裡一首接一首地唱，墨鏡上全是水。知情人士透露：玖玖最近失戀了，「有些歌，只能在下雨天唱。」唱到〈{x}〉時，好幾位香客偷偷擦眼睛。" },
+    { id: "r2", t: "雨再大也不收攤 玖玖淋雨唱到最後一首", b: "雨下了一整天，玖玖的吉他卻沒停過。他說：「她說過最喜歡雨天的我。」據說那是一段剛結束的感情。撐傘停下來聽的香客，最後都陪他唱完〈{x}〉。" },
+    { id: "r3", t: "失戀的人不怕雨？玖玖雨中獨唱", b: "昨天廟口一片雨聲，玖玖沒穿雨衣、沒撐傘，對著空蕩蕩的廣場唱情歌。路過的阿嬤搖頭說：「少年仔一定是被甩了。」玖玖唱完〈{x}〉，只回了一句：「雨停就好了。」" },
+  ],
+  buskTop: [
+    { id: "k1", t: "玖玖點播榜出爐 〈{x}〉奪冠！", b: "街頭藝人玖玖昨天的歌，以〈{x}〉最受歡迎，香客們一共聽了 {v} 次。{y}玖玖戴著墨鏡淡淡地說：「謝謝大家，今天也會繼續唱。」" },
+    { id: "k2", t: "廣場最紅的歌 〈{x}〉聽了 {v} 次", b: "廟口的吉他聲又圈粉了！昨天被聽最多次的是〈{x}〉，共 {v} 次。{y}有香客說聽完就忘不了，一路哼回家。" },
+    { id: "k3", t: "玖玖本日冠軍曲：〈{x}〉", b: "根據本報統計，〈{x}〉昨天被聽了 {v} 次，穩坐第一。{y}玖玖表示：「下一首，獻給還在排隊收驚的朋友。」" },
+  ],
+  buskTip: [
+    { id: "m1", t: "玖玖昨天收到 {v} 平安幣打賞", b: "街頭藝人玖玖的吉他盒昨天進帳 {v} 平安幣。{x}玖玖一一喊名字道謝：「謝謝你！愛你！」" },
+    { id: "m2", t: "打賞不手軟 玖玖笑到墨鏡都歪了", b: "昨天香客們一共打賞玖玖 {v} 平安幣。{x}據說玖玖收攤時多唱了一首當作回禮。" },
+  ],
+  buskCheer: [
+    { id: "n1", t: "玖玖應援團成軍！{v} 人次到場跳舞", b: "昨天有 {v} 人次跑到玖玖身邊跳舞應援，{n} 最熱情。跳完的人都說：幸福感 UP！" },
   ],
   pkWin: [
     { id: "q1", t: "彈珠台老闆笑呵呵", b: "昨天香客們買了 {v} 顆彈珠，換回的平安幣不到一半，老闆心情大好，還請隔壁攤吃地瓜球。" },
@@ -123,6 +142,13 @@ export function buildPaper(data) {
   const pkCash = c.pkCash || 0, pkBuy = c.pkBuy || 0;
   if (pkCash >= 300 && pkCash > pkBuy * .85) { const w = top("pkCash"); add("pkBroke", 82, { v: pkCash, x: w ? `其中 ${w.n} 一個人就換走 ${w.v} 幣。` : "" }, "夜市", "⚪"); }
   else if (pkBuy >= 300 && pkCash < pkBuy * .5) add("pkWin", 40, { v: pkBuy }, "夜市", "⚪");
+  if (evBuskRain(dn) || F.has("buskrain")) { const BN0 = ["記得我忘記", "慢慢欣賞", "妳沒有說", "撲火", "晚安以前", "那個我", "城市停電了"]; add("buskRain", 88, { x: BN0[Math.floor(R() * BN0.length)] }, "娛樂", "🎸"); }
+  /* 玖玖: the most-heard song, tips, the cheering crowd */
+  { const BN = ["記得我忘記", "慢慢欣賞", "可鹽可甜", "妳沒有說", "龜毛先生", "詩情難忘", "一個人的旅程", "禁止正常", "撲火", "晚安以前", "那個我", "城市停電了"];
+    const L = BN.map((n, i) => [n, c["bk" + String(i + 1).padStart(2, "0")] || 0]).filter(e => e[1] > 0).sort((a, b) => b[1] - a[1]);
+    if (L.length && L[0][1] >= 3) add("buskTop", 58, { x: L[0][0], v: L[0][1], y: L[1] ? `第二名是〈${L[1][0]}〉（${L[1][1]} 次）${L[2] ? `，第三名〈${L[2][0]}〉` : ""}。` : "" }, "娛樂", "🎸");
+    const tc = c.buskTipC || 0; if (tc >= 100) { const w = top("buskTipC"); add("buskTip", 50, { v: tc, x: w ? `最大方的是 ${w.n}，一個人就打賞了 ${w.v} 幣。` : "" }, "娛樂", "🎸"); }
+    const ch = c.buskCheer || 0; if (ch >= 3) { const w = top("buskCheer"); add("buskCheer", 40, { v: ch, n: w ? w.n : "神秘香客" }, "娛樂", "💗"); } }
   /* lucky diggers */
   const big = ev.filter(e => e.k === "tudi500"); if (big.length) add("tudi", 70, { n: big[big.length - 1].n }, "福氣", "💰");
   /* people */

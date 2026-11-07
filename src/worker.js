@@ -247,14 +247,14 @@ export class Lobby extends DurableObject {
   async stAdd(map, max) {
     const st = await this.stGet(); let n = Object.keys(st.c).length;
     for (const [k, v] of Object.entries(map || {})) { if (!/^[a-z][a-zA-Z0-9_]{0,23}$/.test(k)) continue; const x = Math.floor(Number(v)); if (!(x > 0)) continue;
-      if (st.c[k] == null) { if (n >= 300) continue; n++; } st.c[k] = (st.c[k] || 0) + Math.min(x, /^pk/.test(k) ? 1000 : max || 200); }
+      if (st.c[k] == null) { if (n >= 300) continue; n++; } st.c[k] = (st.c[k] || 0) + Math.min(x, /^pk|^buskTipC/.test(k) ? 1000 : max || 200); }
     this.stDirty = true; await this.stSave();
   }
   // per player (by id, with the name they go by) — only the counters the newspaper writes about; at most 400 players a day
   async stPlayer(id, name, map) {
-    const KEEP = ["b_bowBtn", "b_jiaoBtn", "b_lotBtn", "minOnline", "minZen", "minInn", "sit_futon", "sit_bed", "sit_tub", "sit_zen", "pkCash", "pkBuy", "minInRain", "sjDone", "ftDone", "paperOpen"];
+    const KEEP = ["b_bowBtn", "b_jiaoBtn", "b_lotBtn", "minOnline", "minZen", "minInn", "sit_futon", "sit_bed", "sit_tub", "sit_zen", "pkCash", "pkBuy", "minInRain", "sjDone", "ftDone", "paperOpen", "buskTipC", "buskCheer"];
     const st = await this.stGet(); st.p = st.p || {}; let e = st.p[id]; if (!e) { if (Object.keys(st.p).length >= 400) return; e = st.p[id] = { n: name, c: {} }; } if (name) e.n = name;
-    for (const k of KEEP) { const x = Math.floor(Number(map && map[k])); if (x > 0) e.c[k] = (e.c[k] || 0) + Math.min(x, /^pk/.test(k) ? 1000 : 200); }
+    for (const k of KEEP) { const x = Math.floor(Number(map && map[k])); if (x > 0) e.c[k] = (e.c[k] || 0) + Math.min(x, /^pk|^buskTipC/.test(k) ? 1000 : 200); }
     this.stDirty = true;
   }
   // 新聞事件: named happenings for the newspaper ("nw:YYYY-MM-DD", at most 300 a day)

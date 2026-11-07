@@ -2533,11 +2533,12 @@ function zenWalkable(x,z){ const G=ZEN.GZ;
     if(!west){ const x=hl.x0+1.5+(hl.x1-hl.x0-3)*(i+rr(.2,.8))/4; E.set(x,FY+2.5,hl.z1+.8); F.set(x+rr(-.4,.4),FY,hl.z1-rr(3,4.6)); }
     else { const z=hl.z0+2+(hl.z1-hl.z0-4)*(i-4+rr(.2,.8))/3; E.set(hl.x0-.8,FY+2.5,z); F.set(hl.x0+rr(3,4.6),FY,z+rr(-.4,.4)); }
     const d=E.clone().sub(F), L=d.length(); d.normalize(); const geo=new T.PlaneGeometry(wv,L); if(west) geo.rotateY(Math.PI/2);
-    const s=new T.Mesh(geo,shM); s.position.copy(E).add(F).multiplyScalar(.5); s.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),d); g.add(s); s.userData.noMerge=1; ZEN.shafts.push(s); }
+    (ZEN.shIn=ZEN.shIn||[]).push({E:E.clone(),F:F.clone(),w:wv,west}); const s=new T.Mesh(geo,shM); s.position.copy(E).add(F).multiplyScalar(.5); s.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),d); g.add(s); s.userData.noMerge=1; ZEN.shafts.push(s); }
   for(let i=0;i<8;i++){ const x=rr(ZEN.X0+4,ZEN.X1-6), z=rr(ZEN.Z0+4,ZEN.Z1-4); if(x>hl.x0-3&&x<hl.x1+3&&z>hl.z0-3&&z<hl.z1+3) continue; const L=rr(10,14); /* out in the garden: down through the trees */
     const s=mesh(new T.PlaneGeometry(rr(1.2,2.4),L),shM,x,L*.42,z,g); s.rotation.set(0,rr(-.4,.4)+Math.PI/2,.5); s.userData.noMerge=1; ZEN.shafts.push(s); }
-  { const n=160, pos=new Float32Array(n*3); for(let i=0;i<n;i++){ pos[i*3]=rr(hl.x0,hl.x1+3); pos[i*3+1]=FY+rr(.3,3.2); pos[i*3+2]=rr(hl.z0,hl.z1); } const pg=new T.BufferGeometry(); pg.setAttribute("position",new T.BufferAttribute(pos,3));
-    ZEN.dust=new T.Points(pg,new T.PointsMaterial({color:ZL("#fff0c8"),size:.035,transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false})); g.add(ZEN.dust); }
+  /* dust motes only where the sun comes in: inside the slanting beams, faint */
+  { const n=84, pos=new Float32Array(n*3), SH=ZEN.shIn||[]; for(let i=0;i<n;i++){ const b=SH[i%SH.length], t=rr(.15,.95), o=rr(-.4,.4)*b.w; pos[i*3]=b.E.x+(b.F.x-b.E.x)*t+(b.west?0:o); pos[i*3+1]=b.E.y+(b.F.y-b.E.y)*t+rr(-.1,.1); pos[i*3+2]=b.E.z+(b.F.z-b.E.z)*t+(b.west?o:0); } ZEN.dust0=pos.slice(); const pg=new T.BufferGeometry(); pg.setAttribute("position",new T.BufferAttribute(pos,3));
+    ZEN.dust=new T.Points(pg,new T.PointsMaterial({color:ZL("#fff0c8"),size:.022,transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false})); g.add(ZEN.dust); }
 }
 /* ================= outside the balustrade: lawn, and cherry trees all round the grounds. Two kinds of tree: near the balustrade a full
    canopy of many small blossom cards (like the zen garden), further out a few big cards per tree — still 3D, so from the air it is a
@@ -2767,7 +2768,7 @@ function zenTick(dt){ { const b=$("#zenMusicBtn"), want=!!(meAv&&meAv.pos.x<-23.
   if(!ZEN.cube&&!Q.lite&&ZEN.water&&camera.position.x<-24){ try{ const rt=new T.WebGLCubeRenderTarget(128,{generateMipmaps:true,minFilter:T.LinearMipmapLinearFilter}); const cc=new T.CubeCamera(.2,160,rt); cc.position.set(-31.2,.5,ZEN.GZ); scene.add(cc); ZEN.water.visible=false; cc.update(renderer,scene); ZEN.water.visible=true; scene.remove(cc);
       const m=ZEN.water.material; m.envMap=rt.texture; m.envMapIntensity=1.5; m.metalness=.85; m.roughness=.04; m.color.set(ZL("#5f8e90")); m.needsUpdate=true; ZEN.cube=rt; }catch(e){ ZEN.cube=1; } } /* the stream mirrors the bridge, the trees and the sky */
   const day=_dn.day, night=_dn.night; for(const s of ZEN.shafts) s.material.opacity=.16*day+.05*(1-day)*(1-night);
-  ZEN.dust.material.opacity=.55*day; { const a=ZEN.dust.geometry.attributes.position; for(let i=0;i<a.count;i++){ let y=a.getY(i)+dt*.04*Math.sin(i+ZEN.t*.3); if(y>ZEN.FY+3.3) y=ZEN.FY+.3; a.setY(i,y); } a.needsUpdate=true; }
+  ZEN.dust.material.opacity=.3*day; { const a=ZEN.dust.geometry.attributes.position, b=ZEN.dust0; for(let i=0;i<a.count;i++){ const t=ZEN.t*.25+i*1.7; a.setXYZ(i,b[i*3]+Math.sin(t)*.06,b[i*3+1]+Math.sin(t*.7+i)*.08,b[i*3+2]+Math.cos(t*.8)*.06); } a.needsUpdate=true; } /* drifting gently in place */
   for(const gl of ZEN.glows) gl.material.opacity=.15+.75*night;
   if(ZEN.glowU) ZEN.glowU.value=.14+.75*night; /* after dark the trees glow as if floodlit */
   /* the colours outside wash over everything here: a warm red-orange cast on the fill light, and darker indoors */
@@ -3562,7 +3563,7 @@ function planGuide(from=0){ const gods=CENSER_ORDER.filter(k=>k!=="tiangong"&&k!
   const r=Math.random(); if(r<.3) out.push({sj:Math.random()<.5?0:1}); else if(r<.55&&stations.fortune) out.push(...planOne("fortune",[{look:rand(25,55)}]));
   return out; }
 /* dancing at 玖玖's pitch: two or three visitors at a time, each on a free spot in front of him, facing him */
-function planBusk(n){ if(typeof BUSK==="undefined") return null; for(let t=0;t<20;t++){ const a=rand(-1.25,1.25), r=rand(1.8,3.3), x=BUSK.x+Math.cos(a)*r, z=BUSK.z+Math.sin(a)*r; if(!walkable(x,z)) continue;
+function planBusk(n){ if(typeof BUSK==="undefined"||BUSK.away) return null; for(let t=0;t<20;t++){ const a=rand(-1.25,1.25), r=rand(1.8,3.3), x=BUSK.x+Math.cos(a)*r, z=BUSK.z+Math.sin(a)*r; if(!walkable(x,z)) continue;
     if(npcs.some(o=>o!==n&&o.buskSpot&&Math.hypot(o.buskSpot[0]-x,o.buskSpot[1]-z)<1)) continue; n.buskD=1; n.buskSpot=[x,z]; return [{go:[x,z]},{face:Math.atan2(BUSK.x-x,BUSK.z-z)},{dance:rand(25,55),busk:1}]; } return null; }
 function planFun(n){ if(n){ const k=npcs.filter(o=>o.buskD).length, p=k<2?.85:k<3?.5:0; if(Math.random()<p){ const b=planBusk(n); if(b) return [...b,{look:rand(2,4)}]; } }
   const [x,z]=Math.random()<.4?hallSpot():botSpot(), out=[{go:[x,z]}];
@@ -5820,7 +5821,7 @@ HANDLERS.wxOpen=()=>{ const cur=wxNow(), manual=WX.set&&Date.now()<WX.setUntil; 
   openSheet("contact","天氣",`${backBtn}<p class="lead">現在：${WX_KINDS[cur].n}${manual?`（主委指定，還有 ${left} 分鐘）`:"（自動：每天上午隨機一個時間換一次，一整天同一種天氣）"}。選一種天氣，全伺服器會一起換，維持 20 分鐘後回到自動。</p>
     <div class="goods">${Object.entries(WX_KINDS).map(([k,o])=>`<button class="good${cur===k?" on":""}" data-act="wxSet" data-v="${k}"><span class="name">${{clear:"☀️",cloudy:"☁️",windy:"🍃",rain:"🌧️",storm:"⛈️"}[k]} ${o.n}</span></button>`).join("")}<button class="good" data-act="wxSet" data-v=""><span class="name">🔄 回到自動</span></button></div>`); };
 /* 主委工具 → 每日統計: today's counters, the last 14 days of the main ones, busiest hours, and today's wishes */
-const STAT_NAME={buskTip:"打賞玖玖",buskCheer:"幫玖玖應援",visitors:"今日訪客",sessions:"進場次數",peak:"最高同時在線",minOnline:"在線總分鐘",minFront:"前殿・廟埕分鐘",minRear:"後殿分鐘",minZen:"靜思禪院分鐘",minInn:"禪房分鐘",minSitting:"坐著的分鐘",minInRain:"淋雨中的分鐘",
+const STAT_NAME={buskTip:"打賞玖玖（次）",buskTipC:"打賞玖玖（幣）",buskCheer:"幫玖玖應援",...Object.fromEntries(["記得我忘記","慢慢欣賞","可鹽可甜","妳沒有說","龜毛先生","詩情難忘","一個人的旅程","禁止正常","撲火","晚安以前","那個我","城市停電了"].map((n,i)=>["bk"+String(i+1).padStart(2,"0"),"玖玖〈"+n+"〉收聽"])),visitors:"今日訪客",sessions:"進場次數",peak:"最高同時在線",minOnline:"在線總分鐘",minFront:"前殿・廟埕分鐘",minRear:"後殿分鐘",minZen:"靜思禪院分鐘",minInn:"禪房分鐘",minSitting:"坐著的分鐘",minInRain:"淋雨中的分鐘",
   wish:"許願卡",lamp:"點燈",msg:"給主委留言",zhan:"沾喜氣",lanterns:"放天燈",reply:"回覆",letter:"寫信",hongbao:"發紅包",hbclaim:"搶紅包",nightMarket:"夜市紀錄",b_bowBtn:"拜拜",b_jiaoBtn:"擲筊",b_lotBtn:"求籤",b_holdBtn:"持香",b_bagBtn:"打開背包",b_hallBtn:"換殿",
   sit_mat:"跪拜墊",sit_zen:"禪坐",sit_futon:"通鋪睡覺",sit_bed:"套房躺床",sit_tub:"泡澡",sit_toilet:"上廁所",st_innDesk:"找櫃台阿姨",st_fortune:"走到鐵口直斷攤",st_cats:"找貓咪",st_lot:"求籤處",sjDone:"完成收驚",ftDone:"鐵口直斷算命",paperOpen:"看報紙",innBedding:"買通鋪床具",innRoom:"買套房房卡",pkCash:"彈珠台換出的平安幣",pkBuy:"買彈珠花的平安幣",sit_sofa:"坐禪房沙發",st_treasure:"土地公挖寶",b_zenMusicBtn:"換禪堂音樂",b_innLockBtn:"鎖房門",b_innSleepBtn:"通鋪睡覺",b_camReset:"鏡頭回正",b_foldBtn:"收起按鈕",b_chairBtn:"打開主委工具"};
 const statName=k=>{ if(STAT_NAME[k]) return STAT_NAME[k]; if(k.startsWith("b_")){ const el=document.getElementById(k.slice(2)); const t=el&&((el.getAttribute("aria-label")||"")||(el.querySelector(".cap")||{}).textContent||el.textContent||"").trim(); if(t&&/[\u4e00-\u9fff]/.test(t)) return "按「"+t.replace(/\s+/g," ").slice(0,12)+"」"; }
@@ -8107,13 +8108,13 @@ function tick(){ if(gameAsleep) return; const _ft0=performance.now(); { const no
     camera.clearViewOffset();
     { /* during a show the normal view goes wide-angle, so even the biggest shells fit on a phone screen */ const zx=meAv.pos.x<-23.5?(ZEN.fovX||0):0; camWideX+=((zx+camTight)-camWideX)*Math.min(1,dt*2); const want=(FW.on||FW.pendingAt)?Math.max(30,Math.min(96,fwFov())/FW_ZOOM):55+camWideX; if(Math.abs(camera.fov-want)>.3){ camera.fov+=(want-camera.fov)*Math.min(1,dt*2.5); camera.updateProjectionMatrix(); } }
     { /* seated or lying: aim at the body (not 1 m above the seat), and once settled swing round behind the character */ const ST=meAv.seat>=0?SEATS[meAv.seat]:null, lie=ST&&(ST.kind==="bed"||ST.kind==="futon");
-      if(ST&&!customizing){ fy=lie?.35:.75; if(meAv.kneel>.9&&CAMSEAT.done!==meAv.seat){ CAMSEAT.done=meAv.seat; rotAnim={to:camYaw+wrapA(meAv.rotY+Math.PI-camYaw)}; if(lie&&camPitch<.75) camPitch=.75; } } else CAMSEAT.done=-1; }
+      if(ST&&!customizing){ fy=lie?.35:.75; if(meAv.kneel>.9&&CAMSEAT.done!==meAv.seat){ CAMSEAT.done=meAv.seat; CAMSEAT.pitch0=camPitch; rotAnim={to:camYaw+wrapA(meAv.rotY+Math.PI-camYaw)}; if(lie&&camPitch<.75) camPitch=.75; if(ST.win) camPitch=.18; } } else { if(CAMSEAT.done>=0){ CAMSEAT.upT=1.6; if(CAMSEAT.pitch0!=null){ camPitch=CAMSEAT.pitch0; CAMSEAT.pitch0=null; } } CAMSEAT.done=-1; } CAMSEAT.upT=Math.max(0,(CAMSEAT.upT||0)-dt); } /* (standing up: the old view comes back, and for a moment the camera does not climb) */
     tmpV.set(meAv.pos.x,fy+((meAv.flyCur||0)>.02?meAv.flyCur:meAv.root.position.y),meAv.pos.y);
-    { const sat=meAv.seat>=0&&!customizing&&meAv.kneel>.5; camSeatK+=((sat?1:0)-camSeatK)*Math.min(1,dt*3); if(sat&&meAv.torso){ meAv.torso.getWorldPosition(_v1); tmpV.set(_v1.x,_v1.y,_v1.z); } } /* sitting or lying: aim at the body itself (lying, it is not over the seat point) */
+    { const sat=meAv.seat>=0&&!customizing&&meAv.kneel>.5; camSeatK+=((sat?1:0)-camSeatK)*Math.min(1,dt*3); if(sat&&meAv.torso){ meAv.torso.getWorldPosition(_v1); tmpV.set(_v1.x,_v1.y,_v1.z); const S=SEATS[meAv.seat]; if(S&&S.win){ tmpV.x+=Math.sin(meAv.rotY)*1.1; tmpV.z+=Math.cos(meAv.rotY)*1.1; tmpV.y+=.35; } } } /* by the window: look past you, out at the view */ /* sitting or lying: aim at the body itself (lying, it is not over the seat point) */
     camFocus.lerp(tmpV,Math.min(1,dt*6));
     // indoors a wall often stops the camera right behind your head: then try it higher up, looking down, and keep the one that stays farthest back
     let want=0, gotD=0; for(const dp of [0,.3,.6,.9]){ const pp=Math.min(1.2,pitch+dp), cx=camFocus.x+Math.sin(yaw)*Math.cos(pp)*dist, cz=camFocus.z+Math.cos(yaw)*Math.cos(pp)*dist, cy=camFocus.y+Math.sin(pp)*dist;
-      camLimit(camFocus,_v2.set(cx,cy,cz),_camTry); const d=_camTry.distanceTo(camFocus); if(d>gotD+.25){ gotD=d; want=dp; } if(d>dist*.8) break; }
+      camLimit(camFocus,_v2.set(cx,cy,cz),_camTry); const d=_camTry.distanceTo(camFocus); if(d>gotD+.25){ gotD=d; want=dp; } if(d>dist*.8) break; } if(camSeatK>.05||CAMSEAT.upT>0) want=0;
     camLift+=(want-camLift)*Math.min(1,dt*(want>camLift?2.2:1.2)); // eases up and down instead of snapping
     { const pp=Math.min(1.2,pitch+camLift), cx=camFocus.x+Math.sin(yaw)*Math.cos(pp)*dist, cz=camFocus.z+Math.cos(yaw)*Math.cos(pp)*dist, cy=camFocus.y+Math.sin(pp)*dist; camLimit(camFocus,_v2.set(cx,cy,cz),_camBest); gotD=_camBest.distanceTo(camFocus); camTight=Math.max(0,Math.min(24,(1-gotD/dist)*36)); }
     tmpV.copy(_camBest); camera.position.lerp(tmpV,Math.min(1,dt*6)); camNear+=(Math.max(0,Math.min(1,(gotD-1.3)/2.4))-camNear)*Math.min(1,dt*3);
@@ -8350,7 +8351,8 @@ function innWalkableL(x,z,gy){ const G=INN.G; gy=gy==null?(meAv.gy||0):gy;
     if(x>41&&z>-27.7&&z<-27.3) return false;
     return true; }
   if(innOnRampStrip(x,z)&&innRampH(z)<1.9) return false;                                                               /* too low to walk under */
-  if(x>INN.X1+3||z<INN.Z0-8||z>INN.Z1+8) return false; return true; }
+  /* outside: only the stone path from the gate to the door, and the foot of the stairs — no wandering round the back of the house */
+  return (x>17.5&&x<INN.X0+.1&&Math.abs(z-G)<1.35)||(x>INN.RX0-.25&&x<INN.RX1+.25&&z>INN.RZB-.7&&z<G); }
 /* routes inside the grounds of the guest house (both levels): area → area through doors and up the ramp */
 function innArea(x,z,gy){ if(gy>2.3||innUp(x,z)&&gy>2.3){ const i=innSuiteAtL(x,z); if(i>=0&&x>INN.suites[i].xa+.1) return "s"+i; if(innCorr(x,z)&&z>INN.Z0-.1) return "k"; if(x>INN.CX1&&z<INN.Z0) return "b"; return "c"; } if(innInL(x,z)){ if(x<41) return "l"; return z>-27.5?"d":"o"; } return "out"; }
 function innRouteL(fx,fz,fg,tx,tz,tg){ const G=INN.G, a=innArea(fx,fz,fg), b=innArea(tx,tz,tg); if(a===b) return [[tx,tz]];
@@ -8500,7 +8502,9 @@ const INN_SEAT0=SEATS.length;
     const tvc=document.createElement("canvas"); tvc.width=256; tvc.height=144; { const x=tvc.getContext("2d"); x.fillStyle="#000"; x.fillRect(0,0,256,144); } const tvt=new T.CanvasTexture(tvc); tvt.encoding=T.sRGBEncoding; const scr=mesh(new T.PlaneGeometry(1.76,.99),new T.MeshBasicMaterial({map:tvt,color:"#222222"}),(37.5+o),y+1.6,S.s1-.17,root); scr.rotation.y=Math.PI;
     INN.tv.push({c:tvc,t:tvt,m:scr,on:false,k:0,at:0,i:S.i});
     { const tb=mat(L("#5a3e28"),{roughness:.5}), ch=mat(L("#a8b4a0"),{roughness:.9}); cyl(.42,.42,.05,tb,(40.7+o),y+.72,S.s0+3.6,root,20); cyl(.05,.05,.7,tb,(40.7+o),y+.36,S.s0+3.6,root,8); /* table by the window */
-      for(const [dz,f] of [[-.95,0],[.95,Math.PI]]){ B(.6,.42,.55,ch,(40.7+o),y+.21,S.s0+3.6+dz); B(.6,.6,.1,ch,(40.7+o),y+.62,S.s0+3.6+dz+(dz<0?-.25:.25)); const v=new T.Vector2((40.7+o),S.s0+3.6+dz); v.inn=1; v.kind="sofa"; v.lift=.14; v.face=f; v.gy=F2; v.suite=S.i; SEATS.push(v); INN.seats[S.i+"chair"+dz]=SEATS.length-1; } }
+      for(const [dz,f0] of [[-.95,0],[.95,Math.PI]]){ const win=S.e, f=win?Math.PI/2:f0; /* east suites: both chairs turned to the big window, to sit and look out */
+        if(win){ B(.55,.42,.6,ch,(40.7+o),y+.21,S.s0+3.6+dz); B(.1,.6,.6,ch,(40.7+o)-.25,y+.62,S.s0+3.6+dz); } else { B(.6,.42,.55,ch,(40.7+o),y+.21,S.s0+3.6+dz); B(.6,.6,.1,ch,(40.7+o),y+.62,S.s0+3.6+dz+(dz<0?-.25:.25)); }
+        const v=new T.Vector2((40.7+o),S.s0+3.6+dz); v.inn=1; v.kind="sofa"; v.lift=.14; v.face=f; v.gy=F2; v.suite=S.i; if(win) v.win=1; SEATS.push(v); INN.seats[S.i+"chair"+dz]=SEATS.length-1; } }
     /* door (shown shut when someone has locked it) */ const dr=B(.08,2.5,1.15,mat(L("#6a4a30"),{roughness:.6}),S.xa+.02,y+1.25,S.dz); S.door=dr; dr.userData.base=dr.position.z;
     const ns=cvs(128,64,(x,w,h)=>{ x.fillStyle="#2e3034"; x.fillRect(0,0,w,h); x.fillStyle="#f4efe6"; x.font='600 34px sans-serif'; x.textAlign="center"; x.textBaseline="middle"; x.fillText("20"+(S.i+1),w/2,h/2); });
     const np=mesh(new T.PlaneGeometry(.4,.2),new T.MeshBasicMaterial({map:ns}),S.xa-.14,y+2.0,S.dz+.85,root); np.rotation.y=-Math.PI/2;
@@ -8515,10 +8519,10 @@ for(let i=INN_SEAT0;i<SEATS.length;i++) SEATS[i].x+=INN.DX; INN.shower.forEach(s
 /* ---- 禪房 extras: colourful trees outside the bath's window (same leaves as the zen garden), lobby sofa corner, the paintings, warm lamps ---- */
 { const root=INN.g, L=h=>ZL(h); let seed=77; const R=()=>{ seed=(seed*16807)%2147483647; return seed/2147483647; }, rr=(a,b)=>a+(b-a)*R();
   const PAL=[["#a00a10","#b81414","#880810"],["#c8380a","#d85410","#b02808"],["#c88a06","#d8a010","#b07404"],["#900c2a","#a8143a","#740820"],["#3a6a14","#4a7c1a","#2c5a10"],["#e07898","#e890ac","#d06088"]];
-  const spots=[]; (INN.beds||[]).forEach(([x,z,y0])=>{ for(const dz of [-1.1,1.1]) spots.push([x,z+dz,1.5,y0]); }); /* small trees in the terrace beds, at window height */
+  const spots=[]; for(const [x,dz] of [[19.6,-3.3],[23.2,-3.4],[19.8,3.3],[23.4,3.4],[27.2,3.3]]) spots.push([x,INN.G+dz,rr(1.4,1.8),0,5]); /* cherry trees along the path */ (INN.beds||[]).forEach(([x,z,y0])=>{ for(const dz of [-1.1,1.1]) spots.push([x,z+dz,1.5,y0]); }); /* small trees in the terrace beds, at window height */
   for(let i=0;i<600&&spots.length<24;i++){ const r=rr(1.8,2.6); let x,z; if(i%2){ x=rr(41,57.5); z=rr(-50,-45); if(z+r>-43.2) continue; } else { x=rr(60,64); z=rr(-46,-22); if(x-r<56.2) continue; } /* (clear of the window, the balcony and the raised beds) */ if(spots.some(s=>Math.hypot(s[0]-x,s[1]-z)<(s[2]+r)*.75)) continue; spots.push([x,z,r]); }
   const cards=[], trunks=[], M4=new T.Matrix4(), Q4=new T.Quaternion(), E3=new T.Euler(), S3=new T.Vector3(), V3=new T.Vector3(), C3=new T.Color();
-  spots.forEach(([x,z,r,y0],i)=>{ y0=y0||0; const pal=PAL[i%PAL.length], th=y0?rr(.8,1.1):rr(1.6,2.2), cy=y0+th+r*.6; trunks.push([x,y0+th/2,z,th]); const n=Math.round(46+r*16);
+  spots.forEach(([x,z,r,y0,pk],i)=>{ y0=y0||0; const pal=PAL[pk!=null?pk:i%PAL.length], th=y0?rr(.8,1.1):rr(1.6,2.2), cy=y0+th+r*.6; trunks.push([x,y0+th/2,z,th]); const n=Math.round(46+r*16);
     for(let k=0;k<n;k++){ const a=rr(0,6.28), u=Math.cbrt(R()), y=rr(-.9,.75), s=rr(.9,1.3)*(.8+r*.1), src=R()<.1?PAL[4]:pal; cards.push([x+Math.cos(a)*u*r,cy+y*r,z+Math.sin(a)*u*r,rr(-.5,.5),rr(0,3.14),rr(-.4,.4),s,C3.set(ZL(src[k%3])).offsetHSL(0,rr(-.05,.05),(y<-.2?-.08:0)+rr(-.1,.08)).getHex()]); } });
   if(typeof ZEN!=="undefined"&&ZEN.leafMat&&ZEN.leaves){ const im=new T.InstancedMesh(ZEN.leaves.geometry,ZEN.leafMat,cards.length); cards.forEach((e,i)=>{ E3.set(e[3],e[4],e[5]); Q4.setFromEuler(E3); M4.compose(V3.set(e[0],e[1],e[2]),Q4,S3.set(e[6],e[6],e[6])); im.setMatrixAt(i,M4); im.setColorAt(i,C3.set(e[7])); }); im.instanceMatrix.needsUpdate=true; im.instanceColor.needsUpdate=true; im.frustumCulled=false; root.add(im);
     const tm=new T.InstancedMesh(new T.CylinderGeometry(.12,.2,1,6),mat(L("#3a2418"),{roughness:.9}),trunks.length); trunks.forEach((e,i)=>{ M4.compose(V3.set(e[0],e[1],e[2]),Q4.identity(),S3.set(1,e[3],1)); tm.setMatrixAt(i,M4); }); tm.frustumCulled=false; root.add(tm); }
@@ -8556,7 +8560,10 @@ for(let i=INN_SEAT0;i<SEATS.length;i++) SEATS[i].x+=INN.DX; INN.shower.forEach(s
     const X0=INN.X0, X1=INN.X1, Z1=INN.Z1, F2=INN.F2;
     for(const z of [-38,-24,-17.5]) sc(X0,2.6,z,-1,0); INN.suites.filter(S=>!S.e).forEach(S=>sc(X0,F2+2.3,S.dz+.95,-1,0)); /* front: ground floor, and beside each upstairs door */
     for(const z of [-24,-18]) sc(X1,2.6,z,1,0); for(const z of [-39.6,-33.75,-27.5,-21.25,-15.4]) sc(X1,F2+2.5,z,1,0); /* back: between the big windows */
-    for(const x of [36.1,40.7,45.3,49.9]) sc(x,2.7,Z1,0,1); for(const x of [33,38,47,52]) sc(x,F2+2.5,Z1,0,1); /* the street side */ }
+    for(const x of [36.1,40.7,45.3,49.9]) sc(x,2.7,Z1,0,1); for(const x of [33,38,47,52]) sc(x,F2+2.5,Z1,0,1); /* the street side */
+    /* street lamps along the path from the gate: dark posts, a lantern head that glows at night */
+    for(const [x,dz] of [[18.8,-1.9],[22.2,1.9],[25.4,-1.9],[28.6,1.9]]){ const z=INN.G+dz; cyl(.06,.08,2.9,bp,x,1.45,z,root,8); box(.34,.1,.34,bp,x,.05,z,root); const h=new T.Mesh(new T.BoxGeometry(.26,.36,.26),INN.scM); h.position.set(x,3.08,z); root.add(h); box(.36,.06,.36,bp,x,3.29,z,root); box(.08,.12,.08,bp,x,3.38,z,root);
+      const gl=new T.Sprite(gm.clone()); gl.position.set(x,3.08,z); gl.scale.set(2.2,2.2,1); root.add(gl); INN.scG.push(gl); } }
   /* 暖簾 over the two doors off the lobby: 湯 for the bath, ZZ for the dorm — two cloth panels each, split up the middle */
   { const nr=(z,txt,bg)=>{ const c=cvs(256,192,(x,w,h)=>{ x.fillStyle=bg; x.fillRect(0,0,w,h); x.fillStyle="rgba(255,255,255,.12)"; x.fillRect(0,0,w,16); x.fillStyle="#f6f0e2"; x.font=txt==="湯"?'700 120px "LXGW WenKai TC","Noto Serif TC",serif':'800 104px sans-serif'; x.textAlign="center"; x.textBaseline="middle"; x.fillText(txt,w/2,h/2+10); });
       [0,1].forEach(k=>{ const t=c.clone(); t.needsUpdate=true; t.repeat.set(.5,1); t.offset.set(k*.5,0); const m=new T.Mesh(new T.PlaneGeometry(.66,1.0),new T.MeshStandardMaterial({map:t,roughness:.95,side:T.DoubleSide})); m.position.set(40.88,1.95,z+(k?.35:-.35)); m.rotation.y=-Math.PI/2; m.userData.noMerge=1; root.add(m); });
@@ -8769,10 +8776,10 @@ function buskEl(k){ let a=BUSK.el[k]; if(a) return a; if(!ac) return null; a=new
     const pg=new T.Mesh(new T.BoxGeometry(.12,.16,.075),mat("#f2f2f2",{roughness:.4})); pg.position.set(.04,-.02,0); gt.add(pg);
     const nk=new T.Mesh(new T.BoxGeometry(.05,.62,.035),wood); nk.position.y=.55; gt.add(nk); const hd=new T.Mesh(new T.BoxGeometry(.08,.14,.035),blk); hd.position.y=.92; gt.add(hd);
     for(let k=0;k<3;k++){ const s=new T.Mesh(new T.CylinderGeometry(.006,.006,.8,4),chrome); s.position.set(-.012+k*.012,.42,.02); gt.add(s); } }
-  const stand=new T.Group(); stand.position.set(BUSK.x+.75,0,BUSK.z); scene.add(stand); stand.userData.isAvatar=1; /* (kept out of build mode) */
+  const stand=new T.Group(); stand.position.set(BUSK.x+.75,0,BUSK.z); scene.add(stand); BUSK.stand=stand; stand.userData.isAvatar=1; /* (kept out of build mode) */
   stand.add((m=>{ m.position.set(0,.6,0); return m; })(new T.Mesh(new T.CylinderGeometry(.02,.02,1.2,8),chrome))); stand.add((m=>{ m.position.set(0,.015,0); return m; })(new T.Mesh(new T.CylinderGeometry(.18,.2,.03,16),blk)));
   { const mic=new T.Mesh(new T.SphereGeometry(.045,12,10),chrome); mic.position.set(-.12,1.22,0); stand.add(mic); const mh=new T.Mesh(new T.CylinderGeometry(.018,.024,.14,8),blk); mh.position.set(-.06,1.2,0); mh.rotation.z=1.2; stand.add(mh); }
-  const amp=new T.Group(); amp.position.set(BUSK.x-.2,0,BUSK.z+1.05); amp.rotation.y=Math.PI/2+.4; scene.add(amp); amp.userData.isAvatar=1;
+  const amp=new T.Group(); amp.position.set(BUSK.x-.2,0,BUSK.z+1.05); amp.rotation.y=Math.PI/2+.4; scene.add(amp); BUSK.amp=amp; amp.userData.isAvatar=1;
   amp.add((m=>{ m.position.set(0,.3,0); return m; })(new T.Mesh(new T.BoxGeometry(.7,.6,.36),blk))); amp.add((m=>{ m.position.set(0,.28,.181); return m; })(new T.Mesh(new T.PlaneGeometry(.58,.4),mat("#2a2a2a",{roughness:.95})))); amp.add((m=>{ m.position.set(0,.53,.182); return m; })(new T.Mesh(new T.BoxGeometry(.6,.05,.02),mat("#d9aa3d",{metalness:.7,roughness:.3}))));
   /* singing: strumming hand, the other on the neck, a bob to the beat, the odd head-bang and a rock-star kick */
   /* playing and singing: strums in eighths, the fret hand slides now and then, the body sways side to side with the beat (weight from foot to foot),
@@ -8787,15 +8794,19 @@ function buskEl(k){ let a=BUSK.el[k]; if(a) return a; if(!ac) return null; a=new
   /* ♪ notes drifting up round him */
   BUSK.noteTex=["♪","♫","♬"].map((ch,k)=>cvs(64,64,(x,w,h)=>{ x.font='700 48px serif'; x.textAlign="center"; x.textBaseline="middle"; x.fillStyle=["#ffd27a","#ff8fb6","#9fe8ff"][k]; x.shadowColor="rgba(0,0,0,.6)"; x.shadowBlur=4; x.fillText(ch,w/2,h/2); })); }
 /* tap 玖玖: tip him 50 or 100 平安幣 and he thanks you by name (the chair tips for free) */
-function openBuskTip(){ ensureAudio(); const [i]=buskNow(); openSheet("contact","街頭藝人玖玖",`<p class="lead">現在唱的是〈${BUSK.names[i]}〉。喜歡的話，打賞一下吧！</p><div class="goods">${[50,100].map(v=>`<button class="good" data-act="buskPay" data-v="${v}"><span class="name">🎸 打賞 ${v} 平安幣</span></button>`).join("")}<button class="good" data-act="buskCheer"><span class="name">📣 應援：到他身邊跳一段</span></button></div>`); }
+function openBuskTip(){ ensureAudio(); if(BUSK.away){ toast("下雨了，玖玖今天收攤回家了",2200); return; } const [i]=buskNow(); openSheet("contact","街頭藝人玖玖",`<p class="lead">現在唱的是〈${BUSK.names[i]}〉。喜歡的話，打賞一下吧！</p><div class="goods">${[50,100].map(v=>`<button class="good" data-act="buskPay" data-v="${v}"><span class="name">🎸 打賞 ${v} 平安幣</span></button>`).join("")}<button class="good" data-act="buskCheer"><span class="name">📣 應援：到他身邊跳一段</span></button></div>`); }
 /* 應援: you go to a free spot by him, dance one round (12 s), and come away 幸福感 UP — hearts float up round you */
 const HEART_TEX=cvs(64,64,(x,w,h)=>{ x.font='48px serif'; x.textAlign="center"; x.textBaseline="middle"; x.fillText("💗",w/2,h/2+3); });
 function buskHappy(av){ for(let i=0;i<18;i++) setTimeout(()=>{ const s=new T.Sprite(new T.SpriteMaterial({map:HEART_TEX,transparent:true,depthWrite:false})); const a=rand(0,Math.PI*2), r=rand(.2,.9); s.position.set(av.pos.x+Math.cos(a)*r,rand(.3,1.1),av.pos.y+Math.sin(a)*r); const sc=rand(.2,.34); s.scale.set(sc,sc,1); scene.add(s); parts.push({s,vx:0,vy:rand(1.0,1.8),vz:0,life:0,max:rand(1.4,2.2),grow:.12,op:1}); },i*80);
   av.say("幸福感 UP！","#ff8fb6",3.5); if(av===meAv){ tone(784,.12,.05,"triangle"); tone(1046,.18,.05,"triangle",.12); toast("💗 應援完成，幸福感 UP！",2600); } }
 setTimeout(()=>{ HANDLERS.buskCheer=()=>{ closeSheet(); ensureAudio(); const B=BUSK; let spot=null; for(let t=0;t<30&&!spot;t++){ const a=rand(-1.25,1.25), r=rand(1.6,3.0), x=B.x+Math.cos(a)*r, z=B.z+Math.sin(a)*r; if(walkable(x,z)&&!npcs.some(o=>o.buskSpot&&Math.hypot(o.buskSpot[0]-x,o.buskSpot[1]-z)<.9)) spot=[x,z]; }
     if(!spot){ toast("他身邊擠滿人了，等一下再來",2000); return; } if(meAv.seat>=0){ meAv.seat=-1; updateStandBtn(); } walkTo(spot[0],spot[1]); B.cheer={x:spot[0],z:spot[1],ph:0,t:0}; statInc("buskCheer"); };
-  HANDLERS.buskPay=v=>{ v=+v; if(!me||!me.sp){ if(bag.coins<v){ toast("平安幣不夠了",1800); return; } bag.coins-=v; saveBag(); } sfx.coin(); closeSheet(); statInc("buskTip"); const nm=(me&&me.name)||"朋友"; BUSK.av.say(`${nm}謝謝你！愛你！`,"#ffd27a",4); toast(`打賞玖玖 ${v} 平安幣`,1800); }; },0);
-function buskTick(dt){ const B=BUSK, me=meAv; if(!me||!B.av) return; const d=Math.hypot(me.pos.x-B.x,me.pos.y-B.z); if(d<45){ const av=B.av; av.pos.set(B.x,B.z); av.target.copy(av.pos); av.faceGoal=Math.PI/2; av.update(dt); } /* (he was never animated: nobody called his update) */ const live=soundOn&&audioUnlocked&&!document.hidden&&!gameAsleep;
+  HANDLERS.buskPay=v=>{ v=+v; if(!me||!me.sp){ if(bag.coins<v){ toast("平安幣不夠了",1800); return; } bag.coins-=v; saveBag(); } sfx.coin(); closeSheet(); statInc("buskTip"); statInc("buskTipC",v); const nm=(me&&me.name)||"朋友"; BUSK.av.say(`${nm}謝謝你！愛你！`,"#ffd27a",4); toast(`打賞玖玖 ${v} 平安幣`,1800); }; },0);
+/* rain: 玖玖 packs up and goes home — except on about one rainy day in four, when he stays and sings in the rain (the paper writes about it) */
+function buskRainStay(){ const loc=Date.now()+8*3600e3, d=Math.floor(loc/864e5), ch=d*864e5+(6+5*wxHash(d*13+1))*3600e3, dd=(window.MZ_WX||(WX.set&&Date.now()<WX.setUntil))?d:(loc<ch?d-1:d); return wxHash(dd*41+7)<.28; }
+function buskAway(){ const k=wxNow(); return (k==="rain"||k==="storm")&&!buskRainStay(); }
+function buskTick(dt){ const B=BUSK, me=meAv; if(!me||!B.av) return;
+  { const away=buskAway(); if(away!==!!B.away){ B.away=away; for(const o of [B.av.root,B.stand,B.amp]) if(o) o.visible=!away; } if(away){ for(const a of B.el) if(a){ if(a._g&&ac) a._g.gain.setTargetAtTime(0,ac.currentTime,.2); if(!a.paused) a.pause(); } B.on=false; B.prox=0; return; } } const d=Math.hypot(me.pos.x-B.x,me.pos.y-B.z); if(d<45){ const av=B.av; av.pos.set(B.x,B.z); av.target.copy(av.pos); av.faceGoal=Math.PI/2; av.update(dt); } /* (he was never animated: nobody called his update) */ const live=soundOn&&audioUnlocked&&!document.hidden&&!gameAsleep;
   const prox=live?Math.pow(Math.max(0,Math.min(1,1-(d-1.5)/15)),1.6):0; /* heard from about 16 m */ B.prox+=(prox-B.prox)*Math.min(1,dt*2);
   const want=live&&d<28&&ac;
   if(want){ const [i,t]=buskNow(); let A=buskEl(B.which), Bn=buskEl(1-B.which); if(!A) return;
@@ -8810,6 +8821,9 @@ function buskTick(dt){ const B=BUSK, me=meAv; if(!me||!B.av) return; const d=Mat
   { const C=B.cheer; if(C){ C.t+=dt; if(C.ph===0){ if(Math.hypot(me.pos.x-C.x,me.pos.y-C.z)<.3&&!(me.path&&me.path.length)){ me.rotY=Math.atan2(B.x-me.pos.x,B.z-me.pos.y); me.root.rotation.y=me.rotY; HANDLERS.doAct([5,6,7,8][(Math.random()*4)|0]); C.ph=1; C.t=0; } else if(C.t>30) B.cheer=null; }
       else if(me.act<0||Math.hypot(me.pos.x-C.x,me.pos.y-C.z)>.6) B.cheer=null; /* walked off: no reward */
       else if(C.t>12){ HANDLERS.doAct(-1); buskHappy(me); B.cheer=null; } } }
+  /* a listen counts once you have heard a minute of one song (here, or picked in the zen garden) — the paper's 玖玖 chart */
+  { let li=-1; if(B.on&&B.prox>.15) li=buskNow()[0]; else if(typeof curTrack!=="undefined"&&curTrack==="zen"&&TRK.zen&&!TRK.zen.paused&&/^busk\/b(\d\d)/.test(TRK_SRC.zen)) li=+TRK_SRC.zen.match(/^busk\/b(\d\d)/)[1]-1;
+    if(li>=0){ if(B.lsI!==li){ B.lsI=li; B.lsT=0; B.lsDone=false; } B.lsT+=dt; if(!B.lsDone&&B.lsT>60){ B.lsDone=true; statInc("bk"+String(li+1).padStart(2,"0")); } } }
   /* notes */ if(B.on&&(B.noteT-=dt)<0){ B.noteT=.35+Math.random()*.3; const s=new T.Sprite(new T.SpriteMaterial({map:B.noteTex[(Math.random()*3)|0],transparent:true,depthWrite:false})); s.position.set(B.x+(Math.random()-.5)*.9,1.3+Math.random()*.4,B.z+(Math.random()-.5)*.9); s.scale.set(.26,.26,1); scene.add(s); B.notes.push({s,t:0,vx:(Math.random()-.5)*.3,vz:(Math.random()-.5)*.3}); }
   for(let k=B.notes.length-1;k>=0;k--){ const n=B.notes[k]; n.t+=dt; n.s.position.y+=dt*.55; n.s.position.x+=n.vx*dt+Math.sin(n.t*3)*.004; n.s.position.z+=n.vz*dt; n.s.material.opacity=Math.max(0,1-n.t/2.4); if(n.t>2.4){ scene.remove(n.s); n.s.material.dispose(); B.notes.splice(k,1); } } }
 
@@ -8844,8 +8858,9 @@ async function paperDemo(sc){ const G=await import("./paper-gen.js"); const back
   const R2=sc.seed?rnd:(a,b2)=>a; /* the "換一份" samples get random numbers and people; the first sample stays fixed */
   const p={}; if(!sc.calm){ const k=sc.seed?rnd(2,5):2; for(let i=0;i<k;i++){ const nm=i===0?n:pickN(); p["u"+i]={n:nm,c:{b_bowBtn:R2(5,40),b_jiaoBtn:R2(5,25),minOnline:R2(30,180),minZen:R2(0,30),pkCash:R2(0,700),sit_futon:R2(0,4)}}; } }
   const WISH=["希望明天考試順利","阿嬤身體健康","找到好工作","家人平安","今年脫單","店裡生意興隆","貓咪長命百歲","出國比賽順利"], wishes=sc.calm?[]:Array.from({length:sc.seed?rnd(1,6):2},()=>({name:pickN(),text:WISH[rnd(0,WISH.length-1)]}));
+  const bk={}; if(!sc.calm&&(!sc.seed||Math.random()<.7)){ for(let i=1;i<=12;i++) bk["bk"+String(i).padStart(2,"0")]=R2(0,25)+(sc.seed?0:i===12?20:i===1?14:i); bk.buskTipC=R2(100,600); bk.buskCheer=R2(3,15); p.u0&&(p.u0.c.buskTipC=R2(50,200),p.u0.c.buskCheer=R2(1,5)); } /* 玖玖's chart, tips and cheering */
   const sp=sc.seed?rnd(25,90):58;
-  return G.buildPaper({d,no:sc.no||1+(sc.seed?rnd(1,99):0),seed:sc.seed||0,force:sc.force||[],st:{c:sc.calm?{visitors:12,b_bowBtn:30}:{visitors:R2(20,90),b_bowBtn:R2(80,400),b_jiaoBtn:R2(40,200),b_lotBtn:R2(10,90),wish:wishes.length,sit_futon:R2(2,12),...pk},mx:{peak:Math.round(sp*.4),sp,h20:Math.round(sp*.4),s20:sp,s21:Math.round(sp*.85),s19:Math.round(sp*.7),s14:Math.round(sp*.5)},p},
+  return G.buildPaper({d,no:sc.no||1+(sc.seed?rnd(1,99):0),seed:sc.seed||0,force:sc.force||[],st:{c:sc.calm?{visitors:12,b_bowBtn:30}:{visitors:R2(20,90),b_bowBtn:R2(80,400),b_jiaoBtn:R2(40,200),b_lotBtn:R2(10,90),wish:wishes.length,sit_futon:R2(2,12),...pk,...bk},mx:{peak:Math.round(sp*.4),sp,h20:Math.round(sp*.4),s20:sp,s21:Math.round(sp*.85),s19:Math.round(sp*.7),s14:Math.round(sp*.5)},p},
     ev:ev.concat(sc.calm?[]:(STATQ.ev||[])),wishes}); }
 function paperHTML(p){ const E=esc, it=p.items||[], dt=p.d.split("-"), wk="日一二三四五六"[new Date(p.d+"T12:00:00+08:00").getDay()];
   const art=(s,i)=>PAPER.ph&&PAPER.ph[i]?`<figure class="np-photo"><img src="${PAPER.ph[i]}" alt=""><figcaption>本報記者攝</figcaption></figure>`:`<div class="np-art"><span>${s.art||"📰"}</span></div>`;
@@ -8890,14 +8905,14 @@ HANDLERS.paperTest=()=>{ const seen=load("mz.paperSeen","");
     <button class="good" data-act="paperTry" data-v="real"><span class="name">📰 昨天的報紙</span><span class="meta">${USE_CF?"大家今天看到的那一份":"測試頁沒有伺服器，會用範例"}</span></button>
     ${USE_CF?`<button class="good" data-act="paperTry" data-v="live"><span class="name">📡 預覽今天的報紙</span><span class="meta">用今天到目前為止的資料寫（明天大家才看得到）</span></button>`:""}
     <button class="good" data-act="paperTry" data-v="shuffle"><span class="name">🔀 換一份範例</span><span class="meta">同樣的資料換不同寫法</span></button></div>
-    <div class="group"><span class="group-label">範例情境</span><div class="chips">${[["heat","🥵 阿嬤中暑"],["stall","🌪️ 攤子被吹走"],["storm","⛈️ 雷雨天"],["rain","🌧️ 下雨天"],["pk","⚪ 彈珠台破產"],["calm","🏮 平靜的一天"]].map(([k,t])=>`<button class="chip" data-act="paperTry" data-v="sc:${k}">${t}</button>`).join("")}</div></div>
+    <div class="group"><span class="group-label">範例情境</span><div class="chips">${[["heat","🥵 阿嬤中暑"],["stall","🌪️ 攤子被吹走"],["storm","⛈️ 雷雨天"],["rain","🌧️ 下雨天"],["buskrain","🎸 玖玖雨中開唱"],["pk","⚪ 彈珠台破產"],["calm","🏮 平靜的一天"]].map(([k,t])=>`<button class="chip" data-act="paperTry" data-v="sc:${k}">${t}</button>`).join("")}</div></div>
     <p class="note">開場每天只會自動出現一次${seen?`（這支手機已看過 ${esc(seen)} 的報紙）`:""}。<button class="chip" data-act="paperTry" data-v="reset">讓下次進遊戲再出現一次</button></p>`); };
 HANDLERS.paperTry=async v=>{ PAPER.seed=(PAPER.seed||0)+1;
   if(v==="reset"){ save("mz.paperSeen",""); toast("好了，下次進遊戲會再出現報紙",2200); return; }
   if(v==="live"){ const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return; } try{ const r=await fetch("/paper?live=1",{headers:{"x-key":key},cache:"no-store"}); const j=await r.json().catch(()=>({})); forgetKey(r,j); if(!j.ok){ toast("讀不到（密碼？）",2000); return; } PAPER.p=j.paper; }catch(e){ toast("網路不穩",2000); return; } closeSheet(); paperOpen(false); return; }
   if(v==="real"){ PAPER.p=null; if(!(await paperFetch())){ toast("今天的報紙還沒送來",2200); return; } closeSheet(); paperOpen(false); return; }
   const sc={seed:PAPER.seed*7919};
-  if(v.startsWith("sc:")){ const k=v.slice(3); if(k==="heat"||k==="stall"||k==="storm"||k==="rain") sc.force=[k]; if(k==="pk"){ sc.rec=false; sc.tudi=false; } if(k==="calm"){ sc.calm=true; sc.force=["clear"]; } if(k!=="pk") sc.pk=false; }
+  if(v.startsWith("sc:")){ const k=v.slice(3); if(k==="heat"||k==="stall"||k==="storm"||k==="rain") sc.force=[k]; if(k==="buskrain") sc.force=["rain","buskrain"]; if(k==="pk"){ sc.rec=false; sc.tudi=false; } if(k==="calm"){ sc.calm=true; sc.force=["clear"]; } if(k!=="pk") sc.pk=false; }
   try{ PAPER.p=await paperDemo(sc); }catch(e){ toast("範例報紙載入失敗",2000); return; }
   closeSheet(); paperOpen(v==="intro"); };
 HANDLERS.paperOpen=async()=>{ closeSheet(); if(!(await paperFetch())){ toast("今天的報紙還沒送來",2200); return; } paperOpen(false); };
