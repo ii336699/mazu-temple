@@ -270,7 +270,7 @@ export class Lobby extends DurableObject {
     const old = live ? null : await this.ctx.storage.get("paperOld:" + day); /* a re-issue (sponsors added after it came out) keeps its number */
     const p = buildPaper({ d: day, st, ev, wishes, used: old ? old.used : meta.used, no: old ? old.no : meta.no + 1, rev: old ? old.rev : 0 });
     if (old) { await this.ctx.storage.delete("paperOld:" + day); await this.ctx.storage.put("paper:" + day, p); return p; }
-    if (!live) { await this.ctx.storage.put("paper:" + day, p); await this.ctx.storage.put("paperMeta", { no: meta.no + 1, used: p.used });
+    if (!live) { p.usedIn = meta.used; await this.ctx.storage.put("paper:" + day, p); await this.ctx.storage.put("paperMeta", { no: meta.no + 1, used: p.used });
       const keep = (await this.ctx.storage.get("paperDays")) || []; keep.push(day); while (keep.length > 30) await this.ctx.storage.delete("paper:" + keep.shift()); await this.ctx.storage.put("paperDays", keep); }
     return p;
   }
@@ -310,7 +310,12 @@ export class Lobby extends DurableObject {
     if (url.pathname === "/sponsor") {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
       const yday = this.stDay(Date.now() - 864e5), today = this.stDay();
-      const reissue = async day => { const got = await this.ctx.storage.get("paper:" + day); if (!got) return; await this.ctx.storage.put("paperOld:" + day, { no: got.no, used: got.used, rev: (got.rev || 0) + 1 }); await this.ctx.storage.delete("paper:" + day); await this.paper(day, false); };
+      /* re-issue: the new paper is built first and then swapped in, so a player opening the paper meanwhile never finds it missing (and never starts a
+         second numbered paper); if building it fails the sponsor is still saved and the old paper stays */
+      const reissue = async day => { try { const got = await this.ctx.storage.get("paper:" + day); if (!got) return; await this.stSave(true); const st = (await this.ctx.storage.get("st:" + day)) || { c: {}, mx: {}, p: {} };
+        const ev = (await this.ctx.storage.get("nw:" + day)) || [], t0 = Date.parse(day + "T00:00:00+08:00"), t1 = t0 + 864e5;
+        const wishes = ((await this.ctx.storage.get("wishes")) || []).filter(w => w.at >= t0 && w.at < t1).map(w => ({ name: w.name, text: w.text }));
+        const p = buildPaper({ d: day, st, ev, wishes, used: got.usedIn || got.used, no: got.no, rev: (got.rev || 0) + 1 }); p.usedIn = got.usedIn || got.used; await this.ctx.storage.put("paper:" + day, p); } catch (e) { this.spErr = String(e && e.message || e).slice(0, 120); } };
       if (req.method === "POST") {
         let b = {}; try { b = await req.json(); } catch {}
         const day = b.when === "next" || b.day === today ? today : yday, key = "nw:" + day, L = (await this.ctx.storage.get(key)) || [];
@@ -324,10 +329,10 @@ export class Lobby extends DurableObject {
           let n = -1, gone = null; const i = Math.floor(Number(b.i)); const keep = L.filter(e => { if (e.k !== "sponsor") return true; n++; if (n === i) { gone = e; return false; } return true; }); await this.ctx.storage.put(key, keep);
           if (gone) { const H = (await this.ctx.storage.get("honor")) || []; const j = H.findIndex(h => h.at === gone.at && h.n === gone.n); if (j >= 0) { H.splice(j, 1); await this.ctx.storage.put("honor", H); } } /* a mistake comes off the honour wall too */
         } else return json({ ok: false });
-        if (day === yday) await reissue(yday);
+        this.spErr = ""; if (day === yday) await reissue(yday);
       }
       const list = async d => ((await this.ctx.storage.get("nw:" + d)) || []).filter(e => e.k === "sponsor").map(e => ({ n: e.n, x: e.x, m: e.m }));
-      return json({ ok: true, yday, today, now: await list(yday), next: await list(today) });
+      const pe = this.spErr || undefined; this.spErr = ""; return json({ ok: true, yday, today, now: await list(yday), next: await list(today), paperErr: pe });
     }
     if (url.pathname === "/stat") {
       if (req.method === "POST") {
