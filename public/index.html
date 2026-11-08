@@ -300,6 +300,28 @@ input,textarea{-webkit-user-select:text;user-select:text}
 .np-head p{margin:8px 0 0;font-size:15px;line-height:1.65;text-align:justify;white-space:pre-line}
 .sp-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0 0 10px;padding:10px;border-radius:12px;background:rgba(255,255,255,.06)}.sp-row input{min-width:0;width:100%;box-sizing:border-box;padding:9px 10px;border-radius:9px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.25);color:inherit;font:inherit;font-size:15px}.sp-row input.sp-m{grid-column:1/-1}
 .hf-sl label{display:grid;grid-template-columns:5.2em 1fr 3.2em;align-items:center;gap:8px;margin:2px 0;font-size:14px}.hf-sl input{width:100%;min-width:0}.hf-sl b{font-variant-numeric:tabular-nums;text-align:right;font-weight:600;opacity:.85}
+.gc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px;margin:10px 0}.gc-cell{display:grid;place-items:center;aspect-ratio:1;border-radius:10px;background:rgba(255,255,255,.08)}.gc-cell .bic{width:44px;height:44px}.gc-no .bic{filter:brightness(0) opacity(.35)}
+.gc-show{position:fixed;inset:0;z-index:60;display:grid;place-items:center;overflow:hidden;background:radial-gradient(circle at 50% 45%,rgba(60,20,50,.92),rgba(5,2,10,.97));animation:gcIn .35s ease}
+@keyframes gcIn{from{opacity:0}to{opacity:1}}
+.gc-rays{position:absolute;left:50%;top:45%;width:180vmax;height:180vmax;margin:-90vmax 0 0 -90vmax;background:repeating-conic-gradient(from 0deg,rgba(255,220,120,.18) 0 6deg,transparent 6deg 18deg);animation:gcSpin 9s linear infinite;opacity:.35;transition:opacity .6s}
+.gc-r2{animation-direction:reverse;animation-duration:14s;background:repeating-conic-gradient(from 5deg,rgba(255,140,220,.14) 0 4deg,transparent 4deg 22deg)}
+.gc-show.open .gc-rays{opacity:1}@keyframes gcSpin{to{transform:rotate(360deg)}}
+.gc-egg{position:absolute;left:50%;top:45%;width:150px;height:170px;margin:-85px 0 0 -75px;transform:translateY(-70vh);transition:transform .8s cubic-bezier(.3,1.5,.5,1);filter:drop-shadow(0 0 24px var(--c))}
+.gc-show.drop .gc-egg{transform:translateY(0)}.gc-show.shake .gc-egg{animation:gcShake .25s ease-in-out 4}
+@keyframes gcShake{0%,100%{rotate:0deg}25%{rotate:-12deg}75%{rotate:12deg}}
+.gc-top,.gc-bot{position:absolute;left:0;width:150px;height:85px;transition:transform .7s cubic-bezier(.2,.8,.3,1),opacity .7s}
+.gc-top{top:0;border-radius:75px 75px 8px 8px;background:radial-gradient(circle at 35% 30%,#fff 0 8%,var(--c) 30%,color-mix(in srgb,var(--c) 60%,#000) 100%)}
+.gc-bot{bottom:0;border-radius:8px 8px 75px 75px;background:radial-gradient(circle at 40% 20%,#fff 0 20%,#e8e4ee 70%,#a8a0b8 100%);border-top:4px solid rgba(0,0,0,.15)}
+.gc-show.open .gc-top{transform:translate(-90px,-160px) rotate(-50deg);opacity:0}.gc-show.open .gc-bot{transform:translate(80px,200px) rotate(40deg);opacity:0}
+.gc-prize{position:relative;display:grid;justify-items:center;gap:8px;opacity:0;transform:scale(.3);transition:transform .7s cubic-bezier(.2,1.6,.4,1) .15s,opacity .4s .15s;text-align:center;color:#fff;padding:0 16px}
+.gc-show.open .gc-prize{opacity:1;transform:scale(1)}
+.gc-ic{width:min(52vw,230px)!important;height:min(52vw,230px)!important;filter:drop-shadow(0 0 22px rgba(255,230,140,.9));animation:gcFloat 2.4s ease-in-out infinite}
+@keyframes gcFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.gc-name{font:900 30px/1.2 var(--f-display,inherit);letter-spacing:.06em;color:#ffe9a0;text-shadow:0 0 18px rgba(255,200,80,.9)}.gc-sub{font-size:14px;opacity:.85}
+.gc-btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:8px}
+.gc-sparks i{position:absolute;left:50%;top:45%;width:8px;height:8px;border-radius:50%;opacity:0;box-shadow:0 0 10px currentColor}
+.gc-show.open .gc-sparks i{animation:gcBurst 1.3s ease-out var(--d) forwards}
+@keyframes gcBurst{0%{opacity:1;transform:translate(0,0) scale(1.4)}100%{opacity:0;transform:translate(var(--x),var(--y)) scale(.3)}}
 .sp-list{margin:6px 0 12px;padding:0;list-style:none}.sp-list li{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.08)}.sp-list li span{flex:1;min-width:0}.sp-list small{opacity:.7}
 .np-photo{margin:6px 0 0} .np-photo img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;filter:grayscale(1) contrast(1.15) brightness(1.05);border:1px solid #333} .np-photo figcaption{font-size:10px;text-align:right;color:#555;margin-top:2px} .np-wide{column-span:all}
 .np-art{aspect-ratio:16/9;background:#d9cdb2;border:1px solid #8a7a60;display:grid;place-items:center;filter:sepia(.4)} .np-art span{font-size:clamp(60px,20vw,110px)}
@@ -816,8 +838,10 @@ const NEON_GLOW=(()=>{ let t=null; return ()=>t||(t=cvs(16,64,(x,w,h)=>{ const g
 /* ---- 榮譽功德榜 data: the early sponsors (THANKS) plus the ones recorded through 贊助登報 (server /honor) ---- */
 const HONOR={list:[],extra:[],slabs:[]};
 function honorAll(){ const base=THANKS.map((t,i)=>{ const m=String(t.text).match(/謝謝(?:信徒)?(.+?)贊助(\d+)元/); return {n:m?m[1]:t.text,a:t.amt,x:"",th:i,o:i}; });
-  return base.concat(HONOR.extra.map((e,i)=>({n:e.n,a:+e.a||0,x:e.x||"",o:1000+i}))).sort((p,q)=>q.a-p.a||p.o-q.o); }
-const honorAmt=e=>e.a>0?`${e.a.toLocaleString("en-US")} 元`:(e.x||"");
+  /* the same person giving again is added up into one line */
+  const by=new Map(); for(const e of base.concat(HONOR.extra.map((e,i)=>({n:e.n,a:+e.a||0,x:e.x||"",o:1000+i})))){ const key=String(e.n).trim().toLowerCase(), h=by.get(key); if(!h){ by.set(key,{...e}); continue; } h.a+=e.a; if(!h.a&&e.x) h.x=e.x; else if(e.x&&!e.a&&h.x!==e.x) h.x=(h.x?h.x+"、":"")+e.x; }
+  return [...by.values()].sort((p,q)=>q.a-p.a||p.o-q.o); }
+const honorAmt=e=>e.a>0?`${e.a.toLocaleString("en-US")} 元${e.x&&!/\d/.test(e.x)?"＋"+e.x:""}`:(e.x||"");
 /* carve the names into the two slabs: as many columns and rows as the list needs, the biggest gifts first, gold for 500 and up */
 function honorDraw(){ if(!HONOR.slabs.length) return; const L=honorAll(), half=Math.ceil(L.length/2), parts=[L.slice(0,half),L.slice(half)];
   HONOR.slabs.forEach((face,si)=>{ const list=parts[si]||[], W=2048, H=494, rows=Math.min(8,Math.max(4,Math.ceil(list.length/3))), cols=Math.max(1,Math.ceil(list.length/rows));
@@ -835,8 +859,8 @@ function honorDraw(){ if(!HONOR.slabs.length) return; const L=honorAll(), half=M
     t.anisotropy=renderer.capabilities.getMaxAnisotropy(); const m=face.material; if(m.map) m.map.dispose(); m.map=t; m.emissiveMap=t; m.emissiveIntensity=.35; m.needsUpdate=true; }); }
 async function honorLoad(){ if(!USE_CF){ try{ HONOR.extra=JSON.parse(load("mz.honor","")||"[]"); }catch(e){ HONOR.extra=[]; } honorDraw(); return; }
   try{ const r=await fetch("/honor",{cache:"no-store"}); const j=await r.json(); if(j&&Array.isArray(j.list)){ HONOR.extra=j.list; honorDraw(); } }catch(e){} }
-function openHonor(){ sfx.coin(); HANDLERS.thanksPic=v=>openThanks(+v); const L=honorAll(); openSheet("thanks","榮譽功德榜",`<p class="lead">感謝每一位贊助天后宮的善心人士，媽祖保佑大家平安順心。（金色為 500 元以上）</p>
-  <ul class="sp-list">${L.map(e=>`<li><span><b style="color:${e.a>=500?"#f0c050":"inherit"}">${esc(e.n)}</b></span><span style="flex:0 0 auto;opacity:.85">${esc(honorAmt(e))}</span>${e.th!=null?`<button class="chip" data-act="thanksPic" data-v="${e.th}">感謝圖</button>`:""}</li>`).join("")}</ul>`); }
+function openHonor(){ sfx.coin(); const L=honorAll(); openSheet("thanks","榮譽功德榜",`<p class="lead">感謝每一位贊助天后宮的善心人士，媽祖保佑大家平安順心。（金色為 500 元以上）</p>
+  <ul class="sp-list">${L.map(e=>`<li><span><b style="color:${e.a>=500?"#f0c050":"inherit"}">${esc(e.n)}</b></span><span style="flex:0 0 auto;opacity:.85">${esc(honorAmt(e))}</span></li>`).join("")}</ul>`); }
 THANKS.map((t,i)=>[t,i]).sort((a,b)=>b[0].amt-a[0].amt||a[1]-b[1]).forEach(([t],k)=>{ const sl=THANK_SLOTS[k]; if(sl){ t.x=sl[0]; t.y=sl[1]; } });
 
 /* ================= persisted per-viewer state ================= */
@@ -2207,6 +2231,42 @@ function buildCat(fur,belly,stripe,patch){ const g=new T.Group(); g.userData.noM
 [["#f6f3ee","#ffffff",null,"#55504c"],["#efd2a8","#fbecd6",null,null],["#cfcdc8","#f1efea","#a9a6a0",null]].forEach((c,i)=>{ const cat=buildCat(...c); scene.add(cat); CATS.list.push({g:cat,i}); });
 station("cats",[CATS.c.x-2.4,CATS.c.z],Math.PI/2);
 setTimeout(()=>addHit("cats",CATS.c.x,0,CATS.c.z,1.5,1.3),0);
+/* ---- 招財貓扭蛋機 (beside the dancing cats): 10 扭蛋幣 a turn, one of the hats in gachaPool() each time, never one you already have until
+   you have them all. The coins come off and the hat goes into the bag in one save BEFORE the show starts, so closing the page halfway can
+   neither give a free turn nor lose the hat; a second tap while it turns does nothing; the coin count is re-read from storage first so
+   another open tab cannot spend the same coins twice. ---- */
+const GACHA={x:9.6,z:35.2,cost:10,busy:false};
+let GACHA_POOL_=null; const gachaPool=()=>GACHA_POOL_||(GACHA_POOL_=Object.keys(HAT_FIT_CHAIR).filter(k=>ACC[k]&&!ACC[k].gone)); /* (worked out on first use: the hat lists are defined further down) */
+station("gacha",[GACHA.x-2.7,GACHA.z],Math.PI/2);
+loadModel("gacha",m=>{ const w=fitModel(m,4.1); w.rotation.y=-Math.PI/2; w.position.set(GACHA.x,0,GACHA.z); scene.add(w); setAct(w,"gacha"); w.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=true; } }); });
+setTimeout(()=>addHit("gacha",GACHA.x,0,GACHA.z,1.7,4.1),0);
+function gachaLeft(){ const o=accState().owned; return gachaPool().filter(k=>!o[k]); }
+function openGacha(){ HANDLERS.gachaSpin=gachaSpin; /* (registered here: HANDLERS is made further down the page) */ const left=gachaLeft(), have=gachaPool().length-left.length, a=accState();
+  openSheet("gacha","招財貓扭蛋機",`<p class="lead">投 ${GACHA.cost} 枚扭蛋幣轉一次，會轉出一頂頭飾。抽過的不會再出現，直到 ${gachaPool().length} 頂全部收齊。</p>
+    <div class="inv-top"><span class="inv-coin">🎟️<b id="gcCoins">${bag.gacha||0}</b>扭蛋幣</span><span class="inv-note">已收集 ${have} / ${gachaPool().length}</span></div>
+    <div class="goods"><button class="good" data-act="gachaSpin" ${left.length||me.sp?"":"disabled"}><span class="name">🎰 轉一次（${GACHA.cost} 枚）</span><span class="meta">${left.length?`還有 ${left.length} 頂等你轉`:me.sp?"主委測試：全部都有，轉了只看動畫":"全部收齊了！"}</span></button></div>
+    <div class="gc-grid">${gachaPool().map(k=>`<span class="gc-cell${a.owned[k]?"":" gc-no"}" title="${esc(ACC[k].name)}">${bic(k)}</span>`).join("")}</div>
+    <p class="note">扭蛋幣從各殿神明小遊戲贏來（每個遊戲一天一枚），土地公尋寶也挖得到。</p>`); }
+function gachaSpin(){ if(GACHA.busy) return; GACHA.busy=true;
+  try{ /* take the latest from storage: another tab may already have spent coins or won hats */
+    const st=load("mz.bag",null); if(st&&typeof st==="object"){ if((st.gacha||0)<(bag.gacha||0)) bag.gacha=st.gacha||0; const so=st.acc&&st.acc.owned; if(so) Object.assign(accState().owned,so); }
+    if((bag.gacha||0)<GACHA.cost){ GACHA.busy=false; toast(`扭蛋幣不夠，轉一次要 ${GACHA.cost} 枚`,2400); return; }
+    const left=gachaLeft(); let k, demo=false;
+    if(left.length) k=left[Math.floor(Math.random()*left.length)]; else if(me.sp){ k=gachaPool()[Math.floor(Math.random()*gachaPool().length)]; demo=true; } else { GACHA.busy=false; toast("全部收齊了！",2200); return; }
+    bag.gacha-=GACHA.cost; if(!demo) accState().owned[k]=1; saveBag(); markDirty(); try{ profSave(true); }catch(e){} statInc("gachaSpin");
+    closeSheet(); gachaShow(k); }catch(e){ GACHA.busy=false; } }
+/* the reveal: dark screen, light rays, the capsule drops, shakes, cracks open, and the hat's picture comes out in a burst of light */
+function gachaShow(k){ const el=document.createElement("div"); el.className="gc-show"; const col=["#ff6b9a","#ffb02e","#4fc3ff","#8f6bff","#3fd28a"][Math.floor(Math.random()*5)];
+  el.innerHTML=`<div class="gc-rays"></div><div class="gc-rays gc-r2"></div><div class="gc-egg" style="--c:${col}"><div class="gc-top"></div><div class="gc-bot"></div></div>
+    <div class="gc-prize">${bic(k,"gc-ic")}<div class="gc-name">${esc(ACC[k].name)}</div><div class="gc-sub">已放進背包的「飾品」</div>
+    <div class="gc-btns"><button class="primary" data-g="wear">馬上戴上</button><button class="secondary" data-g="again">再轉一次</button><button class="secondary" data-g="close">關閉</button></div></div><div class="gc-sparks"></div>`;
+  document.body.appendChild(el); miniOpen=true; try{ sfx.coin(); }catch(e){}
+  const sp=el.querySelector(".gc-sparks"); for(let i=0;i<36;i++){ const s=document.createElement("i"); const a=Math.random()*6.283, d=120+Math.random()*220; s.style.setProperty("--x",Math.cos(a)*d+"px"); s.style.setProperty("--y",Math.sin(a)*d+"px"); s.style.setProperty("--d",(Math.random()*.4)+"s"); s.style.background=["#fff6c0","#ffd24a","#ff8fc8","#8fe0ff"][i%4]; sp.appendChild(s); }
+  const T0=[[400,()=>el.classList.add("drop")],[1300,()=>{ el.classList.add("shake"); try{ tone(660,.08,.1,"triangle"); tone(880,.08,.1,"triangle",.15); }catch(e){} }],[2300,()=>{ el.classList.add("open"); try{ [523,659,784,1047].forEach((f,i)=>tone(f,.25,.12,"triangle",i*.08)); }catch(e){} }]];
+  const tm=T0.map(([t,f])=>setTimeout(f,t)); const done=how=>{ tm.forEach(clearTimeout); el.remove(); miniOpen=false; GACHA.busy=false;
+    if(how==="wear"){ const a=accState(); a.head=k; meAv.setAcc(myEq()); saveBag(); markDirty(); toast(`戴上了「${ACC[k].name}」`,2000); } else if(how==="again") openGacha(); };
+  el.addEventListener("click",e=>{ const b=e.target.closest("[data-g]"); if(b){ e.stopPropagation(); done(b.dataset.g); } else if(!el.classList.contains("open")){ tm.forEach(clearTimeout); el.classList.add("drop","shake","open"); } }); }
+
 const catNote=new T.Group(); catNote.userData.noMerge=1; scene.add(catNote);
 function updateCats(dt){ if(CATS.off) return; if(Q.low&&Math.abs(meAv.pos.y-CATS.c.z)>14){ return; } CATS.t+=dt; const T0=CATS.t, P=4, cyc=T0%(P*3), ph=Math.floor(cyc/P), u=(cyc%P)/P;
   CATS.list.forEach(({g,i})=>{ const R=g.userData.rig; const base=i*Math.PI*2/3+Math.PI/2; const r=.95; let ang=base, face=Math.PI/2;
@@ -3450,7 +3510,7 @@ canvas.addEventListener("pointerup",endPointer); canvas.addEventListener("pointe
 canvas.addEventListener("wheel",e=>{ e.preventDefault(); if(fwZoomable()){ FW_ZOOM=Math.max(1,Math.min(2.8,FW_ZOOM*(1-e.deltaY*.0015))); return; } if(customizing){ pvMode=e.deltaY<0?"face":"full"; syncPvSeg(); return; } if(meAv&&meAv.pos.x<-23.5){ ZEN.fovX=Math.max(0,Math.min(34,(ZEN.fovX||0)+e.deltaY*.03)); return; } camDist=Math.max(2.4,Math.min(13,camDist*(1+e.deltaY*.001))); },{passive:false});
 
 let pendingStation=null; let nearKey=null;
-const STATION_LABEL={xuantian:"玄天上帝",guangong:"關聖帝君",fountain:"觀音噴泉",cats:"跳舞小貓",lot:"求籤",altar:"媽祖供桌",shop:"服務處",burn:"金爐",donate:"香油錢",lamp:"光明燈",lampR:"光明燈",bell:"敲鐘",drum:"擊鼓",tiangong:"天公爐",caishen:"財神爺",yuelao:"月老",huye:"虎爺",jieqian:"解籤處",wish:"許願樹"};
+const STATION_LABEL={gacha:"招財貓扭蛋機",xuantian:"玄天上帝",guangong:"關聖帝君",fountain:"觀音噴泉",cats:"跳舞小貓",lot:"求籤",altar:"媽祖供桌",shop:"服務處",burn:"金爐",donate:"香油錢",lamp:"光明燈",lampR:"光明燈",bell:"敲鐘",drum:"擊鼓",tiangong:"天公爐",caishen:"財神爺",yuelao:"月老",huye:"虎爺",jieqian:"解籤處",wish:"許願樹"};
 // tap marker: a gold ring that pulses where you are walking to
 const tapMark=new T.Group(); tapMark.userData.noMerge=1; tapMark.visible=false; scene.add(tapMark);
 { const ringM=new T.MeshBasicMaterial({color:new T.Color("#ffb52e"),transparent:true,opacity:.9,depthWrite:false,side:T.DoubleSide,toneMapped:false});
@@ -3536,7 +3596,7 @@ station("altar",[0,-9.35],Math.PI);
 let tapGy=0, tapGyS=-1;
 function walkTo(x,z,stationKey){ if(sjGuard(()=>walkTo(x,z,stationKey))) return; closeSheet(); if(!stationKey) showTap(x,z); else { const st=stations[stationKey]; showTap(st.approach.x,st.approach.y); } const pth=myFly?[flyClamp(x,z)]:planPath(meAv.pos.x,meAv.pos.y,x,z,meAv.gy||0,tapGy); tapGy=0; if(!myFly&&zoneOf(x,z)==="R"){ const si=tapGyS; tapGyS=-1; if(si>=0&&innLockedBy(si)==="other"&&innSuiteAt(meAv.pos.x,meAv.pos.y)!==si){ toast("這間套房有人鎖門了",2400); return; } } meAv.moveTo(pth[0][0],pth[0][1]); meAv.path=pth.slice(1); meAv.faceGoal=null; pendingStation=stationKey||null; meAv.hold=meAv.hold&&!stationKey?meAv.hold:meAv.hold; markDirty(); updateStandBtn(); }
 function goStation(k){ const s=stations[k]; walkTo(s.approach.x,s.approach.y,k); toast(STATION_HINT[k]); }
-const STATION_HINT={innDesk:"走向禪房櫃台",xuantian:"走向玄天上帝",guangong:"走向關聖帝君",cats:"走向小貓",fountain:"走向觀音噴泉",wish:"走向許願樹",jieqian:"走向解籤處",tiangong:"走向天公爐",caishen:"走向財神爺",yuelao:"走向月老",huye:"走向虎爺",lamp:"走向光明燈",lampR:"走向光明燈",bell:"走去敲鐘",drum:"走去擊鼓",altar:"走向供桌",lot:"走向籤詩櫃",shop:"走向服務處",burn:"走向金爐",donate:"走向香油錢箱"};
+const STATION_HINT={gacha:"走向扭蛋機",innDesk:"走向禪房櫃台",xuantian:"走向玄天上帝",guangong:"走向關聖帝君",cats:"走向小貓",fountain:"走向觀音噴泉",wish:"走向許願樹",jieqian:"走向解籤處",tiangong:"走向天公爐",caishen:"走向財神爺",yuelao:"走向月老",huye:"走向虎爺",lamp:"走向光明燈",lampR:"走向光明燈",bell:"走去敲鐘",drum:"走去擊鼓",altar:"走向供桌",lot:"走向籤詩櫃",shop:"走向服務處",burn:"走向金爐",donate:"走向香油錢箱"};
 function trySit(i){ if(sjGuard(()=>trySit(i))) return; { const S0=SEATS[i]; statInc("sit_"+(S0&&(S0.kind||(S0.zen?"zen":""))||"mat")); } { const S=SEATS[i]; if(S&&S.kind==="futon"&&!(bag.gd&&bag.gd.bedding)){ toast("先到櫃台跟阿姨領床具，才能鋪床睡覺喔",3000); return; } if(S&&S.suite!=null&&innLockedBy(S.suite)==="other"){ toast("這間套房有人鎖門了",2400); return; } } if(seatTakenByPeer(i)){ toast("這個拜墊已經有人了"); return; } closeSheet(); showTap(SEATS[i].x,SEATS[i].y); pendingStation=null; meAv.sitAt(i); { const pth=planPath(meAv.pos.x,meAv.pos.y,SEATS[i].x,SEATS[i].y,meAv.gy||0,SEATS[i].gy||0); meAv.target.set(pth[0][0],pth[0][1]); meAv.path=pth.slice(1); } meAv.faceGoal=null; npcYield(i); markDirty(); updateStandBtn(); }
 /* the small dot above the joystick: camera back behind your character at the normal height and distance */
 $("#camReset").onclick=()=>{ rotAnim={to:camYaw+wrapA(meAv.rotY+Math.PI-camYaw)}; camPitch=.3; camDist=4.6; };
@@ -4399,10 +4459,10 @@ const GIFT_ITEMS=GOODS.map(g=>[g.k,g.name]);
 const GIFTQ=[]; let giftShowing=false;
 function giftCard(g){ GIFTQ.push(g); if(!giftShowing) giftNext(); }
 function giftNext(){ const g=GIFTQ.shift(); if(!g){ giftShowing=false; return; } giftShowing=true; sfx.coin(); if(sheetKind) closeSheet(); /* open panels sit above everything else, so the card waits for nothing */
-  const what=g.kind==="acc"?`${esc((ACC[g.k]||{}).name||g.k)}`:g.kind==="coins"?`平安幣 <b>${g.n}</b>`:`${esc((GOOD_BY[g.k]||{}).name||g.k)} × <b>${g.n}</b>`;
+  const what=g.kind==="gacha"?`扭蛋幣 <b>${g.n}</b> 枚`:g.kind==="acc"?`${esc((ACC[g.k]||{}).name||g.k)}`:g.kind==="coins"?`平安幣 <b>${g.n}</b>`:`${esc((GOOD_BY[g.k]||{}).name||g.k)} × <b>${g.n}</b>`;
   const d=document.createElement("div"); d.className="gift-card"; d.innerHTML=`<div class="gc-in gc-pop"><div class="gc-icon">🎁</div><b>收到來自「${esc(g.from||"主委")}」的禮物！</b><div class="gc-big">${what}</div><button class="primary" data-x="ok">收下</button></div>`;
   document.body.appendChild(d); const done=()=>{ d.remove(); setTimeout(giftNext,250); }; d.querySelector('[data-x="ok"]').onclick=done; setTimeout(()=>{ if(d.parentNode) done(); },9000); }
-function giftApply(g){ if(g.kind==="acc"){ if(!ACC[g.k]) return; accState().owned[g.k]=1; saveBag(); markDirty(); giftCard(g); return; } if(g.kind==="coins") bag.coins+=g.n; else if(GOOD_BY[g.k]){ bag.items[g.k]=(bag.items[g.k]||0)+g.n; if(g.k==="fu") meAv.setAmulet(true); } else return; saveBag(); markDirty(); giftCard(g); }
+function giftApply(g){ if(g.kind==="gacha"){ bag.gacha=Math.min(255,(bag.gacha||0)+Math.max(1,g.n|0)); saveBag(); markDirty(); giftCard(g); return; } if(g.kind==="acc"){ if(!ACC[g.k]) return; accState().owned[g.k]=1; saveBag(); markDirty(); giftCard(g); return; } if(g.kind==="coins") bag.coins+=g.n; else if(GOOD_BY[g.k]){ bag.items[g.k]=(bag.items[g.k]||0)+g.n; if(g.k==="fu") meAv.setAmulet(true); } else return; saveBag(); markDirty(); giftCard(g); }
 const GIFT_SEEN=new Set(load("mz.giftSeen",[]));
 async function giftFetch(){ if(!NET_ME()) return; try{ const r=await fetch("/gifts",{cache:"no-store"}); const j=await r.json(); let any=false;
     const GAS=new Set(bag.gaSeen||[]); /* server-wide gifts: remembered in the bag (and the save code's profile) so each is taken once */
@@ -4415,6 +4475,8 @@ function openGift(id,name){ if(!me.sp) return; GIFT_TO=[id,name]; const ALL=id==
   openSheet("gift","送禮",`<p class="lead">送給：<b>${esc(name)}</b></p>${ALL?`<div class="chips"><button class="chip" data-act="giftWho" data-v="0" aria-pressed="${!GIFT_ONLINE}">🌐 所有玩家（14 天內進來的也有）</button><button class="chip" data-act="giftWho" data-v="1" aria-pressed="${GIFT_ONLINE}">🟢 只有現在在線上的人</button></div><p class="note">${GIFT_ONLINE?"只有按下送出這一刻在線上的玩家會收到，之後才進來的人不會有。":"每一位玩家都會收到一份，現在不在線上的人（14 天內進來）也會收到，每人只領一次。"}</p>`:""}
     <div class="group"><span class="group-label">平安幣</span><div class="chips">${[50,100,500,1000].map(v=>`<button class="chip" data-act="giftAmt" data-v="${v}">${v}</button>`).join("")}</div>
       <div class="mail-row"><input class="mail-box" id="giftCoins" type="text" inputmode="numeric" maxlength="6" placeholder="輸入金額"><button class="primary" data-act="giftSend" data-v="coins">送平安幣</button></div></div>
+    <div class="group"><span class="group-label">扭蛋幣</span><div class="chips">${[1,5,10,20,50].map(v=>`<button class="chip" data-act="giftGachaN" data-v="${v}">${v} 枚</button>`).join("")}</div>
+      <div class="mail-row"><input class="mail-box" id="giftGacha" type="text" inputmode="numeric" maxlength="3" placeholder="幾枚"><button class="primary" data-act="giftSend" data-v="gacha">送扭蛋幣</button></div><p class="note">10 枚可以轉一次扭蛋機；每人最多存 255 枚。</p></div>
     <div class="group"><span class="group-label">道具</span><div class="chips" id="giftItems">${it}</div>
       <div class="mail-row"><input class="mail-box" id="giftQty" type="text" inputmode="numeric" maxlength="2" value="1" placeholder="數量"><button class="primary" data-act="giftSend" data-v="item">送道具</button></div></div>
     <div class="group"><span class="group-label">飾品（頭飾・髮型・手持）</span><div class="chips" id="giftAccs">${ACC_IDS.filter(k=>!ACC[k].gone).map(k=>`<button class="chip" data-act="giftAcc" data-v="${k}" aria-pressed="false">${esc(ACC[k].name)}</button>`).join("")}</div>
@@ -4423,8 +4485,9 @@ function openGift(id,name){ if(!me.sp) return; GIFT_TO=[id,name]; const ALL=id==
 let GIFT_K=null;
 let GIFT_ACC=null; HANDLERS.giftAcc=(v,b)=>{ GIFT_ACC=v; document.querySelectorAll("#giftAccs .chip").forEach(c=>c.setAttribute("aria-pressed",String(c===b))); };
 HANDLERS.giftAmt=v=>{ const i=$("#giftCoins"); if(i) i.value=v; };
+HANDLERS.giftGachaN=v=>{ const i=$("#giftGacha"); if(i) i.value=v; };
 HANDLERS.giftItem=(v,b)=>{ GIFT_K=v; document.querySelectorAll("#giftItems .chip").forEach(c=>c.setAttribute("aria-pressed",String(c===b))); };
-HANDLERS.giftSend=async v=>{ if(!me.sp||!GIFT_TO) return; if(v==="acc"){ if(!GIFT_ACC){ toast("先選要送的飾品"); return; } return giftGo({kind:"acc",k:GIFT_ACC,n:1,from:SP_NAME}); } const kind=v==="item"?"item":"coins";
+HANDLERS.giftSend=async v=>{ if(!me.sp||!GIFT_TO) return; if(v==="gacha"){ const n=Math.floor(Number(($("#giftGacha")||{}).value)||0); if(n<1){ toast("請輸入幾枚"); return; } if(n>255){ toast("一次最多 255 枚"); return; } return giftGo({kind:"gacha",k:"",n,from:SP_NAME}); } if(v==="acc"){ if(!GIFT_ACC){ toast("先選要送的飾品"); return; } return giftGo({kind:"acc",k:GIFT_ACC,n:1,from:SP_NAME}); } const kind=v==="item"?"item":"coins";
   const n=Math.floor(Number(kind==="coins"?($("#giftCoins")||{}).value:($("#giftQty")||{}).value)||0); if(n<1){ toast(kind==="coins"?"請輸入金額":"請輸入數量"); return; } if(kind==="item"&&!GIFT_K){ toast("先選要送的道具"); return; }
   if(kind==="coins"&&n>100000){ toast("一次最多 100000"); return; } if(kind==="item"&&n>99){ toast("一次最多 99 個"); return; }
   return giftGo({kind,k:kind==="item"?GIFT_K:"",n,from:SP_NAME}); };
@@ -4507,7 +4570,7 @@ function openBag(){ const list=bagEntries(); if(!list.find(e=>e.id===bagSel)) ba
     grid+=`<button class="slot${e.n===0?" zero":""}" data-act="bagSel" data-v="${e.id}" aria-pressed="${e.id===bagSel}" aria-label="${e.name}">${e.poem?`<span class="pslip">${CN_NUM(e.poem)}</span>`:bic(e.ic)}${e.n!=null?`<span class="n">${e.n}</span>`:""}${e.on?`<span class="on">穿戴中</span>`:""}${e.done?`<span class="on">已解</span>`:""}</button>`; if(i===rowEnd) grid+="%%DET%%"; }
   let det=sel?`<div class="inv-detail inline" style="--arrow:${((selI%cols)+.5)/cols*100}%">${sel.poem?`<span class="pslip">${CN_NUM(sel.poem)}</span>`:bic(sel.ic)}<div class="tx"><span class="tt">${sel.name}${sel.n!=null?`　<small style="font-size:13px;color:var(--ink)">持有 ${sel.n}</small>`:""}</span><span class="ds">${sel.desc}</span><div class="acts">${bagActs(sel)}</div></div></div>`
     :`<div class="inv-detail">${bic("gift")}<div class="tx"><span class="tt">還是空的</span><span class="ds">${bagTab==="acc"?"到夜市玩地瓜球、珍珠奶茶、射氣球、香腸攤，可以得到飾品。":bagTab==="poem"?"到媽祖右前方的籤詩櫃求籤，收下的籤詩會放在這裡。":"到服務處請香、買供品和金紙。"}</span><div class="acts">${bagTab==="poem"?`<button class="chip" data-act="bagGo" data-v="lot">走去籤詩櫃</button>`:bagTab==="acc"?"":`<button class="chip" data-act="goShop">去服務處</button>`}</div></div></div>`;
-  const html=`<div class="inv-top"><span class="inv-coin">${bic("coin")}<b>${bag.coins}</b>平安幣</span><span class="inv-note">每天補到 300</span></div><div class="inv-top"><span class="inv-coin">🎟️<b>${bag.gacha||0}</b>扭蛋幣</span><span class="inv-note">扭蛋機尚未開放，先存著</span></div>
+  const html=`<div class="inv-top"><span class="inv-coin">${bic("coin")}<b>${bag.coins}</b>平安幣</span><span class="inv-note">每天補到 300</span></div><div class="inv-top"><span class="inv-coin">🎟️<b>${bag.gacha||0}</b>扭蛋幣</span><span class="inv-note">10 枚可到廟埕小貓旁的扭蛋機轉一次</span></div>
     <div class="inv-tabs" role="tablist">${tab("all","全部")}${tab("goods","供品")}${tab("acc","飾品")}${tab("poem","籤詩")}</div>
     <div class="inv-grid">${sel?grid.replace("%%DET%%",det):grid}</div>${sel?"":det}`;
   const keep=sheetKind==="bag"?sheetBody.scrollTop:0; openSheet("bag","背包",html); sheetBody.scrollTop=keep; }
@@ -4551,7 +4614,7 @@ HANDLERS.toggleNpc=(v,b)=>{ showNpc=!showNpc; save("mz.npc",showNpc); b.setAttri
 HANDLERS.showPoem=v=>openPoem(+v,true);
 
 /* ---- stations ---- */
-function openStation(k){ statInc("st_"+k); if(k==="innDesk"){ HANDLERS.innDeskOpen(); return; } if(k==="fortune"&&typeof INC!=="undefined"&&INC.stall){ FTB.av&&FTB.av.say("我早就算到會有這麼一天，今天只能休息一天了","#ffe2a0",4); return; } if(typeof WX!=="undefined"&&WX.shut&&(k==="fortune"||k==="cats")){ toast("下雨了，老師傅收攤躲雨去了，天晴再來",2600); return; } if(k==="fortune"&&INC.stall){ toast("攤子被風吹走了！老師傅：「我早就算到了…」今天先休息",3200); return; } if(k==="treasure"){ thDig(); return; } if(k.startsWith("nm:")){ openStall(k.slice(3)); return; } if(k==="puppet"){ ptOpen(); return; } if(k==="fortune"){ openFortune(); return; } if(k==="cats"){ openCats(); return; } if(k==="fountain"){ openFountain(); return; } if(k==="wish"){ openWish(); return; } if(CENSER_INFO[k]){ openCenser(k); return; } if(k==="jieqian"){ openJieqian(); return; } if(k==="shop") openShop(); if(k==="altar") openAltar(); if(k==="burn") openBurn(); if(k==="donate") openDonate(); if(k==="lot") openLot("ask"); if(k==="lamp"||k==="lampR") openLamp(); if(k==="bell"){ meAv.burnT=0; ringBell(); toast("咚——鐘聲迴盪（只有你聽得到）"); } if(k==="drum"){ meAv.burnT=0; hitDrum(); toast("咚！鼓聲響起（只有你聽得到）"); } }
+function openStation(k){ statInc("st_"+k); if(k==="gacha"){ openGacha(); return; } if(k==="innDesk"){ HANDLERS.innDeskOpen(); return; } if(k==="fortune"&&typeof INC!=="undefined"&&INC.stall){ FTB.av&&FTB.av.say("我早就算到會有這麼一天，今天只能休息一天了","#ffe2a0",4); return; } if(typeof WX!=="undefined"&&WX.shut&&(k==="fortune"||k==="cats")){ toast("下雨了，老師傅收攤躲雨去了，天晴再來",2600); return; } if(k==="fortune"&&INC.stall){ toast("攤子被風吹走了！老師傅：「我早就算到了…」今天先休息",3200); return; } if(k==="treasure"){ thDig(); return; } if(k.startsWith("nm:")){ openStall(k.slice(3)); return; } if(k==="puppet"){ ptOpen(); return; } if(k==="fortune"){ openFortune(); return; } if(k==="cats"){ openCats(); return; } if(k==="fountain"){ openFountain(); return; } if(k==="wish"){ openWish(); return; } if(CENSER_INFO[k]){ openCenser(k); return; } if(k==="jieqian"){ openJieqian(); return; } if(k==="shop") openShop(); if(k==="altar") openAltar(); if(k==="burn") openBurn(); if(k==="donate") openDonate(); if(k==="lot") openLot("ask"); if(k==="lamp"||k==="lampR") openLamp(); if(k==="bell"){ meAv.burnT=0; ringBell(); toast("咚——鐘聲迴盪（只有你聽得到）"); } if(k==="drum"){ meAv.burnT=0; hitDrum(); toast("咚！鼓聲響起（只有你聽得到）"); } }
 function openThanks(i){ const th=THANKS[i]; if(!th) return; sfx.coin(); openSheet("thanks","感謝贊助",`<img class="thanks-img" src="${th.img}" alt="感謝看板" width="1024" height="768"><p class="thanks-text">${esc(th.text)}</p>`); }
 function openShop(){ const html=`<p class="lead">拜拜順序：天公爐 → 媽祖 → 玄天上帝 → 武財神 → 文昌帝君 → 關聖帝君 → 月老 → 土地公 → 觀音菩薩 → 註生娘娘 → 斗姥元君 → 九天玄女 → 地藏王 → 虎爺。十四爐都插好香，再到廟埕金爐燒金紙。</p>
   <div class="goods">${GOODS.map(g=>`<button class="good" data-act="buy" data-v="${g.k}" ${bag.coins<g.price?"disabled":""}><span class="name">${g.name}</span><span class="meta">${g.meta}</span><span class="price">${g.price} 平安幣</span><span class="own">持有 ${bag.items[g.k]||0}</span></button>`).join("")}</div>
@@ -7262,7 +7325,7 @@ const twDay=()=>new Date(Date.now()+8*3600e3).toISOString().slice(0,10);
 function gameReward(g,accId){ bag.gd=bag.gd||{}; const a=accState();
   if(accId&&ACC[accId]&&!a.owned[accId]){ giveAcc(accId); return {kind:"acc",id:accId,text:`獲得飾品「${ACC[accId].name}」，已經戴上了`}; }
   if(bag.gd[g]===twDay()) return {kind:"none",text:"今天這個遊戲的扭蛋幣已經領過了，明天再來"};
-  bag.gd[g]=twDay(); bag.gacha=(bag.gacha||0)+1; saveBag(); markDirty(); return {kind:"gacha",text:"獲得扭蛋幣 1 枚（扭蛋機尚未開放，先存著）"}; }
+  bag.gd[g]=twDay(); bag.gacha=Math.min(255,(bag.gacha||0)+1); saveBag(); markDirty(); return {kind:"gacha",text:"獲得扭蛋幣 1 枚！到廟埕小貓旁的扭蛋機轉頭飾"}; }
 const fmtMs=ms=>(ms/1000).toFixed(2)+" 秒";
 async function lbSubmit(g,ms,sc,avg){ const name=(me.name||(me.no?`香客${me.no}`:"香客")).slice(0,10), id=load("mz.id","")||"anon";
   try{ const r=await fetch("/lb",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({g,t:Math.round(ms),s:sc,a:avg,name,id})}); const j=await r.json(); if(Array.isArray(j.top)) return j.top.map(e=>({...e,me:e.id===id})); }catch(e){}
@@ -7325,7 +7388,7 @@ function thChest(ms){ const g=new T.Group(); g.position.set(TH.x,-.6,TH.z); g.ro
   if(pick[0]==="gacha"&&bag.gd.tudiG===twDay()) pick=TH_LOOT[1]; thLeft(); bag.gd.tudiN.n++; const left=Math.max(0,TH_MAX-bag.gd.tudiN.n);
   let text; if(pick[0]==="big"){ bag.coins+=500; text="挖到大寶藏：500 平安幣！土地公保佑！"; newsEv("tudi500",500); }
   else if(pick[0]==="coins"){ const amt=30+Math.round(Math.random()*9)*10; bag.coins+=amt; text=`挖到一袋平安幣：${amt} 幣！`; }
-  else if(pick[0]==="gacha"){ bag.gd.tudiG=twDay(); bag.gacha=(bag.gacha||0)+1; text="挖到扭蛋幣 1 枚！（扭蛋機尚未開放，先存著）"; }
+  else if(pick[0]==="gacha"){ bag.gd.tudiG=twDay(); bag.gacha=Math.min(255,(bag.gacha||0)+1); text="挖到扭蛋幣 1 枚！到廟埕小貓旁的扭蛋機轉頭飾"; }
   else if(pick[0]==="sock"){ text="挖到一隻臭襪子……土地公說這不是他的。"; } else { text="挖到一根魚骨頭……應該是廟裡的貓藏的。"; }
   if(!me.sp) text+=left?`（今天還能挖 ${left} 次）`:"（今天的 3 次挖完了）"; saveBag(); markDirty();
   const item=textSprite(pick[1].split(" ")[0],{fs:72,h:.5,pad:4}); item.position.set(0,.3,0); item.visible=false; g.add(item);

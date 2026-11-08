@@ -585,9 +585,9 @@ export class Lobby extends DurableObject {
       }
       if (url.pathname === "/gift" && req.method === "POST") {
         const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
-        let b = {}; try { b = await req.json(); } catch {} const to = clean(b.to, 16).replace(/[^a-z0-9]/g, ""), kind = b.kind === "item" ? "item" : b.kind === "acc" ? "acc" : "coins";
-        const k = kind !== "coins" ? String(b.k || "").replace(/[^a-z_]/g, "").slice(0, 16) : "", n = kind === "acc" ? 1 : Math.max(1, Math.min(kind === "item" ? 99 : 100000, Math.floor(Number(b.n) || 0)));
-        if (!to || (kind !== "coins" && !k)) return json({ ok: false });
+        let b = {}; try { b = await req.json(); } catch {} const to = clean(b.to, 16).replace(/[^a-z0-9]/g, ""), kind = b.kind === "item" ? "item" : b.kind === "acc" ? "acc" : b.kind === "gacha" ? "gacha" : "coins";
+        const k = kind === "item" || kind === "acc" ? String(b.k || "").replace(/[^a-z_]/g, "").slice(0, 16) : "", n = kind === "acc" ? 1 : Math.max(1, Math.min(kind === "item" ? 99 : kind === "gacha" ? 255 : 100000, Math.floor(Number(b.n) || 0)));
+        if (!to || ((kind === "item" || kind === "acc") && !k)) return json({ ok: false });
         if (to === "all" && b.online) { /* 只有現在在線上的人: sent straight down every open connection, not stored */
           const gift = { g: "n" + Math.random().toString(36).slice(2, 10), kind, k, n, from: clean(b.from, 16) || "主委", at: Date.now() };
           await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/giftping", { method: "POST", body: JSON.stringify({ all: 1, gift }) }).catch(() => {})));
