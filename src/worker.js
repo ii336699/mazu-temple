@@ -201,7 +201,7 @@ export class Lobby extends DurableObject {
     const LENS = [218, 97, 126, 186], txt = plain(txtIn, 24); let sh = LENS[shIn | 0] ? shIn | 0 : 0, len = LENS[sh], cu = "";
     if (cuIn) { cu = String(cuIn).replace(/[^a-z0-9]/g, "").slice(0, 12); const show = cu && await this.ctx.storage.get("fwc:" + cu); if (!show) return { ok: false, gone: true }; sh = show.song | 0; len = show.len || LENS[sh]; }
     const last = (await this.ctx.storage.get("fwAt")) || 0, lastLen = (await this.ctx.storage.get("fwLen")) || 218; if (Date.now() - last < (lastLen + 16) * 1000) return { ok: false, busy: true };
-    const at = Date.now() + 10000; await this.ctx.storage.put("fwAt", at); await this.ctx.storage.put("fwLen", len); const seed = (Math.random() * 4294967295) >>> 0;
+    const at = Date.now() + 10000; await this.ctx.storage.put("fwAt", at); try { await this.newsAdd({ k: "fw", g: sh, x: txt }); } catch {} /* for tomorrow's paper */ await this.ctx.storage.put("fwLen", len); const seed = (Math.random() * 4294967295) >>> 0;
     await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/fireworks", { method: "POST", body: JSON.stringify({ seed, at, sh, txt, len, cu }) }).catch(() => {})));
     return { ok: true };
   }

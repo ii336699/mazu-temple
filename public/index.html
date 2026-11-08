@@ -6952,7 +6952,7 @@ const HFX={
   h_steam:{smoke:"#d8d8d8",r:.3,s:[.08,.12],at:"top",dy:.15,vy:.7,l:[.9,1.2],gr:.3,op:.45,o:{n:4,t:"gear",c:["#d8a640","#b8862a","#e8c060","#a87428"],r:.5,y:.3,sp:.8,s:.15,spin:2.5,wob:.12}},
   h_devil:{t:"heart",c:["#ff6fb0","#ff9ac8","#ff4f9a"],r:.35,s:[.06,.1],at:"top",vy:.35,sp:.12,l:[1.3,1.8],also:{smoke:"#7a3aa8",r:.3,s:[.1,.16],at:"ring",dy:.1,vy:.18,l:[1.2,1.6],gr:.2,op:.35}},
   h_lion:{t:"conf",c:["#ff2a2a","#ffd21a","#ff7a1a","#ffffff"],r:.6,burst:12,s:[.03,.05],at:"top",dy:.1,vy:1,sp:.8,g:2,l:[.9,1.3],rot:1},
-  h_cow:{t:"drop",c:["#ffffff","#fffaf0","#f4f0e6"],r:2.6,burst:14,s:[.035,.06],at:"mouth",vy:1.1,sp:1.6,g:3.4,l:[.6,.9]} /* sprays milk now and then */,
+  h_cow:{t:"drop",c:["#ffffff","#fffaf0","#f4f0e6"],r:.03,burst:2,s:[.05,.075],at:"mouth",vy:1.9,sp:.55,g:4.2,l:[.75,.95]} /* a milk fountain from the mouth, never stopping */,
   h_sushi:{o:{n:3,t:"fish",c:["#ff8a50","#ffa070","#ff7040"],r:.5,y:.22,sp:1.3,s:.3,plane:1}},
   h_pumpkin:{t:"dot",c:["#ffb030","#ff7a1a","#ffd060"],r:.14,s:[.015,.03],at:"top",vy:.5,sp:.12,l:[.9,1.4],add:1,keep:[{c:"#ff9a2a",y:.2,z:.12,s:.45,pulse:2}]},
   h_bigshark:{},
@@ -9094,7 +9094,7 @@ async function paperFetch(){ if(PAPER.p) return PAPER.p;
     else { PAPER.p=await paperDemo({}); } }catch(e){ console.warn("paper",e); }
   return PAPER.p; }
 /* a sample paper (test page, and the chair's 報紙測試): made up numbers plus whatever this page did today; sc picks the stories */
-async function paperDemo(sc){ const G=await import("./paper-gen.js?v=20261108a"); const back=sc.seed?1+Math.floor(Math.random()*40):1, d=new Date(Date.now()+8*3600e3-back*864e5).toISOString().slice(0,10); const NAMES=["阿明","小美","怕癢的傑克","開心凱文","跑很快的小龍","溫柔的松鼠","阿嬤的乖孫","夜市小王子","拜拜達人","甜甜圈"], pickN=()=>NAMES[(Math.random()*NAMES.length)|0]; const n=sc.seed?pickN():(me.name||"香客").slice(0,10); const pkr=sc.pk===undefined&&sc.seed?Math.random():(sc.pk===false?.9:0); const pk=pkr<.4?{pkCash:1340,pkBuy:980}:pkr<.7?{pkCash:120,pkBuy:900}:{pkCash:60,pkBuy:80}; if(sc.nm||(sc.seed&&Math.random()<.6)){ const r=(a,b)=>a+Math.floor(Math.random()*(b-a+1)); ["qq","sausage","bbq","fish","pachinko","boba","balloon"].forEach(k=>{ if(sc.nm||Math.random()<.6){ pk["nmP_"+k]=r(3,30); pk["nmW_"+k]=r(0,Math.floor(pk["nmP_"+k]/2)); } }); pk.sjDone=r(3,20); pk.ftDone=r(3,15); pk.sit_tub=r(3,12); } /* stalls and the other corners */
+async function paperDemo(sc){ const G=await import("./paper-gen.js?v=20261108c"); const back=sc.seed?1+Math.floor(Math.random()*40):1, d=new Date(Date.now()+8*3600e3-back*864e5).toISOString().slice(0,10); const NAMES=["阿明","小美","怕癢的傑克","開心凱文","跑很快的小龍","溫柔的松鼠","阿嬤的乖孫","夜市小王子","拜拜達人","甜甜圈"], pickN=()=>NAMES[(Math.random()*NAMES.length)|0]; const n=sc.seed?pickN():(me.name||"香客").slice(0,10); const pkr=sc.pk===undefined&&sc.seed?Math.random():(sc.pk===false?.9:0); const pk=pkr<.4?{pkCash:1340,pkBuy:980}:pkr<.7?{pkCash:120,pkBuy:900}:{pkCash:60,pkBuy:80}; if(sc.nm||(sc.seed&&Math.random()<.6)){ const r=(a,b)=>a+Math.floor(Math.random()*(b-a+1)); ["qq","sausage","bbq","fish","pachinko","boba","balloon"].forEach(k=>{ if(sc.nm||Math.random()<.6){ pk["nmP_"+k]=r(3,30); pk["nmW_"+k]=r(0,Math.floor(pk["nmP_"+k]/2)); } }); pk.sjDone=r(3,20); pk.ftDone=r(3,15); pk.sit_tub=r(3,12); } /* stalls and the other corners */
   const ev=[]; const G7=["wenchang","tudi","guanyin","zhusheng","doumu","jiutian","dizang"], NM=["qq","bbq","fish","pachinko","boba","balloon"]; const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
   if(sc.rec!==false&&(!sc.seed||Math.random()<.7)){ const g=G7[rnd(0,6)]; ev.push({k:"lb",g,n:sc.seed?pickN():n,v:g==="wenchang"?rnd(700,1200):rnd(3000,20000)}); } if(sc.seed&&Math.random()<.5){ const g=NM[rnd(0,5)]; ev.push({k:"nm",g,n:pickN(),v:rnd(5,60)}); }
   if(sc.tudi!==false&&(!sc.seed||Math.random()<.5)) ev.push({k:"tudi500",n:pickN()}); if(sc.calm){ ev.length=0; }
@@ -9112,7 +9112,7 @@ function paperHTML(p){ const E=esc, it=p.items||[], dt=p.d.split("-"), wk="日�
     <div class="np-rule"></div>
     <article class="np-head"><span class="np-tag">${E(p.head.tag)}</span><h2>${E(p.head.t)}</h2>${art(p.head,0)}<p>${E(p.head.b)}</p></article>
     <div class="np-cols">${it.map((s,k)=>`<article class="np-item"><span class="np-tag">${E(s.tag)}</span><h3>${E(s.t)}</h3>${k===0?(PAPER.ph&&PAPER.ph[1]?`<img class="np-thumb" src="${PAPER.ph[1]}" alt="">`:`<i data-ph="1" hidden></i>`):""}<p>${E(s.b)}</p></article>`).join("")}
-      <aside class="np-box"><h3>昨日數字</h3>${p.box.map(([k,v])=>`<div><span>${E(k)}</span><b>${v}</b></div>`).join("")}${p.busyHour>=0?`<div><span>最熱鬧</span><b>${p.busyHour} 點</b></div>`:""}</aside></div>
+      <aside class="np-box"><h3>昨日數字</h3>${p.box.map(([k,v])=>`<div><span>${E(k)}</span><b>${v}</b></div>`).join("")}${p.busyHour>=0?`<div><span>最熱鬧</span><b>${String(p.busyHour).padStart(2,"0")}:00</b></div>`:""}</aside></div>
     <div class="np-ads">${(p.ads||[]).map(a=>a.poster?`<div class="np-ad poster"><img src="${E(a.img)}" alt="廣告"></div>`:a.img?`<div class="np-ad pic"><img src="${E(a.img)}" alt=""><div><b>${E(a.t)}</b><span>${E(a.b)}</span></div></div>`:`<div class="np-ad"><b>${E(a.t)}</b><span>${E(a.b)}</span></div>`).join("")}</div>
     <footer class="np-foot">天后宮日報社・本報內容由廟方記者（和一隻貓）採訪撰寫</footer></div>`; }
 function paperDing(){ const a=soundOn?ensureAudio():null, v=sVol(); if(!a||v<=0) return; const t0=a.currentTime+.05;
@@ -9135,12 +9135,19 @@ function paperShoot(kind){ try{ const W=480,H=300, cam=new T.PerspectiveCamera(5
     x.putImageData(id,0,0); return c.toDataURL("image/jpeg",.82); }catch(e){ return null; } }
 /* the photos are taken after the paper is already open, one per frame, and slipped in when ready (taking them first froze the page for a while:
    each one draws the whole temple from a new spot) */
-function paperPhotos(){ const p=PAPER.p; if(!p) return; const tok=PAPER.phTok=(PAPER.phTok||0)+1; PAPER.ph=[]; const kinds=[p.head.kind,p.items[0]?p.items[0].kind:null];
+/* photos are taken ahead of time, quietly, before the paper is opened (and kept on the phone for the day), so opening it is instant.
+   The server cannot take them: only the game on the phone can draw the temple. */
+const paperPhKey=p=>p?p.d+"#"+(p.rev||0)+"#"+p.head.kind+"#"+(p.items[0]?p.items[0].kind:""):"";
+function paperPhCached(p){ try{ const c=JSON.parse(load("mz.paperPh","")||"null"); if(c&&c.k===paperPhKey(p)&&Array.isArray(c.ph)) return c.ph; }catch(e){} return null; }
+function paperPrepare(p){ return new Promise(res=>{ if(!p||paperPhCached(p)) return res(); const kinds=[p.head.kind,p.items[0]?p.items[0].kind:null], ph=[];
+  const step=i=>{ if(i>=kinds.length){ try{ save("mz.paperPh",JSON.stringify({k:paperPhKey(p),ph})); }catch(e){} return res(); } if(kinds[i]) ph[i]=paperShoot(kinds[i]); setTimeout(()=>requestAnimationFrame(()=>step(i+1)),120); };
+  requestAnimationFrame(()=>step(0)); }); }
+function paperPhotos(){ const p=PAPER.p; if(!p) return; { const c=paperPhCached(p); if(c){ PAPER.ph=c.slice(); [0,1].forEach(i=>{ const src=PAPER.ph[i], el=src&&document.querySelector(`#paper [data-ph="${i}"]`); if(!el) return; el.outerHTML=i===0?`<figure class="np-photo"><img src="${src}" alt=""><figcaption>本報記者攝</figcaption></figure>`:`<img class="np-thumb" src="${src}" alt="">`; }); return; } } const tok=PAPER.phTok=(PAPER.phTok||0)+1; PAPER.ph=[]; const kinds=[p.head.kind,p.items[0]?p.items[0].kind:null];
   const put=i=>{ const src=PAPER.ph[i]; if(!src) return; const el=document.querySelector(`#paper [data-ph="${i}"]`); if(!el) return;
     if(i===0) el.outerHTML=`<figure class="np-photo np-fade"><img src="${src}" alt=""><figcaption>本報記者攝</figcaption></figure>`; else el.outerHTML=`<img class="np-thumb np-fade" src="${src}" alt="">`; };
-  const step=i=>{ if(tok!==PAPER.phTok||i>=kinds.length) return; if(kinds[i]) PAPER.ph[i]=paperShoot(kinds[i]); put(i); setTimeout(()=>requestAnimationFrame(()=>step(i+1)),60); };
+  const step=i=>{ if(tok!==PAPER.phTok||i>=kinds.length){ if(i>=kinds.length) try{ save("mz.paperPh",JSON.stringify({k:paperPhKey(p),ph:PAPER.ph})); }catch(e){} return; } if(kinds[i]) PAPER.ph[i]=paperShoot(kinds[i]); put(i); setTimeout(()=>requestAnimationFrame(()=>step(i+1)),60); };
   setTimeout(()=>requestAnimationFrame(()=>step(0)),350); }
-function paperOpen(intro){ const p=PAPER.p; if(!p) return; PAPER.ph=[]; let el=$("#paper"); if(!el){ el=document.createElement("div"); el.id="paper"; document.body.appendChild(el); }
+function paperOpen(intro){ const p=PAPER.p; if(!p) return; PAPER.ph=(paperPhCached(p)||[]).slice(); let el=$("#paper"); if(!el){ el=document.createElement("div"); el.id="paper"; document.body.appendChild(el); }
   el.innerHTML=`<div class="np-call" aria-live="polite"><div class="np-icon">📰</div><div class="np-big">報紙到囉！</div><div class="np-hint">點一下打開報紙</div></div><div class="np-wrap">${paperHTML(p)}<button class="np-close" type="button">收起報紙</button></div>`;
   el.className=intro?"intro":"open"; el.hidden=false; PAPER.shown=true; statInc("paperOpen"); if(!intro) paperPhotos();
   const close=()=>{ el.className="closing"; setTimeout(()=>{ el.hidden=true; el.className=""; },420); };
@@ -9154,7 +9161,7 @@ const spAmt=v=>{ v=String(v||"").trim(); return /^[\d,]+$/.test(v)?"新台幣 "+
 async function spReq(body){ if(!USE_CF){ const d=SPT.get(); if(body){ const w=body.when==="next"||body.day==="next"?"next":"now"; if(body.act==="add") d[w].push(...body.list); if(body.act==="del") d[w].splice(body.i,1); SPT.put(d); } return {ok:true,now:d.now,next:d.next}; }
   const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return null; }
   try{ const r=await fetch("/sponsor",body?{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify(body)}:{headers:{"x-key":key},cache:"no-store"}); const j=await r.json().catch(()=>({})); forgetKey(r,j); if(!j.ok){ toast("存不進去（密碼？）",2200); return null; } return j; }catch(e){ toast("網路不穩",2000); return null; } }
-const spRow=()=>`<div class="sp-row"><input class="sp-n" maxlength="16" placeholder="贊助人名字" autocomplete="off"><input class="sp-x" maxlength="24" placeholder="金額，例：1000" autocomplete="off" inputmode="text"><input class="sp-m" maxlength="40" placeholder="想說的話（可不填）" autocomplete="off"></div>`;
+const spRow=()=>`<div class="sp-row"><input class="sp-n" maxlength="16" placeholder="贊助人名字" autocomplete="off"><input class="sp-x" maxlength="24" placeholder="金額，例：1000" autocomplete="off" inputmode="text"><input class="sp-m" maxlength="40" placeholder="主委想說的話（可不填）" autocomplete="off"></div>`;
 HANDLERS.sponsorOpen=async()=>{ openSheet("contact","贊助登報",`${backBtn}<p class="lead">讀取中…</p>`); const j=await spReq(null); if(!j){ return; }
   const li=(L,w)=>L.length?`<ul class="sp-list">${L.map((e,i)=>`<li><span><b>${esc(e.n)}</b>　${esc(e.x||"")}${e.m?`<br><small>「${esc(e.m)}」</small>`:""}</span><button class="chip" data-act="sponsorDel" data-v="${w}:${i}">刪除</button></li>`).join("")}</ul>`:`<p class="note">還沒有。</p>`;
   openSheet("contact","贊助登報",`${backBtn}<p class="lead">登記贊助人，會登上報紙頭版。一天有好幾位時，會合在同一篇頭版一起感謝。</p>
@@ -9208,7 +9215,9 @@ HANDLERS.paperTry=async v=>{ PAPER.seed=(PAPER.seed||0)+1;
   closeSheet(); paperOpen(v==="intro"); };
 HANDLERS.paperOpen=async()=>{ closeSheet(); if(!(await paperFetch())){ toast("今天的報紙還沒送來",2200); return; } paperOpen(false); };
 /* once a day, when the page has loaded (not on someone's very first visit, while they make their character) */
-setTimeout(async()=>{ if(firstVisitPending) return; const p=await paperFetch(); if(!p||load("mz.paperSeen","")===p.d) return; save("mz.paperSeen",p.d); paperOpen(true); },300);
+setTimeout(async()=>{ if(firstVisitPending) return; const p=await paperFetch(); if(!p) return; const seen=load("mz.paperSeen","")===p.d+(p.rev?"#"+p.rev:"");
+  if(seen){ setTimeout(()=>paperPrepare(p),9000); return; } /* already read today: get the photos ready in the background for when it is opened again */
+  await new Promise(r=>setTimeout(r,1500)); await paperPrepare(p); save("mz.paperSeen",p.d+(p.rev?"#"+p.rev:"")); paperOpen(true); },300); /* (a re-issue with sponsors pops up again) */
 
 if(firstVisit) setTimeout(async()=>{ if(await profRestore()){ firstVisitPending=false; toast("歡迎回來！已自動找回你的角色",3600); return; } openLook(true); },600); else setTimeout(()=>toast(guideStep().n===1?"先到大殿入口右手邊的服務處，請清香、金紙和供品":(matchMedia("(pointer:fine)").matches?"WASD 走動・拖曳滑鼠轉視角":"點地板走動・拖曳畫面轉視角"),4200),900);
 // ---- in-app browser hint (Threads / Instagram / Facebook / LINE / other app web views) ----
