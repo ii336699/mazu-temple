@@ -923,7 +923,13 @@ function crInfo(){ let m={}; try{ const r=renderer.info; m={geo:r.memory.geometr
 function crSend(k,info){ try{ if(typeof USE_CF==="undefined"||!USE_CF) return; const ua=navigator.userAgent, dev=/iPhone/.test(ua)?"iPhone":/iPad|Macintosh.*Mobile/.test(ua)||(navigator.maxTouchPoints>1&&/Mac/.test(ua))?"iPad":/Android/.test(ua)?"Android":"電腦";
   const app=/Line\//.test(ua)?"LINE":/FBAN|FBAV|FB_IAB/.test(ua)?"FB":/Instagram/.test(ua)?"IG":/CriOS|Chrome/.test(ua)?"Chrome":/Safari/.test(ua)?"Safari":"其他", os=(ua.match(/OS (\d+)_/)||ua.match(/Android (\d+)/)||[])[1]||"";
   fetch("/crash",{method:"POST",headers:{"content-type":"application/json"},keepalive:true,body:JSON.stringify({k,dev,app,os,mem:navigator.deviceMemory||0,scr:Math.round(screen.width*(devicePixelRatio||1))+"x"+Math.round(screen.height*(devicePixelRatio||1)),...info})}).catch(()=>{}); }catch(e){} }
-{ const prev=load("mz.alive",null); if(prev&&!prev.bye&&Date.now()-prev.t<15*60e3){ const ctx=Date.now()-(+load("mz.crash",0)||0)<60e3; setTimeout(()=>crSend(ctx?"ctx":"kill",prev),6000); } }
+/* 人物減量: when the game was closed by the phone (out of memory), the next visit draws fewer other people — half after one, none after a
+   second within 3 days — and says why first. Three days without it closing steps back up by one. 設定 → 畫面上的人物 changes it by hand. */
+const CUT=(()=>{ const c=load("mz.cut",null)||{}; return {lv:c.lv|0,at:c.at||0,man:!!c.man,say:0}; })();
+const cutSave=()=>save("mz.cut",{lv:CUT.lv,at:CUT.at,man:CUT.man});
+{ const prev=load("mz.alive",null); if(prev&&!prev.bye&&Date.now()-prev.t<15*60e3){ const ctx=Date.now()-(+load("mz.crash",0)||0)<60e3; setTimeout(()=>crSend(ctx?"ctx":"kill",prev),6000);
+    if(CUT.lv<2&&!(CUT.man&&CUT.lv===0&&Date.now()-CUT.at<6*3600e3)){ CUT.lv=CUT.lv===1&&Date.now()-CUT.at<3*864e5?2:Math.max(1,CUT.lv); CUT.at=Date.now(); CUT.man=false; CUT.say=CUT.lv; cutSave(); } }
+  else if(CUT.lv>0&&!CUT.man&&Date.now()-CUT.at>3*864e5){ CUT.lv--; CUT.at=Date.now(); cutSave(); } }
 setInterval(()=>{ if(document.visibilityState==="visible") save("mz.alive",crInfo()); },4000);
 const crBye=()=>{ const a=crInfo(); a.bye=Date.now()-(+load("mz.crash",0)||0)<8000?0:1; /* (the reload after the 3D memory ran out is not a clean goodbye) */ save("mz.alive",a); };
 addEventListener("pagehide",crBye); document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="hidden") crBye(); else save("mz.alive",crInfo()); });
@@ -3516,7 +3522,12 @@ meAv.setName(myLabel());
 let camYaw=0, camPitch=.3, camDist=4.6, camTarget=new T.Vector3(); let customizing=false; let pvYaw=0, pvMode="full", pvSpin=0, rotAnim=null;
 const camFocus=new T.Vector3(meAv.pos.x,1.0,meAv.pos.y); camTarget.copy(camFocus);
 function resize(){ const w=window.innerWidth,h=window.innerHeight; renderer.setSize(w,h,false); lblSize(); camera.aspect=w/h; if(!resize.done){ resize.done=1; camera.fov=w<h?62:52; } /* (after the first time the lens is the camera code's alone: a resize — or a sharpness change — used to snap it and the view jumped) */ camera.updateProjectionMatrix(); }
-window.addEventListener("resize",resize); resize();
+/* turning the phone fires a burst of resizes (with odd in-between sizes on iPhones); each one used to re-make the full-screen drawing
+   buffers at once, and two or three of them at a time could run a phone out of memory and close the game. Now it waits until the size
+   has settled and only acts if it really changed. */
+const RSZ={w:0,h:0,t:0};
+function resizeSoon(){ clearTimeout(RSZ.t); RSZ.t=setTimeout(()=>{ const w=window.innerWidth,h=window.innerHeight; if(w===RSZ.w&&h===RSZ.h) return; RSZ.w=w; RSZ.h=h; resize(); },220); }
+window.addEventListener("resize",resizeSoon); window.addEventListener("orientationchange",()=>{ clearTimeout(RSZ.t); RSZ.t=setTimeout(resizeSoon,350); }); RSZ.w=window.innerWidth; RSZ.h=window.innerHeight; resize();
 
 const raycaster=new T.Raycaster(); const ndc=new T.Vector2();
 // glyphs of the web font arrive per character; once they are in, redraw canvas plaques so no character falls back or goes missing
@@ -3664,7 +3675,8 @@ async function crowdFetch(){ try{ const r=await fetch("/crowd",{cache:"no-store"
 const FAKE_W=[.34,.2,.14,.1,.07,.05,.04,.03,.02,.01]; // how the crowd spreads over 正殿…十殿
 // halls fill in order: a hall takes 86–94 people before anyone shows up in the next one
 function fakeSplit(T){ const ts=Date.now(), out=[]; let left=Math.max(0,T); for(let i=0;i<FAKE_W.length;i++){ const cap=Math.round(86+8*fakeNoise(ts,20*60e3,10+i)), v=Math.min(left,cap); out.push(Math.round(v)); left-=v; } return out; }
-function realCounts(){ const c=(HALLS.counts||[]).slice(); const cur=HALLS.current(); c[cur]=Math.max(c[cur]||0,1+remotes.size); return c; }
+const PEERS={n:0};
+function realCounts(){ const c=(HALLS.counts||[]).slice(); const cur=HALLS.current(); c[cur]=Math.max(c[cur]||0,1+Math.max(remotes.size,PEERS.n)); return c; }
 // real players take the place of demo ones: the target is the whole temple's count, real players included, so every real
 // player who comes in means one demo worshipper fewer (if there are more real players than the target, only they count)
 function fakeHalls(ts){ const real=realCounts(), R=real.reduce((a,b)=>a+(b||0),0); let left=Math.max(0,fakeTotal(ts)-R); const out=[];
@@ -3684,7 +3696,7 @@ const BOT={nextAdjust:0, cap:null, slow:0, fast:0, ema:1};
 // how many walking demo people a phone draws: up to 96 on a phone that keeps up; if the game gets choppy the number comes
 // down on that phone only (the count shown at the top doesn't change), and creeps back up when it runs smoothly again
 function botMax(){ return 96; }
-function botLimit(){ if(BOT.cap==null) BOT.cap=Q.lite?24:Q.low?48:96; return Math.min(botMax(),BOT.cap); }
+function botLimit(){ if(BOT.cap==null) BOT.cap=Q.lite?24:Q.low?48:96; return CUT.lv>=2?0:Math.min(botMax(),BOT.cap); }
 function botFps(){ const now=performance.now(), dt=BOT.lastF?(now-BOT.lastF)/1000:0; BOT.lastF=now; // real time between frames (the game's own dt is capped)
   if(document.hidden||!dt||dt>1.5||miniOpen) return; botLimit();
   // compare each frame with the speed the game is aiming for right now (60 when you move, 30/20 when you stand still):
@@ -3693,9 +3705,9 @@ function botFps(){ const now=performance.now(), dt=BOT.lastF?(now-BOT.lastF)/100
   if(BOT.ema>1.45&&(dresFloor()||BOT.ema>1.9)){ BOT.slow+=dt; BOT.fast=0; if(BOT.slow>2.5&&BOT.cap>10){ BOT.cap=Math.max(10,Math.round(BOT.cap*.75)); BOT.slow=0; BOT.nextAdjust=0; } }
   else if(cap===60&&BOT.ema<1.15){ BOT.fast+=dt; BOT.slow=0; if(BOT.fast>20&&BOT.cap<botMax()){ BOT.cap=Math.min(botMax(),BOT.cap+4); BOT.fast=0; } }
   else { BOT.slow=0; if(cap!==60) BOT.fast=0; } }
-function sitterLimit(){ return !showNpc?0:Q.lite?3:Q.low?6:12; }       // the classic ones on the cushions
+function sitterLimit(){ const n=!showNpc?0:Q.lite?3:Q.low?6:12; return CUT.lv>=2?0:CUT.lv===1?Math.ceil(n/2):n; }       // the classic ones on the cushions
 function hereCount(){ return FAKE_CROWD?(fakeHalls(Date.now())[HALLS.current()]||0):16; }
-function botWant(){ const lim=botLimit(); if(!lim) return 0; const floor=Q.lite?6:Q.low?12:20, room=Math.max(floor,lim-remotes.size), h=hereCount(); return h<=0?0:Math.min(room,Math.max(2,h)); }
+function botWant(){ const lim=botLimit(); if(!lim) return 0; const floor=Math.min(lim,Q.lite?6:Q.low?12:20), room=Math.max(floor,lim-remotes.size), h=hereCount(); const w=h<=0?0:Math.min(room,Math.max(2,h)); return CUT.lv===1?Math.ceil(w/2):w; } /* (人物減量: half) */
 /* (real players used to take up the whole drawing budget: with 45 of them in the hall, and the budget lowered a little because so many
    people were walking about, not one demo visitor was left even though the count said 89. Now a floor of them always stays.) */
 function sitterWant(){ const lim=sitterLimit(); if(!lim) return 0; return Math.max(Math.min(1,lim),Math.min(lim,Math.round(hereCount()/5))); }
@@ -3922,7 +3934,7 @@ function placeBot(){ const role=pickRole(); let a;
   a.role=role; return a; }
 function buildNpcs(){ npcs.forEach(n=>n.dispose()); npcs.length=0;
   // the original demo worshippers, exactly as before: no name, always kneeling on the mats in the hall and bowing now and then
-  if(showNpc) for(let i=0;i<12;i++){ const s=freeSeat(); if(s<0) break; const a=new Avatar(randomLook(),{npc:true,x:SEATS[s].x,z:SEATS[s].y}); /* (the nameless kneelers wear no game prizes: only the named demo players do) */ try{ bakeAvatar(a); }catch(e){}
+  if(showNpc) for(let i=0;i<(CUT.lv>=2?0:CUT.lv===1?6:12);i++){ const s=freeSeat(); if(s<0) break; const a=new Avatar(randomLook(),{npc:true,x:SEATS[s].x,z:SEATS[s].y}); /* (the nameless kneelers wear no game prizes: only the named demo players do) */ try{ bakeAvatar(a); }catch(e){}
     a.classic=true; a.seat=s; a.kneel=1; a.next=rand(2,18); a.steps=[]; a.step=null; if(customizing) a.root.visible=false; npcs.push(a); }
   const want=Math.min(40,botWant()); for(let i=0;i<want;i++) placeBot();
   BOT.nextAdjust=performance.now()+rand(1500,4000); }
@@ -3941,9 +3953,10 @@ function sendPresence(force){ if(!room) return; dirty=false; const p=presencePay
 function seatTakenByPeer(i){ for(const r of remotes.values()) if(r.seat===i) return true; return false; }
 function num(v,a,b,d){ v=Number(v); return Number.isFinite(v)?Math.max(a,Math.min(b,v)):d; }
 function cleanName(n){ const t=String(n||"").replace(/[\u0000-\u001f​-‏‪-‮]/g,"").slice(0,10); return hasAddLine(t)?"":t; }
-function syncPeers(peers){ const seen=new Set();
+function syncPeers(peers){ const seen=new Set(); const nReal=PEERS.n=peers.filter(p=>!p.sameTab&&p.kind==="viewer").length, cap=CUT.lv>=2?0:CUT.lv===1?Math.ceil(nReal/2):1e9;
   for(const p of peers){ if(p.sameTab||p.kind!=="viewer") continue; const pr=p.presence||{}; if(pr.v!==1||pr.u===0) continue; seen.add(p.peer);
     let av=remotes.get(p.peer); const look=sanitizeLook(pr.l,pr.q===1); if(av) av.setSp(pr.q===1);
+    if(!av&&pr.q!==1&&remotes.size>=cap) continue; /* 人物減量: no figure for this one (nothing is made, so no memory is used) */
     if(!av){ av=new Avatar(look,{sp:pr.q===1,x:num(pr.x,-78,68,0),z:num(pr.z,-43,HZ+YX+18,HZ+12)}); av.autoBake=true; av.real=1; try{ bakeAvatar(av); }catch(e){} if(!othersShown) av.root.visible=false; av.lastBow=pr.b; av.lastJ=Array.isArray(pr.j)?pr.j[1]:""; av.lastF=pr.f; av.offerGroup=new T.Group(); scene.add(av.offerGroup); remotes.set(p.peer,av); if(customizing) av.root.visible=false; }
     else if(av.swim&&av.swimSave){ if(look.join()!==av.swimSave.join()) av.swimSave=look.slice(); } /* in the hot spring: keep the swimsuit, remember the new clothes for afterwards */
     else if(look.join()!==av.look.join()) av.setLook(look);
@@ -3981,7 +3994,7 @@ function syncPeers(peers){ const seen=new Set();
   }
   let lampGone=false; for(const [k,av] of remotes){ if(!seen.has(k)){ av.dispose(); if(av.offerGroup) scene.remove(av.offerGroup); if(av.lamp>=0) lampGone=true; remotes.delete(k); } } if(lampGone) refreshLamps();
   updateCount(); }
-function updateCount(){ const n=FAKE_CROWD?hallShown(HALLS.current(),Date.now()):1+remotes.size; $("#countText").textContent=FAKE_CROWD||room?`殿內 ${n} 人`:"單人模式"; $("#dot").classList.toggle("off",!room||!roomConnected); }
+function updateCount(){ const n=FAKE_CROWD?hallShown(HALLS.current(),Date.now()):1+Math.max(remotes.size,PEERS.n); $("#countText").textContent=FAKE_CROWD||room?`殿內 ${n} 人`:"單人模式"; $("#dot").classList.toggle("off",!room||!roomConnected); }
 let roomConnected=false;
 /* ---- standalone site: Supabase Realtime, halls of up to HALL_CAP people ---- */
 const SB_URL="https://zgwbthrqjrsnhqpdcona.supabase.co", SB_KEY="sb_publishable_Xl0v2Yrg0OrDw90ddpV35A_AzRta8FH";
@@ -4616,6 +4629,7 @@ function dbgHTML(){ const t=(k,n)=>`<button class="chip" data-act="dbg" data-v="
 function openGfx(){ const opt=(v,t,d)=>`<button class="good" data-act="quality" data-v="${v}" aria-pressed="${Q.mode===v}" style="${Q.mode===v?"border-color:var(--gold);background:rgba(142,28,20,.35)":""}"><span class="name">${t}${Q.mode===v?"　✓":""}</span><span class="meta">${d}</span></button>`;
   /* order: what players change most (畫質) first, then smoothness, then saving the temple to the phone; the testing tools only for the chair */
   openSheet("gfx","設定",`<div class="group"><span class="group-label">畫質</span><p class="lead">畫面卡頓或手機發燙時，可以改用省電畫質。</p></div><div class="goods">${opt("auto","自動","進場後自動偵測，太卡會切到省電")}${opt("high","高畫質","光束、灰塵、全部燈光，最漂亮")}${opt("low","省電","降低解析度與特效，舊手機也順")}${opt("lite","低配","最省：模型減面、小貼圖、關閉抗鋸齒，給比較舊的手機（會重新載入）")}</div><p class="note">目前：${Q.lite?"低配":Q.low?"省電畫質":"高畫質"}</p>`
+    +`<div class="group"><span class="group-label">畫面上的人物</span><div class="chips">${[[0,"全部"],[1,"減少一半"],[2,"全部關掉"]].map(([v,t])=>`<button class="chip" data-act="cutSet" data-v="${v}" aria-pressed="${CUT.lv===v}">${t}</button>`).join("")}</div><p class="note">手機常被關掉（閃退）時，少畫一點人會比較穩。遊戲被關掉時會自動幫你調低，並先跟你說。</p></div>`
     +`<div class="group"><span class="group-label">流暢度</span><div class="chips"><button class="chip" data-act="fps60" aria-pressed="${PACE.smooth}">流暢模式（一直 60 格，較耗電）</button></div><p class="note">關閉時：操作和走路時 60 格，站著看時 30 格，半分鐘沒碰螢幕 20 格，比較省電。</p></div>`
     +(()=>{ const f=fltApply(); const c=(v,t)=>`<button class="chip" data-act="flt" data-v="${v}" aria-pressed="${f===v}">${t}</button>`; return `<div class="group"><span class="group-label">畫面濾鏡</span><div class="chips">${c("off","關閉")}${c("soft","柔和")}${c("film","電影感")}</div><p class="note">讓顏色更有層次、四周微微變暗。</p></div>`; })()
     +`<div class="group"><span class="group-label">下載到手機</span><p class="lead">先把模型、音樂和圖片存進手機，之後進廟更快、更省流量。</p><div class="chips"><button class="chip" data-act="preDl">${PREDL.done?"✓ 已預先下載":"📥 預先下載全部"}</button></div></div>${installBlock()}`
@@ -5068,7 +5082,7 @@ function inputReset(){ const go=()=>{ try{ joy.reset(); }catch(e){} try{ keys.cl
   go(); setTimeout(go,300); setTimeout(go,1200); }
 let miniOpen=false, bgmHush=false; // bgmHush: the background music fades out (the rhythm game needs quiet)
 function gameLayer(title,hint){ closeSheet(); miniOpen=true; crumb("遊戲:"+String(title||"").replace(/<[^>]*>/g,"").slice(0,14)); const el=document.createElement("div"); el.className="mini"; el.innerHTML=`<div class="mini-top"><b>${title}</b><span class="mini-hint">${hint}</span><button class="mini-x" aria-label="離開">✕</button></div><canvas></canvas>`; document.body.appendChild(el);
-  const cv=el.querySelector("canvas"), x=cv.getContext("2d"); const fit=()=>{ const d=Math.min(2,window.devicePixelRatio||1); cv.width=innerWidth*d; cv.height=innerHeight*d; cv.style.width=innerWidth+"px"; cv.style.height=innerHeight+"px"; x.setTransform(d,0,0,d,0,0); }; fit();
+  const cv=el.querySelector("canvas"), x=cv.getContext("2d"); const fitNow=()=>{ const d=Math.min(2,window.devicePixelRatio||1); if(cv.width===Math.round(innerWidth*d)&&cv.height===Math.round(innerHeight*d)) return; cv.width=innerWidth*d; cv.height=innerHeight*d; cv.style.width=innerWidth+"px"; cv.style.height=innerHeight+"px"; x.setTransform(d,0,0,d,0,0); }; let fitT=0; const fit=()=>{ clearTimeout(fitT); fitT=setTimeout(fitNow,200); }; fitNow();
   const L={el,cv,x,W:()=>innerWidth,H:()=>innerHeight,done:false,close(){ L.done=true; miniOpen=false; window.removeEventListener("resize",fit); el.remove(); try{ cv.width=0; cv.height=0; }catch(e){} /* (iPhones only free a canvas once it is sized to 0) */ inputReset(); }};
   window.addEventListener("resize",fit); el.querySelector(".mini-x").onclick=()=>L.close(); return L; }
 function healSound(){ const a=ensureAudio(); if(!a) return; const v=sVol(); if(v<=0) return; const t=a.currentTime;
@@ -9276,10 +9290,12 @@ function paperShoot(kind){ try{ const W=480,H=300, cam=new T.PerspectiveCamera(5
    The server cannot take them: only the game on the phone can draw the temple. */
 const paperPhKey=p=>p?p.d+"#"+(p.rev||0)+"#"+p.head.kind+"#"+(p.items[0]?p.items[0].kind:""):"";
 function paperPhCached(p){ try{ const c=JSON.parse(load("mz.paperPh","")||"null"); if(c&&c.k===paperPhKey(p)&&Array.isArray(c.ph)) return c.ph; }catch(e){} return null; }
-function paperPrepare(p){ return new Promise(res=>{ if(!p||paperPhCached(p)) return res(); const kinds=[p.head.kind,p.items[0]?p.items[0].kind:null], ph=[];
+/* no photos while 人物減量 is on (or on 低配): each photo draws a far corner of the temple, which loads that corner's pictures into the phone's memory */
+const paperNoPh=()=>CUT.lv>0||Q.lite;
+function paperPrepare(p){ return new Promise(res=>{ if(!p||paperPhCached(p)||paperNoPh()) return res(); const kinds=[p.head.kind,p.items[0]?p.items[0].kind:null], ph=[];
   const step=i=>{ if(i>=kinds.length){ try{ save("mz.paperPh",JSON.stringify({k:paperPhKey(p),ph})); }catch(e){} return res(); } if(kinds[i]) ph[i]=paperShoot(kinds[i]); setTimeout(()=>requestAnimationFrame(()=>step(i+1)),120); };
   requestAnimationFrame(()=>step(0)); }); }
-function paperPhotos(){ const p=PAPER.p; if(!p) return; { const c=paperPhCached(p); if(c){ PAPER.ph=c.slice(); [0,1].forEach(i=>{ const src=PAPER.ph[i], el=src&&document.querySelector(`#paper [data-ph="${i}"]`); if(!el) return; el.outerHTML=i===0?`<figure class="np-photo"><img src="${src}" alt=""><figcaption>本報記者攝</figcaption></figure>`:`<img class="np-thumb" src="${src}" alt="">`; }); return; } } const tok=PAPER.phTok=(PAPER.phTok||0)+1; PAPER.ph=[]; const kinds=[p.head.kind,p.items[0]?p.items[0].kind:null];
+function paperPhotos(){ const p=PAPER.p; if(!p) return; { const c=paperPhCached(p); if(c){ PAPER.ph=c.slice(); [0,1].forEach(i=>{ const src=PAPER.ph[i], el=src&&document.querySelector(`#paper [data-ph="${i}"]`); if(!el) return; el.outerHTML=i===0?`<figure class="np-photo"><img src="${src}" alt=""><figcaption>本報記者攝</figcaption></figure>`:`<img class="np-thumb" src="${src}" alt="">`; }); return; } } if(paperNoPh()) return; const tok=PAPER.phTok=(PAPER.phTok||0)+1; PAPER.ph=[]; const kinds=[p.head.kind,p.items[0]?p.items[0].kind:null];
   const put=i=>{ const src=PAPER.ph[i]; if(!src) return; const el=document.querySelector(`#paper [data-ph="${i}"]`); if(!el) return;
     if(i===0) el.outerHTML=`<figure class="np-photo np-fade"><img src="${src}" alt=""><figcaption>本報記者攝</figcaption></figure>`; else el.outerHTML=`<img class="np-thumb np-fade" src="${src}" alt="">`; };
   const step=i=>{ if(tok!==PAPER.phTok||i>=kinds.length){ if(i>=kinds.length) try{ save("mz.paperPh",JSON.stringify({k:paperPhKey(p),ph:PAPER.ph})); }catch(e){} return; } if(kinds[i]) PAPER.ph[i]=paperShoot(kinds[i]); put(i); setTimeout(()=>requestAnimationFrame(()=>step(i+1)),60); };
@@ -9336,6 +9352,7 @@ HANDLERS.honorSave=async v=>{ const n=$("#hnN").value.trim(), raw=$("#hnA").valu
 /* delete needs a second tap within 3 s */
 const confirmTap=(()=>{ let k0="",t0=0; return (k,msg)=>{ const now=Date.now(); if(k===k0&&now-t0<3000){ k0=""; return true; } k0=k; t0=now; toast(msg,2600); return false; }; })();
 HANDLERS.honorDel=async v=>{ const e=(HONOR.ed||[])[+v]; if(!e) return; if(!confirmTap("hnDel"+v,`再按一次刪除「${e.n}」`)) return; const j=await honorReq({act:"del",i:+v}); if(!j) return; toast("已刪除",1600); HANDLERS.honorEdit(); };
+HANDLERS.cutSet=v=>{ v=+v|0; if(v===CUT.lv) return; CUT.lv=v; CUT.man=true; CUT.at=Date.now(); cutSave(); toast(v===0?"人物全部顯示，重新整理中…":v===1?"人物減少一半，重新整理中…":"其他人物全部關掉，重新整理中…",2000); setTimeout(()=>location.reload(),1500); };
 /* 主委工具 → 查取回碼: search the saved characters by name (or a code) and read the player their 取回碼; they type it in 設定 → 取回碼 */
 HANDLERS.rcFind=()=>{ openSheet("contact","查取回碼",`${backBtn}<p class="lead">打玩家的名字（打一部分也可以），找到後把取回碼告訴他。他到「設定 → 取回碼」輸入，就會拿回角色（名字、造型、平安幣、背包、頭飾）。</p>
   <div class="mail-row"><input class="mail-box" id="rcQ" maxlength="16" placeholder="玩家名字" autocomplete="off"><button class="good mail-copy" data-act="rcFindGo"><span class="name">🔍 查詢</span></button></div><div id="rcRes"></div>`); setTimeout(()=>{ const i=$("#rcQ"); if(i){ i.focus(); i.addEventListener("keydown",e=>{ if(e.key==="Enter") HANDLERS.rcFindGo(); }); } },50); };
@@ -9406,9 +9423,14 @@ HANDLERS.paperReroll=async()=>{ if(PAPER.rr) return; PAPER.rr=1; try{
   PAPER.p=j.paper; toast("換好了！之後打開報紙的人看到的就是新的",2600); closeSheet(); paperOpen(false); }
   catch(e){ toast("網路不穩，請再按一次",2000); } finally{ PAPER.rr=0; } };
 HANDLERS.paperOpen=async()=>{ closeSheet(); if(!(await paperFetch())){ toast("今天的報紙還沒送來",2200); return; } paperOpen(false); };
+/* 人物減量: say why before anything else (see CUT) */
+function cutCard(){ const lv=CUT.say; if(!lv) return; CUT.say=0; const d=document.createElement("div"); d.className="gift-card"; d.style.zIndex="9500";
+  d.innerHTML=`<div class="gc-in"><b>${lv===1?"📱 剛剛遊戲被手機關掉了":"📱 遊戲又被手機關掉了"}</b><p style="margin:12px 0;line-height:1.7;text-align:left">${lv===1?"這通常是手機記憶體不夠（廟裡人多的時候比較容易發生）。<br>為了讓你玩得順，這次先幫你把畫面上的<b>其他人物減少一半</b>，遊戲比較不會再被關掉。":"這次先幫你把畫面上的<b>其他人物全部關掉</b>（看不到其他香客，只留下你和廟裡的工作人員），讓手機少用一點記憶體。<br>聊天、參拜、小遊戲都照常可以玩。"}</p><p class="gc-sub">之後不會再當掉的話，過幾天會自動恢復；也可以到「設定 → 畫面上的人物」自己調整。</p><div class="row"><button class="secondary" data-x="undo">維持原本</button><button class="primary" data-x="ok">好，就這樣</button></div></div>`;
+  document.body.appendChild(d); d.querySelector('[data-x="ok"]').onclick=()=>d.remove(); d.querySelector('[data-x="undo"]').onclick=()=>{ d.remove(); CUT.lv=0; CUT.man=true; CUT.at=Date.now(); cutSave(); toast("好的，人物全部顯示（如果又被關掉，建議改回來）",3600); setTimeout(()=>location.reload(),1800); }; }
+if(CUT.say){ const w=()=>{ const ld=$("#loading"); if(!ld||ld.hasAttribute("data-done")) setTimeout(cutCard,600); else setTimeout(w,200); }; w(); }
 /* once a day, when the page has loaded (not on someone's very first visit, while they make their character) */
 setTimeout(async()=>{ if(firstVisitPending) return; const p=await paperFetch(); if(!p) return; const seen=load("mz.paperSeen","")===p.d+(p.rev?"#"+p.rev:"");
-  if(seen){ setTimeout(()=>paperPrepare(p),9000); return; } /* already read today: get the photos ready in the background for when it is opened again */
+  if(seen){ if(!Q.phone) setTimeout(()=>paperPrepare(p),9000); return; } /* (on phones the photos are taken only if the paper is opened again) */ /* already read today: get the photos ready in the background for when it is opened again */
   await new Promise(r=>{ const w=()=>{ const ld=$("#loading"); if(!ld||ld.hasAttribute("data-done")) setTimeout(r,1200); else setTimeout(w,200); }; w(); }); /* after the loading screen has gone */ await paperPrepare(p); save("mz.paperSeen",p.d+(p.rev?"#"+p.rev:"")); paperOpen(true); },300); /* (a re-issue with sponsors pops up again) */
 
 if(firstVisit) setTimeout(async()=>{ if(await profRestore()){ firstVisitPending=false; toast("歡迎回來！已自動找回你的角色",3600); return; } openLook(true); },600); else setTimeout(()=>toast(guideStep().n===1?"先到大殿入口右手邊的服務處，請清香、金紙和供品":(matchMedia("(pointer:fine)").matches?"WASD 走動・拖曳滑鼠轉視角":"點地板走動・拖曳畫面轉視角"),4200),900);
