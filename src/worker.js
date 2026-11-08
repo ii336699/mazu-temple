@@ -5,7 +5,7 @@ import { buildPaper } from "../public/paper-gen.js";
 
 const HALLS = 10, CAP = 100, MAX_MSG = 4000;
 const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000, "/puppet": 5000, "/crowd": 5000, "/market": 5000, "/layout": 5000 };
-const LOBBY_PATHS = ["/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather", "/stat", "/nev", "/paper"];
+const LOBBY_PATHS = ["/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather", "/stat", "/nev", "/paper", "/sponsor", "/hatfit"];
 const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage", "/puppet": "/puppet", "/crowd": "/crowd", "/market": "/market", "/layout": "/layout" }; // a POST here makes that cached list stale
 
 export default {
@@ -252,7 +252,7 @@ export class Lobby extends DurableObject {
   }
   // per player (by id, with the name they go by) — only the counters the newspaper writes about; at most 400 players a day
   async stPlayer(id, name, map) {
-    const KEEP = ["b_bowBtn", "b_jiaoBtn", "b_lotBtn", "minOnline", "minZen", "minInn", "sit_futon", "sit_bed", "sit_tub", "sit_zen", "pkCash", "pkBuy", "minInRain", "sjDone", "ftDone", "paperOpen", "buskTipC", "buskCheer"];
+    const KEEP = ["b_bowBtn", "b_jiaoBtn", "b_lotBtn", "minOnline", "minZen", "minInn", "sit_futon", "sit_bed", "sit_tub", "sit_zen", "pkCash", "pkBuy", "minInRain", "sjDone", "ftDone", "paperOpen", "buskTipC", "buskCheer", "nmP_qq", "nmP_sausage", "nmP_bbq", "nmP_fish", "nmP_pachinko", "nmP_boba", "nmP_balloon"];
     const st = await this.stGet(); st.p = st.p || {}; let e = st.p[id]; if (!e) { if (Object.keys(st.p).length >= 400) return; e = st.p[id] = { n: name, c: {} }; } if (name) e.n = name;
     for (const k of KEEP) { const x = Math.floor(Number(map && map[k])); if (x > 0) e.c[k] = (e.c[k] || 0) + Math.min(x, /^pk|^buskTipC/.test(k) ? 1000 : 200); }
     this.stDirty = true;
@@ -267,7 +267,9 @@ export class Lobby extends DurableObject {
     const ev = (await this.ctx.storage.get("nw:" + day)) || [], t0 = Date.parse(day + "T00:00:00+08:00"), t1 = t0 + 864e5;
     const wishes = ((await this.ctx.storage.get("wishes")) || []).filter(w => w.at >= t0 && w.at < t1).map(w => ({ name: w.name, text: w.text }));
     const meta = (await this.ctx.storage.get("paperMeta")) || { no: 0, used: [] };
-    const p = buildPaper({ d: day, st, ev, wishes, used: meta.used, no: meta.no + 1 });
+    const old = live ? null : await this.ctx.storage.get("paperOld:" + day); /* a re-issue (sponsors added after it came out) keeps its number */
+    const p = buildPaper({ d: day, st, ev, wishes, used: old ? old.used : meta.used, no: old ? old.no : meta.no + 1, rev: old ? old.rev : 0 });
+    if (old) { await this.ctx.storage.delete("paperOld:" + day); await this.ctx.storage.put("paper:" + day, p); return p; }
     if (!live) { await this.ctx.storage.put("paper:" + day, p); await this.ctx.storage.put("paperMeta", { no: meta.no + 1, used: p.used });
       const keep = (await this.ctx.storage.get("paperDays")) || []; keep.push(day); while (keep.length > 30) await this.ctx.storage.delete("paper:" + keep.shift()); await this.ctx.storage.put("paperDays", keep); }
     return p;
@@ -287,6 +289,35 @@ export class Lobby extends DurableObject {
     if (url.pathname === "/paper") { // yesterday's paper for everyone; ?live=1 (chair only) previews today's so far
       const live = url.searchParams.get("live") === "1"; if (live) { const auth = await this.checkKey(req); if (!auth.ok) return json(auth); }
       const day = live ? this.stDay() : this.stDay(Date.now() - 864e5); return json({ ok: true, paper: await this.paper(day, live) });
+    }
+    // 贊助: the chair records sponsors; they go on the front page. "now" re-issues yesterday's paper (the one everyone sees today), "next" goes in tomorrow's
+    // 頭飾定位: the chair's own fitting of each hat (size, height, tilt…), the same for everyone
+    if (url.pathname === "/hatfit" && req.method === "POST") {
+      const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
+      let b = {}; try { b = await req.json(); } catch {} const out = {}, F = b && b.fit && typeof b.fit === "object" ? b.fit : {};
+      for (const [id, v] of Object.entries(F).slice(0, 80)) { if (!/^[a-z0-9_]{1,24}$/.test(id) || !v || typeof v !== "object") continue; const o = {};
+        for (const k of ["w", "x", "y", "z", "rx", "ry", "rz", "zs", "ex", "ey", "ez"]) { const n = Number(v[k]); if (Number.isFinite(n) && Math.abs(n) <= 10) o[k] = Math.round(n * 1000) / 1000; } out[id] = o; }
+      await this.ctx.storage.put("hatfit", { fit: out, at: Date.now() }); return json({ ok: true });
+    }
+    if (url.pathname === "/hatfit") return json((await this.ctx.storage.get("hatfit")) || { fit: {}, at: 0 });
+    if (url.pathname === "/sponsor") {
+      const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
+      const yday = this.stDay(Date.now() - 864e5), today = this.stDay();
+      const reissue = async day => { const got = await this.ctx.storage.get("paper:" + day); if (!got) return; await this.ctx.storage.put("paperOld:" + day, { no: got.no, used: got.used, rev: (got.rev || 0) + 1 }); await this.ctx.storage.delete("paper:" + day); await this.paper(day, false); };
+      if (req.method === "POST") {
+        let b = {}; try { b = await req.json(); } catch {}
+        const day = b.when === "next" || b.day === today ? today : yday, key = "nw:" + day, L = (await this.ctx.storage.get(key)) || [];
+        if (b.act === "add") {
+          const add = (Array.isArray(b.list) ? b.list : []).slice(0, 20).map(e => ({ k: "sponsor", n: clean(e && e.n, 16), x: clean(e && e.x, 24), m: clean(e && e.m, 40), at: Date.now() })).filter(e => e.n);
+          if (!add.length) return json({ ok: false }); L.push(...add); await this.ctx.storage.put(key, L);
+          const days = (await this.ctx.storage.get("nwDays")) || []; if (!days.includes(day)) { days.push(day); await this.ctx.storage.put("nwDays", days); }
+        } else if (b.act === "del") {
+          let n = -1; const i = Math.floor(Number(b.i)); const keep = L.filter(e => { if (e.k !== "sponsor") return true; n++; return n !== i; }); await this.ctx.storage.put(key, keep);
+        } else return json({ ok: false });
+        if (day === yday) await reissue(yday);
+      }
+      const list = async d => ((await this.ctx.storage.get("nw:" + d)) || []).filter(e => e.k === "sponsor").map(e => ({ n: e.n, x: e.x, m: e.m }));
+      return json({ ok: true, yday, today, now: await list(yday), next: await list(today) });
     }
     if (url.pathname === "/stat") {
       if (req.method === "POST") {

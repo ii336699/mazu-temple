@@ -104,6 +104,57 @@ const T = {
     { id: "x1", t: "昨天許願卡 {v} 張", b: "許願樹上又多了 {v} 張卡。本報摘錄一則：「{x}」" },
     { id: "x2", t: "許願樹又重了一點", b: "昨天有 {v} 位香客掛上許願卡，其中一張寫著：「{x}」。願媽祖保佑大家心想事成。" },
   ],
+  sponsor1: [
+    { id: "d1", t: "感謝 {n} 贊助天后宮 {x}！", b: "天后宮昨天收到 {n} 的熱心贊助，金額 {x}。{m}主委代表全體香客致上最深的謝意，願媽祖保佑 {n} 闔家平安、事事順心、財源滾滾。" },
+    { id: "d2", t: "善心香客 {n} 慷慨贊助 {x}", b: "{n} 昨天贊助天后宮 {x}，讓廟裡的香火更旺、燈籠更亮。{m}廟方感謝這份心意，媽祖都看在眼裡，福氣一定加倍回到 {n} 身上。" },
+    { id: "d3", t: "頭版致謝：{n} 贊助 {x}", b: "本報頭版特別感謝 {n}！昨天贊助天后宮 {x}，{m}收驚阿嬤聽到消息笑得合不攏嘴，連貓咪都多跳了一支舞。願媽祖保佑 {n} 平安喜樂。" },
+  ],
+  sponsorN: [
+    { id: "e1", t: "感謝 {v} 位善心人士贊助天后宮！", b: "昨天共有 {v} 位善心人士慷慨贊助：\n{x}\n主委代表全體香客感謝大家，願媽祖保佑各位闔家平安、事事順心。" },
+    { id: "e2", t: "善心滿滿！{v} 位香客贊助天后宮", b: "天后宮昨天收到 {v} 筆贊助，本報在頭版向每一位致謝：\n{x}\n大家的心意讓廟裡更熱鬧，媽祖保佑好人一生平安。" },
+  ],
+  nmTop: [
+    { id: "a1", t: "夜市人氣榜：{x}最熱門", b: "昨天夜市最多人光顧的是{x}，一共被玩了 {v} 次。{y}老闆們都說：今晚繼續開，歡迎再來！" },
+    { id: "a2", t: "夜市排隊王：{x}", b: "根據本報記者在夜市數人頭，{x}昨天被玩了 {v} 次，排隊排到隔壁攤。{y}" },
+  ],
+  nm_qq: [
+    { id: "q1", t: "地瓜球阿嬤：昨天壓了 {v} 份", b: "地瓜球攤昨天被玩了 {v} 次，{w} 份壓得又圓又蓬過關。{y}地瓜球阿嬤說：「跟著阿嬤的節奏，就不會失敗啦。」" },
+    { id: "q2", t: "地瓜球攤香氣飄滿夜市", b: "昨天有 {v} 次香客挑戰跟著節奏壓地瓜球，{w} 次成功。{y}阿嬤笑說手都壓到痠了。" },
+  ],
+  nm_sausage: [
+    { id: "g1", t: "香腸攤十八仔戰況激烈", b: "香腸伯昨天被挑戰了 {v} 次，輸給香客 {w} 次。{y}香腸伯摸摸頭：「骰子今天特別不聽話。」" },
+    { id: "g2", t: "香腸伯：昨天送出 {w} 根香腸", b: "十八仔擲骰昨天共擲了 {v} 局，{w} 位香客贏走香腸。{y}攤子前的蒜頭味飄到廟埕都聞得到。" },
+  ],
+  nm_bbq: [
+    { id: "b1", t: "烤肉哥昨天烤了 {v} 輪", b: "烤肉攤昨天有 {v} 位香客上場翻烤肉串，{w} 位九串全部烤到剛好。{y}烤肉哥：「烤焦的我自己吃掉了。」" },
+    { id: "b2", t: "烤肉攤炭火不停", b: "昨天烤肉攤共開烤 {v} 次，成功 {w} 次。{y}據說烤肉香讓排隊收驚的香客都在吞口水。" },
+  ],
+  nm_fish: [
+    { id: "f1", t: "撈金魚攤 {v} 人次挑戰紙網", b: "撈魚阿姨昨天賣出 {v} 支紙網。{y}阿姨提醒：「彩色的很難撈，紙網不要泡太久喔。」" },
+    { id: "f2", t: "金魚們昨天很忙", b: "撈金魚攤昨天來了 {v} 位挑戰者，金魚們游得比平常還快。{y}" },
+  ],
+  nm_pachinko: [
+    { id: "c1", t: "彈珠台叮叮咚咚響不停", b: "彈珠台昨天開了 {v} 局。{y}老闆說：「中間那格倍率最高⋯⋯騙你的啦。」" },
+  ],
+  nm_boba: [
+    { id: "o1", t: "珍奶妹妹昨天搖了 {v} 杯", b: "珍奶攤昨天有 {v} 次挑戰照單加料，{w} 次三杯全對。{y}珍奶妹妹說手臂都搖出肌肉了。" },
+    { id: "o2", t: "珍珠奶茶攤生意興隆", b: "昨天珍奶攤被挑戰了 {v} 次，{w} 位成功做完三杯。{y}" },
+  ],
+  nm_balloon: [
+    { id: "l1", t: "射氣球攤砰砰砰 {v} 局", b: "氣球大叔昨天吹氣球吹到頭暈，一共被挑戰 {v} 局，{w} 位三十顆全破。{y}" },
+    { id: "l2", t: "氣球大叔：昨天補了好多氣球", b: "射氣球攤昨天開了 {v} 局，{w} 局全部射破。{y}大叔說準星會飄是正常的，「不是你手抖」。" },
+  ],
+  sj: [
+    { id: "j1", t: "收驚阿嬤昨天收了 {v} 位", b: "金爐旁的收驚阿嬤昨天幫 {v} 位香客收驚。{y}阿嬤說：「收完驚，晚上就好睡了。」" },
+    { id: "j2", t: "收驚隊伍排到金爐後", b: "昨天有 {v} 位香客找阿嬤收驚，{y}隊伍一度排到金爐後面。阿嬤們輪流喝水，繼續收。" },
+  ],
+  ft: [
+    { id: "u1", t: "鐵口直斷昨天算了 {v} 卦", b: "老師傅昨天幫 {v} 位香客算命。{y}老師傅摸著鬍子說：「信不信由你，準不準由天。」" },
+    { id: "u2", t: "算命攤前大排長龍", b: "昨天有 {v} 位香客找鐵口直斷問事業、問姻緣。{y}" },
+  ],
+  onsen: [
+    { id: "n1", t: "禪房溫泉昨天泡了 {v} 人次", b: "禪房一樓的溫泉昨天共有 {v} 人次下去泡，{y}櫃台阿姨說：「泡完記得喝水。」" },
+  ],
   calm: [
     { id: "c1", t: "平靜的一天", b: "昨天天后宮風平浪靜，香客 {v} 位，香火裊裊。本報記者在廟埕晃了一整天，只看到貓咪在跳舞。" },
     { id: "c2", t: "廟裡一切安好", b: "昨天沒有大新聞，就是最好的新聞。共有 {v} 位香客來參拜，祝大家平安。" },
@@ -170,9 +221,22 @@ export function buildPaper(data) {
   const pz = top("minZen"); if (pz && pz.v >= 5) add("zen", 42, pz, "人物", "🧘");
   if ((c.sit_futon || 0) >= 3) { const s = top("sit_futon"); add("sleep", 38, { v: c.sit_futon, n: s ? s.n : "神秘人" }, "生活", "🛏️"); }
   const ws = data.wishes || []; if (ws.length) { const w = ws[Math.floor(R() * ws.length)]; add("wishes", 36, { v: ws.length, x: w.text }, "許願", "🎋"); }
+  /* night market: every stall that was played can make the paper (the busiest ones first) */
+  const NMK = { qq: ["地瓜球攤", "🟡"], sausage: ["香腸攤", "🌭"], bbq: ["烤肉攤", "🍢"], fish: ["撈金魚攤", "🐟"], pachinko: ["彈珠台", "⚪"], boba: ["珍奶攤", "🧋"], balloon: ["射氣球攤", "🎈"] };
+  const nmL = Object.keys(NMK).map(k => [k, c["nmP_" + k] || 0, c["nmW_" + k] || 0]).filter(e => e[1] >= 3).sort((a, b) => b[1] - a[1]);
+  if (nmL.length >= 3) { const t2 = nmL.slice(1, 3).map(e => `${NMK[e[0]][0]}（${e[1]} 次）`).join("、"); add("nmTop", 50, { x: NMK[nmL[0][0]][0], v: nmL[0][1], y: `接著是${t2}。` }, "夜市", "🏮"); }
+  nmL.slice(0, 4).forEach((e, i) => { const w = top("nmP_" + e[0]); add("nm_" + e[0], 47 - i * 3, { v: e[1], w: e[2], y: w && w.v >= 2 ? `最常來的是 ${w.n}，一個人就玩了 ${w.v} 次。` : "" }, "夜市", NMK[e[0]][1]); });
+  /* the temple's other corners */
+  if ((c.sjDone || 0) >= 3) { const w = top("sjDone"); add("sj", 43, { v: c.sjDone, y: w && w.v >= 2 ? `${w.n} 一天就收了 ${w.v} 次。` : "" }, "廟務", "👵"); }
+  if ((c.ftDone || 0) >= 3) { const w = top("ftDone"); add("ft", 41, { v: c.ftDone, y: w && w.v >= 2 ? `${w.n} 連算了 ${w.v} 次，據說是在問姻緣。` : "" }, "廟務", "🔮"); }
+  if ((c.sit_tub || 0) >= 3) { const w = top("sit_tub"); add("onsen", 37, { v: c.sit_tub, y: w ? `最愛泡的是 ${w.n}。` : "" }, "生活", "♨️"); }
   if (stories.length < 2) add("calm", 20, { v: visitors }, "廟務", "🏮");
+  /* sponsors the chair recorded: always the front page; several on one day share one thank-you story */
+  const spn = ev.filter(e => e.k === "sponsor" && e.n);
+  if (spn.length === 1) { const e = spn[0]; add("sponsor1", 1000, { n: e.n, x: e.x || "", m: e.m ? `${e.n} 留言：「${e.m}」。` : "" }, "感謝", "🧧"); }
+  else if (spn.length > 1) add("sponsorN", 1000, { v: spn.length, x: spn.map(e => `・${e.n}　${e.x || ""}${e.m ? `　「${e.m}」` : ""}`).join("\n") }, "感謝", "🧧");
   stories.sort((a, b) => b.pri - a.pri);
-  const head = stories[0], items = stories.slice(1, 6);
+  const head = stories[0], items = stories.slice(1, 8);
   /* ads: one illustrated poster (ads/pNN.webp, the chair's) and one old-style engraving with our own copy (ads/bNN.webp), plus a small text ad */
   const pi = 1 + Math.floor(R() * 10), bi = Math.floor(R() * BADS.length), ti = Math.floor(R() * ADS.length);
   const ads = [{ img: `ads/p${String(pi).padStart(2, "0")}.webp`, poster: 1 }, { img: `ads/b${String(bi + 1).padStart(2, "0")}.webp`, t: BADS[bi][0], b: BADS[bi][1] }, ADS[ti]];
@@ -183,7 +247,7 @@ export function buildPaper(data) {
   const reg = rate => Math.round(regH * rate * (.85 + R() * .3));
   const box = [["香客人次", visitors], ["最高同時在線", peakShown], ["參拜", (c.b_bowBtn || 0) + reg(2.4)], ["擲筊", (c.b_jiaoBtn || 0) + reg(1.1)], ["求籤", (c.b_lotBtn || 0) + reg(.5)], ["許願", (c.wish || ws.length || 0) + reg(.08)]];
   const today = dn + 1, fc = dayWx(today);
-  return { v: 1, d, no: data.no || 1, wx, wxn: WXN[wx], wxi: WXI[wx], fc, fcn: WXN[fc], fci: WXI[fc], busyHour: hm > 0 ? hrs.indexOf(hm) : -1,
+  return { v: 1, d, rev: data.rev || 0, no: data.no || 1, wx, wxn: WXN[wx], wxi: WXI[wx], fc, fcn: WXN[fc], fci: WXI[fc], busyHour: hm > 0 ? hrs.indexOf(hm) : -1,
     head: { t: head.t, b: head.b, tag: head.tag, art: head.art, kind: head.kind, who: head.who }, items: items.map(s => ({ t: s.t, b: s.b, tag: s.tag, art: s.art, kind: s.kind, who: s.who })),
     box, ads, used: [...used].slice(-80) };
 }
