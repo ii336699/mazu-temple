@@ -9171,11 +9171,11 @@ function paperPhotos(){ const p=PAPER.p; if(!p) return; { const c=paperPhCached(
   const step=i=>{ if(tok!==PAPER.phTok||i>=kinds.length){ if(i>=kinds.length) try{ save("mz.paperPh",JSON.stringify({k:paperPhKey(p),ph:PAPER.ph})); }catch(e){} return; } if(kinds[i]) PAPER.ph[i]=paperShoot(kinds[i]); put(i); setTimeout(()=>requestAnimationFrame(()=>step(i+1)),60); };
   setTimeout(()=>requestAnimationFrame(()=>step(0)),350); }
 function paperOpen(intro){ const p=PAPER.p; if(!p) return; PAPER.ph=(paperPhCached(p)||[]).slice(); let el=$("#paper"); if(!el){ el=document.createElement("div"); el.id="paper"; document.body.appendChild(el); }
-  el.innerHTML=`<div class="np-call" aria-live="polite"><div class="np-icon">📰</div><div class="np-big">報紙到囉！</div><div class="np-hint">點一下打開報紙</div></div><div class="np-wrap">${paperHTML(p)}<button class="np-close" type="button">收起報紙</button></div>`;
+  el.innerHTML=`<div class="np-call" aria-live="polite"><div class="np-icon">📰</div><div class="np-big">報紙到囉！</div></div><div class="np-wrap">${paperHTML(p)}<button class="np-close" type="button">收起報紙</button></div>`;
   el.className=intro?"intro":"open"; el.hidden=false; PAPER.shown=true; statInc("paperOpen"); if(!intro) paperPhotos();
   const close=()=>{ el.className="closing"; setTimeout(()=>{ el.hidden=true; el.className=""; },420); };
   el.querySelector(".np-close").onclick=e=>{ e.stopPropagation(); close(); };
-  if(intro){ el.onclick=()=>{ if(el.className!=="intro") return; el.onclick=null; el.className="calling"; paperDing(); paperCall(); setTimeout(()=>{ el.className="open"; paperPhotos(); },1700); }; }
+  if(intro){ /* no tap needed: "報紙到囉！" plays, then the paper opens by itself */ el.onclick=null; el.className="calling"; try{ paperDing(); paperCall(); }catch(e){} setTimeout(()=>{ if(el.className==="calling"){ el.className="open"; paperPhotos(); } },1700); }
   else el.onclick=null; }
 /* 主委工具 → 贊助登報: names and amounts go on the front page. 今天 = re-issue the paper everyone is reading today; 明天 = in tomorrow's paper.
    Several on one day share one thank-you story listing everyone. (The test page keeps them on this phone and shows them in the sample paper.) */
@@ -9240,7 +9240,7 @@ HANDLERS.paperOpen=async()=>{ closeSheet(); if(!(await paperFetch())){ toast("�
 /* once a day, when the page has loaded (not on someone's very first visit, while they make their character) */
 setTimeout(async()=>{ if(firstVisitPending) return; const p=await paperFetch(); if(!p) return; const seen=load("mz.paperSeen","")===p.d+(p.rev?"#"+p.rev:"");
   if(seen){ setTimeout(()=>paperPrepare(p),9000); return; } /* already read today: get the photos ready in the background for when it is opened again */
-  await new Promise(r=>setTimeout(r,1500)); await paperPrepare(p); save("mz.paperSeen",p.d+(p.rev?"#"+p.rev:"")); paperOpen(true); },300); /* (a re-issue with sponsors pops up again) */
+  await new Promise(r=>{ const w=()=>{ const ld=$("#loading"); if(!ld||ld.hasAttribute("data-done")) setTimeout(r,1200); else setTimeout(w,200); }; w(); }); /* after the loading screen has gone */ await paperPrepare(p); save("mz.paperSeen",p.d+(p.rev?"#"+p.rev:"")); paperOpen(true); },300); /* (a re-issue with sponsors pops up again) */
 
 if(firstVisit) setTimeout(async()=>{ if(await profRestore()){ firstVisitPending=false; toast("歡迎回來！已自動找回你的角色",3600); return; } openLook(true); },600); else setTimeout(()=>toast(guideStep().n===1?"先到大殿入口右手邊的服務處，請清香、金紙和供品":(matchMedia("(pointer:fine)").matches?"WASD 走動・拖曳滑鼠轉視角":"點地板走動・拖曳畫面轉視角"),4200),900);
 // ---- in-app browser hint (Threads / Instagram / Facebook / LINE / other app web views) ----
