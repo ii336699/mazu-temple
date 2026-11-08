@@ -3,9 +3,12 @@
 import { DurableObject } from "cloudflare:workers";
 import { buildPaper } from "../public/paper-gen.js";
 
+// the name and coins inside a saved character code (same layout as lookCode() in the page)
+function snapInfo(str) { try { const raw = atob(String(str).slice(3).replace(/-/g, "+").replace(/_/g, "/")); const bits = []; for (const ch of raw) { const b = ch.charCodeAt(0); for (let i = 7; i >= 0; i--) bits.push((b >> i) & 1); } let p = 0; const get = n => { let v = 0; for (let i = 0; i < n; i++) v = v * 2 + (bits[p++] || 0); return v; };
+  if (get(4) !== 1) return {}; get(65); const coins = get(16); get(30); get(1); const pn = get(3); get(pn * 6); get(24); const nl = get(4); let name = ""; for (let i = 0; i < nl; i++) name += String.fromCharCode(get(16)); return { name, coins }; } catch { return {}; } }
 const HALLS = 10, CAP = 100, MAX_MSG = 4000;
 const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000, "/puppet": 5000, "/crowd": 5000, "/market": 5000, "/layout": 5000 };
-const LOBBY_PATHS = ["/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather", "/stat", "/nev", "/paper", "/sponsor", "/hatfit", "/honor"];
+const LOBBY_PATHS = ["/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather", "/stat", "/nev", "/paper", "/sponsor", "/hatfit", "/honor", "/lookup"];
 const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage", "/puppet": "/puppet", "/crowd": "/crowd", "/market": "/market", "/layout": "/layout" }; // a POST here makes that cached list stale
 
 export default {
@@ -324,6 +327,15 @@ export class Lobby extends DurableObject {
       return json({ ok: true, seeded: seeded || b.act === "seed", list: H.slice(-600).map(h => ({ n: h.n, a: h.a, x: h.x })) });
     }
     if (url.pathname === "/honor") return json({ ok: true, seeded: !!(await this.ctx.storage.get("honorSeeded")), list: ((await this.ctx.storage.get("honor")) || []).map(h => ({ n: h.n, a: h.a, x: h.x })) });
+    // 查取回碼 (chair): find a player's saved character by the name inside it, so the chair can tell them their 取回碼
+    if (url.pathname === "/lookup") {
+      const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
+      const q = String(url.searchParams.get("q") || "").normalize("NFKC").trim().toLowerCase().slice(0, 16), qc = q.toUpperCase().replace(/[^0-9A-Z]/g, "");
+      if (!q) return json({ ok: false, why: "q" }); const out = []; let seen = 0;
+      if (qc.length === 7) { const owner = await this.ctx.storage.get("C:" + qc); const P = owner && await this.ctx.storage.get("P:" + owner); if (P) { const d = snapInfo(P.snap); out.push({ n: d.name, code: P.code, at: P.at || 0, coins: d.coins, id: P.id || "" }); } }
+      for (const [, P] of await this.ctx.storage.list({ prefix: "P:", limit: 20000 })) { seen++; if (!P || !P.snap || !P.code) continue; const d = snapInfo(P.snap); if (!d.name || !d.name.normalize("NFKC").toLowerCase().includes(q)) continue; if (out.some(o => o.code === P.code)) continue; out.push({ n: d.name, code: P.code, at: P.at || 0, coins: d.coins, id: P.id || "" }); }
+      out.sort((a, b) => b.at - a.at); return json({ ok: true, seen, list: out.slice(0, 40) });
+    }
     if (url.pathname === "/hatfit") return json((await this.ctx.storage.get("hatfit")) || { fit: {}, at: 0 });
     if (url.pathname === "/sponsor") {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);

@@ -4296,6 +4296,7 @@ const ctTile=(act,icon,name,note="")=>`<button class="ct" data-act="${act}"><b>$
 function openChair(){ if(!me.sp) return;
   openSheet("chair","主委工具",`<div class="ck-row"><input class="mail-box ck" id="readKey" type="password" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="留言讀取密碼（輸入一次就會記住）" value="${esc(load("mz.rk",""))}"><button class="chip ck-eye" type="button" onclick="const i=document.getElementById('readKey'); i.type=i.type==='password'?'text':'password'; this.textContent=i.type==='password'?'👁':'🙈';">👁</button></div>
   <div class="ct-group"><span class="group-label">訊息</span><div class="ct-grid">${ctTile("msgsOpen","📬","香客留言")}${ctTile("annOpen","📢","全服公告","跑馬燈")}${ctTile("boardOpen","📋","公告欄",board.text?"有公告":"空白")}</div></div>
+  <div class="ct-group"><span class="group-label">玩家</span><div class="ct-grid">${ctTile("rcFind","🔑","查取回碼","幫玩家找回角色")}</div></div>
   <div class="ct-group"><span class="group-label">頭飾</span><div class="ct-grid">${ctTile("hatFitOpen","🎩","頭飾定位","調整每頂帽子戴的位置")}</div></div>
   <div class="ct-group"><span class="group-label">報紙與統計</span><div class="ct-grid">${ctTile("sponsorOpen","🧧","贊助登報","登上報紙頭版")}${ctTile("paperReroll","🔄","換報紙內容","今天的報紙換別的新聞")}${ctTile("honorEdit","🪨","榮譽功德榜","新增・修改・刪除")}${ctTile("paperTest","📰","報紙測試","開場・範例・預覽")}${ctTile("statOpen","📊","每日統計","今天・近 14 天")}</div></div>
   <div class="ct-group"><span class="group-label">表演與活動</span><div class="ct-grid">${ctTile("askFw","🎆","全服煙火","4 場可選")}${ctTile("fwedOpen","🎼","煙火編排器","自己排")}${ctTile("schedOpen","⏰","定時活動","煙火・夜市")}${ctTile("askSL","🏮","50 盞天燈")}${ctTile("stageChair","🎭","歌仔戲台",OP.on?"演出中":"")}${ctTile("puppetChair","🎎","布袋戲台",PT.on?"演出中":"")}${ctTile("marketOpen","🏮","夜市",Object.keys(MK.open).length?`${Object.keys(MK.open).length} 攤營業中`:"")}</div></div>
@@ -9315,6 +9316,16 @@ HANDLERS.honorSave=async v=>{ const n=$("#hnN").value.trim(), raw=$("#hnA").valu
 /* delete needs a second tap within 3 s */
 const confirmTap=(()=>{ let k0="",t0=0; return (k,msg)=>{ const now=Date.now(); if(k===k0&&now-t0<3000){ k0=""; return true; } k0=k; t0=now; toast(msg,2600); return false; }; })();
 HANDLERS.honorDel=async v=>{ const e=(HONOR.ed||[])[+v]; if(!e) return; if(!confirmTap("hnDel"+v,`再按一次刪除「${e.n}」`)) return; const j=await honorReq({act:"del",i:+v}); if(!j) return; toast("已刪除",1600); HANDLERS.honorEdit(); };
+/* 主委工具 → 查取回碼: search the saved characters by name (or a code) and read the player their 取回碼; they type it in 設定 → 取回碼 */
+HANDLERS.rcFind=()=>{ openSheet("contact","查取回碼",`${backBtn}<p class="lead">打玩家的名字（打一部分也可以），找到後把取回碼告訴他。他到「設定 → 取回碼」輸入，就會拿回角色（名字、造型、平安幣、背包、頭飾）。</p>
+  <div class="mail-row"><input class="mail-box" id="rcQ" maxlength="16" placeholder="玩家名字" autocomplete="off"><button class="good mail-copy" data-act="rcFindGo"><span class="name">🔍 查詢</span></button></div><div id="rcRes"></div>`); setTimeout(()=>{ const i=$("#rcQ"); if(i){ i.focus(); i.addEventListener("keydown",e=>{ if(e.key==="Enter") HANDLERS.rcFindGo(); }); } },50); };
+HANDLERS.rcFindGo=async()=>{ const q=(($("#rcQ")||{}).value||"").trim(), box=$("#rcRes"); if(!q){ toast("請打名字"); return; } if(!USE_CF){ toast("測試頁沒有伺服器，要在正式站查",2600); return; }
+  const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return; } box.innerHTML=`<p class="note">查詢中…</p>`;
+  try{ const r=await fetch("/lookup?q="+encodeURIComponent(q),{headers:{"x-key":key},cache:"no-store"}); const j=await r.json().catch(()=>null); if(!j||j.error){ box.innerHTML=`<p class="note">伺服器忙，請再按一次</p>`; return; } forgetKey(r,j); if(!j.ok){ box.innerHTML=`<p class="note">查不到（密碼？）</p>`; return; }
+    const when=t=>{ if(!t) return "—"; const d=new Date(t+8*3600e3); return `${d.getUTCMonth()+1}/${d.getUTCDate()} ${String(d.getUTCHours()).padStart(2,"0")}:${String(d.getUTCMinutes()).padStart(2,"0")}`; };
+    box.innerHTML=j.list.length?`<p class="note">找到 ${j.list.length} 個（最近存檔的在上面；同名的可以看平安幣和時間分辨）</p><ul class="sp-list">${j.list.map(e=>`<li><span><b>${esc(e.n)}</b><br><small>最後存檔 ${when(e.at)}・平安幣 ${e.coins|0}</small></span><span style="flex:0 0 auto;display:flex;gap:6px;align-items:center"><b style="font:700 16px monospace;letter-spacing:1px">${fmtCode(e.code)}</b><button class="chip" data-act="rcCopy" data-v="${esc(fmtCode(e.code))}">複製</button></span></li>`).join("")}</ul>`:`<p class="note">找不到名字有「${esc(q)}」的角色（共查了 ${j.seen} 個存檔）。玩家可能還沒存過檔，或改過名字。</p>`; }
+  catch(e){ box.innerHTML=`<p class="note">網路不穩，請再按一次</p>`; } };
+HANDLERS.rcCopy=async v=>{ let ok=false; try{ await navigator.clipboard.writeText(v); ok=true; }catch(e){} toast(ok?`已複製 ${v}`:"請長按自行複製",2200); };
 /* 主委工具 → 頭飾定位 */
 function hfIds(){ return ACC_IDS.filter(k=>HAT_FIT[k]&&!ACC[k].gone); }
 HANDLERS.hatFitOpen=v=>{ const ids=hfIds(); const id=v&&HAT_FIT[v]?v:(HFIT.id&&HAT_FIT[HFIT.id]?HFIT.id:(accState().head&&HAT_FIT[accState().head]?accState().head:ids[0])); HFIT.id=id;
