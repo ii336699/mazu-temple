@@ -3705,9 +3705,9 @@ function botFps(){ const now=performance.now(), dt=BOT.lastF?(now-BOT.lastF)/100
   if(BOT.ema>1.45&&(dresFloor()||BOT.ema>1.9)){ BOT.slow+=dt; BOT.fast=0; if(BOT.slow>2.5&&BOT.cap>10){ BOT.cap=Math.max(10,Math.round(BOT.cap*.75)); BOT.slow=0; BOT.nextAdjust=0; } }
   else if(cap===60&&BOT.ema<1.15){ BOT.fast+=dt; BOT.slow=0; if(BOT.fast>20&&BOT.cap<botMax()){ BOT.cap=Math.min(botMax(),BOT.cap+4); BOT.fast=0; } }
   else { BOT.slow=0; if(cap!==60) BOT.fast=0; } }
-function sitterLimit(){ const n=!showNpc?0:Q.lite?3:Q.low?6:12; return CUT.lv>=2?0:CUT.lv===1?Math.ceil(n/2):n; }       // the classic ones on the cushions
+function sitterLimit(){ const n=!showNpc?0:Q.lite?3:Q.low||Q.phone?6:12; return CUT.lv>=2?0:CUT.lv===1?Math.ceil(n/2):n; }       // the classic ones on the cushions
 function hereCount(){ return FAKE_CROWD?(fakeHalls(Date.now())[HALLS.current()]||0):16; }
-function botWant(){ const lim=botLimit(); if(!lim) return 0; const floor=Math.min(lim,Q.lite?6:Q.low?12:20), room=Math.max(floor,lim-remotes.size), h=hereCount(); const w=h<=0?0:Math.min(room,Math.max(2,h)); return CUT.lv===1?Math.ceil(w/2):w; } /* (人物減量: half) */
+function botWant(){ let lim=botLimit(); if(!lim) return 0; if(Q.phone) lim=Math.min(lim,CUT.lv===1?FIG.phoneAll/2:FIG.phoneAll); const floor=Math.min(lim,Q.phone?6:Q.lite?6:Q.low?12:20), room=Math.max(floor,lim-remotes.size), h=hereCount(); const w=h<=0?0:Math.min(room,Math.max(2,h)); return CUT.lv===1&&!Q.phone?Math.ceil(w/2):w; } /* (人物減量: half; on phones the cap above is already halved) */
 /* (real players used to take up the whole drawing budget: with 45 of them in the hall, and the budget lowered a little because so many
    people were walking about, not one demo visitor was left even though the count said 89. Now a floor of them always stays.) */
 function sitterWant(){ const lim=sitterLimit(); if(!lim) return 0; return Math.max(Math.min(1,lim),Math.min(lim,Math.round(hereCount()/5))); }
@@ -3934,7 +3934,7 @@ function placeBot(){ const role=pickRole(); let a;
   a.role=role; return a; }
 function buildNpcs(){ npcs.forEach(n=>n.dispose()); npcs.length=0;
   // the original demo worshippers, exactly as before: no name, always kneeling on the mats in the hall and bowing now and then
-  if(showNpc) for(let i=0;i<(CUT.lv>=2?0:CUT.lv===1?6:12);i++){ const s=freeSeat(); if(s<0) break; const a=new Avatar(randomLook(),{npc:true,x:SEATS[s].x,z:SEATS[s].y}); /* (the nameless kneelers wear no game prizes: only the named demo players do) */ try{ bakeAvatar(a); }catch(e){}
+  if(showNpc) for(let i=0;i<(CUT.lv>=2?0:CUT.lv===1||Q.phone?6:12);i++){ const s=freeSeat(); if(s<0) break; const a=new Avatar(randomLook(),{npc:true,x:SEATS[s].x,z:SEATS[s].y}); /* (the nameless kneelers wear no game prizes: only the named demo players do) */ try{ bakeAvatar(a); }catch(e){}
     a.classic=true; a.seat=s; a.kneel=1; a.next=rand(2,18); a.steps=[]; a.step=null; if(customizing) a.root.visible=false; npcs.push(a); }
   const want=Math.min(40,botWant()); for(let i=0;i<want;i++) placeBot();
   BOT.nextAdjust=performance.now()+rand(1500,4000); }
@@ -3953,10 +3953,20 @@ function sendPresence(force){ if(!room) return; dirty=false; const p=presencePay
 function seatTakenByPeer(i){ for(const r of remotes.values()) if(r.seat===i) return true; return false; }
 function num(v,a,b,d){ v=Number(v); return Number.isFinite(v)?Math.max(a,Math.min(b,v)):d; }
 function cleanName(n){ const t=String(n||"").replace(/[\u0000-\u001f​-‏‪-‮]/g,"").slice(0,10); return hasAddLine(t)?"":t; }
-function syncPeers(peers){ const seen=new Set(); const nReal=PEERS.n=peers.filter(p=>!p.sameTab&&p.kind==="viewer").length, cap=CUT.lv>=2?0:CUT.lv===1?Math.ceil(nReal/2):1e9;
-  for(const p of peers){ if(p.sameTab||p.kind!=="viewer") continue; const pr=p.presence||{}; if(pr.v!==1||pr.u===0) continue; seen.add(p.peer);
+/* how many other real players get a figure: on phones the nearest 20 (10 with 人物減量 half, none when off) — 50 players in one hall plus the
+   demo crowd was more than an iPhone's memory holds (the crash reports: about 80 figures on screen when it closed). The chair always shows.
+   New figures are made a few at a time, not 50 in the first second. */
+const FIG={phoneReal:20,phoneAll:32};
+function figCap(nReal){ if(CUT.lv>=2) return 0; if(Q.phone) return CUT.lv===1?FIG.phoneReal/2:FIG.phoneReal; return CUT.lv===1?Math.ceil(nReal/2):1e9; }
+function syncPeers(peers){ const seen=new Set(); const valid=peers.filter(p=>!p.sameTab&&p.kind==="viewer"&&p.presence&&p.presence.v===1&&p.presence.u!==0), nReal=PEERS.n=valid.length, cap=figCap(nReal);
+  const rank=new Map(); if(nReal>cap){ const mx=meAv.pos.x, mz=meAv.pos.y; valid.map(p=>{ const pr=p.presence; return [p.peer,pr.q===1?-1:Math.hypot(num(pr.x,-78,68,0)-mx,num(pr.z,-43,HZ+YX+18,HZ+12)-mz)]; }).sort((a,b)=>a[1]-b[1]).forEach(([id],i)=>rank.set(id,i)); }
+  let made=0;
+  for(const p of peers){ if(p.sameTab||p.kind!=="viewer") continue; const pr=p.presence||{}; if(pr.v!==1||pr.u===0) continue;
+    if(pr.q!==1&&nReal>cap){ const rk=rank.get(p.peer); if(rk>=(remotes.has(p.peer)?cap+6:cap)) continue; } /* too far down the list: no figure (one already drawn keeps it until 6 places further, so people near the edge do not flicker) */
+    if(!remotes.has(p.peer)&&pr.q!==1&&made>=4) continue; /* the rest next time (presence comes round again within a moment) */
+    seen.add(p.peer);
     let av=remotes.get(p.peer); const look=sanitizeLook(pr.l,pr.q===1); if(av) av.setSp(pr.q===1);
-    if(!av&&pr.q!==1&&remotes.size>=cap) continue; /* 人物減量: no figure for this one (nothing is made, so no memory is used) */
+    if(!av) made++;
     if(!av){ av=new Avatar(look,{sp:pr.q===1,x:num(pr.x,-78,68,0),z:num(pr.z,-43,HZ+YX+18,HZ+12)}); av.autoBake=true; av.real=1; try{ bakeAvatar(av); }catch(e){} if(!othersShown) av.root.visible=false; av.lastBow=pr.b; av.lastJ=Array.isArray(pr.j)?pr.j[1]:""; av.lastF=pr.f; av.offerGroup=new T.Group(); scene.add(av.offerGroup); remotes.set(p.peer,av); if(customizing) av.root.visible=false; }
     else if(av.swim&&av.swimSave){ if(look.join()!==av.swimSave.join()) av.swimSave=look.slice(); } /* in the hot spring: keep the swimsuit, remember the new clothes for afterwards */
     else if(look.join()!==av.look.join()) av.setLook(look);
@@ -7696,7 +7706,7 @@ function playFushui(){ const L=gameLayer("觀音菩薩・接福水","點木水�
     const inTop=g.oy-g.cs*.42; { const ts2=tileArt("S",true,ts); x.save(); x.beginPath(); x.rect(scx-g.cs/2,inTop,g.cs,g.oy-inTop+2); x.clip(); x.translate(scx,inTop+g.cs/2); x.rotate(Math.PI/2); x.drawImage(ts2,-g.cs/2,-g.cs/2,g.cs,g.cs); x.restore();
       const fw=g.cs*.31, fg2=x.createLinearGradient(scx-fw,0,scx+fw,0); fg2.addColorStop(0,"#9c6716"); fg2.addColorStop(.35,"#ffe7a0"); fg2.addColorStop(.7,"#e0a83c"); fg2.addColorStop(1,"#8a5a12");
       x.fillStyle=fg2; x.beginPath(); x.moveTo(scx-fw,inTop-g.cs*.05); x.lineTo(scx+fw,inTop-g.cs*.05); x.lineTo(scx+g.cs*.19,inTop+g.cs*.1); x.lineTo(scx-g.cs*.19,inTop+g.cs*.1); x.closePath(); x.fill(); x.strokeStyle="#5a3a12"; x.lineWidth=1; x.stroke();
-      x.beginPath(); x.ellipse(scx,inTop-g.cs*.05,fw,g.cs*.07,0,0,7); x.fillStyle=fg2; x.fill(); x.stroke(); const wg3=x.createRadialGradient(scx,inTop-g.cs*.05,0,scx,inTop-g.cs*.05,fw*.85); wg3.addColorStop(0,"#bff0ff"); wg3.addColorStop(1,"#1f8ad0"); x.fillStyle=wg3; x.beginPath(); x.ellipse(scx,inTop-g.cs*.05,fw*.82,g.cs*.05,0,0,7); x.fill(); }
+      x.beginPath(); x.ellipse(scx,inTop-g.cs*.05,Math.max(0,fw),g.cs*.07,0,0,7); x.fillStyle=fg2; x.fill(); x.stroke(); const wg3=x.createRadialGradient(scx,inTop-g.cs*.05,0,scx,inTop-g.cs*.05,fw*.85); wg3.addColorStop(0,"#bff0ff"); wg3.addColorStop(1,"#1f8ad0"); x.fillStyle=wg3; x.beginPath(); x.ellipse(scx,inTop-g.cs*.05,Math.max(0,fw*.82),g.cs*.05,0,0,7); x.fill(); }
     if(ok("vase")){ const s=g.cs*.36/142, vw=IM.vase.naturalWidth*s, vh=IM.vase.naturalHeight*s, vx=scx-688*s, vy=inTop-g.cs*.02-vh; x.drawImage(IM.vase,vx,vy,vw,vh);
       // the pouring water moves: bright ripples run down the stream, drops spill off the end
       x.save(); x.translate(vx,vy); x.scale(s,s); x.globalCompositeOperation="lighter"; x.lineCap="round";
@@ -7709,7 +7719,7 @@ function playFushui(){ const L=gameLayer("觀音菩薩・接福水","點木水�
     if(ok("hands")){ const hw=g.cs*1.35, hh=hw*IM.hands.naturalHeight/IM.hands.naturalWidth, hx=scx-hw*.5, hy=g.oy+g.bh+g.cs*.04;
       if(won){ const fy=g.oy+g.bh-g.cs*.05, ty2=hy+hh*.5; x.strokeStyle="rgba(70,190,255,.85)"; x.lineWidth=g.cs*.2; x.lineCap="round"; x.beginPath(); x.moveTo(scx,fy); x.lineTo(scx,ty2); x.stroke(); x.strokeStyle="rgba(220,250,255,.8)"; x.lineWidth=g.cs*.05; x.setLineDash([g.cs*.08,g.cs*.16]); x.lineDashOffset=-t*g.cs*1.6; x.beginPath(); x.moveTo(scx,fy); x.lineTo(scx,ty2); x.stroke(); x.setLineDash([]); }
       x.drawImage(IM.hands,hx,hy,hw,hh);
-      if(won){ const k3=Math.min(1,(now-wonT)/900), px3=scx, py3=hy+hh*.5; const pg2=x.createRadialGradient(px3,py3,0,px3,py3,hw*.24); pg2.addColorStop(0,"rgba(190,240,255,.95)"); pg2.addColorStop(.6,"rgba(70,180,250,.85)"); pg2.addColorStop(1,"rgba(40,140,230,0)"); x.fillStyle=pg2; x.beginPath(); x.ellipse(px3,py3,hw*.24*k3,hh*.1*k3,0,0,7); x.fill(); }
+      if(won){ const k3=Math.max(0,Math.min(1,(now-wonT)/900)) /* (the frame time can be a hair behind the moment of winning: a negative size threw) */, px3=scx, py3=hy+hh*.5; const pg2=x.createRadialGradient(px3,py3,0,px3,py3,hw*.24); pg2.addColorStop(0,"rgba(190,240,255,.95)"); pg2.addColorStop(.6,"rgba(70,180,250,.85)"); pg2.addColorStop(1,"rgba(40,140,230,0)"); x.fillStyle=pg2; x.beginPath(); x.ellipse(px3,py3,hw*.24*k3,hh*.1*k3,0,0,7); x.fill(); }
       if(won){ if(Math.random()<.5) drops.push({x:scx+(Math.random()-.5)*hw*.5,y:hy+hh*.35,vx:(Math.random()-.5)*60,vy:-60-Math.random()*80,t:0}); }
       for(const d of drops){ d.t+=.016; d.x+=d.vx*.016; d.y+=d.vy*.016; d.vy+=260*.016; x.fillStyle=`rgba(255,255,220,${Math.max(0,1-d.t)})`; x.beginPath(); x.arc(d.x,d.y,2.2,0,7); x.fill(); } while(drops.length&&drops[0].t>1) drops.shift(); }
     x.fillStyle="#fff"; x.font=`600 15px ${UI_FONT}`; x.textAlign="left"; x.fillText(`${(((done?wonT:now)-t0)/1000).toFixed(1)} 秒`,16,104);
