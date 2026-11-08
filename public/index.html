@@ -9216,10 +9216,16 @@ HANDLERS.hatFitOpen=v=>{ const ids=hfIds(); const id=v&&HAT_FIT[v]?v:(HFIT.id&&H
     <div class="chips" style="margin:8px 0">${[["0","正面"],["1.57","左側"],["3.14","背面"],["-1.57","右側"]].map(([y,t])=>`<button class="chip" data-act="hatFitView" data-v="${y}">${t}</button>`).join("")}<button class="chip" data-act="hatFitView" data-v="turn">轉一圈</button></div>
     <div class="hf-sl">${HF_KEYS.map(([k,t,lo,hi,st])=>{ const val=F[k]!=null?F[k]:(k==="w"?.74:k==="zs"||k==="xs"?1:0); return `<label><span>${t}</span><input type="range" data-k="${k}" min="${lo}" max="${hi}" step="${st}" value="${val}"><b>${(+val).toFixed(2)}</b></label>`; }).join("")}</div>
     <div class="goods"><button class="good" data-act="hatFitSave"><span class="name">💾 儲存給大家</span><span class="meta">把調過的帽子存起來（有 • 的是還沒存的）</span></button>
-    <button class="good" data-act="hatFitReset"><span class="name">↺ 這頂重設</span><span class="meta">回到原本的位置</span></button></div>`);
+    <button class="good" data-act="hatFitReset"><span class="name">↺ 這頂重設</span><span class="meta">回到原本的位置</span></button>
+    <button class="good" data-act="hatFitCopy"><span class="name">📋 複製設定碼</span><span class="meta">把所有調好的帽子變成一段文字，貼給工程師就能寫進遊戲</span></button></div>
+    <textarea id="hfCode" readonly hidden style="width:100%;box-sizing:border-box;min-height:90px;margin-top:8px;font:12px/1.4 monospace;border-radius:10px;padding:8px;background:rgba(0,0,0,.3);color:inherit;border:1px solid rgba(255,255,255,.2)"></textarea>`);
   sheetBody.querySelectorAll(".hf-sl input").forEach(inp=>{ inp.oninput=()=>{ const k=inp.dataset.k; HAT_FIT[id][k]=+inp.value; inp.nextElementSibling.textContent=(+inp.value).toFixed(2); HFIT.dirty[id]=1;
     if(!HFIT.raf) HFIT.raf=requestAnimationFrame(()=>{ HFIT.raf=0; meAv.setAcc(myEq()); }); }; }); };
 HANDLERS.hatFitView=v=>{ if(v==="turn"){ pvSpin=Math.PI*2; return; } pvYaw=+v; };
+HANDLERS.hatFitCopy=async()=>{ const fit={}; for(const id of hfIds()){ const o={}, F=HAT_FIT[id], F0=HAT_FIT0[id]||{}; for(const [k] of HF_KEYS){ if(F[k]!=null&&F[k]!==F0[k]) o[k]=Math.round(F[k]*1000)/1000; } if(Object.keys(o).length) fit[id]=o; }
+  const txt="HATFIT"+JSON.stringify(fit), ta=$("#hfCode"); if(ta){ ta.hidden=false; ta.value=txt; ta.focus(); ta.select(); }
+  let ok=false; try{ await navigator.clipboard.writeText(txt); ok=true; }catch(e){ try{ ok=document.execCommand("copy"); }catch(_){} }
+  toast(Object.keys(fit).length?(ok?`已複製 ${Object.keys(fit).length} 頂的設定，貼給工程師就好`:"請長按下面的文字全選複製"):"還沒有調過任何帽子",2800); };
 HANDLERS.hatFitReset=()=>{ const id=HFIT.id; if(!id) return; for(const [k] of HF_KEYS) delete HAT_FIT[id][k]; Object.assign(HAT_FIT[id],HAT_FIT0[id]); HFIT.dirty[id]=1; meAv.setAcc(myEq()); HANDLERS.hatFitOpen(id); };
 HANDLERS.hatFitSave=async()=>{ const fit={}; for(const id of hfIds()){ const o={}, F=HAT_FIT[id], F0=HAT_FIT0[id]||{}; for(const [k] of HF_KEYS){ if(F[k]!=null&&F[k]!==F0[k]) o[k]=F[k]; } if(Object.keys(o).length) fit[id]=o; }
   if(!USE_CF){ save("mz.hatfit",JSON.stringify(fit)); HFIT.dirty={}; toast("已儲存（測試頁存在這支手機）",2200); HANDLERS.hatFitOpen(HFIT.id); return; }
