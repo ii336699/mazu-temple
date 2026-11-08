@@ -6894,7 +6894,7 @@ ACC.h_angler.gone=1; ACC.h_bigshark.gone=1; /* taken out at the chair's request;
 Object.assign(HAT_FIT.h_xlb,{rx:.1}); for(const k of ["h_angel","h_hibiscus","h_flower","h_shades"]) HAT_FIT[k].y=-.04; /* (bands sit higher, on top of the head) */
 /* ---- 頭飾定位 (主委工具): the chair fits each hat by eye (size, height, forward/back, tilt, depth, and where its effects sit); saved on the
    server and the same for everyone. HAT_FIT0 keeps the built-in values for 重設. ---- */
-const HAT_FIT0=JSON.parse(JSON.stringify(HAT_FIT)), HF_KEYS=[["w","大小",.3,1.6,.01],["y","上下",-.5,.5,.005],["z","前後",-.35,.35,.005],["x","左右",-.25,.25,.005],["rx","前後傾",-1,1,.01],["rz","左右歪",-1,1,.01],["ry","轉向",-3.14,3.14,.02],["zs","前後厚度",.5,2.4,.01],["ey","特效上下",-.6,.6,.01],["ez","特效前後",-.5,.5,.01],["ex","特效左右",-.5,.5,.01]];
+const HAT_FIT0=JSON.parse(JSON.stringify(HAT_FIT)), HF_KEYS=[["w","大小",.3,1.6,.01],["y","上下",-.5,.5,.005],["z","前後",-.35,.35,.005],["x","左右",-.25,.25,.005],["rx","前後傾",-1,1,.01],["rz","左右歪",-1,1,.01],["ry","轉向",-3.14,3.14,.02],["zs","前後厚度",.5,2.4,.01],["xs","左右厚度",.5,2.4,.01],["ey","特效上下",-.6,.6,.01],["ez","特效前後",-.5,.5,.01],["ex","特效左右",-.5,.5,.01]];
 const HFIT={id:null,dirty:{},t:0};
 function hatFitApply(fit){ if(!fit||typeof fit!=="object") return; for(const [id,v] of Object.entries(fit)){ if(!HAT_FIT[id]||!v) continue; Object.assign(HAT_FIT[id],v); } }
 async function hatFitLoad(){ let f=null; try{ if(USE_CF){ const r=await fetch("/hatfit",{cache:"no-store"}); const j=await r.json(); f=j&&j.fit; } else f=JSON.parse(load("mz.hatfit","")||"null"); }catch(e){}
@@ -7050,7 +7050,7 @@ const ACC_MAT={}; const accMat=(c,o={})=>ACC_MAT[c+JSON.stringify(o)]||(ACC_MAT[
 function buildAccHead(id){ const g=new T.Group();
   if(HAT_FIT[id]){ const F=HAT_FIT[id]; if(HFX[id]) g.userData.hfx=id; loadShared(F.m||"hats",m=>{ let src=null; m.traverse(q=>{ if(q.name===id&&!src) src=q; }); if(!src) return; const o=src.clone(); o.position.set(0,0,0); o.rotation.set(0,0,0);
       const w=new T.Group(); w.add(o); w.updateMatrixWorld(true); const bb=new T.Box3().setFromObject(o), sz=bb.getSize(new T.Vector3()), c=bb.getCenter(new T.Vector3()); const k=F.w/Math.max(.001,sz.x);
-      o.position.set(-c.x-(F.ox||0)*sz.x,-bb.min.y,-c.z-(F.oz||0)*sz.x); w.scale.set(k,k,k*(F.zs||1)); /* (hats2: the bottom rim is centred on the head and stretched front-to-back to go round it) */ w.position.set(F.x||0,F.y,F.z||0); w.rotation.set(F.rx||0,F.ry||0,F.rz||0);
+      o.position.set(-c.x-(F.ox||0)*sz.x,-bb.min.y,-c.z-(F.oz||0)*sz.x); w.scale.set(k*(F.xs||1),k,k*(F.zs||1)); /* (hats2: the bottom rim is centred on the head and stretched front-to-back to go round it) */ w.position.set(F.x||0,F.y,F.z||0); w.rotation.set(F.rx||0,F.ry||0,F.rz||0);
       o.traverse(q=>{ if(q.isMesh){ q.castShadow=false; q.userData.noMerge=1; if(q.material) q.material.envMapIntensity=.6; } }); g.add(w); });
     return g; }
   if(id==="qqball"){ // 地瓜球: a big yellow ball wrapped round the whole head with an opening for the face, a purple one and a light-yellow one on top
@@ -9178,7 +9178,7 @@ HANDLERS.hatFitOpen=v=>{ const ids=hfIds(); const id=v&&HAT_FIT[v]?v:(HFIT.id&&H
   openSheet("hatfit","頭飾定位",`${backBtn}<p class="lead">選一頂帽子，拉下面的拉桿調到剛好戴在頭上。調好按「儲存給大家」，所有人看到的都會一樣。</p>
     <div class="chips" style="max-height:132px;overflow:auto;flex-shrink:0">${ids.map(k=>`<button class="chip" data-act="hatFitOpen" data-v="${k}" aria-pressed="${k===id}">${esc(ACC[k].name)}${HFIT.dirty[k]?" •":""}</button>`).join("")}</div>
     <div class="chips" style="margin:8px 0">${[["0","正面"],["1.57","左側"],["3.14","背面"],["-1.57","右側"]].map(([y,t])=>`<button class="chip" data-act="hatFitView" data-v="${y}">${t}</button>`).join("")}<button class="chip" data-act="hatFitView" data-v="turn">轉一圈</button></div>
-    <div class="hf-sl">${HF_KEYS.map(([k,t,lo,hi,st])=>{ const val=F[k]!=null?F[k]:(k==="w"?.74:k==="zs"?1:0); return `<label><span>${t}</span><input type="range" data-k="${k}" min="${lo}" max="${hi}" step="${st}" value="${val}"><b>${(+val).toFixed(2)}</b></label>`; }).join("")}</div>
+    <div class="hf-sl">${HF_KEYS.map(([k,t,lo,hi,st])=>{ const val=F[k]!=null?F[k]:(k==="w"?.74:k==="zs"||k==="xs"?1:0); return `<label><span>${t}</span><input type="range" data-k="${k}" min="${lo}" max="${hi}" step="${st}" value="${val}"><b>${(+val).toFixed(2)}</b></label>`; }).join("")}</div>
     <div class="goods"><button class="good" data-act="hatFitSave"><span class="name">💾 儲存給大家</span><span class="meta">把調過的帽子存起來（有 • 的是還沒存的）</span></button>
     <button class="good" data-act="hatFitReset"><span class="name">↺ 這頂重設</span><span class="meta">回到原本的位置</span></button></div>`);
   sheetBody.querySelectorAll(".hf-sl input").forEach(inp=>{ inp.oninput=()=>{ const k=inp.dataset.k; HAT_FIT[id][k]=+inp.value; inp.nextElementSibling.textContent=(+inp.value).toFixed(2); HFIT.dirty[id]=1;
