@@ -5,7 +5,7 @@ import { buildPaper } from "../public/paper-gen.js";
 
 const HALLS = 10, CAP = 100, MAX_MSG = 4000;
 const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000, "/puppet": 5000, "/crowd": 5000, "/market": 5000, "/layout": 5000 };
-const LOBBY_PATHS = ["/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather", "/stat", "/nev", "/paper", "/sponsor", "/hatfit"];
+const LOBBY_PATHS = ["/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather", "/stat", "/nev", "/paper", "/sponsor", "/hatfit", "/honor"];
 const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage", "/puppet": "/puppet", "/crowd": "/crowd", "/market": "/market", "/layout": "/layout" }; // a POST here makes that cached list stale
 
 export default {
@@ -299,6 +299,13 @@ export class Lobby extends DurableObject {
         for (const k of ["w", "x", "y", "z", "rx", "ry", "rz", "zs", "xs", "ex", "ey", "ez"]) { const n = Number(v[k]); if (Number.isFinite(n) && Math.abs(n) <= 10) o[k] = Math.round(n * 1000) / 1000; } out[id] = o; }
       await this.ctx.storage.put("hatfit", { fit: out, at: Date.now() }); return json({ ok: true });
     }
+    // 榮譽功德榜: everyone recorded through 贊助登報 (the early sponsors are built into the page). The chair can remove one.
+    if (url.pathname === "/honor" && req.method === "POST") {
+      const auth = await this.checkKey(req); if (!auth.ok) return json(auth); let b = {}; try { b = await req.json(); } catch {}
+      const H = (await this.ctx.storage.get("honor")) || []; const i = Math.floor(Number(b.i)); if (b.act === "del" && i >= 0 && i < H.length) { H.splice(i, 1); await this.ctx.storage.put("honor", H); }
+      return json({ ok: true, list: H.map(h => ({ n: h.n, a: h.a, x: h.x })) });
+    }
+    if (url.pathname === "/honor") return json({ ok: true, list: ((await this.ctx.storage.get("honor")) || []).map(h => ({ n: h.n, a: h.a, x: h.x })) });
     if (url.pathname === "/hatfit") return json((await this.ctx.storage.get("hatfit")) || { fit: {}, at: 0 });
     if (url.pathname === "/sponsor") {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
@@ -310,9 +317,12 @@ export class Lobby extends DurableObject {
         if (b.act === "add") {
           const add = (Array.isArray(b.list) ? b.list : []).slice(0, 20).map(e => ({ k: "sponsor", n: clean(e && e.n, 16), x: clean(e && e.x, 24), m: clean(e && e.m, 40), at: Date.now() })).filter(e => e.n);
           if (!add.length) return json({ ok: false }); L.push(...add); await this.ctx.storage.put(key, L);
+          /* and carve them into the 榮譽功德榜 for good */
+          const H = (await this.ctx.storage.get("honor")) || []; for (const e of add) { const dg = String(e.x).replace(/,/g, "").match(/\d+/); H.push({ n: e.n, a: dg ? Number(dg[0]) : 0, x: e.x, at: e.at }); } await this.ctx.storage.put("honor", H.slice(-600));
           const days = (await this.ctx.storage.get("nwDays")) || []; if (!days.includes(day)) { days.push(day); await this.ctx.storage.put("nwDays", days); }
         } else if (b.act === "del") {
-          let n = -1; const i = Math.floor(Number(b.i)); const keep = L.filter(e => { if (e.k !== "sponsor") return true; n++; return n !== i; }); await this.ctx.storage.put(key, keep);
+          let n = -1, gone = null; const i = Math.floor(Number(b.i)); const keep = L.filter(e => { if (e.k !== "sponsor") return true; n++; if (n === i) { gone = e; return false; } return true; }); await this.ctx.storage.put(key, keep);
+          if (gone) { const H = (await this.ctx.storage.get("honor")) || []; const j = H.findIndex(h => h.at === gone.at && h.n === gone.n); if (j >= 0) { H.splice(j, 1); await this.ctx.storage.put("honor", H); } } /* a mistake comes off the honour wall too */
         } else return json({ ok: false });
         if (day === yday) await reissue(yday);
       }
