@@ -268,9 +268,9 @@ export class Lobby extends DurableObject {
     const wishes = ((await this.ctx.storage.get("wishes")) || []).filter(w => w.at >= t0 && w.at < t1).map(w => ({ name: w.name, text: w.text }));
     const meta = (await this.ctx.storage.get("paperMeta")) || { no: 0, used: [] };
     const old = live ? null : await this.ctx.storage.get("paperOld:" + day); /* a re-issue (sponsors added after it came out) keeps its number */
-    const p = buildPaper({ d: day, st, ev, wishes, used: old ? old.used : meta.used, no: old ? old.no : meta.no + 1, rev: old ? old.rev : 0 });
+    const recent = (meta.recent || []).flat(); const p = buildPaper({ d: day, st, ev, wishes, used: old ? old.used : meta.used, no: old ? old.no : meta.no + 1, rev: old ? old.rev : 0, recent });
     if (old) { await this.ctx.storage.delete("paperOld:" + day); await this.ctx.storage.put("paper:" + day, p); return p; }
-    if (!live) { p.usedIn = meta.used; await this.ctx.storage.put("paper:" + day, p); await this.ctx.storage.put("paperMeta", { no: meta.no + 1, used: p.used });
+    if (!live) { p.usedIn = meta.used; p.recentIn = recent; await this.ctx.storage.put("paper:" + day, p); await this.ctx.storage.put("paperMeta", { no: meta.no + 1, used: p.used, recent: [...(meta.recent || []).slice(-2), p.kinds || []] });
       const keep = (await this.ctx.storage.get("paperDays")) || []; keep.push(day); while (keep.length > 30) await this.ctx.storage.delete("paper:" + keep.shift()); await this.ctx.storage.put("paperDays", keep); }
     return p;
   }
@@ -286,6 +286,17 @@ export class Lobby extends DurableObject {
       if (!["tudi500", "pkBig"].includes(k) || !id) return json({ ok: false }); this.nvLast = this.nvLast || new Map(); const now = Date.now(); if (now - (this.nvLast.get(id) || 0) < 10000) return json({ ok: false, slow: true }); this.nvLast.set(id, now);
       await this.newsAdd({ k, n: name, v }); return json({ ok: true });
     }
+    if (url.pathname === "/paper" && req.method === "POST") { // 換報紙內容 (chair): today's paper again with other stories; sponsors stay on the front page
+      const auth = await this.checkKey(req); if (!auth.ok) return json(auth); const day = this.stDay(Date.now() - 864e5);
+      let got = await this.ctx.storage.get("paper:" + day); if (!got) got = await this.paper(day, false);
+      await this.stSave(true); const st = (await this.ctx.storage.get("st:" + day)) || { c: {}, mx: {}, p: {} };
+      const ev = (await this.ctx.storage.get("nw:" + day)) || [], t0 = Date.parse(day + "T00:00:00+08:00"), t1 = t0 + 864e5;
+      const wishes = ((await this.ctx.storage.get("wishes")) || []).filter(w => w.at >= t0 && w.at < t1).map(w => ({ name: w.name, text: w.text }));
+      const usedIn = got.used || [], recentIn = [...(got.recentIn || []), ...(got.kinds || [])].slice(-40);
+      const p = buildPaper({ d: day, st, ev, wishes, used: usedIn, no: got.no, rev: (got.rev || 0) + 1, seed: (got.seed || 0) + 1, recent: recentIn }); p.usedIn = usedIn; p.recentIn = recentIn;
+      await this.ctx.storage.put("paper:" + day, p); const meta = (await this.ctx.storage.get("paperMeta")) || { no: 0, used: [] }; meta.used = p.used; await this.ctx.storage.put("paperMeta", meta);
+      return json({ ok: true, paper: p });
+    }
     if (url.pathname === "/paper") { // yesterday's paper for everyone; ?live=1 (chair only) previews today's so far
       const live = url.searchParams.get("live") === "1"; if (live) { const auth = await this.checkKey(req); if (!auth.ok) return json(auth); }
       const day = live ? this.stDay() : this.stDay(Date.now() - 864e5); return json({ ok: true, paper: await this.paper(day, live) });
@@ -299,13 +310,20 @@ export class Lobby extends DurableObject {
         for (const k of ["w", "x", "y", "z", "rx", "ry", "rz", "zs", "xs", "ex", "ey", "ez"]) { const n = Number(v[k]); if (Number.isFinite(n) && Math.abs(n) <= 10) o[k] = Math.round(n * 1000) / 1000; } out[id] = o; }
       await this.ctx.storage.put("hatfit", { fit: out, at: Date.now() }); return json({ ok: true });
     }
-    // 榮譽功德榜: everyone recorded through 贊助登報 (the early sponsors are built into the page). The chair can remove one.
+    // 榮譽功德榜: its own list, kept apart from the paper. Once the chair has opened the editor the early sponsors (built into the page) are
+    // copied in ("seeded") so every line can be fixed; after that the page shows this list only. The chair adds, edits and removes lines.
     if (url.pathname === "/honor" && req.method === "POST") {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth); let b = {}; try { b = await req.json(); } catch {}
-      const H = (await this.ctx.storage.get("honor")) || []; const i = Math.floor(Number(b.i)); if (b.act === "del" && i >= 0 && i < H.length) { H.splice(i, 1); await this.ctx.storage.put("honor", H); }
-      return json({ ok: true, list: H.map(h => ({ n: h.n, a: h.a, x: h.x })) });
+      const H = (await this.ctx.storage.get("honor")) || [], seeded = !!(await this.ctx.storage.get("honorSeeded")), i = Math.floor(Number(b.i));
+      const one = e => { const x = clean(e && e.x, 24), a = Math.max(0, Math.min(1e9, Math.floor(Number(e && e.a) || 0))); return { n: clean(e && e.n, 16), a, x, at: Date.now() }; };
+      if (b.act === "seed" && !seeded) { const L = (Array.isArray(b.list) ? b.list : []).slice(0, 200).map(one).filter(e => e.n); H.unshift(...L); await this.ctx.storage.put("honorSeeded", true); }
+      else if (b.act === "add") { const e = one(b); if (!e.n) return json({ ok: false, why: "name" }); H.push(e); }
+      else if (b.act === "edit" && i >= 0 && i < H.length) { const e = one(b); if (!e.n) return json({ ok: false, why: "name" }); H[i] = { ...e, at: H[i].at || e.at }; }
+      else if (b.act === "del" && i >= 0 && i < H.length) H.splice(i, 1);
+      await this.ctx.storage.put("honor", H.slice(-600));
+      return json({ ok: true, seeded: seeded || b.act === "seed", list: H.slice(-600).map(h => ({ n: h.n, a: h.a, x: h.x })) });
     }
-    if (url.pathname === "/honor") return json({ ok: true, list: ((await this.ctx.storage.get("honor")) || []).map(h => ({ n: h.n, a: h.a, x: h.x })) });
+    if (url.pathname === "/honor") return json({ ok: true, seeded: !!(await this.ctx.storage.get("honorSeeded")), list: ((await this.ctx.storage.get("honor")) || []).map(h => ({ n: h.n, a: h.a, x: h.x })) });
     if (url.pathname === "/hatfit") return json((await this.ctx.storage.get("hatfit")) || { fit: {}, at: 0 });
     if (url.pathname === "/sponsor") {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
@@ -315,19 +333,18 @@ export class Lobby extends DurableObject {
       const reissue = async day => { try { const got = await this.ctx.storage.get("paper:" + day); if (!got) return; await this.stSave(true); const st = (await this.ctx.storage.get("st:" + day)) || { c: {}, mx: {}, p: {} };
         const ev = (await this.ctx.storage.get("nw:" + day)) || [], t0 = Date.parse(day + "T00:00:00+08:00"), t1 = t0 + 864e5;
         const wishes = ((await this.ctx.storage.get("wishes")) || []).filter(w => w.at >= t0 && w.at < t1).map(w => ({ name: w.name, text: w.text }));
-        const p = buildPaper({ d: day, st, ev, wishes, used: got.usedIn || got.used, no: got.no, rev: (got.rev || 0) + 1 }); p.usedIn = got.usedIn || got.used; await this.ctx.storage.put("paper:" + day, p); } catch (e) { this.spErr = String(e && e.message || e).slice(0, 120); } };
+        const p = buildPaper({ d: day, st, ev, wishes, used: got.usedIn || got.used, no: got.no, rev: (got.rev || 0) + 1, seed: got.seed || 0, recent: got.recentIn || [] }); p.usedIn = got.usedIn || got.used; p.recentIn = got.recentIn || []; await this.ctx.storage.put("paper:" + day, p); } catch (e) { this.spErr = String(e && e.message || e).slice(0, 120); } };
       if (req.method === "POST") {
         let b = {}; try { b = await req.json(); } catch {}
         const day = b.when === "next" || b.day === today ? today : yday, key = "nw:" + day, L = (await this.ctx.storage.get(key)) || [];
         if (b.act === "add") {
           const add = (Array.isArray(b.list) ? b.list : []).slice(0, 20).map(e => ({ k: "sponsor", n: clean(e && e.n, 16), x: clean(e && e.x, 24), m: clean(e && e.m, 40), at: Date.now() })).filter(e => e.n);
           if (!add.length) return json({ ok: false }); L.push(...add); await this.ctx.storage.put(key, L);
-          /* and carve them into the 榮譽功德榜 for good */
-          const H = (await this.ctx.storage.get("honor")) || []; for (const e of add) { const dg = String(e.x).replace(/,/g, "").match(/\d+/); H.push({ n: e.n, a: dg ? Number(dg[0]) : 0, x: e.x, at: e.at }); } await this.ctx.storage.put("honor", H.slice(-600));
+          /* and onto the 榮譽功德榜 (the same name is added up on the wall). Removing a paper entry later does not touch the wall: the chair edits that in 榮譽功德榜. */
+          const H = (await this.ctx.storage.get("honor")) || []; for (const e of add) { const dg = String(e.x).replace(/[,，]/g, "").match(/\d+/); H.push({ n: e.n, a: dg ? Number(dg[0]) : 0, x: dg ? "" : e.x, at: e.at }); } await this.ctx.storage.put("honor", H.slice(-600));
           const days = (await this.ctx.storage.get("nwDays")) || []; if (!days.includes(day)) { days.push(day); await this.ctx.storage.put("nwDays", days); }
         } else if (b.act === "del") {
-          let n = -1, gone = null; const i = Math.floor(Number(b.i)); const keep = L.filter(e => { if (e.k !== "sponsor") return true; n++; if (n === i) { gone = e; return false; } return true; }); await this.ctx.storage.put(key, keep);
-          if (gone) { const H = (await this.ctx.storage.get("honor")) || []; const j = H.findIndex(h => h.at === gone.at && h.n === gone.n); if (j >= 0) { H.splice(j, 1); await this.ctx.storage.put("honor", H); } } /* a mistake comes off the honour wall too */
+          let n = -1; const i = Math.floor(Number(b.i)); const keep = L.filter(e => { if (e.k !== "sponsor") return true; n++; if (n === i) return false; return true; }); await this.ctx.storage.put(key, keep);
         } else return json({ ok: false });
         this.spErr = ""; if (day === yday) await reissue(yday);
       }

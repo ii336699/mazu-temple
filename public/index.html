@@ -836,8 +836,11 @@ const THANKS=[{img:"thanks1.webp",amt:50,text:"謝謝阿詠贊助50元伺服器�
   {img:"thanks28.webp",amt:500,text:"謝謝信徒糖糖贊助500元伺服器營運費用 🫶"}];
 const NEON_GLOW=(()=>{ let t=null; return ()=>t||(t=cvs(16,64,(x,w,h)=>{ const g=x.createLinearGradient(0,0,0,h); g.addColorStop(0,"rgba(255,255,255,0)"); g.addColorStop(.5,"rgba(255,255,255,1)"); g.addColorStop(1,"rgba(255,255,255,0)"); x.fillStyle=g; x.fillRect(0,0,w,h); })); })();
 /* ---- 榮譽功德榜 data: the early sponsors (THANKS) plus the ones recorded through 贊助登報 (server /honor) ---- */
-const HONOR={list:[],extra:[],slabs:[]};
-function honorAll(){ const base=THANKS.map((t,i)=>{ const m=String(t.text).match(/謝謝(?:信徒)?(.+?)贊助(\d+)元/); return {n:m?m[1]:t.text,a:t.amt,x:"",th:i,o:i}; });
+const HONOR={list:[],extra:[],slabs:[],seeded:false};
+function honorAll(){ const base=HONOR.seeded?[]:honorSeed().map((e,i)=>({...e,o:i})); return honorMerge(base); }
+/* the early sponsors, from the thank-you texts (copied into the server list the first time the chair opens the editor) */
+function honorSeed(){ return THANKS.map((t,i)=>{ const m=String(t.text).match(/謝謝(?:信徒)?(.+?)贊助(\d+)元/); return {n:m?m[1]:t.text,a:t.amt,x:""}; }); }
+function honorMerge(base){
   /* the same person giving again is added up into one line */
   const by=new Map(); for(const e of base.concat(HONOR.extra.map((e,i)=>({n:e.n,a:+e.a||0,x:e.x||"",o:1000+i})))){ const key=String(e.n).trim().toLowerCase(), h=by.get(key); if(!h){ by.set(key,{...e}); continue; } h.a+=e.a; if(!h.a&&e.x) h.x=e.x; else if(e.x&&!e.a&&h.x!==e.x) h.x=(h.x?h.x+"、":"")+e.x; }
   return [...by.values()].sort((p,q)=>q.a-p.a||p.o-q.o); }
@@ -857,9 +860,14 @@ function honorDraw(){ if(!HONOR.slabs.length) return; const L=honorAll(), half=M
         let fill="#eef0f2"; if(gold){ const g=x.createLinearGradient(0,cy-fs/2,0,cy+fs/2); g.addColorStop(0,"#fff3b8"); g.addColorStop(.5,"#e9b83c"); g.addColorStop(1,"#a8720f"); fill=g; }
         x.fillStyle=fill; x.textAlign="left"; x.font=`700 ${nfs}px ${UI_FONT}`; x.fillText(nm,cx+12,cy); x.textAlign="right"; x.font=`600 ${fs*.78}px ${UI_FONT}`; x.fillText(am,cx+cw-14,cy); }); });
     t.anisotropy=renderer.capabilities.getMaxAnisotropy(); const m=face.material; if(m.map) m.map.dispose(); m.map=t; m.emissiveMap=t; m.emissiveIntensity=.35; m.needsUpdate=true; }); }
-async function honorLoad(){ if(!USE_CF){ try{ HONOR.extra=JSON.parse(load("mz.honor","")||"[]"); }catch(e){ HONOR.extra=[]; } honorDraw(); return; }
-  try{ const r=await fetch("/honor",{cache:"no-store"}); const j=await r.json(); if(j&&Array.isArray(j.list)){ HONOR.extra=j.list; honorDraw(); } }catch(e){} }
-function openHonor(){ sfx.coin(); const L=honorAll(); openSheet("thanks","榮譽功德榜",`<p class="lead">感謝每一位贊助天后宮的善心人士，媽祖保佑大家平安順心。（金色為 500 元以上）</p>
+async function honorLoad(){ if(!USE_CF){ const j=honorLocal(null); HONOR.extra=j.list; HONOR.seeded=j.seeded; honorDraw(); return; }
+  try{ const r=await fetch("/honor",{cache:"no-store"}); const j=await r.json(); if(j&&Array.isArray(j.list)){ HONOR.extra=j.list; HONOR.seeded=!!j.seeded; honorDraw(); } }catch(e){} }
+/* the test page keeps the list on this phone and does what the server does */
+function honorLocal(b){ let H=[]; try{ H=JSON.parse(load("mz.honor","")||"[]"); }catch(e){} let seeded=!!load("mz.honorSeeded",false); const i=b?Math.floor(+b.i):-1;
+  const one=e=>({n:String(e.n||"").trim().slice(0,16),a:Math.max(0,Math.floor(+e.a||0)),x:String(e.x||"").slice(0,24)});
+  if(b){ if(b.act==="seed"&&!seeded){ H.unshift(...b.list.map(one)); seeded=true; save("mz.honorSeeded",true); } else if(b.act==="add") H.push(one(b)); else if(b.act==="edit"&&i>=0&&i<H.length) H[i]=one(b); else if(b.act==="del"&&i>=0&&i<H.length) H.splice(i,1); save("mz.honor",JSON.stringify(H)); }
+  return {ok:true,seeded,list:H}; }
+function openHonor(){ if(me.sp){ HANDLERS.honorEdit(); return; } sfx.coin(); const L=honorAll(); openSheet("thanks","榮譽功德榜",`<p class="lead">感謝每一位贊助天后宮的善心人士，媽祖保佑大家平安順心。（金色為 500 元以上）</p>
   <ul class="sp-list">${L.map(e=>`<li><span><b style="color:${e.a>=500?"#f0c050":"inherit"}">${esc(e.n)}</b></span><span style="flex:0 0 auto;opacity:.85">${esc(honorAmt(e))}</span></li>`).join("")}</ul>`); }
 THANKS.map((t,i)=>[t,i]).sort((a,b)=>b[0].amt-a[0].amt||a[1]-b[1]).forEach(([t],k)=>{ const sl=THANK_SLOTS[k]; if(sl){ t.x=sl[0]; t.y=sl[1]; } });
 
@@ -4289,7 +4297,7 @@ function openChair(){ if(!me.sp) return;
   openSheet("chair","主委工具",`<div class="ck-row"><input class="mail-box ck" id="readKey" type="password" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="留言讀取密碼（輸入一次就會記住）" value="${esc(load("mz.rk",""))}"><button class="chip ck-eye" type="button" onclick="const i=document.getElementById('readKey'); i.type=i.type==='password'?'text':'password'; this.textContent=i.type==='password'?'👁':'🙈';">👁</button></div>
   <div class="ct-group"><span class="group-label">訊息</span><div class="ct-grid">${ctTile("msgsOpen","📬","香客留言")}${ctTile("annOpen","📢","全服公告","跑馬燈")}${ctTile("boardOpen","📋","公告欄",board.text?"有公告":"空白")}</div></div>
   <div class="ct-group"><span class="group-label">頭飾</span><div class="ct-grid">${ctTile("hatFitOpen","🎩","頭飾定位","調整每頂帽子戴的位置")}</div></div>
-  <div class="ct-group"><span class="group-label">報紙與統計</span><div class="ct-grid">${ctTile("sponsorOpen","🧧","贊助登報","登上報紙頭版")}${ctTile("paperTest","📰","報紙測試","開場・範例・預覽")}${ctTile("statOpen","📊","每日統計","今天・近 14 天")}</div></div>
+  <div class="ct-group"><span class="group-label">報紙與統計</span><div class="ct-grid">${ctTile("sponsorOpen","🧧","贊助登報","登上報紙頭版")}${ctTile("paperReroll","🔄","換報紙內容","今天的報紙換別的新聞")}${ctTile("honorEdit","🪨","榮譽功德榜","新增・修改・刪除")}${ctTile("paperTest","📰","報紙測試","開場・範例・預覽")}${ctTile("statOpen","📊","每日統計","今天・近 14 天")}</div></div>
   <div class="ct-group"><span class="group-label">表演與活動</span><div class="ct-grid">${ctTile("askFw","🎆","全服煙火","4 場可選")}${ctTile("fwedOpen","🎼","煙火編排器","自己排")}${ctTile("schedOpen","⏰","定時活動","煙火・夜市")}${ctTile("askSL","🏮","50 盞天燈")}${ctTile("stageChair","🎭","歌仔戲台",OP.on?"演出中":"")}${ctTile("puppetChair","🎎","布袋戲台",PT.on?"演出中":"")}${ctTile("marketOpen","🏮","夜市",Object.keys(MK.open).length?`${Object.keys(MK.open).length} 攤營業中`:"")}</div></div>
   <div class="ct-group"><span class="group-label">環境</span><div class="ct-grid">${ctTile("wxOpen","🌦️","天氣",WX_KINDS[wxNow()].n)}${ctTile("noFog","🌫️",NOFOG.on?"恢復霧氣":"除霧",NOFOG.on?"目前無霧":"看清遠方")}${ctTile("toggleCats","🐱",CATS.off?"放出貓咪":"收起貓咪",CATS.off?"已收起":"跳舞中")}</div></div>
   <div class="ct-group"><span class="group-label">線上人數</span><div class="crowd-row"><span class="crowd-now"><span>全廟 <b>${shownTotal()}</b> 人</span><small>這殿 ${hallShown(HALLS.current(),Date.now())} 人・${CROWD.real?"真實人數":CROWD.at&&CROWD.target!=null?`目標 ${CROWD.target}`:"自動"}</small></span><input id="crowdIn" type="text" inputmode="numeric" maxlength="3" placeholder="目標"><button class="chip" data-act="crowdSet">設定</button><button class="chip" data-act="crowdAuto">自動</button><button class="chip" data-act="crowdReal" aria-pressed="${!!CROWD.real}">真實人數</button></div>
@@ -9202,7 +9210,7 @@ async function paperFetch(){ if(PAPER.p) return PAPER.p;
     else { PAPER.p=await paperDemo({}); } }catch(e){ console.warn("paper",e); }
   return PAPER.p; }
 /* a sample paper (test page, and the chair's 報紙測試): made up numbers plus whatever this page did today; sc picks the stories */
-async function paperDemo(sc){ const G=await import("./paper-gen.js?v=20261108c"); const back=sc.seed?1+Math.floor(Math.random()*40):1, d=new Date(Date.now()+8*3600e3-back*864e5).toISOString().slice(0,10); const NAMES=["阿明","小美","怕癢的傑克","開心凱文","跑很快的小龍","溫柔的松鼠","阿嬤的乖孫","夜市小王子","拜拜達人","甜甜圈"], pickN=()=>NAMES[(Math.random()*NAMES.length)|0]; const n=sc.seed?pickN():(me.name||"香客").slice(0,10); const pkr=sc.pk===undefined&&sc.seed?Math.random():(sc.pk===false?.9:0); const pk=pkr<.4?{pkCash:1340,pkBuy:980}:pkr<.7?{pkCash:120,pkBuy:900}:{pkCash:60,pkBuy:80}; if(sc.nm||(sc.seed&&Math.random()<.6)){ const r=(a,b)=>a+Math.floor(Math.random()*(b-a+1)); ["qq","sausage","bbq","fish","pachinko","boba","balloon"].forEach(k=>{ if(sc.nm||Math.random()<.6){ pk["nmP_"+k]=r(3,30); pk["nmW_"+k]=r(0,Math.floor(pk["nmP_"+k]/2)); } }); pk.sjDone=r(3,20); pk.ftDone=r(3,15); pk.sit_tub=r(3,12); } /* stalls and the other corners */
+async function paperDemo(sc){ const G=await import("./paper-gen.js?v=20261108d"); const back=sc.seed?1+Math.floor(Math.random()*40):1, d=new Date(Date.now()+8*3600e3-back*864e5).toISOString().slice(0,10); const NAMES=["阿明","小美","怕癢的傑克","開心凱文","跑很快的小龍","溫柔的松鼠","阿嬤的乖孫","夜市小王子","拜拜達人","甜甜圈"], pickN=()=>NAMES[(Math.random()*NAMES.length)|0]; const n=sc.seed?pickN():(me.name||"香客").slice(0,10); const pkr=sc.pk===undefined&&sc.seed?Math.random():(sc.pk===false?.9:0); const pk=pkr<.4?{pkCash:1340,pkBuy:980}:pkr<.7?{pkCash:120,pkBuy:900}:{pkCash:60,pkBuy:80}; if(sc.nm||(sc.seed&&Math.random()<.6)){ const r=(a,b)=>a+Math.floor(Math.random()*(b-a+1)); ["qq","sausage","bbq","fish","pachinko","boba","balloon"].forEach(k=>{ if(sc.nm||Math.random()<.6){ pk["nmP_"+k]=r(3,30); pk["nmW_"+k]=r(0,Math.floor(pk["nmP_"+k]/2)); } }); pk.sjDone=r(3,20); pk.ftDone=r(3,15); pk.sit_tub=r(3,12); } /* stalls and the other corners */
   const ev=[]; const G7=["wenchang","tudi","guanyin","zhusheng","doumu","jiutian","dizang"], NM=["qq","bbq","fish","pachinko","boba","balloon"]; const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
   if(sc.rec!==false&&(!sc.seed||Math.random()<.7)){ const g=G7[rnd(0,6)]; ev.push({k:"lb",g,n:sc.seed?pickN():n,v:g==="wenchang"?rnd(700,1200):rnd(3000,20000)}); } if(sc.seed&&Math.random()<.5){ const g=NM[rnd(0,5)]; ev.push({k:"nm",g,n:pickN(),v:rnd(5,60)}); }
   if(sc.tudi!==false&&(!sc.seed||Math.random()<.5)) ev.push({k:"tudi500",n:pickN()}); if(sc.calm){ ev.length=0; }
@@ -9266,7 +9274,7 @@ function paperOpen(intro){ const p=PAPER.p; if(!p) return; PAPER.ph=(paperPhCach
    Several on one day share one thank-you story listing everyone. (The test page keeps them on this phone and shows them in the sample paper.) */
 const SPT={get:()=>{ try{ return JSON.parse(load("mz.spTest","")||"null")||{now:[],next:[]}; }catch(e){ return {now:[],next:[]}; } }, put:v=>save("mz.spTest",JSON.stringify(v))};
 const spAmt=v=>{ v=String(v||"").trim(); return /^[\d,]+$/.test(v)?"新台幣 "+(+v.replace(/,/g,"")).toLocaleString("en-US")+" 元":v; };
-async function spReq(body){ if(!USE_CF){ const d=SPT.get(); if(body){ const w=body.when==="next"||body.day==="next"?"next":"now"; if(body.act==="add"){ d[w].push(...body.list); try{ const H=JSON.parse(load("mz.honor","")||"[]"); body.list.forEach(e=>{ const dg=String(e.x).replace(/,/g,"").match(/\d+/); H.push({n:e.n,a:dg?+dg[0]:0,x:e.x}); }); save("mz.honor",JSON.stringify(H)); }catch(e){} } if(body.act==="del"){ const g=d[w].splice(body.i,1)[0]; if(g) try{ const H=JSON.parse(load("mz.honor","")||"[]"), j=H.findIndex(h=>h.n===g.n&&h.x===g.x); if(j>=0){ H.splice(j,1); save("mz.honor",JSON.stringify(H)); } }catch(e){} } SPT.put(d); } return {ok:true,now:d.now,next:d.next}; }
+async function spReq(body){ if(!USE_CF){ const d=SPT.get(); if(body){ const w=body.when==="next"||body.day==="next"?"next":"now"; if(body.act==="add"){ d[w].push(...body.list); body.list.forEach(e=>{ const dg=String(e.x).replace(/[,，]/g,"").match(/\d+/); honorLocal({act:"add",n:e.n,a:dg?+dg[0]:0,x:dg?"":e.x}); }); } if(body.act==="del") d[w].splice(body.i,1); SPT.put(d); } return {ok:true,now:d.now,next:d.next}; }
   const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return null; }
   try{ const r=await fetch("/sponsor",body?{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify(body)}:{headers:{"x-key":key},cache:"no-store"}); const j=await r.json().catch(()=>null); if(!j||j.error){ toast("伺服器忙，請再按一次"+(j&&j.error?"（"+String(j.error).slice(0,40)+"）":""),3200); return null; } forgetKey(r,j); if(!j.ok){ toast(j.locked?"今天密碼錯太多次，明天再試":"存不進去（密碼？）",2600); return null; } if(j.paperErr) toast("已存好，但報紙重新出刊失敗："+j.paperErr,4000); return j; }catch(e){ toast("網路不穩，請再按一次",2000); return null; } }
 const spRow=()=>`<div class="sp-row"><input class="sp-n" maxlength="16" placeholder="贊助人名字" autocomplete="off"><input class="sp-x" maxlength="24" placeholder="金額，例：1000" autocomplete="off" inputmode="text"><input class="sp-m" maxlength="40" placeholder="主委想說的話（可不填）" autocomplete="off"></div>`;
@@ -9282,9 +9290,31 @@ HANDLERS.sponsorOpen=async()=>{ openSheet("contact","贊助登報",`${backBtn}<p
 HANDLERS.sponsorRow=()=>{ const box=$("#spRows"); if(box&&box.children.length<20) box.insertAdjacentHTML("beforeend",spRow()); };
 HANDLERS.sponsorSave=async w=>{ const list=[...document.querySelectorAll("#spRows .sp-row")].map(r=>({n:r.querySelector(".sp-n").value.trim().slice(0,16),x:spAmt(r.querySelector(".sp-x").value).slice(0,24),m:r.querySelector(".sp-m").value.trim().slice(0,40)})).filter(e=>e.n);
   if(!list.length){ toast("請先填贊助人名字"); return; } if(list.some(e=>!e.x)){ toast("每一位都要填金額"); return; }
-  const j=await spReq({act:"add",when:w,list}); if(!j) return; toast((w==="now"?`已登上今天的報紙（${list.length} 位）`:`已排進明天的報紙（${list.length} 位）`)+"，也刻上榮譽功德榜了",2800); honorLoad(); PAPER.p=null; HANDLERS.sponsorOpen();
+  const j=await spReq({act:"add",when:w,list}); if(!j) return; toast((w==="now"?`已登上今天的報紙（${list.length} 位）`:`已排進明天的報紙（${list.length} 位）`)+"，也加進榮譽功德榜了",2800); honorLoad(); PAPER.p=null; HANDLERS.sponsorOpen();
   if(w==="now"){ const p=await paperFetch(); if(!USE_CF){ PAPER.p=await paperDemo({}); } if(PAPER.p){ closeSheet(); paperOpen(false); } } };
 HANDLERS.sponsorDel=async v=>{ const [w,i]=String(v).split(":"); const j=await spReq({act:"del",day:w==="next"?"next":"now",when:w,i:+i}); if(!j) return; PAPER.p=null; toast("已刪除",1600); HANDLERS.sponsorOpen(); };
+/* 主委工具 → 榮譽功德榜: its own list, not tied to the paper. The first time it opens, the early sponsors are copied in so every line can be fixed.
+   Each line is one gift; the same name on several lines is added up on the wall. */
+async function honorReq(body){ if(!USE_CF) return honorLocal(body); const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return null; }
+  try{ const r=await fetch("/honor",body?{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify(body)}:{cache:"no-store"}); const j=await r.json().catch(()=>null);
+    if(!j||j.error){ toast("伺服器忙，請再按一次",2600); return null; } if(body) forgetKey(r,j); if(!j.ok){ toast(j.why==="name"?"請填名字":j.locked?"今天密碼錯太多次，明天再試":"存不進去（密碼？）",2400); return null; } return j; }catch(e){ toast("網路不穩，請再按一次",2000); return null; } }
+const hnAmt=v=>{ v=String(v||"").trim(); const d=v.replace(/[,，\s]/g,""); return /^\d+$/.test(d)?{a:+d,x:""}:{a:+((d.match(/\d+/)||[0])[0]),x:v}; };
+HANDLERS.honorEdit=async()=>{ openSheet("contact","榮譽功德榜",`${backBtn}<p class="lead">讀取中…</p>`); let j=await honorReq(null); if(!j) return;
+  if(!j.seeded){ j=await honorReq({act:"seed",list:honorSeed()}); if(!j) return; }
+  HONOR.extra=j.list; HONOR.seeded=true; honorDraw(); HONOR.ed=j.list;
+  const row=(e,i)=>`<li><span><b style="color:${e.a>=500?"#f0c050":"inherit"}">${esc(e.n)}</b>　${esc(e.x||(e.a.toLocaleString("en-US")+" 元"))}</span><span style="flex:0 0 auto;display:flex;gap:6px"><button class="chip" data-act="honorFix" data-v="${i}">修改</button><button class="chip" data-act="honorDel" data-v="${i}">刪除</button></span></li>`;
+  const tot=honorAll().length;
+  openSheet("contact","榮譽功德榜",`${backBtn}<p class="lead">「贊助登報」會自動加一筆到這裡；在這裡改只會改功德榜，不會動到報紙（刪掉報紙那筆也不會刪這裡）。同一個名字有好幾筆，牆上會自動加起來（現在牆上 ${tot} 位）。500 元以上金字。</p>
+    <div class="group" id="hnForm"><span class="group-label" id="hnTitle">新增一筆</span>
+      <div class="sp-row"><input class="sp-n" id="hnN" maxlength="16" placeholder="名字" autocomplete="off"><input class="sp-x" id="hnA" maxlength="24" placeholder="金額，例：1000（也可以打「供品一批」）" autocomplete="off"></div>
+      <div class="goods"><button class="good" data-act="honorSave" data-v="-1" id="hnSave"><span class="name">🪨 刻上功德榜</span><span class="meta">馬上出現在觀音後面的石板上</span></button></div></div>
+    <div class="group"><span class="group-label">全部 ${j.list.length} 筆（新的在下面）</span>${j.list.length?`<ul class="sp-list">${j.list.map(row).join("")}</ul>`:`<p class="note">還沒有。</p>`}</div>`); };
+HANDLERS.honorFix=v=>{ const i=+v, e=(HONOR.ed||[])[i]; if(!e) return; $("#hnN").value=e.n; $("#hnA").value=e.x||String(e.a); $("#hnTitle").textContent=`修改第 ${i+1} 筆`; const b=$("#hnSave"); b.dataset.v=String(i); b.querySelector(".name").textContent="💾 儲存修改"; $("#hnForm").scrollIntoView({behavior:"smooth",block:"start"}); $("#hnN").focus(); };
+HANDLERS.honorSave=async v=>{ const n=$("#hnN").value.trim(), raw=$("#hnA").value.trim(); if(!n){ toast("請填名字"); return; } if(!raw){ toast("請填金額"); return; }
+  const i=+v, {a,x}=hnAmt(raw); const j=await honorReq(i>=0?{act:"edit",i,n,a,x}:{act:"add",n,a,x}); if(!j) return; toast(i>=0?"已修改":`「${n}」已刻上功德榜`,2000); HANDLERS.honorEdit(); };
+/* delete needs a second tap within 3 s */
+const confirmTap=(()=>{ let k0="",t0=0; return (k,msg)=>{ const now=Date.now(); if(k===k0&&now-t0<3000){ k0=""; return true; } k0=k; t0=now; toast(msg,2600); return false; }; })();
+HANDLERS.honorDel=async v=>{ const e=(HONOR.ed||[])[+v]; if(!e) return; if(!confirmTap("hnDel"+v,`再按一次刪除「${e.n}」`)) return; const j=await honorReq({act:"del",i:+v}); if(!j) return; toast("已刪除",1600); HANDLERS.honorEdit(); };
 /* 主委工具 → 頭飾定位 */
 function hfIds(){ return ACC_IDS.filter(k=>HAT_FIT[k]&&!ACC[k].gone); }
 HANDLERS.hatFitOpen=v=>{ const ids=hfIds(); const id=v&&HAT_FIT[v]?v:(HFIT.id&&HAT_FIT[HFIT.id]?HFIT.id:(accState().head&&HAT_FIT[accState().head]?accState().head:ids[0])); HFIT.id=id;
@@ -9327,6 +9357,14 @@ HANDLERS.paperTry=async v=>{ PAPER.seed=(PAPER.seed||0)+1;
   if(v.startsWith("sc:")){ const k=v.slice(3); if(k==="heat"||k==="stall"||k==="storm"||k==="rain") sc.force=[k]; if(k==="buskrain") sc.force=["rain","buskrain"]; if(k==="pk"){ sc.rec=false; sc.tudi=false; } if(k==="calm"){ sc.calm=true; sc.force=["clear"]; } if(k!=="pk") sc.pk=false; if(k==="sp1") sc.sp=[{k:"sponsor",n:"王小明",x:"新台幣 3,600 元",m:"祝大家平安順心"}]; if(k==="spN") sc.sp=[{k:"sponsor",n:"王小明",x:"新台幣 3,600 元",m:"祝大家平安順心"},{k:"sponsor",n:"陳阿姨",x:"新台幣 1,000 元"},{k:"sponsor",n:"廟口香舖",x:"供品一批",m:"媽祖保佑"}]; if(k==="nm") sc.nm=true; }
   try{ PAPER.p=await paperDemo(sc); }catch(e){ toast("範例報紙載入失敗",2000); return; }
   closeSheet(); paperOpen(v==="intro"); };
+/* 主委工具 → 換報紙內容: today's paper (the one everyone reads) is written again with other stories; the sponsors stay on the front page */
+HANDLERS.paperReroll=async()=>{ if(PAPER.rr) return; PAPER.rr=1; try{
+  if(!USE_CF){ PAPER.seed=(PAPER.seed||0)+1; PAPER.p=await paperDemo({seed:PAPER.seed*7919}); toast("測試頁：換了一份範例報紙",2000); closeSheet(); paperOpen(false); return; }
+  const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return; } toast("報紙重新印刷中…",1500);
+  const r=await fetch("/paper",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:"{}"}); const j=await r.json().catch(()=>null);
+  if(!j||j.error){ toast("伺服器忙，請再按一次",2400); return; } forgetKey(r,j); if(!j.ok){ toast("換不了（密碼？）",2200); return; }
+  PAPER.p=j.paper; toast("換好了！之後打開報紙的人看到的就是新的",2600); closeSheet(); paperOpen(false); }
+  catch(e){ toast("網路不穩，請再按一次",2000); } finally{ PAPER.rr=0; } };
 HANDLERS.paperOpen=async()=>{ closeSheet(); if(!(await paperFetch())){ toast("今天的報紙還沒送來",2200); return; } paperOpen(false); };
 /* once a day, when the page has loaded (not on someone's very first visit, while they make their character) */
 setTimeout(async()=>{ if(firstVisitPending) return; const p=await paperFetch(); if(!p) return; const seen=load("mz.paperSeen","")===p.d+(p.rev?"#"+p.rev:"");

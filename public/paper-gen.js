@@ -330,7 +330,10 @@ const fill = (s, o) => s.replace(/\{(\w)\}/g, (_, k) => o[k] != null ? String(o[
 export function buildPaper(data) {
   const d = data.d, dn = dayNum(d), R = rng(dn * 9973 + 17 + (data.seed || 0)), F = new Set(data.force || []), /* force: test-only story kinds (heat, stall, storm, rain) */ used = new Set(data.used || []), st = data.st || { c: {}, mx: {}, p: {} }, c = st.c || {}, mx = st.mx || {}, P = st.p || {}, ev = data.ev || [];
   const pickT = kind => { const L = T[kind], key = x => kind + ":" + x.id, fresh = L.filter(x => !used.has(key(x))), pool = fresh.length ? fresh : L, x = pool[Math.floor(R() * pool.length)]; used.delete(key(x)); used.add(key(x)); return x; }; /* (ids are only unique within a kind) */
-  const stories = []; const add = (kind, pri, o, tag, art) => { const w = pickT(kind); stories.push({ pri: pri + R() * 5, tag, art, t: fill(w.t, o), b: fill(w.b, o), id: w.id, kind, who: o.n || "" }); };
+  /* a story that comes from the day's numbers (the pachinko owner, the busker, the stalls…) can be true every day; if it was in one of the last few
+     papers it drops far down, so other stories take the front page and it comes back only when there is little else to say */
+  const recent = new Set(data.recent || []), FRESH = new Set(["sponsor1", "sponsorN", "fw", "record", "tudi", "heat", "stall", "storm", "rain", "windy", "buskRain", "fun", "tale", "calm", "wishes"]);
+  const stories = []; const add = (kind, pri, o, tag, art) => { if (recent.has(kind) && !FRESH.has(kind)) pri -= 50; const w = pickT(kind); stories.push({ pri: pri + R() * 5, tag, art, t: fill(w.t, o), b: fill(w.b, o), id: w.id, kind, who: o.n || "" }); };
   /* people: the paper uses what players saw on screen (real players plus the temple's regulars), so the numbers match what everyone remembers;
      visits ≈ the hourly peaks added up (people stay a while), never fewer than the real visitors, and capped so a busy day cannot run away */
   let shownSum = 0; for (let h = 0; h < 24; h++) shownSum += mx["s" + String(h).padStart(2, "0")] || 0;
@@ -401,7 +404,7 @@ export function buildPaper(data) {
   const reg = rate => Math.round(regH * rate * (.85 + R() * .3));
   const box = [["香客人次", visitors], ["參拜", (c.b_bowBtn || 0) + reg(2.4)], ["擲筊", (c.b_jiaoBtn || 0) + reg(1.1)], ["求籤", (c.b_lotBtn || 0) + reg(.5)], ["許願", (c.wish || ws.length || 0) + reg(.08)]];
   const today = dn + 1, fc = dayWx(today);
-  return { v: 1, d, rev: data.rev || 0, no: data.no || 1, wx, wxn: WXN[wx], wxi: WXI[wx], fc, fcn: WXN[fc], fci: WXI[fc], busyHour: hm > 0 ? hrs.indexOf(hm) : -1,
+  return { v: 1, d, rev: data.rev || 0, no: data.no || 1, seed: data.seed || 0, kinds: [head, ...items].filter(Boolean).map(x => x.kind), wx, wxn: WXN[wx], wxi: WXI[wx], fc, fcn: WXN[fc], fci: WXI[fc], busyHour: hm > 0 ? hrs.indexOf(hm) : -1,
     head: { t: head.t, b: head.b, tag: head.tag, art: head.art, kind: head.kind, who: head.who }, items: items.map(s => ({ t: s.t, b: s.b, tag: s.tag, art: s.art, kind: s.kind, who: s.who })),
     box, ads, used: [...used].slice(-260) };
 }
