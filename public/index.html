@@ -9272,35 +9272,22 @@ function paperCall(){ const a=soundOn?ensureAudio():null, v=sVol(); if(!a||v<=0)
   const F=[[800,1200],[400,2200],[300,2700],[500,900]]; let t=a.currentTime+.75; [[.16,1.0,1.25],[.14,1.1,.9],[.15,1.2,1.3],[.32,1.25,.8]].forEach(([d,k,glide],i)=>{ const f0=430*k, o=a.createOscillator(), out=a.createGain(), fm=F[i%F.length];
     o.type="sawtooth"; o.frequency.setValueAtTime(f0,t); o.frequency.linearRampToValueAtTime(f0*glide,t+d); out.gain.setValueAtTime(0,t); out.gain.linearRampToValueAtTime(.16*v,t+.015); out.gain.linearRampToValueAtTime(0,t+d);
     for(const fr of fm){ const bp=a.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=fr; bp.Q.value=6; o.connect(bp); bp.connect(out); } out.connect(sfxBus(a)); o.start(t); o.stop(t+d+.05); t+=d+.06; }); }
-/* the paper's photos: taken in the game itself, from a spot that fits each story (the furnace, the teller's corner, the courtyard …) */
-function paperSpot(kind){ const C=[0,3.2,HZ+YX+16,0,2.6,HZ];
-  const S={heat:[SJ.g[0].x+4.5,2,SJ.g[0].z+2.5,SJ.g[0].x,1,SJ.g[0].z+1.5],stall:[FTB.x+4.2,2.0,FTB.z,FTB.x-.5,1,FTB.z],buskTop:[BUSK.x+3.8,1.9,BUSK.z+.8,BUSK.x,1.1,BUSK.z],buskTip:[BUSK.x+3.8,1.9,BUSK.z+.8,BUSK.x,1.1,BUSK.z],buskCheer:[BUSK.x+4.5,2.4,BUSK.z+1.5,BUSK.x+1.5,1,BUSK.z],buskRain:[BUSK.x+3.8,1.9,BUSK.z+.8,BUSK.x,1.1,BUSK.z],tudi:TH.x?[TH.x+3,2,TH.z+3,TH.x,.6,TH.z]:[FX+5,2.4,FZ+5,FX,1.4,FZ],
-    record:[TG.x+4,2.6,TG.z+5,TG.x,1.8,TG.z],wishes:[WT.x+7,3,WT.z+6,WT.x,3,WT.z],pious:[0,2.2,HZ-1.5,0,1.8,-6],jiao:[0,2.2,HZ-1.5,0,1.8,-6],
-    zen:[ZEN.plat.x1+7,3.4,ZEN.GZ+5,(ZEN.plat.x0+ZEN.plat.x1)/2,1.6,ZEN.GZ],sleep:[INN.DX+21,5,-12,INN.DX+40,2.5,-28],storm:C,rain:C,windy:C,calm:C,online:C,pkBroke:[FX+6,3,FZ+9,FX,1.5,FZ],pkWin:[FX+6,3,FZ+9,FX,1.5,FZ]};
-  return S[kind]||C; }
-function paperShoot(kind){ try{ const W=480,H=300, cam=new T.PerspectiveCamera(50,W/H,.1,600), v=paperSpot(kind).slice(); { const a=(Math.random()-.5)*(kind==="stall"?.5:1.2), /* (the stall: a lantern post stands to one side) */ dx=v[0]-v[3], dz=v[2]-v[5], c=Math.cos(a), s2=Math.sin(a); v[0]=v[3]+dx*c-dz*s2; v[2]=v[5]+dx*s2+dz*c; v[1]+=Math.random()*.8; } cam.position.set(v[0],v[1],v[2]); cam.lookAt(v[3],v[4],v[5]); cam.updateMatrixWorld();
-    const rt=new T.WebGLRenderTarget(W,H); const prev=renderer.getRenderTarget(); renderer.setRenderTarget(rt); renderer.render(scene,cam); const px=new Uint8Array(W*H*4); renderer.readRenderTargetPixels(rt,0,0,W,H,px); renderer.setRenderTarget(prev); rt.dispose();
-    const c=document.createElement("canvas"); c.width=W; c.height=H; const x=c.getContext("2d"), id=x.createImageData(W,H); for(let y=0;y<H;y++) id.data.set(px.subarray((H-1-y)*W*4,(H-y)*W*4),y*W*4);
-    { /* auto levels: stretch the darkest 2% to black and the brightest 1% to white, then lift the mid-tones (night photos came out nearly black) */ const d=id.data, hist=new Uint32Array(256); for(let i=0;i<d.length;i+=4) hist[(d[i]*.3+d[i+1]*.59+d[i+2]*.11)|0]++; const N=W*H; let lo=0, hi=255, acc=0; for(;lo<255&&(acc+=hist[lo])<N*.02;lo++); acc=0; for(;hi>0&&(acc+=hist[hi])<N*.01;hi--);
-      const sc=255/Math.max(30,hi-lo), LUT=new Uint8ClampedArray(256); for(let v=0;v<256;v++) LUT[v]=255*Math.pow(Math.max(0,Math.min(1,(v-lo)*sc/255)),.7); for(let i=0;i<d.length;i+=4){ d[i]=LUT[d[i]]; d[i+1]=LUT[d[i+1]]; d[i+2]=LUT[d[i+2]]; } }
-    x.putImageData(id,0,0); const u=c.toDataURL("image/jpeg",.82); c.width=c.height=0; return u; }catch(e){ return null; } }
-/* the photos are taken after the paper is already open, one per frame, and slipped in when ready (taking them first froze the page for a while:
-   each one draws the whole temple from a new spot) */
-/* photos are taken ahead of time, quietly, before the paper is opened (and kept on the phone for the day), so opening it is instant.
-   The server cannot take them: only the game on the phone can draw the temple. */
-const paperPhKey=p=>p?p.d+"#"+(p.rev||0)+"#"+p.head.kind+"#"+(p.items[0]?p.items[0].kind:""):"";
-function paperPhCached(p){ try{ const c=JSON.parse(load("mz.paperPh","")||"null"); if(c&&c.k===paperPhKey(p)&&Array.isArray(c.ph)) return c.ph; }catch(e){} return null; }
-/* no photos while 人物減量 is on (or on 低配): each photo draws a far corner of the temple, which loads that corner's pictures into the phone's memory */
-const paperNoPh=()=>CUT.lv>0||Q.lite;
-function paperPrepare(p){ return new Promise(res=>{ if(!p||paperPhCached(p)||paperNoPh()) return res(); const kinds=[p.head.kind,p.items[0]?p.items[0].kind:null], ph=[];
-  const step=i=>{ if(i>=kinds.length){ try{ save("mz.paperPh",JSON.stringify({k:paperPhKey(p),ph})); }catch(e){} return res(); } if(kinds[i]) ph[i]=paperShoot(kinds[i]); setTimeout(()=>requestAnimationFrame(()=>step(i+1)),120); };
-  requestAnimationFrame(()=>step(0)); }); }
-function paperPhotos(){ const p=PAPER.p; if(!p) return; { const c=paperPhCached(p); if(c){ PAPER.ph=c.slice(); [0,1].forEach(i=>{ const src=PAPER.ph[i], el=src&&document.querySelector(`#paper [data-ph="${i}"]`); if(!el) return; el.outerHTML=i===0?`<figure class="np-photo"><img src="${src}" alt=""><figcaption>本報記者攝</figcaption></figure>`:`<img class="np-thumb" src="${src}" alt="">`; }); return; } } if(paperNoPh()) return; const tok=PAPER.phTok=(PAPER.phTok||0)+1; PAPER.ph=[]; const kinds=[p.head.kind,p.items[0]?p.items[0].kind:null];
-  const put=i=>{ const src=PAPER.ph[i]; if(!src) return; const el=document.querySelector(`#paper [data-ph="${i}"]`); if(!el) return;
-    if(i===0) el.outerHTML=`<figure class="np-photo np-fade"><img src="${src}" alt=""><figcaption>本報記者攝</figcaption></figure>`; else el.outerHTML=`<img class="np-thumb np-fade" src="${src}" alt="">`; };
-  const step=i=>{ if(tok!==PAPER.phTok||i>=kinds.length){ if(i>=kinds.length) try{ save("mz.paperPh",JSON.stringify({k:paperPhKey(p),ph:PAPER.ph})); }catch(e){} return; } if(kinds[i]) PAPER.ph[i]=paperShoot(kinds[i]); put(i); setTimeout(()=>requestAnimationFrame(()=>step(i+1)),60); };
-  setTimeout(()=>requestAnimationFrame(()=>step(0)),350); }
-function paperOpen(intro){ const p=PAPER.p; if(!p) return; PAPER.ph=(paperPhCached(p)||[]).slice(); let el=$("#paper"); if(!el){ el=document.createElement("div"); el.id="paper"; document.body.appendChild(el); }
+try{ localStorage.removeItem("mz.paperPh"); }catch(e){} /* (photos used to be taken on the phone and kept here) */
+/* the paper's photos are pictures taken ahead of time from the game itself (paperph/<place>-<n>.webp, shot by the test machine), picked by
+   the story and the date, so every player sees the same paper and no phone has to draw far corners of the temple to make them */
+const PH_LOC={heat:["sj"],sj:["sj"],stall:["ft"],ft:["ft"],storm:["hall"],rain:["hall","busk"],windy:["front","cats"],record:["record","fountain"],
+  pkBroke:["pk","nm_pachinko"],pkWin:["pk","nm_pachinko"],nm_pachinko:["nm_pachinko","pk"],buskRain:["busk"],buskTop:["busk","busk_night"],buskTip:["busk","busk_night"],buskCheer:["busk_night","busk"],
+  tudi:["fountain"],pious:["hall"],jiao:["hall"],online:["front","front_night"],zen:["hall"],sleep:["onsen"],onsen:["onsen"],wishes:["wishes"],sponsor1:["honor"],sponsorN:["honor"],
+  nmTop:["nm"],nm_qq:["nm_qq"],nm_sausage:["nm_sausage"],nm_bbq:["nm_bbq"],nm_fish:["nm_fish"],nm_boba:["nm_boba"],nm_balloon:["nm_balloon"],fw:["front_night"],
+  fun:["front","cats","fountain","wishes","hall","front_night"],tale:["hall","front","fountain","wishes"],calm:["front"]};
+const PH_IDX={"busk":[0,1,2],"busk_night":[0,1,2],"cats":[0,1,2],"fountain":[0,1,2],"front":[0,1,2],"front_night":[1,2],"ft":[0,1,2],"hall":[0,1,2],"honor":[0,1,2],"nm":[2],"nm_balloon":[2],"nm_bbq":[0,1,2],"nm_boba":[0,1,2],"nm_fish":[0,1],"nm_pachinko":[0,1,2],"nm_qq":[0,1],"nm_sausage":[0,1,2],"onsen":[0,1,2],"pk":[0,1,2],"record":[0,1,2],"sj":[0,1,2],"wishes":[0,1,2]}; /* the pictures there are for each place */
+function paperLib(p){ if(!p||!p.head) return []; const h=str=>{ let x=2166136261; for(const c of str) x=Math.imul(x^c.charCodeAt(0),16777619); return x>>>0; };
+  const pick=(kind,salt,avoid)=>{ const L=PH_LOC[kind]||PH_LOC.fun; let k=h(p.d+"|"+kind+"|"+salt), loc=L[k%L.length]; if(avoid&&avoid.startsWith(loc+"-")&&L.length>1) loc=L[(k+1)%L.length]; const I=PH_IDX[loc]||PH_IDX.front; let j=(k>>>8)%I.length; if(avoid===loc+"-"+I[j]) j=(j+1)%I.length; return (PH_IDX[loc]?loc:"front")+"-"+I[j]; };
+  const a=pick(p.head.kind,0), b=p.items&&p.items[0]?pick(p.items[0].kind,1,a):null; return [a,b].map(x=>x?"paperph/"+x+".webp":null); }
+/* fetched before the paper opens so they are there at once */
+function paperPrepare(p){ return new Promise(res=>{ const L=paperLib(p).filter(Boolean); if(!L.length) return res(); let n=L.length; const done=()=>{ if(--n<=0) res(); }; L.forEach(u=>{ const im=new Image(); im.onload=im.onerror=done; im.src=u; }); setTimeout(res,4000); }); }
+function paperPhotos(){}
+function paperOpen(intro){ const p=PAPER.p; if(!p) return; PAPER.ph=paperLib(p); let el=$("#paper"); if(!el){ el=document.createElement("div"); el.id="paper"; document.body.appendChild(el); }
   el.innerHTML=`<div class="np-call" aria-live="polite"><div class="np-icon">📰</div><div class="np-big">報紙到囉！</div></div><div class="np-wrap">${paperHTML(p)}<button class="np-close" type="button">收起報紙</button></div>`;
   el.className=intro?"intro":"open"; el.hidden=false; PAPER.shown=true; statInc("paperOpen"); if(!intro) paperPhotos();
   const close=()=>{ el.className="closing"; setTimeout(()=>{ el.hidden=true; el.className=""; },420); };
@@ -9430,7 +9417,7 @@ function cutCard(){ const lv=CUT.say; if(!lv) return; CUT.say=0; const d=documen
 if(CUT.say){ const w=()=>{ const ld=$("#loading"); if(!ld||ld.hasAttribute("data-done")) setTimeout(cutCard,600); else setTimeout(w,200); }; w(); }
 /* once a day, when the page has loaded (not on someone's very first visit, while they make their character) */
 setTimeout(async()=>{ if(firstVisitPending) return; const p=await paperFetch(); if(!p) return; const seen=load("mz.paperSeen","")===p.d+(p.rev?"#"+p.rev:"");
-  if(seen){ if(!Q.phone) setTimeout(()=>paperPrepare(p),9000); return; } /* (on phones the photos are taken only if the paper is opened again) */ /* already read today: get the photos ready in the background for when it is opened again */
+  if(seen) return; /* already read today: get the photos ready in the background for when it is opened again */
   await new Promise(r=>{ const w=()=>{ const ld=$("#loading"); if(!ld||ld.hasAttribute("data-done")) setTimeout(r,1200); else setTimeout(w,200); }; w(); }); /* after the loading screen has gone */ await paperPrepare(p); save("mz.paperSeen",p.d+(p.rev?"#"+p.rev:"")); paperOpen(true); },300); /* (a re-issue with sponsors pops up again) */
 
 if(firstVisit) setTimeout(async()=>{ if(await profRestore()){ firstVisitPending=false; toast("歡迎回來！已自動找回你的角色",3600); return; } openLook(true); },600); else setTimeout(()=>toast(guideStep().n===1?"先到大殿入口右手邊的服務處，請清香、金紙和供品":(matchMedia("(pointer:fine)").matches?"WASD 走動・拖曳滑鼠轉視角":"點地板走動・拖曳畫面轉視角"),4200),900);
