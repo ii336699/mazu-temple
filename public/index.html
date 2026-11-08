@@ -479,6 +479,7 @@ body.hideui .joy,body.customizing .joy,body.hideui .camreset,body.customizing .c
     <div class="vol-pop glass" id="volPop" hidden role="dialog" aria-label="音量">
       <label class="vol-row"><span>背景音樂</span><input type="range" min="0" max="100" step="5" data-vol="m" aria-label="背景音樂音量"><b id="volm"></b></label>
       <label class="vol-row"><span>音效</span><input type="range" min="0" max="100" step="5" data-vol="s" aria-label="音效音量"><b id="vols"></b></label>
+      <label class="vol-row"><span>街頭藝人</span><input type="range" min="0" max="100" step="5" data-vol="b" aria-label="街頭藝人玖玖的歌聲音量"><b id="volb"></b></label>
       <button class="chip vol-mute" id="muteBtn"></button>
     </div>
     <button class="icon-btn glass fold-btn" id="foldBtn" aria-label="收起功能列" aria-expanded="true"><svg viewBox="0 0 24 24"><path class="fo-open" d="M6 15l6-6 6 6"/><path class="fo-shut" d="M4 7h16M4 12h16M4 17h16"/></svg><span class="cap" id="foldCap">收起</span></button>
@@ -3994,7 +3995,7 @@ document.addEventListener("visibilitychange",()=>{ if(room) sendPresence(); });
 
 /* ================= audio ================= */
 let ac=null, soundOn=load("mz.sound",true);
-const VOL=Object.assign({m:100,s:100},load("mz.vol",{})); const mVol=()=>Math.max(0,Math.min(100,+VOL.m||0))/100, sVol=()=>Math.max(0,Math.min(100,+VOL.s||0))/100;
+const VOL=Object.assign({m:100,s:100,b:100},load("mz.vol",{})); const mVol=()=>Math.max(0,Math.min(100,+VOL.m||0))/100, sVol=()=>Math.max(0,Math.min(100,+VOL.s||0))/100, bVol=()=>Math.max(0,Math.min(100,VOL.b==null?100:+VOL.b||0))/100; /* b: 街頭藝人玖玖 (each player can turn him down or off) */
 const bgm=$("#bgm"); bgm.volume=.38*mVol(); let audioUnlocked=false, catMode=false; let curTrack="main"; let rearZone=false, rearDwell=0; /* 後殿 has its own song: walking into the 後埕/後殿 fades the temple music out and the rear song in, and back */
 // Sound effects all go through one bus. Muting, hiding the page or switching away disconnects it, which silences
 // anything still ringing at once, and new sounds are refused while the page is hidden so nothing piles up for later.
@@ -4044,7 +4045,7 @@ function trkPrime(){ const soon=[]; if(meAv&&meAv.pos.y<RY0+14) soon.push("rear"
 function playMusic(){ if(!soundOn||document.hidden) return; audioUnlocked=true; setTrack(FW.on?"fw":catMode?"cat":rearZone?"rear":"main"); trkPlay(trk(curTrack)); try{ trkPrime(); }catch(e){} }
 function musicTick(dt){ const z=meAv.pos.y, inRear=z<RY0||meAv.pos.x<-23.5; if(inRear!==rearZone){ rearDwell+=dt; if(rearDwell>2.5){ rearZone=inRear; rearDwell=0; } } else rearDwell=0; /* stay 2.5 s in an area before its song takes over */
   const want=(FW.on&&!(FWED.on&&!FWED.play))?"fw":catMode?"cat":(meAv.pos.x<-23.5)?"zen":rearZone?"rear":"main"; if(want!==curTrack) setTrack(want);
-  const mv=mVol(), near=Math.max((OP&&OP.on)?OP.prox:0,(typeof BUSK!=="undefined"?BUSK.prox*.9:0)), live=soundOn&&audioUnlocked&&!document.hidden&&!gameAsleep; duckF+=((duckT>0?.42:1)-duckF)*Math.min(1,dt*(duckT>0?2.5:1));
+  const mv=mVol(), near=Math.max((OP&&OP.on)?OP.prox:0,(typeof BUSK!=="undefined"?BUSK.prox*.9*bVol():0)), live=soundOn&&audioUnlocked&&!document.hidden&&!gameAsleep; duckF+=((duckT>0?.42:1)-duckF)*Math.min(1,dt*(duckT>0?2.5:1));
   for(const n in TRK){ const a=TRK[n], on=n===curTrack; MIX[n]+=((on?1:0)-MIX[n])*Math.min(1,dt*(on?.9:1.4)); /* about a 2-second cross-fade */
     const lv=MIX[n]*TRK_TOP[n]*mv*duckF*(1-near)*(bgmHush?0:1); trkLevel(n,lv<.004?0:lv);
     if(!on&&MIX[n]<.01&&!a.paused) a.pause(); }
@@ -4063,7 +4064,7 @@ const sfx={ // 叮咚: a two-note door chime (high then low), each note with a s
   rattle(){ for(let i=0;i<8;i++) noiseBurst(.05,.2,1800+Math.random()*900,i*.09); }, fire(){ noiseBurst(1.4,.25,600); noiseBurst(.9,.15,1600,.2); } };
 function renderSound(){ $("#soundBtn").setAttribute("aria-pressed",String(soundOn)); $("#soundWave").style.display=soundOn?"":"none"; $("#soundOff").style.display=soundOn?"none":""; $("#soundBtn").setAttribute("aria-label",soundOn?"關閉音樂":"開啟音樂"); }
 // The speaker button opens a small volume panel: music and sound-effect sliders plus mute-all.
-function renderVolPop(){ for(const k of ["m","s"]){ const r=$(`[data-vol="${k}"]`); if(r) r.value=VOL[k]; $("#vol"+k).textContent=VOL[k]+"%"; } $("#muteBtn").textContent=soundOn?"🔇 全部靜音":"🔊 開啟聲音"; }
+function renderVolPop(){ for(const k of ["m","s","b"]){ const r=$(`[data-vol="${k}"]`); if(r) r.value=VOL[k]; $("#vol"+k).textContent=VOL[k]+"%"; } $("#muteBtn").textContent=soundOn?"🔇 全部靜音":"🔊 開啟聲音"; }
 $("#soundBtn").onclick=e=>{ e.stopPropagation(); const p=$("#volPop"); p.hidden=!p.hidden; if(!p.hidden) renderVolPop(); };
 $("#muteBtn").onclick=()=>{ soundOn=!soundOn; save("mz.sound",soundOn); renderSound(); if(soundOn) ensureAudio(); else stopAllSound(); renderVolPop(); toast(soundOn?"聲音已開啟":"已全部靜音"); };
 document.addEventListener("pointerdown",e=>{ const p=$("#volPop"); if(!p.hidden&&!p.contains(e.target)&&!$("#soundBtn").contains(e.target)) p.hidden=true; },true);
@@ -9035,7 +9036,8 @@ function buskEl(k){ let a=BUSK.el[k]; if(a) return a; if(!ac) return null; a=new
   /* ♪ notes drifting up round him */
   BUSK.noteTex=["♪","♫","♬"].map((ch,k)=>cvs(64,64,(x,w,h)=>{ x.font='700 48px serif'; x.textAlign="center"; x.textBaseline="middle"; x.fillStyle=["#ffd27a","#ff8fb6","#9fe8ff"][k]; x.shadowColor="rgba(0,0,0,.6)"; x.shadowBlur=4; x.fillText(ch,w/2,h/2); })); }
 /* tap 玖玖: tip him 50 or 100 平安幣 and he thanks you by name (the chair tips for free) */
-function openBuskTip(){ ensureAudio(); if(BUSK.away) return; const [i]=buskNow(); openSheet("contact","街頭藝人玖玖",`<p class="lead">現在唱的是〈${BUSK.names[i]}〉。喜歡的話，打賞一下吧！</p><div class="goods">${[50,100].map(v=>`<button class="good" data-act="buskPay" data-v="${v}"><span class="name">🎸 打賞 ${v} 平安幣</span></button>`).join("")}<button class="good" data-act="buskCheer"><span class="name">📣 應援：到他身邊跳一段</span></button></div>`); }
+function openBuskTip(){ ensureAudio(); if(BUSK.away) return; const [i]=buskNow(); openSheet("contact","街頭藝人玖玖",`<p class="lead">現在唱的是〈${BUSK.names[i]}〉。喜歡的話，打賞一下吧！</p><div class="goods">${[50,100].map(v=>`<button class="good" data-act="buskPay" data-v="${v}"><span class="name">🎸 打賞 ${v} 平安幣</span></button>`).join("")}<button class="good" data-act="buskCheer"><span class="name">📣 應援：到他身邊跳一段</span></button><button class="good" data-act="buskMute"><span class="name">${bVol()>0?"🔇 我不想聽他唱歌":"🔊 我想聽他唱歌"}</span><span class="meta">只影響你自己，音量也可以在右上角的聲音按鈕調</span></button></div>`); }
+HANDLERS.buskMute=()=>{ VOL.b=bVol()>0?0:100; save("mz.vol",VOL); try{ renderVolPop(); }catch(e){} toast(VOL.b?"🎸 玖玖的歌聲打開了":"🔇 已關掉玖玖的歌聲，只影響你自己",2400); closeSheet(); };
 /* 應援: you go to a free spot by him, dance one round (12 s), and come away 幸福感 UP — hearts float up round you */
 const HEART_TEX=cvs(64,64,(x,w,h)=>{ x.font='48px serif'; x.textAlign="center"; x.textBaseline="middle"; x.fillText("💗",w/2,h/2+3); });
 function buskHappy(av){ for(let i=0;i<18;i++) setTimeout(()=>{ const s=new T.Sprite(new T.SpriteMaterial({map:HEART_TEX,transparent:true,depthWrite:false})); const a=rand(0,Math.PI*2), r=rand(.2,.9); s.position.set(av.pos.x+Math.cos(a)*r,rand(.3,1.1),av.pos.y+Math.sin(a)*r); const sc=rand(.2,.34); s.scale.set(sc,sc,1); scene.add(s); parts.push({s,vx:0,vy:rand(1.0,1.8),vz:0,life:0,max:rand(1.4,2.2),grow:.12,op:1}); },i*80);
@@ -9058,14 +9060,14 @@ function buskTick(dt){ const B=BUSK, me=meAv; if(!me||!B.av) return;
       if(B.wk==="out"||B.wk==="back"||B.wk==="pack"){ if(Math.hypot(me.pos.x-av.pos.x,me.pos.y-av.pos.y)<45) av.update(dt); } }
     if(away||B.wk){ for(const a of B.el) if(a){ if(a._g&&ac) a._g.gain.setTargetAtTime(0,ac.currentTime,.2); if(!a.paused) a.pause(); } B.on=false; B.prox=0;
       for(const n of B.notes){ scene.remove(n.s); n.s.material.dispose(); } B.notes.length=0; /* no music, no notes */ return; } } const d=Math.hypot(me.pos.x-B.x,me.pos.y-B.z); if(d<45){ const av=B.av; av.pos.set(B.x,B.z); av.target.copy(av.pos); av.faceGoal=Math.PI/2; av.update(dt); } /* (he was never animated: nobody called his update) */ const live=soundOn&&audioUnlocked&&!document.hidden&&!gameAsleep;
-  const prox=live?Math.pow(Math.max(0,Math.min(1,1-(d-1.5)/15)),1.6):0; /* heard from about 16 m */ B.prox+=(prox-B.prox)*Math.min(1,dt*2);
+  const prox=live&&bVol()>0?Math.pow(Math.max(0,Math.min(1,1-(d-1.5)/15)),1.6):0; /* heard from about 16 m (not at all if this player turned him off) */ B.prox+=(prox-B.prox)*Math.min(1,dt*2);
   const want=live&&d<28&&ac;
   if(want){ const [i,t]=buskNow(); let A=buskEl(B.which), Bn=buskEl(1-B.which); if(!A) return;
     if(A.track!==i){ if(Bn&&Bn.track===i){ B.which=1-B.which; [A,Bn]=[Bn,A]; } else { A.src=B.file(i); A.track=i; A.load(); } A.wantSeek=t; }
     if(A.wantSeek!=null&&A.readyState>=1){ if(Math.abs(A.currentTime-A.wantSeek)>1.5) try{ A.currentTime=A.wantSeek; }catch(e){} A.wantSeek=null; }
     if(A.paused&&A.readyState>=2) A.play().catch(()=>{});
     if(B.dur[i]-t<20&&Bn){ const nx=buskNext(i); if(Bn.track!==nx){ Bn.src=B.file(nx); Bn.track=nx; Bn.preload="auto"; Bn.load(); } } /* next song ready before this one ends */
-    const v=B.prox*mVol()*.6; for(const a of B.el) if(a&&a._g){ const w=a===A?v:0; if(a._v==null||Math.abs(a._v-w)>.004){ a._v=w; a._g.gain.setTargetAtTime(w,ac.currentTime,.15); } } else if(a) a.volume=a===A?Math.min(1,v):0;
+    const v=B.prox*mVol()*.6*bVol(); for(const a of B.el) if(a&&a._g){ const w=a===A?v:0; if(a._v==null||Math.abs(a._v-w)>.004){ a._v=w; a._g.gain.setTargetAtTime(w,ac.currentTime,.15); } } else if(a) a.volume=a===A?Math.min(1,v):0;
     for(const a of B.el) if(a&&a!==A&&!a.paused&&a.currentTime>1) a.pause();
     B.on=!A.paused&&B.prox>.01; }
   else { for(const a of B.el) if(a){ if(a._g&&ac) a._g.gain.setTargetAtTime(0,ac.currentTime,.2); if(!a.paused&&B.prox<.01) a.pause(); } B.on=false; }
