@@ -8,7 +8,7 @@ function snapInfo(str) { try { const raw = atob(String(str).slice(3).replace(/-/
   if (get(4) !== 1) return {}; get(65); const coins = get(16); get(30); get(1); const pn = get(3); get(pn * 6); get(24); const nl = get(4); let name = ""; for (let i = 0; i < nl; i++) name += String.fromCharCode(get(16)); return { name, coins }; } catch { return {}; } }
 const HALLS = 10, CAP = 100, MAX_MSG = 4000;
 const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000, "/puppet": 5000, "/crowd": 5000, "/market": 5000, "/layout": 5000 };
-const LOBBY_PATHS = ["/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather", "/stat", "/nev", "/paper", "/sponsor", "/hatfit", "/honor", "/lookup"];
+const LOBBY_PATHS = ["/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather", "/stat", "/nev", "/paper", "/sponsor", "/hatfit", "/honor", "/lookup", "/crash"];
 const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage", "/puppet": "/puppet", "/crowd": "/crowd", "/market": "/market", "/layout": "/layout" }; // a POST here makes that cached list stale
 
 export default {
@@ -327,6 +327,14 @@ export class Lobby extends DurableObject {
       return json({ ok: true, seeded: seeded || b.act === "seed", list: H.slice(-600).map(h => ({ n: h.n, a: h.a, x: h.x })) });
     }
     if (url.pathname === "/honor") return json({ ok: true, seeded: !!(await this.ctx.storage.get("honorSeeded")), list: ((await this.ctx.storage.get("honor")) || []).map(h => ({ n: h.n, a: h.a, x: h.x })) });
+    // 閃退紀錄: pages report when their last visit was killed on screen (or a script error); the chair reads the list
+    if (url.pathname === "/crash" && req.method === "POST") {
+      const ip = clean(req.headers.get("cf-connecting-ip"), 64) || "?"; this.crLast = this.crLast || new Map(); const now = Date.now(); if (now - (this.crLast.get(ip) || 0) < 20000) return json({ ok: false, slow: true }); this.crLast.set(ip, now); if (this.crLast.size > 3000) this.crLast.clear();
+      let b = {}; try { b = JSON.parse((await req.text()).slice(0, 4000)); } catch {} const S = v => clean(v, 160), N = v => Math.max(0, Math.min(1e6, Number(v) || 0));
+      const e = { at: now, k: ["kill", "ctx", "err"].includes(b.k) ? b.k : "kill", dev: S(b.dev).slice(0, 10), app: S(b.app).slice(0, 10), os: S(b.os).slice(0, 4), mem: N(b.mem), scr: S(b.scr).slice(0, 12), w: S(b.w).slice(0, 40), pos: S(b.pos).slice(0, 12), mini: b.mini ? 1 : 0, min: N(b.min), q: S(b.q).slice(0, 20), dres: N(b.dres), heap: N(b.heap), geo: N(b.geo), tex: N(b.tex), calls: N(b.calls), npc: N(b.npc), rem: N(b.rem), msg: S(b.msg), at2: S(b.at2), err: (Array.isArray(b.err) ? b.err : []).slice(0, 2).map(S) };
+      const L = (await this.ctx.storage.get("crashes")) || []; L.push(e); await this.ctx.storage.put("crashes", L.slice(-400)); return json({ ok: true });
+    }
+    if (url.pathname === "/crash") { const auth = await this.checkKey(req); if (!auth.ok) return json(auth); return json({ ok: true, list: ((await this.ctx.storage.get("crashes")) || []).slice(-400) }); }
     // 查取回碼 (chair): find a player's saved character by the name inside it, so the chair can tell them their 取回碼
     if (url.pathname === "/lookup") {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
