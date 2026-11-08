@@ -9425,11 +9425,11 @@ function catLearned(p){ return TRICKS.filter(([k,,n])=>(p.tr&&p.tr[k]||0)>=n); }
    rest orientation), so the numbers read as "swing forward / back" whatever each bone's own setup. */
 const CAT_FWD=Math.atan2(-.578,.816); /* the way the body points in the model */
 const CAT_AX={L:new T.Vector3(.816,0,.578),U:new T.Vector3(0,1,0),F:new T.Vector3(-.578,0,.816)};
-function catRigMake(src,tex){ 
+function catRigMake(src,tex,face){ 
   const root=new T.Group(), body=new T.Group(), yaw=new T.Group(); root.add(body); body.add(yaw); body.position.y=.3; yaw.position.y=-.3; yaw.rotation.y=-CAT_FWD;
   const m=src.clone(true); yaw.add(m); let sm=null, srcSm=null; m.traverse(o=>{ if(o.isSkinnedMesh) sm=o; }); src.traverse(o=>{ if(o.isSkinnedMesh) srcSm=o; });
   const bones=srcSm.skeleton.bones.map(b=>m.getObjectByName(b.name)); sm.bind(new T.Skeleton(bones,srcSm.skeleton.boneInverses),srcSm.bindMatrix);
-  if(tex){ tex.flipY=false; tex.encoding=T.sRGBEncoding; } sm.material=new T.MeshStandardMaterial({map:tex||null,color:tex?0xffffff:0xd9d2c8,roughness:.9,skinning:true}); sm.frustumCulled=false; sm.castShadow=true;
+  if(tex){ tex.flipY=false; tex.encoding=T.sRGBEncoding; } sm.material=new T.MeshStandardMaterial({map:tex||null,color:tex?0xffffff:0xd9d2c8,roughness:.9,skinning:true}); if(face) catFaceMat(sm.material,face); sm.frustumCulled=false; sm.castShadow=true;
   m.updateMatrixWorld(true); const B={}, rest={};
   bones.forEach(b=>{ const k=b.name.replace(/^tripo/,""); B[k]=b; const pw=new T.Quaternion(); b.parent.getWorldQuaternion(pw); rest[k]={q:b.quaternion.clone(),pw,pwi:pw.clone().invert()}; });
   return {root,body,yaw,mesh:sm,B,rest,P:catRigZero(),tmp:new T.Quaternion(),tq:new T.Quaternion()}; }
@@ -9454,8 +9454,27 @@ const CAT_ANIM={
 };
 function catRigPose(c,anim,t,k){ const tgt=Object.assign(catRigZero(),(CAT_ANIM[anim]||CAT_ANIM.idle)(t)); const P=c.P; k=k==null?1:k; for(const key in tgt){ if(k>=1||key==="rx"&&anim==="flip") P[key]=tgt[key]; else P[key]+=(tgt[key]-P[key])*k; } catRigApply(c); }
 
+/* the face is drawn on the smooth head by the shader (round eyes with a shine, a pink nose, an ω mouth, whiskers), in the model's rest
+   coordinates so it moves with the head. face = {eL, eR, nose, wh} colours. */
+const CAT_FACE_GLSL=`
+vec3 catFaceCol(vec3 c,vec3 p){ const float FX=-.093; float fx=p.x-FX; if(p.z<.28) return c;
+  float wh=0.; for(int s=0;s<2;s++){ float sx=s==0?-1.:1.; for(int k=0;k<3;k++){ float a=(float(k)-1.)*.16; vec2 o=vec2(sx*.085,.545); vec2 d=vec2(sx*cos(a),sin(a)); vec2 q=vec2(fx,p.y)-o; float t=dot(q,d); float e=length(q-d*t); wh=max(wh,(1.-smoothstep(.0016,.0034,e))*step(0.,t)*step(t,.11)); } }
+  c=mix(c,uWh,wh*.9);
+  float eye=0., hl=0.; vec3 ec=uEL; for(int s=0;s<2;s++){ float sx=s==0?-1.:1.; vec2 e=vec2(fx-sx*.112,p.y-.630); float r=length(e/vec2(.026,.031)); if(r<1.){ eye=max(eye,1.-smoothstep(.82,1.,r)); ec=s==0?uEL:uER; } hl=max(hl,1.-smoothstep(.5,1.,length((e-vec2(.008,.011))/.0085))); }
+  eye*=step(.38,p.z); c=mix(c,ec,eye); c=mix(c,vec3(1.),hl*eye*.95);
+  float nose=(1.-smoothstep(.75,1.,length(vec2(fx,(p.y-.573)*1.25)/.02)))*step(.40,p.z); c=mix(c,uNose,nose);
+  float mo=0.; for(int s=0;s<2;s++){ float sx=s==0?-1.:1.; vec2 m=vec2(fx-sx*.0165,p.y-.556); float d=abs(length(m)-.0165); mo=max(mo,(1.-smoothstep(.0018,.0038,d))*step(m.y,0.)); }
+  mo=max(mo,(1.-smoothstep(.0018,.0036,abs(fx)))*step(.556,p.y)*step(p.y,.566)); c=mix(c,vec3(.24,.13,.1),mo*step(.40,p.z));
+  return c; }`;
+function catFaceMat(m,f){ const C=v=>new T.Color(v).convertSRGBToLinear();
+  m.onBeforeCompile=sh=>{ Object.assign(sh.uniforms,{uEL:{value:C(f.eL||"#2a1a12")},uER:{value:C(f.eR||f.eL||"#2a1a12")},uNose:{value:C(f.nose||"#ef9aa4")},uWh:{value:C(f.wh||"#6b4a3a")}});
+    sh.vertexShader="varying vec3 vCP;\n"+sh.vertexShader.replace("#include <begin_vertex>","#include <begin_vertex>\n vCP=position;");
+    sh.fragmentShader="varying vec3 vCP; uniform vec3 uEL,uER,uNose,uWh;\n"+CAT_FACE_GLSL+"\n"+sh.fragmentShader.replace("#include <map_fragment>","#include <map_fragment>\n diffuseColor.rgb=catFaceCol(diffuseColor.rgb,vCP);"); };
+  m.customProgramCacheKey=()=>"catface"; }
+const CAT_FACES=[{},{},{eL:"#3d7fc8",eR:"#e2a41c"},{},{},{wh:"#e9dccb"},{},{},{wh:"#f2f2f2",eL:"#1a1210"},{},{nose:"#5a3a30",wh:"#e9dccb"}];
+
 function catTex(t){ CAT.tex=CAT.tex||{}; if(!CAT.tex[t]){ const tx=new T.TextureLoader().load("catcoat/cat-"+t+".webp"); tx.flipY=false; tx.encoding=T.sRGBEncoding; tx.anisotropy=2; CAT.tex[t]=tx; } return CAT.tex[t]; }
-function catEnt(kind,ref){ if(!CAT.src) return null; const rig=catRigMake(CAT.src,catTex(ref.t)), g=rig.root; g.scale.setScalar(.5); g.userData.noMerge=1; scene.add(g);
+function catEnt(kind,ref){ if(!CAT.src) return null; const rig=catRigMake(CAT.src,catTex(ref.t),CAT_FACES[ref.t]||{}), g=rig.root; g.scale.setScalar(.5); g.userData.noMerge=1; scene.add(g);
   const sp=catPlace(); g.position.set(sp[0],0,sp[1]); const e={kind,ref,g,rig,st:"sit",tt:rand(2,6),tx:sp[0],tz:sp[1],ph:Math.random()*9,trick:null,z:null,path:null,sl:"loaf"};
   e.hit=addHit("cat:"+(kind==="pet"?"pet":ref.id),sp[0],0,sp[1],.32,.5); CAT.ents.push(e); return e; }
 function catDrop(e){ scene.remove(e.g); try{ e.rig.mesh.material.dispose(); }catch(_){} if(e.z){ scene.remove(e.z); } if(e.sick){ scene.remove(e.sick); } scene.remove(e.hit); const i=pickables.indexOf(e.hit); if(i>=0) pickables.splice(i,1); CAT.ents.splice(CAT.ents.indexOf(e),1); }
