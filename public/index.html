@@ -300,7 +300,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
 .np-head p{margin:8px 0 0;font-size:15px;line-height:1.65;text-align:justify;white-space:pre-line}
 .sp-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0 0 10px;padding:10px;border-radius:12px;background:rgba(255,255,255,.06)}.sp-row input{min-width:0;width:100%;box-sizing:border-box;padding:9px 10px;border-radius:9px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.25);color:inherit;font:inherit;font-size:15px}.sp-row input.sp-m{grid-column:1/-1}
 .hf-sl label{display:grid;grid-template-columns:5.2em 1fr 3.2em;align-items:center;gap:8px;margin:2px 0;font-size:14px}.hf-sl input{width:100%;min-width:0}.hf-sl b{font-variant-numeric:tabular-nums;text-align:right;font-weight:600;opacity:.85}
-.gc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px;margin:10px 0}.gc-cell{display:grid;place-items:center;aspect-ratio:1;border-radius:10px;background:rgba(255,255,255,.08)}.gc-cell .bic{width:44px;height:44px}.gc-no .bic{filter:brightness(0) opacity(.35)}
+.gc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px;margin:10px 0}.gc-cell{display:grid;place-items:center;aspect-ratio:1;border-radius:10px;background:rgba(255,255,255,.08)}.gc-cell .bic{width:44px;height:44px}.gc-no .bic{filter:brightness(0) drop-shadow(0 0 1px rgba(255,255,255,.25))}
 .gc-show{position:fixed;inset:0;z-index:60;display:grid;place-items:center;overflow:hidden;background:radial-gradient(circle at 50% 45%,rgba(60,20,50,.92),rgba(5,2,10,.97));animation:gcIn .35s ease}
 @keyframes gcIn{from{opacity:0}to{opacity:1}}
 .gc-rays{position:absolute;left:50%;top:45%;width:180vmax;height:180vmax;margin:-90vmax 0 0 -90vmax;background:repeating-conic-gradient(from 0deg,rgba(255,220,120,.18) 0 6deg,transparent 6deg 18deg);animation:gcSpin 9s linear infinite;opacity:.35;transition:opacity .6s}
@@ -2235,24 +2235,26 @@ setTimeout(()=>addHit("cats",CATS.c.x,0,CATS.c.z,1.5,1.3),0);
    you have them all. The coins come off and the hat goes into the bag in one save BEFORE the show starts, so closing the page halfway can
    neither give a free turn nor lose the hat; a second tap while it turns does nothing; the coin count is re-read from storage first so
    another open tab cannot spend the same coins twice. ---- */
-const GACHA={x:9.6,z:35.2,cost:10,busy:false};
+const GACHA={x:9.6,z:35.2,cost:10,busy:false,demo:{}};
 let GACHA_POOL_=null; const gachaPool=()=>GACHA_POOL_||(GACHA_POOL_=Object.keys(HAT_FIT_CHAIR).filter(k=>ACC[k]&&!ACC[k].gone)); /* (worked out on first use: the hat lists are defined further down) */
 station("gacha",[GACHA.x-2.7,GACHA.z],Math.PI/2);
 loadModel("gacha",m=>{ const w=fitModel(m,4.1); w.rotation.y=-Math.PI/2; w.position.set(GACHA.x,0,GACHA.z); scene.add(w); setAct(w,"gacha"); w.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=true; } }); });
 setTimeout(()=>addHit("gacha",GACHA.x,0,GACHA.z,1.7,4.1),0);
 function gachaLeft(){ const o=accState().owned; return gachaPool().filter(k=>!o[k]); }
-function openGacha(){ HANDLERS.gachaSpin=gachaSpin; /* (registered here: HANDLERS is made further down the page) */ const left=gachaLeft(), have=gachaPool().length-left.length, a=accState();
+/* what the 圖鑑 shows in colour: hats you own; the chair owns everything already, so for the chair it is the ones spun this visit */
+const gachaGot=k=>me.sp?!!GACHA.demo[k]:!!accState().owned[k];
+function openGacha(){ HANDLERS.gachaSpin=gachaSpin; /* (registered here: HANDLERS is made further down the page) */ const left=gachaLeft(), have=gachaPool().filter(gachaGot).length;
   openSheet("gacha","招財貓扭蛋機",`<p class="lead">投 ${GACHA.cost} 枚扭蛋幣轉一次，會轉出一頂頭飾。抽過的不會再出現，直到 ${gachaPool().length} 頂全部收齊。</p>
     <div class="inv-top"><span class="inv-coin">🎟️<b id="gcCoins">${bag.gacha||0}</b>扭蛋幣</span><span class="inv-note">已收集 ${have} / ${gachaPool().length}</span></div>
     <div class="goods"><button class="good" data-act="gachaSpin" ${left.length||me.sp?"":"disabled"}><span class="name">🎰 轉一次（${GACHA.cost} 枚）</span><span class="meta">${left.length?`還有 ${left.length} 頂等你轉`:me.sp?"主委測試：全部都有，轉了只看動畫":"全部收齊了！"}</span></button></div>
-    <div class="gc-grid">${gachaPool().map(k=>`<span class="gc-cell${a.owned[k]?"":" gc-no"}" title="${esc(ACC[k].name)}">${bic(k)}</span>`).join("")}</div>
+    <div class="gc-grid">${gachaPool().map(k=>`<span class="gc-cell${gachaGot(k)?"":" gc-no"}" title="${gachaGot(k)?esc(ACC[k].name):"？？？"}">${bic(k)}</span>`).join("")}</div>
     <p class="note">扭蛋幣從各殿神明小遊戲贏來（每個遊戲一天一枚），土地公尋寶也挖得到。</p>`); }
 function gachaSpin(){ if(GACHA.busy) return; GACHA.busy=true;
   try{ /* take the latest from storage: another tab may already have spent coins or won hats */
     const st=load("mz.bag",null); if(st&&typeof st==="object"){ if((st.gacha||0)<(bag.gacha||0)) bag.gacha=st.gacha||0; const so=st.acc&&st.acc.owned; if(so) Object.assign(accState().owned,so); }
     if((bag.gacha||0)<GACHA.cost){ GACHA.busy=false; toast(`扭蛋幣不夠，轉一次要 ${GACHA.cost} 枚`,2400); return; }
     const left=gachaLeft(); let k, demo=false;
-    if(left.length) k=left[Math.floor(Math.random()*left.length)]; else if(me.sp){ k=gachaPool()[Math.floor(Math.random()*gachaPool().length)]; demo=true; } else { GACHA.busy=false; toast("全部收齊了！",2200); return; }
+    if(left.length) k=left[Math.floor(Math.random()*left.length)]; else if(me.sp){ let L=gachaPool().filter(x=>!GACHA.demo[x]); if(!L.length){ GACHA.demo={}; L=gachaPool(); } k=L[Math.floor(Math.random()*L.length)]; GACHA.demo[k]=1; demo=true; } else { GACHA.busy=false; toast("全部收齊了！",2200); return; }
     bag.gacha-=GACHA.cost; if(!demo) accState().owned[k]=1; saveBag(); markDirty(); try{ profSave(true); }catch(e){} statInc("gachaSpin");
     closeSheet(); gachaShow(k); }catch(e){ GACHA.busy=false; } }
 /* the reveal: dark screen, light rays, the capsule drops, shakes, cracks open, and the hat's picture comes out in a burst of light */
