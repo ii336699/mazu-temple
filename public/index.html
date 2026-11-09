@@ -4604,7 +4604,7 @@ const bic=(k,cls="")=>{ if(k==="treat"||k==="can") return `<span class="bic ${cl
 let bagTab="all", bagSel=null;
 function bagEntries(){ const a=accState(), out=[];
   if(bagTab==="all"||bagTab==="goods") GOODS.forEach(g=>{ const n=bag.items[g.k]||0; if(n||bagTab==="goods") out.push({id:"g:"+g.k,ic:g.k,n,name:g.name,desc:g.meta}); });
-  if(bagTab==="all"||bagTab==="goods"){ const cn=bag.items.can||0; const tr=bag.items.treat||0; if(tr) out.push({id:"g:treat",ic:"treat",n:tr,name:"肉泥",desc:"貓咪最愛的零食。"}); if(cn) out.push({id:"g:can",ic:"can",n:cn,name:"貓罐頭",desc:"廟裡的貓最愛吃。"}); }
+  if(bagTab==="all"||bagTab==="goods"){ const cn=bag.items.can||0; const tr=bag.items.treat||0; if(tr) out.push({id:"g:treat",ic:"treat",n:tr,name:"肉泥",desc:"貓咪最愛的零食。訓練貓咪一次要給一條，愛心媽媽一條賣 5 平安幣。"}); if(cn) out.push({id:"g:can",ic:"can",n:cn,name:"貓罐頭",desc:"廟裡的貓最愛吃。流浪貓餵一罐好感 +20，自己養的貓一天要吃一罐。愛心媽媽一罐賣 10 平安幣，土地公尋寶也挖得到。"}); }
   if(bagTab==="all"||bagTab==="goods"){ const hb=bag.hongbao||0; if(hb) out.push({id:"g:hongbao",ic:"hongbao",n:hb,name:"紅包",desc:"財神爺撒下來的紅包，裡面的平安幣已經收進錢包。留著當紀念。"}); }
   if(bagTab==="all"||bagTab==="acc") ACC_IDS.filter(id=>a.owned[id]&&!ACC[id].gone).forEach(id=>out.push({id:"a:"+id,ic:id,name:ACC[id].name,on:a[ACC[id].slot]===id,desc:(ACC[id].note?ACC[id].note+"。":"")+(ACC[id].cat==="頭飾"?"戴在頭上的頭飾。":ACC[id].slot==="mouth"?"咬在嘴邊的小東西。":ACC[id].slot==="pet"?"跟在身邊的小夥伴。":ACC[id].slot==="wrist"?"繫在手腕上，可以和手上拿的東西一起戴。":"拿在手上的小東西。")}));
   if(bagTab==="all"||bagTab==="poem"){ const L=(bag.poems||[]).length; (bag.poems||[]).slice().reverse().forEach((n,i)=>{ if(bagTab==="all"&&i>=8) return; const t=(bag.poemT||[])[L-1-i]||0, done=!!(bag.jqDone&&bag.jqDone[n+"@"+t]);
@@ -9375,7 +9375,7 @@ Object.assign(HANDLERS,{
   catTDig:()=>{ const e=CAT.ents.find(x=>x.kind==="pet"); const p=catData().pet; if(!e||!p){ toast("貓不在身邊",1600); return; } p.lf=catDay(); p.ll=catDay(); p.lp=catDay(); p.home=false; p.dg={d:catDay(),n:0}; e.digIn=.01; closeSheet(); toast("看牠去挖寶……",1600); },
   catTSick:()=>{ const p=catData().pet; if(!p) return; p.vet=null; delete p.vet; p.sick={d:catDay(),cost:500+((Math.random()*11)|0)*50}; catSync(); saveBag(); toast(`${p.nm} 生病了，點牠看看`,2000); closeSheet(); },
   catTVetBack:()=>{ const p=catData().pet; if(!p||!p.vet){ toast("沒有在住院",1500); return; } p.vet.back=catDay(); catData(); catSync(); saveBag(); HANDLERS.catTest(); },
-  catTLearn:()=>{ const p=catData().pet; if(!p) return; TRICKS.forEach(([k,,n])=>p.tr[k]=n); saveBag(); toast("全部動作都學會了",2200); HANDLERS.catTest(); },
+  catTLearn:()=>{ const p=catData().pet; if(!p) return; TRICKS.forEach(([k,,n])=>p.tr[k]=n); saveBag(); toast("全部動作都學會了，到貓咪面板按「動一動」",2200); HANDLERS.catTest(); },
   catTReset:()=>{ const p=catData().pet; if(!p) return; p.tt={}; p.dg=null; p.lf=catDay()-1; p.ll=catDay()-1; p.lp=catDay()-1; saveBag(); toast("今天的餵食、貓砂、摸摸、訓練、挖寶都可以再做一次",2400); HANDLERS.catTest(); },
   catTAway:()=>{ const p=catData().pet; if(!p) return; p.away=true; p.home=false; catSync(); saveBag(); toast(`${p.nm} 跑去愛心媽媽那裡了`,2000); HANDLERS.catTest(); },
   catTRel:()=>{ const C=catData(); C.pet=null; catSync(); saveBag(); toast("放回去了",1500); HANDLERS.catTest(); },
@@ -9536,7 +9536,7 @@ function catBuildHome(){ const M=CAT.mom, B=CAT.bed;
   addHit("catLitter",B.x+.95,0,B.z+.1,.4,.3); }
 
 /* ---- every frame ---- */
-function catTick(dt){ CAT.t+=dt; if(CAT.momAv){ CAT.momAv.update(dt); if((CAT.momAv.talkIn-=dt)<0){ CAT.momAv.talkIn=rand(14,30); if(Math.hypot(meAv.pos.x-CAT.mom.x,meAv.pos.y-CAT.mom.z)<9) CAT.momAv.say(["小貓咪要吃飯囉～","要不要買個罐頭？","摸摸牠們，牠們就會記得你","領養之前要想清楚喔","貓咪不舒服要趕快帶去看醫生","肉泥是牠們的最愛"][(Math.random()*7)|0],"#f7ecd6",3); } }
+function catTick(dt){ CAT.t+=dt; if(CAT.momAv){ CAT.momAv.update(dt); if((CAT.momAv.talkIn-=dt)<0){ CAT.momAv.talkIn=rand(14,30); if(Math.hypot(meAv.pos.x-CAT.mom.x,meAv.pos.y-CAT.mom.z)<9) CAT.momAv.say(["小貓咪要吃飯囉～","罐頭一罐 10 塊，貓咪一天吃一罐","摸摸牠們，牠們就會記得你","領養之前要想清楚喔","貓砂每天都要清一次","貓咪不舒服要趕快帶去看醫生","訓練的時候給一條肉泥，牠會學得很快"][(Math.random()*7)|0],"#f7ecd6",3); } }
   if(CAT.dirt){ const p=bag.cat&&bag.cat.pet; CAT.dirt.visible=!!(p&&!p.vet&&catDays(p,"ll")>=1); }
   if(!CAT.ents.length) return; const me2=meAv.pos, rain=catRain();
   for(const e of CAT.ents){ const g=e.g; e.ph+=dt; let anim="idle", spd=0; const sick=e.kind==="pet"&&!!e.ref.sick;
@@ -9631,19 +9631,19 @@ function catStraySheet(){ const e=CAT.cur; if(!e||e.kind!=="stray") return; cons
   HANDLERS.catPet=catPet; HANDLERS.catFeed=catFeed; HANDLERS.catAdopt=catAdopt; HANDLERS.goCatMom=()=>{ closeSheet(); goStation("catMom"); };
   openSheet("cat",`🐈 ${s.nm}（${coat}）`,`<p class="lead">${s.a<20?"牠還有點怕生，慢慢靠近牠吧。":s.a<60?"牠開始認得你了，會跟在你旁邊。":s.a<100?"牠很喜歡你，常常來找你！":"牠已經把你當成家人了 ❤"}</p>
     <p class="note">好感度 ${s.a}/100</p>${catBar(s.a)}
-    <div class="goods"><button class="good" data-act="catPet"><span class="name">🤚 摸摸牠</span><span class="meta">陪牠玩一下</span></button>
-    <button class="good" data-act="catFeed" ${s.fd===d?"disabled":""}><span class="name">🥫 餵罐頭</span><span class="meta">${s.fd===d?"今天吃飽了":`你有 ${catCans()} 罐`}</span></button>
-    ${s.a>=100?`<button class="good" data-act="catAdopt"><span class="name">🏠 領養牠</span><span class="meta">${C.pet?"你已經有一隻貓了":"帶牠回家"}</span></button>`:""}</div>
-    <p class="note">罐頭可以跟廟埕的愛心媽媽買。</p><div class="chips"><button class="chip" data-act="goCatMom">去找愛心媽媽</button></div>`); }
+    <div class="goods"><button class="good" data-act="catPet"><span class="name">🤚 摸摸牠</span><span class="meta">今天 ${s.pn}/3 次・好感 +5</span></button>
+    <button class="good" data-act="catFeed" ${s.fd===d?"disabled":""}><span class="name">🥫 餵罐頭</span><span class="meta">${s.fd===d?"今天吃飽了":`好感 +20・你有 ${catCans()} 罐`}</span></button>
+    ${s.a>=100?`<button class="good" data-act="catAdopt"><span class="name">🏠 領養牠</span><span class="meta">${C.pet?"你已經有一隻貓了（一次只能養一隻）":"帶牠回家，每天照顧牠"}</span></button>`:""}</div>
+    <p class="note">罐頭可以跟廟埕的愛心媽媽買（一罐 10 平安幣），土地公尋寶也挖得到。第一次餵牠，牠就會認定你，別人靠近會跑開；連續兩天沒來看牠，牠會忘記你。好感度滿 100 就可以領養。</p><div class="chips"><button class="chip" data-act="goCatMom">去找愛心媽媽</button></div>`); }
 function catPet(){ const e=CAT.cur; if(!e) return; if(e.kind==="pet"){ const p=e.ref; const first=p.lp!==catDay(); p.lp=catDay(); catHearts(e,first?6:3); catPurr(); catTrick(e,"sit"); saveBag(); markDirty(); toast(first?`${p.nm} 舒服得呼嚕呼嚕叫`:`${p.nm} 蹭了蹭你的手`,1800); catPetSheet(); return; }
-  const s=e.ref; if(s.pn>=3){ toast(`${s.nm} 今天被摸夠了，明天再來吧`,2000); return; } s.pn++; s.a=Math.min(100,s.a+5); s.lv=catDay(); catHearts(e,3); catPurr(); saveBag(); markDirty(); toast(s.a>=100?`${s.nm} 好感度滿了！可以領養牠了`:`${s.nm} 瞇起眼睛`,2000); catStraySheet(); }
+  const s=e.ref; if(s.pn>=3){ toast(`${s.nm} 今天被摸夠了，明天再來吧`,2000); return; } s.pn++; s.a=Math.min(100,s.a+5); s.lv=catDay(); catHearts(e,3); catPurr(); saveBag(); markDirty(); toast(s.a>=100?`${s.nm} 好感度滿了！可以領養牠了`:`${s.nm} 瞇起眼睛，好感 +5`,2000); catStraySheet(); }
 function catFeed(){ const e=CAT.cur; if(!e) return; if(catCans()<1){ toast("沒有罐頭了，到愛心媽媽那裡買",2400); return; } const d=catDay();
-  if(e.kind==="pet"){ const p=e.ref; if(p.lf===d){ toast(`${p.nm} 今天吃飽了`,2200); return; } bag.items.can--; p.lf=d; catHearts(e,5); catMeow(true); saveBag(); markDirty(); toast(`${p.nm} 吃得好開心！`,1800); catPetSheet(); return; }
-  const s=e.ref; if(s.fd===d){ toast(`${s.nm} 今天吃飽了`,1800); return; } bag.items.can--; s.fd=d; s.a=Math.min(100,s.a+20); s.lv=d; const first=!s.own; s.own=1; catHearts(e,6); catMeow(true); saveBag(); markDirty(); toast(s.a>=100?`${s.nm} 好感度滿了！可以領養牠了`:first?`${s.nm} 吃得津津有味，認定你了！`:`${s.nm} 吃得津津有味`,2200); if(first) catSync(); catStraySheet(); }
+  if(e.kind==="pet"){ const p=e.ref; if(p.lf===d){ toast(`${p.nm} 今天吃飽了，一天一罐就好`,2200); return; } bag.items.can--; p.lf=d; catHearts(e,5); catMeow(true); saveBag(); markDirty(); toast(`${p.nm} 吃得好開心！`,1800); catPetSheet(); return; }
+  const s=e.ref; if(s.fd===d){ toast(`${s.nm} 今天吃飽了`,1800); return; } bag.items.can--; s.fd=d; s.a=Math.min(100,s.a+20); s.lv=d; const first=!s.own; s.own=1; catHearts(e,6); catMeow(true); saveBag(); markDirty(); toast(s.a>=100?`${s.nm} 好感度滿了！可以領養牠了`:first?`${s.nm} 吃得津津有味，認定你了！好感 +20`:`${s.nm} 吃得津津有味，好感 +20`,2200); if(first) catSync(); catStraySheet(); }
 function catAdopt(){ const e=CAT.cur, C=catData(); if(!e||e.kind!=="stray") return; if(C.pet){ toast("一次只能養一隻貓，先好好照顧你家的貓吧",2600); return; } if(e.ref.a<100) return; const s=e.ref, d=catDay();
   C.pet={t:s.t,sd:s.sd,nm:s.nm,born:d,lf:s.fd===d?d:d-1,ll:d,lp:d,tr:{},tt:{},home:false}; C.s=C.s.filter(x=>x!==s); C.next=d+1; const pos=[e.g.position.x,e.g.position.z]; catDrop(e); catSync();
   const pe=CAT.ents.find(x=>x.kind==="pet"); if(pe){ pe.g.position.set(pos[0],0,pos[1]); catHearts(pe,10); } catMeow(true); saveBag(); markDirty(); profSave(true); statInc("catAdopt");
-  closeSheet(); toast(`你領養了 ${s.nm}！`,4000); setTimeout(()=>{ CAT.cur=pe; catPetSheet(); },900); }
+  closeSheet(); toast(`你領養了 ${s.nm}！記得每天餵一罐、清貓砂、摸摸牠`,4000); setTimeout(()=>{ CAT.cur=pe; catPetSheet(); },900); }
 
 /* ---- your cat ---- */
 function catPetSheet(){ const e=CAT.ents.find(x=>x.kind==="pet"); const C=catData(), p=C.pet; if(!p||p.vet){ closeSheet(); return; } CAT.cur=e; const d=catDay(), mood=catMood(p), coat=CAT_COATS[p.t][0];
@@ -9651,30 +9651,30 @@ function catPetSheet(){ const e=CAT.ents.find(x=>x.kind==="pet"); const C=catDat
   const fed=p.lf===d, clean=p.ll===d, pet=p.lp===d, learned=catLearned(p);
   HANDLERS.catVet=catVet;
   if(p.sick){ openSheet("cat",`🐈 ${esc(p.nm)}（${coat}）🤒`,`<p class="lead">${esc(p.nm)} 生病了，趴著不太想動，也不想吃東西。要帶去給獸醫看。</p>
-    <div class="goods"><button class="good" data-act="catVet"><span class="name">🏥 帶去看獸醫</span><span class="meta">醫藥費 ${p.sick.cost} 平安幣（你有 ${bag.coins}）</span></button>
-    <button class="good" data-act="catPet"><span class="name">🤚 摸摸牠</span><span class="meta">陪陪牠</span></button></div><p class="note">住院期間牠不會在廟裡，治好了會自己回來。</p>`); return; }
+    <div class="goods"><button class="good" data-act="catVet"><span class="name">🏥 帶去看獸醫</span><span class="meta">醫藥費 ${p.sick.cost} 平安幣・住院 1～3 天（你有 ${bag.coins}）</span></button>
+    <button class="good" data-act="catPet"><span class="name">🤚 摸摸牠</span><span class="meta">陪陪牠</span></button></div><p class="note">住院期間牠不會在廟裡，治好了會自己回來。生病時心情最多 30。</p>`); return; }
   openSheet("cat",`🐈 ${esc(p.nm)}（${coat}）`,`<p class="lead">${mood>=80?"心情很好，一直蹭你":mood>=50?"還不錯，想要你多陪陪牠":mood>=25?"有點不開心……":"很難過，好像快要離家出走了"}</p>
     <p class="note">心情 ${mood}/100</p>${catBar(mood,mood>=50?"linear-gradient(90deg,#9be38a,#4cc36a)":"linear-gradient(90deg,#ffcf6a,#ff8a4c)")}
-    <div class="goods"><button class="good" data-act="catFeed" ${fed?"disabled":""}><span class="name">🥫 ${fed?"今天吃過了":"肚子餓了，餵一罐"}</span><span class="meta">你有 ${catCans()} 罐</span></button>
-    <button class="good" data-act="catLitter" ${clean?"disabled":""}><span class="name">🧹 ${clean?"貓砂很乾淨":"清貓砂"}</span><span class="meta">${clean?"今天清過了":"貓砂盆在愛心媽媽旁邊"}</span></button>
+    <div class="goods"><button class="good" data-act="catFeed" ${fed?"disabled":""}><span class="name">🥫 ${fed?"今天吃過了":"肚子餓了，餵一罐"}</span><span class="meta">一天一罐・你有 ${catCans()} 罐</span></button>
+    <button class="good" data-act="catLitter" ${clean?"disabled":""}><span class="name">🧹 ${clean?"貓砂很乾淨":"清貓砂"}</span><span class="meta">${clean?"今天清過了":"貓砂盆在愛心媽媽旁邊，每天清一次"}</span></button>
     <button class="good" data-act="catPet"><span class="name">🤚 摸摸牠</span><span class="meta">${pet?"今天摸過了，再摸也很開心":"牠在等你摸摸"}</span></button>
     <button class="good" data-act="catTrainOpen"><span class="name">🎓 訓練</span><span class="meta">學會 ${learned.length}/${TRICKS.length} 個動作</span></button>
     ${learned.length?`<button class="good" data-act="catShowOpen"><span class="name">🎪 動一動</span><span class="meta">讓牠做學會的動作</span></button>`:""}</div>
     <div class="chips"><button class="chip" data-act="catHome">${p.home?"🐾 帶牠出門（跟著我）":"🏠 讓牠回貓窩休息"}</button><button class="chip" data-act="catRename">✏️ 改名字</button></div>
-    <p class="note">養了 ${d-p.born+1} 天。</p>`); }
+    <p class="note">每天要餵一罐、清貓砂、摸摸牠，心情才會好。三天以上沒吃東西，牠會跑去愛心媽媽那裡。養了 ${d-p.born+1} 天。</p>`); }
 function catLitter(){ const p=catData().pet; if(!p) return; const B=CAT.bed; if(Math.hypot(meAv.pos.x-B.x-.95,meAv.pos.y-B.z)>3.2){ CAT.litterGo=true; walkTo(B.x+.2,B.z+1.1); toast("走去貓砂盆……",1500); return; }
   if(p.ll===catDay()){ toast("貓砂今天清過了",1500); return; } p.ll=catDay(); try{ [300,260,320].forEach((f,i)=>tone(f,.08,.05,"square",i*.12)); }catch(_){} saveBag(); markDirty(); toast("貓砂清好了，乾乾淨淨！",1800); const e=CAT.ents.find(x=>x.kind==="pet"); if(e) catHearts(e,2); }
 function catVet(){ const C=catData(), p=C.pet; if(!p||!p.sick) return; const cost=p.sick.cost; if(bag.coins<cost){ toast(`平安幣不夠，醫藥費要 ${cost}`,2400); return; } bag.coins-=cost; const days=1+((Math.random()*3)|0); p.vet={back:catDay()+days,days}; p.sick=null; saveBag(); markDirty(); profSave(true); statInc("catVet");
   const e=CAT.ents.find(x=>x.kind==="pet"); if(e) catDrop(e); closeSheet(); toast(`${p.nm} 住院了，要 ${days} 天才會好。治好會自己回來`,4200); }
 function catTrainOpen(){ const p=catData().pet; if(!p) return; const d=catDay(); p.tt=p.tt&&p.tt.d===d?p.tt:{d,n:0}; const mood=catMood(p), learned=catLearned(p).length; HANDLERS.catTrain=catTrain;
-  openSheet("cat",`🎓 訓練 ${esc(p.nm)}`,`${backBtnCat()}<p class="lead">練一次要給牠一條肉泥。</p><div class="inv-top"><span class="inv-coin">🍡<b>${bag.items.treat||0}</b>條肉泥</span></div>
+  openSheet("cat",`🎓 訓練 ${esc(p.nm)}`,`${backBtnCat()}<p class="lead">每練一次要給一條肉泥（愛心媽媽一條 5 平安幣）。每個動作每天練一次，一天最多練 3 次。心情要 40 以上才肯練。</p><div class="inv-top"><span class="inv-coin">🍡<b>${bag.items.treat||0}</b>條肉泥</span></div>
     <div class="goods">${TRICKS.map(([k,n,need])=>{ const v=Math.min(need,p.tr[k]||0), done=v>=need, lock=k==="flip"&&learned<3&&!done, today=p.tt[k];
-      return `<button class="good" data-act="catTrain" data-v="${k}" ${done||lock||today?"disabled":""}><span class="name">${done?"✅":lock?"🔒":"🐾"} ${n}</span><span class="meta">${done?"學會了":lock?"先學會其他動作":today?"今天練過了":`進度 ${v}/${need}`}</span></button>`; }).join("")}</div>
-    <p class="note">心情 ${mood}/100</p>`); }
+      return `<button class="good" data-act="catTrain" data-v="${k}" ${done||lock||today?"disabled":""}><span class="name">${done?"✅":lock?"🔒":"🐾"} ${n}</span><span class="meta">${done?"學會了":lock?"先學會 3 個動作才能練":today?"今天練過了":`進度 ${v}/${need}`}</span></button>`; }).join("")}</div>
+    <p class="note">今天練了 ${p.tt.n}/3 次・心情 ${mood}</p>`); }
 const backBtnCat=()=>`<button class="chip" data-act="catBack" style="margin-bottom:8px">← 回到貓咪</button>`;
 HANDLERS.catBack=()=>catPetSheet();
 function catTrain(k){ const p=catData().pet, e=CAT.ents.find(x=>x.kind==="pet"); if(!p||!e) return; const d=catDay(), T0=TRICKS.find(x=>x[0]===k); if(!T0) return;
-  if(!(bag.items.treat>0)){ toast("沒有肉泥了，到愛心媽媽那裡買",2600); return; } if(catMood(p)<40){ toast(`${p.nm} 心情不好，先摸摸牠吧`,2200); return; } if(p.tt.n>=3){ toast("今天練夠了，明天再來",2000); return; } if(p.tt[k]) return;
+  if(!(bag.items.treat>0)){ toast("沒有肉泥了，到愛心媽媽那裡買（一條 5 平安幣）",2600); return; } if(catMood(p)<40){ toast(`${p.nm} 心情不好，先摸摸牠吧`,2200); return; } if(p.tt.n>=3){ toast("今天練夠了，明天再來",2000); return; } if(p.tt[k]) return;
   bag.items.treat--; p.tt[k]=1; p.tt.n++; p.tr[k]=Math.min(T0[2],(p.tr[k]||0)+1); const done=p.tr[k]>=T0[2]; closeSheet(); catTrick(e,k,!done); saveBag(); markDirty(); if(done) profSave(true);
   setTimeout(()=>{ if(done){ catHearts(e,10); catMeow(true); toast(`🎉 ${p.nm} 學會「${T0[1]}」了！`,3200); statInc("catTrick"); } else toast(`${p.nm} 試著${T0[1]}……還不太會（${p.tr[k]}/${T0[2]}）`,2400); },TRICK_T[k]*1000); }
 function catShowOpen(){ const p=catData().pet; if(!p) return; HANDLERS.catShow=k=>{ const e=CAT.ents.find(x=>x.kind==="pet"); closeSheet(); if(e){ catTrick(e,k); setTimeout(()=>catHearts(e,3),TRICK_T[k]*900); } };
@@ -9690,8 +9690,8 @@ function catMomOpen(){ const C=catData(), p=C.pet; HANDLERS.catBuyT=n=>{ n=+n; c
   openSheet("contact","👵 愛心媽媽",`<p class="lead">「廟裡的貓都是我在餵的。你喜歡貓的話，買幾個罐頭去餵牠們吧！牠們吃飽了、被摸舒服了，就會把你當家人。」</p>
     ${p&&p.vet?`<p class="note">🏥 ${esc(p.nm)} 在獸醫那裡住院，${Math.max(1,p.vet.back-catDay())} 天後回來。</p>`:""}${p&&p.away?`<div class="group"><span class="group-label">你的貓在這裡</span><p class="lead">「${esc(p.nm)} 好幾天沒吃東西，跑來我這裡。餵牠一罐，牠就跟你回去。」</p><div class="goods"><button class="good" data-act="catBack2"><span class="name">🥫 餵牠，帶牠回家</span><span class="meta">用掉 1 罐</span></button></div></div>`:""}
     <div class="inv-top"><span class="inv-coin">${bic("coin")}<b>${bag.coins}</b>平安幣</span><span class="inv-note">🥫 ${catCans()} 罐・🍡 ${bag.items.treat||0} 條</span></div>
-    <div class="goods">${[1,5,10].map(n=>`<button class="good" data-act="catBuy" data-v="${n}"><span class="name">🥫 貓罐頭 ×${n}</span><span class="meta">${n*10} 平安幣</span></button>`).join("")}${[1,3,10].map(n=>`<button class="good" data-act="catBuyT" data-v="${n}"><span class="name">🍡 肉泥 ×${n}</span><span class="meta">${n*5} 平安幣</span></button>`).join("")}</div>
-    `); }
+    <div class="goods">${[1,5,10].map(n=>`<button class="good" data-act="catBuy" data-v="${n}"><span class="name">🥫 貓罐頭 ×${n}</span><span class="meta">${n*10} 平安幣</span></button>`).join("")}${[1,3,10].map(n=>`<button class="good" data-act="catBuyT" data-v="${n}"><span class="name">🍡 肉泥 ×${n}</span><span class="meta">${n*5} 平安幣・訓練用</span></button>`).join("")}</div>
+    <p class="note">貓咪一天吃一罐。摸摸 +5、餵罐頭 +20 好感，好感滿 100 就能領養（一次一隻）。第一次餵牠，牠就會認定你，別人靠近會跑開；有貓認定你，廟裡就會多來一隻流浪貓（最多 5 隻）。連續兩天沒來看牠，牠會忘記你、好感歸零。領養後要每天餵食、清貓砂（就在我旁邊）、摸摸牠；訓練一次給一條肉泥，最厲害的是後空翻！牠開心的時候會幫你挖寶（一天兩次），你掛網時牠也會每小時挖一次。貓咪生病了要帶去看獸醫。</p>`); }
 
 catLoad();
 /* 主委工具 → 頭飾定位 */
