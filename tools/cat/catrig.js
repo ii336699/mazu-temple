@@ -32,7 +32,7 @@ const CAT_ANIM={
   dig:t=>{ const p=t*14; return {rx:.24,by:-.04,fl0:-.55+.55*Math.sin(p),fl1:.7*Math.max(0,Math.cos(p)),fr0:-.55+.55*Math.sin(p+Math.PI),fr1:.7*Math.max(0,Math.cos(p+Math.PI)),bl0:-.25,bl1:-.35,br0:-.25,br1:-.35,hp:.35,tp:-.8,ty:Math.sin(t*6)*.25}; },
   flip:t=>{ const u=Math.min(1,t/1.1), sm=u*u*(3-2*u), up=Math.sin(Math.PI*u); return {rx:-Math.PI*2*sm,by:1.3*up,fl0:-.9*up,fl1:1.1*up,fr0:-.9*up,fr1:1.1*up,bl0:-.7*up,bl1:-1.1*up,br0:-.7*up,br1:-1.1*up,tp:-.5}; },
 };
-function catRigPose(c,anim,t,k){ const tgt=Object.assign(catRigZero(),(CAT_ANIM[anim]||CAT_ANIM.idle)(t)); const P=c.P; k=k==null?1:k; for(const key in tgt){ if(k>=1||key==="rx"&&anim==="flip") P[key]=tgt[key]; else P[key]+=(tgt[key]-P[key])*k; } catRigApply(c); }
+function catRigPose(c,anim,t,k){ const tgt=Object.assign(catRigZero(),(CAT_ANIM[anim]||CAT_ANIM.idle)(t)); const P=c.P; k=k==null?1:k; for(const key in tgt){ if(k>=1||key==="rx"&&anim==="flip") P[key]=tgt[key]; else { if(key==="rx"||key==="rz"||key==="ry"){ const w=Math.PI*2; P[key]=tgt[key]+(((P[key]-tgt[key]+Math.PI)%w+w)%w-Math.PI); } P[key]+=(tgt[key]-P[key])*k; } } catRigApply(c); }
 
 /* the face is drawn on the smooth head by the shader (round eyes with a shine, a pink nose, an ω mouth, whiskers), in the model's rest
    coordinates so it moves with the head. face = {eL, eR, nose, wh} colours. */
