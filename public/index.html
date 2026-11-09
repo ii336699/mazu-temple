@@ -909,7 +909,17 @@ const canvas=$("#c");
 const renderer=new T.WebGLRenderer({canvas,antialias:!Q.lite,powerPreference:"high-performance"});
 /* If the phone runs out of graphics memory the browser takes the 3D drawing away (it would freeze or close the page). Remember it,
    reload, and run lighter for 20 minutes instead of crashing again. */
-canvas.addEventListener("webglcontextlost",e=>{ e.preventDefault(); try{ save("mz.crash",Date.now()); }catch(_){ } try{ toast("畫面記憶體不足，自動重新整理並改用較省的畫質",2500); }catch(_){ } setTimeout(()=>location.reload(),1200); },false);
+/* 畫面中斷 (WebGL context lost): iPhones take the drawing surface away when memory runs short or the app goes to the background. Reloading
+   straight away (as before) often lost it again at once — the crash reports show phones reloading over and over. Now we wait for the
+   phone to give it back (three.js re-sends everything by itself); only if it doesn't come back in time do we reload in the lighter mode. */
+const CTXL={lost:0,tm:0,hid:0};
+function ctxReload(){ if(!CTXL.lost) return; try{ save("mz.crash",Date.now()); }catch(_){ } try{ toast("畫面記憶體不足，自動重新整理並改用較省的畫質",2500); }catch(_){ } setTimeout(()=>location.reload(),1200); }
+function ctxArm(){ clearTimeout(CTXL.tm); if(!CTXL.lost) return; if(document.hidden){ CTXL.tm=0; return; } CTXL.tm=setTimeout(ctxReload,9000); } /* (waits while you are in another app; counts 9 s once you are back) */
+canvas.addEventListener("webglcontextlost",e=>{ e.preventDefault(); CTXL.lost=Date.now(); CTXL.hid=document.hidden?1:0; try{ crumb("畫面中斷"+(CTXL.hid?"(背景)":"")); }catch(_){ } try{ if(!document.hidden) toast("畫面暫停一下，正在恢復…",3000); }catch(_){ } ctxArm(); },false);
+document.addEventListener("visibilitychange",ctxArm);
+canvas.addEventListener("webglcontextrestored",()=>{ const was=CTXL.lost; CTXL.lost=0; clearTimeout(CTXL.tm);
+  try{ /* pictures drawn once into the graphics memory are gone: draw them again */ if(typeof WX!=="undefined"&&WX.cube){ WX.cube.face=0; WX.cube.done=false; } if(typeof ZEN!=="undefined"&&ZEN.cube&&ZEN.cube.rt){ ZEN.cube.face=0; ZEN.cube.done=0; } if(typeof INN!=="undefined"&&INN.cube&&INN.cube.rt){ INN.cube.face=0; INN.cube.done=0; } if(typeof LAKE!=="undefined"&&LAKE.on) setTimeout(()=>{ try{ lakeReflect(); }catch(_){ } },500); }catch(_){ }
+  try{ crSend("ctxok",Object.assign(crInfo(),{msg:"恢復 "+Math.round((Date.now()-was)/100)/10+" 秒"+(CTXL.hid?"・在背景時中斷":"")})); }catch(_){ } try{ toast("畫面恢復了",1600); }catch(_){ } },false);
 /* ---- 閃退紀錄: every few seconds the page notes what the player is doing; if the next visit finds that note was never closed (the page
    was killed while on screen — out of memory, a crash) it tells the server, so the chair can see where and on which phones it happens.
    Script errors are sent too (once each). Nothing personal: the phone type, quality, where in the temple, how long they had played. ---- */
@@ -3643,7 +3653,7 @@ const STATION_HINT={gacha:"走向扭蛋機",innDesk:"走向禪房櫃台",xuantia
 function trySit(i){ if(sjGuard(()=>trySit(i))) return; { const S0=SEATS[i]; statInc("sit_"+(S0&&(S0.kind||(S0.zen?"zen":""))||"mat")); } { const S=SEATS[i]; if(S&&S.kind==="futon"&&!(bag.gd&&bag.gd.bedding)){ toast("先到櫃台跟阿姨領床具，才能鋪床睡覺喔",3000); return; } if(S&&S.suite!=null&&innLockedBy(S.suite)==="other"){ toast("這間套房有人鎖門了",2400); return; } } if(seatTakenByPeer(i)){ toast("這個拜墊已經有人了"); return; } closeSheet(); showTap(SEATS[i].x,SEATS[i].y); pendingStation=null; meAv.sitAt(i); { const pth=planPath(meAv.pos.x,meAv.pos.y,SEATS[i].x,SEATS[i].y,meAv.gy||0,SEATS[i].gy||0); meAv.target.set(pth[0][0],pth[0][1]); meAv.path=pth.slice(1); } meAv.faceGoal=null; npcYield(i); markDirty(); updateStandBtn(); }
 /* the small dot above the joystick: camera back behind your character at the normal height and distance */
 $("#camReset").onclick=()=>{ rotAnim={to:camYaw+wrapA(meAv.rotY+Math.PI-camYaw)}; camPitch=.3; camDist=4.6; };
-function arrivedCheck(){ if(pendingStation&&!(meAv.path&&meAv.path.length)&&meAv.pos.distanceTo(meAv.target)<.05){ const k=pendingStation; pendingStation=null; meAv.faceGoal=stations[k].face; { const want=stations[k].face+Math.PI; rotAnim={to:camYaw+wrapA(want-camYaw)}; camPitch=Math.max(camPitch,.28); } if(AUTO.on) AUTO.arrived=k; else openStation(k); } }
+function arrivedCheck(){ if(pendingStation&&!(meAv.path&&meAv.path.length)&&meAv.pos.distanceTo(meAv.target)<.05){ const k=pendingStation; pendingStation=null; if(!stations[k]) return; /* (the spot went away while you walked there, e.g. the 土地公 treasure ended) */ meAv.faceGoal=stations[k].face; { const want=stations[k].face+Math.PI; rotAnim={to:camYaw+wrapA(want-camYaw)}; camPitch=Math.max(camPitch,.28); } if(AUTO.on) AUTO.arrived=k; else openStation(k); } }
 $("#standBtn").onclick=()=>{ meAv.seat=-1; meAv.target.set(meAv.pos.x,meAv.pos.y+.9); markDirty(); updateStandBtn(); };
 function updateStandBtn(){ $("#standBtn").hidden=meAv.seat<0||customizing; }
 
@@ -4279,8 +4289,8 @@ const joy={x:0,y:0,on:false,reset(){}};
   document.addEventListener("touchend",e=>{ if(pid!=null&&e.touches.length===0) joy.reset(); },true); document.addEventListener("touchcancel",e=>{ if(pid!=null&&e.touches.length===0) joy.reset(); },true);
   document.addEventListener("visibilitychange",()=>{ if(document.hidden){ joy.reset(); try{ keys.clear(); }catch(err){} } }); }
 const keys=new Set(); const MOVE_KEYS=["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright","q","e"," ","shift"]; // space / shift: fly up / down (chair, while flying)
-window.addEventListener("keydown",e=>{ if(e.target&&e.target.closest&&e.target.closest("input,textarea")) return; const k=e.key.toLowerCase(); if(MOVE_KEYS.includes(k)){ keys.add(k); e.preventDefault(); ensureAudio(); } if(k==="escape") closeSheet(); });
-window.addEventListener("keyup",e=>keys.delete(e.key.toLowerCase()));
+window.addEventListener("keydown",e=>{ if(e.target&&e.target.closest&&e.target.closest("input,textarea")) return; const k=String(e.key||"").toLowerCase(); if(MOVE_KEYS.includes(k)){ keys.add(k); e.preventDefault(); ensureAudio(); } if(k==="escape") closeSheet(); });
+window.addEventListener("keyup",e=>keys.delete(String(e.key||"").toLowerCase()));
 window.addEventListener("blur",()=>keys.clear());
 $("#lookBtn").onclick=()=>openLook(false);
 $("#sayBtn").onclick=()=>openSay();
@@ -9395,7 +9405,7 @@ HANDLERS.rcCopy=async v=>{ let ok=false; try{ await navigator.clipboard.writeTex
 let CRASH_TXT=""; HANDLERS.crashCopy=async()=>{ let ok=false; try{ await navigator.clipboard.writeText(CRASH_TXT); ok=true; }catch(e){} if(!ok) prompt("複製這段給 Claude：",CRASH_TXT); else toast("已複製，貼給 Claude 就可以",2600); };
 HANDLERS.crashOpen=async()=>{ openSheet("contact","閃退紀錄",`${backBtn}<p class="lead">讀取中…</p>`); if(!USE_CF){ openSheet("contact","閃退紀錄",`${backBtn}<p class="lead">測試頁沒有伺服器，要在正式站看。</p>`); return; }
   const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return; } let j=null; try{ const r=await fetch("/crash",{headers:{"x-key":key},cache:"no-store"}); j=await r.json().catch(()=>null); if(j) forgetKey(r,j); }catch(e){} if(!j||!j.ok){ toast("讀不到（密碼？）",2000); return; }
-  const L=j.list.slice().reverse(), K={kill:"閃退",ctx:"畫面記憶體不足",err:"程式錯誤"}, day=Date.now()-864e5, D=L.filter(e=>e.at>day);
+  const L=j.list.slice().reverse(), K={kill:"閃退",ctx:"畫面記憶體不足",ctxok:"畫面中斷後恢復",err:"程式錯誤"}, day=Date.now()-864e5, D=L.filter(e=>e.at>day);
   const cnt=f=>{ const m={}; D.forEach(e=>{ const k=f(e); if(k) m[k]=(m[k]||0)+1; }); return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([k,v])=>`${esc(k)} <b>${v}</b>`).join("・")||"—"; };
   const t=v=>{ const d=new Date(v+8*3600e3); return `${d.getUTCMonth()+1}/${d.getUTCDate()} ${String(d.getUTCHours()).padStart(2,"0")}:${String(d.getUTCMinutes()).padStart(2,"0")}`; };
   CRASH_TXT="MZCRASH:"+JSON.stringify(L.slice(0,150).map(e=>[t(e.at),e.k,e.w,e.mini,e.dev,e.os,e.app,e.mem,e.scr,e.q,e.dres,e.min,e.pos,e.wx,e.calls,e.geo,e.tex,e.heap,e.npc,e.rem,e.msg||(e.err||[]).join("|"),e.at2]));
