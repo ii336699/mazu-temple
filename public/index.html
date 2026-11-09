@@ -9575,15 +9575,15 @@ function catMove(e,tx,tz,sp,dt){ const g=e.g, dx=tx-g.position.x, dz=tz-g.positi
 /* along a planned path (through doorways), not straight through walls */
 function catMoveP(e,sp,dt){ if(!e.path||!e.path.length) e.path=[[e.tx,e.tz]]; const w=e.path[0]; if(catMove(e,w[0],w[1],sp,dt)){ e.path.shift(); if(!e.path.length) return true; } return false; }
 
-/* ---- 挖寶: now and then (twice a day at most, only when it has eaten and is happy) your cat runs off a few steps, digs with its front
+/* ---- 挖寶: now and then (once a day while you play, only when it has eaten and is happy) your cat runs off a few steps, digs with its front
    paws and brings you 平安幣 or 扭蛋幣. Decided and paid on this phone like the 土地公 treasure. ---- */
 const CAT_DIG=[["c",50,.40],["c",100,.24],["c",500,.07],["c",1000,.02],["g",1,.18],["g",5,.07],["g",10,.02]];
 /* (掛網: no tap or key for 3 minutes. Then it still digs, but only once an hour — counted from your last touch or its last
-   掛網 dig — and these don't use up the 2 a day you get while playing.) */
+   掛網 dig — and these don't use up the one a day you get while playing.) */
 CAT.inT=Date.now(); ["pointerdown","keydown","touchstart","wheel"].forEach(ev=>addEventListener(ev,()=>{ CAT.inT=Date.now(); },{passive:true,capture:true}));
 function catDigMaybe(e,dt){ const p=e.ref, d=catDay(); if(p.lf!==d||catMood(p)<50||miniOpen) return; p.dg=p.dg&&p.dg.d===d?p.dg:{d,n:0};
   const now=Date.now(); if(now-CAT.inT>180e3){ if(now-Math.max(p.ak||0,CAT.inT)<3600e3) return; if(catDigGo(e)){ p.ak=now; saveBag(); } return; }
-  if(p.dg.n>=2) return;
+  if(p.dg.n>=1) return; /* once a day while you play */
   if(e.digIn==null) e.digIn=rand(150,360); if((e.digIn-=dt)>0) return; e.digIn=rand(240,600);
   if(catDigGo(e)){ p.dg.n++; saveBag(); } }
 function catDigGo(e){ let to=null; for(let k=0;k<12&&!to;k++){ const a=Math.random()*6.283, r=rand(2.2,3.6), x=meAv.pos.x+Math.cos(a)*r, z=meAv.pos.y+Math.sin(a)*r; if(walkable(x,z)) to=[x,z]; } if(!to) return false;
@@ -9634,12 +9634,12 @@ function catStraySheet(){ const e=CAT.cur; if(!e||e.kind!=="stray") return; cons
     <div class="goods"><button class="good" data-act="catPet"><span class="name">🤚 摸摸牠</span><span class="meta">今天 ${s.pn}/3 次・好感 +5</span></button>
     <button class="good" data-act="catFeed" ${s.fd===d?"disabled":""}><span class="name">🥫 餵罐頭</span><span class="meta">${s.fd===d?"今天吃飽了":`好感 +20・你有 ${catCans()} 罐`}</span></button>
     ${s.a>=100?`<button class="good" data-act="catAdopt"><span class="name">🏠 領養牠</span><span class="meta">${C.pet?"你已經有一隻貓了（一次只能養一隻）":"帶牠回家，每天照顧牠"}</span></button>`:""}</div>
-    <p class="note">罐頭可以跟廟埕的愛心媽媽買（一罐 10 平安幣），土地公尋寶也挖得到。第一次餵牠，牠就會認定你，別人靠近會跑開；連續兩天沒來看牠，牠會忘記你。好感度滿 100 就可以領養。</p><div class="chips"><button class="chip" data-act="goCatMom">去找愛心媽媽</button></div>`); }
+    <p class="note">罐頭可以跟廟埕的愛心媽媽買（一罐 10 平安幣），土地公尋寶也挖得到。好感度滿 100 就可以領養。</p><div class="chips"><button class="chip" data-act="goCatMom">去找愛心媽媽</button></div>`); }
 function catPet(){ const e=CAT.cur; if(!e) return; if(e.kind==="pet"){ const p=e.ref; const first=p.lp!==catDay(); p.lp=catDay(); catHearts(e,first?6:3); catPurr(); catTrick(e,"sit"); saveBag(); markDirty(); toast(first?`${p.nm} 舒服得呼嚕呼嚕叫`:`${p.nm} 蹭了蹭你的手`,1800); catPetSheet(); return; }
   const s=e.ref; if(s.pn>=3){ toast(`${s.nm} 今天被摸夠了，明天再來吧`,2000); return; } s.pn++; s.a=Math.min(100,s.a+5); s.lv=catDay(); catHearts(e,3); catPurr(); saveBag(); markDirty(); toast(s.a>=100?`${s.nm} 好感度滿了！可以領養牠了`:`${s.nm} 瞇起眼睛，好感 +5`,2000); catStraySheet(); }
 function catFeed(){ const e=CAT.cur; if(!e) return; if(catCans()<1){ toast("沒有罐頭了，到愛心媽媽那裡買",2400); return; } const d=catDay();
   if(e.kind==="pet"){ const p=e.ref; if(p.lf===d){ toast(`${p.nm} 今天吃飽了，一天一罐就好`,2200); return; } bag.items.can--; p.lf=d; catHearts(e,5); catMeow(true); saveBag(); markDirty(); toast(`${p.nm} 吃得好開心！`,1800); catPetSheet(); return; }
-  const s=e.ref; if(s.fd===d){ toast(`${s.nm} 今天吃飽了`,1800); return; } bag.items.can--; s.fd=d; s.a=Math.min(100,s.a+20); s.lv=d; const first=!s.own; s.own=1; catHearts(e,6); catMeow(true); saveBag(); markDirty(); toast(s.a>=100?`${s.nm} 好感度滿了！可以領養牠了`:first?`${s.nm} 吃得津津有味，認定你了！好感 +20`:`${s.nm} 吃得津津有味，好感 +20`,2200); if(first) catSync(); catStraySheet(); }
+  const s=e.ref; if(s.fd===d){ toast(`${s.nm} 今天吃飽了`,1800); return; } bag.items.can--; s.fd=d; s.a=Math.min(100,s.a+20); s.lv=d; const first=!s.own; s.own=1; catHearts(e,6); catMeow(true); saveBag(); markDirty(); toast(s.a>=100?`${s.nm} 好感度滿了！可以領養牠了`:first?`${s.nm} 吃得津津有味，牠有點喜歡你・好感 +20`:`${s.nm} 吃得津津有味，好感 +20`,2200); if(first) catSync(); catStraySheet(); }
 function catAdopt(){ const e=CAT.cur, C=catData(); if(!e||e.kind!=="stray") return; if(C.pet){ toast("一次只能養一隻貓，先好好照顧你家的貓吧",2600); return; } if(e.ref.a<100) return; const s=e.ref, d=catDay();
   C.pet={t:s.t,sd:s.sd,nm:s.nm,born:d,lf:s.fd===d?d:d-1,ll:d,lp:d,tr:{},tt:{},home:false}; C.s=C.s.filter(x=>x!==s); C.next=d+1; const pos=[e.g.position.x,e.g.position.z]; catDrop(e); catSync();
   const pe=CAT.ents.find(x=>x.kind==="pet"); if(pe){ pe.g.position.set(pos[0],0,pos[1]); catHearts(pe,10); } catMeow(true); saveBag(); markDirty(); profSave(true); statInc("catAdopt");
@@ -9691,7 +9691,7 @@ function catMomOpen(){ const C=catData(), p=C.pet; HANDLERS.catBuyT=n=>{ n=+n; c
     ${p&&p.vet?`<p class="note">🏥 ${esc(p.nm)} 在獸醫那裡住院，${Math.max(1,p.vet.back-catDay())} 天後回來。</p>`:""}${p&&p.away?`<div class="group"><span class="group-label">你的貓在這裡</span><p class="lead">「${esc(p.nm)} 好幾天沒吃東西，跑來我這裡。餵牠一罐，牠就跟你回去。」</p><div class="goods"><button class="good" data-act="catBack2"><span class="name">🥫 餵牠，帶牠回家</span><span class="meta">用掉 1 罐</span></button></div></div>`:""}
     <div class="inv-top"><span class="inv-coin">${bic("coin")}<b>${bag.coins}</b>平安幣</span><span class="inv-note">🥫 ${catCans()} 罐・🍡 ${bag.items.treat||0} 條</span></div>
     <div class="goods">${[1,5,10].map(n=>`<button class="good" data-act="catBuy" data-v="${n}"><span class="name">🥫 貓罐頭 ×${n}</span><span class="meta">${n*10} 平安幣</span></button>`).join("")}${[1,3,10].map(n=>`<button class="good" data-act="catBuyT" data-v="${n}"><span class="name">🍡 肉泥 ×${n}</span><span class="meta">${n*5} 平安幣・訓練用</span></button>`).join("")}</div>
-    <p class="note">貓咪一天吃一罐。摸摸 +5、餵罐頭 +20 好感，好感滿 100 就能領養（一次一隻）。第一次餵牠，牠就會認定你，別人靠近會跑開；有貓認定你，廟裡就會多來一隻流浪貓（最多 5 隻）。連續兩天沒來看牠，牠會忘記你、好感歸零。領養後要每天餵食、清貓砂（就在我旁邊）、摸摸牠；訓練一次給一條肉泥，最厲害的是後空翻！牠開心的時候會幫你挖寶（一天兩次），你掛網時牠也會每小時挖一次。貓咪生病了要帶去看獸醫。</p>`); }
+    <p class="note">貓咪一天吃一罐。摸摸 +5、餵罐頭 +20 好感，好感滿 100 就能領養（一次一隻）。領養後要每天餵食、清貓砂（就在我旁邊）、摸摸牠；訓練一次給一條肉泥，最厲害的是後空翻！貓咪生病了要帶去看獸醫。</p>`); }
 
 catLoad();
 /* 主委工具 → 頭飾定位 */
