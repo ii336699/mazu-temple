@@ -4,7 +4,7 @@
    bone_18-19 (back right), bone_21-22 (tail). A bone is turned about an axis given in the model's own frame (through its parent's
    rest orientation), so the numbers read as "swing forward / back" whatever each bone's own setup. */
 const CAT_FWD=Math.atan2(-.578,.816); /* the way the body points in the model */
-const CAT_AX={L:new THREE.Vector3(.816,0,.578),U:new THREE.Vector3(0,1,0),F:new THREE.Vector3(-.578,0,.816)};
+const CAT_AX={L:new THREE.Vector3(1,0,0),U:new THREE.Vector3(0,1,0),F:new THREE.Vector3(0,0,1)}; /* (the parents' rest turn already includes the 35° straightening, so the swing axes are the straightened body's own: sideways = x, forward = z) */
 function catRigMake(src,tex,face){ const T=THREE;
   const root=new T.Group(), body=new T.Group(), yaw=new T.Group(); root.add(body); body.add(yaw); body.position.y=.3; yaw.position.y=-.3; yaw.rotation.y=-CAT_FWD;
   const m=src.clone(true); yaw.add(m); let sm=null, srcSm=null; m.traverse(o=>{ if(o.isSkinnedMesh) sm=o; }); src.traverse(o=>{ if(o.isSkinnedMesh) srcSm=o; });
