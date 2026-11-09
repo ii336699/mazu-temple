@@ -2562,7 +2562,7 @@ function zenWalkable(x,z){ const G=ZEN.GZ;
   /* ---- the hall: raised dark floor, posts, shoji transoms, railings, ceiling, a hipped tile roof and an alcove ---- */
   const hl=ZEN.hall, pl=ZEN.plat, FY=ZEN.FY, H=3.5;
   { const base=box(pl.x1-pl.x0,FY,pl.z1-pl.z0,mat(ZL("#2a1c14"),{roughness:.8}),(pl.x0+pl.x1)/2,FY/2,(pl.z0+pl.z1)/2,g);
-    const fm=new T.MeshStandardMaterial({color:ZL("#4a2814"),roughness:.15,metalness:.05}); const fl=mesh(new T.PlaneGeometry(pl.x1-pl.x0,pl.z1-pl.z0),fm,(pl.x0+pl.x1)/2,FY+.004,(pl.z0+pl.z1)/2,g); fl.rotation.x=-Math.PI/2; fl.userData.floor=true; fl.userData.keepMat=1; ZEN.pick.push(fl); ZEN.floor=fl;
+    const fm=new T.MeshStandardMaterial({color:ZL("#1b1411"),roughness:.62,metalness:.05}); /* (near-black lacquered wood, the chair's pick; was #4a2814 brown) */ const fl=mesh(new T.PlaneGeometry(pl.x1-pl.x0,pl.z1-pl.z0),fm,(pl.x0+pl.x1)/2,FY+.004,(pl.z0+pl.z1)/2,g); fl.rotation.x=-Math.PI/2; fl.userData.floor=true; fl.userData.keepMat=1; ZEN.pick.push(fl); ZEN.floor=fl;
     for(let i=0;i<4;i++) box(1.0,.14,3.0,mat(ZL("#2e1f15"),{roughness:.8}),pl.x1+.5+i*.0,FY-.14*(i+1)+.07,G,g).position.x=pl.x1+.4+i*.4; }
   { const posts=[], step=2.0; const nx=Math.round((hl.x1-hl.x0)/step), nz=Math.round((hl.z1-hl.z0)/step);
     for(let i=0;i<=nx;i++) for(const z of [hl.z0,hl.z1]) posts.push({x:hl.x0+(hl.x1-hl.x0)*i/nx,y:FY+H/2,z,sy:H});
@@ -2603,8 +2603,8 @@ function zenWalkable(x,z){ const G=ZEN.GZ;
     const eave=box(2*w2+.2,.16,2*d2+.2,darkWood,cx,ry-.02,cz,g); }
 
   /* ---- 50 round cushions (zafu) on square mats ---- */
-  { const zs=SEATS.slice(ZEN.s0), mats=zs.map(s=>({x:s.x,y:FY+.02,z:s.y})), cu=zs.map((s,i)=>({x:s.x,y:FY+.1,z:s.y,c:ZL(["#14172a","#1e1420","#121e18"][i%3])}));
-    inst(new T.BoxGeometry(.86,.035,.86),mat(ZL("#3e120c"),{roughness:.9}),mats);
+  { const zs=SEATS.slice(ZEN.s0), mats=zs.map(s=>({x:s.x,y:FY+.02,z:s.y})), cu=zs.map((s,i)=>({x:s.x,y:FY+.1,z:s.y,c:ZL(["#56689a","#7c5a80","#4d7c66"][i%3]) /* (a little lighter than before so they don't read as black) */}));
+    inst(new T.BoxGeometry(.86,.035,.86),mat(ZL("#6a2a1c"),{roughness:.9}),mats);
     ZEN.cush=inst(new T.CylinderGeometry(.3,.32,.16,18),new T.MeshStandardMaterial({roughness:.95,color:"#ffffff"}),cu); ZEN.pick.push(ZEN.cush); }
 
   /* ---- trees: maples in red, crimson, orange and gold, some green, cherry and plum in bloom, a few pines ---- */
@@ -2716,12 +2716,12 @@ function zenMirrorInit(){ if(ZEN.refl||Q.lite) return; const res=Q.low||Q.phone?
   const texMat={value:new T.Matrix4()}; const p=ZEN.plat;
   /* a soft, misty reflection (the chair found the sharp low-res one blocky): the picture is blurred with 13 taps in two rings, and it fades
      out toward the edges of the floor and with distance from where you look, like polished wood rather than a mirror */
-  const m=new T.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{tex:{value:rt.texture},texMat,op:{value:.42},px:{value:new T.Vector2(1/res,1/res)},box:{value:new T.Vector4(p.x0,p.z0,p.x1,p.z1)}},
+  const m=new T.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{tex:{value:rt.texture},texMat,op:{value:.34},px:{value:new T.Vector2(1/res,1/res)},box:{value:new T.Vector4(p.x0,p.z0,p.x1,p.z1)}},
     vertexShader:`uniform mat4 texMat; varying vec4 vU; varying vec3 vW; void main(){ vec4 w=modelMatrix*vec4(position,1.0); vW=w.xyz; vU=texMat*w; gl_Position=projectionMatrix*viewMatrix*w; }`,
     fragmentShader:`uniform sampler2D tex; uniform float op; uniform vec2 px; uniform vec4 box; varying vec4 vU; varying vec3 vW;
       void main(){ vec2 uv=vU.xy/vU.w; vec3 c=texture2D(tex,uv).rgb*.16; float w=.16;
         for(int i=0;i<6;i++){ float a=float(i)*1.0472; vec2 d=vec2(cos(a),sin(a)); c+=texture2D(tex,uv+d*px*1.8).rgb*.09; c+=texture2D(tex,uv+vec2(d.y,-d.x)*px*4.2).rgb*.05; w+=.14; }
-        c=c/w*vec3(1.0,.82,.66); float l=dot(c,vec3(.3,.5,.2));
+        c=c/w*vec3(.92,.86,.8); float l=dot(c,vec3(.3,.5,.2));
         float e=min(min(vW.x-box.x,box.z-vW.x),min(vW.z-box.y,box.w-vW.z)); float edge=smoothstep(.0,2.2,e);
         float far=1.-smoothstep(4.,14.,distance(vW.xz,cameraPosition.xz));
         gl_FragColor=vec4(c,op*edge*(.35+.65*far)*(.55+.45*smoothstep(.05,.5,l))); }`});
@@ -3247,12 +3247,13 @@ function faceTexture(l){ const key=[l[0],l[7],l[8],l[9],l[10],l[11]].join(","); 
    removed canvas's memory until its size is set to 0). Without this every bubble and every visitor who left stayed in memory, and after a
    long while (a long pachinko session) the page ran out and closed itself. */
 function relSprite(sp){ if(!sp||!sp.material) return; const m=sp.material, t=m.map; if(t){ const im=t.image; t.dispose(); if(im&&im.getContext){ try{ im.width=0; im.height=0; }catch(e){} } } m.dispose(); }
+const LBL_RES=2, LBL_FAR=16; /* label pictures drawn at 2× · names/bubbles shown within 16 m (fading out over the last 3 m) */
 function bubbleSprite(text,color){ const fs=36, pad=18, maxW=430; const c=document.createElement("canvas"); const x=c.getContext("2d"); const font=`700 ${fs}px ${DISPLAY_FONT}`; x.font=font;
   const lines=[]; let cur=""; for(const ch of Array.from(text)){ if(x.measureText(cur+ch).width>maxW&&cur){ lines.push(cur); cur=ch; } else cur+=ch; } if(cur) lines.push(cur);
-  const tw=Math.ceil(Math.max(...lines.map(l=>x.measureText(l).width))); const lh=fs*1.3; c.width=tw+pad*2; c.height=Math.ceil(lines.length*lh+pad*1.4);
-  x.fillStyle="rgba(40,12,8,.9)"; const r=22, w=c.width, h=c.height; x.beginPath(); x.moveTo(r,0); x.arcTo(w,0,w,h,r); x.arcTo(w,h,0,h,r); x.arcTo(0,h,0,0,r); x.arcTo(0,0,w,0,r); x.closePath(); x.fill(); x.strokeStyle=color; x.lineWidth=3; x.stroke();
+  const tw=Math.ceil(Math.max(...lines.map(l=>x.measureText(l).width))); const lh=fs*1.3, S=LBL_RES, w=tw+pad*2, h=Math.ceil(lines.length*lh+pad*1.4); c.width=w*S; c.height=h*S; x.scale(S,S);
+  x.fillStyle="rgba(40,12,8,.9)"; const r=22; x.beginPath(); x.moveTo(r,0); x.arcTo(w,0,w,h,r); x.arcTo(w,h,0,h,r); x.arcTo(0,h,0,0,r); x.arcTo(0,0,w,0,r); x.closePath(); x.fill(); x.strokeStyle=color; x.lineWidth=3; x.stroke();
   x.font=font; x.fillStyle=color; x.textAlign="center"; x.textBaseline="middle"; lines.forEach((l,i)=>x.fillText(l,w/2,pad*.7+lh*(i+.5)+2));
-  const t=new T.CanvasTexture(c); t.encoding=T.sRGBEncoding; const sp=new T.Sprite(new T.SpriteMaterial({map:t,transparent:true,depthWrite:false})); const hh=.19*c.height/(fs+pad*1.3); sp.scale.set(hh*w/h,hh,1); return lblReg(sp); }
+  const t=new T.CanvasTexture(c); t.encoding=T.sRGBEncoding; const sp=new T.Sprite(new T.SpriteMaterial({map:t,transparent:true,depthWrite:false})); const hh=.19*h/(fs+pad*1.3); sp.scale.set(hh*w/h,hh,1); return lblReg(sp); }
 function spLabel(){ const c=document.createElement("canvas"); c.width=320; c.height=96; const t=new T.CanvasTexture(c); t.encoding=T.sRGBEncoding;
   const sp=new T.Sprite(new T.SpriteMaterial({map:t,transparent:true,depthWrite:false})); sp.scale.set(.75,.225,1); sp.userData.draw=ph=>{ const x=c.getContext("2d"); x.clearRect(0,0,c.width,c.height);
     const g=x.createLinearGradient(0,0,c.width,0); for(let i=0;i<=6;i++) g.addColorStop(i/6,`hsl(${(ph*360+i*60)%360},95%,62%)`);
@@ -3274,18 +3275,18 @@ function lblRender(){ lblInit(); if(!LBL.r) return; const X=LBL.x, W=LBL.r.width
     let p=s, v=true; while(p&&p!==scene){ if(!p.visible){ v=false; break; } p=p.parent; } if(p!==scene||!v) continue;
     const m=s.material; if(!m||!m.map||!m.map.image||m.opacity<=.01) continue;
     s.matrixWorld.decompose(LBL._p,LBL._q,LBL._s); const rm=camRoom(LBL._p.x,LBL._p.z); if(rm!=="O"&&rm!==LBL.camRm) continue; /* someone inside a hall you are not in: the wall hides their name */
-    const q=LBL._v.copy(LBL._p).applyMatrix4(camera.matrixWorldInverse); const dz=-q.z; if(dz<camera.near) continue;
-    const ph=LBL._s.y/(dz*th)*H, pw=LBL._s.x/(dz*th*ar)*W; if(ph<1.5||ph>H*3) continue;
+    const q=LBL._v.copy(LBL._p).applyMatrix4(camera.matrixWorldInverse); const dz=-q.z; if(dz<camera.near) continue; const far=s.userData.far||LBL_FAR; if(dz>far) continue; /* names and bubbles only near you, not across the whole map */
+    const ph=LBL._s.y/(dz*th)*H, pw=LBL._s.x/(dz*th*ar)*W; if(ph<9*LBL.dpr||ph>H*3) continue; /* (too small to read: leave it out) */
     const sx=(q.x/(dz*th*ar)+.5)*W, sy=(.5-q.y/(dz*th))*H, x0=sx-s.center.x*pw, y0=sy-(1-s.center.y)*ph;
-    if(x0>W||y0>H||x0+pw<0||y0+ph<0) continue; L.push({s,dz,x0,y0,pw,ph}); }
+    if(x0>W||y0>H||x0+pw<0||y0+ph<0) continue; L.push({s,dz,x0,y0,pw,ph,a:Math.min(1,(far-dz)/3)}); }
   if(!L.length&&!LBL.drew) return; X.setTransform(1,0,0,1,0,0); X.clearRect(0,0,W,H); LBL.drew=L.length;
   L.sort((a,b)=>b.dz-a.dz||a.s.renderOrder-b.s.renderOrder); X.imageSmoothingEnabled=true; X.imageSmoothingQuality="high";
-  for(const o of L){ X.globalAlpha=Math.min(1,o.s.material.opacity); try{ X.drawImage(o.s.material.map.image,o.x0,o.y0,o.pw,o.ph); }catch(e){} } X.globalAlpha=1; }
+  for(const o of L){ X.globalAlpha=Math.min(1,o.s.material.opacity)*o.a; try{ X.drawImage(o.s.material.map.image,o.x0,o.y0,o.pw,o.ph); }catch(e){} } X.globalAlpha=1; }
 function lblClear(){ if(LBL.x&&LBL.drew){ LBL.x.setTransform(1,0,0,1,0,0); LBL.x.clearRect(0,0,LBL.r.width,LBL.r.height); LBL.drew=0; } }
-function textSprite(text,o={}){ const c=document.createElement("canvas"); const fs=o.fs||34, pad=o.pad??14; const x=c.getContext("2d"); x.font=`${o.weight||600} ${fs}px ${o.font||UI_FONT}`;
-  const tw=Math.ceil(x.measureText(text).width); c.width=tw+pad*2; c.height=fs+pad*1.3; x.font=`${o.weight||600} ${fs}px ${o.font||UI_FONT}`;
-  if(o.bg){ x.fillStyle=o.bg; const r=c.height/2; x.beginPath(); x.moveTo(r,0); x.lineTo(c.width-r,0); x.arc(c.width-r,r,r,-Math.PI/2,Math.PI/2); x.lineTo(r,c.height); x.arc(r,r,r,Math.PI/2,Math.PI*1.5); x.fill(); if(o.border){ x.strokeStyle=o.border; x.lineWidth=3; x.stroke(); } }
-  x.fillStyle=o.color||"#fff"; x.textAlign="center"; x.textBaseline="middle"; if(!o.bg){ x.shadowColor="rgba(0,0,0,.85)"; x.shadowBlur=6; } x.fillText(text,c.width/2,c.height/2+2);
+function textSprite(text,o={}){ const c=document.createElement("canvas"); const fs=o.fs||34, pad=o.pad??14, S=LBL_RES; const x=c.getContext("2d"); x.font=`${o.weight||600} ${fs}px ${o.font||UI_FONT}`;
+  const tw=Math.ceil(x.measureText(text).width), W=tw+pad*2, H=Math.round(fs+pad*1.3); c.width=W*S; c.height=H*S; x.scale(S,S); x.font=`${o.weight||600} ${fs}px ${o.font||UI_FONT}`; /* (drawn at twice the size so the words stay sharp up close) */
+  if(o.bg){ x.fillStyle=o.bg; const r=H/2; x.beginPath(); x.moveTo(r,0); x.lineTo(W-r,0); x.arc(W-r,r,r,-Math.PI/2,Math.PI/2); x.lineTo(r,H); x.arc(r,r,r,Math.PI/2,Math.PI*1.5); x.fill(); if(o.border){ x.strokeStyle=o.border; x.lineWidth=3; x.stroke(); } }
+  x.fillStyle=o.color||"#fff"; x.textAlign="center"; x.textBaseline="middle"; if(!o.bg){ x.shadowColor="rgba(0,0,0,.85)"; x.shadowBlur=6*S; } x.fillText(text,W/2,H/2+2);
   const t=new T.CanvasTexture(c); t.encoding=T.sRGBEncoding; const s=new T.Sprite(new T.SpriteMaterial({map:t,transparent:true,depthWrite:false}));
   const hgt=o.h||.2; s.scale.set(hgt*c.width/c.height,hgt,1); return lblReg(s); }
 const shadowMat=new T.MeshBasicMaterial({map:cvs(64,64,(x,w,h)=>{ const g=x.createRadialGradient(32,32,0,32,32,32); g.addColorStop(0,"rgba(0,0,0,.72)"); g.addColorStop(.55,"rgba(0,0,0,.5)"); g.addColorStop(1,"rgba(0,0,0,0)"); x.fillStyle=g; x.fillRect(0,0,w,h); }),transparent:true,depthWrite:false}); /* a firmer core than shadowTex, so a long evening shadow still reads */

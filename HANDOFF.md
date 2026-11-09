@@ -521,3 +521,5 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - ctx 改法：webglcontextlost 不再馬上重新整理。preventDefault 後等手機還畫面（three.js 會自己重新上傳）；在背景時一直等，回到前景 9 秒還沒恢復才照舊重新整理＋省電模式。恢復後重畫一次性的反射（WX/ZEN/INN cube、LAKE）。恢復時回報 k="ctxok"（msg「恢復 x 秒・在背景時中斷」），worker 收 ctxok，閃退紀錄顯示「畫面中斷後恢復」。模擬器用 WEBGL_lose_context 測過：沒有重新整理，畫面正常。
 - err 修：土地公尋寶結束時正在走過去 → arrivedCheck 找不到 stations.treasure（加判斷）；Android 某些鍵盤 keydown 沒有 e.key → toLowerCase 錯（加判斷）。其餘是 IG 內建瀏覽器自己的錯、音效裝置啟動失敗、網路，不用管。
 - 禪院地板反射改柔霧版：13 點兩圈模糊（不再有低解析度馬賽克感）、靠地板邊緣 2.2 m 內淡出、離視點 4→14 m 漸淡到 35%，op .42。手機版截圖確認（~/mz-sim/shots/zen_new1/2.png）。
+- 禪院地板改近黑漆木 #1b1411（roughness .62，倒影色改中性、op .34）；蒲團改亮一點的藍/紫/綠（#56689a/#7c5a80/#4d7c66），方墊 #6a2a1c。
+- 名字/對話氣泡：之前改成 2D 圖層後沒有距離限制，整張地圖的名字都畫成小糊字。現在只畫 16 m 內（最後 3 m 淡出，個別可用 userData.far 放寬），太小（< 9 px）不畫；textSprite / bubbleSprite 畫布改 2 倍解析度（LBL_RES），近看也清楚。
