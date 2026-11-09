@@ -2714,9 +2714,17 @@ const SAKURA={};
 /* ---- the mirror floor: the garden and hall drawn upside down into a texture each frame while you are inside (only the garden, at low resolution) ---- */
 function zenMirrorInit(){ if(ZEN.refl||Q.lite) return; const res=Q.low||Q.phone?256:512; const rt=new T.WebGLRenderTarget(res,res,{minFilter:T.LinearFilter,magFilter:T.LinearFilter}); rt.texture.encoding=T.sRGBEncoding;
   const texMat={value:new T.Matrix4()}; const p=ZEN.plat;
-  const m=new T.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{tex:{value:rt.texture},texMat,op:{value:.36}} /* (the chair asked for a fainter mirror; was .62) */,
+  /* a soft, misty reflection (the chair found the sharp low-res one blocky): the picture is blurred with 13 taps in two rings, and it fades
+     out toward the edges of the floor and with distance from where you look, like polished wood rather than a mirror */
+  const m=new T.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{tex:{value:rt.texture},texMat,op:{value:.42},px:{value:new T.Vector2(1/res,1/res)},box:{value:new T.Vector4(p.x0,p.z0,p.x1,p.z1)}},
     vertexShader:`uniform mat4 texMat; varying vec4 vU; varying vec3 vW; void main(){ vec4 w=modelMatrix*vec4(position,1.0); vW=w.xyz; vU=texMat*w; gl_Position=projectionMatrix*viewMatrix*w; }`,
-    fragmentShader:`uniform sampler2D tex; uniform float op; varying vec4 vU; varying vec3 vW; void main(){ vec3 c=texture2DProj(tex,vU).rgb*vec3(1.0,.82,.66); float l=dot(c,vec3(.3,.5,.2)); gl_FragColor=vec4(c,op*(.55+.45*smoothstep(.05,.5,l))); }`});
+    fragmentShader:`uniform sampler2D tex; uniform float op; uniform vec2 px; uniform vec4 box; varying vec4 vU; varying vec3 vW;
+      void main(){ vec2 uv=vU.xy/vU.w; vec3 c=texture2D(tex,uv).rgb*.16; float w=.16;
+        for(int i=0;i<6;i++){ float a=float(i)*1.0472; vec2 d=vec2(cos(a),sin(a)); c+=texture2D(tex,uv+d*px*1.8).rgb*.09; c+=texture2D(tex,uv+vec2(d.y,-d.x)*px*4.2).rgb*.05; w+=.14; }
+        c=c/w*vec3(1.0,.82,.66); float l=dot(c,vec3(.3,.5,.2));
+        float e=min(min(vW.x-box.x,box.z-vW.x),min(vW.z-box.y,box.w-vW.z)); float edge=smoothstep(.0,2.2,e);
+        float far=1.-smoothstep(4.,14.,distance(vW.xz,cameraPosition.xz));
+        gl_FragColor=vec4(c,op*edge*(.35+.65*far)*(.55+.45*smoothstep(.05,.5,l))); }`});
   const mp=mesh(new T.PlaneGeometry(p.x1-p.x0,p.z1-p.z0),m,(p.x0+p.x1)/2,ZEN.FY+.008,(p.z0+p.z1)/2,ZEN.g); mp.rotation.x=-Math.PI/2; mp.userData.noMerge=1; mp.renderOrder=2;
   const mc=new T.PerspectiveCamera(); ZEN.refl={rt,texMat,mp,mc,frame:0};
   ZEN.g.traverse(o=>{ if(o!==mp) o.layers.enable(3); }); }

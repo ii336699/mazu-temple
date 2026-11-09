@@ -520,3 +520,4 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - kill 78（多數 iPhone 15/16 系列，geo 3000–6700，玩 5–15 分鐘）、ctx 62（多數 iPhone 12–14 尺寸 1170/1179，28 筆在剛開遊戲幾秒內，而且同一台會一分鐘一次連續重來：ctx → 重新整理 → 又 ctx）、err 10。
 - ctx 改法：webglcontextlost 不再馬上重新整理。preventDefault 後等手機還畫面（three.js 會自己重新上傳）；在背景時一直等，回到前景 9 秒還沒恢復才照舊重新整理＋省電模式。恢復後重畫一次性的反射（WX/ZEN/INN cube、LAKE）。恢復時回報 k="ctxok"（msg「恢復 x 秒・在背景時中斷」），worker 收 ctxok，閃退紀錄顯示「畫面中斷後恢復」。模擬器用 WEBGL_lose_context 測過：沒有重新整理，畫面正常。
 - err 修：土地公尋寶結束時正在走過去 → arrivedCheck 找不到 stations.treasure（加判斷）；Android 某些鍵盤 keydown 沒有 e.key → toLowerCase 錯（加判斷）。其餘是 IG 內建瀏覽器自己的錯、音效裝置啟動失敗、網路，不用管。
+- 禪院地板反射改柔霧版：13 點兩圈模糊（不再有低解析度馬賽克感）、靠地板邊緣 2.2 m 內淡出、離視點 4→14 m 漸淡到 35%，op .42。手機版截圖確認（~/mz-sim/shots/zen_new1/2.png）。
