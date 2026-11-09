@@ -2704,7 +2704,7 @@ const SAKURA={};
 /* ---- the mirror floor: the garden and hall drawn upside down into a texture each frame while you are inside (only the garden, at low resolution) ---- */
 function zenMirrorInit(){ if(ZEN.refl||Q.lite) return; const res=Q.low||Q.phone?256:512; const rt=new T.WebGLRenderTarget(res,res,{minFilter:T.LinearFilter,magFilter:T.LinearFilter}); rt.texture.encoding=T.sRGBEncoding;
   const texMat={value:new T.Matrix4()}; const p=ZEN.plat;
-  const m=new T.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{tex:{value:rt.texture},texMat,op:{value:.62}},
+  const m=new T.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{tex:{value:rt.texture},texMat,op:{value:.36}} /* (the chair asked for a fainter mirror; was .62) */,
     vertexShader:`uniform mat4 texMat; varying vec4 vU; varying vec3 vW; void main(){ vec4 w=modelMatrix*vec4(position,1.0); vW=w.xyz; vU=texMat*w; gl_Position=projectionMatrix*viewMatrix*w; }`,
     fragmentShader:`uniform sampler2D tex; uniform float op; varying vec4 vU; varying vec3 vW; void main(){ vec3 c=texture2DProj(tex,vU).rgb*vec3(1.0,.82,.66); float l=dot(c,vec3(.3,.5,.2)); gl_FragColor=vec4(c,op*(.55+.45*smoothstep(.05,.5,l))); }`});
   const mp=mesh(new T.PlaneGeometry(p.x1-p.x0,p.z1-p.z0),m,(p.x0+p.x1)/2,ZEN.FY+.008,(p.z0+p.z1)/2,ZEN.g); mp.rotation.x=-Math.PI/2; mp.userData.noMerge=1; mp.renderOrder=2;
@@ -2772,23 +2772,23 @@ function wxAudio(){ if(WX.au) return WX.au; const a=ensureAudio(); if(!a) return
   WX.au={a,b,rainG,rainLo,windG,wf}; return WX.au; }
 function wxThunder(near){ const A=wxAudio(); if(!A||document.hidden||!soundOn) return; const a=A.a, t0=a.currentTime+.02, v=sVol()*(near?1:.7);
   const src=(o)=>{ const s=a.createBufferSource(); s.buffer=A.b; s.start(t0+(o||0),Math.random()*1.5); return s; };
-  if(near){ const s=src(), hp=a.createBiquadFilter(), g=a.createGain(); hp.type="highpass"; hp.frequency.value=1800; g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(.55*v,t0+.008); g.gain.exponentialRampToValueAtTime(.001,t0+.35); s.connect(hp).connect(g).connect(audioOut(a)); s.stop(t0+.4); }
-  const dur=4.5+Math.random()*3, s=src(.05), lp=a.createBiquadFilter(), g=a.createGain(); lp.type="lowpass"; lp.Q.value=.9; lp.frequency.setValueAtTime(near?1400:600,t0); lp.frequency.exponentialRampToValueAtTime(110,t0+dur*.7);
-  g.gain.setValueAtTime(0,t0); let tt=t0; const swells=3+((Math.random()*3)|0); for(let k=0;k<swells;k++){ tt+=.15+Math.random()*(dur/swells); g.gain.linearRampToValueAtTime((.9-k*.15)*v*(.6+Math.random()*.4),tt); tt+=.25; g.gain.linearRampToValueAtTime(.25*v,tt); }
+  /* (just the low rolling rumble: no sharp crack, no hiss) */
+  const dur=4.5+Math.random()*3, s=src(.05), lp=a.createBiquadFilter(), g=a.createGain(); lp.type="lowpass"; lp.Q.value=.9; lp.frequency.setValueAtTime(near?320:220,t0); lp.frequency.exponentialRampToValueAtTime(70,t0+dur*.7);
+  g.gain.setValueAtTime(0,t0); let tt=t0; const swells=3+((Math.random()*3)|0); for(let k=0;k<swells;k++){ tt+=.15+Math.random()*(dur/swells); g.gain.linearRampToValueAtTime((1.3-k*.2)*v*(.6+Math.random()*.4),tt); tt+=.25; g.gain.linearRampToValueAtTime(.25*v,tt); }
   g.gain.linearRampToValueAtTime(.001,t0+dur); s.connect(lp).connect(g).connect(audioOut(a)); s.stop(t0+dur+.1);
   const s2=src(.08), lp2=a.createBiquadFilter(), g2=a.createGain(); lp2.type="lowpass"; lp2.frequency.value=90; g2.gain.setValueAtTime(0,t0); g2.gain.linearRampToValueAtTime(1.1*v,t0+.12); g2.gain.exponentialRampToValueAtTime(.001,t0+dur*.8); s2.connect(lp2).connect(g2).connect(audioOut(a)); s2.stop(t0+dur); }
 /* ---- wet floors: outdoor floors darken and get a glossy, mirror-like sheen (a still picture of the surroundings taken once) ---- */
 function wxWetInit(){ if(WX.wetMats) return; WX.wetMats=[]; const seen=new Set(); scene.traverse(o=>{ if(!o.isMesh||!o.userData||!o.userData.floor||o.userData.keepMat) return; const m=o.material; if(!m||!m.isMeshPhongMaterial||seen.has(m)) return; o.updateMatrixWorld(); /* merged floors often reach from a hall out into the open: wet when a good part of it is outdoors */ const bb=new T.Box3().setFromObject(o); let n=0, out=0; for(let i=0;i<5;i++) for(let j=0;j<5;j++){ n++; if(wxOutdoor(bb.min.x+(bb.max.x-bb.min.x)*(i+.5)/5,bb.min.z+(bb.max.z-bb.min.z)*(j+.5)/5)) out++; } if(out/n<.34) return; seen.add(m); WX.wetMats.push({m,col:m.color.clone(),spec:m.specular.clone(),sh:m.shininess,em:m.emissive.clone()}); });
   if(!Q.lite){ try{ const rt=new T.WebGLCubeRenderTarget(64,{generateMipmaps:true,minFilter:T.LinearMipmapLinearFilter}); const cc=new T.CubeCamera(.5,200,rt); cc.position.set(0,1.2,HZ+12); cc.updateMatrixWorld(true); WX.cube={rt,cc,face:0,done:false}; WX.env=rt.texture;
     for(const q of WX.wetMats){ q.m.envMap=WX.env; q.m.combine=T.MixOperation; q.m.reflectivity=0; q.m.needsUpdate=true; } }catch(e){} }
-  /* the lawn: a wet sheen over the grass (smoother, darker, reflecting the sky) */ const g=outsideGround.material; WX.grass={m:g,col:g.color.clone(),r:g.roughness,mt:g.metalness||0}; if(WX.env){ g.envMap=WX.env; g.envMapIntensity=0; g.needsUpdate=true; } }
+  /* the lawn: a wet sheen over the grass (smoother, darker, reflecting the sky) */ const g=outsideGround.material; WX.grass={m:g,col:g.color.clone(),r:g.roughness,mt:g.metalness||0}; /* (no sheen on the grass: the chair turned it off) */ }
 /* one face of the reflection picture per frame, only while it is wet and not yet taken */
 function wxCubeStep(){ const C=WX.cube; if(!C||C.done) return; const i=C.face, cams=C.cc.children; const rt0=renderer.getRenderTarget(), was=[rainMesh.visible,petMesh.visible]; rainMesh.visible=petMesh.visible=false;
   C.rt.texture.generateMipmaps=i===5; renderer.setRenderTarget(C.rt,i); renderer.render(scene,cams[i]); renderer.setRenderTarget(rt0); rainMesh.visible=was[0]; petMesh.visible=was[1]; C.face++; if(C.face>5) C.done=true; }
 setTimeout(()=>{ try{ wxWetInit(); }catch(e){} },9000); /* compile the shiny-floor shader early, while nothing is happening */
 function wxWet(w){ if(Math.abs(w-WX.wet)<.004) return; WX.wet=w; if(w>.01) wxWetInit(); if(!WX.wetMats) return;
   for(const q of WX.wetMats){ q.m.color.copy(q.col).multiplyScalar(1-.38*w); q.m.specular.copy(q.spec).lerp(_wc.setRGB(.55,.58,.64),w); q.m.shininess=q.sh+60*w; q.m.emissive.copy(q.em).multiplyScalar(1-.5*w); if(WX.env) q.m.reflectivity=.2*w; /* (a little softer: the rain tiles were too mirror-like) */ }
-  const G=WX.grass; if(G){ G.m.color.copy(G.col).multiplyScalar(1-.34*w); G.m.roughness=G.r-(G.r-.66)*w; G.m.metalness=G.mt; if(WX.env) G.m.envMapIntensity=.28*w; /* wet grass: darker and a soft dull sheen, still grass — not a mirror */ } }
+  const G=WX.grass; if(G){ G.m.color.copy(G.col).multiplyScalar(1-.34*w); G.m.roughness=G.r; G.m.metalness=G.mt; /* wet grass is just a little darker, no shine */ /* wet grass: darker and a soft dull sheen, still grass — not a mirror */ } }
 const _wc=new T.Color(), _wv2=new T.Vector2();
 /* per frame, after dayNight: weather moves gently toward the target; lights, sky, effects and sound follow */
 function wxTick(dt){ WX.t+=dt; const show=(typeof FW!=="undefined"&&(FW.on||FW.pendingAt))||(typeof LAKE!=="undefined"&&LAKE.on)||(typeof FWED!=="undefined"&&FWED.on);
@@ -2818,7 +2818,7 @@ function wxTick(dt){ WX.t+=dt; const show=(typeof FW!=="undefined"&&(FW.on||FW.p
   if(r>.5&&WX.t>(WX.homeT||0)){ WX.homeT=WX.t+2; for(let i=npcs.length-1;i>=0;i--){ const n=npcs[i]; if(!n.isBot||n.classic||n.seat>=0) continue; if(wxOutdoor(n.pos.x,n.pos.y)&&Math.random()<.45){ n.sjq=null; n.dispose(); npcs.splice(i,1); } } } /* the pretend players outside just log off, like real players closing the game */
   { const shut=r>.5; if(shut!==!!WX.shut){ WX.shut=shut; /* the outdoor stalls pack up in the rain: the 收驚 grannies and the fortune teller */
       try{ if(FTB.g) FTB.g.visible=!shut; if(shut&&mySj) sjLeaveQueue(); if(!WX.home){ WX.home=[{av:FTB.av,home:[FTB.x-.95,FTB.z],ft:1},...SJ.g.map(g=>({av:g.av,home:[g.x,g.z],face:Math.PI/2}))].filter(o=>o.av); WX.home.forEach(o=>{ o.exit=[-22.5,o.home[1]+1.5]; }); }
-        WX.home.forEach(o=>{ const av=o.av; av.moveSpeed=1.5; if(shut){ av.target.set(...o.exit); av.path=[]; av.faceGoal=null; o.state="out"; } else { av.root.visible=true; av.pos.set(...o.exit); av.target.set(...o.home); av.path=[]; o.state="back"; } }); FTB.walk=true; }catch(e){} } }
+        WX.home.forEach(o=>{ const av=o.av; av.moveSpeed=1.5; if(o.ft){ ftRain(shut); return; } if(shut){ av.target.set(...o.exit); av.path=[]; av.faceGoal=null; o.state="out"; } else { av.root.visible=true; av.pos.set(...o.exit); av.target.set(...o.home); av.path=[]; o.state="back"; } }); FTB.walk=true; }catch(e){} } }
   if(WX.home) for(const o of WX.home){ const av=o.av; /* the 收驚 grannies and the fortune teller walk off home in the rain, and walk back when it clears */
     if(o.state==="out"&&av.pos.distanceTo(_wv2.set(...o.exit))<.4){ av.root.visible=false; o.state="gone"; }
     if(o.state==="back"&&av.pos.distanceTo(_wv2.set(...o.home))<.08){ o.state=""; av.faceGoal=Math.PI/2; if(o.ft) FTB.walk=false; } }
@@ -2890,7 +2890,7 @@ function zenTick(dt){ { const b=$("#zenMusicBtn"), want=!!(meAv&&meAv.pos.x<-23.
   /* the stream mirrors the bridge, the trees and the sky: the picture is taken one face per frame as you come near (no single big stall) */
   if(!ZEN.cube&&!Q.lite&&ZEN.water&&camera.position.x<-18){ try{ const rt=new T.WebGLCubeRenderTarget(Q.low||Q.phone?64:96,{generateMipmaps:true,minFilter:T.LinearMipmapLinearFilter}); const cc=new T.CubeCamera(.2,160,rt); cc.position.set(-31.2,.5,ZEN.GZ); cc.updateMatrixWorld(true); ZEN.cube={rt,cc,face:0}; }catch(e){ ZEN.cube={done:1}; } }
   if(ZEN.cube&&!ZEN.cube.done&&ZEN.cube.cc){ const C=ZEN.cube, i=C.face, rt0=renderer.getRenderTarget(); ZEN.water.visible=false; C.rt.texture.generateMipmaps=i===5; renderer.setRenderTarget(C.rt,i); renderer.render(scene,C.cc.children[i]); renderer.setRenderTarget(rt0); ZEN.water.visible=true; C.face++;
-    if(C.face>5){ C.done=1; const m=ZEN.water.material; m.envMap=C.rt.texture; m.envMapIntensity=1.5; m.metalness=.85; m.roughness=.04; m.color.set(ZL("#5f8e90")); m.needsUpdate=true; } }
+    if(C.face>5){ C.done=1; const m=ZEN.water.material; m.envMap=C.rt.texture; m.envMapIntensity=.7; m.metalness=.55; m.roughness=.1; /* (toned down at the chair's request; was 1.5 / .85 / .04) */ m.color.set(ZL("#5f8e90")); m.needsUpdate=true; } }
   const day=_dn.day, night=_dn.night; for(const s of ZEN.shafts) s.material.opacity=.16*day+.05*(1-day)*(1-night);
   ZEN.dust.material.opacity=.3*day; { const a=ZEN.dust.geometry.attributes.position, b=ZEN.dust0; for(let i=0;i<a.count;i++){ const t=ZEN.t*.25+i*1.7; a.setXYZ(i,b[i*3]+Math.sin(t)*.06,b[i*3+1]+Math.sin(t*.7+i)*.08,b[i*3+2]+Math.cos(t*.8)*.06); } a.needsUpdate=true; } /* drifting gently in place */
   for(const gl of ZEN.glows) gl.material.opacity=.15+.75*night;
@@ -4604,7 +4604,7 @@ const bic=(k,cls="")=>{ if(k==="treat"||k==="can") return `<span class="bic ${cl
 let bagTab="all", bagSel=null;
 function bagEntries(){ const a=accState(), out=[];
   if(bagTab==="all"||bagTab==="goods") GOODS.forEach(g=>{ const n=bag.items[g.k]||0; if(n||bagTab==="goods") out.push({id:"g:"+g.k,ic:g.k,n,name:g.name,desc:g.meta}); });
-  if(bagTab==="all"||bagTab==="goods"){ const cn=bag.items.can||0; const tr=bag.items.treat||0; if(tr) out.push({id:"g:treat",ic:"treat",n:tr,name:"肉泥",desc:"貓咪最愛的零食。訓練貓咪一次要給一條，愛心媽媽一條賣 5 平安幣。"}); if(cn) out.push({id:"g:can",ic:"can",n:cn,name:"貓罐頭",desc:"廟裡的貓最愛吃。流浪貓餵一罐好感 +20，自己養的貓一天要吃一罐。愛心媽媽一罐賣 10 平安幣，土地公尋寶也挖得到。"}); }
+  if(bagTab==="all"||bagTab==="goods"){ const cn=bag.items.can||0; const tr=bag.items.treat||0; if(tr) out.push({id:"g:treat",ic:"treat",n:tr,name:"肉泥",desc:"貓咪最愛的零食。"}); if(cn) out.push({id:"g:can",ic:"can",n:cn,name:"貓罐頭",desc:"廟裡的貓最愛吃。"}); }
   if(bagTab==="all"||bagTab==="goods"){ const hb=bag.hongbao||0; if(hb) out.push({id:"g:hongbao",ic:"hongbao",n:hb,name:"紅包",desc:"財神爺撒下來的紅包，裡面的平安幣已經收進錢包。留著當紀念。"}); }
   if(bagTab==="all"||bagTab==="acc") ACC_IDS.filter(id=>a.owned[id]&&!ACC[id].gone).forEach(id=>out.push({id:"a:"+id,ic:id,name:ACC[id].name,on:a[ACC[id].slot]===id,desc:(ACC[id].note?ACC[id].note+"。":"")+(ACC[id].cat==="頭飾"?"戴在頭上的頭飾。":ACC[id].slot==="mouth"?"咬在嘴邊的小東西。":ACC[id].slot==="pet"?"跟在身邊的小夥伴。":ACC[id].slot==="wrist"?"繫在手腕上，可以和手上拿的東西一起戴。":"拿在手上的小東西。")}));
   if(bagTab==="all"||bagTab==="poem"){ const L=(bag.poems||[]).length; (bag.poems||[]).slice().reverse().forEach((n,i)=>{ if(bagTab==="all"&&i>=8) return; const t=(bag.poemT||[])[L-1-i]||0, done=!!(bag.jqDone&&bag.jqDone[n+"@"+t]);
@@ -4673,7 +4673,7 @@ HANDLERS.toggleNpc=(v,b)=>{ showNpc=!showNpc; save("mz.npc",showNpc); b.setAttri
 HANDLERS.showPoem=v=>openPoem(+v,true);
 
 /* ---- stations ---- */
-function openStation(k){ statInc("st_"+k); crumb("站:"+k); if(k==="gacha"){ openGacha(); return; } if(k==="catMom"){ catMomOpen(); return; } if(k==="innDesk"){ HANDLERS.innDeskOpen(); return; } if(k==="fortune"&&typeof INC!=="undefined"&&INC.stall){ FTB.av&&FTB.av.say("我早就算到會有這麼一天，今天只能休息一天了","#ffe2a0",4); return; } if(typeof WX!=="undefined"&&WX.shut&&(k==="fortune"||k==="cats")){ toast("下雨了，老師傅收攤躲雨去了，天晴再來",2600); return; } if(k==="fortune"&&INC.stall){ toast("攤子被風吹走了！老師傅：「我早就算到了…」今天先休息",3200); return; } if(k==="treasure"){ thDig(); return; } if(k.startsWith("nm:")){ openStall(k.slice(3)); return; } if(k==="puppet"){ ptOpen(); return; } if(k==="fortune"){ openFortune(); return; } if(k==="cats"){ openCats(); return; } if(k==="fountain"){ openFountain(); return; } if(k==="wish"){ openWish(); return; } if(CENSER_INFO[k]){ openCenser(k); return; } if(k==="jieqian"){ openJieqian(); return; } if(k==="shop") openShop(); if(k==="altar") openAltar(); if(k==="burn") openBurn(); if(k==="donate") openDonate(); if(k==="lot") openLot("ask"); if(k==="lamp"||k==="lampR") openLamp(); if(k==="bell"){ meAv.burnT=0; ringBell(); toast("咚——鐘聲迴盪（只有你聽得到）"); } if(k==="drum"){ meAv.burnT=0; hitDrum(); toast("咚！鼓聲響起（只有你聽得到）"); } }
+function openStation(k){ statInc("st_"+k); crumb("站:"+k); if(k==="gacha"){ openGacha(); return; } if(k==="catMom"){ catMomOpen(); return; } if(k==="innDesk"){ HANDLERS.innDeskOpen(); return; } if(k==="fortune"&&typeof INC!=="undefined"&&INC.stall){ FTB.av&&FTB.av.say("我早就算到會有這麼一天，今天只能休息一天了","#ffe2a0",4); return; } if(typeof WX!=="undefined"&&WX.shut&&k==="cats"){ toast("下雨了，貓咪躲雨去了，天晴再來",2600); return; } if(k==="fortune"&&INC.stall){ toast("攤子被風吹走了！老師傅：「我早就算到了…」今天先休息",3200); return; } if(k==="treasure"){ thDig(); return; } if(k.startsWith("nm:")){ openStall(k.slice(3)); return; } if(k==="puppet"){ ptOpen(); return; } if(k==="fortune"){ openFortune(); return; } if(k==="cats"){ openCats(); return; } if(k==="fountain"){ openFountain(); return; } if(k==="wish"){ openWish(); return; } if(CENSER_INFO[k]){ openCenser(k); return; } if(k==="jieqian"){ openJieqian(); return; } if(k==="shop") openShop(); if(k==="altar") openAltar(); if(k==="burn") openBurn(); if(k==="donate") openDonate(); if(k==="lot") openLot("ask"); if(k==="lamp"||k==="lampR") openLamp(); if(k==="bell"){ meAv.burnT=0; ringBell(); toast("咚——鐘聲迴盪（只有你聽得到）"); } if(k==="drum"){ meAv.burnT=0; hitDrum(); toast("咚！鼓聲響起（只有你聽得到）"); } }
 function openThanks(i){ const th=THANKS[i]; if(!th) return; sfx.coin(); openSheet("thanks","感謝贊助",`<img class="thanks-img" src="${th.img}" alt="感謝看板" width="1024" height="768"><p class="thanks-text">${esc(th.text)}</p>`); }
 function openShop(){ const html=`<p class="lead">拜拜順序：天公爐 → 媽祖 → 玄天上帝 → 武財神 → 文昌帝君 → 關聖帝君 → 月老 → 土地公 → 觀音菩薩 → 註生娘娘 → 斗姥元君 → 九天玄女 → 地藏王 → 虎爺。十四爐都插好香，再到廟埕金爐燒金紙。</p>
   <div class="goods">${GOODS.map(g=>`<button class="good" data-act="buy" data-v="${g.k}" ${bag.coins<g.price?"disabled":""}><span class="name">${g.name}</span><span class="meta">${g.meta}</span><span class="price">${g.price} 平安幣</span><span class="own">持有 ${bag.items[g.k]||0}</span></button>`).join("")}</div>
@@ -6303,9 +6303,18 @@ const FT_ELC={木:"#4fae6a",火:"#e0533a",土:"#c99a3c",金:"#cfc8b8",水:"#4a8f
   for(const [x,len] of [[0,.36],[-.06,.26],[.06,.26]]) mk(H,new T.BoxGeometry(.07,len,.015),white,x,-.12-len/2,.22,-.15);
   av.story=1; av.setName("鐵口直斷 老師傅"); FTB.av=av; }
 station("fortune",[FTB.x+1.9,FTB.z],-Math.PI/2);
-setTimeout(()=>addHit("fortune",FTB.x-.2,0,FTB.z,1.3,2.4),0);
+setTimeout(()=>{ FTB.hit=addHit("fortune",FTB.x-.2,0,FTB.z,1.3,2.4); },0);
 STATION_LABEL.fortune="鐵口直斷"; STATION_HINT.fortune="走向算命攤";
-function ftTick(dt){ const av=FTB.av; if(!av) return; if(!FTB.walk){ av.pos.set(FTB.x-.95,FTB.z); av.target.copy(av.pos); av.faceGoal=Math.PI/2; } av.update(dt);
+/* 下雨: the booth packs up and he waits it out inside the 正殿, by the left wall near the door — you can still go and ask him there */
+function ftRainSpot(){ for(const c of [[-8.6,HZ-3],[-8.6,HZ-4.5],[-7.6,HZ-3],[8.6,HZ-3]]) if(walkable(c[0],c[1])) return c; return hallSpot(); }
+function ftRain(shut){ const av=FTB.av; if(!av) return; av.root.visible=true; av.root.position.y=0; const to=shut?ftRainSpot():[FTB.x-.95,FTB.z]; const p=planPath(av.pos.x,av.pos.y,to[0],to[1]);
+  av.target.set(p[0][0],p[0][1]); av.path=p.slice(1); av.faceGoal=null; FTB.walk=true; FTB.rain=shut?"in":"back"; FTB.to=to;
+  if(stations.fortune) stations.fortune.approach.set(shut?to[0]+1.3:FTB.x+1.9,shut?to[1]:FTB.z); }
+function ftTick(dt){ const av=FTB.av; if(!av) return;
+  if(FTB.rain){ av.update(dt); const T0=FTB.to; if(FTB.hit) FTB.hit.position.set(av.pos.x,1.2,av.pos.y);
+    if(Math.hypot(av.pos.x-T0[0],av.pos.y-T0[1])<.12&&!(av.path&&av.path.length)){ if(FTB.rain==="back"){ FTB.rain=null; FTB.walk=false; if(FTB.hit) FTB.hit.position.set(FTB.x-.2,1.2,FTB.z); } else { av.faceGoal=Math.PI/2; } }
+    if(FTB.talkT>0){ FTB.talkT-=dt; av.arms[1].rotation.set(-.9+Math.sin(av.t*5)*.25,0,.3); } return; } /* (standing, not on his stool) */
+  if(!FTB.walk){ av.pos.set(FTB.x-.95,FTB.z); av.target.copy(av.pos); av.faceGoal=Math.PI/2; } av.update(dt);
   if(typeof INC!=="undefined"&&INC.stall){ av.head.rotation.x=Math.sin(av.t*.9)*.05; return; } /* stall blown away: he just stands there, no stool to sit on */
   av.root.position.y=.17; av.hips.position.y=.28; av.legs.forEach(l=>l.rotation.x=1.45); av.torso.rotation.x=.3; // sitting on his stool, a little bent
   if(FTB.talkT>0){ FTB.talkT-=dt; av.arms[1].rotation.set(-.9+Math.sin(av.t*5)*.25,0,.3); av.head.rotation.x=-.28+Math.sin(av.t*7)*.06; }
@@ -9366,7 +9375,7 @@ Object.assign(HANDLERS,{
   catTDig:()=>{ const e=CAT.ents.find(x=>x.kind==="pet"); const p=catData().pet; if(!e||!p){ toast("貓不在身邊",1600); return; } p.lf=catDay(); p.ll=catDay(); p.lp=catDay(); p.home=false; p.dg={d:catDay(),n:0}; e.digIn=.01; closeSheet(); toast("看牠去挖寶……",1600); },
   catTSick:()=>{ const p=catData().pet; if(!p) return; p.vet=null; delete p.vet; p.sick={d:catDay(),cost:500+((Math.random()*11)|0)*50}; catSync(); saveBag(); toast(`${p.nm} 生病了，點牠看看`,2000); closeSheet(); },
   catTVetBack:()=>{ const p=catData().pet; if(!p||!p.vet){ toast("沒有在住院",1500); return; } p.vet.back=catDay(); catData(); catSync(); saveBag(); HANDLERS.catTest(); },
-  catTLearn:()=>{ const p=catData().pet; if(!p) return; TRICKS.forEach(([k,,n])=>p.tr[k]=n); saveBag(); toast("全部動作都學會了，到貓咪面板按「動一動」",2200); HANDLERS.catTest(); },
+  catTLearn:()=>{ const p=catData().pet; if(!p) return; TRICKS.forEach(([k,,n])=>p.tr[k]=n); saveBag(); toast("全部動作都學會了",2200); HANDLERS.catTest(); },
   catTReset:()=>{ const p=catData().pet; if(!p) return; p.tt={}; p.dg=null; p.lf=catDay()-1; p.ll=catDay()-1; p.lp=catDay()-1; saveBag(); toast("今天的餵食、貓砂、摸摸、訓練、挖寶都可以再做一次",2400); HANDLERS.catTest(); },
   catTAway:()=>{ const p=catData().pet; if(!p) return; p.away=true; p.home=false; catSync(); saveBag(); toast(`${p.nm} 跑去愛心媽媽那裡了`,2000); HANDLERS.catTest(); },
   catTRel:()=>{ const C=catData(); C.pet=null; catSync(); saveBag(); toast("放回去了",1500); HANDLERS.catTest(); },
@@ -9421,13 +9430,18 @@ const catDay=()=>Math.floor((Date.now()+8*3600e3)/864e5);
 /* ---- the saved state (bag.cat): s = the strays (id, t coat, sd seed, nm name, a 好感度, fd day last fed, pd/pn petted today), pet = your cat ---- */
 function catNewStray(){ return {id:Math.random().toString(36).slice(2,8),t:(Math.random()*CAT_COATS.length)|0,sd:(Math.random()*65535)|0,nm:CAT_NAMES[(Math.random()*CAT_NAMES.length)|0],a:0,fd:0,pd:0,pn:0}; }
 function catData(){ const d=catDay(); if(!bag.cat||typeof bag.cat!=="object") bag.cat={s:[],pet:null}; const C=bag.cat; C.s=Array.isArray(C.s)?C.s:[];
-  if(C.s.length<3&&(!C.next||d>=C.next)){ while(C.s.length<3) C.s.push(catNewStray()); C.next=0; }
-  C.s.forEach(s=>{ if(s.pd!==d){ s.pd=d; s.pn=0; } });
+  /* 認定主人: a stray you feed takes you as its person (s.own) and runs from anyone else who comes close. Each one that has
+     picked you brings another stray along, up to 5 at once. Two whole days without you petting or feeding it and it forgets you. */
+  C.s.forEach(s=>{ if(s.pd!==d){ s.pd=d; s.pn=0; } if(s.own&&d-(s.lv||0)>2){ s.own=0; s.a=0; } });
+  const want=Math.min(5,3+C.s.filter(s=>s.own).length);
+  if(C.s.length<want&&(!C.next||d>=C.next)){ while(C.s.length<want) C.s.push(catNewStray()); C.next=0; }
+  while(C.s.length>want){ let k=-1; C.s.forEach((s,i)=>{ if(!s.own&&(k<0||s.a<C.s[k].a)) k=i; }); if(k<0) break; C.s.splice(k,1); }
   { const P=C.pet; if(P&&P.vet&&d>=P.vet.back){ const nm=P.nm; delete P.vet; P.sick=null; P.lf=d; P.ll=d; P.lp=d; setTimeout(()=>toast(`${nm} 病好了，從獸醫那裡回來了！`,4000),3500); }
     if(P&&!P.away&&!P.vet&&!P.sick&&P.sk!==d&&d>P.born){ P.sk=d; const m=catMood(P); if(Math.random()<(m<50?.12:.04)){ P.sick={d,cost:500+((Math.random()*11)|0)*50}; setTimeout(()=>toast(`${P.nm} 好像生病了，懶洋洋的……點牠看看`,4500),5000); } } } /* 生病: 4% a day (12% if it is unhappy); 獸醫 500–1000 平安幣, away 1–3 days */
   if(C.pet&&!C.pet.away&&!C.pet.vet&&catDays(C.pet,"lf")>=4){ C.pet.away=true; C.pet.home=false; setTimeout(()=>toast(`${C.pet.nm} 好幾天沒吃東西，跑去愛心媽媽那裡了。去找愛心媽媽帶牠回來吧`,5000),4000); }
   return C; }
 const catCans=()=>bag.items.can||0;
+function catStranger(x,z,r){ for(const a of remotes.values()){ if(a&&a.pos&&Math.hypot(a.pos.x-x,a.pos.y-z)<r) return a.pos; } for(const a of npcs){ if(a&&a.pos&&!a.classic&&!a.afk&&Math.hypot(a.pos.x-x,a.pos.y-z)<r) return a.pos; } return null; }
 function catDays(p,k){ return p&&p[k]?catDay()-p[k]:99; }
 function catMood(p){ if(!p) return 0; if(p.sick) return Math.min(30,catMood0(p)); return catMood0(p); }
 function catMood0(p){ const f=catDays(p,"lf"), l=catDays(p,"ll"), t=catDays(p,"lp"); return Math.max(0,Math.min(100,100-30*Math.max(0,f-1)-15*Math.max(0,l-1)-10*Math.max(0,t-1)-(f>=1?10:0)-(l>=1?5:0))); }
@@ -9522,7 +9536,7 @@ function catBuildHome(){ const M=CAT.mom, B=CAT.bed;
   addHit("catLitter",B.x+.95,0,B.z+.1,.4,.3); }
 
 /* ---- every frame ---- */
-function catTick(dt){ CAT.t+=dt; if(CAT.momAv){ CAT.momAv.update(dt); if((CAT.momAv.talkIn-=dt)<0){ CAT.momAv.talkIn=rand(14,30); if(Math.hypot(meAv.pos.x-CAT.mom.x,meAv.pos.y-CAT.mom.z)<9) CAT.momAv.say(["小貓咪要吃飯囉～","罐頭一罐 10 塊，貓咪一天吃一罐","摸摸牠們，牠們就會記得你","領養之前要想清楚喔","貓砂每天都要清一次","貓咪不舒服要趕快帶去看醫生","訓練的時候給一條肉泥，牠會學得很快"][(Math.random()*7)|0],"#f7ecd6",3); } }
+function catTick(dt){ CAT.t+=dt; if(CAT.momAv){ CAT.momAv.update(dt); if((CAT.momAv.talkIn-=dt)<0){ CAT.momAv.talkIn=rand(14,30); if(Math.hypot(meAv.pos.x-CAT.mom.x,meAv.pos.y-CAT.mom.z)<9) CAT.momAv.say(["小貓咪要吃飯囉～","要不要買個罐頭？","摸摸牠們，牠們就會記得你","領養之前要想清楚喔","貓咪不舒服要趕快帶去看醫生","肉泥是牠們的最愛"][(Math.random()*7)|0],"#f7ecd6",3); } }
   if(CAT.dirt){ const p=bag.cat&&bag.cat.pet; CAT.dirt.visible=!!(p&&!p.vet&&catDays(p,"ll")>=1); }
   if(!CAT.ents.length) return; const me2=meAv.pos, rain=catRain();
   for(const e of CAT.ents){ const g=e.g; e.ph+=dt; let anim="idle", spd=0; const sick=e.kind==="pet"&&!!e.ref.sick;
@@ -9535,8 +9549,12 @@ function catTick(dt){ CAT.t+=dt; if(CAT.momAv){ CAT.momAv.update(dt); if((CAT.mo
       else { e.idle=(e.idle||0)+dt; if(e.st==="walk") e.st="sit"; if(e.st!=="sleep"&&(e.idle>30||sick)){ e.st="sleep"; e.sl=Math.random()<.5?"loaf":"side"; } if(e.st!=="sleep") g.rotation.y=lerpAngle(g.rotation.y,meAv.rotY,dt*2); } }
     else { /* wandering, sitting, napping; out of the rain when it pours */
       e.tt-=dt; const out=zoneOf(g.position.x,g.position.z)==="C";
+      if(e.kind==="stray"&&e.ref.own&&(e.fl=(e.fl||0)-dt)<0){ e.fl=.4; const o=catStranger(g.position.x,g.position.z,2.2); /* someone else close by: off it runs */
+        if(o){ const dx=g.position.x-o.x, dz=g.position.z-o.y, L=Math.hypot(dx,dz)||1; let to=null; for(let k=0;k<10&&!to;k++){ const a=Math.atan2(dx,dz)+rand(-.8,.8), r=rand(4.5,7), x=g.position.x+Math.sin(a)*r, z=g.position.z+Math.cos(a)*r; if(walkable(x,z)) to=[x,z]; }
+          if(to){ e.tx=to[0]; e.tz=to[1]; e.path=planPath(g.position.x,g.position.z,to[0],to[1],0,0); e.st="walk"; e.tt=40; e.run=2.5; } } }
+      if(e.run>0) e.run-=dt;
       if(rain&&out&&e.st!=="walk") e.tt=-1;
-      if(e.st==="walk"){ spd=rain&&out?2.2:.75; if(catMoveP(e,spd,dt)){ e.st=Math.random()<.4?"sleep":"sit"; if(e.st==="sleep") e.sl=Math.random()<.5?"loaf":"side"; e.tt=e.st==="sleep"?rand(25,70):rand(5,14); } }
+      if(e.st==="walk"){ spd=e.run>0?3:rain&&out?2.2:.75; if(catMoveP(e,spd,dt)){ e.st=Math.random()<.4?"sleep":"sit"; if(e.st==="sleep") e.sl=Math.random()<.5?"loaf":"side"; e.tt=e.st==="sleep"?rand(25,70):rand(5,14); } }
       else if(e.tt<0){ let to; const near=e.kind==="pet"&&!rain?[CAT.bed.x,CAT.bed.z]:null;
         if(rain) to=catPlace(out?null:[g.position.x,g.position.z]);
         else if(e.kind==="stray"&&e.ref.a>=40&&Math.hypot(me2.x-g.position.x,me2.y-g.position.z)<10&&Math.random()<.5) to=catPlace([me2.x,me2.y]); else if(!near&&Math.random()<.3){ const n=CAT_NAP[(Math.random()*CAT_NAP.length)|0]; to=[n[0]+rand(-.5,.5),n[1]+rand(-.5,.5)]; if(!walkable(to[0],to[1])) to=catPlace(); } else to=catPlace(near);
@@ -9560,10 +9578,16 @@ function catMoveP(e,sp,dt){ if(!e.path||!e.path.length) e.path=[[e.tx,e.tz]]; co
 /* ---- 挖寶: now and then (twice a day at most, only when it has eaten and is happy) your cat runs off a few steps, digs with its front
    paws and brings you 平安幣 or 扭蛋幣. Decided and paid on this phone like the 土地公 treasure. ---- */
 const CAT_DIG=[["c",50,.40],["c",100,.24],["c",500,.07],["c",1000,.02],["g",1,.18],["g",5,.07],["g",10,.02]];
-function catDigMaybe(e,dt){ const p=e.ref, d=catDay(); if(p.lf!==d||catMood(p)<50||miniOpen) return; p.dg=p.dg&&p.dg.d===d?p.dg:{d,n:0}; if(p.dg.n>=2) return;
+/* (掛網: no tap or key for 3 minutes. Then it still digs, but only once an hour — counted from your last touch or its last
+   掛網 dig — and these don't use up the 2 a day you get while playing.) */
+CAT.inT=Date.now(); ["pointerdown","keydown","touchstart","wheel"].forEach(ev=>addEventListener(ev,()=>{ CAT.inT=Date.now(); },{passive:true,capture:true}));
+function catDigMaybe(e,dt){ const p=e.ref, d=catDay(); if(p.lf!==d||catMood(p)<50||miniOpen) return; p.dg=p.dg&&p.dg.d===d?p.dg:{d,n:0};
+  const now=Date.now(); if(now-CAT.inT>180e3){ if(now-Math.max(p.ak||0,CAT.inT)<3600e3) return; if(catDigGo(e)){ p.ak=now; saveBag(); } return; }
+  if(p.dg.n>=2) return;
   if(e.digIn==null) e.digIn=rand(150,360); if((e.digIn-=dt)>0) return; e.digIn=rand(240,600);
-  let to=null; for(let k=0;k<12&&!to;k++){ const a=Math.random()*6.283, r=rand(2.2,3.6), x=meAv.pos.x+Math.cos(a)*r, z=meAv.pos.y+Math.sin(a)*r; if(walkable(x,z)) to=[x,z]; } if(!to) return;
-  p.dg.n++; let r=Math.random(), pick=CAT_DIG[0]; for(const L of CAT_DIG){ if(r<L[2]){ pick=L; break; } r-=L[2]; } e.dig={ph:"go",x:to[0],z:to[1],t:0,prize:pick}; e.st="walk"; catMeow(true); saveBag(); }
+  if(catDigGo(e)){ p.dg.n++; saveBag(); } }
+function catDigGo(e){ let to=null; for(let k=0;k<12&&!to;k++){ const a=Math.random()*6.283, r=rand(2.2,3.6), x=meAv.pos.x+Math.cos(a)*r, z=meAv.pos.y+Math.sin(a)*r; if(walkable(x,z)) to=[x,z]; } if(!to) return false;
+  let r=Math.random(), pick=CAT_DIG[0]; for(const L of CAT_DIG){ if(r<L[2]){ pick=L; break; } r-=L[2]; } e.dig={ph:"go",x:to[0],z:to[1],t:0,prize:pick}; e.st="walk"; catMeow(true); return true; }
 let CAT_DIRT=null;
 function catDigStep(e,dt){ const D=e.dig, g=e.g; D.t+=dt;
   if(D.ph==="go"){ catRigPose(e.rig,"run",e.ph,Math.min(1,dt*8)); if(catMove(e,D.x,D.z,2.6,dt)||D.t>8){ D.ph="dig"; D.t=0; } return; }
@@ -9607,19 +9631,19 @@ function catStraySheet(){ const e=CAT.cur; if(!e||e.kind!=="stray") return; cons
   HANDLERS.catPet=catPet; HANDLERS.catFeed=catFeed; HANDLERS.catAdopt=catAdopt; HANDLERS.goCatMom=()=>{ closeSheet(); goStation("catMom"); };
   openSheet("cat",`🐈 ${s.nm}（${coat}）`,`<p class="lead">${s.a<20?"牠還有點怕生，慢慢靠近牠吧。":s.a<60?"牠開始認得你了，會跟在你旁邊。":s.a<100?"牠很喜歡你，常常來找你！":"牠已經把你當成家人了 ❤"}</p>
     <p class="note">好感度 ${s.a}/100</p>${catBar(s.a)}
-    <div class="goods"><button class="good" data-act="catPet"><span class="name">🤚 摸摸牠</span><span class="meta">今天 ${s.pn}/3 次・好感 +5</span></button>
-    <button class="good" data-act="catFeed" ${s.fd===d?"disabled":""}><span class="name">🥫 餵罐頭</span><span class="meta">${s.fd===d?"今天吃飽了":`好感 +20・你有 ${catCans()} 罐`}</span></button>
-    ${s.a>=100?`<button class="good" data-act="catAdopt"><span class="name">🏠 領養牠</span><span class="meta">${C.pet?"你已經有一隻貓了（一次只能養一隻）":"帶牠回家，每天照顧牠"}</span></button>`:""}</div>
-    <p class="note">罐頭可以跟廟埕的愛心媽媽買（一罐 10 平安幣），土地公尋寶也挖得到。好感度滿 100 就可以領養。</p><div class="chips"><button class="chip" data-act="goCatMom">去找愛心媽媽</button></div>`); }
+    <div class="goods"><button class="good" data-act="catPet"><span class="name">🤚 摸摸牠</span><span class="meta">陪牠玩一下</span></button>
+    <button class="good" data-act="catFeed" ${s.fd===d?"disabled":""}><span class="name">🥫 餵罐頭</span><span class="meta">${s.fd===d?"今天吃飽了":`你有 ${catCans()} 罐`}</span></button>
+    ${s.a>=100?`<button class="good" data-act="catAdopt"><span class="name">🏠 領養牠</span><span class="meta">${C.pet?"你已經有一隻貓了":"帶牠回家"}</span></button>`:""}</div>
+    <p class="note">罐頭可以跟廟埕的愛心媽媽買。</p><div class="chips"><button class="chip" data-act="goCatMom">去找愛心媽媽</button></div>`); }
 function catPet(){ const e=CAT.cur; if(!e) return; if(e.kind==="pet"){ const p=e.ref; const first=p.lp!==catDay(); p.lp=catDay(); catHearts(e,first?6:3); catPurr(); catTrick(e,"sit"); saveBag(); markDirty(); toast(first?`${p.nm} 舒服得呼嚕呼嚕叫`:`${p.nm} 蹭了蹭你的手`,1800); catPetSheet(); return; }
-  const s=e.ref; if(s.pn>=3){ toast(`${s.nm} 今天被摸夠了，明天再來吧`,2000); return; } s.pn++; s.a=Math.min(100,s.a+5); catHearts(e,3); catPurr(); saveBag(); markDirty(); toast(s.a>=100?`${s.nm} 好感度滿了！可以領養牠了`:`${s.nm} 瞇起眼睛，好感 +5`,2000); catStraySheet(); }
+  const s=e.ref; if(s.pn>=3){ toast(`${s.nm} 今天被摸夠了，明天再來吧`,2000); return; } s.pn++; s.a=Math.min(100,s.a+5); s.lv=catDay(); catHearts(e,3); catPurr(); saveBag(); markDirty(); toast(s.a>=100?`${s.nm} 好感度滿了！可以領養牠了`:`${s.nm} 瞇起眼睛`,2000); catStraySheet(); }
 function catFeed(){ const e=CAT.cur; if(!e) return; if(catCans()<1){ toast("沒有罐頭了，到愛心媽媽那裡買",2400); return; } const d=catDay();
-  if(e.kind==="pet"){ const p=e.ref; if(p.lf===d){ toast(`${p.nm} 今天吃飽了，一天一罐就好`,2200); return; } bag.items.can--; p.lf=d; catHearts(e,5); catMeow(true); saveBag(); markDirty(); toast(`${p.nm} 吃得好開心！`,1800); catPetSheet(); return; }
-  const s=e.ref; if(s.fd===d){ toast(`${s.nm} 今天吃飽了`,1800); return; } bag.items.can--; s.fd=d; s.a=Math.min(100,s.a+20); catHearts(e,6); catMeow(true); saveBag(); markDirty(); toast(s.a>=100?`${s.nm} 好感度滿了！可以領養牠了`:`${s.nm} 吃得津津有味，好感 +20`,2200); catStraySheet(); }
+  if(e.kind==="pet"){ const p=e.ref; if(p.lf===d){ toast(`${p.nm} 今天吃飽了`,2200); return; } bag.items.can--; p.lf=d; catHearts(e,5); catMeow(true); saveBag(); markDirty(); toast(`${p.nm} 吃得好開心！`,1800); catPetSheet(); return; }
+  const s=e.ref; if(s.fd===d){ toast(`${s.nm} 今天吃飽了`,1800); return; } bag.items.can--; s.fd=d; s.a=Math.min(100,s.a+20); s.lv=d; const first=!s.own; s.own=1; catHearts(e,6); catMeow(true); saveBag(); markDirty(); toast(s.a>=100?`${s.nm} 好感度滿了！可以領養牠了`:first?`${s.nm} 吃得津津有味，認定你了！`:`${s.nm} 吃得津津有味`,2200); if(first) catSync(); catStraySheet(); }
 function catAdopt(){ const e=CAT.cur, C=catData(); if(!e||e.kind!=="stray") return; if(C.pet){ toast("一次只能養一隻貓，先好好照顧你家的貓吧",2600); return; } if(e.ref.a<100) return; const s=e.ref, d=catDay();
   C.pet={t:s.t,sd:s.sd,nm:s.nm,born:d,lf:s.fd===d?d:d-1,ll:d,lp:d,tr:{},tt:{},home:false}; C.s=C.s.filter(x=>x!==s); C.next=d+1; const pos=[e.g.position.x,e.g.position.z]; catDrop(e); catSync();
   const pe=CAT.ents.find(x=>x.kind==="pet"); if(pe){ pe.g.position.set(pos[0],0,pos[1]); catHearts(pe,10); } catMeow(true); saveBag(); markDirty(); profSave(true); statInc("catAdopt");
-  closeSheet(); toast(`你領養了 ${s.nm}！記得每天餵一罐、清貓砂、摸摸牠`,4000); setTimeout(()=>{ CAT.cur=pe; catPetSheet(); },900); }
+  closeSheet(); toast(`你領養了 ${s.nm}！`,4000); setTimeout(()=>{ CAT.cur=pe; catPetSheet(); },900); }
 
 /* ---- your cat ---- */
 function catPetSheet(){ const e=CAT.ents.find(x=>x.kind==="pet"); const C=catData(), p=C.pet; if(!p||p.vet){ closeSheet(); return; } CAT.cur=e; const d=catDay(), mood=catMood(p), coat=CAT_COATS[p.t][0];
@@ -9627,30 +9651,30 @@ function catPetSheet(){ const e=CAT.ents.find(x=>x.kind==="pet"); const C=catDat
   const fed=p.lf===d, clean=p.ll===d, pet=p.lp===d, learned=catLearned(p);
   HANDLERS.catVet=catVet;
   if(p.sick){ openSheet("cat",`🐈 ${esc(p.nm)}（${coat}）🤒`,`<p class="lead">${esc(p.nm)} 生病了，趴著不太想動，也不想吃東西。要帶去給獸醫看。</p>
-    <div class="goods"><button class="good" data-act="catVet"><span class="name">🏥 帶去看獸醫</span><span class="meta">醫藥費 ${p.sick.cost} 平安幣・住院 1～3 天（你有 ${bag.coins}）</span></button>
-    <button class="good" data-act="catPet"><span class="name">🤚 摸摸牠</span><span class="meta">陪陪牠</span></button></div><p class="note">住院期間牠不會在廟裡，治好了會自己回來。生病時心情最多 30。</p>`); return; }
+    <div class="goods"><button class="good" data-act="catVet"><span class="name">🏥 帶去看獸醫</span><span class="meta">醫藥費 ${p.sick.cost} 平安幣（你有 ${bag.coins}）</span></button>
+    <button class="good" data-act="catPet"><span class="name">🤚 摸摸牠</span><span class="meta">陪陪牠</span></button></div><p class="note">住院期間牠不會在廟裡，治好了會自己回來。</p>`); return; }
   openSheet("cat",`🐈 ${esc(p.nm)}（${coat}）`,`<p class="lead">${mood>=80?"心情很好，一直蹭你":mood>=50?"還不錯，想要你多陪陪牠":mood>=25?"有點不開心……":"很難過，好像快要離家出走了"}</p>
     <p class="note">心情 ${mood}/100</p>${catBar(mood,mood>=50?"linear-gradient(90deg,#9be38a,#4cc36a)":"linear-gradient(90deg,#ffcf6a,#ff8a4c)")}
-    <div class="goods"><button class="good" data-act="catFeed" ${fed?"disabled":""}><span class="name">🥫 ${fed?"今天吃過了":"肚子餓了，餵一罐"}</span><span class="meta">一天一罐・你有 ${catCans()} 罐</span></button>
-    <button class="good" data-act="catLitter" ${clean?"disabled":""}><span class="name">🧹 ${clean?"貓砂很乾淨":"清貓砂"}</span><span class="meta">${clean?"今天清過了":"貓砂盆在愛心媽媽旁邊，每天清一次"}</span></button>
+    <div class="goods"><button class="good" data-act="catFeed" ${fed?"disabled":""}><span class="name">🥫 ${fed?"今天吃過了":"肚子餓了，餵一罐"}</span><span class="meta">你有 ${catCans()} 罐</span></button>
+    <button class="good" data-act="catLitter" ${clean?"disabled":""}><span class="name">🧹 ${clean?"貓砂很乾淨":"清貓砂"}</span><span class="meta">${clean?"今天清過了":"貓砂盆在愛心媽媽旁邊"}</span></button>
     <button class="good" data-act="catPet"><span class="name">🤚 摸摸牠</span><span class="meta">${pet?"今天摸過了，再摸也很開心":"牠在等你摸摸"}</span></button>
     <button class="good" data-act="catTrainOpen"><span class="name">🎓 訓練</span><span class="meta">學會 ${learned.length}/${TRICKS.length} 個動作</span></button>
     ${learned.length?`<button class="good" data-act="catShowOpen"><span class="name">🎪 動一動</span><span class="meta">讓牠做學會的動作</span></button>`:""}</div>
     <div class="chips"><button class="chip" data-act="catHome">${p.home?"🐾 帶牠出門（跟著我）":"🏠 讓牠回貓窩休息"}</button><button class="chip" data-act="catRename">✏️ 改名字</button></div>
-    <p class="note">每天要餵一罐、清貓砂、摸摸牠，心情才會好。三天以上沒吃東西，牠會跑去愛心媽媽那裡。養了 ${d-p.born+1} 天。</p>`); }
+    <p class="note">養了 ${d-p.born+1} 天。</p>`); }
 function catLitter(){ const p=catData().pet; if(!p) return; const B=CAT.bed; if(Math.hypot(meAv.pos.x-B.x-.95,meAv.pos.y-B.z)>3.2){ CAT.litterGo=true; walkTo(B.x+.2,B.z+1.1); toast("走去貓砂盆……",1500); return; }
   if(p.ll===catDay()){ toast("貓砂今天清過了",1500); return; } p.ll=catDay(); try{ [300,260,320].forEach((f,i)=>tone(f,.08,.05,"square",i*.12)); }catch(_){} saveBag(); markDirty(); toast("貓砂清好了，乾乾淨淨！",1800); const e=CAT.ents.find(x=>x.kind==="pet"); if(e) catHearts(e,2); }
 function catVet(){ const C=catData(), p=C.pet; if(!p||!p.sick) return; const cost=p.sick.cost; if(bag.coins<cost){ toast(`平安幣不夠，醫藥費要 ${cost}`,2400); return; } bag.coins-=cost; const days=1+((Math.random()*3)|0); p.vet={back:catDay()+days,days}; p.sick=null; saveBag(); markDirty(); profSave(true); statInc("catVet");
   const e=CAT.ents.find(x=>x.kind==="pet"); if(e) catDrop(e); closeSheet(); toast(`${p.nm} 住院了，要 ${days} 天才會好。治好會自己回來`,4200); }
 function catTrainOpen(){ const p=catData().pet; if(!p) return; const d=catDay(); p.tt=p.tt&&p.tt.d===d?p.tt:{d,n:0}; const mood=catMood(p), learned=catLearned(p).length; HANDLERS.catTrain=catTrain;
-  openSheet("cat",`🎓 訓練 ${esc(p.nm)}`,`${backBtnCat()}<p class="lead">每練一次要給一條肉泥（愛心媽媽一條 5 平安幣）。每個動作每天練一次，一天最多練 3 次。心情要 40 以上才肯練。</p><div class="inv-top"><span class="inv-coin">🍡<b>${bag.items.treat||0}</b>條肉泥</span></div>
+  openSheet("cat",`🎓 訓練 ${esc(p.nm)}`,`${backBtnCat()}<p class="lead">練一次要給牠一條肉泥。</p><div class="inv-top"><span class="inv-coin">🍡<b>${bag.items.treat||0}</b>條肉泥</span></div>
     <div class="goods">${TRICKS.map(([k,n,need])=>{ const v=Math.min(need,p.tr[k]||0), done=v>=need, lock=k==="flip"&&learned<3&&!done, today=p.tt[k];
-      return `<button class="good" data-act="catTrain" data-v="${k}" ${done||lock||today?"disabled":""}><span class="name">${done?"✅":lock?"🔒":"🐾"} ${n}</span><span class="meta">${done?"學會了":lock?"先學會 3 個動作才能練":today?"今天練過了":`進度 ${v}/${need}`}</span></button>`; }).join("")}</div>
-    <p class="note">今天練了 ${p.tt.n}/3 次・心情 ${mood}</p>`); }
+      return `<button class="good" data-act="catTrain" data-v="${k}" ${done||lock||today?"disabled":""}><span class="name">${done?"✅":lock?"🔒":"🐾"} ${n}</span><span class="meta">${done?"學會了":lock?"先學會其他動作":today?"今天練過了":`進度 ${v}/${need}`}</span></button>`; }).join("")}</div>
+    <p class="note">心情 ${mood}/100</p>`); }
 const backBtnCat=()=>`<button class="chip" data-act="catBack" style="margin-bottom:8px">← 回到貓咪</button>`;
 HANDLERS.catBack=()=>catPetSheet();
 function catTrain(k){ const p=catData().pet, e=CAT.ents.find(x=>x.kind==="pet"); if(!p||!e) return; const d=catDay(), T0=TRICKS.find(x=>x[0]===k); if(!T0) return;
-  if(!(bag.items.treat>0)){ toast("沒有肉泥了，到愛心媽媽那裡買（一條 5 平安幣）",2600); return; } if(catMood(p)<40){ toast(`${p.nm} 心情不好，先摸摸牠吧`,2200); return; } if(p.tt.n>=3){ toast("今天練夠了，明天再來",2000); return; } if(p.tt[k]) return;
+  if(!(bag.items.treat>0)){ toast("沒有肉泥了，到愛心媽媽那裡買",2600); return; } if(catMood(p)<40){ toast(`${p.nm} 心情不好，先摸摸牠吧`,2200); return; } if(p.tt.n>=3){ toast("今天練夠了，明天再來",2000); return; } if(p.tt[k]) return;
   bag.items.treat--; p.tt[k]=1; p.tt.n++; p.tr[k]=Math.min(T0[2],(p.tr[k]||0)+1); const done=p.tr[k]>=T0[2]; closeSheet(); catTrick(e,k,!done); saveBag(); markDirty(); if(done) profSave(true);
   setTimeout(()=>{ if(done){ catHearts(e,10); catMeow(true); toast(`🎉 ${p.nm} 學會「${T0[1]}」了！`,3200); statInc("catTrick"); } else toast(`${p.nm} 試著${T0[1]}……還不太會（${p.tr[k]}/${T0[2]}）`,2400); },TRICK_T[k]*1000); }
 function catShowOpen(){ const p=catData().pet; if(!p) return; HANDLERS.catShow=k=>{ const e=CAT.ents.find(x=>x.kind==="pet"); closeSheet(); if(e){ catTrick(e,k); setTimeout(()=>catHearts(e,3),TRICK_T[k]*900); } };
@@ -9666,8 +9690,8 @@ function catMomOpen(){ const C=catData(), p=C.pet; HANDLERS.catBuyT=n=>{ n=+n; c
   openSheet("contact","👵 愛心媽媽",`<p class="lead">「廟裡的貓都是我在餵的。你喜歡貓的話，買幾個罐頭去餵牠們吧！牠們吃飽了、被摸舒服了，就會把你當家人。」</p>
     ${p&&p.vet?`<p class="note">🏥 ${esc(p.nm)} 在獸醫那裡住院，${Math.max(1,p.vet.back-catDay())} 天後回來。</p>`:""}${p&&p.away?`<div class="group"><span class="group-label">你的貓在這裡</span><p class="lead">「${esc(p.nm)} 好幾天沒吃東西，跑來我這裡。餵牠一罐，牠就跟你回去。」</p><div class="goods"><button class="good" data-act="catBack2"><span class="name">🥫 餵牠，帶牠回家</span><span class="meta">用掉 1 罐</span></button></div></div>`:""}
     <div class="inv-top"><span class="inv-coin">${bic("coin")}<b>${bag.coins}</b>平安幣</span><span class="inv-note">🥫 ${catCans()} 罐・🍡 ${bag.items.treat||0} 條</span></div>
-    <div class="goods">${[1,5,10].map(n=>`<button class="good" data-act="catBuy" data-v="${n}"><span class="name">🥫 貓罐頭 ×${n}</span><span class="meta">${n*10} 平安幣</span></button>`).join("")}${[1,3,10].map(n=>`<button class="good" data-act="catBuyT" data-v="${n}"><span class="name">🍡 肉泥 ×${n}</span><span class="meta">${n*5} 平安幣・訓練用</span></button>`).join("")}</div>
-    <p class="note">貓咪一天吃一罐。摸摸 +5、餵罐頭 +20 好感，好感滿 100 就能領養（一次一隻）。領養後要每天餵食、清貓砂（就在我旁邊）、摸摸牠；訓練一次給一條肉泥，最厲害的是後空翻！貓咪生病了要帶去看獸醫。</p>`); }
+    <div class="goods">${[1,5,10].map(n=>`<button class="good" data-act="catBuy" data-v="${n}"><span class="name">🥫 貓罐頭 ×${n}</span><span class="meta">${n*10} 平安幣</span></button>`).join("")}${[1,3,10].map(n=>`<button class="good" data-act="catBuyT" data-v="${n}"><span class="name">🍡 肉泥 ×${n}</span><span class="meta">${n*5} 平安幣</span></button>`).join("")}</div>
+    `); }
 
 catLoad();
 /* 主委工具 → 頭飾定位 */
