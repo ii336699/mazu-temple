@@ -9366,7 +9366,7 @@ Object.assign(HANDLERS,{
   catTDig:()=>{ const e=CAT.ents.find(x=>x.kind==="pet"); const p=catData().pet; if(!e||!p){ toast("貓不在身邊",1600); return; } p.lf=catDay(); p.ll=catDay(); p.lp=catDay(); p.home=false; p.dg={d:catDay(),n:0}; e.digIn=.01; closeSheet(); toast("看牠去挖寶……",1600); },
   catTSick:()=>{ const p=catData().pet; if(!p) return; p.vet=null; delete p.vet; p.sick={d:catDay(),cost:500+((Math.random()*11)|0)*50}; catSync(); saveBag(); toast(`${p.nm} 生病了，點牠看看`,2000); closeSheet(); },
   catTVetBack:()=>{ const p=catData().pet; if(!p||!p.vet){ toast("沒有在住院",1500); return; } p.vet.back=catDay(); catData(); catSync(); saveBag(); HANDLERS.catTest(); },
-  catTLearn:()=>{ const p=catData().pet; if(!p) return; TRICKS.forEach(([k,,n])=>p.tr[k]=n); saveBag(); toast("全部動作都學會了，到貓咪面板按「表演」",2200); HANDLERS.catTest(); },
+  catTLearn:()=>{ const p=catData().pet; if(!p) return; TRICKS.forEach(([k,,n])=>p.tr[k]=n); saveBag(); toast("全部動作都學會了，到貓咪面板按「動一動」",2200); HANDLERS.catTest(); },
   catTReset:()=>{ const p=catData().pet; if(!p) return; p.tt={}; p.dg=null; p.lf=catDay()-1; p.ll=catDay()-1; p.lp=catDay()-1; saveBag(); toast("今天的餵食、貓砂、摸摸、訓練、挖寶都可以再做一次",2400); HANDLERS.catTest(); },
   catTAway:()=>{ const p=catData().pet; if(!p) return; p.away=true; p.home=false; catSync(); saveBag(); toast(`${p.nm} 跑去愛心媽媽那裡了`,2000); HANDLERS.catTest(); },
   catTRel:()=>{ const C=catData(); C.pet=null; catSync(); saveBag(); toast("放回去了",1500); HANDLERS.catTest(); },
@@ -9635,7 +9635,7 @@ function catPetSheet(){ const e=CAT.ents.find(x=>x.kind==="pet"); const C=catDat
     <button class="good" data-act="catLitter" ${clean?"disabled":""}><span class="name">🧹 ${clean?"貓砂很乾淨":"清貓砂"}</span><span class="meta">${clean?"今天清過了":"貓砂盆在愛心媽媽旁邊，每天清一次"}</span></button>
     <button class="good" data-act="catPet"><span class="name">🤚 摸摸牠</span><span class="meta">${pet?"今天摸過了，再摸也很開心":"牠在等你摸摸"}</span></button>
     <button class="good" data-act="catTrainOpen"><span class="name">🎓 訓練</span><span class="meta">學會 ${learned.length}/${TRICKS.length} 個動作</span></button>
-    ${learned.length?`<button class="good" data-act="catShowOpen"><span class="name">🎪 表演</span><span class="meta">讓牠做學會的動作</span></button>`:""}</div>
+    ${learned.length?`<button class="good" data-act="catShowOpen"><span class="name">🎪 動一動</span><span class="meta">讓牠做學會的動作</span></button>`:""}</div>
     <div class="chips"><button class="chip" data-act="catHome">${p.home?"🐾 帶牠出門（跟著我）":"🏠 讓牠回貓窩休息"}</button><button class="chip" data-act="catRename">✏️ 改名字</button></div>
     <p class="note">每天要餵一罐、清貓砂、摸摸牠，心情才會好。三天以上沒吃東西，牠會跑去愛心媽媽那裡。養了 ${d-p.born+1} 天。</p>`); }
 function catLitter(){ const p=catData().pet; if(!p) return; const B=CAT.bed; if(Math.hypot(meAv.pos.x-B.x-.95,meAv.pos.y-B.z)>3.2){ CAT.litterGo=true; walkTo(B.x+.2,B.z+1.1); toast("走去貓砂盆……",1500); return; }
@@ -9654,7 +9654,7 @@ function catTrain(k){ const p=catData().pet, e=CAT.ents.find(x=>x.kind==="pet");
   bag.items.treat--; p.tt[k]=1; p.tt.n++; p.tr[k]=Math.min(T0[2],(p.tr[k]||0)+1); const done=p.tr[k]>=T0[2]; closeSheet(); catTrick(e,k,!done); saveBag(); markDirty(); if(done) profSave(true);
   setTimeout(()=>{ if(done){ catHearts(e,10); catMeow(true); toast(`🎉 ${p.nm} 學會「${T0[1]}」了！`,3200); statInc("catTrick"); } else toast(`${p.nm} 試著${T0[1]}……還不太會（${p.tr[k]}/${T0[2]}）`,2400); },TRICK_T[k]*1000); }
 function catShowOpen(){ const p=catData().pet; if(!p) return; HANDLERS.catShow=k=>{ const e=CAT.ents.find(x=>x.kind==="pet"); closeSheet(); if(e){ catTrick(e,k); setTimeout(()=>catHearts(e,3),TRICK_T[k]*900); } };
-  openSheet("cat",`🎪 ${esc(p.nm)} 表演`,`${backBtnCat()}<div class="goods">${catLearned(p).map(([k,n])=>`<button class="good" data-act="catShow" data-v="${k}"><span class="name">${n}</span></button>`).join("")}</div>`); }
+  openSheet("cat",`🎪 ${esc(p.nm)} 動一動`,`${backBtnCat()}<div class="goods">${catLearned(p).map(([k,n])=>`<button class="good" data-act="catShow" data-v="${k}"><span class="name">${n}</span></button>`).join("")}</div>`); }
 function catRename(){ const p=catData().pet; if(!p) return; HANDLERS.catNameSave=()=>{ const v=cleanName((($("#catNm")||{}).value||"").trim()).slice(0,6); if(!v){ toast("請輸入名字"); return; } if(chatCheck&&chatCheck(v)){ toast("換一個名字吧",1800); return; } p.nm=v; saveBag(); markDirty(); profSave(true); toast(`牠現在叫 ${v} 了`,1800); catPetSheet(); };
   openSheet("cat","✏️ 幫貓咪取名字",`${backBtnCat()}<div class="mail-row"><input class="mail-box" id="catNm" maxlength="6" value="${esc(p.nm)}" autocomplete="off"><button class="good mail-copy" data-act="catNameSave"><span class="name">好了</span></button></div><p class="note">最多 6 個字。</p>`); }
 function catHome(){ const p=catData().pet; if(!p) return; p.home=!p.home; const e=CAT.ents.find(x=>x.kind==="pet"); if(e){ e.st="walk"; const sp=p.home?catPlace([CAT.bed.x,CAT.bed.z]):[meAv.pos.x,meAv.pos.y]; e.tx=sp[0]; e.tz=sp[1]; e.path=planPath(e.g.position.x,e.g.position.z,sp[0],sp[1],0,0); } saveBag(); markDirty(); toast(p.home?`${p.nm} 回貓窩休息了`:`${p.nm} 跟著你出門了`,1800); catPetSheet(); }
