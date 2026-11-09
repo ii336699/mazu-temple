@@ -2603,8 +2603,8 @@ function zenWalkable(x,z){ const G=ZEN.GZ;
     const eave=box(2*w2+.2,.16,2*d2+.2,darkWood,cx,ry-.02,cz,g); }
 
   /* ---- 50 round cushions (zafu) on square mats ---- */
-  { const zs=SEATS.slice(ZEN.s0), mats=zs.map(s=>({x:s.x,y:FY+.02,z:s.y})), cu=zs.map((s,i)=>({x:s.x,y:FY+.1,z:s.y,c:ZL(["#56689a","#7c5a80","#4d7c66"][i%3]) /* (a little lighter than before so they don't read as black) */}));
-    inst(new T.BoxGeometry(.86,.035,.86),mat(ZL("#6a2a1c"),{roughness:.9}),mats);
+  { const zs=SEATS.slice(ZEN.s0), mats=zs.map(s=>({x:s.x,y:FY+.02,z:s.y})), cu=zs.map((s,i)=>({x:s.x,y:FY+.1,z:s.y,c:ZL(["#14172a","#1e1420","#121e18"][i%3])}));
+    inst(new T.BoxGeometry(.86,.035,.86),mat(ZL("#3e120c"),{roughness:.9}),mats);
     ZEN.cush=inst(new T.CylinderGeometry(.3,.32,.16,18),new T.MeshStandardMaterial({roughness:.95,color:"#ffffff"}),cu); ZEN.pick.push(ZEN.cush); }
 
   /* ---- trees: maples in red, crimson, orange and gold, some green, cherry and plum in bloom, a few pines ---- */
@@ -9444,7 +9444,7 @@ function gpuTrim(){ if(!Q.phone) return; const now=performance.now(); if(now-GPU
 const CAT_COATS=[["三花"],["灰白"],["白貓"],["銀虎斑"],["紅虎斑"],["玳瑁"],["橘虎斑"],["橘白"],["賓士"],["豹紋"],["暹羅"]]; /* catcoat/cat-<n>.webp: the chair's 11 cats */
 const CAT_NAMES=["咪咪","小橘","阿花","黑糖","布丁","麻糬","湯圓","奶茶","芝麻","豆花","可樂","饅頭","小虎","雪球","肉圓","米糕","珍珠","仙草","花生","Lucky"];
 const TRICKS=[["sit","坐下",2],["paw","握手",3],["spin","轉圈",3],["roll","翻滾",4],["jump","跳高",4],["wave","招財貓招手",5],["flip","後空翻",7]];
-const CAT={geo:null,ents:[],t:0,pend:null,mom:{x:15.2,z:28.6},bed:{x:16.6,z:30.6},hearts:[],ready:false};
+const CAT={geo:null,ents:[],t:0,pend:null,mom:{x:9.7,z:37.7},bed:{x:7.6,z:38.4} /* (beside the gacha machine; it used to stand where the night-market stalls go) */,hearts:[],ready:false};
 const catDay=()=>Math.floor((Date.now()+8*3600e3)/864e5);
 /* 遊戲天: the in-game day (one turn of day and night = TOD_LEN s, 24 min). The hospital stay and the daily dig go by this; everything
    else about the cats (meals, litter, petting, training, running off, forgetting you) goes by the real day above. */
