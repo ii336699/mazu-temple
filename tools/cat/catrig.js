@@ -41,14 +41,16 @@ vec3 catFaceCol(vec3 c,vec3 p){ const float FX=-.093; float fx=p.x-FX; if(p.z<.2
   float wh=0.; for(int s=0;s<2;s++){ float sx=s==0?-1.:1.; for(int k=0;k<3;k++){ float a=(float(k)-1.)*.16; vec2 o=vec2(sx*.085,.545); vec2 d=vec2(sx*cos(a),sin(a)); vec2 q=vec2(fx,p.y)-o; float t=dot(q,d); float e=length(q-d*t); wh=max(wh,(1.-smoothstep(.0016,.0034,e))*step(0.,t)*step(t,.11)); } }
   c=mix(c,uWh,wh*.9);
   float eye=0., hl=0.; vec3 ec=uEL; for(int s=0;s<2;s++){ float sx=s==0?-1.:1.; vec2 e=vec2(fx-sx*.112,p.y-.630); float r=length(e/vec2(.026,.031)); if(r<1.){ eye=max(eye,1.-smoothstep(.82,1.,r)); ec=s==0?uEL:uER; } hl=max(hl,1.-smoothstep(.5,1.,length((e-vec2(.008,.011))/.0085))); }
-  eye*=step(.38,p.z); c=mix(c,ec,eye); c=mix(c,vec3(1.),hl*eye*.95);
+  eye*=step(.38,p.z); float op=1.-uSleep; c=mix(c,ec,eye*op); c=mix(c,vec3(1.),hl*eye*.95*op);
+  float cl=0.; for(int s=0;s<2;s++){ float sx=s==0?-1.:1.; vec2 m=vec2(fx-sx*.112,p.y-.640); float d=abs(length(m/vec2(1.,.8))-.022); cl=max(cl,(1.-smoothstep(.0022,.0042,d))*step(m.y,.0)); }
+  c=mix(c,vec3(.2,.12,.09),cl*uSleep*step(.38,p.z)); /* closed eyes: two little ‿ when asleep */
   float nose=(1.-smoothstep(.75,1.,length(vec2(fx,(p.y-.573)*1.25)/.02)))*step(.40,p.z); c=mix(c,uNose,nose);
   float mo=0.; for(int s=0;s<2;s++){ float sx=s==0?-1.:1.; vec2 m=vec2(fx-sx*.0165,p.y-.556); float d=abs(length(m)-.0165); mo=max(mo,(1.-smoothstep(.0018,.0038,d))*step(m.y,0.)); }
   mo=max(mo,(1.-smoothstep(.0018,.0036,abs(fx)))*step(.556,p.y)*step(p.y,.566)); c=mix(c,vec3(.24,.13,.1),mo*step(.40,p.z));
   return c; }`;
 function catFaceMat(m,f){ const C=v=>new THREE.Color(v).convertSRGBToLinear();
-  m.onBeforeCompile=sh=>{ Object.assign(sh.uniforms,{uEL:{value:C(f.eL||"#2a1a12")},uER:{value:C(f.eR||f.eL||"#2a1a12")},uNose:{value:C(f.nose||"#ef9aa4")},uWh:{value:C(f.wh||"#6b4a3a")}});
+  m.onBeforeCompile=sh=>{ Object.assign(sh.uniforms,{uEL:{value:C(f.eL||"#2a1a12")},uER:{value:C(f.eR||f.eL||"#2a1a12")},uNose:{value:C(f.nose||"#ef9aa4")},uWh:{value:C(f.wh||"#6b4a3a")},uSleep:{value:0}}); m.userData.u=sh.uniforms;
     sh.vertexShader="varying vec3 vCP;\n"+sh.vertexShader.replace("#include <begin_vertex>","#include <begin_vertex>\n vCP=position;");
-    sh.fragmentShader="varying vec3 vCP; uniform vec3 uEL,uER,uNose,uWh;\n"+CAT_FACE_GLSL+"\n"+sh.fragmentShader.replace("#include <map_fragment>","#include <map_fragment>\n diffuseColor.rgb=catFaceCol(diffuseColor.rgb,vCP);"); };
+    sh.fragmentShader="varying vec3 vCP; uniform vec3 uEL,uER,uNose,uWh; uniform float uSleep;\n"+CAT_FACE_GLSL+"\n"+sh.fragmentShader.replace("#include <map_fragment>","#include <map_fragment>\n diffuseColor.rgb=catFaceCol(diffuseColor.rgb,vCP);"); };
   m.customProgramCacheKey=()=>"catface"; }
 const CAT_FACES=[{},{},{eL:"#3d7fc8",eR:"#e2a41c"},{},{},{wh:"#e9dccb"},{},{},{wh:"#f2f2f2",eL:"#1a1210"},{},{nose:"#5a3a30",wh:"#e9dccb"}];

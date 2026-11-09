@@ -8446,7 +8446,7 @@ function tick(){ if(gameAsleep) return; const _ft0=performance.now(); { const no
   botTick(dt);
   lodPrep(); remotes.forEach(r=>{ lodUpdate(r,dt); if((r.eq&&(r.eq[0]||r.eq[1]||r.eq[2]||r.eq[3]))||r.flies||r.hasThread) accTick(r,dt); }); /* r.flies: keep ticking once more so flies go away after the sausage is put down */ sjUpdate(dt); fwUpdate(dt); updateSkyLanterns(dt); renderSLBtn(); opTick(dt); ptTick(dt); REAR_TICK.forEach(f=>f(dt)); csTick(dt); hbTick(dt); flyCtlTick(dt); slodTick(dt); poolTick(dt); rearVis(); buildTick(); ftTick(dt); mkTick(dt);
   if(room&&dirty&&performance.now()-lastSend>((keys.size||joy.on)?800:SEND_GAP)) sendPresence();
-  updateFlyers(dt); updateFu(dt); updateCats(dt); try{ catTick(dt); }catch(e){} updateWater(dt);
+  updateFlyers(dt); updateFu(dt); updateCats(dt); try{ catTick(dt); }catch(e){} try{ gpuTrim(); }catch(e){} updateWater(dt);
   { let best=null, bd=2.6; if(!sheetKind&&!customizing&&!pendingStation&&meAv.seat<0&&!(meAv.danceT>0)) for(const k in stations){ if(k==="cats"){ if(CATS.off) continue; const dc=Math.hypot(meAv.pos.x-CATS.c.x,meAv.pos.y-CATS.c.z); if(dc<3.6){ best=k; bd=0; } continue; } const d=meAv.pos.distanceTo(stations[k].approach); if(d<bd){ bd=d; best=k; } }
     const nc=$("#nearChip"); if(best!==nearKey){ nearKey=best; if(best){ nc.textContent=best==="cats"?"🐾 一起祈求":"點我："+(STATION_LABEL[best]||STATION_HINT[best]||best).replace(/^走(向|去)/,""); nc.hidden=false; } else nc.hidden=true; } }
   // camera
@@ -9215,7 +9215,7 @@ function buskTick(dt){ const B=BUSK, me=meAv; if(!me||!B.av) return;
       if(B.wk==="out"||B.wk==="back"||B.wk==="pack"){ if(Math.hypot(me.pos.x-av.pos.x,me.pos.y-av.pos.y)<45) av.update(dt); } }
     if(away||B.wk){ for(const a of B.el) if(a){ if(a._g&&ac) a._g.gain.setTargetAtTime(0,ac.currentTime,.2); if(!a.paused) a.pause(); } B.on=false; B.prox=0;
       for(const n of B.notes){ scene.remove(n.s); n.s.material.dispose(); } B.notes.length=0; /* no music, no notes */ return; } } const d=Math.hypot(me.pos.x-B.x,me.pos.y-B.z); if(d<45){ const av=B.av; av.pos.set(B.x,B.z); av.target.copy(av.pos); av.faceGoal=Math.PI/2; av.update(dt); } /* (he was never animated: nobody called his update) */ const live=soundOn&&audioUnlocked&&!document.hidden&&!gameAsleep;
-  const prox=live&&bVol()>0?Math.pow(Math.max(0,Math.min(1,1-(d-1.5)/15)),1.6):0; /* heard from about 16 m (not at all if this player turned him off) */ B.prox+=(prox-B.prox)*Math.min(1,dt*2);
+  const prox=live&&bVol()>0?Math.pow(Math.max(0,Math.min(1,1-(d-2)/3.6)),1.6):0; /* heard only within about 10 yard tiles of him (5.6 m; a tile is .56 m), not at all if this player turned him off */ B.prox+=(prox-B.prox)*Math.min(1,dt*2);
   const want=live&&d<28&&ac;
   if(want){ const [i,t]=buskNow(); let A=buskEl(B.which), Bn=buskEl(1-B.which); if(!A) return;
     if(A.track!==i){ if(Bn&&Bn.track===i){ B.which=1-B.which; [A,Bn]=[Bn,A]; } else { A.src=B.file(i); A.track=i; A.load(); } A.wantSeek=t; }
@@ -9393,6 +9393,22 @@ HANDLERS.crashOpen=async()=>{ openSheet("contact","閃退紀錄",`${backBtn}<p c
   openSheet("contact","閃退紀錄",`${backBtn}<p class="lead">玩家下次打開遊戲時才會回報上一次閃退，所以會晚一點出現。近 24 小時共 ${D.length} 筆。</p><div class="chips"><button class="chip" data-act="crashCopy">📋 複製全部給 Claude</button></div>
     <div class="group"><span class="group-label">近 24 小時</span><p class="note">種類：${cnt(e=>K[e.k])}</p><p class="note">當時在：${cnt(e=>e.w)}</p><p class="note">手機：${cnt(e=>e.dev+(e.os?" "+e.os:"")+"・"+e.app)}</p><p class="note">畫質：${cnt(e=>e.q)}</p><p class="note">天氣/反射：${cnt(e=>e.wx||"—")}</p><p class="note">同場人物：${cnt(e=>{ const n=(e.npc||0)+(e.rem||0); return n<20?"20 以下":n<40?"20–39":n<60?"40–59":"60 以上"; })}</p></div>
     <div class="group"><span class="group-label">最近 60 筆</span><ul class="sp-list">${L.slice(0,60).map(e=>`<li><span><b>${t(e.at)} ${K[e.k]||e.k}</b>　${esc(e.w)}${e.mini?"（小遊戲中）":""}<br><small>${esc(e.dev)} ${esc(e.os)}・${esc(e.app)}${e.mem?"・"+e.mem+"GB":""}・${esc(e.scr)}・畫質 ${esc(e.q)}・玩了 ${e.min} 分・位置 ${esc(e.pos)}${e.wx?"・"+esc(e.wx):""}・繪製 ${e.calls}/${e.geo}/${e.tex}${e.heap?"・JS "+e.heap+"MB":""}・人物 ${e.npc}+${e.rem}</small>${e.msg||e.err&&e.err.length?`<br><small style="color:#ff9a8a">${esc(e.msg||e.err.join(" | "))} ${esc(e.at2||"")}</small>`:""}</span></li>`).join("")}</ul></div>`); };
+/* ================= 手機記憶體: crash reports show iPhones closing the game once ~4,500+ shapes and ~750 pictures sit in the graphics
+   memory — the whole temple, picked up bit by bit as you walk, is never given back. On phones, every 12 s the parts more than 50 m from
+   the camera (and every picture only they use) give back their graphics copy; the data stays, so walking back brings them in again by
+   itself, as on the first visit. People (skinned figures), sprites, video and drawn-into pictures (reflections) are left alone. */
+const GPUT={t:0,R:50,n:0,off:new WeakSet() /* (pictures have no userData in this three.js) */};
+function gpuTrim(){ if(!Q.phone) return; const now=performance.now(); if(now-GPUT.t<12000) return; GPUT.t=now;
+  const cx=camera.position.x, cz=camera.position.z, G=new Map(), X=new Map(), A=new Map() /* (a buffer two shapes share counts as near if either is) */, sp=new T.Sphere(), KEYS=["map","emissiveMap","normalMap","roughnessMap","metalnessMap","alphaMap","aoMap","bumpMap","specularMap","lightMap"];
+  const note=(M,k,d)=>{ const o=M.get(k); if(o===undefined||d<o) M.set(k,d); };
+  scene.traverse(o=>{ if(!(o.isMesh||o.isPoints||o.isLine)||o.isSkinnedMesh) return; const g=o.geometry; if(!g||!g.attributes||!g.attributes.position) return;
+    let d=0; if(o.frustumCulled!==false&&!(o.userData&&o.userData.keepGPU)){ if(!g.boundingSphere) g.computeBoundingSphere(); sp.copy(g.boundingSphere).applyMatrix4(o.matrixWorld); d=Math.hypot(sp.center.x-cx,sp.center.z-cz)-sp.radius; if(!(d>=0)) d=0; }
+    note(G,g,d); for(const k in g.attributes) note(A,g.attributes[k].data||g.attributes[k],d); if(g.index) note(A,g.index,d); const ms=Array.isArray(o.material)?o.material:[o.material]; for(const m of ms){ if(!m) continue; for(const k of KEYS){ const t=m[k]; if(t&&t.isTexture) note(X,t,d); } } });
+  const allFar=g=>{ for(const k in g.attributes){ const q=g.attributes[k]; if(!(A.get(q.data||q)>GPUT.R)) return false; } return !g.index||A.get(g.index)>GPUT.R; };
+  let n=0; for(const [g,d] of G) if(d>GPUT.R&&!g.userData.gpuOff&&allFar(g)){ g.dispose(); g.userData.gpuOff=1; n++; } else if(d<=GPUT.R) g.userData.gpuOff=0;
+  for(const [t,d] of X){ const im=t.image; const ok=!t.isVideoTexture&&!t.isDataTexture&&!t.isCubeTexture&&im&&(im.nodeName||typeof ImageBitmap!=="undefined"&&im instanceof ImageBitmap);
+    if(!ok) continue; if(d>GPUT.R&&!GPUT.off.has(t)){ t.dispose(); GPUT.off.add(t); n++; } else if(d<=GPUT.R) GPUT.off.delete(t); }
+  GPUT.n=n; }
 /* ================= 貓咪: three strays wander the courtyard, nap and come to people who are kind to them; feed and pet one until it
    trusts you and you can adopt it. Then it follows you, eats one can a day, needs its litter cleaned and loves being petted, and
    learns tricks a little each day. 愛心媽媽 by the cats sells cans (10 平安幣); 土地公 sometimes digs one up. Each cat's coat is drawn
@@ -9461,15 +9477,17 @@ vec3 catFaceCol(vec3 c,vec3 p){ const float FX=-.093; float fx=p.x-FX; if(p.z<.2
   float wh=0.; for(int s=0;s<2;s++){ float sx=s==0?-1.:1.; for(int k=0;k<3;k++){ float a=(float(k)-1.)*.16; vec2 o=vec2(sx*.085,.545); vec2 d=vec2(sx*cos(a),sin(a)); vec2 q=vec2(fx,p.y)-o; float t=dot(q,d); float e=length(q-d*t); wh=max(wh,(1.-smoothstep(.0016,.0034,e))*step(0.,t)*step(t,.11)); } }
   c=mix(c,uWh,wh*.9);
   float eye=0., hl=0.; vec3 ec=uEL; for(int s=0;s<2;s++){ float sx=s==0?-1.:1.; vec2 e=vec2(fx-sx*.112,p.y-.630); float r=length(e/vec2(.026,.031)); if(r<1.){ eye=max(eye,1.-smoothstep(.82,1.,r)); ec=s==0?uEL:uER; } hl=max(hl,1.-smoothstep(.5,1.,length((e-vec2(.008,.011))/.0085))); }
-  eye*=step(.38,p.z); c=mix(c,ec,eye); c=mix(c,vec3(1.),hl*eye*.95);
+  eye*=step(.38,p.z); float op=1.-uSleep; c=mix(c,ec,eye*op); c=mix(c,vec3(1.),hl*eye*.95*op);
+  float cl=0.; for(int s=0;s<2;s++){ float sx=s==0?-1.:1.; vec2 m=vec2(fx-sx*.112,p.y-.640); float d=abs(length(m/vec2(1.,.8))-.022); cl=max(cl,(1.-smoothstep(.0022,.0042,d))*step(m.y,.0)); }
+  c=mix(c,vec3(.2,.12,.09),cl*uSleep*step(.38,p.z)); /* closed eyes: two little ‿ when asleep */
   float nose=(1.-smoothstep(.75,1.,length(vec2(fx,(p.y-.573)*1.25)/.02)))*step(.40,p.z); c=mix(c,uNose,nose);
   float mo=0.; for(int s=0;s<2;s++){ float sx=s==0?-1.:1.; vec2 m=vec2(fx-sx*.0165,p.y-.556); float d=abs(length(m)-.0165); mo=max(mo,(1.-smoothstep(.0018,.0038,d))*step(m.y,0.)); }
   mo=max(mo,(1.-smoothstep(.0018,.0036,abs(fx)))*step(.556,p.y)*step(p.y,.566)); c=mix(c,vec3(.24,.13,.1),mo*step(.40,p.z));
   return c; }`;
 function catFaceMat(m,f){ const C=v=>new T.Color(v).convertSRGBToLinear();
-  m.onBeforeCompile=sh=>{ Object.assign(sh.uniforms,{uEL:{value:C(f.eL||"#2a1a12")},uER:{value:C(f.eR||f.eL||"#2a1a12")},uNose:{value:C(f.nose||"#ef9aa4")},uWh:{value:C(f.wh||"#6b4a3a")}});
+  m.onBeforeCompile=sh=>{ Object.assign(sh.uniforms,{uEL:{value:C(f.eL||"#2a1a12")},uER:{value:C(f.eR||f.eL||"#2a1a12")},uNose:{value:C(f.nose||"#ef9aa4")},uWh:{value:C(f.wh||"#6b4a3a")},uSleep:{value:0}}); m.userData.u=sh.uniforms;
     sh.vertexShader="varying vec3 vCP;\n"+sh.vertexShader.replace("#include <begin_vertex>","#include <begin_vertex>\n vCP=position;");
-    sh.fragmentShader="varying vec3 vCP; uniform vec3 uEL,uER,uNose,uWh;\n"+CAT_FACE_GLSL+"\n"+sh.fragmentShader.replace("#include <map_fragment>","#include <map_fragment>\n diffuseColor.rgb=catFaceCol(diffuseColor.rgb,vCP);"); };
+    sh.fragmentShader="varying vec3 vCP; uniform vec3 uEL,uER,uNose,uWh; uniform float uSleep;\n"+CAT_FACE_GLSL+"\n"+sh.fragmentShader.replace("#include <map_fragment>","#include <map_fragment>\n diffuseColor.rgb=catFaceCol(diffuseColor.rgb,vCP);"); };
   m.customProgramCacheKey=()=>"catface"; }
 const CAT_FACES=[{},{},{eL:"#3d7fc8",eR:"#e2a41c"},{},{},{wh:"#e9dccb"},{},{},{wh:"#f2f2f2",eL:"#1a1210"},{},{nose:"#5a3a30",wh:"#e9dccb"}];
 
@@ -9526,6 +9544,7 @@ function catTick(dt){ CAT.t+=dt; if(CAT.momAv){ CAT.momAv.update(dt); if((CAT.mo
     if(!e.trick&&!e.dig){ anim=e.st==="walk"?(spd>1.5?"run":"walk"):e.st==="sleep"?e.sl:e.st==="sit"?"sit":"idle"; if(sick&&e.st!=="walk") anim="loaf";
       catRigPose(e.rig,anim,e.ph,Math.min(1,dt*(e.st==="sleep"?3:8)));
       if(e.st==="sit"&&!sick){ const dd=Math.hypot(me2.x-g.position.x,me2.y-g.position.z); let a=Math.atan2(me2.x-g.position.x,me2.y-g.position.z)-g.rotation.y; a=((a+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI; if(dd<5&&Math.abs(a)<1.6){ e.rig.P.hy=a*.7; catRigApply(e.rig); } } } /* (a sitting cat turns its head to look at you) */
+    { const u=e.rig.mesh.material.userData.u; if(u){ const want=e.trick||e.dig?0:e.st==="sleep"?1:sick?.55:0; u.uSleep.value+=(want-u.uSleep.value)*Math.min(1,dt*4); } } /* eyes close when it sleeps, half shut when sick */
     /* Zz over a sleeping cat, a fever face over a sick one */
     if(e.st==="sleep"&&!e.trick&&!sick){ if(!e.z){ e.z=textSprite("Zz",{fs:40,h:.18,color:"#dfe8ff"}); scene.add(e.z); } e.z.position.set(g.position.x,.5+Math.sin(e.ph*1.4)*.05,g.position.z); } else if(e.z){ scene.remove(e.z); e.z=null; }
     if(sick){ if(!e.sick){ e.sick=textSprite("🤒",{fs:56,h:.2}); scene.add(e.sick); } e.sick.position.set(g.position.x,.6+Math.sin(e.ph*2)*.03,g.position.z); } else if(e.sick){ scene.remove(e.sick); e.sick=null; }

@@ -498,3 +498,9 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - 新模型（tripo，120 萬點、沒有 UV、沒有骨架、臉是平滑的）→ tools/cat/transfer.py：gltfpack -si 0.006 減到 6.3k 點；用 ICP 對齊舊模型（頭部再單獨對一次），每個點找舊模型最近的三角形拿 UV 和骨架權重（跨 UV 島的三角形拆開各自取，避免接縫糊掉）；舊模型的眼睛/鼻子/嘴/鬍鬚小島不取（會變碎片）。writeglb.py 用舊骨架＋反綁定矩陣寫出 → public/cat.glb（345KB）、cat-lite.glb（-si 0.5，249KB）。11 張花色貼圖、全部動作照用。
 - 臉改成 shader 畫（catFaceMat / CAT_FACE_GLSL，模型座標，跟著頭動）：圓眼＋反光、粉紅鼻、ω 嘴、左右各 3 條鬍鬚；CAT_FACES 每種花色的眼睛/鼻子/鬍鬚顏色（白貓異色瞳、賓士白鬍鬚、暹羅深色鼻）。
 - 又踩到同名函式：catFace 已經是跳舞貓的，改成 catFaceMat。新增函式前先 grep。
+
+## 2026-11-09 09:30 — 睡覺閉眼、玖玖聲音範圍、手機記憶體回收（未部署）
+- 貓睡覺閉眼：CAT_FACE_GLSL 加 uSleep（0 張眼、1 閉眼畫兩條 ‿），catTick 依狀態漸變（睡覺 1、生病 .55、表演/挖東西 0）。material.userData.u 存 shader uniforms。
+- 街頭藝人玖玖：聲音只在身邊約 10 格廟埕磁磚（一格 .56 m → 約 5.6 m）內聽得到，2 m 內最大聲。
+- 閃退（11/9 早上主委貼的 150 筆）：人數上限上線後，仍有 iPhone 在 geo 4500–6400、tex 700–900 被系統關掉；遊玩分鐘數不長。模擬 iPhone 走遍全區：只有世界本身就累積到 geo ~3000 / tex ~400，走過的地方永遠不還。
+  → gpuTrim()（貓咪模組前）：只在手機，每 12 秒把離鏡頭 50 m 以外的形狀與只有它們用的圖片的顯示卡副本釋放（資料留著，走回去自動再上傳）。不碰骨架人物、sprite、影片、反射用的 render target；共用 buffer 只要有一個近就不放。r128 的 Texture 沒有 userData，用 GPUT.off(WeakSet) 記。
