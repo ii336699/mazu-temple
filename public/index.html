@@ -9372,9 +9372,9 @@ HANDLERS.catTest=()=>{ const C=catData(), p=C.pet; const t=(a,n,m)=>`<button cla
 Object.assign(HANDLERS,{
   catTAdopt:v=>{ const C=catData(), d=catDay(), i=+v; const old=CAT.ents.find(x=>x.kind==="pet"); if(old) catDrop(old); C.pet={t:i,sd:(Math.random()*65535)|0,nm:CAT_NAMES[(Math.random()*CAT_NAMES.length)|0],born:d-1,lf:d,ll:d,lp:d,tr:{},tt:{},home:false}; catSync(); const e=CAT.ents.find(x=>x.kind==="pet"); if(e){ e.g.position.set(meAv.pos.x+.8,0,meAv.pos.y+.8); catHearts(e,8); } saveBag(); toast(`養了一隻${CAT_COATS[i][0]}：${C.pet.nm}`,2200); HANDLERS.catTest(); },
   catTGive:()=>{ bag.items.can=(bag.items.can||0)+10; bag.items.treat=(bag.items.treat||0)+10; saveBag(); toast("給了 10 罐頭、10 肉泥",1600); HANDLERS.catTest(); },
-  catTDig:()=>{ const e=CAT.ents.find(x=>x.kind==="pet"); const p=catData().pet; if(!e||!p){ toast("貓不在身邊",1600); return; } p.lf=catDay(); p.ll=catDay(); p.lp=catDay(); p.home=false; p.dg={d:catDay(),n:0}; e.digIn=.01; closeSheet(); toast("看牠去挖寶……",1600); },
+  catTDig:()=>{ const e=CAT.ents.find(x=>x.kind==="pet"); const p=catData().pet; if(!e||!p){ toast("貓不在身邊",1600); return; } p.lf=catDay(); p.ll=catDay(); p.lp=catDay(); p.home=false; p.dg={g:catGDay(),n:0}; e.digIn=.01; closeSheet(); toast("看牠去挖寶……",1600); },
   catTSick:()=>{ const p=catData().pet; if(!p) return; p.vet=null; delete p.vet; p.sick={d:catDay(),cost:500+((Math.random()*11)|0)*50}; catSync(); saveBag(); toast(`${p.nm} 生病了，點牠看看`,2000); closeSheet(); },
-  catTVetBack:()=>{ const p=catData().pet; if(!p||!p.vet){ toast("沒有在住院",1500); return; } p.vet.back=catDay(); catData(); catSync(); saveBag(); HANDLERS.catTest(); },
+  catTVetBack:()=>{ const p=catData().pet; if(!p||!p.vet){ toast("沒有在住院",1500); return; } p.vet.back=p.vet.g?catGDay():catDay(); catData(); catSync(); saveBag(); HANDLERS.catTest(); },
   catTLearn:()=>{ const p=catData().pet; if(!p) return; TRICKS.forEach(([k,,n])=>p.tr[k]=n); saveBag(); toast("全部動作都學會了，到貓咪面板按「動一動」",2200); HANDLERS.catTest(); },
   catTReset:()=>{ const p=catData().pet; if(!p) return; p.tt={}; p.dg=null; p.lf=catDay()-1; p.ll=catDay()-1; p.lp=catDay()-1; saveBag(); toast("今天的餵食、貓砂、摸摸、訓練、挖寶都可以再做一次",2400); HANDLERS.catTest(); },
   catTAway:()=>{ const p=catData().pet; if(!p) return; p.away=true; p.home=false; catSync(); saveBag(); toast(`${p.nm} 跑去愛心媽媽那裡了`,2000); HANDLERS.catTest(); },
@@ -9427,6 +9427,10 @@ const CAT_NAMES=["咪咪","小橘","阿花","黑糖","布丁","麻糬","湯圓",
 const TRICKS=[["sit","坐下",2],["paw","握手",3],["spin","轉圈",3],["roll","翻滾",4],["jump","跳高",4],["wave","招財貓招手",5],["flip","後空翻",7]];
 const CAT={geo:null,ents:[],t:0,pend:null,mom:{x:15.2,z:28.6},bed:{x:16.6,z:30.6},hearts:[],ready:false};
 const catDay=()=>Math.floor((Date.now()+8*3600e3)/864e5);
+/* 遊戲天: the in-game day (one turn of day and night = TOD_LEN s, 24 min). The hospital stay and the daily dig go by this; everything
+   else about the cats (meals, litter, petting, training, running off, forgetting you) goes by the real day above. */
+const catGDay=()=>Math.floor(Date.now()/1000/TOD_LEN);
+const catVetLeft=v=>v.g?Math.max(0,v.back-catGDay()):Math.max(0,v.back-catDay());
 /* ---- the saved state (bag.cat): s = the strays (id, t coat, sd seed, nm name, a 好感度, fd day last fed, pd/pn petted today), pet = your cat ---- */
 function catNewStray(){ return {id:Math.random().toString(36).slice(2,8),t:(Math.random()*CAT_COATS.length)|0,sd:(Math.random()*65535)|0,nm:CAT_NAMES[(Math.random()*CAT_NAMES.length)|0],a:0,fd:0,pd:0,pn:0}; }
 function catData(){ const d=catDay(); if(!bag.cat||typeof bag.cat!=="object") bag.cat={s:[],pet:null}; const C=bag.cat; C.s=Array.isArray(C.s)?C.s:[];
@@ -9436,7 +9440,7 @@ function catData(){ const d=catDay(); if(!bag.cat||typeof bag.cat!=="object") ba
   const want=Math.min(5,3+C.s.filter(s=>s.own).length);
   if(C.s.length<want&&(!C.next||d>=C.next)){ while(C.s.length<want) C.s.push(catNewStray()); C.next=0; }
   while(C.s.length>want){ let k=-1; C.s.forEach((s,i)=>{ if(!s.own&&(k<0||s.a<C.s[k].a)) k=i; }); if(k<0) break; C.s.splice(k,1); }
-  { const P=C.pet; if(P&&P.vet&&d>=P.vet.back){ const nm=P.nm; delete P.vet; P.sick=null; P.lf=d; P.ll=d; P.lp=d; setTimeout(()=>toast(`${nm} 病好了，從獸醫那裡回來了！`,4000),3500); }
+  { const P=C.pet; if(P&&P.vet&&catVetLeft(P.vet)<=0){ const nm=P.nm; delete P.vet; P.sick=null; P.lf=d; P.ll=d; P.lp=d; setTimeout(()=>toast(`${nm} 病好了，從獸醫那裡回來了！`,4000),3500); }
     if(P&&!P.away&&!P.vet&&!P.sick&&P.sk!==d&&d>P.born){ P.sk=d; const m=catMood(P); if(Math.random()<(m<50?.12:.04)){ P.sick={d,cost:500+((Math.random()*11)|0)*50}; setTimeout(()=>toast(`${P.nm} 好像生病了，懶洋洋的……點牠看看`,4500),5000); } } } /* 生病: 4% a day (12% if it is unhappy); 獸醫 500–1000 平安幣, away 1–3 days */
   if(C.pet&&!C.pet.away&&!C.pet.vet&&catDays(C.pet,"lf")>=4){ C.pet.away=true; C.pet.home=false; setTimeout(()=>toast(`${C.pet.nm} 好幾天沒吃東西，跑去愛心媽媽那裡了。去找愛心媽媽帶牠回來吧`,5000),4000); }
   return C; }
@@ -9575,13 +9579,13 @@ function catMove(e,tx,tz,sp,dt){ const g=e.g, dx=tx-g.position.x, dz=tz-g.positi
 /* along a planned path (through doorways), not straight through walls */
 function catMoveP(e,sp,dt){ if(!e.path||!e.path.length) e.path=[[e.tx,e.tz]]; const w=e.path[0]; if(catMove(e,w[0],w[1],sp,dt)){ e.path.shift(); if(!e.path.length) return true; } return false; }
 
-/* ---- 挖寶: now and then (once a day while you play, only when it has eaten and is happy) your cat runs off a few steps, digs with its front
+/* ---- 挖寶: now and then (once a game day — 24 min — while you play, only when it has eaten and is happy) your cat runs off a few steps, digs with its front
    paws and brings you 平安幣 or 扭蛋幣. Decided and paid on this phone like the 土地公 treasure. ---- */
 const CAT_DIG=[["c",50,.40],["c",100,.24],["c",500,.07],["c",1000,.02],["g",1,.18],["g",5,.07],["g",10,.02]];
 /* (掛網: no tap or key for 3 minutes. Then it still digs, but only once an hour — counted from your last touch or its last
    掛網 dig — and these don't use up the one a day you get while playing.) */
 CAT.inT=Date.now(); ["pointerdown","keydown","touchstart","wheel"].forEach(ev=>addEventListener(ev,()=>{ CAT.inT=Date.now(); },{passive:true,capture:true}));
-function catDigMaybe(e,dt){ const p=e.ref, d=catDay(); if(p.lf!==d||catMood(p)<50||miniOpen) return; p.dg=p.dg&&p.dg.d===d?p.dg:{d,n:0};
+function catDigMaybe(e,dt){ const p=e.ref, d=catDay(), gd=catGDay(); if(p.lf!==d||catMood(p)<50||miniOpen) return; p.dg=p.dg&&p.dg.g===gd?p.dg:{g:gd,n:0};
   const now=Date.now(); if(now-CAT.inT>180e3){ if(now-Math.max(p.ak||0,CAT.inT)<3600e3) return; if(catDigGo(e)){ p.ak=now; saveBag(); } return; }
   if(p.dg.n>=1) return; /* once a day while you play */
   if(e.digIn==null) e.digIn=rand(150,360); if((e.digIn-=dt)>0) return; e.digIn=rand(240,600);
@@ -9651,7 +9655,7 @@ function catPetSheet(){ const e=CAT.ents.find(x=>x.kind==="pet"); const C=catDat
   const fed=p.lf===d, clean=p.ll===d, pet=p.lp===d, learned=catLearned(p);
   HANDLERS.catVet=catVet;
   if(p.sick){ openSheet("cat",`🐈 ${esc(p.nm)}（${coat}）🤒`,`<p class="lead">${esc(p.nm)} 生病了，趴著不太想動，也不想吃東西。要帶去給獸醫看。</p>
-    <div class="goods"><button class="good" data-act="catVet"><span class="name">🏥 帶去看獸醫</span><span class="meta">醫藥費 ${p.sick.cost} 平安幣・住院 1～3 天（你有 ${bag.coins}）</span></button>
+    <div class="goods"><button class="good" data-act="catVet"><span class="name">🏥 帶去看獸醫</span><span class="meta">醫藥費 ${p.sick.cost} 平安幣・住院遊戲裡 1～3 天（你有 ${bag.coins}）</span></button>
     <button class="good" data-act="catPet"><span class="name">🤚 摸摸牠</span><span class="meta">陪陪牠</span></button></div><p class="note">住院期間牠不會在廟裡，治好了會自己回來。生病時心情最多 30。</p>`); return; }
   openSheet("cat",`🐈 ${esc(p.nm)}（${coat}）`,`<p class="lead">${mood>=80?"心情很好，一直蹭你":mood>=50?"還不錯，想要你多陪陪牠":mood>=25?"有點不開心……":"很難過，好像快要離家出走了"}</p>
     <p class="note">心情 ${mood}/100</p>${catBar(mood,mood>=50?"linear-gradient(90deg,#9be38a,#4cc36a)":"linear-gradient(90deg,#ffcf6a,#ff8a4c)")}
@@ -9664,8 +9668,8 @@ function catPetSheet(){ const e=CAT.ents.find(x=>x.kind==="pet"); const C=catDat
     <p class="note">每天要餵一罐、清貓砂、摸摸牠，心情才會好。三天以上沒吃東西，牠會跑去愛心媽媽那裡。養了 ${d-p.born+1} 天。</p>`); }
 function catLitter(){ const p=catData().pet; if(!p) return; const B=CAT.bed; if(Math.hypot(meAv.pos.x-B.x-.95,meAv.pos.y-B.z)>3.2){ CAT.litterGo=true; walkTo(B.x+.2,B.z+1.1); toast("走去貓砂盆……",1500); return; }
   if(p.ll===catDay()){ toast("貓砂今天清過了",1500); return; } p.ll=catDay(); try{ [300,260,320].forEach((f,i)=>tone(f,.08,.05,"square",i*.12)); }catch(_){} saveBag(); markDirty(); toast("貓砂清好了，乾乾淨淨！",1800); const e=CAT.ents.find(x=>x.kind==="pet"); if(e) catHearts(e,2); }
-function catVet(){ const C=catData(), p=C.pet; if(!p||!p.sick) return; const cost=p.sick.cost; if(bag.coins<cost){ toast(`平安幣不夠，醫藥費要 ${cost}`,2400); return; } bag.coins-=cost; const days=1+((Math.random()*3)|0); p.vet={back:catDay()+days,days}; p.sick=null; saveBag(); markDirty(); profSave(true); statInc("catVet");
-  const e=CAT.ents.find(x=>x.kind==="pet"); if(e) catDrop(e); closeSheet(); toast(`${p.nm} 住院了，要 ${days} 天才會好。治好會自己回來`,4200); }
+function catVet(){ const C=catData(), p=C.pet; if(!p||!p.sick) return; const cost=p.sick.cost; if(bag.coins<cost){ toast(`平安幣不夠，醫藥費要 ${cost}`,2400); return; } bag.coins-=cost; const days=1+((Math.random()*3)|0); p.vet={back:catGDay()+days,days,g:1}; p.sick=null; saveBag(); markDirty(); profSave(true); statInc("catVet");
+  const e=CAT.ents.find(x=>x.kind==="pet"); if(e) catDrop(e); closeSheet(); toast(`${p.nm} 住院了，要遊戲裡 ${days} 天（約 ${days*TOD_LEN/60|0} 分鐘）才會好。治好會自己回來`,4200); }
 function catTrainOpen(){ const p=catData().pet; if(!p) return; const d=catDay(); p.tt=p.tt&&p.tt.d===d?p.tt:{d,n:0}; const mood=catMood(p), learned=catLearned(p).length; HANDLERS.catTrain=catTrain;
   openSheet("cat",`🎓 訓練 ${esc(p.nm)}`,`${backBtnCat()}<p class="lead">每練一次要給一條肉泥（愛心媽媽一條 5 平安幣）。每個動作每天練一次，一天最多練 3 次。心情要 40 以上才肯練。</p><div class="inv-top"><span class="inv-coin">🍡<b>${bag.items.treat||0}</b>條肉泥</span></div>
     <div class="goods">${TRICKS.map(([k,n,need])=>{ const v=Math.min(need,p.tr[k]||0), done=v>=need, lock=k==="flip"&&learned<3&&!done, today=p.tt[k];
@@ -9688,7 +9692,7 @@ function catMomOpen(){ const C=catData(), p=C.pet; HANDLERS.catBuyT=n=>{ n=+n; c
   HANDLERS.catBuy=n=>{ n=+n; const cost=n*10; if(bag.coins<cost){ toast("平安幣不夠",1800); return; } bag.coins-=cost; bag.items.can=Math.min(99,(bag.items.can||0)+n); saveBag(); markDirty(); try{ sfx.coin(); }catch(_){} toast(`買了 ${n} 罐貓罐頭（共 ${catCans()} 罐）`,1800); catMomOpen(); };
   HANDLERS.catBack2=()=>{ if(!p||!p.away) return; if(catCans()<1){ toast("要先有 1 個罐頭餵牠，跟我買一罐吧",2400); return; } bag.items.can--; p.away=false; p.lf=catDay(); p.ll=catDay(); p.lp=catDay(); p.home=false; saveBag(); markDirty(); catSync(); toast(`${p.nm} 吃了罐頭，開心地跟你回家了。以後要每天照顧牠喔`,3600); closeSheet(); };
   openSheet("contact","👵 愛心媽媽",`<p class="lead">「廟裡的貓都是我在餵的。你喜歡貓的話，買幾個罐頭去餵牠們吧！牠們吃飽了、被摸舒服了，就會把你當家人。」</p>
-    ${p&&p.vet?`<p class="note">🏥 ${esc(p.nm)} 在獸醫那裡住院，${Math.max(1,p.vet.back-catDay())} 天後回來。</p>`:""}${p&&p.away?`<div class="group"><span class="group-label">你的貓在這裡</span><p class="lead">「${esc(p.nm)} 好幾天沒吃東西，跑來我這裡。餵牠一罐，牠就跟你回去。」</p><div class="goods"><button class="good" data-act="catBack2"><span class="name">🥫 餵牠，帶牠回家</span><span class="meta">用掉 1 罐</span></button></div></div>`:""}
+    ${p&&p.vet?`<p class="note">🏥 ${esc(p.nm)} 在獸醫那裡住院，遊戲裡 ${Math.max(1,catVetLeft(p.vet))} 天後回來（遊戲的一天約 ${TOD_LEN/60|0} 分鐘）。</p>`:""}${p&&p.away?`<div class="group"><span class="group-label">你的貓在這裡</span><p class="lead">「${esc(p.nm)} 好幾天沒吃東西，跑來我這裡。餵牠一罐，牠就跟你回去。」</p><div class="goods"><button class="good" data-act="catBack2"><span class="name">🥫 餵牠，帶牠回家</span><span class="meta">用掉 1 罐</span></button></div></div>`:""}
     <div class="inv-top"><span class="inv-coin">${bic("coin")}<b>${bag.coins}</b>平安幣</span><span class="inv-note">🥫 ${catCans()} 罐・🍡 ${bag.items.treat||0} 條</span></div>
     <div class="goods">${[1,5,10].map(n=>`<button class="good" data-act="catBuy" data-v="${n}"><span class="name">🥫 貓罐頭 ×${n}</span><span class="meta">${n*10} 平安幣</span></button>`).join("")}${[1,3,10].map(n=>`<button class="good" data-act="catBuyT" data-v="${n}"><span class="name">🍡 肉泥 ×${n}</span><span class="meta">${n*5} 平安幣・訓練用</span></button>`).join("")}</div>
     <p class="note">貓咪一天吃一罐。摸摸 +5、餵罐頭 +20 好感，好感滿 100 就能領養（一次一隻）。領養後要每天餵食、清貓砂（就在我旁邊）、摸摸牠；訓練一次給一條肉泥，最厲害的是後空翻！貓咪生病了要帶去看獸醫。</p>`); }
