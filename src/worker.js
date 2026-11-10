@@ -361,7 +361,7 @@ export class Lobby extends DurableObject {
           const add = (Array.isArray(b.list) ? b.list : []).slice(0, 20).map(e => ({ k: "sponsor", n: clean(e && e.n, 16), x: clean(e && e.x, 24), m: clean(e && e.m, 40), at: Date.now() })).filter(e => e.n);
           if (!add.length) return json({ ok: false }); L.push(...add); await this.ctx.storage.put(key, L);
           /* and onto the 榮譽功德榜 (the same name is added up on the wall). Removing a paper entry later does not touch the wall: the chair edits that in 榮譽功德榜. */
-          const H = (await this.ctx.storage.get("honor")) || []; for (const e of add) { const dg = String(e.x).replace(/[,，]/g, "").match(/\d+/); H.push({ n: e.n, a: dg ? Number(dg[0]) : 0, x: dg ? "" : e.x, at: e.at }); } await this.ctx.storage.put("honor", H.slice(-600));
+          if (!b.noHonor) { /* (the chair can tick 「不加進榮譽功德榜」 when the amount is already on the wall) */ const H = (await this.ctx.storage.get("honor")) || []; for (const e of add) { const dg = String(e.x).replace(/[,，]/g, "").match(/\d+/); H.push({ n: e.n, a: dg ? Number(dg[0]) : 0, x: dg ? "" : e.x, at: e.at }); } await this.ctx.storage.put("honor", H.slice(-600)); }
           const days = (await this.ctx.storage.get("nwDays")) || []; if (!days.includes(day)) { days.push(day); await this.ctx.storage.put("nwDays", days); }
         } else if (b.act === "move") { /* a sponsor that went into the paper before (the one that has already been replaced) is moved into today's paper; the 榮譽功德榜 is not touched */
           const P = (await this.ctx.storage.get("nw:" + pday)) || []; let n = -1, got = null; const i = Math.floor(Number(b.i)); const keep = P.filter(e => { if (e.k !== "sponsor") return true; n++; if (n === i) { got = e; return false; } return true; });
