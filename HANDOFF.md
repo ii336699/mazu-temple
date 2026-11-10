@@ -540,3 +540,4 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - 模擬 iPhone 量貼圖：scene 內 378 MB。重複上傳：清水模 cv.clone() ×57（40 MB）、texRep 磚 ×28（38 MB，unifyBricks 之後全部 repeat=1）、inn-art clone ×18（98 MB）；臉 512×256 ×108、頭髮 512×512 ×數十。
 - 改：cvsLo（手機半尺寸）用在 faceTexture、hairMap；texRep 快取（TEXREP）；innWood 快取（innWood.c，避開 TDZ）；清水模 UV 帶重複、共用 skinMat；unifyBricks 共用 unifyBricks.t；inn 掛畫共用 artMat、UV 選區塊。→ 163 MB；GPU 程序 800→540 MB。磚牆截圖正常；臉、掛畫、清水模還沒截圖。
 - START-HERE.md 全面改寫成 11/10 版本（換帳號）。
+- 主委擔心糊：cvsLo 關閉（CVS_LO=false），臉／頭髮維持原尺寸；只保留畫面完全相同的「共用貼圖」部分。

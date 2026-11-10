@@ -969,7 +969,8 @@ const GOLD=()=>mat("#d4a04a",{metalness:.85,roughness:.32});
 function cvs(w,h,draw){ const c=document.createElement("canvas"); c.width=w;c.height=h; const x=c.getContext("2d"); draw(x,w,h); const t=new T.CanvasTexture(c); t.encoding=T.sRGBEncoding; t.anisotropy=4; t._draw=draw; t._ctx=x; return t; }
 /* 手機記憶體: per-person pictures (faces, hair) are drawn at full size and kept at half size on phones — a quarter of the memory each, and
    with many players around there are well over a hundred of them (they were ~160 MB of the phone's graphics memory) */
-function cvsLo(w,h,draw){ if(!Q.phone) return cvs(w,h,draw); const big=document.createElement("canvas"); big.width=w; big.height=h; draw(big.getContext("2d"),w,h);
+const CVS_LO=false; /* (OFF: the chair worries about blur — faces and hair stay full size until he has seen before/after shots) */
+function cvsLo(w,h,draw){ if(!CVS_LO||!Q.phone) return cvs(w,h,draw); const big=document.createElement("canvas"); big.width=w; big.height=h; draw(big.getContext("2d"),w,h);
   const t=cvs(w>>1,h>>1,(x,W,H)=>{ x.clearRect(0,0,W,H); x.drawImage(big,0,0,W,H); }); big.width=big.height=1; return t; }
 function redraw(t){ const c=t.image; t._draw(t._ctx,c.width,c.height); t.needsUpdate=true; }
 function mesh(geo,m,x=0,y=0,z=0,parent=scene){ const o=new T.Mesh(geo,m); o.position.set(x,y,z); parent.add(o); return o; }
