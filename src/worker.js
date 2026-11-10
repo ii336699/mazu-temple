@@ -363,6 +363,12 @@ export class Lobby extends DurableObject {
           /* and onto the 榮譽功德榜 (the same name is added up on the wall). Removing a paper entry later does not touch the wall: the chair edits that in 榮譽功德榜. */
           if (!b.noHonor) { /* (the chair can tick 「不加進榮譽功德榜」 when the amount is already on the wall) */ const H = (await this.ctx.storage.get("honor")) || []; for (const e of add) { const dg = String(e.x).replace(/[,，]/g, "").match(/\d+/); H.push({ n: e.n, a: dg ? Number(dg[0]) : 0, x: dg ? "" : e.x, at: e.at }); } await this.ctx.storage.put("honor", H.slice(-600)); }
           const days = (await this.ctx.storage.get("nwDays")) || []; if (!days.includes(day)) { days.push(day); await this.ctx.storage.put("nwDays", days); }
+        } else if (b.act === "copy") { /* one already in today's paper is put in tomorrow's as well (the 榮譽功德榜 is not touched) */
+          const Y = (await this.ctx.storage.get("nw:" + yday)) || []; let n = -1, got = null; const i = Math.floor(Number(b.i)); for (const e of Y) { if (e.k !== "sponsor") continue; n++; if (n === i) { got = e; break; } }
+          if (!got) return json({ ok: false }); const T = (await this.ctx.storage.get("nw:" + today)) || []; T.push({ ...got, at: Date.now() }); await this.ctx.storage.put("nw:" + today, T);
+          const days = (await this.ctx.storage.get("nwDays")) || []; if (!days.includes(today)) { days.push(today); await this.ctx.storage.put("nwDays", days); }
+          const list = async d => ((await this.ctx.storage.get("nw:" + d)) || []).filter(e => e.k === "sponsor").map(e => ({ n: e.n, x: e.x, m: e.m }));
+          return json({ ok: true, yday, today, now: await list(yday), next: await list(today), prev: await list(pday) });
         } else if (b.act === "move") { /* a sponsor that went into the paper before (the one that has already been replaced) is moved into today's paper; the 榮譽功德榜 is not touched */
           const from = b.from === "next" ? today : pday; /* (from tomorrow's paper too: entered just after midnight, wanted in today's) */ const P = (await this.ctx.storage.get("nw:" + from)) || []; let n = -1, got = null; const i = Math.floor(Number(b.i)); const keep = P.filter(e => { if (e.k !== "sponsor") return true; n++; if (n === i) { got = e; return false; } return true; });
           if (!got) return json({ ok: false }); await this.ctx.storage.put("nw:" + from, keep); const Y = (await this.ctx.storage.get("nw:" + yday)) || []; Y.push({ ...got, at: Date.now() }); await this.ctx.storage.put("nw:" + yday, Y);
