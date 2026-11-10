@@ -4268,14 +4268,17 @@ async function autoWorship(){ if(AUTO.on){ autoStop("已停止一鍵參拜"); re
   const live=()=>AUTO.run===run;
   try{
     if(need.buy.length){ autoLabel("⏹ 停止・請香"); if(!await autoGo("shop",run)) return live()&&autoStop("一鍵參拜已停止"); need.buy.forEach(autoBuy); toast(`請好${need.buy.map(k=>GOOD_BY[k].name).join("、")}`,1800); await autoSleep(900); }
-    for(let i=0;i<CENSER_ORDER.length;i++){ const k=CENSER_ORDER[i]; if(!live()) return;
+    /* 中斷後再按: censers already finished (incense in, 平安符 passed over, offerings laid at 媽祖) are skipped, so it carries on where it stopped */
+    const cDone=k=>((bag.planted||[]).includes(k)||stuckIn(k))&&(!bag.items.fu||(flow().fu||[]).includes(k))&&(k!=="mazu"||flow().offered||!["hua","guo","bing"].some(x=>bag.items[x]>0));
+    { const first=CENSER_ORDER.findIndex(k=>!cDone(k)); if(first>0) toast(`從第 ${first+1} 爐 ${CENSER_NAME[CENSER_ORDER[first]]} 繼續`,2400); else if(first<0) toast("每一爐都拜好了，接著收供品、燒金紙",2400); }
+    for(let i=0;i<CENSER_ORDER.length;i++){ const k=CENSER_ORDER[i]; if(!live()) return; if(cDone(k)) continue;
       autoLabel(`⏹ 停止・${i+1}/${CENSER_ORDER.length} ${CENSER_NAME[k]}`);
       if(!await autoGo(k==="mazu"?"altar":k,run)) return live()&&autoStop("一鍵參拜已停止");
       if(k==="mazu"&&!flow().offered){ const f=["hua","guo","bing"].find(x=>bag.items[x]>0); if(f){ HANDLERS.offer(f); closeSheet(); await autoSleep(700); } }
       if(!(bag.planted||[]).includes(k)&&!stuckIn(k)){ if(!bowedAt(k)){ bowWithIncense(k); await autoSleep(1900); } if(!live()) return; plantAt(k); await autoSleep(800); }
-      if(bag.items.fu&&live()&&passFu(meAv,k,3.6)){ myGF=[k,Math.random().toString(36).slice(2,8)]; markDirty(); while(meAv.fuAnim&&live()) await autoSleep(200); await autoSleep(300); } }
-    if(!live()) return; autoLabel("⏹ 停止・收供品");
-    if(!await autoGo("altar",run)) return live()&&autoStop("一鍵參拜已停止"); HANDLERS.clearOffer(); closeSheet(); await autoSleep(900);
+      if(bag.items.fu&&live()&&!(flow().fu||[]).includes(k)&&passFu(meAv,k,3.6)){ myGF=[k,Math.random().toString(36).slice(2,8)]; markDirty(); flow().fu=(flow().fu||[]).concat(k); saveBag(); while(meAv.fuAnim&&live()) await autoSleep(200); await autoSleep(300); } }
+    if(!live()) return; if(!flow().cleared){ autoLabel("⏹ 停止・收供品");
+    if(!await autoGo("altar",run)) return live()&&autoStop("一鍵參拜已停止"); HANDLERS.clearOffer(); closeSheet(); await autoSleep(900); }
     if(!live()) return; autoLabel("⏹ 停止・燒金紙");
     if(!await autoGo("burn",run)) return live()&&autoStop("一鍵參拜已停止"); HANDLERS.burn(); closeSheet(); await autoSleep(600);
     autoStop(); toast(`一鍵參拜圓滿：${CENSER_ORDER.length} 爐香、平安符逐爐過爐、金紙燒化。媽祖保庇！`,4600);
