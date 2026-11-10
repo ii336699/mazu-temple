@@ -541,3 +541,4 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - 改：cvsLo（手機半尺寸）用在 faceTexture、hairMap；texRep 快取（TEXREP）；innWood 快取（innWood.c，避開 TDZ）；清水模 UV 帶重複、共用 skinMat；unifyBricks 共用 unifyBricks.t；inn 掛畫共用 artMat、UV 選區塊。→ 163 MB；GPU 程序 800→540 MB。磚牆截圖正常；臉、掛畫、清水模還沒截圖。
 - START-HERE.md 全面改寫成 11/10 版本（換帳號）。
 - 主委擔心糊：cvsLo 關閉（CVS_LO=false），臉／頭髮維持原尺寸；只保留畫面完全相同的「共用貼圖」部分。
+- 11/10 night: joystick through doorways — when the way ahead is blocked the stick now tries up to ~70° left/right (stickSteer: picks the side that opens up ahead, then falls back to the old wall slide), and the collision padding round solid things is .15 m (was .2). Grid model of every gap in the temple (tools idea: dump walkable() at .25 m, push through each doorway from 5 offsets × 5 angles): success on passable doorways 82.5 % → 94.7 %. Not deployed.

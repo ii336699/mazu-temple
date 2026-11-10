@@ -8492,7 +8492,7 @@ function tick(){ if(gameAsleep) return; const _ft0=performance.now(); { const no
     if(keys.has("q")||keys.has("arrowleft")){ camYaw+=dt*1.8; rotAnim=null; } if(keys.has("e")||keys.has("arrowright")){ camYaw-=dt*1.8; rotAnim=null; }
     if(f||r){ const fx=-Math.sin(camYaw), fz=-Math.cos(camYaw); let mx=fx*f-fz*r, mz=fz*f+fx*r; const L=Math.hypot(mx,mz); mx/=L; mz/=L;
       if(meAv.seat>=0){ meAv.seat=-1; updateStandBtn(); } pendingStation=null; meAv.faceGoal=null; tapMark.visible=false;
-      { let nx=meAv.pos.x+mx*.5, nz=meAv.pos.y+mz*.5; const inNow=isIn(meAv.pos.y); if(myFly){ [nx,nz]=flyClamp(nx,nz); } else if(!walkable(meAv.pos.x,meAv.pos.y)){ /* standing on a spot the walk map calls blocked (a god's table after a game): let the stick walk you off it */ } else if(!walkable(nx,nz)){ if(walkable(nx,meAv.pos.y)) nz=meAv.pos.y; else if(walkable(meAv.pos.x,nz)) nx=meAv.pos.x; else { nx=meAv.pos.x; nz=meAv.pos.y; } } meAv.path=[]; meAv.target.set(nx,nz); } markDirty(); } }
+      { let nx=meAv.pos.x+mx*.5, nz=meAv.pos.y+mz*.5; const inNow=isIn(meAv.pos.y); if(myFly){ [nx,nz]=flyClamp(nx,nz); } else if(!walkable(meAv.pos.x,meAv.pos.y)){ /* standing on a spot the walk map calls blocked (a god's table after a game): let the stick walk you off it */ } else if(!walkable(nx,nz)||!walkable(meAv.pos.x+mx*.25,meAv.pos.y+mz*.25)){ [nx,nz]=stickSteer(meAv.pos.x,meAv.pos.y,mx,mz); } meAv.path=[]; meAv.target.set(nx,nz); } markDirty(); } }
   if(rotAnim){ camYaw+=(rotAnim.to-camYaw)*Math.min(1,dt*7); if(Math.abs(rotAnim.to-camYaw)<.005){ camYaw=rotAnim.to; rotAnim=null; } }
   // head follows where the camera looks
   // head follows where the camera looks; when the camera swings round in front, the character looks into the lens instead (with hysteresis so it doesn't flip-flop)
@@ -8600,7 +8600,7 @@ function colBuild(){ const C=COL, g=new Uint8Array(C.nx*C.nz), bb=new T.Box3(), 
   scene.traverse(o=>{ if(!o.isMesh||o.isInstancedMesh||o.isSkinnedMesh||(o.userData&&(o.userData.floor||o.userData.innPick))||MERGED.includes(o)) return; if(skip(o)) return;
     const m=o.material; if(m&&(Array.isArray(m)?false:(m.transparent&&m.opacity<.5))) return; bb.setFromObject(o); if(bb.isEmpty()) return;
     const h=bb.max.y-bb.min.y, w=bb.max.x-bb.min.x, d=bb.max.z-bb.min.z; if(bb.min.y>1.0||bb.max.y<.3||h<.3) return; if(w>6||d>6||w*d>12) return;
-    const pad=.2, mark=(x0,x1,z0,z1)=>{ const i0=Math.max(0,Math.floor((x0-pad-C.x0)/C.cs)), i1=Math.min(C.nx-1,Math.floor((x1+pad-C.x0)/C.cs)), j0=Math.max(0,Math.floor((z0-pad-C.z0)/C.cs)), j1=Math.min(C.nz-1,Math.floor((z1+pad-C.z0)/C.cs)); for(let j=j0;j<=j1;j++) for(let i=i0;i<=i1;i++){ if(!g[j*C.nx+i]) n++; g[j*C.nx+i]=1; } };
+    const pad=.15, mark=(x0,x1,z0,z1)=>{ const i0=Math.max(0,Math.floor((x0-pad-C.x0)/C.cs)), i1=Math.min(C.nx-1,Math.floor((x1+pad-C.x0)/C.cs)), j0=Math.max(0,Math.floor((z0-pad-C.z0)/C.cs)), j1=Math.min(C.nz-1,Math.floor((z1+pad-C.z0)/C.cs)); for(let j=j0;j<=j1;j++) for(let i=i0;i<=i1;i++){ if(!g[j*C.nx+i]) n++; g[j*C.nx+i]=1; } };
     /* the real shape, not its box: only what the mesh actually has between knee and chest height blocks (so an arch, a moon gate or a
        door frame leaves its opening free — their boxes used to fill the doorway, and the joystick could not get through) */
     const ge=o.geometry, pa=ge&&ge.attributes&&ge.attributes.position; if(pa&&pa.count<60000&&(w*d>.6||Math.max(w,d)>1.0)){ colTris(o,pa,ge.index,mark); return; }
@@ -8613,6 +8613,15 @@ function colBuild(){ const C=COL, g=new Uint8Array(C.nx*C.nz), bb=new T.Box3(), 
   if(typeof INN!=="undefined"&&INN.g){ for(let a=0;a<6.3;a+=.3) open(INN.DX+48.5+Math.cos(a)*3.2,-34.25+Math.sin(a)*2.6,1.4); }
   C.g=g; C.n=n; }
 [8000,20000,45000].forEach(t=>setTimeout(()=>{ try{ colBuild(); }catch(e){} },t)); /* again as late models arrive */
+/* the stick, when the way straight ahead is blocked (a door frame, a post): try a little to the left and right — up to about 70° — and take the
+   side that opens up ahead, so you are funnelled through a doorway instead of stopping at an invisible edge and having to let go and push again */
+function stickSteer(px,pz,mx,mz){ const ok=(ax,az,L)=>{ const x=px+ax*L, z=pz+az*L; return walkable(x,z)&&walkable(px+ax*L*.5,pz+az*L*.5)?[x,z]:null; };
+  let r=ok(mx,mz,.3); if(r) return r;
+  for(const a of [.15,.3,.45,.6,.8,1.0,1.25]){ let best=null, bs=-1;
+    for(const sg of [1,-1]){ const c=Math.cos(a*sg), s=Math.sin(a*sg), ax=mx*c-mz*s, az=mx*s+mz*c;
+      for(const L of [.5,.3,.18]){ const q=ok(ax,az,L); if(q){ let sc=0; for(let k=1;k<7;k++) if(walkable(q[0]+mx*k*.25,q[1]+mz*k*.25)) sc+=10; for(const dx of [-.25,0,.25]) for(const dz of [-.25,0,.25]) if(walkable(q[0]+dx,q[1]+dz)) sc++; if(sc>bs){ best=q; bs=sc; } break; } } }
+    if(best) return best; }
+  const nx=px+mx*.5, nz=pz+mz*.5; if(walkable(nx,pz)) return [nx,pz]; if(walkable(px,nz)) return [px,nz]; return [px,pz]; } /* last resort: slide along the wall as before */
 function colBlocked(x,z){ const C=COL; if(!C.g) return false; const i=Math.floor((x-C.x0)/C.cs), j=Math.floor((z-C.z0)/C.cs); if(i<0||j<0||i>=C.nx||j>=C.nz) return false; return C.g[j*C.nx+i]===1; }
 /* a tapped walk: where a straight leg would pass through something, find a way round it on the grid (A*, a few thousand cells at most) */
 function colDetour(ax,az,bx,bz){ const C=COL, cs=C.cs, ci=x=>Math.floor((x-C.x0)/cs), cj=z=>Math.floor((z-C.z0)/cs), cx=i=>C.x0+(i+.5)*cs, cz=j=>C.z0+(j+.5)*cs;
