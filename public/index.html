@@ -9339,9 +9339,14 @@ function paperOpen(intro){ const p=PAPER.p; if(!p) return; PAPER.ph=paperLib(p);
   else el.onclick=null; }
 /* 主委工具 → 贊助登報: names and amounts go on the front page. 今天 = re-issue the paper everyone is reading today; 明天 = in tomorrow's paper.
    Several on one day share one thank-you story listing everyone. (The test page keeps them on this phone and shows them in the sample paper.) */
-const SPT={get:()=>{ try{ return JSON.parse(load("mz.spTest","")||"null")||{now:[],next:[]}; }catch(e){ return {now:[],next:[]}; } }, put:v=>save("mz.spTest",JSON.stringify(v))};
+/* 測試頁的贊助: kept on this phone with the day they were entered, so the days turn over like the real paper — one put in "tomorrow's paper"
+   shows in the paper from the next day on, and "today's paper" ones drop off the day after */
+const spTDay=()=>new Date(Date.now()+8*3600e3).toISOString().slice(0,10);
+const SPT={get:()=>{ let v; try{ v=JSON.parse(load("mz.spTest","")||"null")||{now:[],next:[]}; }catch(e){ v={now:[],next:[]}; } const t=spTDay(), y=new Date(Date.now()+8*3600e3-864e5).toISOString().slice(0,10);
+    v.now=(v.now||[]).filter(e=>!e.d||e.d>=t); /* (old entries without a day stay as they were) */ const due=(v.next||[]).filter(e=>e.d&&e.d<t); v.next=(v.next||[]).filter(e=>!e.d||e.d>=t); due.filter(e=>e.d===y).forEach(e=>v.now.push({...e,d:t})); return v; },
+  put:v=>save("mz.spTest",JSON.stringify(v))};
 const spAmt=v=>{ v=String(v||"").trim(); return /^[\d,]+$/.test(v)?"新台幣 "+(+v.replace(/,/g,"")).toLocaleString("en-US")+" 元":v; };
-async function spReq(body){ if(!USE_CF){ const d=SPT.get(); if(body){ const w=body.when==="next"||body.day==="next"?"next":"now"; if(body.act==="add"){ d[w].push(...body.list); body.list.forEach(e=>{ const dg=String(e.x).replace(/[,，]/g,"").match(/\d+/); honorLocal({act:"add",n:e.n,a:dg?+dg[0]:0,x:dg?"":e.x}); }); } if(body.act==="del") d[w].splice(body.i,1); SPT.put(d); } return {ok:true,now:d.now,next:d.next}; }
+async function spReq(body){ if(!USE_CF){ const d=SPT.get(); if(body){ const w=body.when==="next"||body.day==="next"?"next":"now"; if(body.act==="add"){ d[w].push(...body.list.map(e=>({...e,d:spTDay()}))); body.list.forEach(e=>{ const dg=String(e.x).replace(/[,，]/g,"").match(/\d+/); honorLocal({act:"add",n:e.n,a:dg?+dg[0]:0,x:dg?"":e.x}); }); } if(body.act==="del") d[w].splice(body.i,1); SPT.put(d); } return {ok:true,now:d.now,next:d.next}; }
   const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return null; }
   try{ const r=await fetch("/sponsor",body?{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify(body)}:{headers:{"x-key":key},cache:"no-store"}); const j=await r.json().catch(()=>null); if(!j||j.error){ toast("伺服器忙，請再按一次"+(j&&j.error?"（"+String(j.error).slice(0,40)+"）":""),3200); return null; } forgetKey(r,j); if(!j.ok){ toast(j.locked?"今天密碼錯太多次，明天再試":"存不進去（密碼？）",2600); return null; } if(j.paperErr) toast("已存好，但報紙重新出刊失敗："+j.paperErr,4000); return j; }catch(e){ toast("網路不穩，請再按一次",2000); return null; } }
 const spRow=()=>`<div class="sp-row"><input class="sp-n" maxlength="16" placeholder="贊助人名字" autocomplete="off"><input class="sp-x" maxlength="24" placeholder="金額，例：1000" autocomplete="off" inputmode="text"><input class="sp-m" maxlength="40" placeholder="主委想說的話（可不填）" autocomplete="off"></div>`;
@@ -9748,8 +9753,8 @@ HANDLERS.hatFitSave=async()=>{ const fit={}; for(const id of hfIds()){ const o={
 HANDLERS.paperTest=()=>{ const seen=load("mz.paperSeen","");
   openSheet("contact","報紙測試",`${backBtn}<p class="lead">試看報紙的各種樣子。範例報紙用假數字，不會存到伺服器。</p>
     <div class="goods"><button class="good" data-act="paperTry" data-v="intro"><span class="name">🎬 播放開場</span><span class="meta">黑畫面 → 點一下 → 叮叮＋「報紙到囉！」→ 報紙打開</span></button>
-    <button class="good" data-act="paperTry" data-v="real"><span class="name">📰 昨天的報紙</span><span class="meta">${USE_CF?"大家今天看到的那一份":"測試頁沒有伺服器，會用範例"}</span></button>
-    ${USE_CF?`<button class="good" data-act="paperTry" data-v="live"><span class="name">📡 預覽今天的報紙</span><span class="meta">用今天到目前為止的資料寫（明天大家才看得到）</span></button>`:""}
+    <button class="good" data-act="paperTry" data-v="real"><span class="name">📰 今天的報紙</span><span class="meta">${USE_CF?"大家今天看到的那一份":"測試頁沒有伺服器，會用範例"}</span></button>
+    ${USE_CF?`<button class="good" data-act="paperTry" data-v="live"><span class="name">📡 預覽明天的報紙</span><span class="meta">用今天到目前為止的資料寫，明天早上出刊</span></button>`:""}
     <button class="good" data-act="paperTry" data-v="shuffle"><span class="name">🔀 換一份範例</span><span class="meta">同樣的資料換不同寫法</span></button></div>
     <div class="group"><span class="group-label">範例情境</span><div class="chips">${[["heat","🥵 阿嬤中暑"],["stall","🌪️ 攤子被吹走"],["storm","⛈️ 雷雨天"],["rain","🌧️ 下雨天"],["buskrain","🎸 玖玖雨中開唱"],["pk","⚪ 彈珠台破產"],["sp1","🧧 一位贊助"],["spN","🧧 多位贊助"],["nm","🏮 夜市熱鬧"],["calm","🏮 平靜的一天"]].map(([k,t])=>`<button class="chip" data-act="paperTry" data-v="sc:${k}">${t}</button>`).join("")}</div></div>
     <p class="note">開場每天只會自動出現一次${seen?`（這支手機已看過 ${esc(seen)} 的報紙）`:""}。<button class="chip" data-act="paperTry" data-v="reset">讓下次進遊戲再出現一次</button></p>`); };
