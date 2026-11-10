@@ -347,7 +347,7 @@ export class Lobby extends DurableObject {
     if (url.pathname === "/hatfit") return json((await this.ctx.storage.get("hatfit")) || { fit: {}, at: 0 });
     if (url.pathname === "/sponsor") {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
-      const yday = this.stDay(Date.now() - 864e5), today = this.stDay();
+      const yday = this.stDay(Date.now() - 864e5), today = this.stDay(), pday = this.stDay(Date.now() - 2 * 864e5);
       /* re-issue: the new paper is built first and then swapped in, so a player opening the paper meanwhile never finds it missing (and never starts a
          second numbered paper); if building it fails the sponsor is still saved and the old paper stays */
       const reissue = async day => { try { const got = await this.ctx.storage.get("paper:" + day); if (!got) return; await this.stSave(true); const st = (await this.ctx.storage.get("st:" + day)) || { c: {}, mx: {}, p: {} };
@@ -363,13 +363,18 @@ export class Lobby extends DurableObject {
           /* and onto the 榮譽功德榜 (the same name is added up on the wall). Removing a paper entry later does not touch the wall: the chair edits that in 榮譽功德榜. */
           const H = (await this.ctx.storage.get("honor")) || []; for (const e of add) { const dg = String(e.x).replace(/[,，]/g, "").match(/\d+/); H.push({ n: e.n, a: dg ? Number(dg[0]) : 0, x: dg ? "" : e.x, at: e.at }); } await this.ctx.storage.put("honor", H.slice(-600));
           const days = (await this.ctx.storage.get("nwDays")) || []; if (!days.includes(day)) { days.push(day); await this.ctx.storage.put("nwDays", days); }
+        } else if (b.act === "move") { /* a sponsor that went into the paper before (the one that has already been replaced) is moved into today's paper; the 榮譽功德榜 is not touched */
+          const P = (await this.ctx.storage.get("nw:" + pday)) || []; let n = -1, got = null; const i = Math.floor(Number(b.i)); const keep = P.filter(e => { if (e.k !== "sponsor") return true; n++; if (n === i) { got = e; return false; } return true; });
+          if (!got) return json({ ok: false }); await this.ctx.storage.put("nw:" + pday, keep); const Y = (await this.ctx.storage.get("nw:" + yday)) || []; Y.push({ ...got, at: Date.now() }); await this.ctx.storage.put("nw:" + yday, Y);
+          this.spErr = ""; await reissue(yday); const list = async d => ((await this.ctx.storage.get("nw:" + d)) || []).filter(e => e.k === "sponsor").map(e => ({ n: e.n, x: e.x, m: e.m }));
+          return json({ ok: true, yday, today, now: await list(yday), next: await list(today), prev: await list(pday), paperErr: this.spErr || undefined });
         } else if (b.act === "del") {
           let n = -1; const i = Math.floor(Number(b.i)); const keep = L.filter(e => { if (e.k !== "sponsor") return true; n++; if (n === i) return false; return true; }); await this.ctx.storage.put(key, keep);
         } else return json({ ok: false });
         this.spErr = ""; if (day === yday) await reissue(yday);
       }
       const list = async d => ((await this.ctx.storage.get("nw:" + d)) || []).filter(e => e.k === "sponsor").map(e => ({ n: e.n, x: e.x, m: e.m }));
-      const pe = this.spErr || undefined; this.spErr = ""; return json({ ok: true, yday, today, now: await list(yday), next: await list(today), paperErr: pe });
+      const pe = this.spErr || undefined; this.spErr = ""; return json({ ok: true, yday, today, now: await list(yday), next: await list(today), prev: await list(pday), paperErr: pe });
     }
     if (url.pathname === "/stat") {
       if (req.method === "POST") {

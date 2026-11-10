@@ -9299,7 +9299,7 @@ async function paperDemo(sc){ const G=await import("./paper-gen.js?v=20261108d")
   const sp=sc.seed?rnd(25,90):58;
   return G.buildPaper({d,no:sc.no||1+(sc.seed?rnd(1,99):0),seed:sc.seed||0,force:sc.force||[],st:{c:sc.calm?{visitors:12,b_bowBtn:30}:{visitors:R2(20,90),b_bowBtn:R2(80,400),b_jiaoBtn:R2(40,200),b_lotBtn:R2(10,90),wish:wishes.length,sit_futon:R2(2,12),...pk,...bk},mx:{peak:Math.round(sp*.4),sp,h20:Math.round(sp*.4),s20:sp,s21:Math.round(sp*.85),s19:Math.round(sp*.7),s14:Math.round(sp*.5)},p},
     ev:ev.concat(sc.calm?[]:(STATQ.ev||[])).concat(sc.sp?sc.sp:(!USE_CF&&!sc.seed?SPT.get().now.map(e=>({k:"sponsor",...e})):[])),wishes}); }
-function paperHTML(p){ const E=esc, it=p.items||[], dt=p.d.split("-"), wk="日一二三四五六"[new Date(p.d+"T12:00:00+08:00").getDay()];
+function paperHTML(p){ const E=esc, it=p.items||[], pub=new Date(Date.parse(p.d+"T12:00:00+08:00")+864e5), dt=[0,pub.getUTCMonth()+1,pub.getUTCDate()], wk="日一二三四五六"[pub.getUTCDay()]; /* (dated the morning it comes out: the stories are about the day before) */
   const art=(s,i)=>PAPER.ph&&PAPER.ph[i]?`<figure class="np-photo"><img src="${PAPER.ph[i]}" alt=""><figcaption>本報記者攝</figcaption></figure>`:`<div class="np-art" data-ph="${i}"><span>${s.art||"📰"}</span></div>`;
   return `<div class="np-page" role="document">
     <header class="np-mast"><div class="np-side">第 ${p.no} 期<br>${+dt[1]} 月 ${+dt[2]} 日（${wk}）</div><h1>天后宮日報</h1><div class="np-side r">昨日 ${p.wxi} ${p.wxn}<br>今日 ${p.fci} ${p.fcn}</div></header>
@@ -9348,12 +9348,14 @@ const spRow=()=>`<div class="sp-row"><input class="sp-n" maxlength="16" placehol
 HANDLERS.sponsorOpen=async()=>{ openSheet("contact","贊助登報",`${backBtn}<p class="lead">讀取中…</p>`); const j=await spReq(null); if(!j){ return; }
   const li=(L,w)=>L.length?`<ul class="sp-list">${L.map((e,i)=>`<li><span><b>${esc(e.n)}</b>　${esc(e.x||"")}${e.m?`<br><small>「${esc(e.m)}」</small>`:""}</span><button class="chip" data-act="sponsorDel" data-v="${w}:${i}">刪除</button></li>`).join("")}</ul>`:`<p class="note">還沒有。</p>`;
   openSheet("contact","贊助登報",`${backBtn}<p class="lead">登記贊助人，會登上報紙頭版。一天有好幾位時，會合在同一篇頭版一起感謝。</p>
+    <div class="group"><span class="group-label">明天的報紙（今天登記的）</span>${li(j.next,"next")}</div>
     <div class="group"><span class="group-label">今天大家看的報紙</span>${li(j.now,"now")}</div>
-    <div class="group"><span class="group-label">明天的報紙</span>${li(j.next,"next")}</div>
+    ${j.prev&&j.prev.length?`<div class="group"><span class="group-label">上一份報紙（已經換新了）</span><ul class="sp-list">${j.prev.map((e,i)=>`<li><span><b>${esc(e.n)}</b>　${esc(e.x||"")}</span><button class="chip" data-act="sponsorMove" data-v="${i}">搬到今天的報紙</button></li>`).join("")}</ul><p class="note">搬過去不會再加一次榮譽功德榜。</p></div>`:""}
     <div class="group"><span class="group-label">新增贊助</span><div id="spRows">${spRow()}</div><button class="chip" data-act="sponsorRow">＋ 再加一位</button>
       <p class="note">金額只打數字會自動寫成「新台幣 1,000 元」，也可以自己打，例如「平安幣 5000」、「供品一批」。</p>
-      <div class="goods"><button class="good" data-act="sponsorSave" data-v="now"><span class="name">🧧 登上今天的報紙</span><span class="meta">今天的報紙馬上重新出刊，大家打開就看得到</span></button>
-      <button class="good" data-act="sponsorSave" data-v="next"><span class="name">📅 登上明天的報紙</span><span class="meta">明天早上出刊的那一份</span></button></div></div>`); };
+      <div class="goods"><button class="good" data-act="sponsorSave" data-v="next"><span class="name">📅 登上明天的報紙</span><span class="meta">明天早上出刊，大家一打開就看到</span></button>
+      <button class="good" data-act="sponsorSave" data-v="now"><span class="name">🧧 今天的報紙馬上補登</span><span class="meta">今天大家正在看的那份立刻重新出刊</span></button></div></div>`); };
+HANDLERS.sponsorMove=async v=>{ if(!USE_CF){ toast("單機測試版沒有上一份報紙",2000); return; } const j=await spReq({act:"move",i:+v}); if(!j) return; PAPER.p=null; toast("已搬到今天的報紙",1800); HANDLERS.sponsorOpen(); };
 HANDLERS.sponsorRow=()=>{ const box=$("#spRows"); if(box&&box.children.length<20) box.insertAdjacentHTML("beforeend",spRow()); };
 HANDLERS.sponsorSave=async w=>{ const list=[...document.querySelectorAll("#spRows .sp-row")].map(r=>({n:r.querySelector(".sp-n").value.trim().slice(0,16),x:spAmt(r.querySelector(".sp-x").value).slice(0,24),m:r.querySelector(".sp-m").value.trim().slice(0,40)})).filter(e=>e.n);
   if(!list.length){ toast("請先填贊助人名字"); return; } if(list.some(e=>!e.x)){ toast("每一位都要填金額"); return; }
