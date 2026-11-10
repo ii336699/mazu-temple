@@ -68,7 +68,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-o
 .icon-btn .cap{position:absolute;top:calc(100% + 2px);left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;line-height:1.15;font-size:10px;color:var(--muted);white-space:nowrap;text-shadow:0 1px 3px #000;pointer-events:none}
 .icon-btn .cap b{color:var(--gold);font-size:11px;font-variant-numeric:tabular-nums}
 .icon-btn svg{width:20px;height:20px;stroke:var(--ink);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 136px);transform:translateX(-50%);padding:9px 18px;border-radius:999px;font-size:14px;z-index:6;
+.toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 136px);transform:translateX(-50%);padding:9px 18px;border-radius:999px;font-size:14px;z-index:9; /* (above the sheets, so a message about the sheet is never hidden behind it) */
   white-space:nowrap;max-width:calc(100% - 32px);overflow:hidden;text-overflow:ellipsis;transition:opacity .35s;pointer-events:none}
 .toast[data-hide]{opacity:0}
 .actions{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:12px;
@@ -9351,7 +9351,7 @@ async function spReq(body){ if(!USE_CF){ const d=SPT.get(); if(body){ const w=bo
   try{ const r=await fetch("/sponsor",body?{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify(body)}:{headers:{"x-key":key},cache:"no-store"}); const j=await r.json().catch(()=>null); if(!j||j.error){ toast("伺服器忙，請再按一次"+(j&&j.error?"（"+String(j.error).slice(0,40)+"）":""),3200); return null; } forgetKey(r,j); if(!j.ok){ toast(j.locked?"今天密碼錯太多次，明天再試":"存不進去（密碼？）",2600); return null; } if(j.paperErr) toast("已存好，但報紙重新出刊失敗："+j.paperErr,4000); return j; }catch(e){ toast("網路不穩，請再按一次",2000); return null; } }
 const spRow=()=>`<div class="sp-row"><input class="sp-n" maxlength="16" placeholder="贊助人名字" autocomplete="off"><input class="sp-x" maxlength="24" placeholder="金額，例：1000" autocomplete="off" inputmode="text"><input class="sp-m" maxlength="40" placeholder="主委想說的話（可不填）" autocomplete="off"></div>`;
 HANDLERS.sponsorOpen=async()=>{ openSheet("contact","贊助登報",`${backBtn}<p class="lead">讀取中…</p>`); const j=await spReq(null); if(!j){ return; }
-  const li=(L,w)=>L.length?`<ul class="sp-list">${L.map((e,i)=>`<li><span><b>${esc(e.n)}</b>　${esc(e.x||"")}${e.m?`<br><small>「${esc(e.m)}」</small>`:""}</span><button class="chip" data-act="sponsorDel" data-v="${w}:${i}">刪除</button></li>`).join("")}</ul>`:`<p class="note">還沒有。</p>`;
+  const li=(L,w)=>L.length?`<ul class="sp-list">${L.map((e,i)=>`<li><span><b>${esc(e.n)}</b>　${esc(e.x||"")}${e.m?`<br><small>「${esc(e.m)}」</small>`:""}</span><span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${w==="next"?`<button class="chip" data-act="sponsorMove" data-v="next:${i}">改登今天的報紙</button>`:""}<button class="chip" data-act="sponsorDel" data-v="${w}:${i}">刪除</button></span></li>`).join("")}</ul>`:`<p class="note">還沒有。</p>`;
   openSheet("contact","贊助登報",`${backBtn}<p class="lead">登記贊助人，會登上報紙頭版。一天有好幾位時，會合在同一篇頭版一起感謝。</p>
     <div class="group"><span class="group-label">明天的報紙（今天登記的）</span>${li(j.next,"next")}</div>
     <div class="group"><span class="group-label">今天大家看的報紙</span>${li(j.now,"now")}</div>
@@ -9361,10 +9361,12 @@ HANDLERS.sponsorOpen=async()=>{ openSheet("contact","贊助登報",`${backBtn}<p
       <label class="sp-nh" style="display:flex;gap:8px;align-items:center;margin:6px 0 10px;font-size:14px"><input type="checkbox" id="spNoHonor"> 只登報紙，不加進榮譽功德榜（金額已經加過了）</label>
       <div class="goods"><button class="good" data-act="sponsorSave" data-v="next"><span class="name">📅 登上明天的報紙</span><span class="meta">明天早上出刊，大家一打開就看到</span></button>
       <button class="good" data-act="sponsorSave" data-v="now"><span class="name">🧧 今天的報紙馬上補登</span><span class="meta">今天大家正在看的那份立刻重新出刊</span></button></div></div>`); };
-HANDLERS.sponsorMove=async v=>{ if(!USE_CF){ toast("單機測試版沒有上一份報紙",2000); return; } const j=await spReq({act:"move",i:+v}); if(!j) return; PAPER.p=null; toast("已搬到今天的報紙",1800); HANDLERS.sponsorOpen(); };
+HANDLERS.sponsorMove=async v=>{ const nx=String(v).startsWith("next:"), i=+String(v).replace("next:","");
+  if(!USE_CF){ if(!nx){ toast("單機測試版沒有上一份報紙",2000); return; } const d=SPT.get(); const e=d.next.splice(i,1)[0]; if(e) d.now.push({...e,d:spTDay()}); SPT.put(d); PAPER.p=null; toast("已改登今天的報紙",1800); HANDLERS.sponsorOpen(); return; }
+  const j=await spReq({act:"move",i,from:nx?"next":"prev"}); if(!j) return; PAPER.p=null; toast("已搬到今天的報紙",1800); HANDLERS.sponsorOpen(); };
 HANDLERS.sponsorRow=()=>{ const box=$("#spRows"); if(box&&box.children.length<20) box.insertAdjacentHTML("beforeend",spRow()); };
 HANDLERS.sponsorSave=async w=>{ const list=[...document.querySelectorAll("#spRows .sp-row")].map(r=>({n:r.querySelector(".sp-n").value.trim().slice(0,16),x:spAmt(r.querySelector(".sp-x").value).slice(0,24),m:r.querySelector(".sp-m").value.trim().slice(0,40)})).filter(e=>e.n);
-  if(!list.length){ toast("請先填贊助人名字"); return; } if(list.some(e=>!e.x)){ toast("每一位都要填金額"); return; }
+  if(!list.length){ toast("請先在「新增贊助」填贊助人名字和金額；已經在清單上的，用旁邊的按鈕改登或刪除",3200); return; } if(list.some(e=>!e.x)){ toast("每一位都要填金額"); return; }
   const nh=!!($("#spNoHonor")&&$("#spNoHonor").checked); const j=await spReq({act:"add",when:w,list,noHonor:nh}); if(!j) return; toast((w==="now"?`已登上今天的報紙（${list.length} 位）`:`已排進明天的報紙（${list.length} 位）`)+(nh?"，榮譽功德榜沒有變動":"，也加進榮譽功德榜了"),2800); honorLoad(); PAPER.p=null; HANDLERS.sponsorOpen();
   if(w==="now"){ const p=await paperFetch(); if(!USE_CF){ PAPER.p=await paperDemo({}); } if(PAPER.p){ closeSheet(); paperOpen(false); } } };
 HANDLERS.sponsorDel=async v=>{ const [w,i]=String(v).split(":"); const j=await spReq({act:"del",day:w==="next"?"next":"now",when:w,i:+i}); if(!j) return; PAPER.p=null; toast("已刪除",1600); HANDLERS.sponsorOpen(); };
