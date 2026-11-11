@@ -553,7 +553,7 @@ body.hideui .joy,body.customizing .joy,body.hideui .camreset,body.customizing .c
 const T = window.THREE;
 /* low-poly switch: while LOWPOLY is on (building other players and the demo crowd), round shapes are made with about half the segments
    each way, so a character costs about a quarter of the triangles. Your own character is built at full detail. */
-let LOWPOLY=false; var SHOPX=null; var DQ=null; /* 今日功課 (filled in near the end of the page) */ /* 商店街 (filled in near the end of the page) */
+let LOWPOLY=false; var SHOPX=null; var DQ=null; var ROOMX=null; /* 今日功課 (filled in near the end of the page) */ /* 商店街 (filled in near the end of the page) */
 { const k=.45, sg=(n,min)=>Math.max(min,Math.round(n*k));
   const wrap=(name,fix)=>{ const C=T[name]; if(!C) return; const W=function(...a){ if(LOWPOLY) fix(a); return new C(...a); }; W.prototype=C.prototype; T[name]=W; };
   wrap("SphereGeometry",a=>{ a[1]=sg(a[1]??32,6); a[2]=sg(a[2]??16,4); });
@@ -4605,7 +4605,7 @@ const CODE_ITEMS=["xiang","hua","guo","bing","jin","fu"];
 function lookCode(){ const bits=[]; const put=(v,n)=>{ v=Math.max(0,Math.min((2**n)-1,v|0)); for(let i=n-1;i>=0;i--) bits.push((v/2**i|0)&1); };
   put(1,4); for(let i=0;i<13;i++) put(me.look[i]||0,5); put(bag.coins,16); CODE_ITEMS.forEach(k=>put(bag.items[k]||0,5)); put(bag.redThread?1:0,1);
   const ps=(bag.poems||[]).slice(-5); put(ps.length,3); ps.forEach(n=>put(n,6)); put(me.no||0,24);
-  const nm=[...String(me.sp?"":(me.name||""))].slice(0,10).join(""); const cu=[]; for(let i=0;i<nm.length;i++) cu.push(nm.charCodeAt(i)); put(Math.min(15,cu.length),4); cu.slice(0,15).forEach(c=>put(c,16)); { const a=accState(); put(Math.min(15,ACC_IDS.length),4); ACC_IDS.slice(0,15).forEach(id=>put(a.owned[id]?1:0,1)); } put(Math.min(255,bag.gacha||0),8); { const a=accState(), more=ACC_IDS.slice(15); put(more.length,6); more.forEach(id=>put(a.owned[id]?1:0,1)); } { const c=bag.cat&&bag.cat.pet; put(1,1); put(Math.min(255,bag.items.can||0),8); put(Math.min(255,bag.items.treat||0),8); put(c?1:0,1); if(c){ put(c.t,4); put(c.sd,16); const cn=[...String(c.nm||"")].slice(0,6); put(cn.length,3); cn.forEach(ch=>put(ch.charCodeAt(0),16)); TRICKS.forEach(([k])=>put(Math.min(7,c.tr&&c.tr[k]||0),3)); } } /* 貓: cans and your cat (older codes read as none) */ put(1,1); put(bag.clo||0,16); put(Math.max(0,Math.min(100,Math.round(bag.en??100))),7); SNACK_KEYS.forEach(k=>put(Math.min(63,(bag.snk||{})[k]||0),6)); put(Math.max(0,(bag.coins|0)-65535),24); { const z=DQ?DQ.pack():null; put(z?1:0,1); if(z) z.forEach(v=>put(v[0],v[1])); } /* 今日功課: sign-in, claims, 功德簿 */ /* (coins above the old 16-bit field) */ /* 商店街: outfits bought, 精力, snacks (older codes read as none) */ /* 扭蛋幣 (codes made before it was added simply read as 0) */
+  const nm=[...String(me.sp?"":(me.name||""))].slice(0,10).join(""); const cu=[]; for(let i=0;i<nm.length;i++) cu.push(nm.charCodeAt(i)); put(Math.min(15,cu.length),4); cu.slice(0,15).forEach(c=>put(c,16)); { const a=accState(); put(Math.min(15,ACC_IDS.length),4); ACC_IDS.slice(0,15).forEach(id=>put(a.owned[id]?1:0,1)); } put(Math.min(255,bag.gacha||0),8); { const a=accState(), more=ACC_IDS.slice(15); put(more.length,6); more.forEach(id=>put(a.owned[id]?1:0,1)); } { const c=bag.cat&&bag.cat.pet; put(1,1); put(Math.min(255,bag.items.can||0),8); put(Math.min(255,bag.items.treat||0),8); put(c?1:0,1); if(c){ put(c.t,4); put(c.sd,16); const cn=[...String(c.nm||"")].slice(0,6); put(cn.length,3); cn.forEach(ch=>put(ch.charCodeAt(0),16)); TRICKS.forEach(([k])=>put(Math.min(7,c.tr&&c.tr[k]||0),3)); } } /* 貓: cans and your cat (older codes read as none) */ put(1,1); put(bag.clo||0,16); put(Math.max(0,Math.min(100,Math.round(bag.en??100))),7); SNACK_KEYS.forEach(k=>put(Math.min(63,(bag.snk||{})[k]||0),6)); put(Math.max(0,(bag.coins|0)-65535),24); { const z=DQ?DQ.pack():null; put(z?1:0,1); if(z) z.forEach(v=>put(v[0],v[1])); } /* 今日功課: sign-in, claims, 功德簿 */ { const z=ROOMX?ROOMX.pack():null; put(z?1:0,1); if(z) z.forEach(v=>put(v[0],v[1])); } /* 我的房間 */ /* (coins above the old 16-bit field) */ /* 商店街: outfits bought, 精力, snacks (older codes read as none) */ /* 扭蛋幣 (codes made before it was added simply read as 0) */
   while(bits.length%8) bits.push(0); const bytes=[]; for(let i=0;i<bits.length;i+=8){ let b=0; for(let j=0;j<8;j++) b=b*2+bits[i+j]; bytes.push(b); } bytes.push(bytes.reduce((a,b)=>(a+b)&255,0x5a));
   return "MZ-"+btoa(String.fromCharCode(...bytes)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }
 function readCode(str){ try{ str=String(str||"").trim().replace(/\s+/g,""); if(!/^MZ-[A-Za-z0-9_-]{10,}$/.test(str)) return null; const raw=atob(str.slice(3).replace(/-/g,"+").replace(/_/g,"/")); const bytes=[...raw].map(c=>c.charCodeAt(0));
@@ -4613,8 +4613,8 @@ function readCode(str){ try{ str=String(str||"").trim().replace(/\s+/g,""); if(!
   if(get(4)!==1) return null; const look=[]; for(let i=0;i<13;i++) look.push(get(5)); const coins=get(16); const items={}; CODE_ITEMS.forEach(k=>{ const v=get(5); if(v) items[k]=v; }); const red=get(1);
   const pn=get(3), poems=[]; for(let i=0;i<pn;i++){ const n=get(6); if(n>=1&&n<=60) poems.push(n); } const no=get(24); const nl=get(4); let name=""; for(let i=0;i<nl;i++) name+=String.fromCharCode(get(16));
   const an=get(4), acc=[]; for(let i=0;i<an;i++) if(get(1)&&ACC_IDS[i]) acc.push(ACC_IDS[i]); const gacha=get(8); { const an2=get(6); for(let i=0;i<an2;i++) if(get(1)&&ACC_IDS[15+i]) acc.push(ACC_IDS[15+i]); } let cans=0, treat=0, cat=null; if(get(1)){ cans=get(8); treat=get(8); if(get(1)){ cat={t:get(4)%11,sd:get(16)}; const l=get(3); let nm=""; for(let i=0;i<l;i++) nm+=String.fromCharCode(get(16)); cat.nm=nm||"咪咪"; cat.tr={}; TRICKS.forEach(([k])=>{ const v=get(3); if(v) cat.tr[k]=v; }); } }
-  let shop=null; if(get(1)){ shop={clo:get(16),en:get(7),snk:{}}; SNACK_KEYS.forEach(k=>{ const v=get(6); if(v) shop.snk[k]=v; }); shop.xc=get(24); } let daily=null; if(shop&&get(1)&&DQ) daily=DQ.unpack(get);
-  return {look,coins:coins+(shop&&shop.xc||0),items,red,poems,no,name,acc,gacha,cans,treat,cat,shop,daily}; }catch(e){ return null; } }
+  let shop=null; if(get(1)){ shop={clo:get(16),en:get(7),snk:{}}; SNACK_KEYS.forEach(k=>{ const v=get(6); if(v) shop.snk[k]=v; }); shop.xc=get(24); } let daily=null; if(shop&&get(1)&&DQ) daily=DQ.unpack(get); let room=null; if(daily&&get(1)&&ROOMX) room=ROOMX.unpack(get);
+  return {look,coins:coins+(shop&&shop.xc||0),items,red,poems,no,name,acc,gacha,cans,treat,cat,shop,daily,room}; }catch(e){ return null; } }
 /* 除霧 (chair only, this screen only): the haze is lifted so the far scenery and the whole sky show reads clearly; press again to bring it back */
 const NOFOG={on:false,near:0,far:0};
 HANDLERS.noFog=()=>{ NOFOG.on=!NOFOG.on; if(NOFOG.on){ NOFOG.near=scene.fog.near; NOFOG.far=scene.fog.far; scene.fog.near=1e4; scene.fog.far=2e4; } else { scene.fog.near=NOFOG.near; scene.fog.far=NOFOG.far; } toast(NOFOG.on?"已除霧（只有你的畫面）":"霧氣已恢復",2200); openChair(); };
@@ -4625,7 +4625,7 @@ HANDLERS.camCode=async()=>{ closeSheet(); await new Promise(r=>setTimeout(r,350)
 HANDLERS.copyCode=async()=>{ const c=lookCode(); let ok=false; try{ await navigator.clipboard.writeText(c); ok=true; }catch(e){ const i=$("#myCode"); if(i){ i.focus(); i.select(); try{ ok=document.execCommand("copy"); }catch(e2){} } } toast(ok?"代碼已複製，記得存在記事本":"請長按代碼自行複製",3000); };
 HANDLERS.applyCode=()=>{ const d=readCode(($("#pasteCode")||{}).value); if(!d){ toast("代碼不正確，請確認有完整貼上",3000); return; }
   me.look=sanitizeLook(d.look,!!me.sp); const nm=cleanName(d.name); if(!me.sp) me.name=[SP_NAME,SP_OLD].includes(nm)?"":nm; if(d.no) me.no=d.no; save("mz.me",me);
-  bag.coins=d.coins; bag.items={...bag.items,...d.items}; bag.redThread=!!d.red; if(d.poems.length){ const keep=new Map((bag.poems||[]).map((n,i)=>[n,(bag.poemT||[])[i]||0])); bag.poems=[...new Set([...(bag.poems||[]),...d.poems])].slice(-30); bag.poemT=bag.poems.map(n=>keep.get(n)||0); } (d.acc||[]).forEach(id=>{ accState().owned[id]=1; }); if(d.gacha) bag.gacha=Math.max(bag.gacha||0,d.gacha); try{ catRestore(d); }catch(e){} if(d.shop){ bag.clo=(bag.clo||0)|d.shop.clo; bag.en=Math.min(100,d.shop.en); bag.snk={...d.shop.snk}; } try{ if(d.daily) DQ.restore(d.daily); }catch(e){} saveBag();
+  bag.coins=d.coins; bag.items={...bag.items,...d.items}; bag.redThread=!!d.red; if(d.poems.length){ const keep=new Map((bag.poems||[]).map((n,i)=>[n,(bag.poemT||[])[i]||0])); bag.poems=[...new Set([...(bag.poems||[]),...d.poems])].slice(-30); bag.poemT=bag.poems.map(n=>keep.get(n)||0); } (d.acc||[]).forEach(id=>{ accState().owned[id]=1; }); if(d.gacha) bag.gacha=Math.max(bag.gacha||0,d.gacha); try{ catRestore(d); }catch(e){} if(d.shop){ bag.clo=(bag.clo||0)|d.shop.clo; bag.en=Math.min(100,d.shop.en); bag.snk={...d.shop.snk}; } try{ if(d.daily) DQ.restore(d.daily); }catch(e){} try{ if(d.room) ROOMX.restore(d.room); }catch(e){} saveBag();
   draftLook=me.look.slice(); meAv.setLook(draftLook); meAv.setName(myLabel()); meAv.setAmulet(!!bag.items.fu); meAv.setThread(threadOn()); markDirty(); renderLook(firstVisitPending); toast("已找回你的名字、造型和背包",3000); };
 /* ---- 角色存檔: the server keeps a copy of your character (look, name, 平安幣, bag, recent 籤詩) under a long-lived cookie, so a
    cleared browser brings it back by itself; the 取回碼 moves it to another app or phone. Gifts from the 主委 arrive the same way. ---- */
@@ -4633,7 +4633,7 @@ const PROF={last:"",code:load("mz.rc",""),busy:false,shown:load("mz.rcShown",fal
 /* the character server is reachable on the site, or simulated inside the test page (window.MZ_SIM, set only by the test build) */
 const NET_ME=()=>USE_CF||!!window.MZ_SIM;
 function applySnap(d){ if(!d) return false; me.look=sanitizeLook(d.look,!!me.sp); const nm=cleanName(d.name); if(!me.sp) me.name=[SP_NAME,SP_OLD].includes(nm)?me.name:nm||me.name; if(d.no) me.no=d.no; save("mz.me",me);
-  bag.coins=d.coins; bag.items={...bag.items,...d.items}; bag.redThread=!!d.red; if(d.poems.length){ const keep=new Map((bag.poems||[]).map((n,i)=>[n,(bag.poemT||[])[i]||0])); bag.poems=[...new Set([...(bag.poems||[]),...d.poems])].slice(-30); bag.poemT=bag.poems.map(n=>keep.get(n)||0); } (d.acc||[]).forEach(id=>{ accState().owned[id]=1; }); if(d.gacha) bag.gacha=Math.max(bag.gacha||0,d.gacha); try{ catRestore(d); }catch(e){} if(d.shop){ bag.clo=(bag.clo||0)|d.shop.clo; bag.en=Math.min(100,d.shop.en); bag.snk={...d.shop.snk}; } try{ if(d.daily) DQ.restore(d.daily); }catch(e){} saveBag();
+  bag.coins=d.coins; bag.items={...bag.items,...d.items}; bag.redThread=!!d.red; if(d.poems.length){ const keep=new Map((bag.poems||[]).map((n,i)=>[n,(bag.poemT||[])[i]||0])); bag.poems=[...new Set([...(bag.poems||[]),...d.poems])].slice(-30); bag.poemT=bag.poems.map(n=>keep.get(n)||0); } (d.acc||[]).forEach(id=>{ accState().owned[id]=1; }); if(d.gacha) bag.gacha=Math.max(bag.gacha||0,d.gacha); try{ catRestore(d); }catch(e){} if(d.shop){ bag.clo=(bag.clo||0)|d.shop.clo; bag.en=Math.min(100,d.shop.en); bag.snk={...d.shop.snk}; } try{ if(d.daily) DQ.restore(d.daily); }catch(e){} try{ if(d.room) ROOMX.restore(d.room); }catch(e){} saveBag();
   draftLook=me.look.slice(); meAv.setLook(draftLook); meAv.setName(myLabel()); meAv.setAmulet(!!bag.items.fu); meAv.setThread(threadOn()); markDirty(); return true; }
 const fmtCode=c=>c?c.slice(0,3)+"-"+c.slice(3):"";
 async function profSave(force,beacon){ if(me.sp||PROF.busy) return; const snap=lookCode(); if(!force&&snap===PROF.last) return;
@@ -6170,7 +6170,7 @@ HANDLERS.wxOpen=()=>{ const cur=wxNow(), manual=WX.set&&Date.now()<WX.setUntil; 
   openSheet("contact","天氣",`${backBtn}<p class="lead">現在：${WX_KINDS[cur].n}${manual?`（主委指定，還有 ${left} 分鐘）`:"（自動：每天上午隨機一個時間換一次，一整天同一種天氣）"}。選一種天氣，全伺服器會一起換，維持 20 分鐘後回到自動。</p>
     <div class="goods">${Object.entries(WX_KINDS).map(([k,o])=>`<button class="good${cur===k?" on":""}" data-act="wxSet" data-v="${k}"><span class="name">${{clear:"☀️",cloudy:"☁️",windy:"🍃",rain:"🌧️",storm:"⛈️"}[k]} ${o.n}</span></button>`).join("")}<button class="good" data-act="wxSet" data-v=""><span class="name">🔄 回到自動</span></button></div>`); };
 /* 主委工具 → 每日統計: today's counters, the last 14 days of the main ones, busiest hours, and today's wishes */
-const STAT_NAME={dqFest:"領節日紅包",dqSign:"每日簽到（人次）",dqChest:"每日功課三件全完成",dqBack:"領回鍋禮（離開 3 天以上回來）",b_dayBtn:"打開今日功課",buskTip:"打賞玖玖（次）",buskTipC:"打賞玖玖（幣）",buskCheer:"幫玖玖應援",...Object.fromEntries(["記得我忘記","慢慢欣賞","可鹽可甜","妳沒有說","龜毛先生","詩情難忘","一個人的旅程","禁止正常","撲火","晚安以前","那個我","城市停電了"].map((n,i)=>["bk"+String(i+1).padStart(2,"0"),"玖玖〈"+n+"〉收聽"])),visitors:"今日訪客",sessions:"進場次數",peak:"最高同時在線",minOnline:"在線總分鐘",minFront:"前殿・廟埕分鐘",minRear:"後殿分鐘",minZen:"靜思禪院分鐘",minInn:"禪房分鐘",minSitting:"坐著的分鐘",minInRain:"淋雨中的分鐘",
+const STAT_NAME={roomOpen:"進我的房間",roomBuy:"房間買東西（次）",dqFest:"領節日紅包",dqSign:"每日簽到（人次）",dqChest:"每日功課三件全完成",dqBack:"領回鍋禮（離開 3 天以上回來）",b_dayBtn:"打開今日功課",buskTip:"打賞玖玖（次）",buskTipC:"打賞玖玖（幣）",buskCheer:"幫玖玖應援",...Object.fromEntries(["記得我忘記","慢慢欣賞","可鹽可甜","妳沒有說","龜毛先生","詩情難忘","一個人的旅程","禁止正常","撲火","晚安以前","那個我","城市停電了"].map((n,i)=>["bk"+String(i+1).padStart(2,"0"),"玖玖〈"+n+"〉收聽"])),visitors:"今日訪客",sessions:"進場次數",peak:"最高同時在線",minOnline:"在線總分鐘",minFront:"前殿・廟埕分鐘",minRear:"後殿分鐘",minZen:"靜思禪院分鐘",minInn:"禪房分鐘",minSitting:"坐著的分鐘",minInRain:"淋雨中的分鐘",
   wish:"許願卡",lamp:"點燈",msg:"給主委留言",zhan:"沾喜氣",lanterns:"放天燈",reply:"回覆",letter:"寫信",hongbao:"發紅包",hbclaim:"搶紅包",nightMarket:"夜市紀錄",b_bowBtn:"拜拜",b_jiaoBtn:"擲筊",b_lotBtn:"求籤",b_holdBtn:"持香",b_bagBtn:"打開背包",b_hallBtn:"換殿",
   sit_mat:"跪拜墊",sit_zen:"禪坐",sit_futon:"通鋪睡覺",sit_bed:"套房躺床",sit_tub:"泡澡",sit_toilet:"上廁所",st_innDesk:"找櫃台阿姨",st_fortune:"走到鐵口直斷攤",st_cats:"找貓咪",st_lot:"求籤處",sjDone:"完成收驚",ftDone:"鐵口直斷算命",paperOpen:"看報紙",innBedding:"買通鋪床具",innRoom:"買套房房卡",pkCash:"彈珠台換出的平安幣",pkBuy:"買彈珠花的平安幣",sit_sofa:"坐禪房沙發",st_treasure:"土地公挖寶",b_zenMusicBtn:"換禪堂音樂",b_innLockBtn:"鎖房門",b_innSleepBtn:"通鋪睡覺",b_camReset:"鏡頭回正",b_foldBtn:"收起按鈕",b_chairBtn:"打開主委工具"};
 const statName=k=>{ if(STAT_NAME[k]) return STAT_NAME[k]; if(k.startsWith("b_")){ const el=document.getElementById(k.slice(2)); const t=el&&((el.getAttribute("aria-label")||"")||(el.querySelector(".cap")||{}).textContent||el.textContent||"").trim(); if(t&&/[\u4e00-\u9fff]/.test(t)) return "按「"+t.replace(/\s+/g," ").slice(0,12)+"」"; }
@@ -9148,6 +9148,7 @@ HANDLERS.innDeskOpen=()=>{ const has=!!bag.gd&&bag.gd.bedding; INN.aunt.say(INN_
   openSheet("contact","禪房櫃台",`<p class="lead">「歡迎光臨禪房！一樓有通鋪和溫泉，二樓是套房。」</p><div class="goods">
     <button class="good" data-act="innBedding"><span class="name">${has?"✓ 已經領了床具":"🛏️ 通鋪床具"}</span><span class="meta">${has?"到通鋪按「睡在這裡」就能鋪床睡覺":"一次 50 平安幣，睡一覺就收回"}</span></button>
     <button class="good" data-act="innRooms"><span class="name">${bag.gd&&bag.gd.roomKey?"✓ 已有房卡":"🔑 套房房卡"}</span><span class="meta">${bag.gd&&bag.gd.roomKey?"上二樓進任何一間空房；離開房間就退房":"一次 100 平安幣・"+INN.suites.map(S=>`20${S.i+1}${innLockedBy(S.i)?" 有人":" 空房"}`).join("・")}</span></button>
+    <button class="good" data-act="roomOpen"><span class="name">🏠 我的房間</span><span class="meta">自己的小屋：換地板、壁紙、地毯，擺家具</span></button>
     <button class="good" data-act="innOnsen"><span class="name">♨️ 溫泉須知</span><span class="meta">泡湯前先沖洗、毛巾放頭上</span></button></div>`); };
 HANDLERS.innBedding=()=>{ bag.gd=bag.gd||{}; if(bag.gd.bedding){ toast("你已經有床具了，到通鋪按「睡在這裡」",2400); return; } if(!me.sp){ if(bag.coins<50){ toast("平安幣不夠（通鋪一次 50）",2400); return; } bag.coins-=50; } bag.gd.bedding=1; saveBag(); statInc("innBedding"); INN.aunt.say("來，床具給您，晚安喔～","#ffe2a0",2.6); toast("領到床具了！到通鋪點一個位子就能鋪床睡覺",3000); HANDLERS.innDeskOpen(); };
 HANDLERS.innRooms=()=>{ bag.gd=bag.gd||{}; if(!bag.gd.roomKey){ if(!me.sp){ if(bag.coins<100){ toast("平安幣不夠（套房一次 100）",2400); return; } bag.coins-=100; } bag.gd.roomKey=1; saveBag(); statInc("innRoom"); INN.aunt.say("房卡給您，套房在二樓，從外面樓梯上去喔～","#ffe2a0",3); }
@@ -10564,6 +10565,7 @@ function clothStart(){ const D=buildCloth(); const o={exposure:1.0}; const el=en
   o.render=dt=>{ const c=D.cam, asp=innerWidth/innerHeight; c.aspect=asp; const ph=(($c("#cP").offsetHeight||200)+60)/innerHeight; const vt=Math.tan(c.fov*Math.PI/360), ht=vt*asp; const d=Math.min(10,Math.max(1.75/(2*vt*Math.max(.3,1-ph)),.75/ht)); const ly=.86-ph*d*vt; c.position.set(0,ly+.3,d); c.lookAt(0,ly,0); c.updateProjectionMatrix(); renderer.render(D.R,c); };
   o.dispose=()=>{ D.R.remove(av.root); }; }
 setTimeout(()=>{ try{ buildWorld(); }catch(e){ console.warn("shop street",e); } },1200);
+SX.enter=enterMode; SX.leave=leaveMode; /* other screens (我的房間) borrow the shop layer */
 return SX; })();
 
 /*SHOPS>>*/
@@ -10699,6 +10701,7 @@ D.open=()=>{ D.page="day"; css(); const s=SG(), can=signCan(), qs=todayQ(), st=s
     <div class="dq-sec">每日功課<small>每天 00:00 換新${F?"・今天加倍":""}</small></div>${qs.map((q,i)=>qrow(q,i)).join("")}
     <div class="dq-q${got(3)?" done":allGot?" dq-gift":""}"><div class="tx"><b>🎁 三件都完成的寶箱</b><small>三件功課的獎勵都領了就能開</small></div><button data-act="dqChest" class="${allGot&&!got(3)?"can":""}" ${allGot&&!got(3)?"":"disabled"}>${got(3)?"已領取":rtxt({...CHEST,c:CHEST.c*mult()})}</button></div>
     ${qrow(QNM,4)}
+    <button class="secondary dq-wide" data-act="roomOpen">🏠 我的房間（佈置地板、壁紙、地毯、家具）</button>
     <button class="secondary dq-wide" data-act="dqAch">📖 功德簿・香火位階${nAch?`（${nAch} 個可領）`:""}</button>
     ${me.sp?`<div class="dq-sec">主委測試<small>只有主委看得到</small></div><div class="row"><button class="secondary" data-act="dqTNext">⏭ 跳到明天</button><button class="secondary" data-act="dqTSkip">⏭ 跳過 4 天（回鍋禮）</button><button class="secondary" data-act="dqTDone">✅ 今天功課全部做完</button><button class="secondary" data-act="dqTF" data-v="1">🏮 把今天當十五</button><button class="secondary" data-act="dqTF" data-v="2">🏮 把今天當媽祖誕辰</button><button class="secondary" data-act="dqTF" data-v="0">↩️ 還原成真正的日期</button></div><button class="secondary dq-wide" data-act="dqFwSched">🎆 節慶煙火：${load("mz.festFw",0)?"已開（按一下關掉）":"自動排進定時活動（按一下打開）"}</button><p class="note">打開後，接下來 30 天內的初一、十五和節日，晚上 8 點會自動放一場煙火（排在「定時活動」裡，可以個別刪掉）。伺服器一次只能排 30 天，所以主委每次進遊戲時會自動補排。</p>`:""}`); dot(); };
 const cbRew=g=>({c:300+100*Math.min(7,g),g:1,s:2});
@@ -10752,6 +10755,193 @@ setInterval(()=>{ try{ dot(); }catch(e){} },60000);
 return D; })();
 
 /*DAILY>>*/
+/*<<ROOM*/
+/* ================= 我的房間: a room of your own. Floor (10 patterns) and wallpaper (10 patterns) are drawn in code and take two
+   colours each from a palette; rugs are the chair's pictures (public/room/rugNN.webp, loaded only when the room is opened).
+   It is its own little scene shown through the shop layer (SHOPX.enter), so the temple is not drawn while you are inside. ================= */
+ROOMX=(()=>{
+const RM={};
+const RW=6, RD=5, RH=2.8;
+const PAL=["#f6efe2","#e8d5b5","#c9a47a","#a06a42","#6b432c","#3d2a20","#f6c9cf","#e58c8c","#b3261e","#7a1f24","#f3d98b","#d9aa3d","#b9d7b0","#5f8f6a","#2f5a44","#bcd9ea","#4f7fb0","#2c3550","#b9a6d9","#6d5a9c","#ffffff","#bdbdbd","#6b6b6b","#2b2b2b"];
+const hx=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+const sh=(h,k)=>{ const c=hx(h); return `rgb(${c.map(v=>Math.max(0,Math.min(255,Math.round(k>1?v+(255-v)*(k-1):v*k)))).join(",")})`; };
+const al=(h,a)=>{ const c=hx(h); return `rgba(${c[0]},${c[1]},${c[2]},${a})`; };
+const rnd=s=>{ let a=s>>>0; return ()=>{ a=(a+0x6D2B79F5)|0; let t=Math.imul(a^(a>>>15),1|a); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; }; };
+/* every pattern draws one 512×512 tile that repeats cleanly; a,b are the two colours */
+const FLOORS=[
+ {n:"原木地板",p:0,d:(x,a,b)=>{ const r=rnd(7); x.fillStyle=sh(a,.7); x.fillRect(0,0,512,512); for(let j=0;j<8;j++){ const off=(j*147)%256; for(let i=-1;i<3;i++){ x.fillStyle=sh(a,.86+r()*.22); x.fillRect(i*256+off+1,j*64+1,254,62); x.fillStyle=al(b,.10+r()*.08); for(let k=0;k<3;k++) x.fillRect(i*256+off+6,j*64+10+k*18+r()*6,244,1.5); } } }},
+ {n:"人字拼木",p:0,d:(x,a,b)=>{ const r=rnd(11); x.fillStyle=sh(a,.65); x.fillRect(0,0,512,512); for(let c=0;c<8;c++){ const up=c%2?1:-1; for(let j=-3;j<19;j++){ const y=j*32; x.fillStyle=(j+c)%5===0?al(b,.9):sh(a,.84+r()*.26); x.beginPath(); x.moveTo(c*64+1,y+(up>0?64:0)); x.lineTo(c*64+63,y+(up>0?0:64)); x.lineTo(c*64+63,y+(up>0?0:64)+30); x.lineTo(c*64+1,y+(up>0?64:0)+30); x.closePath(); x.fill(); } } }},
+ {n:"棋盤格磚",p:1500,d:(x,a,b)=>{ for(let j=0;j<4;j++) for(let i=0;i<4;i++){ x.fillStyle=(i+j)%2?b:a; x.fillRect(i*128,j*128,128,128); x.fillStyle="rgba(255,255,255,.07)"; x.fillRect(i*128+4,j*128+4,120,40); } x.strokeStyle="rgba(0,0,0,.18)"; x.lineWidth=2; for(let i=0;i<=4;i++){ x.beginPath(); x.moveTo(i*128,0); x.lineTo(i*128,512); x.moveTo(0,i*128); x.lineTo(512,i*128); x.stroke(); } }},
+ {n:"大理石",p:1500,d:(x,a,b)=>{ const r=rnd(23); x.fillStyle=a; x.fillRect(0,0,512,512); for(let k=0;k<26;k++){ const x0=r()*512,y0=r()*512,l=80+r()*220,an=r()*6.28,w=.6+r()*2.4; x.strokeStyle=al(b,.10+r()*.28); x.lineWidth=w; for(const ox of [-512,0,512]) for(const oy of [-512,0,512]){ x.beginPath(); x.moveTo(x0+ox,y0+oy); x.bezierCurveTo(x0+ox+Math.cos(an)*l*.3+r()*30,y0+oy+Math.sin(an)*l*.3,x0+ox+Math.cos(an)*l*.6,y0+oy+Math.sin(an)*l*.6+30,x0+ox+Math.cos(an)*l,y0+oy+Math.sin(an)*l); x.stroke(); } } x.strokeStyle="rgba(0,0,0,.16)"; x.lineWidth=2; for(let i=0;i<=2;i++){ x.beginPath(); x.moveTo(i*256,0); x.lineTo(i*256,512); x.moveTo(0,i*256); x.lineTo(512,i*256); x.stroke(); } }},
+ {n:"六角磚",p:1500,d:(x,a,b)=>{ const r=rnd(5), R=512/12, W=512/7; x.fillStyle=sh(b,.8); x.fillRect(0,0,512,512); for(let j=-1;j<9;j++) for(let i=-1;i<8;i++){ const cx=i*W+(j%2?W/2:0), cy=j*R*1.5; const m=(((i*3+j*5)%7)+7)%7; x.fillStyle=m===0?b:sh(a,.92+r()*.14); x.beginPath(); for(let k=0;k<6;k++){ const t=Math.PI/6+k*Math.PI/3; x.lineTo(cx+Math.cos(t)*(W/Math.sqrt(3)-2),cy+Math.sin(t)*(R-2)); } x.closePath(); x.fill(); } }},
+ {n:"榻榻米",p:2000,d:(x,a,b)=>{ const mat=(X,Y,w,h,v)=>{ x.fillStyle=b; x.fillRect(X,Y,w,h); x.fillStyle=a; x.fillRect(X+(v?10:2),Y+(v?2:10),w-(v?20:4),h-(v?4:20)); x.strokeStyle="rgba(0,0,0,.07)"; x.lineWidth=1; for(let k=4;k<(v?w:h)-4;k+=4){ x.beginPath(); if(v){ x.moveTo(X+k,Y+2); x.lineTo(X+k,Y+h-2); } else { x.moveTo(X+2,Y+k); x.lineTo(X+w-2,Y+k); } x.stroke(); } x.strokeStyle="rgba(0,0,0,.3)"; x.strokeRect(X+.5,Y+.5,w-1,h-1); };
+   mat(0,0,256,128,0); mat(0,128,256,128,0); mat(256,0,128,256,1); mat(384,0,128,256,1); mat(0,256,128,256,1); mat(128,256,128,256,1); mat(256,256,256,128,0); mat(256,384,256,128,0); }},
+ {n:"水磨石",p:2000,d:(x,a,b)=>{ const r=rnd(41); x.fillStyle=a; x.fillRect(0,0,512,512); const cs=[b,sh(b,1.4),sh(b,.6),"#ffffff",sh(a,.7)]; for(let k=0;k<230;k++){ const cx=r()*512, cy=r()*512, s=3+r()*11, n=3+Math.floor(r()*4), c=cs[Math.floor(r()*cs.length)], an=r()*6.28; x.fillStyle=c; for(const ox of [-512,0,512]) for(const oy of [-512,0,512]){ if(cx+ox<-20||cx+ox>532||cy+oy<-20||cy+oy>532) continue; x.beginPath(); for(let i=0;i<n;i++){ const t=an+i/n*6.28; x.lineTo(cx+ox+Math.cos(t)*s*(.6+((i*7)%5)/8),cy+oy+Math.sin(t)*s*(.6+((i*3)%5)/8)); } x.closePath(); x.fill(); } } }},
+ {n:"復古花磚",p:2500,d:(x,a,b)=>{ for(let j=0;j<4;j++) for(let i=0;i<4;i++){ const X=i*128, Y=j*128; x.fillStyle=a; x.fillRect(X,Y,128,128); x.fillStyle=b; for(const [cx,cy] of [[0,0],[128,0],[0,128],[128,128]]){ x.beginPath(); x.moveTo(X+cx,Y+cy); x.arc(X+cx,Y+cy,46,0,6.283); x.fill(); } x.fillStyle=a; for(const [cx,cy] of [[0,0],[128,0],[0,128],[128,128]]){ x.beginPath(); x.arc(X+cx,Y+cy,26,0,6.283); x.fill(); } x.fillStyle=b; x.beginPath(); x.moveTo(X+64,Y+40); x.lineTo(X+88,Y+64); x.lineTo(X+64,Y+88); x.lineTo(X+40,Y+64); x.closePath(); x.fill(); x.fillStyle=a; x.beginPath(); x.arc(X+64,Y+64,8,0,6.283); x.fill(); } x.save(); x.beginPath(); x.rect(0,0,512,512); x.clip(); x.strokeStyle="rgba(0,0,0,.2)"; x.lineWidth=2; for(let i=0;i<=4;i++){ x.beginPath(); x.moveTo(i*128,0); x.lineTo(i*128,512); x.moveTo(0,i*128); x.lineTo(512,i*128); x.stroke(); } x.restore(); }},
+ {n:"編織拼花木",p:2500,d:(x,a,b)=>{ const r=rnd(3); x.fillStyle=sh(a,.6); x.fillRect(0,0,512,512); for(let j=0;j<4;j++) for(let i=0;i<4;i++){ const v=(i+j)%2; for(let k=0;k<4;k++){ x.fillStyle=k===0&&v?al(b,.85):sh(a,.86+r()*.24); if(v) x.fillRect(i*128+k*32+1,j*128+1,30,126); else x.fillRect(i*128+1,j*128+k*32+1,126,30); } } }},
+ {n:"菱格磚",p:2500,d:(x,a,b)=>{ x.fillStyle=a; x.fillRect(0,0,512,512); x.fillStyle=b; for(let j=-1;j<9;j++) for(let i=-1;i<9;i++){ if((i+j)%2) continue; const cx=i*64, cy=j*64; x.beginPath(); x.moveTo(cx,cy-64); x.lineTo(cx+64,cy); x.lineTo(cx,cy+64); x.lineTo(cx-64,cy); x.closePath(); x.fill(); } x.strokeStyle="rgba(0,0,0,.16)"; x.lineWidth=2; for(let k=-8;k<=16;k++){ x.beginPath(); x.moveTo(k*64,0); x.lineTo(k*64+512,512); x.moveTo(k*64,0); x.lineTo(k*64-512,512); x.stroke(); } }},
+];
+const WALLS=[
+ {n:"素色",p:0,d:(x,a,b)=>{ const r=rnd(9); x.fillStyle=a; x.fillRect(0,0,512,512); for(let k=0;k<900;k++){ x.fillStyle=al(b,.03+r()*.05); x.fillRect(r()*512,r()*512,2+r()*5,1); } }},
+ {n:"直條紋",p:0,d:(x,a,b)=>{ x.fillStyle=a; x.fillRect(0,0,512,512); x.fillStyle=b; for(let i=0;i<8;i++){ x.fillRect(i*64+16,0,32,512); } x.fillStyle=al(a,.5); for(let i=0;i<8;i++) x.fillRect(i*64+30,0,4,512); }},
+ {n:"圓點",p:1500,d:(x,a,b)=>{ x.fillStyle=a; x.fillRect(0,0,512,512); x.fillStyle=b; for(let j=0;j<9;j++) for(let i=0;i<9;i++){ x.beginPath(); x.arc(i*64+(j%2?32:0),j*64,11,0,6.283); x.fill(); } }},
+ {n:"菱格",p:1500,d:(x,a,b)=>{ x.fillStyle=a; x.fillRect(0,0,512,512); x.strokeStyle=b; x.lineWidth=3; for(let k=-4;k<=8;k++){ x.beginPath(); x.moveTo(k*128,0); x.lineTo(k*128+256,512); x.moveTo(k*128,0); x.lineTo(k*128-256,512); x.stroke(); } x.fillStyle=b; for(let j=0;j<=4;j++) for(let i=0;i<=8;i++){ x.beginPath(); x.arc(i*64,j*128+(i%2?64:0),6,0,6.283); x.fill(); } }},
+ {n:"小碎花",p:1500,d:(x,a,b)=>{ x.fillStyle=a; x.fillRect(0,0,512,512); const fl=(cx,cy,s)=>{ x.fillStyle=b; for(let k=0;k<5;k++){ const t=k/5*6.283-1.57; x.beginPath(); x.ellipse(cx+Math.cos(t)*s*.55,cy+Math.sin(t)*s*.55,s*.42,s*.3,t,0,6.283); x.fill(); } x.fillStyle=sh(b,1.6); x.beginPath(); x.arc(cx,cy,s*.24,0,6.283); x.fill(); x.strokeStyle=al(b,.55); x.lineWidth=2; x.beginPath(); x.moveTo(cx,cy+s); x.quadraticCurveTo(cx+s*.6,cy+s*1.6,cx+s*.2,cy+s*2.2); x.stroke(); };
+   for(let j=0;j<5;j++) for(let i=0;i<5;i++){ fl(i*128+(j%2?64:0),j*128,(i+j)%2?16:12); } }},
+ {n:"大馬士革",p:2000,d:(x,a,b)=>{ x.fillStyle=a; x.fillRect(0,0,512,512); const mo=(cx,cy)=>{ x.fillStyle=al(b,.85); const leaf=(dx,dy,rx,ry,t)=>{ x.beginPath(); x.ellipse(cx+dx,cy+dy,rx,ry,t,0,6.283); x.fill(); }; leaf(0,-52,16,40,0); leaf(0,48,22,34,0); leaf(-34,-8,13,36,.7); leaf(34,-8,13,36,-.7); leaf(-52,44,10,26,1.1); leaf(52,44,10,26,-1.1); leaf(-22,-70,7,18,-.5); leaf(22,-70,7,18,.5); x.fillStyle=a; leaf(0,-52,6,24,0); leaf(0,48,9,18,0); x.beginPath(); x.arc(cx,cy-2,9,0,6.283); x.fill(); x.fillStyle=al(b,.85); x.beginPath(); x.arc(cx,cy-2,4,0,6.283); x.fill(); x.beginPath(); x.arc(cx,cy+100,6,0,6.283); x.fill(); };
+   for(let j=-1;j<3;j++) for(let i=-1;i<3;i++){ mo(i*256+128,j*256+128); mo(i*256,j*256); } }},
+ {n:"青海波",p:2000,d:(x,a,b)=>{ x.fillStyle=a; x.fillRect(0,0,512,512); for(let j=17;j>=-1;j--) for(let i=-1;i<9;i++){ const cx=i*64+(j%2?32:0), cy=j*32; for(let k=0;k<4;k++){ x.fillStyle=k%2?a:b; x.beginPath(); x.arc(cx,cy,32-k*8,Math.PI,0); x.closePath(); x.fill(); } } }},
+ {n:"格紋",p:2000,d:(x,a,b)=>{ x.fillStyle=a; x.fillRect(0,0,512,512); x.fillStyle=al(b,.42); for(let i=0;i<4;i++){ x.fillRect(i*128+24,0,56,512); x.fillRect(0,i*128+24,512,56); } x.fillStyle=al(b,.7); for(let i=0;i<4;i++){ x.fillRect(i*128+100,0,5,512); x.fillRect(0,i*128+100,512,5); } }},
+ {n:"星星",p:2500,d:(x,a,b)=>{ const r=rnd(77); x.fillStyle=a; x.fillRect(0,0,512,512); const st=(cx,cy,s)=>{ x.beginPath(); for(let k=0;k<10;k++){ const t=k/10*6.283-1.57, q=k%2?s*.42:s; x.lineTo(cx+Math.cos(t)*q,cy+Math.sin(t)*q); } x.closePath(); x.fill(); };
+   for(let j=0;j<8;j++) for(let i=0;i<8;i++){ const s=5+r()*11; x.fillStyle=al(b,.55+r()*.45); st(i*64+(j%2?32:0)+16,j*64+24,s); } }},
+ {n:"腰板",p:2500,vr:1,d:(x,a,b)=>{ x.fillStyle=a; x.fillRect(0,0,512,512); x.fillStyle=al(b,.10); for(let i=0;i<16;i++) x.fillRect(i*32+14,0,4,320); x.fillStyle=b; x.fillRect(0,318,512,194); x.fillStyle=sh(b,1.35); x.fillRect(0,312,512,14); x.fillStyle=sh(b,.7); x.fillRect(0,326,512,3); for(let i=0;i<2;i++){ x.strokeStyle=sh(b,.72); x.lineWidth=4; x.strokeRect(i*256+26,352,204,132); x.strokeStyle=sh(b,1.25); x.lineWidth=2; x.strokeRect(i*256+34,360,188,116); } x.fillStyle=sh(b,.6); x.fillRect(0,496,512,16); }},
+];
+/* rugs: [file number, name, width in metres at the middle size, price] */
+const RUGS=[[1,"玫瑰米白地毯",2.4,4000],[2,"紅藍波斯地毯",2.4,5000],[3,"米灰幾何地毯",2.4,3000],[4,"藍紅金線地毯",2.4,4500],[5,"乳牛紋地毯",2.4,3000],[6,"虎紋地毯",2.4,3500],[7,"玫瑰酒紅地毯",2.4,4000],
+  [8,"虎紋長毯",2.0,2000],[9,"乳牛紋長毯",2.0,2000],[10,"黑金幾何長毯",2.0,2500],[11,"粉紅貓掌毯",2.0,3500],[12,"流蘇棉麻長毯",2.2,2000],[13,"老虎造型毯",1.5,6000],[14,"乳牛紋圓毯",1.6,3000],[15,"抹茶雲朵毯",1.7,3000],[16,"黑金大理石地毯",2.2,3500],[17,"米白素面地毯",2.2,1500]];
+const RSZ=[.75,1,1.3];
+/* furniture: simple stand-in shapes for now. Each entry is {n name, e icon, w,d footprint in metres (front faces +z), p price, mk(group)};
+   when the chair's models arrive an entry gets its model instead of mk and nothing else here has to change. */
+const FM={}; const fm=(c,o)=>{ const k=c+(o?JSON.stringify(o):""); if(!FM[k]){ FM[k]=new T.MeshStandardMaterial({roughness:.8,...(o||{})}); FM[k].color.set(c).convertSRGBToLinear(); } return FM[k]; };
+const B=(g,w,h,d,c,x,y,z,o)=>{ const m=new T.Mesh(new T.BoxGeometry(w,h,d),fm(c,o)); m.position.set(x,y,z); g.add(m); return m; };
+const C=(g,r1,r2,h,c,x,y,z,o)=>{ const m=new T.Mesh(new T.CylinderGeometry(r1,r2,h,14),fm(c,o)); m.position.set(x,y,z); g.add(m); return m; };
+const legs=(g,w,d,h,c)=>{ for(const sx of [-1,1]) for(const sz of [-1,1]) B(g,.05,h,.05,c,sx*(w/2-.05),h/2,sz*(d/2-.05)); };
+const FURN=[
+ {n:"單人床",e:"🛏️",w:1.0,d:2.0,p:2500,mk:g=>{ B(g,1,.3,2,"#8a6246",0,.15,0); B(g,.94,.18,1.9,"#f3ece0",0,.39,.02); B(g,1,.85,.08,"#8a6246",0,.425,-.96); B(g,.6,.1,.36,"#ffffff",0,.52,-.68); B(g,.96,.07,1.2,"#9db7d6",0,.5,.33); }},
+ {n:"雙人床",e:"🛌",w:1.6,d:2.0,p:4000,mk:g=>{ B(g,1.6,.3,2,"#6b432c",0,.15,0); B(g,1.54,.2,1.9,"#f3ece0",0,.4,.02); B(g,1.6,.95,.08,"#6b432c",0,.475,-.96); B(g,.6,.1,.36,"#ffffff",-.4,.54,-.68); B(g,.6,.1,.36,"#ffffff",.4,.54,-.68); B(g,1.56,.07,1.2,"#d99aa5",0,.52,.33); }},
+ {n:"書桌",e:"📝",w:1.2,d:.6,p:1500,mk:g=>{ B(g,1.2,.05,.6,"#c9a47a",0,.73,0); legs(g,1.2,.6,.71,"#8a6246"); B(g,.36,.3,.5,"#b08a62",.38,.55,0); }},
+ {n:"椅子",e:"🪑",w:.45,d:.45,p:600,mk:g=>{ B(g,.42,.05,.42,"#c9a47a",0,.45,0); legs(g,.42,.42,.43,"#8a6246"); B(g,.42,.45,.05,"#c9a47a",0,.72,-.19); }},
+ {n:"沙發",e:"🛋️",w:1.8,d:.85,p:3500,mk:g=>{ B(g,1.8,.36,.85,"#5f7f9a",0,.2,0); B(g,1.8,.5,.2,"#5f7f9a",0,.62,-.325); B(g,.2,.3,.85,"#5f7f9a",-.8,.52,0); B(g,.2,.3,.85,"#5f7f9a",.8,.52,0); B(g,.66,.12,.58,"#7d9bb5",-.35,.43,.08); B(g,.66,.12,.58,"#7d9bb5",.35,.43,.08); }},
+ {n:"茶几",e:"☕",w:.9,d:.5,p:1000,mk:g=>{ B(g,.9,.05,.5,"#a06a42",0,.38,0); legs(g,.9,.5,.36,"#3d2a20"); }},
+ {n:"衣櫃",e:"🚪",w:1.2,d:.55,p:3000,mk:g=>{ B(g,1.2,2.0,.55,"#a06a42",0,1.0,0); B(g,.02,1.9,.02,"#3d2a20",0,1.0,.28); B(g,.03,.2,.03,"#d9aa3d",-.07,1.0,.29); B(g,.03,.2,.03,"#d9aa3d",.07,1.0,.29); }},
+ {n:"書櫃",e:"📚",w:.9,d:.32,p:2000,mk:g=>{ B(g,.9,1.8,.04,"#8a6246",0,.9,-.14); B(g,.04,1.8,.32,"#8a6246",-.43,.9,0); B(g,.04,1.8,.32,"#8a6246",.43,.9,0); for(let k=0;k<5;k++) B(g,.86,.04,.32,"#8a6246",0,.02+k*.44,0); const cs=["#b3261e","#4f7fb0","#5f8f6a","#d9aa3d","#6d5a9c","#e58c8c"]; for(let k=0;k<4;k++) for(let i=0;i<7;i++) B(g,.08,.26+((i*7+k*3)%4)*.03,.2,cs[(i+k*2)%6],-.33+i*.105,.18+k*.44,0); }},
+ {n:"床頭櫃",e:"🗄️",w:.45,d:.4,p:800,mk:g=>{ B(g,.45,.5,.4,"#a06a42",0,.25,0); B(g,.39,.18,.02,"#c9a47a",0,.36,.2); B(g,.39,.18,.02,"#c9a47a",0,.14,.2); B(g,.08,.02,.03,"#d9aa3d",0,.36,.22); B(g,.08,.02,.03,"#d9aa3d",0,.14,.22); }},
+ {n:"立燈",e:"💡",w:.4,d:.4,p:1200,mk:g=>{ C(g,.16,.18,.04,"#3d2a20",0,.02,0); C(g,.015,.015,1.45,"#3d2a20",0,.75,0); const m=new T.Mesh(new T.CylinderGeometry(.13,.2,.3,16,1,true),new T.MeshStandardMaterial({color:"#ffe9b8",emissive:"#ffd98a",emissiveIntensity:.9,side:T.DoubleSide,roughness:.9})); m.position.set(0,1.55,0); g.add(m); }},
+ {n:"盆栽",e:"🪴",w:.45,d:.45,p:800,mk:g=>{ C(g,.17,.13,.3,"#c97b52",0,.15,0); C(g,.02,.02,.4,"#6b432c",0,.5,0); for(const [x,y,z,r] of [[0,.85,0,.24],[-.14,.7,.06,.17],[.13,.72,-.05,.18],[.02,.68,.14,.15]]){ const m=new T.Mesh(new T.SphereGeometry(r,10,8),fm("#4f8a56",{roughness:.9})); m.position.set(x,y,z); g.add(m); } }},
+ {n:"電視櫃",e:"📺",w:1.4,d:.4,p:3000,mk:g=>{ B(g,1.4,.45,.4,"#6b432c",0,.225,0); B(g,.66,.3,.02,"#8a6246",-.34,.225,.2); B(g,.66,.3,.02,"#8a6246",.34,.225,.2); B(g,.3,.04,.2,"#2b2b2b",0,.47,0); B(g,1.1,.64,.05,"#1a1a1e",0,.82,0); B(g,1.04,.58,.01,"#2c3550",0,.82,.03,{roughness:.2}); }},
+];
+const MAXIT=24;
+/* ---- what you own and how the room is set ---- */
+const DEF={f:0,fa:2,fb:4,w:0,wa:0,wb:1,r:-1,rx:0,rz:.4,rr:0,rs:1,of:3,ow:3,or:0};
+/* it: placed furniture [kind, x, z, quarter turns]; inv: how many of each kind you own (placed ones included). Everyone starts with a bed and a plant. */
+const ST=()=>{ if(!bag.room||typeof bag.room!=="object") bag.room={}; const r=bag.room; for(const k in DEF) if(typeof r[k]!=="number") r[k]=DEF[k]; r.of|=3; r.ow|=3;
+  if(!Array.isArray(r.it)||!r.inv||typeof r.inv!=="object"){ r.it=[[0,-2.4,-1.4,0],[10,2.6,-2.1,0]]; r.inv={0:1,10:1}; } return r; };
+const invN=i=>ST().inv[i]|0, usedN=i=>ST().it.filter(t=>t[0]===i).length;
+const owned=(k,i)=>me.sp||!!(ST()[k==="f"?"of":k==="w"?"ow":"or"]&(1<<i));
+const LIST={f:FLOORS,w:WALLS};
+const priceOf=(k,i)=>k==="r"?RUGS[i][3]:LIST[k][i].p;
+const nameOf=(k,i)=>k==="r"?RUGS[i][1]:LIST[k][i].n;
+/* ---- the scene ---- */
+let R=null;
+function uvPlane(w,h,ru,rv){ const g=new T.PlaneGeometry(w,h); const uv=g.attributes.uv; for(let i=0;i<uv.count;i++) uv.setXY(i,uv.getX(i)*ru,uv.getY(i)*rv); return g; }
+function canTex(){ const c=document.createElement("canvas"); c.width=c.height=512; const t=new T.CanvasTexture(c); t.encoding=T.sRGBEncoding; t.wrapS=t.wrapT=T.RepeatWrapping; t.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy()); return t; }
+function paint(t,P,a,b){ const x=t.image.getContext("2d"); x.setTransform(1,0,0,1,0,0); x.clearRect(0,0,512,512); P.d(x,PAL[a]||PAL[0],PAL[b]||PAL[1]); t.needsUpdate=true; }
+function build(){ if(R) return R; const S=new T.Scene(); const D={S};
+  S.background=cvs(32,256,(x,w,h)=>{ const g=x.createLinearGradient(0,0,0,h); g.addColorStop(0,"#2a2230"); g.addColorStop(1,"#15121a"); x.fillStyle=g; x.fillRect(0,0,w,h); });
+  S.add(new T.HemisphereLight("#fff6ea","#6a5a52",.95)); const dl=new T.DirectionalLight("#fff2dc",.55); dl.position.set(2.5,5,4); S.add(dl);
+  D.ft=canTex(); D.wt=canTex();
+  D.floor=new T.Mesh(uvPlane(RW,RD,RW/2,RD/2),new T.MeshStandardMaterial({map:D.ft,roughness:.8})); D.floor.rotation.x=-Math.PI/2; S.add(D.floor);
+  const wm=new T.MeshStandardMaterial({map:D.wt,roughness:.95}); D.wm=wm; D.walls=[];
+  const wall=(w,x,z,ry)=>{ const m=new T.Mesh(new T.PlaneGeometry(w,RH),wm); m.position.set(x,RH/2,z); m.rotation.y=ry; m.userData.w=w; S.add(m); D.walls.push(m); };
+  wall(RW,0,-RD/2,0); wall(RD,-RW/2,0,Math.PI/2); wall(RD,RW/2,0,-Math.PI/2);
+  const trim=fm("#f3ece0",{roughness:.7}), dark=fm("#5a4234",{roughness:.7});
+  const bx=(w,h,d,m,x,y,z)=>{ const o=new T.Mesh(new T.BoxGeometry(w,h,d),m); o.position.set(x,y,z); S.add(o); return o; };
+  bx(RW,.12,.04,trim,0,.06,-RD/2+.02); bx(.04,.12,RD,trim,-RW/2+.02,.06,0); bx(.04,.12,RD,trim,RW/2-.02,.06,0);
+  bx(RW+.3,.3,.15,dark,0,-.16,RD/2+.07); bx(RW+.3,.3,RD+.3,dark,0,-.16,0).position.y=-.16;
+  /* a window and a door on the back wall */
+  D.sky=new T.MeshBasicMaterial({color:"#bfe3ff"}); const win=new T.Mesh(new T.PlaneGeometry(1.5,1.1),D.sky); win.position.set(-1.2,1.55,-RD/2+.03); S.add(win);
+  for(const [w,h,x,y] of [[1.66,.08,-1.2,2.14],[1.66,.08,-1.2,.96],[.08,1.26,-1.99,1.55],[.08,1.26,-.41,1.55],[.05,1.1,-1.2,1.55],[1.5,.05,-1.2,1.55]]) bx(w,h,.06,trim,x,y,-RD/2+.04);
+  bx(1.8,.05,.16,trim,-1.2,.94,-RD/2+.09);
+  bx(.95,2.05,.05,fm("#8a6246",{roughness:.6}),1.9,1.025,-RD/2+.03); bx(1.07,.08,.07,trim,1.9,2.09,-RD/2+.04); bx(.06,2.1,.07,trim,1.4,1.05,-RD/2+.04); bx(.06,2.1,.07,trim,2.4,1.05,-RD/2+.04);
+  const knob=new T.Mesh(new T.SphereGeometry(.045,10,8),GOLD()); knob.position.set(2.22,1.0,-RD/2+.08); S.add(knob);
+  D.rugMat=new T.MeshStandardMaterial({roughness:.95,transparent:true,alphaTest:.35,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}); D.rug=new T.Mesh(new T.PlaneGeometry(1,1),D.rugMat); D.rug.rotation.x=-Math.PI/2; D.rug.position.y=.012; D.rug.visible=false; S.add(D.rug); D.rugTex={};
+  D.fg=new T.Group(); S.add(D.fg); D.sel=new T.Mesh(new T.PlaneGeometry(1,1),new T.MeshBasicMaterial({color:"#ffd76a",transparent:true,opacity:.45,depthWrite:false})); D.sel.rotation.x=-Math.PI/2; D.sel.position.y=.02; D.sel.visible=false; S.add(D.sel);
+  D.cam=new T.PerspectiveCamera(36,1,.1,80); D.ray=new T.Raycaster(); D.plane=new T.Plane(new T.Vector3(0,1,0),0); R=D; return D; }
+/* what is showing right now (may be a preview of something not bought yet) */
+let V=null;
+function apply(){ const D=R; paint(D.ft,FLOORS[V.f],V.fa,V.fb); paint(D.wt,WALLS[V.w],V.wa,V.wb);
+  const vr=WALLS[V.w].vr||2; D.walls.forEach(m=>{ const uv=m.geometry.attributes.uv, ru=m.userData.w/(RH/vr); const base=[[0,1],[1,1],[0,0],[1,0]]; for(let i=0;i<4;i++) uv.setXY(i,base[i][0]*ru,base[i][1]*vr); uv.needsUpdate=true; });
+  rugApply(); }
+function rugApply(){ const D=R; if(V.r<0){ D.rug.visible=false; return; } const n=RUGS[V.r][0]; let t=D.rugTex[n];
+  const fit=()=>{ const im=t.image; if(!im||!im.width) return; const w=RUGS[V.r][2]*RSZ[V.rs], h=w*im.height/im.width; D.rug.scale.set(w,h,1); D.rug.rotation.z=V.rr?Math.PI/2:0; const hw=(V.rr?h:w)/2, hd=(V.rr?w:h)/2; V.rx=Math.max(-RW/2+hw,Math.min(RW/2-hw,V.rx)); V.rz=Math.max(-RD/2+hd,Math.min(RD/2-hd,V.rz)); D.rug.position.set(V.rx,.012,V.rz); D.rug.userData.hw=hw; D.rug.userData.hd=hd; D.rugMat.map=t; D.rugMat.needsUpdate=true; D.rug.visible=true; };
+  if(t){ fit(); return; } D.rug.visible=false; const want=V.r; t=D.rugTex[n]=new T.TextureLoader().load(`room/rug${n<10?"0":""}${n}.webp`,()=>{ t.encoding=T.sRGBEncoding; t.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy()); if(V&&V.r===want) rugApply(); }); t.encoding=T.sRGBEncoding; }
+/* placed furniture: one group per piece, rebuilt only when the list changes */
+const foot=t=>{ const F=FURN[t[0]]; return t[3]%2?[F.d/2,F.w/2]:[F.w/2,F.d/2]; };
+const clampIt=t=>{ const [hw,hd]=foot(t); t[1]=Math.round(Math.max(-RW/2+hw,Math.min(RW/2-hw,t[1]))*20)/20; t[2]=Math.round(Math.max(-RD/2+hd,Math.min(RD/2-hd,t[2]))*20)/20; };
+function furnDraw(sel){ const D=R, s=ST(); while(D.fg.children.length){ const g=D.fg.children[0]; D.fg.remove(g); g.traverse(o=>{ if(o.geometry) o.geometry.dispose(); }); }
+  s.it.forEach(t=>{ const F=FURN[t[0]]; if(!F) return; const g=new T.Group(); F.mk(g); g.position.set(t[1],0,t[2]); g.rotation.y=-t[3]*Math.PI/2; D.fg.add(g); }); furnSel(sel); }
+function furnSel(sel){ const D=R, t=sel>=0?ST().it[sel]:null; if(!t){ D.sel.visible=false; return; } const [hw,hd]=foot(t); D.sel.scale.set(hw*2+.12,hd*2+.12,1); D.sel.position.set(t[1],.02,t[2]); D.sel.visible=true; const g=D.fg.children[sel]; if(g){ g.position.set(t[1],0,t[2]); g.rotation.y=-t[3]*Math.PI/2; } }
+const thumbs={};
+function thumb(k,i,a,b){ const key=k+i+"_"+a+"_"+b; if(thumbs[key]) return thumbs[key]; const c=document.createElement("canvas"); c.width=c.height=96; const x=c.getContext("2d"); x.scale(96/512,96/512); LIST[k][i].d(x,PAL[a],PAL[b]); return thumbs[key]=c.toDataURL("image/jpeg",.8); }
+function css(){ if($("#rmCss")) return; const st=document.createElement("style"); st.id="rmCss"; st.textContent=`
+.rm-tabs{display:flex;gap:6px;margin-bottom:8px}.rm-tabs button{flex:1;border:1px solid rgba(255,220,150,.35);border-radius:10px;padding:8px 4px;background:rgba(255,255,255,.06);color:#f3e7d0;font-weight:800;font-size:14px;font-family:inherit}.rm-tabs button.on{background:#d9aa3d;color:#2a1a08}
+.rm-list{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 8px;-webkit-overflow-scrolling:touch;touch-action:pan-x}.rm-it{flex:none;width:78px;border:2px solid transparent;border-radius:10px;background:rgba(255,255,255,.06);padding:4px;text-align:center;color:#f3e7d0;font-family:inherit}
+.rm-it.on{border-color:#ffd76a}.rm-it img,.rm-it .none{display:block;width:66px;height:52px;object-fit:cover;border-radius:6px;margin:0 auto 3px;background:#3a2f2a}.rm-it img.rug{object-fit:contain;background:#55483f}.rm-it .none{line-height:52px;font-size:22px}
+.rm-it b{display:block;font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rm-it small{display:block;font-size:10.5px;color:#ffd76a}.rm-it small.own{color:#9fe3a8}
+.rm-pal{display:flex;align-items:center;gap:5px;overflow-x:auto;padding:2px 2px 6px;touch-action:pan-x}.rm-pal span{flex:none;font-size:12px;color:#cbb;width:30px}.rm-pal i{flex:none;width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.25)}.rm-pal i.on{border-color:#ffd76a;box-shadow:0 0 0 2px #ffd76a}
+.rm-row{display:flex;gap:6px;margin-top:4px}.rm-row .shx-btn{font-size:14px;padding:9px 8px}.rm-row .alt{background:rgba(255,255,255,.12);color:#f3e7d0;border:1px solid rgba(255,220,150,.35)}
+.rm-it .ico{display:block;width:66px;height:52px;line-height:52px;font-size:30px;border-radius:6px;margin:0 auto 3px;background:#3a2f2a}
+.rm-tip{font-size:12px;color:#bba;margin:6px 0 0}`; document.head.appendChild(st); }
+RM.open=()=>{ if(!SHOPX||!SHOPX.enter){ toast("房間還沒準備好，請稍等一下",2200); return; } const D=build(), s=ST(); css(); V={...s}; const o={exposure:1.0}; const el=SHOPX.enter("room",o); try{ statInc("roomOpen"); }catch(e){}
+  { const h=new Date(Date.now()+288e5).getUTCHours(); D.sky.color.set(h>=6&&h<17?"#bfe3ff":h>=17&&h<19?"#ffb27a":"#1c2440"); }
+  apply(); furnDraw(-1);
+  const av=new Avatar(me.look.slice(),{npc:true,x:.6,z:1.2}); scene.remove(av.root); D.S.add(av.root); av.isMe=true; try{ av.setLook(me.look.slice()); }finally{ av.isMe=false; } av.moveSpeed=2.2; av.path=[]; av.update(0); av.root.position.y=0;
+  let tab="f", yaw=-.38, drag=null;
+  el.insertAdjacentHTML("beforeend",`<div class="shx-top"><span class="shx-title">🏠 我的房間</span><span class="shx-pill" id="rC"></span><button class="shx-x" id="rX">離開</button></div><div class="shx-panel" id="rP"></div>`);
+  const $r=q=>el.querySelector(q);
+  const cur=()=>tab==="r"?V.r:V[tab];
+  const commit=()=>{ const s=ST(); for(const k of ["fa","fb","wa","wb","rx","rz","rr","rs"]) s[k]=V[k]; if(owned("f",V.f)) s.f=V.f; if(owned("w",V.w)) s.w=V.w; if(V.r<0||owned("r",V.r)) s.r=V.r; save("mz.bag",bag); };
+  let sel=-1, pick=0;
+  const pal=(lab,key)=>`<div class="rm-pal"><span>${lab}</span>${PAL.map((c,i)=>`<i data-c="${key}:${i}" class="${V[key]===i?"on":""}" style="background:${c}"></i>`).join("")}</div>`;
+  const drawU=()=>{ const s=ST(), F=FURN[pick], have=invN(pick), used=usedN(pick), t=sel>=0?s.it[sel]:null;
+    const items=FURN.map((f,j)=>`<button class="rm-it${pick===j?" on":""}" data-u="${j}"><span class="ico">${f.e}</span><b>${f.n}</b><small class="${invN(j)?"own":""}">${invN(j)?`有 ${invN(j)}・擺 ${usedN(j)}`:f.p+" 幣"}</small></button>`).join("");
+    $r("#rP").innerHTML=`<div class="rm-tabs"><button data-t="f">地板</button><button data-t="w">壁紙</button><button data-t="r">地毯</button><button data-t="u" class="on">家具</button></div><div class="rm-list" id="rL">${items}</div>
+      <div class="rm-row">${have>used?`<button class="shx-btn" id="uPut">擺出一件「${F.n}」</button>`:""}<button class="shx-btn${have>used?" alt":""}" id="uBuy">${me.sp?"拿":"買"}一件「${F.n}」${me.sp?"":"・"+F.p+" 幣"}</button></div>
+      ${t?`<div class="rm-row"><button class="shx-btn alt" id="uRot">↻ 轉 90 度</button><button class="shx-btn alt" id="uOff">收起來</button></div>`:""}
+      <p class="rm-tip">${t?`選到的是「${FURN[t[0]].n}」：按住它可以拖動。`:"點房間裡的家具可以選它，再拖動、旋轉或收起來。"}房間裡最多擺 ${MAXIT} 件（現在 ${s.it.length} 件）。</p>`;
+    $r("#rP").querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{ tab=b.dataset.t; sel=-1; furnSel(-1); draw(); });
+    $r("#rP").querySelectorAll("[data-u]").forEach(b=>b.onclick=()=>{ const sl=$r("#rL").scrollLeft; pick=+b.dataset.u; draw(); $r("#rL").scrollLeft=sl; });
+    const keepSl=f=>{ const sl=$r("#rL").scrollLeft; f(); draw(); $r("#rL").scrollLeft=sl; };
+    const put=$r("#uPut"); if(put) put.onclick=()=>keepSl(()=>{ if(s.it.length>=MAXIT){ toast(`房間最多擺 ${MAXIT} 件，先收起幾件`,2400); return; } const t=[pick,0,.6,0]; clampIt(t); s.it.push(t); sel=s.it.length-1; save("mz.bag",bag); furnDraw(sel); try{ tone(520,.06,.06,"triangle"); }catch(e){} });
+    $r("#uBuy").onclick=()=>keepSl(()=>{ if(invN(pick)>=7){ toast("同一種家具最多 7 件",2200); return; } if(!me.sp){ if(bag.coins<F.p){ try{ buzz(); }catch(e){} toast(`平安幣不夠（還差 ${F.p-bag.coins}）`,2600); return; } bag.coins-=F.p; } s.inv[pick]=invN(pick)+1; saveBag(); markDirty(); try{ profSave(true); }catch(e){} try{ statInc("roomBuy"); }catch(e){} try{ chaChing(); }catch(e){} toast(`${me.sp?"拿到":"買下"}一件「${F.n}」，按「擺出」放進房間`,2600); });
+    const rt=$r("#uRot"); if(rt) rt.onclick=()=>{ t[3]=(t[3]+1)%4; clampIt(t); save("mz.bag",bag); furnSel(sel); };
+    const off=$r("#uOff"); if(off) off.onclick=()=>keepSl(()=>{ s.it.splice(sel,1); sel=-1; save("mz.bag",bag); furnDraw(-1); }); };
+  const draw=()=>{ $r("#rC").textContent=`💰 ${bag.coins}`; if(tab==="u"){ drawU(); return; } const k=tab, i=cur(); let items="", extra="";
+    if(k==="r"){ items=`<button class="rm-it${V.r<0?" on":""}" data-i="-1"><span class="none">🚫</span><b>不放地毯</b><small class="own">&nbsp;</small></button>`+RUGS.map((r,j)=>`<button class="rm-it${V.r===j?" on":""}" data-i="${j}"><img class="rug" loading="lazy" src="room/rug${r[0]<10?"0":""}${r[0]}.webp" alt=""><b>${r[1]}</b><small class="${owned("r",j)?"own":""}">${owned("r",j)?"已擁有":r[3]+" 幣"}</small></button>`).join("");
+      extra=V.r>=0?`<div class="rm-row"><button class="shx-btn alt" id="rRot">↻ 轉 90 度</button><button class="shx-btn alt" id="rSz">大小：${["小","中","大"][V.rs]}</button></div><p class="rm-tip">在「地毯」分頁裡，用手指按住地毯可以拖到想放的位置。</p>`:""; }
+    else { const a=k==="f"?V.fa:V.wa, b=k==="f"?V.fb:V.wb; items=LIST[k].map((P,j)=>`<button class="rm-it${V[k]===j?" on":""}" data-i="${j}"><img src="${thumb(k,j,a,b)}" alt=""><b>${P.n}</b><small class="${owned(k,j)?"own":""}">${owned(k,j)?(P.p?"已擁有":"免費"):P.p+" 幣"}</small></button>`).join("");
+      extra=pal("主色",k+"a")+pal("配色",k+"b"); }
+    const need=i>=0&&!owned(k,i);
+    $r("#rP").innerHTML=`<div class="rm-tabs"><button data-t="f" class="${k==="f"?"on":""}">地板</button><button data-t="w" class="${k==="w"?"on":""}">壁紙</button><button data-t="r" class="${k==="r"?"on":""}">地毯</button><button data-t="u">家具</button></div><div class="rm-list" id="rL">${items}</div>${extra}
+      ${need?`<div class="rm-row"><button class="shx-btn" id="rBuy">購買「${nameOf(k,i)}」・${priceOf(k,i)} 幣</button></div><p class="rm-tip">現在看到的是試鋪的樣子，還沒買的話離開房間就會換回原本的。顏色可以隨時免費換。</p>`:""}`;
+    $r("#rP").querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{ tab=b.dataset.t; draw(); });
+    $r("#rP").querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>{ const j=+b.dataset.i, sl=$r("#rL").scrollLeft; if(k==="r") V.r=j; else V[k]=j; commit(); apply(); draw(); $r("#rL").scrollLeft=sl; try{ tone(700,.05,.05,"triangle"); }catch(e){} });
+    $r("#rP").querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{ const [key,ci]=b.dataset.c.split(":"), sl=$r("#rL").scrollLeft, pls=[...$r("#rP").querySelectorAll(".rm-pal")].map(p=>p.scrollLeft); V[key]=+ci; commit(); apply(); draw(); $r("#rL").scrollLeft=sl; [...$r("#rP").querySelectorAll(".rm-pal")].forEach((p,n)=>{ p.scrollLeft=pls[n]||0; }); });
+    const by=$r("#rBuy"); if(by) by.onclick=()=>{ const p=priceOf(k,i); if(bag.coins<p){ try{ buzz(); }catch(e){} toast(`平安幣不夠（還差 ${p-bag.coins}）`,2600); return; } bag.coins-=p; const s=ST(); const ok=k==="f"?"of":k==="w"?"ow":"or"; s[ok]|=1<<i; commit(); saveBag(); markDirty(); try{ profSave(true); }catch(e){} try{ statInc("roomBuy"); }catch(e){} try{ chaChing(); }catch(e){} toast(`買下「${nameOf(k,i)}」！`,2200); draw(); };
+    const rt=$r("#rRot"); if(rt) rt.onclick=()=>{ V.rr=V.rr?0:1; commit(); rugApply(); }; const sz=$r("#rSz"); if(sz) sz.onclick=()=>{ V.rs=(V.rs+1)%3; commit(); rugApply(); draw(); }; };
+  $r("#rX").onclick=()=>SHOPX.leave();
+  /* drag: on the rug (地毯 tab) moves it, anywhere else turns the view; a tap on the floor walks there */
+  const tl=el.querySelector(".shx-touch"), v2=new T.Vector2(), hit=new T.Vector3();
+  const floorAt=e=>{ v2.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1); D.ray.setFromCamera(v2,D.cam); return D.ray.ray.intersectPlane(D.plane,hit)?hit:null; };
+  tl.addEventListener("pointerdown",e=>{ const p=floorAt(e); drag={x:e.clientX,y:e.clientY,yaw,mv:0,rug:false,it:-1};
+    if(p&&tab==="u"){ const its=ST().it; let h=-1; for(let n=its.length-1;n>=0;n--){ const [hw,hd]=foot(its[n]); if(Math.abs(p.x-its[n][1])<hw+.08&&Math.abs(p.z-its[n][2])<hd+.08){ h=n; break; } } if(h>=0){ drag.it=h; drag.ox=its[h][1]-p.x; drag.oz=its[h][2]-p.z; if(sel!==h){ sel=h; pick=its[h][0]; furnSel(sel); draw(); } } } if(p&&tab==="r"&&V.r>=0&&D.rug.visible&&Math.abs(p.x-V.rx)<D.rug.userData.hw&&Math.abs(p.z-V.rz)<D.rug.userData.hd){ drag.rug=true; drag.ox=V.rx-p.x; drag.oz=V.rz-p.z; } try{ tl.setPointerCapture(e.pointerId); }catch(_){} });
+  tl.addEventListener("pointermove",e=>{ if(!drag) return; drag.mv=Math.max(drag.mv,Math.abs(e.clientX-drag.x)+Math.abs(e.clientY-drag.y)); if(drag.it>=0){ const p=floorAt(e), t=ST().it[drag.it]; if(p&&t&&drag.mv>6){ t[1]=p.x+drag.ox; t[2]=p.z+drag.oz; clampIt(t); furnSel(drag.it); } } else if(drag.rug){ const p=floorAt(e); if(p){ V.rx=p.x+drag.ox; V.rz=p.z+drag.oz; rugApply(); } } else if(drag.mv>8) yaw=Math.max(-.62,Math.min(.62,drag.yaw-(e.clientX-drag.x)*.006)); });
+  const up=e=>{ if(!drag) return; const d=drag; drag=null; if(d.it>=0){ save("mz.bag",bag); return; } if(d.rug){ commit(); return; } if(d.mv<=8&&tab==="u"&&sel>=0){ sel=-1; furnSel(-1); draw(); return; } if(d.mv<=8){ const p=floorAt(e); if(p&&Math.abs(p.x)<RW/2-.3&&Math.abs(p.z)<RD/2-.3){ av.moveTo(p.x,p.z); } } };
+  tl.addEventListener("pointerup",up); tl.addEventListener("pointercancel",()=>{ if(drag&&drag.rug) commit(); drag=null; });
+  draw();
+  o.update=dt=>{ av.update(dt); av.root.position.y=0; };
+  o.render=dt=>{ const c=D.cam, asp=innerWidth/innerHeight; c.aspect=asp; const ph=Math.min(.6,(($r("#rP").offsetHeight||220))/innerHeight); const vt=Math.tan(c.fov*Math.PI/360), ht=vt*asp;
+    const need=Math.max((RW/2+.5)/ht,(RH+2.2)/(2*vt*Math.max(.3,1-ph))); const d=Math.min(40,need), pit=.5; const ty=1.0-ph*d*vt*.95;
+    c.position.set(Math.sin(yaw)*Math.cos(pit)*d,ty+Math.sin(pit)*d,Math.cos(yaw)*Math.cos(pit)*d); c.lookAt(0,ty,0); c.updateProjectionMatrix(); renderer.render(D.S,c); };
+  o.dispose=()=>{ try{ commit(); }catch(e){} D.S.remove(av.root); try{ av.dispose(); }catch(e){} saveBag(); markDirty(); try{ profSave(true); }catch(e){} V=null; }; };
+HANDLERS.roomOpen=()=>{ closeSheet(); RM.open(); };
+/* 取回碼 */
+RM.pack=()=>{ const s=ST(); return [[s.f,4],[s.w,4],[s.fa,5],[s.fb,5],[s.wa,5],[s.wb,5],[s.r+1,5],[Math.round((s.rx+3)*10),6],[Math.round((s.rz+2.5)*10),6],[s.rr,1],[s.rs,2],[s.of&1023,10],[s.ow&1023,10],[s.or&1023,10],[(s.or>>>10)&1023,10]].concat(FURN.map((f,i)=>[Math.min(7,s.inv[i]|0),3]),[[Math.min(MAXIT,s.it.length),5]],...s.it.slice(0,MAXIT).map(t=>[[t[0],5],[Math.round((t[1]+3)*10),6],[Math.round((t[2]+2.5)*10),6],[t[3]&3,2]])); };
+RM.unpack=get=>{ const o={f:get(4),w:get(4),fa:get(5),fb:get(5),wa:get(5),wb:get(5),r:get(5)-1,rx:get(6)/10-3,rz:get(6)/10-2.5,rr:get(1),rs:get(2),of:get(10),ow:get(10),or:get(10)|(get(10)<<10)}; const inv={}; FURN.forEach((f,i)=>{ const n=get(3); if(n) inv[i]=n; }); const n=get(5), it=[]; for(let k=0;k<n;k++){ const t=[get(5),get(6)/10-3,get(6)/10-2.5,get(2)]; if(FURN[t[0]]) it.push(t); } o.inv=inv; o.it=it; return o; };
+RM.restore=o=>{ if(!o) return; const s=ST(), of=s.of|o.of, ow=s.ow|o.ow, or=s.or|o.or; const inv={...s.inv}; for(const k in o.inv) inv[k]=Math.max(inv[k]|0,o.inv[k]|0); Object.assign(s,o); s.inv=inv; s.it.forEach(t=>{ inv[t[0]]=Math.max(inv[t[0]]|0,s.it.filter(u=>u[0]===t[0]).length); }); s.of=of; s.ow=ow; s.or=or; s.f=Math.min(FLOORS.length-1,s.f); s.w=Math.min(WALLS.length-1,s.w); s.r=Math.min(RUGS.length-1,s.r); s.rs=Math.min(2,s.rs); save("mz.bag",bag); };
+return RM; })();
+
+/*ROOM>>*/
 window.__mz={FT,sideMuralMat,CATS,fuAnims,passFu,walkTo,tapMark,camLimit,HZ,renderer,scene,stations,jiaoCam,flyers,sheet,meAv,openPoem,openLot,openStation,goStation,trySit,bag,camera,setYaw:v=>camYaw=v,setPitch:v=>camPitch=v,setDist:v=>camDist=v};
 })();
 </script>
