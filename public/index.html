@@ -3170,15 +3170,15 @@ function buildStyle(t,v,out,acc){if(isStyleX(v))return buildStyleX(t,v);const g=
 }
 /* ---- 服飾店 outfits (styles 18–26): each has its own fixed colours (the colour rows don't change them), finer detail than the starter clothes ---- */
 const STYLEX=[
-  {n:"宮廷漢服",price:880,robe:6,d:"交領右衽、寬袖長裙，腰間繫紅色絲帶，背後披著淡藍披帛。"},
-  {n:"夏日浴衣",price:650,robe:7,d:"深藍底牽牛花浴衣，橘色寬腰帶在背後打成蝴蝶結。"},
-  {n:"海軍水手服",price:600,d:"白色上衣配深藍大方領、紅色領巾、百褶短裙和白色長襪。"},
-  {n:"星空魔法袍",price:780,robe:6,d:"綴滿金色星月的紫色長袍，立領、皮腰帶和星星胸針。"},
-  {n:"醒獅舞衣",price:720,d:"紅色對襟盤扣上衣，金黃腰帶，肩膀和衣襬滾著獅毛，配燈籠褲。"},
-  {n:"西部牛仔",price:640,d:"紅格子襯衫、皮背心配警長星章，大皮帶扣、牛仔褲和長靴。"},
-  {n:"太空人裝",price:980,d:"白色太空衣，胸前控制面板、任務臂章、維生背包和頸環。"},
-  {n:"紳士燕尾服",price:820,d:"黑色燕尾服配緞面翻領、銀灰背心、白領結和長燕尾。"},
-  {n:"偶像打歌服",price:900,d:"亮片外套配金色流蘇肩章、斜背綬帶和白色長褲。"},
+  {n:"宮廷漢服",price:13500,robe:6,d:"交領右衽、寬袖長裙，腰間繫紅色絲帶，背後披著淡藍披帛。"},
+  {n:"夏日浴衣",price:9000,robe:7,d:"深藍底牽牛花浴衣，橘色寬腰帶在背後打成蝴蝶結。"},
+  {n:"海軍水手服",price:8000,d:"白色上衣配深藍大方領、紅色領巾、百褶短裙和白色長襪。"},
+  {n:"星空魔法袍",price:11000,robe:6,d:"綴滿金色星月的紫色長袍，立領、皮腰帶和星星胸針。"},
+  {n:"醒獅舞衣",price:10000,d:"紅色對襟盤扣上衣，金黃腰帶，肩膀和衣襬滾著獅毛，配燈籠褲。"},
+  {n:"西部牛仔",price:8500,d:"紅格子襯衫、皮背心配警長星章，大皮帶扣、牛仔褲和長靴。"},
+  {n:"太空人裝",price:15000,d:"白色太空衣，胸前控制面板、任務臂章、維生背包和頸環。"},
+  {n:"紳士燕尾服",price:12000,d:"黑色燕尾服配緞面翻領、銀灰背心、白領結和長燕尾。"},
+  {n:"偶像打歌服",price:14000,d:"亮片外套配金色流蘇肩章、斜背綬帶和白色長褲。"},
 ];
 const STYLEX0=18; /* STYLES index of the first one */
 const isStyleX=v=>v>=STYLEX0&&v<STYLEX0+STYLEX.length;
@@ -4605,7 +4605,7 @@ const CODE_ITEMS=["xiang","hua","guo","bing","jin","fu"];
 function lookCode(){ const bits=[]; const put=(v,n)=>{ v=Math.max(0,Math.min((2**n)-1,v|0)); for(let i=n-1;i>=0;i--) bits.push((v/2**i|0)&1); };
   put(1,4); for(let i=0;i<13;i++) put(me.look[i]||0,5); put(bag.coins,16); CODE_ITEMS.forEach(k=>put(bag.items[k]||0,5)); put(bag.redThread?1:0,1);
   const ps=(bag.poems||[]).slice(-5); put(ps.length,3); ps.forEach(n=>put(n,6)); put(me.no||0,24);
-  const nm=[...String(me.sp?"":(me.name||""))].slice(0,10).join(""); const cu=[]; for(let i=0;i<nm.length;i++) cu.push(nm.charCodeAt(i)); put(Math.min(15,cu.length),4); cu.slice(0,15).forEach(c=>put(c,16)); { const a=accState(); put(Math.min(15,ACC_IDS.length),4); ACC_IDS.slice(0,15).forEach(id=>put(a.owned[id]?1:0,1)); } put(Math.min(255,bag.gacha||0),8); { const a=accState(), more=ACC_IDS.slice(15); put(more.length,6); more.forEach(id=>put(a.owned[id]?1:0,1)); } { const c=bag.cat&&bag.cat.pet; put(1,1); put(Math.min(255,bag.items.can||0),8); put(Math.min(255,bag.items.treat||0),8); put(c?1:0,1); if(c){ put(c.t,4); put(c.sd,16); const cn=[...String(c.nm||"")].slice(0,6); put(cn.length,3); cn.forEach(ch=>put(ch.charCodeAt(0),16)); TRICKS.forEach(([k])=>put(Math.min(7,c.tr&&c.tr[k]||0),3)); } } /* 貓: cans and your cat (older codes read as none) */ put(1,1); put(bag.clo||0,16); put(Math.max(0,Math.min(100,Math.round(bag.en??100))),7); SNACK_KEYS.forEach(k=>put(Math.min(63,(bag.snk||{})[k]||0),6)); /* 商店街: outfits bought, 精力, snacks (older codes read as none) */ /* 扭蛋幣 (codes made before it was added simply read as 0) */
+  const nm=[...String(me.sp?"":(me.name||""))].slice(0,10).join(""); const cu=[]; for(let i=0;i<nm.length;i++) cu.push(nm.charCodeAt(i)); put(Math.min(15,cu.length),4); cu.slice(0,15).forEach(c=>put(c,16)); { const a=accState(); put(Math.min(15,ACC_IDS.length),4); ACC_IDS.slice(0,15).forEach(id=>put(a.owned[id]?1:0,1)); } put(Math.min(255,bag.gacha||0),8); { const a=accState(), more=ACC_IDS.slice(15); put(more.length,6); more.forEach(id=>put(a.owned[id]?1:0,1)); } { const c=bag.cat&&bag.cat.pet; put(1,1); put(Math.min(255,bag.items.can||0),8); put(Math.min(255,bag.items.treat||0),8); put(c?1:0,1); if(c){ put(c.t,4); put(c.sd,16); const cn=[...String(c.nm||"")].slice(0,6); put(cn.length,3); cn.forEach(ch=>put(ch.charCodeAt(0),16)); TRICKS.forEach(([k])=>put(Math.min(7,c.tr&&c.tr[k]||0),3)); } } /* 貓: cans and your cat (older codes read as none) */ put(1,1); put(bag.clo||0,16); put(Math.max(0,Math.min(100,Math.round(bag.en??100))),7); SNACK_KEYS.forEach(k=>put(Math.min(63,(bag.snk||{})[k]||0),6)); put(Math.max(0,(bag.coins|0)-65535),24); /* (coins above the old 16-bit field) */ /* 商店街: outfits bought, 精力, snacks (older codes read as none) */ /* 扭蛋幣 (codes made before it was added simply read as 0) */
   while(bits.length%8) bits.push(0); const bytes=[]; for(let i=0;i<bits.length;i+=8){ let b=0; for(let j=0;j<8;j++) b=b*2+bits[i+j]; bytes.push(b); } bytes.push(bytes.reduce((a,b)=>(a+b)&255,0x5a));
   return "MZ-"+btoa(String.fromCharCode(...bytes)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }
 function readCode(str){ try{ str=String(str||"").trim().replace(/\s+/g,""); if(!/^MZ-[A-Za-z0-9_-]{10,}$/.test(str)) return null; const raw=atob(str.slice(3).replace(/-/g,"+").replace(/_/g,"/")); const bytes=[...raw].map(c=>c.charCodeAt(0));
@@ -4613,8 +4613,8 @@ function readCode(str){ try{ str=String(str||"").trim().replace(/\s+/g,""); if(!
   if(get(4)!==1) return null; const look=[]; for(let i=0;i<13;i++) look.push(get(5)); const coins=get(16); const items={}; CODE_ITEMS.forEach(k=>{ const v=get(5); if(v) items[k]=v; }); const red=get(1);
   const pn=get(3), poems=[]; for(let i=0;i<pn;i++){ const n=get(6); if(n>=1&&n<=60) poems.push(n); } const no=get(24); const nl=get(4); let name=""; for(let i=0;i<nl;i++) name+=String.fromCharCode(get(16));
   const an=get(4), acc=[]; for(let i=0;i<an;i++) if(get(1)&&ACC_IDS[i]) acc.push(ACC_IDS[i]); const gacha=get(8); { const an2=get(6); for(let i=0;i<an2;i++) if(get(1)&&ACC_IDS[15+i]) acc.push(ACC_IDS[15+i]); } let cans=0, treat=0, cat=null; if(get(1)){ cans=get(8); treat=get(8); if(get(1)){ cat={t:get(4)%11,sd:get(16)}; const l=get(3); let nm=""; for(let i=0;i<l;i++) nm+=String.fromCharCode(get(16)); cat.nm=nm||"咪咪"; cat.tr={}; TRICKS.forEach(([k])=>{ const v=get(3); if(v) cat.tr[k]=v; }); } }
-  let shop=null; if(get(1)){ shop={clo:get(16),en:get(7),snk:{}}; SNACK_KEYS.forEach(k=>{ const v=get(6); if(v) shop.snk[k]=v; }); }
-  return {look,coins,items,red,poems,no,name,acc,gacha,cans,treat,cat,shop}; }catch(e){ return null; } }
+  let shop=null; if(get(1)){ shop={clo:get(16),en:get(7),snk:{}}; SNACK_KEYS.forEach(k=>{ const v=get(6); if(v) shop.snk[k]=v; }); shop.xc=get(24); }
+  return {look,coins:coins+(shop&&shop.xc||0),items,red,poems,no,name,acc,gacha,cans,treat,cat,shop}; }catch(e){ return null; } }
 /* 除霧 (chair only, this screen only): the haze is lifted so the far scenery and the whole sky show reads clearly; press again to bring it back */
 const NOFOG={on:false,near:0,far:0};
 HANDLERS.noFog=()=>{ NOFOG.on=!NOFOG.on; if(NOFOG.on){ NOFOG.near=scene.fog.near; NOFOG.far=scene.fog.far; scene.fog.near=1e4; scene.fog.far=2e4; } else { scene.fog.near=NOFOG.near; scene.fog.far=NOFOG.far; } toast(NOFOG.on?"已除霧（只有你的畫面）":"霧氣已恢復",2200); openChair(); };
@@ -9958,6 +9958,11 @@ const inR=(r,x,z,m=0)=>x>r[0]+m&&x<r[1]-m&&z>r[2]+m&&z<r[3]-m;
 SX.walk=()=>false; SX.inP=()=>false; /* (the street is part of the 禪房 grounds now: innWalkableL) */
 if(typeof bag.en!=="number") bag.en=100; bag.snk=bag.snk&&typeof bag.snk==="object"?bag.snk:{}; bag.clo=bag.clo|0;
 const EN_SHIFT=25, CLAW_COST=15;
+/* daily limits: 打工 five shifts a day, 夾娃娃 five wins a day */
+const WORK_MAX=5, CLAW_WIN_MAX=5;
+function dayCount(k){ if(bag[k+"Day"]!==today){ bag[k+"Day"]=today; bag[k]=0; } return bag[k]|0; }
+function dayAdd(k){ dayCount(k); bag[k]=(bag[k]|0)+1; saveBag(); }
+const GACHA_PRICE=1000;
 /* snacks: 平安幣 price in the shop, 精力 they give back, and the NT$ shelf price used in the cashier game */
 const SNACKS=[
   {k:"drink",n:"古早味紅茶",p:12,e:12,nt:25,col:"#b4502e",tag:"飲料"},
@@ -10254,11 +10259,11 @@ function storeTap(o,S,cx,cy){ const nd=new T.Vector2(cx/innerWidth*2-1,-(cy/inne
 function tapLayer(o,fn){ const t=o.el.querySelector(".shx-touch"); let sx=0, sy=0, st=0; t.addEventListener("pointerdown",e=>{ sx=e.clientX; sy=e.clientY; st=performance.now(); });
   t.addEventListener("pointerup",e=>{ if(Math.hypot(e.clientX-sx,e.clientY-sy)<14&&performance.now()-st<700){ try{ ensureAudio(); }catch(_){} fn(e.clientX,e.clientY); } }); }
 /* ---------- the door: shop or work ---------- */
-function cvsMenu(){ const e=en(); openSheet("cvs","好運來便利商店",`<p class="lead">叮咚～歡迎光臨！要進去買東西，還是來打工？</p><div class="goods">
+function cvsMenu(){ const e=en(), left=WORK_MAX-dayCount("wk"); openSheet("cvs","好運來便利商店",`<p class="lead">叮咚～歡迎光臨！要進去買東西，還是來打工？</p><div class="goods">
   <button class="good" data-act="cvsGo" data-v="buy"><span class="name">🛒 進去買東西</span><span class="meta">飲料、餅乾、泡麵、提神飲料、啤酒、麵包，吃了會恢復精力</span></button>
-  <button class="good" data-act="cvsGo" data-v="work"${e<EN_SHIFT?' style="opacity:.55"':""}><span class="name">🧑‍💼 打工一班（100 秒）</span><span class="meta">要花 ${EN_SHIFT} 精力・你現在有 ${e} 精力。結帳找零、補貨上架，賺平安幣</span></button></div>
+  <button class="good" data-act="cvsGo" data-v="work"${e<EN_SHIFT||left<=0?' style="opacity:.55"':""}><span class="name">🧑‍💼 打工一班（100 秒）</span><span class="meta">要花 ${EN_SHIFT} 精力・你現在有 ${e} 精力・今天還能打工 ${left} 班（每天最多 ${WORK_MAX} 班）。結帳找零、補貨上架，賺平安幣</span></button></div>
   <p class="note">精力用完就不能打工。吃東西可以補；在禪房也能慢慢恢復：套房的床最快，再來是通鋪、溫泉、禪堂靜坐。</p>`); }
-HANDLERS.cvsGo=v=>{ if(v==="work"){ if(en()<EN_SHIFT){ toast(`精力不夠（要 ${EN_SHIFT}，你有 ${en()}），先吃點東西或去休息`,3000); return; } closeSheet(); workStart(); } else { closeSheet(); buyStart(); } };
+HANDLERS.cvsGo=v=>{ if(v==="work"){ if(dayCount("wk")>=WORK_MAX){ toast(`今天已經打工 ${WORK_MAX} 班了，明天再來`,2800); return; } if(en()<EN_SHIFT){ toast(`精力不夠（要 ${EN_SHIFT}，你有 ${en()}），先吃點東西或去休息`,3000); return; } closeSheet(); workStart(); } else { closeSheet(); buyStart(); } };
 SX.station=k=>{ if(k==="cvs"){ cvsMenu(); return true; } if(k==="claw"){ clawStart(); return true; } if(k==="cloth"){ clothStart(); return true; } return false; };
 
 /* ======================= 購物: standing at the counter, the clerk behind it ======================= */
@@ -10269,10 +10274,11 @@ function buyStart(){ const S=buildStore(); const o={exposure:1.05,avs:[]}; const
   const browsers=[]; for(let i=0;i<2;i++){ const sh=STORE_SHELVES[(Math.random()*6)|0]; const b=shopAv(S.R,randomLook(),sh.ap[0]+(Math.random()-.5)*.6,sh.ap[1],1.6); b.faceGoal=sh.face; b.idle=2+Math.random()*4; browsers.push(b); o.avs.push(b); }
   el.insertAdjacentHTML("beforeend",`<div class="shx-top"><span class="shx-title">🏪 好運來便利商店</span><span class="shx-pill" id="bCoins"></span><span class="shx-pill" id="bEn"></span><button class="shx-x" id="bX">離開</button></div><div class="shx-panel"><div class="shx-grid" id="bGrid"></div><p style="margin:8px 2px 0;font-size:12px;color:#d9c9a8">「買」放進背包，想吃的時候再拿出來；「買來吃」直接補精力。</p></div>`);
   const draw=()=>{ el.querySelector("#bCoins").textContent=`💰 ${bag.coins}`; el.querySelector("#bEn").textContent=`⚡ ${en()}`;
-    el.querySelector("#bGrid").innerHTML=SNACKS.map(s=>`<div class="shx-item">${snImg(s.k,46)}<b>${s.n}</b><span><span class="pr">${s.p} 幣</span>・<span class="en">⚡+${s.e}</span></span><span style="font-size:11px;color:#bba">背包有 ${bag.snk[s.k]||0}</span><div class="bt"><button class="shx-btn sec" data-b="${s.k}">買</button><button class="shx-btn" data-e="${s.k}">買來吃</button></div></div>`).join(""); };
+    el.querySelector("#bGrid").innerHTML=`<div class="shx-item"><span style="font-size:36px;line-height:46px">🎟️</span><b>扭蛋幣</b><span><span class="pr">${GACHA_PRICE} 幣</span></span><span style="font-size:11px;color:#bba">你有 ${bag.gacha||0} 枚</span><div class="bt"><button class="shx-btn" data-g="1">買一枚</button></div></div>`+SNACKS.map(s=>`<div class="shx-item">${snImg(s.k,46)}<b>${s.n}</b><span><span class="pr">${s.p} 幣</span>・<span class="en">⚡+${s.e}</span></span><span style="font-size:11px;color:#bba">背包有 ${bag.snk[s.k]||0}</span><div class="bt"><button class="shx-btn sec" data-b="${s.k}">買</button><button class="shx-btn" data-e="${s.k}">買來吃</button></div></div>`).join(""); };
   draw(); let greeted=false;
   const talk=(t,secs=2.6)=>{ bubble(o,clerk,t,secs); babble(Math.min(1.6,t.length*.12),1.05); };
-  el.querySelector("#bGrid").addEventListener("click",ev=>{ const b=ev.target.closest("button"); if(!b) return; const k=b.dataset.b||b.dataset.e, s=SN[k]; if(!s) return;
+  el.querySelector("#bGrid").addEventListener("click",ev=>{ const b=ev.target.closest("button"); if(!b) return;
+    if(b.dataset.g){ if(bag.coins<GACHA_PRICE){ buzz(); talk("平安幣好像不夠喔～"); return; } bag.coins-=GACHA_PRICE; bag.gacha=Math.min(255,(bag.gacha||0)+1); saveBag(); markDirty(); beep(); setTimeout(chaChing,200); talk("扭蛋幣一枚，祝你轉到想要的！"); draw(); return; } const k=b.dataset.b||b.dataset.e, s=SN[k]; if(!s) return;
     if(bag.coins<s.p){ buzz(); talk("平安幣好像不夠喔～"); return; } if(b.dataset.e&&bag.en>=100){ talk("你看起來精神很好耶，先放背包吧？"); return; }
     bag.coins-=s.p; beep(); setTimeout(chaChing,200); if(b.dataset.e){ eat(k,false); bubble(o,meS,`好吃！⚡+${s.e}`,2,"ok"); } else { bag.snk[k]=(bag.snk[k]||0)+1; } saveBag(); markDirty(); statInc("cvsBuy");
     talk(["謝謝光臨～","要不要加購關東煮？","發票要載具嗎？","歡迎再來喔～","這個很好吃喔！","需要袋子嗎？"][(Math.random()*6)|0]); draw(); });
@@ -10289,7 +10295,7 @@ const moneyHTML=v=>`<span class="money ${v>=100?"bill":"coin"} m${v}">${v}</span
 const breakDown=n=>{ const out=[]; for(const d of NT_DEN){ while(n>=d){ out.push(d); n-=d; } } return out; };
 function payFor(t){ const r=Math.random(); if(r<.16) return breakDown(t); if(r<.58){ const b=[100,500,1000].find(b=>b>=t)||1000; return [b]; }
   if(r<.84){ const b=Math.ceil(t/100)*100, extra=t%10; return breakDown(b).concat(extra&&b>t?breakDown(extra):[]); } const b=Math.ceil(t/50)*50; return breakDown(b===t?b+50:b); }
-function workStart(){ const S=buildStore(); bag.en=Math.max(0,bag.en-EN_SHIFT); saveBag(); statInc("cvsWork");
+function workStart(){ const S=buildStore(); bag.en=Math.max(0,bag.en-EN_SHIFT); dayAdd("wk"); saveBag(); statInc("cvsWork");
   const o={exposure:1.05,avs:[]}; const el=enterMode("cvs-work",o); SX.busy=true;
   const W={t:100,run:false,done:false,pay:0,served:0,miss:0,err:0,rest:0,carry:null,cust:[],queue:[],spawnT:2,cash:null,dismiss:false};
   S.shelves.forEach(sh=>shelfSet(sh,Math.round(sh.cap*(.3+Math.random()*.45))));
@@ -10342,7 +10348,7 @@ function workStart(){ const S=buildStore(); bag.en=Math.max(0,bag.en-EN_SHIFT); 
   const finish=early=>{ if(W.done) return; W.done=true; W.run=false; SX.busy=false; closeCash(); const bonus=(!early&&W.served>=8&&W.miss===0&&W.err===0)?80:0; const total=W.pay+bonus; bag.coins+=total; saveBag(); markDirty(); try{ profSave(true); }catch(e){}
     const msg=W.served>=10&&W.miss===0?"店長：「你太厲害了，下次再來幫忙！」":W.served>=5?"店長：「做得不錯，辛苦了！」":"店長：「慢慢來，下次會更好。」";
     const c=card(`<h3>${early?"提早下班":"打烊了！"}</h3><p>🙂 結帳 ${W.served} 位客人${W.miss?`　😠 走掉 ${W.miss} 位`:""}</p><p>📦 補貨 ${W.rest} 次${W.err?`　❌ 找錯 ${W.err} 次`:""}</p>${bonus?`<p>🌟 全勤零失誤獎金 +${bonus}</p>`:""}<p style="font-size:17px;text-align:center;margin-top:10px">今天的薪水 <b style="color:#ffd76a;font-size:24px">${total}</b> 平安幣</p><p style="text-align:center;color:#d9c9a8">${msg}</p>
-      <div class="row">${en()>=EN_SHIFT?`<button class="shx-btn sec" id="fAgain">再上一班（⚡−${EN_SHIFT}）</button>`:""}<button class="shx-btn" id="fOut">離開</button></div><p style="text-align:center;font-size:12px;color:#bba;margin-top:8px">⚡ 精力剩 ${en()}</p>`);
+      <div class="row">${en()>=EN_SHIFT&&dayCount("wk")<WORK_MAX?`<button class="shx-btn sec" id="fAgain">再上一班（⚡−${EN_SHIFT}）</button>`:""}<button class="shx-btn" id="fOut">離開</button></div><p style="text-align:center;font-size:12px;color:#bba;margin-top:8px">⚡ 精力剩 ${en()}・今天還能打工 ${WORK_MAX-dayCount("wk")} 班</p>`);
     try{ chaChing(); }catch(e){} const a=c.querySelector("#fAgain"); if(a) a.onclick=()=>{ leaveMode(); workStart(); }; c.querySelector("#fOut").onclick=()=>{ leaveMode(); toast(`打工賺了 ${total} 平安幣`,2600); }; };
   o.update=dt=>{ o.avs.forEach(a=>{ avTick(a,dt); if(a.arrive&&atGoal(a)){ const f=a.arrive; a.arrive=null; f(); } });
     if(!W.run) return; W.t-=dt; if(W.t<=0){ W.t=0; hud(); finish(false); return; }
@@ -10405,10 +10411,10 @@ function clawStart(){ const C=buildClaw(); const o={exposure:1.05}; const el=ent
   const G={st:"idle",t:0,timer:0,held:null,hum:null}; let jx=0, jz=0;
   el.insertAdjacentHTML("beforeend",`<div class="shx-top"><span class="shx-title">🧸 夾娃娃機</span><span class="shx-pill" id="kC"></span><span class="shx-pill" id="kT" hidden></span><button class="shx-x" id="kX">離開</button></div>
     <div class="shx-pip" id="kPip"><span>側面</span></div><div class="shx-pad" id="kJ" hidden><button data-d="u">▲</button><button data-d="l">◀</button><button data-d="r">▶</button><button data-d="d">▼</button></div><button class="shx-drop" id="kD" hidden>下爪</button>
-    <div class="shx-panel" id="kP" style="text-align:center"><p style="margin:0 0 8px;font-size:14px;color:#f3e7d0">一次 ${CLAW_COST} 平安幣・按住 ◀ ▶ 左右、▲ ▼ 前後移動爪子（20 秒），對準後按「下爪」。<br>夾起來送到左前方的取物口就是你的！右上角的側面畫面可以對準前後。</p><button class="shx-btn" id="kGo">投幣 ${CLAW_COST} 幣・開始</button></div>`);
+    <div class="shx-panel" id="kP" style="text-align:center"><p style="margin:0 0 8px;font-size:14px;color:#f3e7d0">一次 ${CLAW_COST} 平安幣・按住 ◀ ▶ 左右、▲ ▼ 前後移動爪子（20 秒），對準後按「下爪」。<br>夾起來送到左前方的取物口就是你的！每天最多夾中 ${CLAW_WIN_MAX} 次（今天還有 ${CLAW_WIN_MAX-dayCount("clw")} 次）。右上角的側面畫面可以對準前後。</p><button class="shx-btn" id="kGo">投幣 ${CLAW_COST} 幣・開始</button></div>`);
   const $k=s=>el.querySelector(s); const coins=()=>{ $k("#kC").textContent=`💰 ${bag.coins}`; }; coins();
   const humSet=on=>{ try{ const a=soundOn?ensureAudio():null; if(!a) return; if(on&&!G.hum){ const os=a.createOscillator(), lp=a.createBiquadFilter(), g=a.createGain(); os.type="sawtooth"; os.frequency.value=70; lp.type="lowpass"; lp.frequency.value=320; g.gain.value=.035*sVol(); os.connect(lp).connect(g).connect(sfxBus(a)); os.start(); G.hum={os,g}; } if(!on&&G.hum){ const h=G.hum; G.hum=null; h.g.gain.setTargetAtTime(0,a.currentTime,.05); setTimeout(()=>{ try{ h.os.stop(); }catch(e){} },300); } }catch(e){} };
-  const play=()=>{ if(G.st!=="idle") return; if(bag.coins<CLAW_COST){ buzz(); toast(`平安幣不夠，一次要 ${CLAW_COST}`,2200); return; } bag.coins-=CLAW_COST; saveBag(); markDirty(); coins(); statInc("clawPlay"); SX.busy=true;
+  const play=()=>{ if(G.st!=="idle") return; if(dayCount("clw")>=CLAW_WIN_MAX){ toast(`今天已經夾中 ${CLAW_WIN_MAX} 次了，明天再來`,2800); return; } if(bag.coins<CLAW_COST){ buzz(); toast(`平安幣不夠，一次要 ${CLAW_COST}`,2200); return; } bag.coins-=CLAW_COST; saveBag(); markDirty(); coins(); statInc("clawPlay"); SX.busy=true;
     try{ tone(1200,.05,.08,"square"); tone(900,.05,.08,"square",.08); [523,659,784,1047].forEach((f,i)=>tone(f,.12,.07,"triangle",.2+i*.09)); }catch(e){}
     for(const k in held) held[k]=0; jx=jz=0; J.querySelectorAll("button").forEach(b=>b.classList.remove("on")); G.st="move"; G.timer=20; $k("#kP").hidden=true; $k("#kJ").hidden=false; $k("#kD").hidden=false; $k("#kT").hidden=false; };
   $k("#kGo").onclick=play;
@@ -10420,7 +10426,7 @@ function clawStart(){ const C=buildClaw(); const o={exposure:1.05}; const el=ent
     b.addEventListener("pointerdown",on); b.addEventListener("pointerup",off); b.addEventListener("pointercancel",off); b.addEventListener("lostpointercapture",off); });
   const keyH=e=>{ if(G.st!=="move") return; const d=e.type==="keydown"; if(e.key==="ArrowLeft") jx=d?-1:0; if(e.key==="ArrowRight") jx=d?1:0; if(e.key==="ArrowUp") jz=d?-1:0; if(e.key==="ArrowDown") jz=d?1:0; if(d&&(e.key===" "||e.key==="Enter")) drop(); };
   addEventListener("keydown",keyH); addEventListener("keyup",keyH);
-  const win=p=>{ let what="", ic="🎁"; const t=p.type;
+  const win=p=>{ let what="", ic="🎁"; const t=p.type; dayAdd("clw");
     if(t==="cat"){ bag.coins+=30; what="平安幣 +30"; ic="🐱"; } if(t==="cap"){ bag.gacha=Math.min(255,(bag.gacha||0)+2); what="扭蛋幣 +2 枚"; ic="🥚"; } if(t==="can"){ bag.snk.drink=(bag.snk.drink||0)+1; what="古早味紅茶 ×1（放進背包）"; ic="🧃"; } if(t==="cup"){ bag.snk.noodle=(bag.snk.noodle||0)+1; what="牛肉泡麵 ×1（放進背包）"; ic="🍜"; }
     if(t==="gift"){ let L=[]; try{ L=gachaLeft(); }catch(e){} if(L.length&&!me.sp){ const k=L[(Math.random()*L.length)|0]; accState().owned[k]=1; what=`頭飾「${ACC[k].name}」！（放進背包的飾品）`; ic=""; G.hat=k; } else { bag.coins+=60; what="平安幣 +60"; } }
     saveBag(); markDirty(); try{ profSave(true); }catch(e){} statInc("clawWin"); coins();
