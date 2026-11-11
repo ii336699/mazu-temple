@@ -553,7 +553,7 @@ body.hideui .joy,body.customizing .joy,body.hideui .camreset,body.customizing .c
 const T = window.THREE;
 /* low-poly switch: while LOWPOLY is on (building other players and the demo crowd), round shapes are made with about half the segments
    each way, so a character costs about a quarter of the triangles. Your own character is built at full detail. */
-let LOWPOLY=false; var SHOPX=null; /* 商店街 (filled in near the end of the page) */
+let LOWPOLY=false; var SHOPX=null; var DQ=null; /* 今日功課 (filled in near the end of the page) */ /* 商店街 (filled in near the end of the page) */
 { const k=.45, sg=(n,min)=>Math.max(min,Math.round(n*k));
   const wrap=(name,fix)=>{ const C=T[name]; if(!C) return; const W=function(...a){ if(LOWPOLY) fix(a); return new C(...a); }; W.prototype=C.prototype; T[name]=W; };
   wrap("SphereGeometry",a=>{ a[1]=sg(a[1]??32,6); a[2]=sg(a[2]??16,4); });
@@ -893,7 +893,7 @@ if(me.sp&&me.name===SP_OLD) me.name=SP_NAME;
 if(me.sp&&me.name!==SP_NAME) me.sp=0;
 me.look = sanitizeLook(me.look,!!me.sp);
 let bag = load("mz.bag", {coins:300, day:today, items:{}, poems:[]});
-if(bag.day!==today){ bag.coins=Math.max(bag.coins,300); bag.day=today; }
+if(bag.day!==today){ bag.coins=Math.max(bag.coins,300); if(bag.day) bag.pday=bag.day; bag.day=today; }
 bag.items = bag.items||{}; bag.poems=bag.poems||[]; poemAlign();
 // when each 籤詩 was drawn (same order as bag.poems; 0 = drawn before times were kept)
 function poemAlign(){ bag.poemT=Array.isArray(bag.poemT)?bag.poemT:[]; while(bag.poemT.length<bag.poems.length) bag.poemT.unshift(0); bag.poemT=bag.poemT.slice(-bag.poems.length); }
@@ -3655,7 +3655,7 @@ function updateFlyers(dt){ for(let i=flyers.length-1;i>=0;i--){ const f=flyers[i
 
 /* ================= state, input, camera ================= */
 if(me.sp&&me.name!==SP_NAME) me.sp=0;
-function myLabel(){ return me.name?me.name+"（你）":(me.no?`香客${me.no}（你）`:"你"); }
+function myLabel(){ const tl=DQ&&DQ.ttl()?DQ.ttl()+"・":""; return tl+(me.name?me.name+"（你）":(me.no?`香客${me.no}（你）`:"你")); }
 const meAv=new Avatar(me.look,{isMe:true,sp:!!me.sp,x:(Math.random()<.5?-1:1)*rand(2.4,8),z:HZ+rand(3.4,6.5),r:Math.PI});
 meAv.setName(myLabel());
 let camYaw=0, camPitch=.3, camDist=4.6, camTarget=new T.Vector3(); let customizing=false; let pvYaw=0, pvMode="full", pvSpin=0, rotAnim=null;
@@ -4087,7 +4087,7 @@ let room=null, myBow=0, myJiao=[0,""], myBurn=0, myOffers=[];
 let dirty=true, lastSend=0, lastSentHead=0;
 function markDirty(){ dirty=true; }
 let chairHidden=false;
-function presencePayload(){ return {v:1,u:(customizing||chairHidden)?0:1,n:(me.name||"").slice(0,10),k:me.no||0,l:me.look,x:+meAv.target.x.toFixed(2),z:+meAv.target.y.toFixed(2),r:+meAv.rotY.toFixed(1),s:meAv.seat,b:myBow,h:meAv.hold?1:0,j:myJiao,f:myBurn,o:myOffers,a:bag.items.fu?1:0,g:me.lamp??-1,m:myMsg,c:myChat,p:myPlant,gf:myGF,fx:myFx,t:threadOn()?1:0,q:me.sp?1:0,eq:myEq(),w:myWish,y:+meAv.headGoal.toFixed(1),sq:mySj?[mySj.g+1,mySj.at]:0,sk:mySparkler?1:0,fs:myFwShow||0,e:myEmo,ac:myAct,sl:mySL,sm:myMassSL||0,fl:myFly?+(meAv.flyGoal||FLY_H).toFixed(1):0,cs:myCs,iy:(meAv.gy||0)>2.3?1:0,lk:INN.lock||0}; }
+function presencePayload(){ return {v:1,u:(customizing||chairHidden)?0:1,n:(me.name||"").slice(0,10),k:me.no||0,l:me.look,x:+meAv.target.x.toFixed(2),z:+meAv.target.y.toFixed(2),r:+meAv.rotY.toFixed(1),s:meAv.seat,b:myBow,h:meAv.hold?1:0,j:myJiao,f:myBurn,o:myOffers,a:bag.items.fu?1:0,g:me.lamp??-1,m:myMsg,c:myChat,p:myPlant,gf:myGF,fx:myFx,t:threadOn()?1:0,q:me.sp?1:0,eq:myEq(),w:myWish,y:+meAv.headGoal.toFixed(1),sq:mySj?[mySj.g+1,mySj.at]:0,sk:mySparkler?1:0,fs:myFwShow||0,e:myEmo,ac:myAct,sl:mySL,sm:myMassSL||0,fl:myFly?+(meAv.flyGoal||FLY_H).toFixed(1):0,cs:myCs,iy:(meAv.gy||0)>2.3?1:0,lk:INN.lock||0,tl:DQ?DQ.title():0}; }
 let lastSent="", lastBeat=0;
 setInterval(()=>{ if(room) sendPresence(true); },50000); // heartbeat while idle
 function sendPresence(force){ if(!room) return; dirty=false; const p=presencePayload(), str=JSON.stringify(p), now=performance.now(); lastSend=now; if(str===lastSent&&force!==true&&now-lastBeat<60000) return; lastSent=str; lastBeat=now; room.presence(p).catch(()=>{}); }
@@ -4111,7 +4111,7 @@ function syncPeers(peers){ const seen=new Set(); const valid=peers.filter(p=>!p.
     if(!av){ av=new Avatar(look,{sp:pr.q===1,x:num(pr.x,-78,68,0),z:num(pr.z,-43,HZ+YX+18,HZ+12)}); av.autoBake=true; av.real=1; try{ bakeAvatar(av); }catch(e){} if(!othersShown) av.root.visible=false; av.lastBow=pr.b; av.lastJ=Array.isArray(pr.j)?pr.j[1]:""; av.lastF=pr.f; av.offerGroup=new T.Group(); scene.add(av.offerGroup); remotes.set(p.peer,av); if(customizing) av.root.visible=false; }
     else if(av.swim&&av.swimSave){ if(look.join()!==av.swimSave.join()) av.swimSave=look.slice(); } /* in the hot spring: keep the swimsuit, remember the new clothes for afterwards */
     else if(look.join()!==av.look.join()) av.setLook(look);
-    const pno=Number.isInteger(pr.k)&&pr.k>0&&pr.k<1e8?pr.k:0; let nm=cleanName(pr.n)||(pno?`香客${pno}`:"香客"); if(pr.q!==1&&[SP_NAME,SP_OLD].includes(nm)) nm=pno?`香客${pno}`:"香客"; if(nm!==av.name||av.lblSp!==!!(me&&me.sp)){ av.name=nm; av.lblSp=!!(me&&me.sp); av.setName(nm); }
+    const pno=Number.isInteger(pr.k)&&pr.k>0&&pr.k<1e8?pr.k:0; let nm=cleanName(pr.n)||(pno?`香客${pno}`:"香客"); if(pr.q!==1&&[SP_NAME,SP_OLD].includes(nm)) nm=pno?`香客${pno}`:"香客"; { const tl=DQ&&pr.q!==1?DQ.ttl(pr.tl|0):""; if(nm!==av.name||av.lblSp!==!!(me&&me.sp)||(av.ttl||"")!==tl){ av.name=nm; av.ttl=tl; av.lblSp=!!(me&&me.sp); av.setName(tl?tl+"・"+nm:nm); } }
     av.setSp(pr.q===1); if(pr.q===1) av.name=SP_NAME; av.flyGoal=pr.q===1&&pr.fl?Math.max(.6,Math.min(40,+pr.fl||FLY_H)):0; csForm(av,pr.q===1&&pr.cs===1);
     { const eq=Array.isArray(pr.eq)?[pr.eq[0],pr.eq[1],pr.eq[2],pr.eq[3]].map(v=>typeof v==="string"&&ACC[v]?v:0):[0,0,0,0]; if(String(eq)!==String(av.eq||[0,0,0,0])) av.setAcc(eq); }
     { const tx=num(pr.x,-78,68,av.target.x), tz=num(pr.z,-43,HZ+YX+18,av.target.y); if(tx!==av.goalX||tz!==av.goalZ){ av.goalX=tx; av.goalZ=tz; av.wantGy=pr.iy===1?INN.F2:0; const pth=av.flyGoal>0?[[tx,tz]]:planPath(av.pos.x,av.pos.y,tx,tz,av.gy||0,pr.iy===1?INN.F2:0); av.target.set(pth[0][0],pth[0][1]); av.path=pth.slice(1); } } av.lk=Number.isInteger(pr.lk)&&pr.lk>=1&&pr.lk<=4?pr.lk:0; const seat=Number.isInteger(pr.s)&&pr.s>=0&&pr.s<SEATS.length?pr.s:-1; av.seat=seat; if(seat>=0) npcYield(seat);
@@ -4437,7 +4437,7 @@ sheetBody.addEventListener("click",e=>{ const b=e.target.closest("[data-act]"); 
    to the server every 5 minutes and when the page is hidden. The server adds them into one counter set per Taiwan day — later the NPCs
    can talk about it ("今天已經有 300 人擲筊了"). Only counts, never names or text. ---- */
 const STATQ={q:{},id:Math.random().toString(36).slice(2,12)};
-function statInc(k,n){ k=String(k).replace(/[^a-zA-Z0-9_]/g,"").slice(0,24); if(!k) return; if(!/^[a-z]/.test(k)) k=("x"+k).slice(0,24); STATQ.q[k]=(STATQ.q[k]||0)+(n||1); }
+function statInc(k,n){ k=String(k).replace(/[^a-zA-Z0-9_]/g,"").slice(0,24); if(!k) return; if(!/^[a-z]/.test(k)) k=("x"+k).slice(0,24); STATQ.q[k]=(STATQ.q[k]||0)+(n||1); try{ if(DQ) DQ.stat(k,n||1); }catch(e){} }
 function statFlush(beacon){ const ks=Object.keys(STATQ.q); if(!ks.length||!USE_CF) return; const c={}; ks.slice(0,40).forEach(k=>{ c[k]=STATQ.q[k]; delete STATQ.q[k]; }); const mx=STATQ.m||{}; STATQ.m={}; const body=JSON.stringify({id:load("mz.id","")||STATQ.id,name:(typeof me!=="undefined"&&me.name||"").slice(0,10),c,m:mx});
   try{ if(beacon&&navigator.sendBeacon) navigator.sendBeacon("/stat",new Blob([body],{type:"application/json"})); else fetch("/stat",{method:"POST",headers:{"content-type":"application/json"},body,keepalive:true}).catch(()=>{}); }catch(e){} }
 setInterval(()=>statFlush(),300000); document.addEventListener("visibilitychange",()=>{ if(document.hidden) statFlush(true); });
@@ -4605,7 +4605,7 @@ const CODE_ITEMS=["xiang","hua","guo","bing","jin","fu"];
 function lookCode(){ const bits=[]; const put=(v,n)=>{ v=Math.max(0,Math.min((2**n)-1,v|0)); for(let i=n-1;i>=0;i--) bits.push((v/2**i|0)&1); };
   put(1,4); for(let i=0;i<13;i++) put(me.look[i]||0,5); put(bag.coins,16); CODE_ITEMS.forEach(k=>put(bag.items[k]||0,5)); put(bag.redThread?1:0,1);
   const ps=(bag.poems||[]).slice(-5); put(ps.length,3); ps.forEach(n=>put(n,6)); put(me.no||0,24);
-  const nm=[...String(me.sp?"":(me.name||""))].slice(0,10).join(""); const cu=[]; for(let i=0;i<nm.length;i++) cu.push(nm.charCodeAt(i)); put(Math.min(15,cu.length),4); cu.slice(0,15).forEach(c=>put(c,16)); { const a=accState(); put(Math.min(15,ACC_IDS.length),4); ACC_IDS.slice(0,15).forEach(id=>put(a.owned[id]?1:0,1)); } put(Math.min(255,bag.gacha||0),8); { const a=accState(), more=ACC_IDS.slice(15); put(more.length,6); more.forEach(id=>put(a.owned[id]?1:0,1)); } { const c=bag.cat&&bag.cat.pet; put(1,1); put(Math.min(255,bag.items.can||0),8); put(Math.min(255,bag.items.treat||0),8); put(c?1:0,1); if(c){ put(c.t,4); put(c.sd,16); const cn=[...String(c.nm||"")].slice(0,6); put(cn.length,3); cn.forEach(ch=>put(ch.charCodeAt(0),16)); TRICKS.forEach(([k])=>put(Math.min(7,c.tr&&c.tr[k]||0),3)); } } /* 貓: cans and your cat (older codes read as none) */ put(1,1); put(bag.clo||0,16); put(Math.max(0,Math.min(100,Math.round(bag.en??100))),7); SNACK_KEYS.forEach(k=>put(Math.min(63,(bag.snk||{})[k]||0),6)); put(Math.max(0,(bag.coins|0)-65535),24); /* (coins above the old 16-bit field) */ /* 商店街: outfits bought, 精力, snacks (older codes read as none) */ /* 扭蛋幣 (codes made before it was added simply read as 0) */
+  const nm=[...String(me.sp?"":(me.name||""))].slice(0,10).join(""); const cu=[]; for(let i=0;i<nm.length;i++) cu.push(nm.charCodeAt(i)); put(Math.min(15,cu.length),4); cu.slice(0,15).forEach(c=>put(c,16)); { const a=accState(); put(Math.min(15,ACC_IDS.length),4); ACC_IDS.slice(0,15).forEach(id=>put(a.owned[id]?1:0,1)); } put(Math.min(255,bag.gacha||0),8); { const a=accState(), more=ACC_IDS.slice(15); put(more.length,6); more.forEach(id=>put(a.owned[id]?1:0,1)); } { const c=bag.cat&&bag.cat.pet; put(1,1); put(Math.min(255,bag.items.can||0),8); put(Math.min(255,bag.items.treat||0),8); put(c?1:0,1); if(c){ put(c.t,4); put(c.sd,16); const cn=[...String(c.nm||"")].slice(0,6); put(cn.length,3); cn.forEach(ch=>put(ch.charCodeAt(0),16)); TRICKS.forEach(([k])=>put(Math.min(7,c.tr&&c.tr[k]||0),3)); } } /* 貓: cans and your cat (older codes read as none) */ put(1,1); put(bag.clo||0,16); put(Math.max(0,Math.min(100,Math.round(bag.en??100))),7); SNACK_KEYS.forEach(k=>put(Math.min(63,(bag.snk||{})[k]||0),6)); put(Math.max(0,(bag.coins|0)-65535),24); { const z=DQ?DQ.pack():null; put(z?1:0,1); if(z) z.forEach(v=>put(v[0],v[1])); } /* 今日功課: sign-in, claims, 功德簿 */ /* (coins above the old 16-bit field) */ /* 商店街: outfits bought, 精力, snacks (older codes read as none) */ /* 扭蛋幣 (codes made before it was added simply read as 0) */
   while(bits.length%8) bits.push(0); const bytes=[]; for(let i=0;i<bits.length;i+=8){ let b=0; for(let j=0;j<8;j++) b=b*2+bits[i+j]; bytes.push(b); } bytes.push(bytes.reduce((a,b)=>(a+b)&255,0x5a));
   return "MZ-"+btoa(String.fromCharCode(...bytes)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }
 function readCode(str){ try{ str=String(str||"").trim().replace(/\s+/g,""); if(!/^MZ-[A-Za-z0-9_-]{10,}$/.test(str)) return null; const raw=atob(str.slice(3).replace(/-/g,"+").replace(/_/g,"/")); const bytes=[...raw].map(c=>c.charCodeAt(0));
@@ -4613,8 +4613,8 @@ function readCode(str){ try{ str=String(str||"").trim().replace(/\s+/g,""); if(!
   if(get(4)!==1) return null; const look=[]; for(let i=0;i<13;i++) look.push(get(5)); const coins=get(16); const items={}; CODE_ITEMS.forEach(k=>{ const v=get(5); if(v) items[k]=v; }); const red=get(1);
   const pn=get(3), poems=[]; for(let i=0;i<pn;i++){ const n=get(6); if(n>=1&&n<=60) poems.push(n); } const no=get(24); const nl=get(4); let name=""; for(let i=0;i<nl;i++) name+=String.fromCharCode(get(16));
   const an=get(4), acc=[]; for(let i=0;i<an;i++) if(get(1)&&ACC_IDS[i]) acc.push(ACC_IDS[i]); const gacha=get(8); { const an2=get(6); for(let i=0;i<an2;i++) if(get(1)&&ACC_IDS[15+i]) acc.push(ACC_IDS[15+i]); } let cans=0, treat=0, cat=null; if(get(1)){ cans=get(8); treat=get(8); if(get(1)){ cat={t:get(4)%11,sd:get(16)}; const l=get(3); let nm=""; for(let i=0;i<l;i++) nm+=String.fromCharCode(get(16)); cat.nm=nm||"咪咪"; cat.tr={}; TRICKS.forEach(([k])=>{ const v=get(3); if(v) cat.tr[k]=v; }); } }
-  let shop=null; if(get(1)){ shop={clo:get(16),en:get(7),snk:{}}; SNACK_KEYS.forEach(k=>{ const v=get(6); if(v) shop.snk[k]=v; }); shop.xc=get(24); }
-  return {look,coins:coins+(shop&&shop.xc||0),items,red,poems,no,name,acc,gacha,cans,treat,cat,shop}; }catch(e){ return null; } }
+  let shop=null; if(get(1)){ shop={clo:get(16),en:get(7),snk:{}}; SNACK_KEYS.forEach(k=>{ const v=get(6); if(v) shop.snk[k]=v; }); shop.xc=get(24); } let daily=null; if(shop&&get(1)&&DQ) daily=DQ.unpack(get);
+  return {look,coins:coins+(shop&&shop.xc||0),items,red,poems,no,name,acc,gacha,cans,treat,cat,shop,daily}; }catch(e){ return null; } }
 /* 除霧 (chair only, this screen only): the haze is lifted so the far scenery and the whole sky show reads clearly; press again to bring it back */
 const NOFOG={on:false,near:0,far:0};
 HANDLERS.noFog=()=>{ NOFOG.on=!NOFOG.on; if(NOFOG.on){ NOFOG.near=scene.fog.near; NOFOG.far=scene.fog.far; scene.fog.near=1e4; scene.fog.far=2e4; } else { scene.fog.near=NOFOG.near; scene.fog.far=NOFOG.far; } toast(NOFOG.on?"已除霧（只有你的畫面）":"霧氣已恢復",2200); openChair(); };
@@ -4625,7 +4625,7 @@ HANDLERS.camCode=async()=>{ closeSheet(); await new Promise(r=>setTimeout(r,350)
 HANDLERS.copyCode=async()=>{ const c=lookCode(); let ok=false; try{ await navigator.clipboard.writeText(c); ok=true; }catch(e){ const i=$("#myCode"); if(i){ i.focus(); i.select(); try{ ok=document.execCommand("copy"); }catch(e2){} } } toast(ok?"代碼已複製，記得存在記事本":"請長按代碼自行複製",3000); };
 HANDLERS.applyCode=()=>{ const d=readCode(($("#pasteCode")||{}).value); if(!d){ toast("代碼不正確，請確認有完整貼上",3000); return; }
   me.look=sanitizeLook(d.look,!!me.sp); const nm=cleanName(d.name); if(!me.sp) me.name=[SP_NAME,SP_OLD].includes(nm)?"":nm; if(d.no) me.no=d.no; save("mz.me",me);
-  bag.coins=d.coins; bag.items={...bag.items,...d.items}; bag.redThread=!!d.red; if(d.poems.length){ const keep=new Map((bag.poems||[]).map((n,i)=>[n,(bag.poemT||[])[i]||0])); bag.poems=[...new Set([...(bag.poems||[]),...d.poems])].slice(-30); bag.poemT=bag.poems.map(n=>keep.get(n)||0); } (d.acc||[]).forEach(id=>{ accState().owned[id]=1; }); if(d.gacha) bag.gacha=Math.max(bag.gacha||0,d.gacha); try{ catRestore(d); }catch(e){} if(d.shop){ bag.clo=(bag.clo||0)|d.shop.clo; bag.en=Math.min(100,d.shop.en); bag.snk={...d.shop.snk}; } saveBag();
+  bag.coins=d.coins; bag.items={...bag.items,...d.items}; bag.redThread=!!d.red; if(d.poems.length){ const keep=new Map((bag.poems||[]).map((n,i)=>[n,(bag.poemT||[])[i]||0])); bag.poems=[...new Set([...(bag.poems||[]),...d.poems])].slice(-30); bag.poemT=bag.poems.map(n=>keep.get(n)||0); } (d.acc||[]).forEach(id=>{ accState().owned[id]=1; }); if(d.gacha) bag.gacha=Math.max(bag.gacha||0,d.gacha); try{ catRestore(d); }catch(e){} if(d.shop){ bag.clo=(bag.clo||0)|d.shop.clo; bag.en=Math.min(100,d.shop.en); bag.snk={...d.shop.snk}; } try{ if(d.daily) DQ.restore(d.daily); }catch(e){} saveBag();
   draftLook=me.look.slice(); meAv.setLook(draftLook); meAv.setName(myLabel()); meAv.setAmulet(!!bag.items.fu); meAv.setThread(threadOn()); markDirty(); renderLook(firstVisitPending); toast("已找回你的名字、造型和背包",3000); };
 /* ---- 角色存檔: the server keeps a copy of your character (look, name, 平安幣, bag, recent 籤詩) under a long-lived cookie, so a
    cleared browser brings it back by itself; the 取回碼 moves it to another app or phone. Gifts from the 主委 arrive the same way. ---- */
@@ -4633,7 +4633,7 @@ const PROF={last:"",code:load("mz.rc",""),busy:false,shown:load("mz.rcShown",fal
 /* the character server is reachable on the site, or simulated inside the test page (window.MZ_SIM, set only by the test build) */
 const NET_ME=()=>USE_CF||!!window.MZ_SIM;
 function applySnap(d){ if(!d) return false; me.look=sanitizeLook(d.look,!!me.sp); const nm=cleanName(d.name); if(!me.sp) me.name=[SP_NAME,SP_OLD].includes(nm)?me.name:nm||me.name; if(d.no) me.no=d.no; save("mz.me",me);
-  bag.coins=d.coins; bag.items={...bag.items,...d.items}; bag.redThread=!!d.red; if(d.poems.length){ const keep=new Map((bag.poems||[]).map((n,i)=>[n,(bag.poemT||[])[i]||0])); bag.poems=[...new Set([...(bag.poems||[]),...d.poems])].slice(-30); bag.poemT=bag.poems.map(n=>keep.get(n)||0); } (d.acc||[]).forEach(id=>{ accState().owned[id]=1; }); if(d.gacha) bag.gacha=Math.max(bag.gacha||0,d.gacha); try{ catRestore(d); }catch(e){} if(d.shop){ bag.clo=(bag.clo||0)|d.shop.clo; bag.en=Math.min(100,d.shop.en); bag.snk={...d.shop.snk}; } saveBag();
+  bag.coins=d.coins; bag.items={...bag.items,...d.items}; bag.redThread=!!d.red; if(d.poems.length){ const keep=new Map((bag.poems||[]).map((n,i)=>[n,(bag.poemT||[])[i]||0])); bag.poems=[...new Set([...(bag.poems||[]),...d.poems])].slice(-30); bag.poemT=bag.poems.map(n=>keep.get(n)||0); } (d.acc||[]).forEach(id=>{ accState().owned[id]=1; }); if(d.gacha) bag.gacha=Math.max(bag.gacha||0,d.gacha); try{ catRestore(d); }catch(e){} if(d.shop){ bag.clo=(bag.clo||0)|d.shop.clo; bag.en=Math.min(100,d.shop.en); bag.snk={...d.shop.snk}; } try{ if(d.daily) DQ.restore(d.daily); }catch(e){} saveBag();
   draftLook=me.look.slice(); meAv.setLook(draftLook); meAv.setName(myLabel()); meAv.setAmulet(!!bag.items.fu); meAv.setThread(threadOn()); markDirty(); return true; }
 const fmtCode=c=>c?c.slice(0,3)+"-"+c.slice(3):"";
 async function profSave(force,beacon){ if(me.sp||PROF.busy) return; const snap=lookCode(); if(!force&&snap===PROF.last) return;
@@ -5045,7 +5045,7 @@ function rebuildMyOffers(){ while(myOfferGroup.children.length) myOfferGroup.rem
 function openBurn(){ const n=bag.items.jin||0; openSheet("burn","金爐",`<p class="lead">參拜完畢後，把金紙送進金爐焚化，敬獻神明。</p>
   <div class="result"><span class="big">金</span><p>持有金紙 ${n} 份</p></div>
   <button class="primary" data-act="burn" ${n?"":"disabled"}>焚化一份金紙</button>${n?"":`<button class="secondary" data-act="goShop">去服務處買金紙</button>`}`); }
-HANDLERS.burn=()=>{ if(!(bag.items.jin>0)) return; bag.items.jin--; myBurn++; meAv.burnT=0; markDirty(); burnFx(); sfx.fire(); const f=flow(); if(f.cleared||(Array.isArray(bag.planted)&&bag.planted.length>=5)){ bag.flow={}; bag.planted=[]; bag.bowed={}; bag.stuck=null; saveBag(); toast("金紙焚化，參拜圓滿。媽祖保庇！",4200); closeSheet(); } else { saveBag(); toast("金紙焚化中"); openBurn(); } };
+HANDLERS.burn=()=>{ if(!(bag.items.jin>0)) return; bag.items.jin--; myBurn++; meAv.burnT=0; markDirty(); burnFx(); sfx.fire(); const f=flow(); if(f.cleared||(Array.isArray(bag.planted)&&bag.planted.length>=5)){ bag.flow={}; bag.planted=[]; bag.bowed={}; bag.stuck=null; saveBag(); toast("金紙焚化，參拜圓滿。媽祖保庇！",4200); try{ DQ.ev("bai"); }catch(e){} closeSheet(); } else { saveBag(); toast("金紙焚化中"); openBurn(); } };
 let fireBoost=0;
 function burnFx(){ fireBoost=2.4; for(let i=0;i<10;i++) setTimeout(()=>{ const s=new T.Sprite(new T.SpriteMaterial({map:softTex,color:new T.Color("#f2d070"),transparent:true,opacity:.9,depthWrite:false})); s.position.set(FX+FURN_FRONT+.4+rand(-.2,.2),1.3+rand(0,.35),FZ+rand(-.3,.3)); s.scale.set(.18,.12,1); scene.add(s); parts.push({s,vx:-.8,vy:.2,vz:rand(-.1,.1),life:0,max:.7,grow:-.1,op:.9}); },i*80); }
 function openDonate(){ openSheet("donate","香油錢",`<p class="lead">隨喜添香油，護持廟務。</p>
@@ -5102,7 +5102,7 @@ function renderChatLog(){ const el=$("#chatLog"); if(!el) return; el.innerHTML=c
 const FLOOD={last:"",times:[],muteUntil:0};
 const floodKey=t=>String(t||"").normalize("NFKC").toLowerCase().replace(/[\s\p{P}\p{S}]/gu,"");
 function floodCheck(text){ if(floodKey(text)&&floodKey(text)===FLOOD.last) return "同一句話不能連續發送"; return null; }
-function floodNote(text){ FLOOD.last=floodKey(text); FLOOD.times.push(Date.now()); }
+function floodNote(text){ FLOOD.last=floodKey(text); FLOOD.times.push(Date.now()); try{ DQ.ev("chat"); }catch(e){} }
 // the same rules applied to what other players send, so a modified page can't flood everyone else's screen
 function peerFlood(av,text){ const k=floodKey(text); av.fl=av.fl||{last:""}; if(k&&k===av.fl.last) return true; av.fl.last=k; return false; }
 function sendChat(text){ text=cleanChat(text); if(!text) return false; const now=performance.now(); if(now-lastChatAt<800) return false; /* only stops an accidental double tap */
@@ -6170,7 +6170,7 @@ HANDLERS.wxOpen=()=>{ const cur=wxNow(), manual=WX.set&&Date.now()<WX.setUntil; 
   openSheet("contact","天氣",`${backBtn}<p class="lead">現在：${WX_KINDS[cur].n}${manual?`（主委指定，還有 ${left} 分鐘）`:"（自動：每天上午隨機一個時間換一次，一整天同一種天氣）"}。選一種天氣，全伺服器會一起換，維持 20 分鐘後回到自動。</p>
     <div class="goods">${Object.entries(WX_KINDS).map(([k,o])=>`<button class="good${cur===k?" on":""}" data-act="wxSet" data-v="${k}"><span class="name">${{clear:"☀️",cloudy:"☁️",windy:"🍃",rain:"🌧️",storm:"⛈️"}[k]} ${o.n}</span></button>`).join("")}<button class="good" data-act="wxSet" data-v=""><span class="name">🔄 回到自動</span></button></div>`); };
 /* 主委工具 → 每日統計: today's counters, the last 14 days of the main ones, busiest hours, and today's wishes */
-const STAT_NAME={buskTip:"打賞玖玖（次）",buskTipC:"打賞玖玖（幣）",buskCheer:"幫玖玖應援",...Object.fromEntries(["記得我忘記","慢慢欣賞","可鹽可甜","妳沒有說","龜毛先生","詩情難忘","一個人的旅程","禁止正常","撲火","晚安以前","那個我","城市停電了"].map((n,i)=>["bk"+String(i+1).padStart(2,"0"),"玖玖〈"+n+"〉收聽"])),visitors:"今日訪客",sessions:"進場次數",peak:"最高同時在線",minOnline:"在線總分鐘",minFront:"前殿・廟埕分鐘",minRear:"後殿分鐘",minZen:"靜思禪院分鐘",minInn:"禪房分鐘",minSitting:"坐著的分鐘",minInRain:"淋雨中的分鐘",
+const STAT_NAME={dqSign:"每日簽到（人次）",dqChest:"每日功課三件全完成",dqBack:"領回鍋禮（離開 3 天以上回來）",b_dayBtn:"打開今日功課",buskTip:"打賞玖玖（次）",buskTipC:"打賞玖玖（幣）",buskCheer:"幫玖玖應援",...Object.fromEntries(["記得我忘記","慢慢欣賞","可鹽可甜","妳沒有說","龜毛先生","詩情難忘","一個人的旅程","禁止正常","撲火","晚安以前","那個我","城市停電了"].map((n,i)=>["bk"+String(i+1).padStart(2,"0"),"玖玖〈"+n+"〉收聽"])),visitors:"今日訪客",sessions:"進場次數",peak:"最高同時在線",minOnline:"在線總分鐘",minFront:"前殿・廟埕分鐘",minRear:"後殿分鐘",minZen:"靜思禪院分鐘",minInn:"禪房分鐘",minSitting:"坐著的分鐘",minInRain:"淋雨中的分鐘",
   wish:"許願卡",lamp:"點燈",msg:"給主委留言",zhan:"沾喜氣",lanterns:"放天燈",reply:"回覆",letter:"寫信",hongbao:"發紅包",hbclaim:"搶紅包",nightMarket:"夜市紀錄",b_bowBtn:"拜拜",b_jiaoBtn:"擲筊",b_lotBtn:"求籤",b_holdBtn:"持香",b_bagBtn:"打開背包",b_hallBtn:"換殿",
   sit_mat:"跪拜墊",sit_zen:"禪坐",sit_futon:"通鋪睡覺",sit_bed:"套房躺床",sit_tub:"泡澡",sit_toilet:"上廁所",st_innDesk:"找櫃台阿姨",st_fortune:"走到鐵口直斷攤",st_cats:"找貓咪",st_lot:"求籤處",sjDone:"完成收驚",ftDone:"鐵口直斷算命",paperOpen:"看報紙",innBedding:"買通鋪床具",innRoom:"買套房房卡",pkCash:"彈珠台換出的平安幣",pkBuy:"買彈珠花的平安幣",sit_sofa:"坐禪房沙發",st_treasure:"土地公挖寶",b_zenMusicBtn:"換禪堂音樂",b_innLockBtn:"鎖房門",b_innSleepBtn:"通鋪睡覺",b_camReset:"鏡頭回正",b_foldBtn:"收起按鈕",b_chairBtn:"打開主委工具"};
 const statName=k=>{ if(STAT_NAME[k]) return STAT_NAME[k]; if(k.startsWith("b_")){ const el=document.getElementById(k.slice(2)); const t=el&&((el.getAttribute("aria-label")||"")||(el.querySelector(".cap")||{}).textContent||el.textContent||"").trim(); if(t&&/[\u4e00-\u9fff]/.test(t)) return "按「"+t.replace(/\s+/g," ").slice(0,12)+"」"; }
@@ -6255,7 +6255,7 @@ function nearGod(){ const d=k=>meAv.pos.distanceTo(stations[k].approach); return
 function openJiao(){ jiaoGod=nearGod(); openSheet("jiao","擲筊",`<p class="lead">在心中向${jiaoGod}稟報姓名、住址和想問的事，問題要能用「是」或「否」回答，然後擲出筊杯。</p>
   <div class="result"><span class="big">筊</span><p>一正一反是<b>聖筊</b>，表示應允；兩個平面朝上是<b>笑筊</b>；兩個凸面朝上是<b>陰筊</b>。</p></div>
   <button class="primary" data-act="throw">擲筊</button><div id="jiaoOut"></div><p class="note">擲筊與籤詩結果僅供參考，請以自身判斷為準。</p>`); }
-function doThrow(cb,fast){ if(jiaoBusy) return; jiaoBusy=true; jiaoCam.fast=!!fast; const res=rollJiao(); myJiao=[res,Math.random().toString(36).slice(2,8)]; markDirty(); meAv.burnT=0;
+function doThrow(cb,fast){ if(jiaoBusy) return; jiaoBusy=true; jiaoCam.fast=!!fast; const res=rollJiao(); try{ DQ.ev("jiao"); }catch(e){} myJiao=[res,Math.random().toString(36).slice(2,8)]; markDirty(); meAv.burnT=0;
   throwJiao(meAv,res,()=>{ jiaoBusy=false; meAv.say(RESULT[res].t,RESULT[res].c); toast(`${RESULT[res].t}・${RESULT[res].d.replace("媽祖",jiaoGod)}`,2600); cb&&cb(res); }); }
 HANDLERS.throw=()=>doThrow(res=>{ const el=$("#jiaoOut"); if(el) el.innerHTML=`<div class="result"><span class="big" style="color:${RESULT[res].c}">${RESULT[res].t}</span><p>${RESULT[res].d.replace("媽祖",jiaoGod)}</p></div>`; });
 
@@ -6272,7 +6272,7 @@ HANDLERS.lotDraw=()=>{ if(jiaoBusy) return; jiaoBusy=true; sfx.rattle(); shakeT=
 HANDLERS.lotConfirm=()=>{ jiaoGod="媽祖"; doThrow(res=>{ if(sheetKind!=="lot") return; if(res==="sheng"){ openPoem(lotN,false); } else openLot("draw"); if(res!=="sheng") toast(`${RESULT[res].t}，不是這支籤，請重新抽`,3000); },true); };
 function openPoem(n,fromBag){ const p=POEMS[n-1]; openSheet("poem",`第${CN_NUM(n)}籤`,`${fromBag?"":stepsBar(3)}<div class="poem" role="img" aria-label="第${CN_NUM(n)}籤 ${p.gz}：${p.lines.join("，")}"><div class="no">${vcol("六十甲子籤　第"+CN_NUM(n)+"籤　"+p.gz)}</div><div class="lines">${p.lines.map(l=>`<div class="col">${vcol(l)}</div>`).join("")}</div></div>
   <p class="note">${fromBag?"":"籤詩已自動收進背包。"}想知道白話意思和功名、婚姻、求財等籤解，請到解籤處。結果僅供參考，請以自身判斷為準。</p><button class="primary" data-act="goJq" data-v="${n}">去解籤</button>`);
-  if(!fromBag){ poemAlign(); bag.poems.push(n); bag.poemT.push(Date.now()); if(bag.poems.length>30){ bag.poems.shift(); bag.poemT.shift(); } saveBag(); toast("籤詩已自動收進背包",2600); } }
+  if(!fromBag){ poemAlign(); bag.poems.push(n); bag.poemT.push(Date.now()); try{ DQ.ev("lot"); }catch(e){} if(bag.poems.length>30){ bag.poems.shift(); bag.poemT.shift(); } saveBag(); toast("籤詩已自動收進背包",2600); } }
 let pendingJq=0;
 HANDLERS.goJq=v=>{ pendingJq=+v; closeSheet(); goStation("jieqian"); };
 let shakeT=0; let poppedStick=null;
@@ -9814,7 +9814,7 @@ function catStraySheet(){ const e=CAT.cur; if(!e||e.kind!=="stray") return; cons
     <button class="good" data-act="catFeed" ${s.fd===d?"disabled":""}><span class="name">🥫 餵罐頭</span><span class="meta">${s.fd===d?"今天吃飽了":`好感 +20・你有 ${catCans()} 罐`}</span></button>
     ${s.a>=100?`<button class="good" data-act="catAdopt"><span class="name">🏠 領養牠</span><span class="meta">${C.pet?"你已經有一隻貓了（一次只能養一隻）":"帶牠回家，每天照顧牠"}</span></button>`:""}</div>
     <p class="note">罐頭可以跟廟埕的愛心媽媽買（一罐 10 平安幣），土地公尋寶也挖得到。好感度滿 100 就可以領養。</p><div class="chips"><button class="chip" data-act="goCatMom">去找愛心媽媽</button></div>`); }
-function catPet(){ const e=CAT.cur; if(!e) return; if(e.kind==="pet"){ const p=e.ref; const first=p.lp!==catDay(); p.lp=catDay(); catHearts(e,first?6:3); catPurr(); catTrick(e,"sit"); saveBag(); markDirty(); toast(first?`${p.nm} 舒服得呼嚕呼嚕叫`:`${p.nm} 蹭了蹭你的手`,1800); catPetSheet(); return; }
+function catPet(){ const e=CAT.cur; if(!e) return; try{ DQ.ev("cat"); }catch(_){} if(e.kind==="pet"){ const p=e.ref; const first=p.lp!==catDay(); p.lp=catDay(); catHearts(e,first?6:3); catPurr(); catTrick(e,"sit"); saveBag(); markDirty(); toast(first?`${p.nm} 舒服得呼嚕呼嚕叫`:`${p.nm} 蹭了蹭你的手`,1800); catPetSheet(); return; }
   const s=e.ref; if(s.pn>=3){ toast(`${s.nm} 今天被摸夠了，明天再來吧`,2000); return; } s.pn++; s.a=Math.min(100,s.a+5); s.lv=catDay(); catHearts(e,3); catPurr(); saveBag(); markDirty(); toast(s.a>=100?`${s.nm} 好感度滿了！可以領養牠了`:`${s.nm} 瞇起眼睛，好感 +5`,2000); catStraySheet(); }
 function catFeed(){ const e=CAT.cur; if(!e) return; if(catCans()<1){ toast("沒有罐頭了，到愛心媽媽那裡買",2400); return; } const d=catDay();
   if(e.kind==="pet"){ const p=e.ref; if(p.lf===d){ toast(`${p.nm} 今天吃飽了，一天一罐就好`,2200); return; } bag.items.can--; p.lf=d; catHearts(e,5); catMeow(true); saveBag(); markDirty(); toast(`${p.nm} 吃得好開心！`,1800); catPetSheet(); return; }
@@ -10567,6 +10567,150 @@ setTimeout(()=>{ try{ buildWorld(); }catch(e){ console.warn("shop street",e); } 
 return SX; })();
 
 /*SHOPS>>*/
+/*<<DAILY*/
+/* ================= 今日功課: 每日簽到, 三件每日功課＋寶箱, 回鍋禮, 功德簿 (long goals) and 香火位階 (a title before your name) =================
+   Everything here is plain HTML in the bottom sheet and is driven by things that already happen (statInc and a few direct calls):
+   nothing is drawn in 3D and nothing runs every frame, so it costs a phone nothing. Days turn over at midnight Taiwan time. */
+DQ=(()=>{
+const D={off:0};
+const dayN=()=>Math.floor((Date.now()+288e5)/864e5)+D.off;
+const SG=()=>{ if(!bag.sg||typeof bag.sg!=="object") bag.sg={n:0,st:0,last:0}; return bag.sg; };
+const QD=()=>{ const d=dayN(); if(!bag.dq||bag.dq.d!==d) bag.dq={d,p:{},c:0}; if(!bag.dq.p||typeof bag.dq.p!=="object") bag.dq.p={}; return bag.dq; };
+const LT=()=>{ if(!bag.lt||typeof bag.lt!=="object") bag.lt={}; return bag.lt; };
+const AC=()=>{ if(!bag.ach||typeof bag.ach!=="object") bag.ach={}; return bag.ach; };
+const keep=()=>{ try{ save("mz.bag",bag); }catch(e){} };
+/* ---- rewards ---- */
+function give(r){ const t=[]; if(r.c){ bag.coins+=r.c; t.push(`平安幣 +${r.c}`); } if(r.g){ bag.gacha=Math.min(255,(bag.gacha||0)+r.g); t.push(`扭蛋幣 +${r.g}`); }
+  if(r.s){ bag.snk=bag.snk&&typeof bag.snk==="object"?bag.snk:{}; bag.snk.energy=Math.min(63,(bag.snk.energy||0)+r.s); t.push(`提神飲料 ×${r.s}`); }
+  saveBag(); markDirty(); try{ profSave(true); }catch(e){} try{ chaChing(); }catch(e){ try{ sfx.coin(); }catch(_){} } return t.join("、"); }
+const rtxt=r=>[r.c?`${r.c} 幣`:"",r.g?`扭蛋幣×${r.g}`:"",r.s?`提神飲料×${r.s}`:""].filter(Boolean).join("＋");
+/* ---- 簽到: a seven-day card that goes round and round (a missed day does not send you back to day one);
+        coming on consecutive days adds 20 幣 a day on top, up to +200 ---- */
+const SIGN=[{c:100},{c:150},{c:200},{c:100,s:1},{c:300},{c:400},{c:500,g:1}];
+const signCan=()=>SG().last!==dayN();
+const streakNow=()=>{ const s=SG(), d=dayN(); return s.last===d||s.last===d-1?(s.st||0):0; };
+const signBonus=st=>20*Math.min(10,Math.max(0,st-1));
+/* ---- 香火位階: from the number of days signed in; shown before your name (you can hide it) ---- */
+const TITLES=[[3,"善信"],[7,"信眾"],[14,"虔信"],[30,"居士"],[60,"護持"],[100,"護法"],[200,"大護法"],[365,"長老"]];
+const rankOf=n=>{ let r=0; TITLES.forEach((t,i)=>{ if(n>=t[0]) r=i+1; }); return r; };
+D.title=()=>bag.ttlOff?0:rankOf(SG().n);
+D.ttl=i=>{ i=i===undefined?D.title():(i|0); return i>=1&&i<=TITLES.length?TITLES[i-1][1]:""; };
+function relabel(){ try{ meAv.setName(myLabel()); markDirty(); }catch(e){} }
+/* ---- 每日功課: three a day, one from each group, picked by the date (everyone gets the same three) ---- */
+const QA=[["bow",3,"🙏 參拜 3 次","按畫面下方的「拜」",100],["jiao",1,"🌙 擲筊 1 次","按畫面下方的「筊」",100],["lot",1,"🎋 求一支籤","按畫面下方的「籤」",100],["bai",1,"🔥 完成一次參拜","照參拜指引走完並燒化金紙，一鍵參拜也算",150]];
+const QB=[["work",1,"🏪 在 M超商打工一班","禪房對面的商店街，一班要 33 精力",100],["claw",2,"🕹️ 夾娃娃 2 次","商店街的夾鬼夾怪，有沒有夾中都算",150],["buy",1,"🧃 在 M超商買一樣東西","商店街的 M超商",100],["cat",1,"🐈 摸摸貓咪","廟埕的流浪貓或自己養的貓都算",100]];
+const QC=[["on",10,"⏳ 在廟裡待 10 分鐘","畫面開著才算",100],["zen",2,"🧘 在禪堂待 2 分鐘","走進禪堂就開始算",100],["chat",1,"💬 跟大家說一句話","聊天或快捷語都算",100]];
+const QNM=["nm",1,"🏮 夜市玩一攤（加碼）","夜市每天 17:00–00:00，不算在寶箱裡",100];
+const CHEST={c:200,g:1};
+const hsh=(d,k)=>(Math.imul(d,2654435761|0)^Math.imul(k+1,40503))>>>0;
+const todayQ=()=>{ const d=dayN(); return [QA[hsh(d,1)%QA.length],QB[hsh(d,2)%QB.length],QC[hsh(d,3)%QC.length]]; };
+const prog=q=>Math.min(q[1],QD().p[q[0]]||0), isDone=q=>prog(q)>=q[1], got=i=>!!(QD().c&(1<<i));
+/* ---- 功德簿: long goals; each step pays once ---- */
+const bitsOn=v=>{ let n=0; v=v|0; while(v){ n+=v&1; v>>>=1; } return n; };
+const ACH=[
+  ["sign","📅 累計簽到",[3,7,14,30,60,100,200,365],"天",()=>SG().n],
+  ["bai","🔥 參拜圓滿",[1,5,20,50,100],"次"],
+  ["lot","🎋 求籤",[1,10,30,60],"支"],
+  ["dq","🎁 每日功課全部完成",[1,7,30,100],"天"],
+  ["work","🏪 超商打工",[1,10,30,100],"班"],
+  ["clawWin","🕹️ 夾中娃娃",[1,10,30,100],"次"],
+  ["nmW","🏮 夜市過關",[1,10,30,100],"次"],
+  ["gacha","🎰 轉扭蛋",[1,10,30,60],"次"],
+  ["zen","🧘 禪堂靜心",[10,60,300],"分鐘"],
+  ["chat","💬 跟大家說話",[1,20,100],"句"],
+  ["cat","🐈 摸摸貓咪",[1,20,100],"次"],
+  ["clo","👗 服飾店的衣服",[1,3,6,9],"套",()=>bitsOn(bag.clo)],
+  ["acc","🎩 收集飾品",[5,15,30,50],"個",()=>{ try{ const a=accState(); return ACC_IDS.filter(id=>a.owned[id]).length; }catch(e){ return 0; } }],
+];
+const LTK=["bai","lot","dq","work","clawWin","nmW","gacha","zen","chat","cat"];
+const AREW=[100,200,400,800,1200,2000,3000,5000];
+const arew=i=>({c:AREW[Math.min(i,AREW.length-1)],g:i>=2?1:0});
+const aval=a=>a[4]?a[4]():(LT()[a[0]]||0);
+const atier=a=>Math.min(a[2].length,AC()[a[0]]|0);
+const acan=a=>{ const t=atier(a); return t<a[2].length&&aval(a)>=a[2][t]; };
+/* ---- what happened: called from statInc and from a few places directly ---- */
+const STATMAP={b_bowBtn:"bow",cvsWork:"work",clawPlay:"claw",clawWin:"clawWin",cvsBuy:"buy",minOnline:"on",minZen:"zen",gachaSpin:"gacha"};
+D.stat=(k,n)=>{ const e=STATMAP[k]||(k.indexOf("nmP_")===0?"nm":k.indexOf("nmW_")===0?"nmW":""); if(e) D.ev(e,n); };
+D.ev=(k,n)=>{ n=n||1; let ch=false; if(LTK.includes(k)){ const lt=LT(); lt[k]=Math.min(4095,(lt[k]||0)+n); ch=true; }
+  const qs=todayQ().concat([QNM]), q=qs.find(x=>x[0]===k); if(q){ const d=QD(), b=d.p[k]||0; if(b<q[1]){ d.p[k]=b+n; ch=true; if(b+n>=q[1]) toast(`✅ 每日功課完成：${q[2].replace(/^\S+\s/,"")}　到左上「📅 今日」領獎`,3600); } }
+  if(ch){ keep(); dot(); if(sheetKind==="daily") try{ D.redraw(); }catch(e){} } };
+/* ---- the button (beside 一鍵參拜) and its red dot ---- */
+function css(){ if($("#dqCss")) return; const st=document.createElement("style"); st.id="dqCss"; st.textContent=`
+.dq-row{order:2;display:flex;gap:6px;align-self:flex-start;align-items:center}.dq-row .auto-btn{order:0}
+.dq-btn{position:relative}.dq-dot{position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;background:#ff4d3d;border:2px solid #2a0f0a}
+.dq-hd{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.dq-hd span{border:1px solid var(--gold-soft);border-radius:999px;padding:4px 10px;font-size:13px}.dq-hd b{color:#ffe2a0}
+.dq-sec{font-size:13px;letter-spacing:.1em;color:var(--gold);margin:14px 0 6px;display:flex;align-items:baseline;gap:8px}.dq-sec small{letter-spacing:0;color:var(--muted);font-size:12px}
+.dq-week{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.dq-day{border:1px solid var(--gold-soft);border-radius:10px;padding:6px 2px;text-align:center;font-size:11px;line-height:1.35;background:rgba(255,255,255,.04)}
+.dq-day b{display:block;font-size:12px;color:#ffe2a0}.dq-day.ok{opacity:.5}.dq-day.now{border-color:#ffd76a;background:rgba(217,170,61,.22);opacity:1}
+.dq-q{display:flex;align-items:center;gap:10px;border:1px solid var(--gold-soft);border-radius:12px;padding:9px 10px;margin-bottom:6px;background:rgba(255,255,255,.04)}
+.dq-q .tx{flex:1;min-width:0}.dq-q .tx b{display:block;font-size:15px;font-weight:600}.dq-q .tx small{display:block;font-size:12px;color:var(--muted)}
+.dq-bar{height:5px;border-radius:3px;background:rgba(255,255,255,.14);margin-top:5px;overflow:hidden}.dq-bar i{display:block;height:100%;background:#d9aa3d}
+.dq-q button,.dq-go{flex:none;border:1px solid var(--gold-soft);border-radius:999px;padding:6px 12px;font-size:13px;white-space:nowrap}
+.dq-q button.can{background:#b3261e;border-color:#ffd76a;color:#fff3da;font-weight:700}.dq-q button:disabled{opacity:.55}
+.dq-q.done{opacity:.6}.dq-gift{border-color:#ffd76a;background:rgba(217,170,61,.18)}
+.dq-wide{width:100%;margin-top:8px}`; document.head.appendChild(st); }
+function mkBtn(){ if($("#dayBtn")) return; css(); const ab=$("#autoBtn"); if(!ab) return; const row=document.createElement("div"); row.className="dq-row"; ab.parentNode.insertBefore(row,ab); row.appendChild(ab);
+  const b=document.createElement("button"); b.className="pill glass auto-btn dq-btn"; b.id="dayBtn"; b.setAttribute("aria-label","今日功課"); b.innerHTML=`📅 今日<i class="dq-dot" id="dqDot" hidden></i>`; row.appendChild(b);
+  b.onclick=()=>{ try{ ensureAudio(); }catch(e){} if(sheetKind==="daily") closeSheet(); else D.open(); }; }
+const pending=()=>{ const qs=todayQ(); let n=0; if(signCan()) n++; if(bag.cb) n++; qs.forEach((q,i)=>{ if(isDone(q)&&!got(i)) n++; }); if(qs.every((q,i)=>got(i))&&!got(3)) n++; if(isDone(QNM)&&!got(4)) n++; ACH.forEach(a=>{ if(acan(a)) n++; }); return n; };
+function dot(){ const e=$("#dqDot"); if(e) e.hidden=!pending(); }
+/* ---- the sheet ---- */
+const qrow=(q,i,extra)=>{ const p=prog(q), dn=p>=q[1], g=got(i), r={c:q[4]};
+  return `<div class="dq-q${g?" done":""}"><div class="tx"><b>${q[2]}</b><small>${q[3]}${extra||""}</small><div class="dq-bar"><i style="width:${Math.round(p/q[1]*100)}%"></i></div></div>
+    <button data-act="dqClaim" data-v="${i}" class="${dn&&!g?"can":""}" ${dn&&!g?"":"disabled"}>${g?"已領取":dn?`領 ${rtxt(r)}`:`${p}/${q[1]}・${rtxt(r)}`}</button></div>`; };
+D.redraw=()=>{ if(D.page==="ach") achDraw(); else D.open(); };
+D.open=()=>{ D.page="day"; css(); const s=SG(), can=signCan(), qs=todayQ(), st=streakNow(), idx=can?s.n%7:(s.n+6)%7, rk=rankOf(s.n);
+  const week=SIGN.map((r,i)=>{ const ok=can?i<idx:i<=idx, now=can&&i===idx; return `<div class="dq-day${ok?" ok":""}${now?" now":""}"><b>${ok?"✓":"第"+(i+1)+"天"}</b>${r.c}幣${r.s?"<br>🥤":""}${r.g?"<br>🎟️":""}</div>`; }).join("");
+  const nx=SIGN[s.n%7], allGot=qs.every((q,i)=>got(i)), nAch=ACH.filter(acan).length;
+  const cb=bag.cb?`<div class="dq-q dq-gift"><div class="tx"><b>🎁 好久不見！回鍋禮</b><small>離開了 ${bag.cb} 天，媽祖一直惦記著你</small></div><button class="can" data-act="dqCb">領 ${rtxt(cbRew(bag.cb))}</button></div>`:"";
+  openSheet("daily","📅 今日功課",`<div class="dq-hd"><span>連續 <b>${can?st:s.st||0}</b> 天</span><span>累計簽到 <b>${s.n}</b> 天</span>${rk?`<span>位階 <b>${TITLES[rk-1][1]}</b></span>`:""}</div>${cb}
+    <div class="dq-sec">每日簽到<small>七天一輪；連續來每天多 20 幣（最多 +200）</small></div><div class="dq-week">${week}</div>
+    <button class="primary dq-wide" data-act="dqSign" ${can?"":"disabled"}>${can?`簽到領取　${rtxt({...nx,c:nx.c+signBonus(st+1)})}`:`今天簽到過了・明天可領 ${rtxt({...nx,c:nx.c+signBonus((s.st||0)+1)})}`}</button>
+    <div class="dq-sec">每日功課<small>每天 00:00 換新</small></div>${qs.map((q,i)=>qrow(q,i)).join("")}
+    <div class="dq-q${got(3)?" done":allGot?" dq-gift":""}"><div class="tx"><b>🎁 三件都完成的寶箱</b><small>三件功課的獎勵都領了就能開</small></div><button data-act="dqChest" class="${allGot&&!got(3)?"can":""}" ${allGot&&!got(3)?"":"disabled"}>${got(3)?"已領取":rtxt(CHEST)}</button></div>
+    ${qrow(QNM,4)}
+    <button class="secondary dq-wide" data-act="dqAch">📖 功德簿・香火位階${nAch?`（${nAch} 個可領）`:""}</button>
+    ${me.sp?`<div class="dq-sec">主委測試<small>只有主委看得到</small></div><div class="row"><button class="secondary" data-act="dqTNext">⏭ 跳到明天</button><button class="secondary" data-act="dqTSkip">⏭ 跳過 4 天（回鍋禮）</button><button class="secondary" data-act="dqTDone">✅ 今天功課全部做完</button></div>`:""}`); dot(); };
+const cbRew=g=>({c:300+100*Math.min(7,g),g:1,s:2});
+function achDraw(){ D.page="ach"; css(); const s=SG(), rk=rankOf(s.n), nxt=TITLES[rk];
+  const rows=ACH.map(a=>{ const t=atier(a), v=aval(a), full=t>=a[2].length, tg=full?a[2][t-1]:a[2][t], can=!full&&v>=tg, r=arew(t);
+    return `<div class="dq-q${full?" done":""}"><div class="tx"><b>${a[1]}</b><small>${full?`全部達成（${v} ${a[3]}）`:`第 ${t+1}/${a[2].length} 階：${Math.min(v,tg)}/${tg} ${a[3]}`}</small><div class="dq-bar"><i style="width:${full?100:Math.round(Math.min(1,v/tg)*100)}%"></i></div></div>
+      <button data-act="dqAchGet" data-v="${a[0]}" class="${can?"can":""}" ${can?"":"disabled"}>${full?"圓滿":can?`領 ${rtxt(r)}`:rtxt(r)}</button></div>`; }).join("");
+  openSheet("daily","📖 功德簿",`<button class="secondary" data-act="dqOpen" style="margin-bottom:10px">‹ 回今日功課</button>
+    <div class="dq-sec">香火位階<small>累計簽到天數越多越高，會顯示在名字前面</small></div>
+    <div class="dq-hd">${TITLES.map((t,i)=>`<span style="${i<rk?"border-color:#ffd76a":"opacity:.55"}">${i<rk?"✓ ":""}<b>${t[1]}</b> ${t[0]} 天</span>`).join("")}</div>
+    <p class="note" style="margin:0 0 8px">${rk?`現在是「${TITLES[rk-1][1]}」。`:"簽到滿 3 天就有第一個位階。"}${nxt?`再簽到 ${nxt[0]-s.n} 天升「${nxt[1]}」。`:""}</p>
+    ${rk?`<button class="secondary dq-wide" data-act="dqTtl" style="margin-top:0">${bag.ttlOff?"名字前面顯示位階":"名字前面不要顯示位階"}</button>`:""}
+    <div class="dq-sec">功德簿<small>每一階只能領一次</small></div>${rows}`); dot(); }
+Object.assign(HANDLERS,{
+  dqOpen:()=>D.open(), dqAch:()=>achDraw(),
+  dqSign:()=>{ if(!signCan()) return; const s=SG(), d=dayN(), r0=rankOf(s.n); s.st=s.last===d-1?(s.st||0)+1:1; const r={...SIGN[s.n%7]}; r.c+=signBonus(s.st); s.n=Math.min(1023,s.n+1); s.last=d; const t=give(r); try{ statInc("dqSign"); }catch(e){}
+    const r1=rankOf(s.n); if(r1>r0){ relabel(); toast(`📅 簽到成功：${t}　🎉 位階升為「${TITLES[r1-1][1]}」`,4200); } else toast(`📅 簽到成功：${t}`,3000); D.open(); },
+  dqClaim:v=>{ const i=+v, q=i===4?QNM:todayQ()[i]; if(!q||got(i)||!isDone(q)) return; QD().c|=1<<i; const t=give({c:q[4]}); toast(`領取：${t}`,2400); D.open(); },
+  dqChest:()=>{ if(got(3)||!todayQ().every((q,i)=>got(i))) return; QD().c|=8; const lt=LT(); lt.dq=Math.min(4095,(lt.dq||0)+1); const t=give(CHEST); try{ statInc("dqChest"); }catch(e){} toast(`🎁 寶箱：${t}`,3200); D.open(); },
+  dqCb:()=>{ if(!bag.cb) return; const r=cbRew(bag.cb); delete bag.cb; const t=give(r); try{ statInc("dqBack"); }catch(e){} toast(`🎁 歡迎回來！${t}`,3600); D.open(); },
+  dqAchGet:v=>{ const a=ACH.find(x=>x[0]===v); if(!a||!acan(a)) return; const t=atier(a); AC()[a[0]]=t+1; const tx=give(arew(t)); toast(`📖 ${a[1].replace(/^\S+\s/,"")} 第 ${t+1} 階：${tx}`,3200); achDraw(); },
+  dqTtl:()=>{ bag.ttlOff=bag.ttlOff?0:1; saveBag(); relabel(); achDraw(); },
+  dqTNext:()=>{ if(!me.sp) return; D.off++; toast("（測試）現在是明天",1800); D.open(); },
+  dqTSkip:()=>{ if(!me.sp) return; D.off+=4; bag.cb=4; keep(); toast("（測試）過了 4 天",1800); D.open(); },
+  dqTDone:()=>{ if(!me.sp) return; const d=QD(); todayQ().concat([QNM]).forEach(q=>{ d.p[q[0]]=q[1]; }); keep(); D.open(); },
+});
+/* ---- 取回碼: the sign-in card, today's claims, the 功德簿 and its counters travel with the character ---- */
+D.pack=()=>{ const s=SG(), q=QD(), a=AC(), lt=LT(); const out=[[s.n,10],[s.st||0,10],[Math.max(0,s.last-D.off)&65535,16],[Math.max(0,q.d-D.off)&65535,16],[q.c&31,5],[bag.ttlOff?1:0,1]];
+  ACH.forEach(x=>out.push([Math.min(15,a[x[0]]|0),4])); LTK.forEach(k=>out.push([Math.min(4095,lt[k]|0),12])); return out; };
+D.unpack=get=>{ const o={n:get(10),st:get(10),last:get(16),qd:get(16),qc:get(5),off:get(1),ach:{},lt:{}}; ACH.forEach(x=>{ o.ach[x[0]]=get(4); }); LTK.forEach(k=>{ o.lt[k]=get(12); }); return o; };
+D.restore=o=>{ if(!o) return; const s=SG(); if(o.n>s.n||(o.n===s.n&&o.last>s.last)){ s.n=o.n; s.st=o.st; s.last=o.last; } const q=QD(); if(o.qd===q.d) q.c|=o.qc; bag.ttlOff=o.off?1:0;
+  const a=AC(), lt=LT(); ACH.forEach(x=>{ a[x[0]]=Math.max(a[x[0]]|0,o.ach[x[0]]|0); }); LTK.forEach(k=>{ lt[k]=Math.max(lt[k]|0,o.lt[k]|0); }); keep(); dot(); relabel(); };
+/* ---- start: 回鍋禮 for anyone away three days or more, the button, and (once a day) the card opens by itself ---- */
+try{ if(bag.pday){ const g=Math.round((Date.parse(today)-Date.parse(bag.pday))/864e5); delete bag.pday; if(g>=3&&g<4000&&(bag.sg||bag.flow||(bag.coins|0)!==300)) bag.cb=Math.max(bag.cb|0,g); keep(); } }catch(e){}
+mkBtn(); dot(); if(D.title()) relabel();
+let tries=0; const auto=()=>{ if(!signCan()&&!bag.cb) return; const pe=$("#paper"); const busy=firstVisitPending||customizing||sheetKind||miniOpen||(SHOPX&&SHOPX.on)||(pe&&!pe.hidden)||document.hidden;
+  if(busy){ if(++tries<20) setTimeout(auto,6000); return; } D.open(); };
+setTimeout(auto,9000);
+setInterval(()=>{ try{ dot(); }catch(e){} },60000);
+return D; })();
+
+/*DAILY>>*/
 window.__mz={FT,sideMuralMat,CATS,fuAnims,passFu,walkTo,tapMark,camLimit,HZ,renderer,scene,stations,jiaoCam,flyers,sheet,meAv,openPoem,openLot,openStation,goStation,trySit,bag,camera,setYaw:v=>camYaw=v,setPitch:v=>camPitch=v,setDist:v=>camDist=v};
 })();
 </script>
