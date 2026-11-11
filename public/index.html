@@ -2688,7 +2688,7 @@ const SAKURA={};
   let seed=11; const R=()=>{ seed=(seed*16807)%2147483647; return seed/2147483647; }, rr=(a,b)=>a+(b-a)*R();
   const BX=25.6, BZ0=-50.5, BZ1=HZ+YX+24; /* the balustrade */
   const free=(x,z,m)=>{ const ax=Math.abs(x); if(ax<BX+m&&z>BZ0-m&&z<BZ1+m) return false; /* inside the grounds */
-    if(x<-23&&x>-78-m&&z>-52-m&&z<-4+m) return false; /* 靜思禪院 */ if(x>23&&x<66+m&&z>-52-m&&z<-4+m) return false; /* 禪房 */ if(x>23&&x<43+m&&z>-52-m&&z<13+m) return false; /* the road and the shops along it */ if(ax<22&&z>BZ1-2&&z<64) return false; /* the approach to the gate */
+    if(x<-23&&x>-78-m&&z>-52-m&&z<-4+m) return false; /* 靜思禪院 */ if(x>23&&x<66+m&&z>-52-m&&z<-4+m) return false; /* 禪房 */ if(x>23&&x<43+m&&z>-52-m&&z<39+m) return false; /* the road and the shops along it */ if(ax<22&&z>BZ1-2&&z<64) return false; /* the approach to the gate */
     if(z>60&&ax<75) return false; /* the lake */ if(ax<16&&z<BZ0&&z>-84) return false; /* the big statue */ return true; };
   const dist=(x,z)=>{ const ax=Math.abs(x); const dx=Math.max(0,ax-BX), dz=Math.max(0,BZ0-z,z-BZ1); return Math.hypot(dx,dz); };
   const near=[], far=[]; const NN=Q.lite?60:130, NF=Q.lite?110:230;
@@ -3579,7 +3579,7 @@ function dirArrowTick(close){ if(!meAv) return; if(!dirArrow){ const tex=cvs(128
     dirArrow=new T.Mesh(new T.PlaneGeometry(1.1,1.1),new T.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,opacity:.3})); dirArrow.rotation.set(-Math.PI/2,0,Math.PI); dirArrow.position.y=.03; dirArrow.renderOrder=2; meAv.root.add(dirArrow); }
   if(dirArrow.parent!==meAv.root) meAv.root.add(dirArrow); dirArrow.material.opacity=.22+.6*close; dirArrow.visible=!customizing&&!(meAv.flyCur>.3); }
 function camOK(x,y,z){ if(y<.35) return false; const ax=Math.abs(x);
-  if(x>23.3&&z>-52&&z<13){ if(INN.cutMode){ if(INN.cutMode==="2"){ const S=INN.suites[INN.cutSi], lx=x-INN.DX; if(S&&(z<S.s0+.2||z>S.s1-.2||(S.e?lx<INN.KX1+.2:lx>INN.SX1-.2))) return false; if(INN.cutSi===8&&(lx<INN.SX1+.1||lx>INN.KX1-.1)) return false; /* the camera stays over your own room, so the party walls never stand between */ return y>INN.F2+.8&&y<18; } return y>.4&&y<18; } const up=(meAv.gy||0)>2.3, lx=x-INN.DX; if(innIn(x,z)){ if(up) return y>INN.F2+.7&&y<INN.F2+INN.H2-.2; return y<INN.H1-.2; } if(up&&lx>=INN.RX0) return y>INN.F2+.5&&y<16; return y<20; }
+  if(x>23.3&&z>-52&&z<39){ if(INN.cutMode){ if(INN.cutMode==="2"){ const S=INN.suites[INN.cutSi], lx=x-INN.DX; if(S&&(z<S.s0+.2||z>S.s1-.2||(S.e?lx<INN.KX1+.2:lx>INN.SX1-.2))) return false; if(INN.cutSi===8&&(lx<INN.SX1+.1||lx>INN.KX1-.1)) return false; /* the camera stays over your own room, so the party walls never stand between */ return y>INN.F2+.8&&y<18; } return y>.4&&y<18; } const up=(meAv.gy||0)>2.3, lx=x-INN.DX; if(innIn(x,z)){ if(up) return y>INN.F2+.7&&y<INN.F2+INN.H2-.2; return y<INN.H1-.2; } if(up&&lx>=INN.RX0) return y>INN.F2+.5&&y<16; return y<20; }
   if(x<-23.3&&z>ZEN.Z0-1&&z<ZEN.Z1+1){ if(zenPlat(x,z)&&x>ZEN.hall.x0&&x<ZEN.hall.x1&&z>ZEN.hall.z0&&z<ZEN.hall.z1) return y<ZEN.FY+3.3; return y<20; }
   if(ax>22.4&&ax<24.2&&z<-4&&z>-52){ if(Math.abs(z-ZEN.GZ)<1.0&&y<2.5) return true; if(y>3.9&&y<16) return true; } /* the gates to the 禪院 and the 禪房, and over the side walls */
   if(z<-15.25){ // 後埕 (open sky), then the 後殿 and its 側殿
@@ -3598,7 +3598,7 @@ function camOK(x,y,z){ if(y<.35) return false; const ax=Math.abs(x);
   if(ax>GH.x0-.1&&z>SHZ1+.3&&z<GH.z1+.3){ if(z>GH.z1-.25) return Math.abs(ax-SHXC)<1.0&&y<2.8; return ax>GH.x0+.3&&ax<GH.x1-.3&&y<GH.H-.3; } // the joined garden-path hall
   return ax<25.5&&y<16; }
 // which room a point is in ("O" = outdoors); indoors the camera never leaves your room through a doorway
-function camRoom(x,z){ const ax=Math.abs(x); if(x>23.3&&z>-52&&z<13){ if(typeof INN!=="undefined"&&INN.cutMode) return "O"; if((typeof meAv!=="undefined"&&meAv&&(meAv.gy||0)>2.3)){ const i=innSuiteAt(x,z); return i>=0&&x-INN.DX>INN.CX1+.1?"RS"+i:"O"; } if(innIn(x,z)) return x-INN.DX<41?"RL":(z>-27.5?"RD":"RO"); return "O"; }
+function camRoom(x,z){ const ax=Math.abs(x); if(x>23.3&&z>-52&&z<39){ if(typeof INN!=="undefined"&&INN.cutMode) return "O"; if((typeof meAv!=="undefined"&&meAv&&(meAv.gy||0)>2.3)){ const i=innSuiteAt(x,z); return i>=0&&x-INN.DX>INN.CX1+.1?"RS"+i:"O"; } if(innIn(x,z)) return x-INN.DX<41?"RL":(z>-27.5?"RD":"RO"); return "O"; }
   if(ax<HX&&z>-HZ&&z<HZ) return "M"; if(ax>SHX0&&ax<SHX1+.2&&z>SHZ0&&z<SHZ1) return "S"+Math.sign(x); if(ax>GH.x0&&ax<GH.x1+.2&&z>SHZ1&&z<GH.z1) return "G"+Math.sign(x);
   if(ax<RH.x&&z<RH.z0&&z>RH.z1) return "H"; if(ax>RS.x0&&ax<RS.x1+.2&&z<RS.z0&&z>RS.z1) return "Q"+Math.sign(x); return "O"; }
 function camLimit(from,to,out){ if(myFly) return out.copy(to); if(Math.abs(Math.abs(from.x)-23.4)<3.2&&Math.abs(from.z-ZEN.GZ)<2.6) return out.copy(to); /* passing the gates to the 禪院 / 禪房: the camera just goes straight through, no fuss */ let lo=0; const N=24; const room0=camRoom(from.x,from.z); // inside a 偏殿 the camera stays indoors (it used to slip out the garden door and end up behind the trees)
@@ -3725,8 +3725,8 @@ function onTap(cx,cy){ ensureAudio(); if(customizing) return; if(sheetKind){ clo
   if(h.object.userData.floor){ if(TAPM.mouse&&!myFly){ const now=performance.now(), dbl=now-TAPM.last<450&&Math.hypot(TAPM.x-TAPM.lx,TAPM.y-TAPM.ly)<24; TAPM.last=now; TAPM.lx=TAPM.x; TAPM.ly=TAPM.y; if(!dbl){ if(!TAPM.hinted){ TAPM.hinted=true; toast("用滑鼠時：在地上點兩下才會走過去（也可以用 WASD／方向鍵）",3200); } return; } TAPM.last=0; } tapGy=h.point.y>3?INN.F2:0; tapGyS=tapGy>0?innSuiteAt(h.point.x,h.point.z):-1; if(h.object===floor&&h.point.z<-9.6&&Math.abs(h.point.x)<3){ goStation("altar"); return; } const c=myFly?flyClamp(h.point.x,h.point.z):clampSpot(h.point.x,h.point.z); walkTo(c[0],c[1]); } }
 const isIn=z=>z<HZ;
 // zones: M main hall, C courtyard, S± side hall, P± garden path; doors link them
-function zoneOf(x,z){ if(x<-23.3&&z>ZEN.Z0-1&&z<ZEN.Z1+1) return "Z"; if(x>23.3&&z>-52&&z<13) return "R"; const ax=Math.abs(x), sd=x<0?"-":"+"; if(z>=HZ+.1) return "C"; if(z<RH.z0) return ax<RH.x?"H":"Q"+sd; if(z<RY0) return "B"; if(ax>=12.2&&z<SHZ0-.05) return "K"+sd; if(ax<12.2) return "M"; if(ax>=GH.x0&&ax<GH.x1&&z>SHZ1&&z<GH.z1&&Math.abs(ax-SHXC)>1.1) return "G"+sd; /* inside a garden-path hall, off the path */ return (z<SHZ1?"S":"P")+sd; }
-const ZRECT={R:[23.4,64,-50,12],Z:[ZEN.X0+1,-23.4,ZEN.Z0+1,ZEN.Z1-1],M:[-11,11,-9.5,HZ-.6],C:[-22,22,HZ+.7,HZ+YX+20.4],"S+":[12.9,SHX1-3.2,SHZ0+.7,-2],"S-":[-(SHX1-3.2),-12.9,SHZ0+.7,-2],"P+":[SHXC-1,SHXC+1,-.7,HZ+.6],"P-":[-SHXC-1,-SHXC+1,-.7,HZ+.6],
+function zoneOf(x,z){ if(x<-23.3&&z>ZEN.Z0-1&&z<ZEN.Z1+1) return "Z"; if(x>23.3&&z>-52&&z<39) return "R"; const ax=Math.abs(x), sd=x<0?"-":"+"; if(z>=HZ+.1) return "C"; if(z<RH.z0) return ax<RH.x?"H":"Q"+sd; if(z<RY0) return "B"; if(ax>=12.2&&z<SHZ0-.05) return "K"+sd; if(ax<12.2) return "M"; if(ax>=GH.x0&&ax<GH.x1&&z>SHZ1&&z<GH.z1&&Math.abs(ax-SHXC)>1.1) return "G"+sd; /* inside a garden-path hall, off the path */ return (z<SHZ1?"S":"P")+sd; }
+const ZRECT={R:[23.4,64,-50,38],Z:[ZEN.X0+1,-23.4,ZEN.Z0+1,ZEN.Z1-1],M:[-11,11,-9.5,HZ-.6],C:[-22,22,HZ+.7,HZ+YX+20.4],"S+":[12.9,SHX1-3.2,SHZ0+.7,-2],"S-":[-(SHX1-3.2),-12.9,SHZ0+.7,-2],"P+":[SHXC-1,SHXC+1,-.7,HZ+.6],"P-":[-SHXC-1,-SHXC+1,-.7,HZ+.6],
   "K+":[12.7,RS.x1-.5,RY0+.2,SHZ0-.4],"K-":[-RS.x1+.5,-12.7,RY0+.2,SHZ0-.4],B:[-RS.x1+.5,RS.x1-.5,RH.z0+.5,RY0-.3],
   H:[-RH.x+.5,RH.x-.5,RH_WALK,RH.z0-.5],"Q+":[RS.x0+.6,RS.x1-.6,-38.4,RS.z0-.5],"Q-":[-RS.x1+.6,-RS.x0-.6,-38.4,RS.z0-.5],"G+":[SHXC+1.1,GH.x1-.6,SHZ1+.5,GH.z1-.5],"G-":[-(GH.x1-.6),-(SHXC+1.1),SHZ1+.5,GH.z1-.5]};
 const ZLINK={M:["S+","S-","C"],C:["M","P+","P-"],"S+":["P+","M","K+"],"S-":["P-","M","K-"],"P+":["S+","C","G+"],"P-":["S-","C","G-"],"G+":["P+"],"G-":["P-"],"K+":["S+","B"],"K-":["S-","B"],B:["K+","K-","H","Q+","Q-","Z"],Z:["B"],H:["B","Q+","Q-"],"Q+":["B","H"],"Q-":["B","H"]};
@@ -8882,7 +8882,7 @@ function groundAt(av,x,z){ let g=av.gy||0; if(av.gyInit==null&&av.wantGy!=null){
   av.gy=0; return groundH(x,z); }
 function innLockedBy(i){ if(INN.lock===i+1) return "me"; if(typeof remotes!=="undefined") for(const r of remotes.values()) if(r.lk===i+1) return "other"; return null; }
 function innWalkableL(x,z,gy){ const G=INN.G; gy=gy==null?(meAv.gy||0):gy;
-  if(z<-51||z>12.4) return false;
+  if(z<-51||z>38.4) return false;
   if(gy>2.3||(innOnRampStrip(x,z)&&Math.abs(innRampH(z)-gy)<.8)){ /* upstairs (or on the ramp) */
     if(innOnRampStrip(x,z)) return x>INN.RX0+.2&&x<INN.RX1-.2; if(x>INN.RX0+.25&&x<INN.KX1-.25&&z>INN.LZ0+.25&&z<INN.Z0-.1&&(x<INN.CX1-.25||z<INN.Z0-.15)) return true; /* landing and north balcony */
     if(x>INN.SX1+.25&&x<INN.KX1-.25&&z>INN.Z0-.5&&z<INN.Z1-.25) return true; /* the inside corridor (and its door off the balcony) */
@@ -9122,7 +9122,7 @@ for(let i=INN_SEAT0;i<SEATS.length;i++) SEATS[i].x+=INN.DX; INN.shower.forEach(s
     for(const z of [-24,-18]) sc(X1,2.6,z,1,0); for(const z of [-39.6,-33.75,-27.5,-21.25,-15.4]) sc(X1,F2+2.5,z,1,0); /* back: between the big windows */
     for(const x of [36.1,40.7,45.3,49.9]) sc(x,2.7,Z1,0,1); for(const x of [33,38,47,52]) sc(x,F2+2.5,Z1,0,1); /* the street side */
     /* street lamps along the path from the gate: dark posts, a lantern head that glows at night */
-    for(const [x,z] of [[25.75,-48],[25.75,-36.5],[25.75,-20],[25.75,-6],[25.75,6.5]]){ /* along the edge of the sidewalk */ cyl(.06,.08,2.9,bp,x,1.45,z,root,8); box(.34,.1,.34,bp,x,.05,z,root); const h=new T.Mesh(new T.BoxGeometry(.26,.36,.26),INN.scM); h.position.set(x,3.08,z); root.add(h); box(.36,.06,.36,bp,x,3.29,z,root); box(.08,.12,.08,bp,x,3.38,z,root);
+    for(const [x,z] of [[25.75,-48],[25.75,-36.5],[25.75,-20],[25.75,-6],[25.75,6.5],[25.75,19],[25.75,31.5]]){ /* along the edge of the sidewalk */ cyl(.06,.08,2.9,bp,x,1.45,z,root,8); box(.34,.1,.34,bp,x,.05,z,root); const h=new T.Mesh(new T.BoxGeometry(.26,.36,.26),INN.scM); h.position.set(x,3.08,z); root.add(h); box(.36,.06,.36,bp,x,3.29,z,root); box(.08,.12,.08,bp,x,3.38,z,root);
       const gl=new T.Sprite(gm.clone()); gl.position.set(x,3.08,z); gl.scale.set(2.2,2.2,1); root.add(gl); INN.scG.push(gl); } }
   /* 暖簾 over the two doors off the lobby: 湯 for the bath, ZZ for the dorm — two cloth panels each, split up the middle */
   { const nr=(z,txt,bg)=>{ const c=cvs(256,192,(x,w,h)=>{ x.fillStyle=bg; x.fillRect(0,0,w,h); x.fillStyle="rgba(255,255,255,.12)"; x.fillRect(0,0,w,16); x.fillStyle="#f6f0e2"; x.font=txt==="湯"?'700 120px "LXGW WenKai TC","Noto Serif TC",serif':'800 104px sans-serif'; x.textAlign="center"; x.textBaseline="middle"; x.fillText(txt,w/2,h/2+10); });
@@ -10034,7 +10034,7 @@ function facadeCVS(){ return cvs(1024,384,(x,w,h)=>{ x.fillStyle="#efe9dc"; x.fi
     x.fillStyle="#dfe9ec"; for(const X of [620,770]){ x.fillRect(X,120,110,150); } x.fillStyle="#2d8f6f"; x.font=`900 26px ${UI_FONT}`; x.textAlign="center"; x.fillText("歡迎光臨",750,96); x.fillStyle="#d9483a"; x.fillRect(680,300,140,6);
     win(916,96); x.fillStyle="#d84b3a"; roundRectP(x,40,250,170,60,10); x.fill(); x.fillStyle="#fff"; x.font=`900 26px ${UI_FONT}`; x.fillText("第二件 6 折",125,290); x.fillStyle="#2d78d2"; roundRectP(x,380,240,170,70,10); x.fill(); x.fillStyle="#fff"; x.font=`900 24px ${UI_FONT}`; x.fillText("熱騰騰關東煮",465,285);
     x.fillStyle="#5a564f"; x.fillRect(0,h-30,w,30); }); }
-function signTex(kind){ return cvs(1024,128,(x,w,h)=>{ if(kind==="cvs"){ x.fillStyle="#fbfaf6"; x.fillRect(0,0,w,h); const st=[["#1f9e7a",0],["#f39a2b",26],["#e0453a",52]]; st.forEach(([c,y])=>{ x.fillStyle=c; x.fillRect(0,h-34+y*.35,w,10); }); x.fillStyle="#1f9e7a"; roundRectP(x,20,14,96,70,14); x.fill(); x.fillStyle="#fff"; x.font=`900 46px ${UI_FONT}`; x.textAlign="center"; x.fillText("福",68,66);
+function signTex(kind,wm=1){ return cvs(Math.round(1024*wm),128,(x,w,h)=>{ if(kind==="cvs"){ x.fillStyle="#fbfaf6"; x.fillRect(0,0,w,h); const st=[["#1f9e7a",0],["#f39a2b",26],["#e0453a",52]]; st.forEach(([c,y])=>{ x.fillStyle=c; x.fillRect(0,h-34+y*.35,w,10); }); x.fillStyle="#1f9e7a"; roundRectP(x,20,14,96,70,14); x.fill(); x.fillStyle="#fff"; x.font=`900 46px ${UI_FONT}`; x.textAlign="center"; x.fillText("福",68,66);
       x.fillStyle="#1d3b34"; x.font=`900 64px ${DISPLAY_FONT}`; x.textAlign="left"; x.fillText("好運來便利商店",140,72); x.fillStyle="#e0453a"; roundRectP(x,w-170,14,150,70,14); x.fill(); x.fillStyle="#fff"; x.font=`900 50px ${UI_FONT}`; x.textAlign="center"; x.fillText("24H",w-95,66); }
     if(kind==="claw"){ x.fillStyle="#2a1440"; x.fillRect(0,0,w,h); for(let i=0;i<34;i++){ x.fillStyle=["#ff5fa8","#ffd23f","#55d6ff"][i%3]; x.beginPath(); x.arc(16+i*30,10,5,0,7); x.fill(); x.beginPath(); x.arc(16+i*30,h-10,5,0,7); x.fill(); }
       x.shadowColor="#ff5fa8"; x.shadowBlur=18; x.fillStyle="#ffd9ef"; x.font=`900 70px ${DISPLAY_FONT}`; x.textAlign="center"; x.fillText("夾娃娃天堂",w/2-60,88); x.shadowColor="#55d6ff"; x.fillStyle="#d6f6ff"; x.font=`900 44px ${UI_FONT}`; x.fillText("一次 15 幣",w-150,84); x.shadowBlur=0; }
@@ -10059,7 +10059,7 @@ function glassTex(){ return cvs(128,256,(x,w,h)=>{ const g=x.createLinearGradien
 /* the shops stand in a row north of the 禪房, their fronts in line with its front wall, facing the road.
    They are laid out in a frame of their own (fronts toward -z, as drawn) which is turned to face the road: local (x,z) → world (45.6+z, 21−x). */
 const SHOP_P={x:45.6,z:21}; const shopW=(lx,lz)=>[SHOP_P.x+lz,SHOP_P.z-lx];
-const ROAD={x0:24.6,x1:31.4,z0:-52,z1:12.6}, WALK_IN={x0:31.4,x1:37}, WALK_OUT={x0:22.8,x1:24.6};
+const ROAD={x0:24.6,x1:31.4,z0:-52,z1:38.6}, WALK_IN={x0:31.4,x1:37}, WALK_OUT={x0:22.8,x1:24.6};
 /* ---- the upper floor of a Taiwanese shophouse: tiled wall, aluminium windows, air-conditioners, a parapet; a lit vertical sign ---- */
 function tileTex(base,seed){ return cvs(256,256,(x,w,h)=>{ x.fillStyle="#9a9286"; x.fillRect(0,0,w,h); const tw=32, th=12; let r=seed; const rnd=()=>{ r=(r*9301+49297)%233280; return r/233280; };
   for(let j=0;j<h/th;j++) for(let i=-1;i<w/tw+1;i++){ const X=i*tw+(j%2)*tw/2, Y=j*th; const c=new T.Color(base); const k=.9+rnd()*.18; x.fillStyle=`rgb(${c.r*255*k|0},${c.g*255*k|0},${c.b*255*k|0})`; x.fillRect(X+1,Y+1,tw-2,th-2); } }); }
@@ -10093,44 +10093,57 @@ function buildWorld(){ if(WORLD.ready) return; const G=new T.Group(); G.name="sh
     pv(WALK_IN.x0+.22,WALK_IN.x1); pv(WALK_OUT.x0,WALK_OUT.x1-.22); const kerb=mat("#b9b6ae",{roughness:.8}); box(.22,.05,L,kerb,WALK_IN.x0+.11,.025,cz,G); box(.22,.05,L,kerb,WALK_OUT.x1-.11,.025,cz,G);
     /* a ramp in the kerb at each end of the crossing (painted yellow dots: tactile paving) */ const tac=mat("#e7c13a",{roughness:.8}); box(.6,.035,3.0,tac,WALK_IN.x0+.55,.03,G0,G); box(.6,.035,2.0,tac,WALK_OUT.x1-.5,.03,G0,G); }
   /* ---- shop fronts: the painted picture sits behind real glass and real window frames, inside a wall with depth ---- */
-  /* the shopfront picture is set 1.2 m back from the street wall, as under a 騎樓 arcade: you see its floor, its ceiling with downlights and the side walls,
-     so walking past, the front moves against the wall in front of it like a real recessed shop (the picture's own window frames stay its frames) */
-  const front=(o)=>{ const {cx,w,ow,oh,oy,H,d,z0,wall,img,fb,act}=o; const DP=1.2, zf=z0+DP, top=oy+oh+.12;
-    const body=new T.Mesh(new T.BoxGeometry(w,H,d-DP),wall); body.position.set(cx,H/2,zf+(d-DP)/2); add(body,act);
-    const pw=(w-ow)/2-.02; for(const s of [-1,1]) add(box(pw,H,DP,wall,cx+s*(ow/2+.02+pw/2),H/2,z0+DP/2,SG),act); add(box(ow+.04,H-top,DP,o.head||wall,cx,(top+H)/2,z0+DP/2,SG),act);
-    const pm=em(fb,{roughness:.5}); imgInto(pm,img); const pic=new T.Mesh(new T.PlaneGeometry(ow,oh),pm); pic.rotation.y=Math.PI; pic.position.set(cx,oy+oh/2,zf-.002); add(pic,act);
-    box(ow+.04,oy+.02,.1,o.sill||wall,cx,(oy+.02)/2,zf-.05,SG); box(ow+.04,top-oy-oh,.08,o.sill||wall,cx,(oy+oh+top)/2,zf-.04,SG);
-    const ft=paverTex(); ft.wrapS=ft.wrapT=T.RepeatWrapping; ft.repeat.set(ow/2,DP/2); const fl=new T.Mesh(new T.PlaneGeometry(ow+.04,DP),new T.MeshStandardMaterial({map:ft,roughness:.9,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2})); fl.rotation.x=-Math.PI/2; fl.position.set(cx,.031,z0+DP/2); SG.add(fl);
-    const lm=new T.MeshBasicMaterial({color:"#fff6e0"}); WORLD.dl=WORLD.dl||[]; WORLD.dl.push(lm); for(let i=0;i<Math.round(ow/1.6);i++){ const x=cx-ow/2+(i+.5)*ow/Math.round(ow/1.6); const dl=new T.Mesh(gx('downlight',()=>new T.CircleGeometry(.09,14)),lm); dl.rotation.x=Math.PI/2; dl.position.set(x,top-.005,z0+DP*.55); SG.add(dl);
-      const g=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffe6b0"),transparent:true,depthWrite:false,blending:T.AdditiveBlending,opacity:0})); g.scale.set(1.1,1.1,1); g.position.set(x,top-.25,z0+DP*.55); SG.add(g); WORLD.lamps.push(g); }
-    const gl=new T.Mesh(new T.PlaneGeometry(ow,oh),new T.MeshBasicMaterial({map:glassTex(),transparent:true,opacity:.6,depthWrite:false})); gl.rotation.y=Math.PI; gl.position.set(cx,oy+oh/2,zf-.03); SG.add(gl); return body; };
+  /* a shopfront in two layers: the window frames, door frames and stickers stay out at the street wall (glass layer, the panes cut out),
+     and the shop's inside — the same picture with its frames painted out — hangs 1.6 m further in, inside a lit room (floor, ceiling, side walls).
+     The inside is scaled up so that from the sidewalk it lines up with the glass; walking past, it slides behind the frames like a real room. */
+  const EYE=1.5, VIEW=4.6, DP=1.6;
+  const front=(o)=>{ const {cx,w,ow,oh,oy,H,d,z0,wall,name,fb,col,act}=o; const T3=.3, zg=z0+.16, zb=z0+T3+DP, k=(VIEW+(zb-zg))/VIEW, top=oy+oh;
+    const body=new T.Mesh(new T.BoxGeometry(w,H,d-T3-DP),wall); body.position.set(cx,H/2,zb+(d-T3-DP)/2); add(body,act);
+    const pw=(w-ow)/2; for(const s of [-1,1]) add(box(pw,H,T3,wall,cx+s*(ow/2+pw/2),H/2,z0+T3/2,SG),act); add(box(ow,H-top,T3,o.head||wall,cx,(top+H)/2,z0+T3/2,SG),act); if(oy>0) add(box(ow,oy,T3,o.sill||wall,cx,oy/2,z0+T3/2,SG),act);
+    /* the room */ const rc=new T.Color(col.side), fc=new T.Color(col.floor), cc=new T.Color(col.ceil);
+    const fl=new T.Mesh(new T.PlaneGeometry(ow,DP+T3),new T.MeshStandardMaterial({color:fc,roughness:.25,metalness:.1})); fl.rotation.x=-Math.PI/2; fl.position.set(cx,oy+.004,z0+(T3+DP)/2+.02); SG.add(fl);
+    const ce=new T.Mesh(new T.PlaneGeometry(ow,DP+T3),new T.MeshBasicMaterial({color:cc})); ce.rotation.x=Math.PI/2; ce.position.set(cx,top-.004,z0+(T3+DP)/2+.02); SG.add(ce); WORLD.roomLit=(WORLD.roomLit||[]); WORLD.roomLit.push([ce.material,cc.clone()]);
+    for(const s of [-1,1]){ const sw=new T.Mesh(new T.PlaneGeometry(DP+T3,oh),new T.MeshStandardMaterial({color:rc,roughness:.6})); sw.rotation.y=-s*Math.PI/2; sw.position.set(cx+s*ow/2,oy+oh/2,z0+(T3+DP)/2+.02); SG.add(sw); }
+    const rm=new T.MeshStandardMaterial({map:fb,emissive:new T.Color("#ffffff"),emissiveMap:fb,emissiveIntensity:.35,roughness:.6}); WORLD.rooms=(WORLD.rooms||[]); WORLD.rooms.push(rm); imgInto(rm,"shop/"+name+"-room.webp");
+    const ry=EYE+(oy+oh/2-EYE)*k; const room=new T.Mesh(new T.PlaneGeometry(ow*k,oh*k),rm); room.rotation.y=Math.PI; room.position.set(cx,ry,zb); add(room,act);
+    /* the glass with its frames */ const gm=new T.MeshStandardMaterial({transparent:true,opacity:0,roughness:.35,metalness:.2,alphaTest:.02});
+    new T.TextureLoader().load("shop/"+name+"-glass.webp",t=>{ t.encoding=T.sRGBEncoding; t.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy()); gm.map=t; gm.opacity=1; gm.needsUpdate=true; WORLD.warm=2; });
+    const gp=new T.Mesh(new T.PlaneGeometry(ow,oh),gm); gp.rotation.y=Math.PI; gp.position.set(cx,oy+oh/2,zg); add(gp,act);
+    const gl=new T.Mesh(new T.PlaneGeometry(ow,oh),new T.MeshBasicMaterial({map:glassTex(),transparent:true,opacity:.55,depthWrite:false})); gl.rotation.y=Math.PI; gl.position.set(cx,oy+oh/2,zg-.01); SG.add(gl);
+    return {k,ry,zb,ow,oh,cx}; };
   /* 便利商店 */
-  { const cx=30.5, w=10.4, ow=8.6, oh=2.95, oy=.1, d=4.2, z0=-8.6, H=3.4, wall=mat("#ece6da",{roughness:.85});
-    front({cx,w,ow,oh,oy,H,d,z0,wall,img:"shop/cvs-front.webp",fb:facadeCVS(),mull:[.0136,.1775,.329,.501,.673,.826,.988],frame:"#5d636c",sill:mat("#c9c4ba",{roughness:.8}),act:"cvs"});
+  { const cx=25.3, w=20.8, ow=8.6, /* twice as long: two storefront bays */ oh=2.95, oy=.1, d=4.2, z0=-8.6, H=3.4, wall=mat("#ece6da",{roughness:.85});
+    for(const bx of [cx+w/4,cx-w/4]) front({cx:bx,w:w/2,ow,oh,oy,H,d,z0,wall,name:"cvs",fb:facadeCVS(),col:{floor:"#d8d6d2",ceil:"#f4f4f6",side:"#ece4dc"},sill:mat("#c9c4ba",{roughness:.8}),act:"cvs"});
     const sm=em(signTex("cvs"),{roughness:.4}); imgInto(sm,"shop/cvs-sign.webp"); const sign=new T.Mesh(new T.BoxGeometry(w+.3,.78,.3),[wall,wall,wall,wall,wall,sm]); sign.position.set(cx,H+.12,z0-.05); add(sign,"cvs"); WORLD.signs.push(sign);
     box(w+.3,.1,1.3,mat("#f4f1ea",{roughness:.6}),cx,3.1,z0-.62,SG); box(w+.3,.06,.06,mat("#f2508a"),cx,3.08,z0-1.27,SG);
-    for(let i=0;i<4;i++){ const s=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#fff3d6"),transparent:true,depthWrite:false,blending:T.AdditiveBlending,opacity:0})); s.position.set(cx-3+i*2,3.0,z0-.7); s.scale.set(.9,.9,1); SG.add(s); WORLD.lamps.push(s); }
-    cyl(.025,.025,2.2,mat("#9aa0a6"),cx+4.95,1.1,z0-.5,SG); const fl=new T.Mesh(new T.PlaneGeometry(.55,1.5),new T.MeshStandardMaterial({side:T.DoubleSide,roughness:.8,map:cvs(128,352,(x,w,h)=>{ x.fillStyle="#e0453a"; x.fillRect(0,0,w,h); x.fillStyle="#fff"; x.font=`900 64px ${DISPLAY_FONT}`; x.textAlign="center"; ["關","東","煮"].forEach((c,i)=>x.fillText(c,w/2,90+i*96)); x.fillStyle="#f39a2b"; x.fillRect(0,0,w,14); })}));
-    fl.position.set(cx+4.67,1.4,z0-.5); fl.rotation.y=Math.PI; SG.add(fl); WORLD.flag=fl;
-    for(const [i,c] of [["#2b6cb5",0],["#3a8a4a",1]]) { box(.42,.75,.42,mat(i,{roughness:.6}),cx-4.95+c*.48,.375,z0-.32,SG); box(.44,.05,.44,mat("#d8d8d8"),cx-4.95+c*.48,.77,z0-.32,SG); }
-    station("cvs",shopW(cx,-9.75),Math.PI/2); }
-  /* 夾娃娃機: an open booth with three machines (the owner's model; a simple stand-in shows until it has loaded) */
-  { const cx=22.35, w=5.9, z0=-8.6, d=4.2, H=3.1, /* the three shops stand wall to wall, like a row of shophouses */ wall=mat("#2d1d3f",{roughness:.8}); box(w,H,.15,wall,cx,H/2,z0+d-.08,SG); for(const s of [-1,1]) box(.15,H,d,wall,cx+s*(w/2-.08),H/2,z0+d/2,SG); box(w+.2,.15,d+.2,wall,cx,H,z0+d/2,SG);
-    const fl=new T.Mesh(new T.PlaneGeometry(w-.3,d-.2),new T.MeshStandardMaterial({color:"#3a2a52",roughness:.5,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3})); fl.rotation.x=-Math.PI/2; fl.position.set(cx,.035,z0+d/2); SG.add(fl);
-    const sign=new T.Mesh(new T.BoxGeometry(w+.2,.7,.2),[wall,wall,wall,wall,wall,em(signTex("claw"),{roughness:.3})]); sign.position.set(cx,H+.2,z0-.02); add(sign,"claw"); WORLD.signs.push(sign);
-    const xs=[cx-1.4,cx,cx+1.4], tmp=xs.map(x=>add(clawCabinet(x,z0+1.5,"#ff7fb8"),"claw"));
-    const hit=box(w,2.2,d,new T.MeshBasicMaterial({visible:false}),cx,1.1,z0+d/2,SG); setAct(hit,"claw"); pickables.push(hit);
-    loadShared("claw",m=>{ tmp.forEach(t=>{ SG.remove(t); const i=pickables.indexOf(t); if(i>=0) pickables.splice(i,1); }); xs.forEach(x=>{ const w2=fitModel(m.clone(),1.95); w2.rotation.y=Math.PI; w2.position.set(x,0,z0+1.5); w2.traverse(o=>{ if(o.isMesh&&o.material&&o.material.map&&!o.material.__cl){ o.material.emissive=new T.Color("#ffffff"); o.material.emissiveMap=o.material.map; o.material.emissiveIntensity=.12; o.material.__cl=1; WORLD.glow.push(o.material); } }); add(w2,"claw"); }); WORLD.nt=-1; WORLD.warm=2; });
-    station("claw",shopW(cx,-9.75),Math.PI/2); }
+    for(let i=0;i<8;i++){ const s=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#fff3d6"),transparent:true,depthWrite:false,blending:T.AdditiveBlending,opacity:0})); s.position.set(cx-w/2+(i+.5)*w/8,3.0,z0-.7); s.scale.set(.9,.9,1); SG.add(s); WORLD.lamps.push(s); }
+    cyl(.025,.025,2.2,mat("#9aa0a6"),cx+w/2-.25,1.1,z0-.5,SG); const fl=new T.Mesh(new T.PlaneGeometry(.55,1.5),new T.MeshStandardMaterial({side:T.DoubleSide,roughness:.8,map:cvs(128,352,(x,w,h)=>{ x.fillStyle="#e0453a"; x.fillRect(0,0,w,h); x.fillStyle="#fff"; x.font=`900 64px ${DISPLAY_FONT}`; x.textAlign="center"; ["關","東","煮"].forEach((c,i)=>x.fillText(c,w/2,90+i*96)); x.fillStyle="#f39a2b"; x.fillRect(0,0,w,14); })}));
+    fl.position.set(cx+w/2-.53,1.4,z0-.5); fl.rotation.y=Math.PI; SG.add(fl); WORLD.flag=fl;
+    for(const [i,c] of [["#2b6cb5",0],["#3a8a4a",1]]) { box(.42,.75,.42,mat(i,{roughness:.6}),cx-w/2+.3+c*.48,.375,z0-.32,SG); box(.44,.05,.44,mat("#d8d8d8"),cx-w/2+.3+c*.48,.77,z0-.32,SG); }
+    station("cvs",shopW(cx+w/4,-9.75),Math.PI/2); }
+  /* 夾娃娃機店: a shopfront like the others (the owner's picture); its neon star, rings and bunny glow and twinkle like LEDs */
+  { const cx=9.0, w=11.8, ow=5.1, oh=2.95, oy=.1, d=4.2, z0=-8.6, H=3.4, wall=mat("#3a2550",{roughness:.8}); /* the three shops stand wall to wall, like a row of shophouses */
+    for(const bx of [cx+w/4,cx-w/4]){ const F=front({cx:bx,w:w/2,ow,oh,oy,H,d,z0,wall,name:"claw",fb:cvs(512,296,(x,W,h)=>{ x.fillStyle="#f3c6e6"; x.fillRect(0,0,W,h); }),col:{floor:"#e6c8dc",ceil:"#f2d6ea",side:"#d8b8d0"},sill:mat("#f0e2ee",{roughness:.6}),act:"claw"});
+    if(bx>cx){ const sign=new T.Mesh(new T.BoxGeometry(w+.2,.7,.2),[wall,wall,wall,wall,wall,em(signTex("claw",(w+.2)/.7/8),{roughness:.3})]); sign.position.set(cx,H+.12,z0-.05); add(sign,"claw"); WORLD.signs.push(sign); }
+    /* LED points, in picture coordinates (0–1 across, 0–1 down) on the room picture */
+    const P=(u,v)=>[F.cx+F.ow*F.k*(.5-u),F.ry+F.oh*F.k*(.5-v),F.zb-.03];
+    WORLD.leds=WORLD.leds||[]; const led=(u,v,c,s,ph,sp)=>{ const sm=new T.SpriteMaterial({map:glowTex,color:new T.Color(c),transparent:true,depthWrite:false,blending:T.AdditiveBlending,opacity:.6}); const sp2=new T.Sprite(sm); const [x,y,z]=P(u,v); sp2.position.set(x,y,z); sp2.scale.set(s,s,1); SG.add(sp2); WORLD.leds.push({m:sm,ph,sp,s,o:sp2}); };
+    [[.54,.14],[.5,.09],[.58,.09],[.6,.17],[.48,.18],[.52,.2]].forEach(([u,v],i)=>led(u,v,"#fff2a0",.55,i*.7,2.2)); /* the star */
+    [[.37,.15],[.43,.12],[.47,.16],[.4,.19]].forEach(([u,v],i)=>led(u,v,"#ff7fd0",.45,i*1.1,1.6)); /* the pink ring */
+    [[.45,.24],[.49,.25],[.52,.24]].forEach(([u,v],i)=>led(u,v,"#8fe4ff",.35,i*.9,2.8)); /* the blue ring */
+    [[.43,.34],[.45,.38],[.47,.33]].forEach(([u,v],i)=>led(u,v,"#ffb0e8",.4,i*.8,1.9)); /* the bunny */
+    [[.18,.33],[.24,.36],[.79,.35],[.85,.37],[.2,.62],[.85,.62]].forEach(([u,v],i)=>led(u,v,i%2?"#7fe8ff":"#ff8ad8",.5,i*1.3,1.3)); /* machine tops and light strips */
+    for(let i=0;i<14;i++){ const u=.06+i*.068; led(u,.03,["#ff5fa8","#ffd23f","#55d6ff"][i%3],.22,i*.45,4); } /* a chasing strip along the top */ }
+    station("claw",shopW(cx+w/4,-9.75),Math.PI/2); }
   /* 服飾店 */
-  { const cx=14.6, w=9.6, ow=8.0, oh=2.53, oy=.12, d=4.2, z0=-8.6, H=3.4, wall=mat("#8a6584",{roughness:.8});
-    front({cx,w,ow,oh,oy,H,d,z0,wall,img:"shop/cloth-front.webp",fb:facadeCloth(),mull:[.011,.40,.50,.60,.991],frame:"#4a3a66",sill:mat("#e6dde8",{roughness:.6}),act:"cloth"});
-    const sign=new T.Mesh(new T.BoxGeometry(w+.2,.75,.25),[wall,wall,wall,wall,wall,em(signTex("cloth"),{roughness:.4})]); sign.position.set(cx,H+.12,z0-.05); add(sign,"cloth"); WORLD.signs.push(sign);
+  { const cx=-6.5, w=19.2, ow=8.0, oh=2.53, oy=.12, d=4.2, z0=-8.6, H=3.4, wall=mat("#8a6584",{roughness:.8});
+    for(const bx of [cx+w/4,cx-w/4]) front({cx:bx,w:w/2,ow,oh,oy,H,d,z0,wall,name:"cloth",fb:facadeCloth(),col:{floor:"#c99aa8",ceil:"#f6d8bc",side:"#a6708e"},sill:mat("#e6dde8",{roughness:.6}),act:"cloth"});
+    const sign=new T.Mesh(new T.BoxGeometry(w+.2,.75,.25),[wall,wall,wall,wall,wall,em(signTex("cloth",(w+.2)/.75/8),{roughness:.4})]); sign.position.set(cx,H+.12,z0-.05); add(sign,"cloth"); WORLD.signs.push(sign);
     /* a striped awning over the windows: fixed to the wall at the top, sloping down and out, with a scalloped edge */
     const at=awningTex("#5b3f7a","#f6eedd"); at.wrapS=T.RepeatWrapping; const span=w-.2, rep=span/1.0; at.repeat.set(rep,1); const am=new T.MeshStandardMaterial({map:at,side:T.DoubleSide,roughness:.8});
     const sl=new T.Mesh(new T.PlaneGeometry(span,1.25),am); sl.position.set(cx,2.98,z0-.52); sl.rotation.x=Math.PI/2-.62; SG.add(sl);
     const vt=awningTex("#5b3f7a","#f6eedd",true); vt.wrapS=T.RepeatWrapping; vt.repeat.set(rep,1); const val=new T.Mesh(new T.PlaneGeometry(span,.26),new T.MeshStandardMaterial({map:vt,side:T.DoubleSide,roughness:.8,transparent:true,alphaTest:.5})); val.position.set(cx,2.6,z0-1.03); SG.add(val);
-    station("cloth",shopW(cx,-9.75),Math.PI/2); }
+    station("cloth",shopW(cx+w/4,-9.75),Math.PI/2); }
 
   /* every shop gets a second floor and a vertical sign hanging over the sidewalk; one roof carries a water tank */
   const upper=(cx,w,yb,base,seed,wins,sign)=>{ const h=3.2, z0=-8.6, d=4.2; const tt=tileTex(base,seed); tt.wrapS=tt.wrapT=T.RepeatWrapping; tt.repeat.set(w/2.4,h/2.4); const wm=new T.MeshStandardMaterial({map:tt,roughness:.85}); const uf=upperFace(base,seed,wins); const fm=new T.MeshStandardMaterial({map:uf.map,emissiveMap:uf.glow,roughness:.7,emissive:new T.Color("#ffffff"),emissiveIntensity:0}); WORLD.upper.push(fm);
@@ -10140,10 +10153,10 @@ function buildWorld(){ if(WORLD.ready) return; const G=new T.Group(); G.name="sh
     if(sign){ const [txt,bg,fg,edge,side]=sign; const sx=cx+side*(w/2-.35), t=vsignTex(txt,bg,fg,edge); const sm=new T.MeshStandardMaterial({map:t,emissive:new T.Color("#ffffff"),emissiveMap:t,emissiveIntensity:.08,roughness:.4}); WORLD.glow.push(sm);
       const vs=new T.Mesh(new T.BoxGeometry(.22,2.9,.82),[sm,sm,mat(bg),mat(bg),mat(bg),mat(bg)]); vs.position.set(sx,yb+1.75,z0-.6); SG.add(vs); for(const yy of [yb+.6,yb+2.9]) box(.05,.05,.45,mat("#555"),sx,yy,z0-.2,SG); }
     return yb+h+.6; };
-  upper(30.5,10.4,3.4,"#e2d6bf",3,4,["M便利商店","#ffffff","#e8467f","#2bb0e6",1]);
-  upper(22.35,5.9,3.25,"#b9c4bd",7,2,["夾娃娃","#2a1440","#ffd9ef","#ff5fa8",1]);
-  const top=upper(14.6,9.6,3.4,"#c7a9b8",11,4,["花漾服飾","#3a2a52","#f3d9a0","#d9b26a",1]);
-  { const tk=new T.Group(); tk.position.set(12.5,top-.6,-5.6); SG.add(tk); for(const sx of [-.5,.5]) for(const sz of [-.4,.4]) box(.06,.7,.06,mat("#6a6a6a"),sx,.35,sz,tk); box(1.2,.06,1.0,mat("#6a6a6a"),0,.72,0,tk); const c=cyl(.48,.48,1.1,mat("#c9ccd0",{roughness:.3,metalness:.7}),0,1.3,0,tk,20); cyl(.5,.5,.06,mat("#b5b8bc",{metalness:.7,roughness:.3}),0,1.88,0,tk,20); }
+  upper(25.3,20.8,3.4,"#e2d6bf",3,8,["M便利商店","#ffffff","#e8467f","#2bb0e6",1]);
+  upper(9.0,11.8,3.4,"#b9c4bd",7,4,["夾娃娃","#2a1440","#ffd9ef","#ff5fa8",1]);
+  const top=upper(-6.5,19.2,3.4,"#c7a9b8",11,8,["花漾服飾","#3a2a52","#f3d9a0","#d9b26a",1]);
+  { const tk=new T.Group(); tk.position.set(-2,top-.6,-5.6); SG.add(tk); for(const sx of [-.5,.5]) for(const sz of [-.4,.4]) box(.06,.7,.06,mat("#6a6a6a"),sx,.35,sz,tk); box(1.2,.06,1.0,mat("#6a6a6a"),0,.72,0,tk); const c=cyl(.48,.48,1.1,mat("#c9ccd0",{roughness:.3,metalness:.7}),0,1.3,0,tk,20); cyl(.5,.5,.06,mat("#b5b8bc",{metalness:.7,roughness:.3}),0,1.88,0,tk,20); }
   STATION_LABEL.cvs="好運來便利商店"; STATION_LABEL.claw="夾娃娃機"; STATION_LABEL.cloth="花漾服飾"; STATION_HINT.cvs="走向便利商店"; STATION_HINT.claw="走向夾娃娃機"; STATION_HINT.cloth="走向服飾店";
   WORLD.ready=true; WORLD.warm=2; }
 /* warm-up: draw the whole street and the 禪房 once, into a single pixel, from high above — so textures, shapes and shaders reach the graphics chip while loading instead of the moment you first walk through the gate (that was the hitch) */
@@ -10158,9 +10171,9 @@ function clawCabinet(x,z,col){ const g=new T.Group(); g.position.set(x,0,z); con
   const claw=new T.Group(); claw.position.set(.1,1.9,0); g.add(claw); cyl(.006,.006,.3,mat("#cccccc"),0,.15,0,claw); cyl(.05,.05,.06,GOLD(),0,0,0,claw); for(let i=0;i<3;i++){ const a=i/3*Math.PI*2, p=box(.02,.16,.02,GOLD(),Math.sin(a)*.05,-.08,Math.cos(a)*.05,claw); p.rotation.set(Math.cos(a)*.4,0,-Math.sin(a)*.4); }
   box(.3,.08,.2,mat("#222"),.25,.98,-.52,g); cyl(.02,.02,.12,mat("#222"),.2,1.06,-.52,g); const knob=new T.Mesh(gx('knob',()=>new T.SphereGeometry(.04,10,8)),mat("#e0453a")); knob.position.set(.2,1.13,-.52); g.add(knob);
   const bt=new T.Mesh(gx('btn',()=>new T.CylinderGeometry(.04,.04,.03,14)),mat("#3d8be0")); bt.position.set(.32,1.03,-.52); g.add(bt); return g; }
-function worldTick(dt){ if(WORLD.warm){ WORLD.wt=(WORLD.wt||0)+dt; if(WORLD.wt>.6){ WORLD.wt=0; WORLD.warm=0; warmUp(); } } const ph=todPhase(), n=Math.max(0,Math.min(1,ph.night||0)); WORLD.t=(WORLD.t||0)+dt;
+function worldTick(dt){ if(WORLD.leds){ const t=WORLD.t||0; for(const L of WORLD.leds){ const v=.5+.5*Math.sin(t*L.sp+L.ph); L.m.opacity=.25+.75*v*v; const s=L.s*(.85+.3*v); L.o.scale.set(s,s,1); } } if(WORLD.warm){ WORLD.wt=(WORLD.wt||0)+dt; if(WORLD.wt>.6){ WORLD.wt=0; WORLD.warm=0; warmUp(); } } const ph=todPhase(), n=Math.max(0,Math.min(1,ph.night||0)); WORLD.t=(WORLD.t||0)+dt;
   if(WORLD.flag) WORLD.flag.rotation.y=Math.PI+Math.sin(WORLD.t*1.7)*.12;
-  if(Math.abs(n-WORLD.nt)>.02){ WORLD.nt=n; WORLD.glow.forEach(m=>{ m.emissiveIntensity=.06+n*.75; }); WORLD.upper.forEach(m=>{ m.emissiveIntensity=n*.9; }); WORLD.lamps.forEach(s=>{ s.material.opacity=n*.85; }); (WORLD.lampHeads||[]).forEach(m=>m.color.set(n>.3?"#fff0c4":"#bdb6a6")); }
+  if(Math.abs(n-WORLD.nt)>.02){ WORLD.nt=n; WORLD.glow.forEach(m=>{ m.emissiveIntensity=.06+n*.75; }); WORLD.upper.forEach(m=>{ m.emissiveIntensity=n*.9; }); (WORLD.rooms||[]).forEach(m=>{ m.emissiveIntensity=.35+n*.55; }); WORLD.lamps.forEach(s=>{ s.material.opacity=n*.85; }); (WORLD.lampHeads||[]).forEach(m=>m.color.set(n>.3?"#fff0c4":"#bdb6a6")); }
   if(WORLD.mann.length&&(WORLD.mt=(WORLD.mt||0)+dt)>40){ WORLD.mt=0; const a=WORLD.mann[Math.random()<.5?0:1]; const l=a.look.slice(); let v; do{ v=STYLEX0+Math.floor(Math.random()*STYLEX.length); }while(WORLD.mann.some(m=>m.look[3]===v)); l[3]=v; a.setLook(l); } }
 /* ---------- shop screens: a layer over the game with its own little 3D scene ---------- */
 function shxCSS(){ if(document.getElementById("shxCss")) return; const st=document.createElement("style"); st.id="shxCss"; st.textContent=`
