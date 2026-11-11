@@ -9962,7 +9962,7 @@ const PATHR=[34.45,36.65,-26.5,-13.3], PLAZA=[25.5,57.5,-13.95,-8.7];
 const inR=(r,x,z,m=0)=>x>r[0]+m&&x<r[1]-m&&z>r[2]+m&&z<r[3]-m;
 SX.walk=()=>false; SX.inP=()=>false; /* (the street is part of the 禪房 grounds now: innWalkableL) */
 if(typeof bag.en!=="number") bag.en=100; bag.snk=bag.snk&&typeof bag.snk==="object"?bag.snk:{}; bag.clo=bag.clo|0;
-const EN_SHIFT=33, CLAW_COST=15, EN_REC_MAX=66; /* 精力: 100 each day; a shift costs 33 (three a day); up to 66 can be won back per day */
+const EN_SHIFT=33, CLAW_COST=50, EN_REC_MAX=66; /* 精力: 100 each day; a shift costs 33 (three a day); up to 66 can be won back per day */
 /* daily limits: 打工 five shifts a day, 夾娃娃 five wins a day */
 const WORK_MAX=3, CLAW_WIN_MAX=5;
 function dayCount(k){ if(bag[k+"Day"]!==today){ bag[k+"Day"]=today; bag[k]=0; } return bag[k]|0; }
@@ -10050,7 +10050,7 @@ function facadeCVS(){ return cvs(1024,384,(x,w,h)=>{ x.fillStyle="#efe9dc"; x.fi
 function signTex(kind,wm=1){ return cvs(Math.round(1024*wm),128,(x,w,h)=>{ if(kind==="cvs"){ x.fillStyle="#fbfaf6"; x.fillRect(0,0,w,h); const st=[["#1f9e7a",0],["#f39a2b",26],["#e0453a",52]]; st.forEach(([c,y])=>{ x.fillStyle=c; x.fillRect(0,h-34+y*.35,w,10); }); x.fillStyle="#1f9e7a"; roundRectP(x,20,14,96,70,14); x.fill(); x.fillStyle="#fff"; x.font=`900 46px ${UI_FONT}`; x.textAlign="center"; x.fillText("福",68,66);
       x.fillStyle="#1d3b34"; x.font=`900 64px ${DISPLAY_FONT}`; x.textAlign="left"; x.fillText("M超商",140,72); x.fillStyle="#e0453a"; roundRectP(x,w-170,14,150,70,14); x.fill(); x.fillStyle="#fff"; x.font=`900 50px ${UI_FONT}`; x.textAlign="center"; x.fillText("24H",w-95,66); }
     if(kind==="claw"){ x.fillStyle="#2a1440"; x.fillRect(0,0,w,h); for(let i=0;i<34;i++){ x.fillStyle=["#ff5fa8","#ffd23f","#55d6ff"][i%3]; x.beginPath(); x.arc(16+i*30,10,5,0,7); x.fill(); x.beginPath(); x.arc(16+i*30,h-10,5,0,7); x.fill(); }
-      x.shadowColor="#ff5fa8"; x.shadowBlur=18; x.fillStyle="#ffd9ef"; x.font=`900 70px ${DISPLAY_FONT}`; x.textAlign="center"; x.fillText("夾娃娃天堂",w/2-60,88); x.shadowColor="#55d6ff"; x.fillStyle="#d6f6ff"; x.font=`900 44px ${UI_FONT}`; x.fillText("一次 15 幣",w-150,84); x.shadowBlur=0; }
+      x.shadowColor="#ff5fa8"; x.shadowBlur=18; x.fillStyle="#ffd9ef"; x.font=`900 70px ${DISPLAY_FONT}`; x.textAlign="center"; x.fillText("夾娃娃天堂",w/2-60,88); x.shadowColor="#55d6ff"; x.fillStyle="#d6f6ff"; x.font=`900 44px ${UI_FONT}`; x.fillText("一次 50 幣",w-150,84); x.shadowBlur=0; }
     if(kind==="cloth"){ const g=x.createLinearGradient(0,0,w,0); g.addColorStop(0,"#2c2235"); g.addColorStop(1,"#3d2a40"); x.fillStyle=g; x.fillRect(0,0,w,h); x.strokeStyle="#d9b26a"; x.lineWidth=4; x.strokeRect(10,10,w-20,h-20);
       x.fillStyle="#f3d9a0"; x.font=`700 66px ${DISPLAY_FONT}`; x.textAlign="center"; x.fillText("衣漾服飾",w/2-110,82); x.fillStyle="#e7c88a"; x.font=`600 30px Georgia,serif`; x.fillText("B O U T I Q U E",w/2+250,78); x.fillStyle="#d9b26a"; x.beginPath(); x.arc(150,64,22,0,7); x.fill(); x.fillStyle="#2c2235"; x.font=`900 26px ${UI_FONT}`; x.fillText("衣",150,74); } }); }
 function facadeCloth(){ return cvs(1024,384,(x,w,h)=>{ x.fillStyle="#3a2c2a"; x.fillRect(0,0,w,h); for(let i=0;i<w;i+=32){ x.fillStyle=`rgba(255,255,255,${.03+Math.random()*.03})`; x.fillRect(i,0,3,h); }
@@ -10492,7 +10492,7 @@ function clawStart(){ const C=buildClaw(); const o={exposure:1.05}; const el=ent
   const keyH=e=>{ if(G.st!=="move") return; const d=e.type==="keydown"; if(e.key==="ArrowLeft") jx=d?-1:0; if(e.key==="ArrowRight") jx=d?1:0; if(e.key==="ArrowUp") jz=d?-1:0; if(e.key==="ArrowDown") jz=d?1:0; if(d&&(e.key===" "||e.key==="Enter")) drop(); };
   addEventListener("keydown",keyH); addEventListener("keyup",keyH);
   const win=p=>{ let what="", ic="🎁"; const t=p.type; dayAdd("clw");
-    if(t==="cat"){ bag.coins+=30; what="平安幣 +30"; ic="🐱"; } if(t==="cap"){ bag.gacha=Math.min(255,(bag.gacha||0)+2); what="扭蛋幣 +2 枚"; ic="🥚"; } if(t==="can"){ bag.snk.drink=(bag.snk.drink||0)+1; what="古早味紅茶 ×1（放進背包）"; ic="🧃"; } if(t==="cup"){ bag.snk.noodle=(bag.snk.noodle||0)+1; what="牛肉泡麵 ×1（放進背包）"; ic="🍜"; }
+    if(t==="cat"){ bag.coins+=30; what="平安幣 +30"; ic="🐱"; } if(t==="cap"){ bag.gacha=Math.min(255,(bag.gacha||0)+1); what="扭蛋幣 +1 枚"; ic="🥚"; } if(t==="can"){ bag.snk.drink=(bag.snk.drink||0)+1; what="古早味紅茶 ×1（放進背包）"; ic="🧃"; } if(t==="cup"){ bag.snk.noodle=(bag.snk.noodle||0)+1; what="牛肉泡麵 ×1（放進背包）"; ic="🍜"; }
     if(t==="gift"){ let L=[]; try{ L=gachaLeft(); }catch(e){} if(L.length&&!me.sp){ const k=L[(Math.random()*L.length)|0]; accState().owned[k]=1; what=`頭飾「${ACC[k].name}」！（放進背包的飾品）`; ic=""; G.hat=k; } else { bag.coins+=60; what="平安幣 +60"; } }
     saveBag(); markDirty(); try{ profSave(true); }catch(e){} statInc("clawWin"); coins();
     const c=document.createElement("div"); c.className="shx-card"; c.innerHTML=`<h3>🎉 夾到了！</h3><div style="font-size:52px;line-height:1.2">${G.hat?bic(G.hat,"gc-ic"):ic}</div><p style="text-align:center;font-size:16px"><b>${PRIZE[t].n}</b></p><p style="text-align:center">${what}</p><div class="row"><button class="shx-btn sec" id="wOut">離開</button><button class="shx-btn" id="wAg">再玩一次（${CLAW_COST} 幣）</button></div>`; el.appendChild(c); G.hat=null;
