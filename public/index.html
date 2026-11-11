@@ -6002,6 +6002,9 @@ HANDLERS.schedAdd=async()=>{ const k=$("#schK").value, d=$("#schD").value, t=$("
   const e={id:Math.random().toString(36).slice(2,10),at,k:k.startsWith("fw")?"fw":k,sh:cs?cs.song|0:k.startsWith("fw:")?+k.split(":")[1]:0,txt:k.startsWith("fw")?($("#schTxt").value||"").trim().slice(0,24):"",daily}; if(cu) e.cu=cu;
   SCHED.items.push(e); if(await schedSave()){ toast("已加入：" + schedLabel(e).replace(/<[^>]+>/g,""),2600); HANDLERS.schedOpen(); } else SCHED.items=SCHED.items.filter(x=>x!==e); };
 HANDLERS.schedDel=async id=>{ const keep=SCHED.items; SCHED.items=SCHED.items.filter(e=>e.id!==id); if(await schedSave()) HANDLERS.schedOpen(); else SCHED.items=keep; };
+/* test page only: the default daily night market (17:00 open, midnight close), set once; the chair can change it under 定時活動 */
+setTimeout(()=>{ if(USE_CF||load("mz.schedSeed1",0)) return; const L=load("mz.sched",[]), nx=h=>{ const d=new Date(); d.setHours(h,0,0,0); let t=d.getTime(); while(t<=Date.now()) t+=86400000; return t; };
+  L.push({id:"mkdo",at:nx(17),k:"mkOpen",daily:true},{id:"mkdc",at:nx(24),k:"mkClose",daily:true}); save("mz.sched",L); save("mz.schedSeed1",1); try{ const h=new Date().getHours(); mkSet(h>=17?Object.fromEntries(NM_STALLS.map((s,i)=>[s.k,Date.now()+i])):{}); }catch(e){} },4000);
 /* test page only: run the timetable on this phone */
 setInterval(()=>{ if(USE_CF) return; const L=load("mz.sched",[]); if(!L.length) return; const now=Date.now(); let ch=false; const keep=[];
   for(const e of L){ if(e.at>now){ keep.push(e); continue; } ch=true; if(now-e.at<120000){ if(e.k==="fw"){ const seed=(Math.random()*1e9)|0; myFwShow=[seed,now+10000,e.sh,e.txt]; markDirty(); fwStart(seed,-10000,e.sh,e.txt,e.cu); toast("⏰ 定時煙火開始了",2600); } else mkSet(e.k==="mkOpen"?Object.fromEntries(NM_STALLS.map((s,i)=>[s.k,now+i])):{}); }
@@ -7359,6 +7362,7 @@ function accState(){ if(!bag.acc||typeof bag.acc!=="object") bag.acc={owned:{},h
 function threadOn(){ return accState().wrist==="redthread"; }
 function nmDay(){ const d=new Date(Date.now()+8*3600e3).toISOString().slice(0,10); if(!bag.nm||bag.nm.day!==d) bag.nm={day:d,fish:0,pWin:0,pCash:0}; return bag.nm; }
 function myEq(){ const a=accState(); return [a.head||0,a.hand||0,a.mouth||0,a.pet||0]; }
+function nmToken(st){ bag.gd=bag.gd||{}; if(bag.gd["nm_"+st]===twDay()){ toast("這一攤今天的扭蛋幣已經領過了，明天再來",2600); return; } bag.gd["nm_"+st]=twDay(); bag.gacha=Math.min(255,(bag.gacha||0)+1); saveBag(); markDirty(); toast("🎟️ 獲得扭蛋幣 1 枚！（每攤每天一枚）",3000); }
 function giveAcc(id){ const a=accState(); const had=!!a.owned[id]; a.owned[id]=1; if(!had){ a[ACC[id].slot]=id; } saveBag(); meAv.setAcc(myEq()); markDirty(); return had; }
 function payStall(price){ if(!price) return true; if((bag.coins||0)<price){ toast(`平安幣不夠，這攤要 ${price} 幣`); return false; } bag.coins-=price; saveBag(); sfx.coin&&sfx.coin(); return true; }
 
@@ -8243,7 +8247,7 @@ function playQQ(){ const L=gameLayer("地瓜球","老闆壓一次，你照著節
     if(!started){ nmText(x,"點畫面開始",W/2,H*.27,30); nmText(x,"老闆壓一小節，你照同樣節奏壓下一小節",W/2,H*.27+36,16,"#fff",undefined,500); }
     if(fb&&performance.now()-fb.at<650){ if(fb.perfect&&combo>=3) qqCard(x,W/2,H*.3,combo,(performance.now()-fb.at)/650); else nmText(x,fb.t,W/2,H*.3,34,fb.c); }
     nmText(x,`${good} / ${total}`,W-20,130,18,"#fff","right",600);
-    if(started&&tn>END&&!L.endMsg){ const ok=good>=total*.75; nmRecSend("qq",perfect); if(ok) giveAcc("qqball"); nmEnd(L,ok,ok?"地瓜球超蓬鬆！":"地瓜球塌掉了…",ok?`壓中 ${good}/${total}（讚 ${perfect}），得到地瓜球頭飾，已戴上`:`壓中 ${good}/${total}，要 ${Math.ceil(total*.75)} 下才過關`); }
+    if(started&&tn>END&&!L.endMsg){ const ok=good>=total*.75; nmRecSend("qq",perfect); if(ok&&giveAcc("qqball")) nmToken("qq"); nmEnd(L,ok,ok?"地瓜球超蓬鬆！":"地瓜球塌掉了…",ok?`壓中 ${good}/${total}（讚 ${perfect}），得到地瓜球頭飾，已戴上`:`壓中 ${good}/${total}，要 ${Math.ceil(total*.75)} 下才過關`); }
     fxDraw(L,x,W,H); nmEndDraw(L,x,W,H); requestAnimationFrame(draw); };
   requestAnimationFrame(draw); }
 
@@ -8271,7 +8275,7 @@ function playSausage(){ const L=gameLayer("烤香腸","十八仔：先贏老闆�
     if(roll){ anim+=1/60; const settle=Math.min(1,anim/1.1); const show=(r,cy)=>{ r.d.forEach((v,i)=>{ const sv=settle<1?1+((Math.random()*6)|0):v; const ds=BW*.2, ox=(i%2-.5)*ds*1.35, oy=(Math.floor(i/2)-.5)*ds*1.35; dieDraw(W/2+ox+(settle<1?Math.sin(anim*23+i)*8:0),cy+oy+(settle<1?Math.cos(anim*19+i)*8:0),ds,sv,settle<1?Math.sin(anim*17+i*2)*.8:(i-1.5)*.12); }); if(settle>=1) nmText(x,r.t,W/2+BW/2+8,cy+8,20,"#ffe14d","left"); };
       show(roll.boss,H*.36); show(roll.me,H*.64);
       if(settle>=1&&state==="rolling"){ state="shown"; const d=roll.me.s-roll.boss.s; if(d>0){ me++; msg="你贏這把！"; tone(660,.2,.1,"triangle"); fxBurst(L,L.W()/2,L.H()*.63,26,{kind:"star"}); } else if(d<0){ boss++; msg="老闆贏這把"; tone(260,.25,.1,"sawtooth"); } else msg="平手，再來";
-        setTimeout(()=>{ if(L.done) return; if(me>=3){ const had=giveAcc("sausage"); nmEnd(L,true,"贏到一支香腸！",had?"香腸已經有了，又吃了一支":"好濃的蒜頭味！香腸放進背包飾品，已經拿在手上"); } else if(boss>=3) nmEnd(L,false,"老闆贏了","再來一盤？"); else state="ready"; },900); } }
+        setTimeout(()=>{ if(L.done) return; if(me>=3){ const had=giveAcc("sausage"); if(had) nmToken("sausage"); nmEnd(L,true,"贏到一支香腸！",had?"香腸已經有了，又吃了一支":"好濃的蒜頭味！香腸放進背包飾品，已經拿在手上"); } else if(boss>=3) nmEnd(L,false,"老闆贏了","再來一盤？"); else state="ready"; },900); } }
     if(msg&&state!=="rolling") nmText(x,msg,W/2,H*.5,24,"#fff");
     btn.x=W/2-90; btn.y=H-130; if(!L.endMsg) nmButton(x,btn,state==="ready"?"擲！":"…",state==="ready");
     fxDraw(L,x,W,H); nmEndDraw(L,x,W,H); if(L.endMsg&&L.endMsg.win) nmDraw(x,"sg-stick",W/2,H*.25,90,.2); requestAnimationFrame(draw); };
@@ -8309,7 +8313,7 @@ function playBBQ(){ const L=gameLayer("烤肉","點一下翻面，兩面都烤�
       if(under>.9){ for(let k=0;k<2;k++){ x.fillStyle="rgba(210,210,210,.22)"; x.beginPath(); x.arc(c.x+c.w*(.3+.4*Math.random()),c.y+10-Math.random()*20,6+Math.random()*7,0,7); x.fill(); } }
       [["上",show],["下",under]].forEach(([lb,v],j)=>{ const bx=c.x+c.w*.1, by=c.y+c.h-26+j*7, bw=c.w*.8; x.fillStyle="rgba(255,255,255,.15)"; x.fillRect(bx,by,bw,5);
         const gr=x.createLinearGradient(bx,0,bx+bw,0); gr.addColorStop(0,"#4ad04a"); gr.addColorStop(DONE/BURN,"#d0e040"); gr.addColorStop(1/BURN,"#ffb030"); gr.addColorStop(1,"#e8302a"); x.fillStyle=gr; x.fillRect(bx,by,bw*Math.min(1,v/BURN),5); x.fillStyle="#fff"; x.fillRect(bx+bw*DONE/BURN,by-1,1.5,7); }); });
-    if(!over&&taken===9){ over=true; const secs=(performance.now()-L.t0)/1000; nmRecSend("bbq",+secs.toFixed(1)); const had=giveAcc("skewer"); nmEnd(L,true,"九串都烤得剛剛好！",had?"烤肉串已經有了，再吃一串":"得到香噴噴的烤肉串，已經拿在手上"); }
+    if(!over&&taken===9){ over=true; const secs=(performance.now()-L.t0)/1000; nmRecSend("bbq",+secs.toFixed(1)); const had=giveAcc("skewer"); if(had) nmToken("bbq"); nmEnd(L,true,"九串都烤得剛剛好！",had?"烤肉串已經有了，再吃一串":"得到香噴噴的烤肉串，已經拿在手上"); }
     nmText(x,`夾起 ${taken} / 9`,W/2,150,22);
     fxDraw(L,x,W,H); nmEndDraw(L,x,W,H); requestAnimationFrame(draw); };
   requestAnimationFrame(draw); }
@@ -8377,7 +8381,8 @@ function playPachinko(){ const L=gameLayer("打彈珠","押好彈珠按「發射
   const btns={buy10:{h:42},buy100:{h:42},bet:{h:42},cash:{h:42},fire:{h:50}};
   const say=t=>{ msg=t; msgAt=performance.now(); };
   const buy=n=>{ if(bag.coins<n){ say("平安幣不夠"); return; } bag.coins-=n; marbles+=n; peak=Math.max(peak,marbles); saveBag(); statInc("pkBuy",n); tone(900,.06,.06); };
-  const cash=()=>{ if(!marbles){ say("沒有彈珠可換"); return; } const room=Math.max(0,1000-d.pCash), n=Math.min(marbles,room); if(!n){ say("今天已換滿 1000 幣，明天再來"); return; } marbles-=n; d.pCash+=n; bag.coins+=n; saveBag(); statInc("pkCash",n); if(n>=300) newsEv("pkBig",n); say(`換了 ${n} 平安幣${marbles?`，剩 ${marbles} 顆今天換不了`:""}`); sfx.coin&&sfx.coin(); };
+  const cash=()=>{ if(!marbles){ say("沒有彈珠可換"); return; } const room=Math.max(0,1000-d.pCash), n=Math.min(marbles,room); marbles-=n; d.pCash+=n; bag.coins+=n; const tk=Math.floor(marbles/2000); marbles-=tk*2000; if(tk) bag.gacha=Math.min(255,(bag.gacha||0)+tk); /* past the 1000-coin cap: 2000 marbles = one 扭蛋幣 */
+    if(!n&&!tk){ say(`今天已換滿 1000 幣；再湊到 2000 顆可以換 1 枚扭蛋幣（現在 ${marbles} 顆）`); return; } saveBag(); markDirty(); if(n) statInc("pkCash",n); if(n>=300) newsEv("pkBig",n); say(`${n?`換了 ${n} 平安幣`:""}${n&&tk?"，":""}${tk?`換了 ${tk} 枚扭蛋幣`:""}${marbles?`，剩 ${marbles} 顆`:""}`); sfx.coin&&sfx.coin(); };
   const fire=()=>{ if(ball){ say("等這顆落下"); return; } if(marbles<bet){ say(marbles?`彈珠不夠押 ${bet} 顆`:"先買彈珠"); return; } marbles-=bet;
     ball={phase:"rail",t:0,bet,img:MC[(Math.random()*MC.length)|0],x:0,y:0,vx:0,vy:0}; tone(520,.12,.06,"triangle"); noiseBurst(.25,.05,3000); };
   cv.addEventListener("pointerdown",e=>{ const px=e.clientX, py=e.clientY;
@@ -8438,7 +8443,7 @@ function playBoba(){ const L=gameLayer("珍珠奶茶","照配方點對配料，�
     if(la&&phase==="shake"){ const j=Math.hypot(v[0]-la[0],v[1]-la[1],v[2]-la[2]); if(j>9) shakeOnce(); } la=v; };
   const askMotion=()=>{ if(motionOn) return; try{ if(window.DeviceMotionEvent&&typeof DeviceMotionEvent.requestPermission==="function") DeviceMotionEvent.requestPermission().then(r=>{ if(r==="granted"&&!motionOn){ motionOn=true; addEventListener("devicemotion",onMotion); } }).catch(()=>{}); else { motionOn=true; addEventListener("devicemotion",onMotion); } }catch(e){} };
   const cupDone=()=>{ phase="done"; cup++; fxBurst(L,L.W()/2,L.H()*.42,30,{kind:"star",speed:300}); tone(784,.12,.1,"triangle"); tone(1046,.2,.1,"triangle",.12);
-    if(cup>=3){ over=true; const secs=(performance.now()-t0)/1000; giveAcc("boba"); nmRecSend("boba",+secs.toFixed(1)); nmEnd(L,true,"三杯飲料完成！",`用了 ${secs.toFixed(1)} 秒・得到珍奶頭飾，已戴上`); }
+    if(cup>=3){ over=true; const secs=(performance.now()-t0)/1000; if(giveAcc("boba")) nmToken("boba"); nmRecSend("boba",+secs.toFixed(1)); nmEnd(L,true,"三杯飲料完成！",`用了 ${secs.toFixed(1)} 秒・得到珍奶頭飾，已戴上`); }
     else setTimeout(()=>{ drink=menu[cup]; added=[]; phase="add"; time=20; shakes=0; },1100); };
   cv.addEventListener("pointerdown",e=>{ if(L.endMsg){ L.close(); return; } if(!t0) t0=performance.now(); if(phase==="add"){ btns.forEach((b,i)=>{ if(!inBox(b,e.clientX,e.clientY)) return; const n=BB_ING[i][0];
         if(!drink[2].includes(n)||added.includes(n)){ over=true; nmEnd(L,false,`加錯了：${n}`,`${drink[0]}不用加${n}，再來一次`); return; }
@@ -8497,7 +8502,7 @@ function playBalloon(){ const L=gameLayer("射氣球","準星會飄，抓準時�
     darts--; noiseBurst(.05,.1,2500); const W=L.W(), H=L.H(), g=grid(W,H), cw=g.w/COLS, ch=g.h/ROWS;
     const hit=bl.find(b=>b.alive&&Math.hypot(aim.x-(g.x+(b.c+.5)*cw),aim.y-(g.y+(b.r+.5)*ch))<Math.min(cw,ch)*.42);
     if(hit){ fxBurst(L,aim.x,aim.y,16,{kind:"paper",speed:260,size:4,cols:[{"bl-red":"#ff3a3a","bl-yellow":"#ffd21a","bl-blue":"#2a8aff"}[hit.img]]}); hit.alive=false; hit.pop=1; tone(1200,.05,.12,"square"); noiseBurst(.12,.2,1500); }
-    if(bl.every(b=>!b.alive)){ over=true; nmRecSend("balloon",+((performance.now()-L.t0)/1000).toFixed(1)); const had=giveAcc("afro"); nmEnd(L,true,"全部射破！",had?"爆炸頭已經有了，再閃一次":"得到閃亮彩色爆炸頭，已戴上"); }
+    if(bl.every(b=>!b.alive)){ over=true; nmRecSend("balloon",+((performance.now()-L.t0)/1000).toFixed(1)); const had=giveAcc("afro"); if(had) nmToken("balloon"); nmEnd(L,true,"全部射破！",had?"爆炸頭已經有了，再閃一次":"得到閃亮彩色爆炸頭，已戴上"); }
     else if(darts<=0){ over=true; nmEnd(L,false,`還剩 ${bl.filter(b=>b.alive).length} 顆`,"要全部射破才有獎品"); } });
   const draw=()=>{ if(L.done) return; const now=performance.now(), dt=Math.min(.05,(now-last)/1000); last=now; t+=dt; const W=L.W(), H=L.H(); nmBg(x,W,H,"#2a1a3a","#0a0614"); const g=grid(W,H), cw=g.w/COLS, ch=g.h/ROWS;
     x.fillStyle="#c0392b"; x.beginPath(); x.roundRect?x.roundRect(g.x-16,g.y-16,g.w+32,g.h+32,14):x.rect(g.x-16,g.y-16,g.w+32,g.h+32); x.fill(); x.fillStyle="#f6ead2"; x.fillRect(g.x-6,g.y-6,g.w+12,g.h+12);
@@ -9957,20 +9962,20 @@ const PATHR=[34.45,36.65,-26.5,-13.3], PLAZA=[25.5,57.5,-13.95,-8.7];
 const inR=(r,x,z,m=0)=>x>r[0]+m&&x<r[1]-m&&z>r[2]+m&&z<r[3]-m;
 SX.walk=()=>false; SX.inP=()=>false; /* (the street is part of the 禪房 grounds now: innWalkableL) */
 if(typeof bag.en!=="number") bag.en=100; bag.snk=bag.snk&&typeof bag.snk==="object"?bag.snk:{}; bag.clo=bag.clo|0;
-const EN_SHIFT=25, CLAW_COST=15;
+const EN_SHIFT=33, CLAW_COST=15, EN_REC_MAX=66; /* 精力: 100 each day; a shift costs 33 (three a day); up to 66 can be won back per day */
 /* daily limits: 打工 five shifts a day, 夾娃娃 five wins a day */
-const WORK_MAX=5, CLAW_WIN_MAX=5;
+const WORK_MAX=3, CLAW_WIN_MAX=5;
 function dayCount(k){ if(bag[k+"Day"]!==today){ bag[k+"Day"]=today; bag[k]=0; } return bag[k]|0; }
 function dayAdd(k){ dayCount(k); bag[k]=(bag[k]|0)+1; saveBag(); }
 const GACHA_PRICE=1000;
 /* snacks: 平安幣 price in the shop, 精力 they give back, and the NT$ shelf price used in the cashier game */
 const SNACKS=[
-  {k:"drink",n:"古早味紅茶",p:12,e:12,nt:25,col:"#b4502e",tag:"飲料"},
-  {k:"cookie",n:"蔥香餅乾",p:10,e:10,nt:35,col:"#e7b33c",tag:"餅乾"},
-  {k:"noodle",n:"紅燒牛肉泡麵",p:22,e:25,nt:45,col:"#cf3b2a",tag:"泡麵"},
-  {k:"energy",n:"提神飲料",p:35,e:40,nt:59,col:"#2d78d2",tag:"提神飲料"},
-  {k:"beer",n:"金黃啤酒",p:20,e:18,nt:49,col:"#d9a628",tag:"啤酒"},
-  {k:"bread",n:"菠蘿麵包",p:15,e:15,nt:32,col:"#d39a4c",tag:"麵包"}];
+  {k:"drink",n:"古早味紅茶",p:20,e:6,nt:25,col:"#b4502e",tag:"飲料"},
+  {k:"cookie",n:"蔥香餅乾",p:15,e:5,nt:35,col:"#e7b33c",tag:"餅乾"},
+  {k:"noodle",n:"紅燒牛肉泡麵",p:45,e:15,nt:45,col:"#cf3b2a",tag:"泡麵"},
+  {k:"energy",n:"提神飲料",p:99,e:33,nt:59,col:"#2d78d2",tag:"提神飲料"},
+  {k:"beer",n:"金黃啤酒",p:35,e:10,nt:49,col:"#d9a628",tag:"啤酒"},
+  {k:"bread",n:"菠蘿麵包",p:30,e:10,nt:32,col:"#d39a4c",tag:"麵包"}];
 const SN=Object.fromEntries(SNACKS.map(s=>[s.k,s]));
 /* ---------- snack pictures (drawn once, used in the bag, the shop and the cashier) ---------- */
 function drawSnack(x,k,w,h){ x.clearRect(0,0,w,h); x.save(); x.translate(w/2,h/2); const s=w/100; x.scale(s,s); x.lineJoin="round"; x.lineCap="round";
@@ -9991,24 +9996,32 @@ const ICON={}; function snackIcon(k){ if(ICON[k]) return ICON[k]; const c=docume
 SX.bic=(k,cls="")=>`<span class="bic ${cls}" style="background:url(${snackIcon(k.slice(3))}) center/contain no-repeat"></span>`;
 const snImg=(k,sz=40)=>`<img src="${snackIcon(k)}" width="${sz}" height="${sz}" alt="" style="display:block">`;
 /* ---------- 精力 ---------- */
+/* a new day: 精力 back to 100, and the day's 66 points of rest start again */
+function enDay(){ if(bag.enDay!==today){ bag.enDay=today; bag.en=100; bag.enRec=0; try{ saveBag(); }catch(e){} } }
+enDay();
+const recLeft=()=>{ enDay(); return Math.max(0,EN_REC_MAX-(bag.enRec||0)); };
 const en=()=>Math.round(bag.en);
 SX.wallet=()=>{ let e=$("#enCap"); const cap=document.querySelector("#bagBtn .cap"); if(!e&&cap){ e=document.createElement("span"); e.id="enCap"; cap.appendChild(e); } if(e) e.textContent=`⚡${en()}`; };
-SX.bagTop=()=>`<div class="inv-top"><span class="inv-coin">⚡<b>${en()}</b>精力</span><span class="inv-note">便利商店打工一班要 ${EN_SHIFT}；吃東西、泡溫泉、睡覺、靜坐都會恢復</span></div>`;
-function enAdd(v,why){ const b=en(); bag.en=Math.max(0,Math.min(100,bag.en+v)); if(Math.round(bag.en)!==b){ SX.wallet(); } }
+SX.bagTop=()=>`<div class="inv-top"><span class="inv-coin">⚡<b>${en()}</b>精力</span><span class="inv-note">每天 100；打工一班要 ${EN_SHIFT}。今天還能恢復 ${Math.round(recLeft())}（每天最多 ${EN_REC_MAX}）：套房的床最快，再來通鋪、溫泉、禪堂靜坐，吃東西最方便</span></div>`;
+function enAdd(v){ const b=en(); let g=v; if(v>0){ g=Math.min(v,100-bag.en,recLeft()); bag.enRec=(bag.enRec||0)+Math.max(0,g); } bag.en=Math.max(0,Math.min(100,bag.en+g)); if(Math.round(bag.en)!==b){ SX.wallet(); } return g; }
 let enAcc=0, enSave=0, enWhy="", enNote=0;
 /* 恢復速度 (精力 per second): 套房的床 fastest, then 通鋪, 溫泉, 禪堂靜坐 */
-const REGEN={bed:.5,futon:.32,onsen:.24,zen:.18};
+/* 恢復: the dearer, the faster. 套房 (100 幣) 66 in a minute (all of a day's rest in one stay); 通鋪 (50 幣) 33 in a minute;
+   溫泉 and 禪堂 are free but slow (33 in about 3½ and 5½ minutes). Snacks are instant and cost the most per point. */
+const REGEN={bed:1.1,futon:.55,onsen:.15,zen:.1}, SESS_MAX={bed:66,futon:33,onsen:99,zen:99}; let sess=0;
 SX.tick=dt=>{ let why="";
   try{ const st=meAv.seat>=0?SEATS[meAv.seat]:null; if(st&&meAv.kneel>.6){ if(st.kind==="bed") why="bed"; else if(st.kind==="futon") why="futon"; else if(st.zen) why="zen"; else if(st.kind==="tub") why="onsen"; }
     if(!why&&(meAv.gy||0)<1&&innPool(meAv.pos.x,meAv.pos.y)) why="onsen"; }catch(e){}
-  if(why&&bag.en<100){ const b=Math.floor(bag.en); bag.en=Math.min(100,bag.en+REGEN[why]*dt); if(Math.floor(bag.en)!==b) SX.wallet(); enSave+=dt; if(enSave>8){ enSave=0; save("mz.bag",bag); }
-    if(why!==enWhy&&performance.now()-enNote>20000){ enNote=performance.now(); toast({bed:"躺在套房的床上，精力恢復得最快 ⚡",futon:"在通鋪睡一下，精力慢慢恢復 ⚡",onsen:"泡溫泉，精力慢慢恢復 ⚡",zen:"靜坐養神，精力慢慢恢復 ⚡"}[why],2600); } }
+  if(why!==enWhy) sess=0;
+  if(why&&bag.en<100&&recLeft()>0&&sess<SESS_MAX[why]){ const b=Math.floor(bag.en); const g=enAdd(Math.min(REGEN[why]*dt,SESS_MAX[why]-sess)); sess+=g; if(Math.floor(bag.en)!==b) SX.wallet(); enSave+=dt; if(enSave>8){ enSave=0; save("mz.bag",bag); }
+    if(recLeft()<=0||sess>=SESS_MAX[why]-.01){ toast(recLeft()<=0?"今天的精力恢復已經到上限了（每天最多 66）":why==="futon"?"睡飽了，通鋪一次最多恢復 33":"恢復飽滿了 ⚡",2800); }
+    if(why!==enWhy&&performance.now()-enNote>20000){ enNote=performance.now(); toast({bed:"躺在套房的床上，精力恢復得最快（一次最多 66）⚡",futon:"在通鋪睡一下，精力恢復中（一次最多 33）⚡",onsen:"泡溫泉，精力慢慢恢復 ⚡",zen:"靜坐養神，精力慢慢恢復 ⚡"}[why],2600); } }
   else if(enWhy&&!why) save("mz.bag",bag);
   enWhy=why; if(SX.on&&SX.cur&&SX.cur.update) SX.cur.update(dt); if(!SX.on&&WORLD.ready) worldTick(dt); };
 /* ---------- bag: snacks ---------- */
 SX.bagEntries=(out,tab)=>{ if(tab!=="all"&&tab!=="goods") return; SNACKS.forEach(s=>{ const n=bag.snk[s.k]||0; if(n) out.push({id:"s:"+s.k,ic:"sn_"+s.k,n,name:s.n,desc:`便利商店買的${s.tag}。吃了精力 +${s.e}。`}); }); };
 SX.bagActs=(k,e)=>e.n?`<button class="chip" data-act="snEat" data-v="${k}">${/drink|energy|beer/.test(k)?"喝掉":"吃掉"}（精力 +${SN[k].e}）</button>`:"";
-function eat(k,fromBag){ const s=SN[k]; if(!s) return false; if(bag.en>=100){ toast("精力已經是滿的了",1800); return false; } if(fromBag){ if(!(bag.snk[k]>0)) return false; bag.snk[k]--; }
+function eat(k,fromBag){ const s=SN[k]; if(!s) return false; if(bag.en>=100){ toast("精力已經是滿的了",1800); return false; } if(recLeft()<=0){ toast("今天的精力恢復已經到上限了（每天最多 66），明天再吃吧",2600); return false; } if(fromBag){ if(!(bag.snk[k]>0)) return false; bag.snk[k]--; }
   enAdd(s.e); saveBag(); markDirty(); try{ tone(880,.08,.08,"triangle"); tone(1320,.12,.06,"triangle",.08); }catch(e){}
   if(!SX.on){ meAv.say(k==="beer"?"嗝～ 精力 +"+s.e:k==="energy"?"精神來了！精力 +"+s.e:"好吃！精力 +"+s.e,"#ffe066",2.4); } return true; }
 HANDLERS.snEat=k=>{ if(eat(k,true)){ toast(`${SN[k].n}：精力 +${SN[k].e}（現在 ${en()}）`,2200); if(sheetKind==="bag") openBag(); } };
@@ -10314,7 +10327,7 @@ function tapLayer(o,fn){ const t=o.el.querySelector(".shx-touch"); let sx=0, sy=
 function cvsMenu(){ const e=en(), left=WORK_MAX-dayCount("wk"); openSheet("cvs","M超商",`<p class="lead">叮咚～歡迎光臨！要進去買東西，還是來打工？</p><div class="goods">
   <button class="good" data-act="cvsGo" data-v="buy"><span class="name">🛒 進去買東西</span><span class="meta">飲料、餅乾、泡麵、提神飲料、啤酒、麵包，吃了會恢復精力</span></button>
   <button class="good" data-act="cvsGo" data-v="work"${e<EN_SHIFT||left<=0?' style="opacity:.55"':""}><span class="name">🧑‍💼 打工一班（100 秒）</span><span class="meta">要花 ${EN_SHIFT} 精力・你現在有 ${e} 精力・今天還能打工 ${left} 班（每天最多 ${WORK_MAX} 班）。結帳找零、補貨上架，賺平安幣</span></button></div>
-  <p class="note">精力用完就不能打工。吃東西可以補；在禪房也能慢慢恢復：套房的床最快，再來是通鋪、溫泉、禪堂靜坐。</p>`); }
+  <p class="note">每天有 100 精力，一班要 ${EN_SHIFT}，每天最多打工 ${WORK_MAX} 班。精力每天最多能恢復 ${EN_REC_MAX}（今天還剩 ${Math.round(recLeft())}）：套房的床最快，再來是通鋪、溫泉、禪堂靜坐；吃東西最快但最貴。</p>`); }
 HANDLERS.cvsGo=v=>{ if(v==="work"){ if(dayCount("wk")>=WORK_MAX){ toast(`今天已經打工 ${WORK_MAX} 班了，明天再來`,2800); return; } if(en()<EN_SHIFT){ toast(`精力不夠（要 ${EN_SHIFT}，你有 ${en()}），先吃點東西或去休息`,3000); return; } closeSheet(); workStart(); } else { closeSheet(); buyStart(); } };
 SX.station=k=>{ if(k==="cvs"){ cvsMenu(); return true; } if(k==="claw"){ clawStart(); return true; } if(k==="cloth"){ clothStart(); return true; } return false; };
 
@@ -10331,7 +10344,7 @@ function buyStart(){ const S=buildStore(); const o={exposure:1.05,avs:[]}; const
   const talk=(t,secs=2.6)=>{ bubble(o,clerk,t,secs); babble(Math.min(1.6,t.length*.12),1.05); };
   el.querySelector("#bGrid").addEventListener("click",ev=>{ const b=ev.target.closest("button"); if(!b) return;
     if(b.dataset.g){ if(bag.coins<GACHA_PRICE){ buzz(); talk("平安幣好像不夠喔～"); return; } bag.coins-=GACHA_PRICE; bag.gacha=Math.min(255,(bag.gacha||0)+1); saveBag(); markDirty(); beep(); setTimeout(chaChing,200); talk("扭蛋幣一枚，祝你轉到想要的！"); draw(); return; } const k=b.dataset.b||b.dataset.e, s=SN[k]; if(!s) return;
-    if(bag.coins<s.p){ buzz(); talk("平安幣好像不夠喔～"); return; } if(b.dataset.e&&bag.en>=100){ talk("你看起來精神很好耶，先放背包吧？"); return; }
+    if(bag.coins<s.p){ buzz(); talk("平安幣好像不夠喔～"); return; } if(b.dataset.e&&bag.en>=100){ talk("你看起來精神很好耶，先放背包吧？"); return; } if(b.dataset.e&&recLeft()<=0){ talk("今天吃太多囉，精力補不上去了，先放背包吧？"); return; }
     bag.coins-=s.p; beep(); setTimeout(chaChing,200); if(b.dataset.e){ eat(k,false); bubble(o,meS,`好吃！⚡+${s.e}`,2,"ok"); } else { bag.snk[k]=(bag.snk[k]||0)+1; } saveBag(); markDirty(); statInc("cvsBuy");
     talk(["謝謝光臨～","要不要加購關東煮？","發票要載具嗎？","歡迎再來喔～","這個很好吃喔！","需要袋子嗎？"][(Math.random()*6)|0]); draw(); });
   el.querySelector("#bX").onclick=()=>{ talk("謝謝光臨，歡迎再來～",1.4); try{ sfx.dingdong(); }catch(e){} setTimeout(()=>{ leaveMode(); try{ profSave(true); }catch(e){} },350); };

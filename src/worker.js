@@ -219,6 +219,17 @@ export class Lobby extends DurableObject {
   }
   // 定時活動: the chair's timetable (a show of fireworks, the night market opening or closing), run by this object's alarm even when nobody is online.
   // Each entry: { id, at (ms), k: "fw" | "mkOpen" | "mkClose", sh, txt, daily }. A daily entry moves on to the next day after it runs.
+  // The night market's default hours, set once: open 17:00, close at midnight, Taiwan time, every day. The chair can change or delete them under 定時活動.
+  async schedSeed() {
+    if (this._seeded) return; this._seeded = true;
+    if (await this.ctx.storage.get("schedSeed1")) return;
+    const tw = 8 * 3600000, day = 86400000, now = Date.now();
+    const nx = h => { let t = Math.floor((now + tw) / day) * day + h * 3600000 - tw; while (t <= now) t += day; return t; };
+    const list = (await this.ctx.storage.get("sched")) || [];
+    list.push({ id: "mkdo", at: nx(17), k: "mkOpen", sh: 0, txt: "", daily: true, cu: "" }, { id: "mkdc", at: nx(24), k: "mkClose", sh: 0, txt: "", daily: true, cu: "" });
+    await this.ctx.storage.put("sched", list); await this.ctx.storage.put("schedSeed1", 1); await this.schedArm(list);
+    try { await this.runMarket({ all: new Date(now + tw).getUTCHours() >= 17 }); } catch {}
+  }
   async schedArm(list) {
     const next = list.reduce((m, e) => Math.min(m, e.at), Infinity);
     if (next < Infinity) await this.ctx.storage.setAlarm(Math.max(Date.now() + 1000, next)); else await this.ctx.storage.deleteAlarm();
@@ -280,7 +291,7 @@ export class Lobby extends DurableObject {
   async stMax(k, v) { const st = await this.stGet(); if (!(v > (st.mx[k] || 0))) return; st.mx[k] = v; this.stDirty = true; await this.stSave(); }
 
   async fetch(req) {
-    const url = new URL(req.url);
+    const url = new URL(req.url); try { await this.schedSeed(); } catch {} /* (once: the night market's default hours) */
     // 每日統計: things only the server sees are counted here; the pages send their own tallies to POST /stat
     const SRV_ST = { "/wish": "wish", "/lamp": "lamp", "/msg": "msg", "/zhan": "zhan", "/lanterns": "lanterns", "/reply": "reply", "/letters": "letter", "/hongbao": "hongbao", "/hbclaim": "hbclaim", "/nmrec": "nightMarket" };
     if (req.method === "POST" && SRV_ST[url.pathname]) { try { await this.stAdd({ [SRV_ST[url.pathname]]: 1 }); } catch {} }
