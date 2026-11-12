@@ -43,6 +43,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-o
 .top>*{pointer-events:auto}
 .hall{display:flex;flex-direction:column;gap:6px;min-width:0}
 .hall-btn{border:1px solid var(--gold-soft);text-align:left;color:var(--ink)}
+.top .hall-btn{display:none!important} /* (殿別 and the head count live in 設定 now) */
 .hall-more{margin-left:auto;font-size:12px;color:var(--gold);border:1px solid var(--gold-soft);border-radius:999px;padding:2px 8px}
 .hall-list{display:flex;flex-direction:column;gap:8px}
 .hall-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--gold-soft);border-radius:12px;background:rgba(255,255,255,.04);text-align:left;width:100%}
@@ -4788,7 +4789,7 @@ document.addEventListener("change",e=>{ if(e.target&&e.target.dataset&&e.target.
 function dbgHTML(){ const t=(k,n)=>`<button class="chip" data-act="dbg" data-v="${k}" aria-pressed="${!!DBG[k]}">${n}</button>`; return `<div class="group"><span class="group-label">綠點測試（只影響這台手機，重新整理就恢復）</span><p class="note">一次關一個，看哪一個關掉後綠點不見，告訴我是哪一個。</p><div class="chips">${t("point","① 關掉點光源")}${t("spot","② 關掉聚光燈")}${t("tone","③ 關掉色調映射")}${t("env","④ 關掉環境反光")}</div></div>`; }
 function openGfx(){ const opt=(v,t,d)=>`<button class="good" data-act="quality" data-v="${v}" aria-pressed="${Q.mode===v}" style="${Q.mode===v?"border-color:var(--gold);background:rgba(142,28,20,.35)":""}"><span class="name">${t}${Q.mode===v?"　✓":""}</span><span class="meta">${d}</span></button>`;
   /* order: what players change most (畫質) first, then smoothness, then saving the temple to the phone; the testing tools only for the chair */
-  openSheet("gfx","設定",`<div class="group"><span class="group-label">畫質</span><p class="lead">畫面卡頓或手機發燙時，可以改用省電畫質。</p></div><div class="goods">${opt("auto","自動","進場後自動偵測，太卡會切到省電")}${opt("high","高畫質","光束、灰塵、全部燈光，最漂亮")}${opt("low","省電","降低解析度與特效，舊手機也順")}${opt("lite","低配","最省：模型減面、小貼圖、關閉抗鋸齒，給比較舊的手機（會重新載入）")}</div><p class="note">目前：${Q.lite?"低配":Q.low?"省電畫質":"高畫質"}</p>`
+  openSheet("gfx","設定",`<div class="group"><span class="group-label">伺服器與人數</span><div class="chips"><button class="chip" data-act="hallsOpen">${esc(($(".hall-name")||{}).textContent||"")}・${esc(($("#countText")||{}).textContent||"")}　切換 ▾</button></div></div><div class="group"><span class="group-label">畫質</span><p class="lead">畫面卡頓或手機發燙時，可以改用省電畫質。</p></div><div class="goods">${opt("auto","自動","進場後自動偵測，太卡會切到省電")}${opt("high","高畫質","光束、灰塵、全部燈光，最漂亮")}${opt("low","省電","降低解析度與特效，舊手機也順")}${opt("lite","低配","最省：模型減面、小貼圖、關閉抗鋸齒，給比較舊的手機（會重新載入）")}</div><p class="note">目前：${Q.lite?"低配":Q.low?"省電畫質":"高畫質"}</p>`
     +`<div class="group"><span class="group-label">畫面上的人物</span><div class="chips">${[[0,"全部"],[1,"減少一半"],[2,"全部關掉"]].map(([v,t])=>`<button class="chip" data-act="cutSet" data-v="${v}" aria-pressed="${CUT.lv===v}">${t}</button>`).join("")}</div><p class="note">手機常被關掉（閃退）時，少畫一點人會比較穩。遊戲被關掉時會自動幫你調低，並先跟你說。</p></div>`
     +`<div class="group"><span class="group-label">流暢度</span><div class="chips"><button class="chip" data-act="fps60" aria-pressed="${PACE.smooth}">流暢模式（一直 60 格，較耗電）</button></div><p class="note">關閉時：操作和走路時 60 格，站著看時 30 格，半分鐘沒碰螢幕 20 格，比較省電。</p></div>`
     +(()=>{ const f=fltApply(); const c=(v,t)=>`<button class="chip" data-act="flt" data-v="${v}" aria-pressed="${f===v}">${t}</button>`; return `<div class="group"><span class="group-label">畫面濾鏡</span><div class="chips">${c("off","關閉")}${c("soft","柔和")}${c("film","電影感")}</div><p class="note">讓顏色更有層次、四周微微變暗。</p></div>`; })()
@@ -5129,6 +5130,7 @@ function renderHalls(){ const c=HALLS.counts||[]; const cur=HALLS.current(); con
   const el=$("#hallList"); if(el) el.innerHTML=`<p class="note">全廟目前 ${shownTotal()} 人</p>`+rows; }
 function localHalls(){ if(HALLS.switchTo) return; let hall=0; HALLS.current=()=>hall;
   HALLS.switchTo=i=>{ if(i===hall||i<0||i>=HALL_NAMES.length) return; hall=i; document.querySelector(".hall-name").textContent="天后宮 "+HALL_NAMES[i]; buildNpcs(); updateCount(); toast(`前往${HALL_NAMES[i]}`); }; }
+HANDLERS.hallsOpen=()=>{ closeSheet(); setTimeout(()=>openHalls(),60); };
 function openHalls(){ localHalls(); if(!HALLS.switchTo){ openSheet("halls","殿別",`<p class="lead">目前在單人或預覽模式，沒有其他殿可以切換。</p>`); return; }
   openSheet("halls","殿別",`<p class="lead">每殿最多 ${HALL_CAP} 人。前面的殿快滿時，下一殿才會開放。</p><div class="hall-list" id="hallList"></div>`); renderHalls(); }
 setInterval(()=>{ updateCount(); if(sheetKind==="halls") renderHalls(); },10000);
@@ -8382,8 +8384,8 @@ function playPachinko(){ const L=gameLayer("打彈珠","押好彈珠按「發射
   const btns={buy10:{h:42},buy100:{h:42},bet:{h:42},cash:{h:42},fire:{h:50}};
   const say=t=>{ msg=t; msgAt=performance.now(); };
   const buy=n=>{ if(bag.coins<n){ say("平安幣不夠"); return; } bag.coins-=n; marbles+=n; peak=Math.max(peak,marbles); saveBag(); statInc("pkBuy",n); tone(900,.06,.06); };
-  const cash=()=>{ if(!marbles){ say("沒有彈珠可換"); return; } const room=Math.max(0,1000-d.pCash), n=Math.min(marbles,room); marbles-=n; d.pCash+=n; bag.coins+=n; const tk=Math.floor(marbles/2000); marbles-=tk*2000; if(tk) bag.gacha=Math.min(255,(bag.gacha||0)+tk); /* past the 1000-coin cap: 2000 marbles = one 扭蛋幣 */
-    if(!n&&!tk){ say(`今天已換滿 1000 幣；再湊到 2000 顆可以換 1 枚扭蛋幣（現在 ${marbles} 顆）`); return; } saveBag(); markDirty(); if(n) statInc("pkCash",n); if(n>=300) newsEv("pkBig",n); say(`${n?`換了 ${n} 平安幣`:""}${n&&tk?"，":""}${tk?`換了 ${tk} 枚扭蛋幣`:""}${marbles?`，剩 ${marbles} 顆`:""}`); sfx.coin&&sfx.coin(); };
+  const cash=()=>{ if(!marbles){ say("沒有彈珠可換"); return; } const room=Math.max(0,1000-d.pCash), n=Math.min(marbles,room); marbles-=n; d.pCash+=n; bag.coins+=n; const tk=Math.min(Math.floor(marbles/2000),Math.max(0,3-(d.pTok|0))); marbles-=tk*2000; d.pTok=(d.pTok|0)+tk; if(tk) bag.gacha=Math.min(255,(bag.gacha||0)+tk); /* past the 1000-coin cap: 2000 marbles = one 扭蛋幣, at most 3 a day */
+    if(!n&&!tk){ say((d.pTok|0)>=3?"今天的 1000 幣和 3 枚扭蛋幣都換滿了，明天再來":`今天已換滿 1000 幣；再湊到 2000 顆可以換 1 枚扭蛋幣（現在 ${marbles} 顆）`); return; } saveBag(); markDirty(); if(n) statInc("pkCash",n); if(n>=300) newsEv("pkBig",n); say(`${n?`換了 ${n} 平安幣`:""}${n&&tk?"，":""}${tk?`換了 ${tk} 枚扭蛋幣`:""}${marbles?`，剩 ${marbles} 顆`:""}`); sfx.coin&&sfx.coin(); };
   const fire=()=>{ if(ball){ say("等這顆落下"); return; } if(marbles<bet){ say(marbles?`彈珠不夠押 ${bet} 顆`:"先買彈珠"); return; } marbles-=bet;
     ball={phase:"rail",t:0,bet,img:MC[(Math.random()*MC.length)|0],x:0,y:0,vx:0,vy:0}; tone(520,.12,.06,"triangle"); noiseBurst(.25,.05,3000); };
   cv.addEventListener("pointerdown",e=>{ const px=e.clientX, py=e.clientY;
@@ -8424,7 +8426,7 @@ function playPachinko(){ const L=gameLayer("打彈珠","押好彈珠按「發射
     nmText(x,`彈珠 ${marbles} 顆　押 ${bet}`,W/2,138,20,"#fff",undefined,700);
     const by=G.by+G.h+8, bw4=(W-50)/4; [["buy10","買 10 顆"],["buy100","買 100 顆"],["bet",`押 ${bet} 顆`],["cash","換平安幣"]].forEach(([k,t],i)=>{ const b=btns[k]; b.x=20+i*(bw4+3.3); b.y=by; b.w=bw4; nmButton(x,b,t); });
     const fb=btns.fire; fb.w=Math.min(W-40,260); fb.x=(W-fb.w)/2; fb.y=by+48; nmButton(x,fb,ball?"…":"發射",!ball);
-    nmText(x,`每天最多換 1000 幣・今天已換 ${d.pCash}`,W/2,by+116,13,"#c8c0e0",undefined,500);
+    nmText(x,`每天最多換 1000 幣・今天已換 ${d.pCash}・扭蛋幣 ${d.pTok|0}/3`,W/2,by+116,13,"#c8c0e0",undefined,500);
     if(msg&&now-msgAt<1800) nmText(x,msg,W/2,G.by+G.h*.08+30,19,"#ffe14d");
     fxDraw(L,x,W,H); requestAnimationFrame(draw); };
   const close0=L.close; L.close=()=>{ window.removeEventListener("resize",onRs); if(peak) nmRecSend("pachinko",peak); if(marbles) toast(`還有 ${marbles} 顆彈珠沒換，離開後就沒了`,3000); close0(); };
@@ -9966,7 +9968,7 @@ SX.walk=()=>false; SX.inP=()=>false; /* (the street is part of the 禪房 ground
 if(typeof bag.en!=="number") bag.en=100; bag.snk=bag.snk&&typeof bag.snk==="object"?bag.snk:{}; bag.clo=bag.clo|0;
 const EN_SHIFT=33, CLAW_COST=50, EN_REC_MAX=66; /* 精力: 100 each day; a shift costs 33 (three a day); up to 66 can be won back per day */
 /* daily limits: 打工 five shifts a day, 夾娃娃 five wins a day */
-const WORK_MAX=3, CLAW_WIN_MAX=5;
+const WORK_MAX=5, CLAW_WIN_MAX=5; /* 打工: 100 精力 is three shifts; with the day's 66 won back, five */
 function dayCount(k){ if(bag[k+"Day"]!==today){ bag[k+"Day"]=today; bag[k]=0; } return bag[k]|0; }
 function dayAdd(k){ dayCount(k); bag[k]=(bag[k]|0)+1; saveBag(); }
 const GACHA_PRICE=1000;
@@ -10005,20 +10007,20 @@ enDay();
 const recLeft=()=>{ enDay(); return Math.max(0,EN_REC_MAX-(bag.enRec||0)); };
 const en=()=>Math.round(bag.en);
 SX.wallet=()=>{ let e=$("#enCap"); const cap=document.querySelector("#bagBtn .cap"); if(!e&&cap){ e=document.createElement("span"); e.id="enCap"; cap.appendChild(e); } if(e) e.textContent=`⚡${en()}`; };
-SX.bagTop=()=>`<div class="inv-top"><span class="inv-coin">⚡<b>${en()}</b>精力</span><span class="inv-note">每天 100；打工一班要 ${EN_SHIFT}。今天還能恢復 ${Math.round(recLeft())}（每天最多 ${EN_REC_MAX}）：套房的床最快，再來通鋪、溫泉、禪堂靜坐，吃東西最方便</span></div>`;
+SX.bagTop=()=>`<div class="inv-top"><span class="inv-coin">⚡<b>${en()}</b>精力</span><span class="inv-note">每天 100；打工一班要 ${EN_SHIFT}。今天還能恢復 ${Math.round(recLeft())}（每天最多 ${EN_REC_MAX}）：泡溫泉每分鐘 +1，吃東西最快</span></div>`;
 function enAdd(v){ const b=en(); let g=v; if(v>0){ g=Math.min(v,100-bag.en,recLeft()); bag.enRec=(bag.enRec||0)+Math.max(0,g); } bag.en=Math.max(0,Math.min(100,bag.en+g)); if(Math.round(bag.en)!==b){ SX.wallet(); } return g; }
 let enAcc=0, enSave=0, enWhy="", enNote=0;
 /* 恢復速度 (精力 per second): 套房的床 fastest, then 通鋪, 溫泉, 禪堂靜坐 */
 /* 恢復: the dearer, the faster. 套房 (100 幣) 66 in a minute (all of a day's rest in one stay); 通鋪 (50 幣) 33 in a minute;
    溫泉 and 禪堂 are free but slow (33 in about 3½ and 5½ minutes). Snacks are instant and cost the most per point. */
-const REGEN={bed:1.1,futon:.55,onsen:.15,zen:.1}, SESS_MAX={bed:66,futon:33,onsen:99,zen:99}; let sess=0;
+const REGEN={bed:0,futon:0,onsen:1/60,zen:.1}, SESS_MAX={bed:66,futon:33,onsen:99,zen:99}; /* (sleeping gives no 精力 for now; the hot spring one point a real minute) */ let sess=0;
 SX.tick=dt=>{ let why="";
   try{ const st=meAv.seat>=0?SEATS[meAv.seat]:null; if(st&&meAv.kneel>.6){ if(st.kind==="bed") why="bed"; else if(st.kind==="futon") why="futon"; else if(st.zen) why="zen"; else if(st.kind==="tub") why="onsen"; }
     if(!why&&(meAv.gy||0)<1&&innPool(meAv.pos.x,meAv.pos.y)) why="onsen"; }catch(e){}
   if(why!==enWhy) sess=0;
-  if(why&&bag.en<100&&recLeft()>0&&sess<SESS_MAX[why]){ const b=Math.floor(bag.en); const g=enAdd(Math.min(REGEN[why]*dt,SESS_MAX[why]-sess)); sess+=g; if(Math.floor(bag.en)!==b) SX.wallet(); enSave+=dt; if(enSave>8){ enSave=0; save("mz.bag",bag); }
+  if(why&&REGEN[why]>0&&bag.en<100&&recLeft()>0&&sess<SESS_MAX[why]){ const b=Math.floor(bag.en); const g=enAdd(Math.min(REGEN[why]*dt,SESS_MAX[why]-sess)); sess+=g; if(Math.floor(bag.en)!==b) SX.wallet(); enSave+=dt; if(enSave>8){ enSave=0; save("mz.bag",bag); }
     if(recLeft()<=0||sess>=SESS_MAX[why]-.01){ toast(recLeft()<=0?"今天的精力恢復已經到上限了（每天最多 66）":why==="futon"?"睡飽了，通鋪一次最多恢復 33":"恢復飽滿了 ⚡",2800); }
-    if(why!==enWhy&&performance.now()-enNote>20000){ enNote=performance.now(); toast({bed:"躺在套房的床上，精力恢復得最快（一次最多 66）⚡",futon:"在通鋪睡一下，精力恢復中（一次最多 33）⚡",onsen:"泡溫泉，精力慢慢恢復 ⚡",zen:"靜坐養神，精力慢慢恢復 ⚡"}[why],2600); } }
+    if(why!==enWhy&&performance.now()-enNote>20000){ enNote=performance.now(); toast({bed:"躺在套房的床上，精力恢復得最快（一次最多 66）⚡",futon:"在通鋪睡一下，精力恢復中（一次最多 33）⚡",onsen:"泡溫泉，精力慢慢恢復（每分鐘 1 點）⚡",zen:"靜坐養神，精力慢慢恢復 ⚡"}[why],2600); } }
   else if(enWhy&&!why) save("mz.bag",bag);
   enWhy=why; if(SX.on&&SX.cur&&SX.cur.update) SX.cur.update(dt); if(!SX.on&&WORLD.ready) worldTick(dt); };
 /* ---------- bag: snacks ---------- */
@@ -10275,7 +10277,7 @@ const atGoal=a=>(!a.path||!a.path.length)&&a.pos.distanceTo(a.target)<.06;
 function prodTex(k){ return cvs(64,64,(x,w,h)=>{ const s=SN[k]; x.fillStyle=s.col; x.fillRect(0,0,w,h); if(k==="drink"){ x.fillStyle="#f6eee6"; x.beginPath(); x.moveTo(0,30); for(let i=0;i<=w;i+=4) x.lineTo(i,26+Math.sin(i/w*Math.PI*2)*5); for(let i=w;i>=0;i-=4) x.lineTo(i,36+Math.sin(i/w*Math.PI*2)*5); x.fill(); x.fillStyle="#f8d77a"; x.beginPath(); for(let i=0;i<=w;i+=4) x.lineTo(i,36+Math.sin(i/w*Math.PI*2)*5); for(let i=w;i>=0;i-=4) x.lineTo(i,42+Math.sin(i/w*Math.PI*2)*5); x.fill(); x.fillStyle="#d9dde2"; x.fillRect(0,0,w,5); x.fillRect(0,h-5,w,5); }
     if(k==="energy"){ x.fillStyle="#ffe14a"; x.fillRect(0,28,w,8); } if(k==="beer"){ x.fillStyle="#fff"; x.fillRect(0,24,w,14); x.fillStyle="#2f6a3a"; x.fillRect(0,38,w,4); } if(k==="noodle"){ x.fillStyle="#f2efe8"; x.fillRect(0,0,w,18); x.fillRect(0,46,w,18); x.fillStyle="#fff"; x.fillRect(0,28,w,4); } if(k==="bread"){ x.fillStyle="#e7ae52"; x.fillRect(0,0,w,h); x.strokeStyle="#c78533"; for(let i=0;i<8;i++){ x.beginPath(); x.moveTo(i*10,0); x.lineTo(i*10+20,h); x.stroke(); } } }); }
 const PROD_SZ={drink:.32,energy:.32,beer:.32,cookie:.28,noodle:.29,bread:.28}; const PMAT={};
-function prodMat(k){ if(PMAT[k]) return PMAT[k]; const t=new T.TextureLoader().load(snackIcon(k)); t.encoding=T.sRGBEncoding; t.anisotropy=4; return PMAT[k]=new T.MeshBasicMaterial({map:t,alphaTest:.5,side:T.DoubleSide,toneMapped:false}); }
+function prodMat(k){ if(PMAT[k]) return PMAT[k]; const t=new T.TextureLoader().load(snackIcon(k)); t.encoding=T.sRGBEncoding; t.anisotropy=4; return PMAT[k]=new T.MeshBasicMaterial({map:t,alphaTest:.5,side:T.DoubleSide}); }
 function prodGeo(k){ const z=PROD_SZ[k]; const g=new T.PlaneGeometry(z,z); g.translate(0,z*.47,0); return g; }
 function prodGeoOld(k){ if(k==="drink"){ const g=new T.CylinderGeometry(.036,.038,.22,10); g.translate(0,.11,0); return g; } if(k==="energy"){ const g=new T.CylinderGeometry(.03,.03,.16,10); g.translate(0,.08,0); return g; } if(k==="beer"){ const g=new T.CylinderGeometry(.036,.036,.14,10); g.translate(0,.07,0); return g; }
   if(k==="cookie"){ const g=new T.BoxGeometry(.16,.2,.06); g.translate(0,.1,0); return g; } if(k==="noodle"){ const g=new T.CylinderGeometry(.07,.052,.12,12); g.translate(0,.06,0); return g; } const g=new T.SphereGeometry(.08,12,8); g.scale(1,.62,1); g.translate(0,.05,0); return g; }
@@ -10294,12 +10296,12 @@ function buildStore(){ if(STORE) return STORE; const R=new T.Scene(); R.backgrou
   door.position.set(-4.99,1.05,-2.95); door.rotation.y=Math.PI/2; R.add(door);
   const packs=new T.Mesh(new T.PlaneGeometry(2.6,.9),new T.MeshStandardMaterial({roughness:.6,map:cvs(312,108,(x,w,h)=>{ x.fillStyle="#5a4636"; x.fillRect(0,0,w,h); for(let r=0;r<4;r++) for(let i=0;i<20;i++){ x.fillStyle=["#e8e1d2","#c0392b","#2c3e8f","#e6b422","#1e8449","#ffffff","#8e44ad"][(i*3+r)%7]; x.fillRect(4+i*15.3,4+r*26,12,21); } })})); packs.position.set(-4.98,1.95,1.75); packs.rotation.y=Math.PI/2; R.add(packs);
   /* counter, register, 關東煮, coffee machine */
-  const wood=mat("#f6f2ea",{roughness:.6}); box(1.7,.95,3.2,wood,-3.35,.475,1.8,R); box(1.8,.06,3.3,mat("#c9b79a",{roughness:.4}),-3.35,.98,1.8,R);
-  const cf=new T.Mesh(new T.PlaneGeometry(3.2,.5),new T.MeshStandardMaterial({map:cvs(320,50,(x,w,h)=>{ x.fillStyle="#fbfaf6"; x.fillRect(0,0,w,h); [["#f2508a",12],["#2bb0e6",26]].forEach(([c,y])=>{ x.fillStyle=c; x.fillRect(0,y,w,7); }); }),roughness:.6})); cf.position.set(-2.49,.62,1.8); cf.rotation.y=Math.PI/2; R.add(cf);
-  const reg=new T.Group(); reg.position.set(-3.45,1.01,1.55); R.add(reg); box(.42,.14,.34,mat("#3a3d42",{roughness:.4}),0,.07,0,reg); const scr=box(.3,.2,.02,new T.MeshBasicMaterial({color:"#6dffa0"}),.12,.27,0,reg); scr.rotation.y=Math.PI/2; scr.rotation.z=-.3; box(.04,.18,.04,mat("#3a3d42"),.12,.16,0,reg); box(.2,.03,.3,mat("#55595f"),-.08,.155,0,reg);
-  const oden=new T.Group(); oden.position.set(-3.3,1.01,2.75); R.add(oden); box(.6,.16,.42,mat("#b9c0c7",{roughness:.25,metalness:.6}),0,.08,0,oden); for(let i=0;i<8;i++){ const it=box(.09,.05,.09,mat(["#e9c27a","#f3e9d5","#c27b4a","#efe2b0"][i%4]),-.21+(i%4)*.14,.17,-.1+Math.floor(i/4)*.2,oden); it.rotation.y=i; }
-  box(.32,.55,.32,mat("#2b2b30",{roughness:.4}),-3.5,1.29,.62,R); box(.06,.04,.02,new T.MeshBasicMaterial({color:"#ff4a3a"}),-3.34,1.46,.62,R);
-  S.counterHit=box(1.9,1.2,3.4,new T.MeshBasicMaterial({visible:false}),-3.35,.6,1.8,R); S.counterHit.userData.counter=1; S.hits.push(S.counterHit);
+  const wood=mat("#f6f2ea",{roughness:.6}); box(1.7,.66,3.2,wood,-3.35,.33,1.8,R); box(1.8,.06,3.3,mat("#c9b79a",{roughness:.4}),-3.35,.69,1.8,R); /* counter lowered (.98 → .69) so the clerk shows above it */
+  const cf=new T.Mesh(new T.PlaneGeometry(3.2,.5),new T.MeshStandardMaterial({map:cvs(320,50,(x,w,h)=>{ x.fillStyle="#fbfaf6"; x.fillRect(0,0,w,h); [["#f2508a",12],["#2bb0e6",26]].forEach(([c,y])=>{ x.fillStyle=c; x.fillRect(0,y,w,7); }); }),roughness:.6})); cf.position.set(-2.49,.43,1.8); cf.rotation.y=Math.PI/2; R.add(cf);
+  const reg=new T.Group(); reg.position.set(-3.45,.72,1.55); R.add(reg); box(.42,.14,.34,mat("#3a3d42",{roughness:.4}),0,.07,0,reg); const scr=box(.3,.2,.02,new T.MeshBasicMaterial({color:"#6dffa0"}),.12,.27,0,reg); scr.rotation.y=Math.PI/2; scr.rotation.z=-.3; box(.04,.18,.04,mat("#3a3d42"),.12,.16,0,reg); box(.2,.03,.3,mat("#55595f"),-.08,.155,0,reg);
+  const oden=new T.Group(); oden.position.set(-3.3,.72,2.75); R.add(oden); box(.6,.16,.42,mat("#b9c0c7",{roughness:.25,metalness:.6}),0,.08,0,oden); for(let i=0;i<8;i++){ const it=box(.09,.05,.09,mat(["#e9c27a","#f3e9d5","#c27b4a","#efe2b0"][i%4]),-.21+(i%4)*.14,.17,-.1+Math.floor(i/4)*.2,oden); it.rotation.y=i; }
+  box(.32,.55,.32,mat("#2b2b30",{roughness:.4}),-3.5,1.0,.62,R); box(.06,.04,.02,new T.MeshBasicMaterial({color:"#ff4a3a"}),-3.34,1.17,.62,R);
+  S.counterHit=box(1.9,1.0,3.4,new T.MeshBasicMaterial({visible:false}),-3.35,.5,1.8,R); S.counterHit.userData.counter=1; S.hits.push(S.counterHit);
   /* freezer, stock cart */
   box(.8,.8,1.6,mat("#ffffff",{roughness:.4}),4.4,.4,-2.3,R); const fz=new T.Mesh(new T.PlaneGeometry(.7,1.5),new T.MeshStandardMaterial({roughness:.2,map:cvs(70,150,(x,w,h)=>{ x.fillStyle="#cfe9f7"; x.fillRect(0,0,w,h); for(let i=0;i<18;i++){ x.fillStyle=["#ff9ec4","#fff1a8","#9fd8ff","#c9f2c0"][i%4]; x.fillRect(6+(i%3)*21,6+Math.floor(i/3)*24,17,20); } })})); fz.rotation.x=-Math.PI/2; fz.position.set(4.4,.81,-2.3); R.add(fz);
   const cart=new T.Group(); cart.position.set(-4.4,0,-1.95); R.add(cart); box(.8,.06,.55,mat("#7b8590",{roughness:.4,metalness:.4}),0,.18,0,cart); box(.05,.9,.55,mat("#7b8590",{metalness:.4}),-.38,.55,0,cart); for(const sx of [-.3,.3]) for(const sz of [-.2,.2]) cyl(.05,.05,.04,mat("#222"),sx,.05,sz,cart,8);
@@ -10331,19 +10333,18 @@ function tapLayer(o,fn){ const t=o.el.querySelector(".shx-touch"); let sx=0, sy=
   t.addEventListener("pointerup",e=>{ if(Math.hypot(e.clientX-sx,e.clientY-sy)<14&&performance.now()-st<700){ try{ ensureAudio(); }catch(_){} fn(e.clientX,e.clientY); } }); }
 /* ---------- the door: shop or work ---------- */
 function cvsMenu(){ const e=en(), left=WORK_MAX-dayCount("wk"); openSheet("cvs","M超商",`<p class="lead">叮咚～歡迎光臨！要進去買東西，還是來打工？</p><div class="goods">
-  <button class="good" data-act="cvsGo" data-v="buy"><span class="name">🛒 進去買東西</span><span class="meta">汽水、柳橙汁、礦泉水、餅乾、洋芋片、糖果，吃了會恢復精力</span></button>
-  <button class="good" data-act="cvsGo" data-v="work"${e<EN_SHIFT||left<=0?' style="opacity:.55"':""}><span class="name">🧑‍💼 打工一班（100 秒）</span><span class="meta">要花 ${EN_SHIFT} 精力・你現在有 ${e} 精力・今天還能打工 ${left} 班（每天最多 ${WORK_MAX} 班）。結帳找零、補貨上架，賺平安幣</span></button></div>
-  <p class="note">每天有 100 精力，一班要 ${EN_SHIFT}，每天最多打工 ${WORK_MAX} 班。精力每天最多能恢復 ${EN_REC_MAX}（今天還剩 ${Math.round(recLeft())}）：套房的床最快，再來是通鋪、溫泉、禪堂靜坐；吃東西最快但最貴。</p>`); }
+  <button class="good" data-act="cvsGo" data-v="buy"><span class="name">🛒 進去買東西</span><span class="meta">吃了會恢復精力</span></button>
+  <button class="good" data-act="cvsGo" data-v="work"${e<EN_SHIFT||left<=0?' style="opacity:.55"':""}><span class="name">🧑‍💼 打工一班（100 秒）</span><span class="meta">花 ${EN_SHIFT} 精力・今天還能打工 ${left} 班</span></button></div>`); }
 HANDLERS.cvsGo=v=>{ if(v==="work"){ if(dayCount("wk")>=WORK_MAX){ toast(`今天已經打工 ${WORK_MAX} 班了，明天再來`,2800); return; } if(en()<EN_SHIFT){ toast(`精力不夠（要 ${EN_SHIFT}，你有 ${en()}），先吃點東西或去休息`,3000); return; } closeSheet(); workStart(); } else { closeSheet(); buyStart(); } };
 SX.station=k=>{ if(k==="cvs"){ cvsMenu(); return true; } if(k==="claw"){ clawStart(); return true; } if(k==="cloth"){ clothStart(); return true; } return false; };
 
 /* ======================= 購物: standing at the counter, the clerk behind it ======================= */
-function buyStart(){ const S=buildStore(); const o={exposure:1.05,avs:[]}; const el=enterMode("cvs-buy",o); try{ sfx.dingdong(); }catch(e){}
+function buyStart(){ const S=buildStore(); const o={exposure:.7,avs:[]}; const el=enterMode("cvs-buy",o); try{ sfx.dingdong(); }catch(e){}
   S.shelves.forEach(sh=>shelfSet(sh,Math.round(sh.cap*(.55+Math.random()*.45))));
   const clerk=shopAv(S.R,randomLook(),CASHIER[0],CASHIER[1]); clerk.rotY=Math.PI/2; clerk.faceGoal=Math.PI/2; o.avs.push(clerk);
   const meS=shopAv(S.R,meAv.look,DOOR_IN[0],DOOR_IN[1],2.6); o.avs.push(meS); walkAv(meS,COUNTER_SPOT[0],COUNTER_SPOT[1]); meS.arrive=()=>{ meS.faceGoal=-Math.PI/2; };
   const browsers=[]; for(let i=0;i<2;i++){ const sh=STORE_SHELVES[(Math.random()*6)|0]; const b=shopAv(S.R,randomLook(),sh.ap[0]+(Math.random()-.5)*.6,sh.ap[1],1.6); b.faceGoal=sh.face; b.idle=2+Math.random()*4; browsers.push(b); o.avs.push(b); }
-  el.insertAdjacentHTML("beforeend",`<div class="shx-top"><span class="shx-title">🏪 M超商</span><span class="shx-pill" id="bCoins"></span><span class="shx-pill" id="bEn"></span><button class="shx-x" id="bX">離開</button></div><div class="shx-panel"><div class="shx-grid" id="bGrid"></div><p style="margin:8px 2px 0;font-size:12px;color:#d9c9a8">「買」放進背包，想吃的時候再拿出來；「買來吃」直接補精力。</p></div>`);
+  el.insertAdjacentHTML("beforeend",`<div class="shx-top"><span class="shx-title">🏪 M超商</span><span class="shx-pill" id="bCoins"></span><span class="shx-pill" id="bEn"></span><button class="shx-x" id="bX">離開</button></div><div class="shx-panel"><div class="shx-grid" id="bGrid"></div></div>`);
   const draw=()=>{ el.querySelector("#bCoins").textContent=`💰 ${bag.coins}`; el.querySelector("#bEn").textContent=`⚡ ${en()}`;
     el.querySelector("#bGrid").innerHTML=`<div class="shx-item"><span style="font-size:36px;line-height:46px">🎟️</span><b>扭蛋幣</b><span><span class="pr">${GACHA_PRICE} 幣</span></span><span style="font-size:11px;color:#bba">你有 ${bag.gacha||0} 枚</span><div class="bt"><button class="shx-btn" data-g="1">買一枚</button></div></div>`+SNACKS.map(s=>`<div class="shx-item">${snImg(s.k,46)}<b>${s.n}</b><span><span class="pr">${s.p} 幣</span>・<span class="en">⚡+${s.e}</span></span><span style="font-size:11px;color:#bba">背包有 ${bag.snk[s.k]||0}</span><div class="bt"><button class="shx-btn sec" data-b="${s.k}">買</button><button class="shx-btn" data-e="${s.k}">買來吃</button></div></div>`).join(""); };
   draw(); let greeted=false;
@@ -10367,7 +10368,7 @@ const breakDown=n=>{ const out=[]; for(const d of NT_DEN){ while(n>=d){ out.push
 function payFor(t){ const r=Math.random(); if(r<.16) return breakDown(t); if(r<.58){ const b=[100,500,1000].find(b=>b>=t)||1000; return [b]; }
   if(r<.84){ const b=Math.ceil(t/100)*100, extra=t%10; return breakDown(b).concat(extra&&b>t?breakDown(extra):[]); } const b=Math.ceil(t/50)*50; return breakDown(b===t?b+50:b); }
 function workStart(){ const S=buildStore(); bag.en=Math.max(0,bag.en-EN_SHIFT); dayAdd("wk"); saveBag(); statInc("cvsWork");
-  const o={exposure:1.05,avs:[]}; const el=enterMode("cvs-work",o); SX.busy=true;
+  const o={exposure:.7,avs:[]}; const el=enterMode("cvs-work",o); SX.busy=true;
   const W={t:100,run:false,done:false,pay:0,served:0,miss:0,err:0,rest:0,carry:null,cust:[],queue:[],spawnT:2,cash:null,dismiss:false};
   S.shelves.forEach(sh=>shelfSet(sh,Math.round(sh.cap*(.3+Math.random()*.45))));
   const P=shopAv(S.R,meAv.look,CASHIER[0],CASHIER[1],3.1); P.faceGoal=Math.PI/2; o.avs.push(P); let box3=null;
@@ -10443,16 +10444,16 @@ function workStart(){ const S=buildStore(); bag.en=Math.max(0,bag.en-EN_SHIFT); 
 let CLAW=null;
 const CLW={x0:-.46,x1:.46,z0:-.34,z1:.36,floor:.82,top:1.66,home:[-.38,.28],chute:[-.55,-.2,.08,.45]};
 const inChute=(x,z)=>x>CLW.chute[0]&&x<CLW.chute[1]&&z>CLW.chute[2]&&z<CLW.chute[3];
-const PRIZE={cat:{n:"招財貓娃娃",grip:.8},cap:{n:"扭蛋殼",grip:.62},gift:{n:"神秘禮物盒",grip:.5},can:{n:"草莓汽水",grip:.56},cup:{n:"洋芋片",grip:.66}};
+const PRIZE={cat:{n:"招財貓娃娃",grip:.8},cap:{n:"扭蛋球",grip:.62},gift:{n:"神秘禮物盒",grip:.5},can:{n:"草莓汽水",grip:.56},cup:{n:"洋芋片",grip:.66}};
 function prizeMesh(type){ const g=new T.Group(); let r=.08, h=.16;
   if(type==="cat"){ const w=mat("#fbf7f0",{roughness:.9}); const b=new T.Mesh(gx('pz-body',()=>new T.SphereGeometry(.075,14,10)),w); b.scale.set(1,.85,.9); b.position.y=.065; g.add(b); const hd=new T.Mesh(gx('pz-head',()=>new T.SphereGeometry(.062,14,10)),w); hd.position.set(0,.16,.01); g.add(hd);
     for(const s of [-1,1]){ const e=new T.Mesh(gx('pz-ear',()=>new T.ConeGeometry(.022,.04,8)),w); e.position.set(s*.036,.215,0); e.rotation.z=-s*.3; g.add(e); const ey=new T.Mesh(gx('pz-eye',()=>new T.SphereGeometry(.009,6,5)),mat("#222")); ey.position.set(s*.022,.167,.064); g.add(ey); }
     const c=new T.Mesh(gx('pz-coin',()=>new T.CylinderGeometry(.035,.035,.01,16)),GOLD()); c.rotation.x=Math.PI/2; c.position.set(0,.07,.075); g.add(c); const bell=new T.Mesh(gx('pz-bell',()=>new T.SphereGeometry(.014,8,6)),mat("#e0453a")); bell.position.set(0,.115,.06); g.add(bell); r=.075; h=.22; }
-  if(type==="cap"){ const c=["#ff6b9a","#ffb02e","#4fc3ff","#8f6bff","#3fd28a"][(Math.random()*5)|0]; const t=new T.Mesh(gx('pz-cap-t',()=>new T.SphereGeometry(.07,16,8,0,Math.PI*2,0,Math.PI/2)),mat(c,{roughness:.25})); t.position.y=.07; g.add(t); const bt=new T.Mesh(gx('pz-cap-b',()=>new T.SphereGeometry(.07,16,8,0,Math.PI*2,Math.PI/2,Math.PI/2)),new T.MeshStandardMaterial({color:"#ffffff",roughness:.1,transparent:true,opacity:.55})); bt.position.y=.07; g.add(bt); r=.07; h=.14; }
+  if(type==="cap"){ const gold=Math.random()<.25; g.userData.gold=gold; const c=gold?"#e0a000":["#ff6b9a","#ff8fd0","#4fc3ff","#8f6bff","#3fd28a"][(Math.random()*5)|0]; const t=new T.Mesh(gx('pz-cap-t',()=>new T.SphereGeometry(.07,16,8,0,Math.PI*2,0,Math.PI/2)),mat(c,gold?{roughness:.18,metalness:.25,emissive:"#7a4c00"}:{roughness:.25})); t.position.y=.07; g.add(t); const bt=new T.Mesh(gx('pz-cap-b',()=>new T.SphereGeometry(.07,16,8,0,Math.PI*2,Math.PI/2,Math.PI/2)),new T.MeshStandardMaterial({color:"#ffffff",roughness:.1,transparent:true,opacity:.55})); bt.position.y=.07; g.add(bt); r=.07; h=.14; }
   if(type==="gift"){ const c=["#d84b6a","#3d8be0","#3cbf6a"][(Math.random()*3)|0]; box(.13,.12,.13,mat(c,{roughness:.6}),0,.06,0,g); box(.135,.125,.03,mat("#ffd24a"),0,.06,0,g); box(.03,.125,.135,mat("#ffd24a"),0,.06,0,g); const bw=new T.Mesh(gx('pz-bow',()=>new T.TorusGeometry(.025,.008,6,12)),mat("#ffd24a")); bw.position.y=.13; g.add(bw); r=.075; h=.15; }
   if(type==="can"){ const m=new T.Mesh(gx('pz-can',()=>new T.CylinderGeometry(.038,.038,.13,14)),new T.MeshStandardMaterial({map:prodTex("drink"),roughness:.35})); m.position.y=.065; g.add(m); r=.05; h=.13; }
   if(type==="cup"){ const m=new T.Mesh(gx('pz-bag',()=>{ const q=new T.PlaneGeometry(.17,.17); q.translate(0,.08,0); return q; }),prodMat("noodle")); g.add(m); const m2=m.clone(); m2.rotation.y=Math.PI/2; m2.scale.set(.35,1,1); g.add(m2); r=.06; h=.15; }
-  g.rotation.y=Math.random()*6.28; return {g,type,r,h,grip:PRIZE[type].grip}; }
+  g.rotation.y=Math.random()*6.28; return {g,type,r,h,grip:PRIZE[type].grip,gold:!!g.userData.gold}; }
 function buildClaw(){ if(CLAW) return CLAW; const R=new T.Scene(); R.background=new T.Color("#160c22"); /* no environment map here: it made every pixel of this close-up costly on phones */ const C={R,pz:[],x:CLW.home[0],z:CLW.home[1],y:CLW.top,open:.5,sw:0,swv:0,swz:0,swzv:0};
   R.add(new T.HemisphereLight("#ffffff","#4a3550",1.0)); const dl=new T.DirectionalLight("#ffffff",.8); dl.position.set(1,3,4); R.add(dl); const pl=new T.PointLight("#fff4e0",.9,3.2); pl.position.set(0,1.95,.1); R.add(pl);
   const wall=new T.Mesh(new T.PlaneGeometry(8,4),new T.MeshBasicMaterial({map:cvs(512,256,(x,w,h)=>{ const g=x.createLinearGradient(0,0,0,h); g.addColorStop(0,"#2a1442"); g.addColorStop(1,"#120a1c"); x.fillStyle=g; x.fillRect(0,0,w,h); for(let i=0;i<40;i++){ x.fillStyle=["rgba(255,95,168,.5)","rgba(85,214,255,.5)","rgba(255,210,63,.5)"][i%3]; x.beginPath(); x.arc(Math.random()*w,Math.random()*h*.7,1+Math.random()*2.5,0,7); x.fill(); } })}));
@@ -10473,12 +10474,12 @@ function buildClaw(){ if(CLAW) return CLAW; const R=new T.Scene(); R.background=
   C.head=new T.Group(); R.add(C.head); const hub=new T.Mesh(gx('c-hub',()=>new T.CylinderGeometry(.045,.04,.07,14)),GOLD()); C.head.add(hub); C.prong=[];
   for(let i=0;i<3;i++){ const a=i/3*Math.PI*2; const pv=new T.Group(); pv.position.set(Math.sin(a)*.035,-.03,Math.cos(a)*.035); pv.rotation.y=a; C.head.add(pv); const arm=new T.Group(); pv.add(arm); const s1=box(.016,.12,.016,GOLD(),0,-.06,0,arm); const s2=box(.016,.06,.016,GOLD(),0,-.14,-.02,arm); s2.rotation.x=.6; C.prong.push(arm); }
   box(.22,.06,.16,mat("#2a1440"),0,.83,.56,R); cyl(.012,.012,.1,mat("#222"),-.05,.89,.56,R,8); const kn=new T.Mesh(gx('knob2',()=>new T.SphereGeometry(.028,10,8)),mat("#e0453a")); kn.position.set(-.05,.95,.56); R.add(kn); C.knob=kn; cyl(.03,.03,.02,mat("#3d8be0"),.06,.87,.56,R,12);
-  const types=["cat","cat","cat","cat","cat","cap","cap","cap","cap","gift","gift","can","can","can","cup","cup","cup"]; types.forEach(t=>addPrize(C,t)); C.cam=new T.PerspectiveCamera(42,1,.05,30); C.pip=new T.PerspectiveCamera(40,1,.05,30); CLAW=C; return C; }
+  for(let i=0;i<15;i++) addPrize(C,"cap"); /* all capsules now */ C.cam=new T.PerspectiveCamera(42,1,.05,30); C.pip=new T.PerspectiveCamera(40,1,.05,30); CLAW=C; return C; }
 function supportAt(C,x,z,skip){ let y=CLW.floor+.02; for(const p of C.pz){ if(p===skip||p.held||p.fall) continue; const d=Math.hypot(p.g.position.x-x,p.g.position.z-z); if(d<p.r*.9) y=Math.max(y,p.g.position.y+p.h); } return y; }
 function addPrize(C,type){ const p=prizeMesh(type); for(let k=0;k<40;k++){ const x=CLW.x0+.07+Math.random()*(CLW.x1-CLW.x0-.14), z=CLW.z0+.06+Math.random()*(CLW.z1-CLW.z0-.12); if(inChute(x,z)||Math.hypot(x-CLW.chute[1],z-CLW.chute[2])<.12||x<CLW.chute[1]+.04&&z>CLW.chute[2]-.04) continue;
     const near=C.pz.filter(q=>Math.hypot(q.g.position.x-x,q.g.position.z-z)<q.r+p.r-.01); if(near.length>1&&k<30) continue; p.g.position.set(x,supportAt(C,x,z),z); break; } C.R.add(p.g); C.pz.push(p); return p; }
 function clawStart(){ const C=buildClaw(); const o={exposure:1.05}; const el=enterMode("claw",o);
-  while(C.pz.length<11){ addPrize(C,["cat","cap","can","cup","cat","gift"][(Math.random()*6)|0]); }
+  while(C.pz.length<12){ addPrize(C,"cap"); }
   const G={st:"idle",t:0,timer:0,held:null,hum:null}; let jx=0, jz=0;
   el.insertAdjacentHTML("beforeend",`<div class="shx-top"><span class="shx-title">🧸 夾鬼夾怪</span><span class="shx-pill" id="kC"></span><span class="shx-pill" id="kT" hidden></span><button class="shx-x" id="kX">離開</button></div>
     <div class="shx-pip" id="kPip"><span>側面</span></div><div class="shx-pad" id="kJ" hidden><button data-d="u">▲</button><button data-d="l">◀</button><button data-d="r">▶</button><button data-d="d">▼</button></div><button class="shx-drop" id="kD" hidden>下爪</button>
@@ -10498,10 +10499,14 @@ function clawStart(){ const C=buildClaw(); const o={exposure:1.05}; const el=ent
   const keyH=e=>{ if(G.st!=="move") return; const d=e.type==="keydown"; if(e.key==="ArrowLeft") jx=d?-1:0; if(e.key==="ArrowRight") jx=d?1:0; if(e.key==="ArrowUp") jz=d?-1:0; if(e.key==="ArrowDown") jz=d?1:0; if(d&&(e.key===" "||e.key==="Enter")) drop(); };
   addEventListener("keydown",keyH); addEventListener("keyup",keyH);
   const win=p=>{ let what="", ic="🎁"; const t=p.type; dayAdd("clw");
-    if(t==="cat"){ bag.coins+=30; what="平安幣 +30"; ic="🐱"; } if(t==="cap"){ bag.gacha=Math.min(255,(bag.gacha||0)+1); what="扭蛋幣 +1 枚"; ic="🥚"; } if(t==="can"){ bag.snk.drink=(bag.snk.drink||0)+1; what="草莓汽水 ×1（放進背包）"; ic="🥤"; } if(t==="cup"){ bag.snk.noodle=(bag.snk.noodle||0)+1; what="洋芋片 ×1（放進背包）"; ic="🍟"; }
+    if(t==="cat"){ bag.coins+=30; what="平安幣 +30"; ic="🐱"; } if(t==="cap"){ if(p.gold){ bag.gacha=Math.min(255,(bag.gacha||0)+1); what="扭蛋幣 +1 枚"; ic="🪙"; } else { const r=Math.random();
+      if(r<.55){ bag.coins+=100; what="平安幣 +100"; ic="💰"; } else if(r<.67){ bag.coins+=500; what="平安幣 +500"; ic="💰"; } else if(r<.70){ bag.coins+=1000; what="平安幣 +1000！"; ic="🤑"; }
+      else { /* a random gift: furniture (if the room is in this version), a head ornament you don't have yet, or a snack */ const opt=[]; try{ if(typeof ROOMX!=="undefined"&&ROOMX) opt.push("f"); }catch(e){} let L=[]; try{ L=gachaLeft(); }catch(e){} if(L.length&&!me.sp) opt.push("h"); opt.push("s");
+        const o=opt[(Math.random()*opt.length)|0]; let fu=""; if(o==="f"){ try{ fu=ROOMX.grant("c"); }catch(e){} }
+        if(fu){ what=`家具「${fu}」！（到「我的房間」擺出來）`; ic="🪑"; } else if(o==="h"){ const k=L[(Math.random()*L.length)|0]; accState().owned[k]=1; what=`頭飾「${ACC[k].name}」！（放進背包的飾品）`; ic=""; G.hat=k; } else { const s=SNACKS[(Math.random()*SNACKS.length)|0]; bag.snk[s.k]=(bag.snk[s.k]||0)+1; what=`${s.n} ×1（放進背包）`; ic="🎁"; } } } } if(t==="can"){ bag.snk.drink=(bag.snk.drink||0)+1; what="草莓汽水 ×1（放進背包）"; ic="🥤"; } if(t==="cup"){ bag.snk.noodle=(bag.snk.noodle||0)+1; what="洋芋片 ×1（放進背包）"; ic="🍟"; }
     if(t==="gift"){ let L=[]; try{ L=gachaLeft(); }catch(e){} const fu=(Math.random()<.6||!L.length||me.sp)&&ROOMX?ROOMX.grant("c"):""; if(fu){ what=`家具「${fu}」！（到「我的房間」擺出來）`; ic="🪑"; } else if(L.length&&!me.sp){ const k=L[(Math.random()*L.length)|0]; accState().owned[k]=1; what=`頭飾「${ACC[k].name}」！（放進背包的飾品）`; ic=""; G.hat=k; } else { bag.coins+=60; what="平安幣 +60"; } }
     saveBag(); markDirty(); try{ profSave(true); }catch(e){} statInc("clawWin"); coins();
-    const c=document.createElement("div"); c.className="shx-card"; c.innerHTML=`<h3>🎉 夾到了！</h3><div style="font-size:52px;line-height:1.2">${G.hat?bic(G.hat,"gc-ic"):ic}</div><p style="text-align:center;font-size:16px"><b>${PRIZE[t].n}</b></p><p style="text-align:center">${what}</p><div class="row"><button class="shx-btn sec" id="wOut">離開</button><button class="shx-btn" id="wAg">再玩一次（${CLAW_COST} 幣）</button></div>`; el.appendChild(c); G.hat=null;
+    const c=document.createElement("div"); c.className="shx-card"; c.innerHTML=`<h3>🎉 夾到了！</h3><div style="font-size:52px;line-height:1.2">${G.hat?bic(G.hat,"gc-ic"):ic}</div><p style="text-align:center;font-size:16px"><b>${p.gold?"金色扭蛋球":PRIZE[t].n}</b></p><p style="text-align:center">${what}</p><div class="row"><button class="shx-btn sec" id="wOut">離開</button><button class="shx-btn" id="wAg">再玩一次（${CLAW_COST} 幣）</button></div>`; el.appendChild(c); G.hat=null;
     try{ [523,659,784,1047,1319].forEach((f,i)=>tone(f,.22,.1,"triangle",i*.1)); }catch(e){} c.querySelector("#wOut").onclick=()=>{ leaveMode(); }; c.querySelector("#wAg").onclick=()=>{ c.remove(); play(); }; };
   const toIdle=()=>{ G.st="idle"; SX.busy=false; $k("#kP").hidden=false; $k("#kT").hidden=true; $k("#kGo").textContent=`再玩一次・${CLAW_COST} 幣`; };
   $k("#kX").onclick=()=>{ if(G.st!=="idle"&&G.st!=="move"){ toast("等爪子回來再離開",1600); return; } leaveMode(); };
@@ -10573,6 +10578,76 @@ setTimeout(()=>{ try{ buildWorld(); }catch(e){ console.warn("shop street",e); } 
 SX.enter=enterMode; SX.leave=leaveMode; /* other screens (我的房間) borrow the shop layer */
 return SX; })();
 
+/* ---------- 小地圖 (top left): where you are, and a big map of every place you can go to, one tap to walk there ---------- */
+const MMAP=(()=>{
+  const CAT=[["god","神明","#e0453a",["altar","guanyin","zhusheng","jiutian","doumu","dizang","wenchang","tudi","caishen","yuelao","xuantian","guangong","huye"]],
+    ["pray","參拜","#d9aa3d",["shop","tiangong","burn","donate","lot","jieqian","lamp","bell","drum","wish","fountain"]],
+    ["game","遊戲","#ff6fae",["claw","gacha","cats","fortune","nm:qq","nm:sausage","nm:bbq","nm:fish","nm:pachinko","nm:boba","nm:balloon"]],
+    ["shop","商店","#4fb3ff",["cvs","cloth","innDesk","catMom"]]];
+  const LBL={innDesk:"禪房櫃台"}; const SKIP=new Set(["lampR"]);
+  const catOf=k=>{ for(const c of CAT) if(c[3].includes(k)) return c; return ["etc","其他","#7fd08a",[]]; };
+  const label=k=>LBL[k]||(typeof STATION_LABEL!=="undefined"&&STATION_LABEL[k])||"";
+  const pois=()=>Object.keys(stations).filter(k=>!SKIP.has(k)&&label(k)).map(k=>({k,n:label(k),x:stations[k].approach.x,z:stations[k].approach.y,c:catOf(k)}));
+  /* the ground: every walkable spot, sampled once in small steps after the game has loaded */
+  let B=[-76,66,-50.5,46.5], ST=.5, W=1, H=1; const base=document.createElement("canvas"); let ready=false, row=0, img=null;
+  const sizeUp=()=>{ try{ if(typeof TOWNX!=="undefined"&&TOWNX){ const r=TOWNX.ZR||[-8,182,-137.5,-50.5]; B=[Math.min(B[0],r[0]),Math.max(B[1],r[1]),Math.min(B[2],r[2]),Math.max(B[3],r[3])]; } }catch(e){} /* (the town, when this version has it) */
+    ST=Math.max(.5,Math.sqrt((B[1]-B[0])*(B[3]-B[2])/90000)); W=Math.ceil((B[1]-B[0])/ST); H=Math.ceil((B[3]-B[2])/ST); base.width=W; base.height=H; };
+  const sample=()=>{ if(!img){ sizeUp(); img=new ImageData(W,H); } const t0=performance.now(); const d=img.data;
+    while(row<H&&performance.now()-t0<12){ const z=B[2]+(row+.5)*ST; for(let i=0;i<W;i++){ let ok=false; try{ ok=walkable(B[0]+(i+.5)*ST,z); }catch(e){} if(ok){ const p=(row*W+i)*4; d[p]=236; d[p+1]=223; d[p+2]=196; d[p+3]=255; } } row++; }
+    if(row<H){ setTimeout(sample,30); return; }
+    const t=document.createElement("canvas"); t.width=W; t.height=H; t.getContext("2d").putImageData(img,0,0); const x=base.getContext("2d");
+    const e=document.createElement("canvas"); e.width=W; e.height=H; const ge=e.getContext("2d"); ge.drawImage(t,0,0); ge.globalCompositeOperation="source-in"; ge.fillStyle="#8a6a44"; ge.fillRect(0,0,W,H); /* a brown edge round the paths */ for(const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]]) x.drawImage(e,dx,dy); x.drawImage(t,0,0); ready=true; img=null; };
+  setTimeout(sample,4000);
+  const px=(x)=>(x-B[0])/ST, pz=(z)=>(z-B[2])/ST;
+  /* the small map + the 精力 bar, above the guide */
+  const css=document.createElement("style"); css.textContent=`.mm-row{display:flex;gap:6px;align-items:flex-start}
+#mmBox{position:relative;width:92px;height:92px;border-radius:16px;overflow:hidden;border:1.5px solid var(--gold-soft);background:rgba(30,18,14,.72);padding:0;flex:none;cursor:pointer}
+#mmBox canvas{width:100%;height:100%;display:block}#mmBox span{position:absolute;left:0;right:0;bottom:2px;text-align:center;font-size:10px;font-weight:900;color:#ffe2a0;text-shadow:0 1px 2px #000}
+#enPill{display:flex;align-items:center;gap:6px;padding:6px 10px 6px 8px;border-radius:14px;border:1.5px solid var(--gold-soft);font-weight:900;color:#fff3da;font-size:15px;line-height:1;cursor:pointer}
+#enPill .bar{width:64px;height:10px;border-radius:5px;background:rgba(255,255,255,.18);overflow:hidden}#enPill .bar i{display:block;height:100%;border-radius:5px;transition:width .4s,background .4s}
+#enPill .ic{font-size:17px}#enPill small{font-size:11px;color:#e9d9b8;font-weight:700}
+#mmBig{position:fixed;inset:0;z-index:60;background:rgba(10,6,4,.78);display:flex;flex-direction:column;align-items:center;padding:calc(env(safe-area-inset-top) + 10px) 10px calc(env(safe-area-inset-bottom) + 10px);gap:8px}
+#mmBig .hd{display:flex;align-items:center;gap:8px;width:100%;max-width:560px}#mmBig .hd b{font-size:17px;color:#ffe2a0;flex:1}
+#mmBig .cats{display:flex;gap:6px;flex-wrap:wrap;width:100%;max-width:560px}#mmBig .cats button{border-radius:999px;padding:5px 12px;font-weight:900;font-size:13px;border:1.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff}
+#mmBig .cats button[aria-pressed="true"]{background:var(--c);border-color:var(--c);color:#1a0f08}
+#mmBig .map{position:relative;width:100%;max-width:560px;flex:1 1 auto;min-height:160px;border-radius:14px;overflow:hidden;background:#22160f;border:1.5px solid var(--gold-soft)}#mmBig .map canvas{position:absolute;inset:0;width:100%;height:100%}
+#mmBig .list{display:flex;gap:6px;flex-wrap:wrap;width:100%;max-width:560px;max-height:30vh;overflow:auto}#mmBig .list button{border-radius:12px;padding:8px 12px;font-weight:900;font-size:14px;color:#fff;background:rgba(255,255,255,.1);border:1.5px solid var(--c)}
+#mmBig .x{border-radius:999px;padding:6px 14px;font-weight:900;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.3)}`; document.head.appendChild(css);
+  const hall=document.querySelector(".top .hall"); const rowEl=document.createElement("div"); rowEl.className="mm-row";
+  rowEl.innerHTML=`<button id="mmBox" class="glass" aria-label="地圖"><canvas id="mmCv"></canvas><span>地圖・導航</span></button><div id="enPill" class="glass" role="button" aria-label="精力"><span class="ic">⚡</span><span class="bar"><i></i></span><b id="enNum">100</b><small>精力</small></div>`;
+  if(hall) hall.prepend(rowEl);
+  const cv=rowEl.querySelector("#mmCv"), cx=cv.getContext("2d"); const DPR=Math.min(2,devicePixelRatio||1); cv.width=cv.height=Math.round(92*DPR);
+  const enUpd=()=>{ try{ const v=Math.max(0,Math.min(100,Math.round(bag.en))); const el=document.querySelector("#enNum"); if(!el) return; if(el.textContent!==String(v)) el.textContent=v; const i=document.querySelector("#enPill .bar i"); i.style.width=v+"%"; i.style.background=v>50?"#4cd964":v>20?"#ffcc00":"#ff3b30"; }catch(e){} };
+  rowEl.querySelector("#enPill").onclick=()=>{ try{ toast(`精力 ${Math.round(bag.en)} / 100・打工一班要 33・泡溫泉每分鐘 +1，吃東西最快`,3200); }catch(e){} };
+  const arrow=(g,x,y,a,s,c)=>{ g.save(); g.translate(x,y); g.rotate(a); g.fillStyle=c; g.strokeStyle="#000"; g.lineWidth=1.5*DPR; g.beginPath(); g.moveTo(0,-s); g.lineTo(s*.7,s*.75); g.lineTo(0,s*.35); g.lineTo(-s*.7,s*.75); g.closePath(); g.fill(); g.stroke(); g.restore(); };
+  const drawMini=()=>{ const w=cv.width, h=cv.height, k=2.2*DPR*ST; /* px per sample */ cx.fillStyle="#2a1a12"; cx.fillRect(0,0,w,h); if(!ready){ return; }
+    const mx=meAv.pos.x, mz=meAv.pos.y; cx.imageSmoothingEnabled=true; cx.drawImage(base,w/2-px(mx)*k,h/2-pz(mz)*k,W*k,H*k);
+    for(const p of pois()){ const x=w/2+(p.x-mx)/ST*k, y=h/2+(p.z-mz)/ST*k; if(x<-4||y<-4||x>w+4||y>h+4) continue; cx.fillStyle=p.c[2]; cx.beginPath(); cx.arc(x,y,2.6*DPR,0,7); cx.fill(); }
+    arrow(cx,w/2,h/2,Math.PI-meAv.rotY,6*DPR,"#ffe14a"); };
+  setInterval(()=>{ enUpd(); if(document.hidden||document.body.classList.contains("shopmode")) return; try{ drawMini(); }catch(e){} },250);
+  /* the big map */
+  let cat="god";
+  const open=()=>{ try{ ensureAudio(); }catch(e){} try{ closeSheet(); }catch(e){} let o=document.querySelector("#mmBig"); if(o) o.remove(); o=document.createElement("div"); o.id="mmBig";
+    o.innerHTML=`<div class="hd"><b>🗺️ 地圖・點一下就走過去</b><button class="x" id="mmX">關閉</button></div><div class="cats">${CAT.map(c=>`<button data-c="${c[0]}" style="--c:${c[2]}" aria-pressed="${c[0]===cat}">${c[1]}</button>`).join("")}</div><div class="map"><canvas></canvas></div><div class="list"></div>`;
+    document.body.appendChild(o); const mc=o.querySelector(".map canvas"), box=o.querySelector(".map"); let fit=null;
+    const go=k=>{ o.remove(); if(stations[k]) goStation(k); else toast("那裡現在去不了",2000); };
+    const draw=()=>{ const r=box.getBoundingClientRect(), d=Math.min(2,devicePixelRatio||1); mc.width=Math.round(r.width*d); mc.height=Math.round(r.height*d); const g=mc.getContext("2d");
+      const P=pois(), sel=P.filter(p=>p.c[0]===cat); /* fit the whole grounds, centred */ const s=Math.min(mc.width/W,mc.height/H)*.96, ox=(mc.width-W*s)/2, oy=(mc.height-H*s)/2; fit={s,ox,oy,d};
+      g.fillStyle="#22160f"; g.fillRect(0,0,mc.width,mc.height); if(ready) g.drawImage(base,ox,oy,W*s,H*s); else { g.fillStyle="#e9d9b8"; g.font=`${14*d}px sans-serif`; g.textAlign="center"; g.fillText("地圖準備中…",mc.width/2,mc.height/2); }
+      const X=x=>ox+px(x)*s, Y=z=>oy+pz(z)*s;
+      for(const p of P){ if(p.c[0]===cat) continue; g.fillStyle="rgba(255,255,255,.35)"; g.beginPath(); g.arc(X(p.x),Y(p.z),2.2*d,0,7); g.fill(); }
+      g.font=`900 ${11*d}px sans-serif`; g.textAlign="center"; g.lineJoin="round";
+      for(const p of sel){ const x=X(p.x), y=Y(p.z); g.fillStyle=p.c[2]; g.strokeStyle="#1a0f08"; g.lineWidth=2*d; g.beginPath(); g.arc(x,y,5*d,0,7); g.fill(); g.stroke(); g.lineWidth=3*d; g.strokeText(p.n,x,y-8*d); g.fillStyle="#fff"; g.fillText(p.n,x,y-8*d); }
+      arrow(g,X(meAv.pos.x),Y(meAv.pos.y),Math.PI-meAv.rotY,8*d,"#ffe14a");
+      o.querySelector(".list").innerHTML=sel.map(p=>`<button data-k="${p.k}" style="--c:${p.c[2]}">${p.n}</button>`).join("")||`<span style="color:#d9c9a8;font-size:13px">這一類現在沒有地方可以去</span>`;
+      o.querySelectorAll(".list button").forEach(b=>b.onclick=()=>go(b.dataset.k)); };
+    o.querySelector("#mmX").onclick=()=>o.remove(); o.querySelectorAll(".cats button").forEach(b=>b.onclick=()=>{ cat=b.dataset.c; o.querySelectorAll(".cats button").forEach(x=>x.setAttribute("aria-pressed",x===b)); draw(); });
+    mc.addEventListener("click",e=>{ if(!fit) return; const r=mc.getBoundingClientRect(), x=(e.clientX-r.left)*fit.d, y=(e.clientY-r.top)*fit.d; let best=null, bd=22*fit.d;
+      for(const p of pois()){ if(p.c[0]!==cat) continue; const dx=fit.ox+px(p.x)*fit.s-x, dy=fit.oy+pz(p.z)*fit.s-y, dd=Math.hypot(dx,dy); if(dd<bd){ bd=dd; best=p; } } if(best) go(best.k); });
+    requestAnimationFrame(draw); };
+  rowEl.querySelector("#mmBox").onclick=open;
+  return {open};
+})();
 /*SHOPS>>*/
 /*<<DAILY*/
 /* ================= 今日功課: 每日簽到, 三件每日功課＋寶箱, 回鍋禮, 功德簿 (long goals) and 香火位階 (a title before your name) =================

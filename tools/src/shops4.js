@@ -1,18 +1,17 @@
 /* ---------- the door: shop or work ---------- */
 function cvsMenu(){ const e=en(), left=WORK_MAX-dayCount("wk"); openSheet("cvs","M超商",`<p class="lead">叮咚～歡迎光臨！要進去買東西，還是來打工？</p><div class="goods">
-  <button class="good" data-act="cvsGo" data-v="buy"><span class="name">🛒 進去買東西</span><span class="meta">汽水、柳橙汁、礦泉水、餅乾、洋芋片、糖果，吃了會恢復精力</span></button>
-  <button class="good" data-act="cvsGo" data-v="work"${e<EN_SHIFT||left<=0?' style="opacity:.55"':""}><span class="name">🧑‍💼 打工一班（100 秒）</span><span class="meta">要花 ${EN_SHIFT} 精力・你現在有 ${e} 精力・今天還能打工 ${left} 班（每天最多 ${WORK_MAX} 班）。結帳找零、補貨上架，賺平安幣</span></button></div>
-  <p class="note">每天有 100 精力，一班要 ${EN_SHIFT}，每天最多打工 ${WORK_MAX} 班。精力每天最多能恢復 ${EN_REC_MAX}（今天還剩 ${Math.round(recLeft())}）：套房的床最快，再來是通鋪、溫泉、禪堂靜坐；吃東西最快但最貴。</p>`); }
+  <button class="good" data-act="cvsGo" data-v="buy"><span class="name">🛒 進去買東西</span><span class="meta">吃了會恢復精力</span></button>
+  <button class="good" data-act="cvsGo" data-v="work"${e<EN_SHIFT||left<=0?' style="opacity:.55"':""}><span class="name">🧑‍💼 打工一班（100 秒）</span><span class="meta">花 ${EN_SHIFT} 精力・今天還能打工 ${left} 班</span></button></div>`); }
 HANDLERS.cvsGo=v=>{ if(v==="work"){ if(dayCount("wk")>=WORK_MAX){ toast(`今天已經打工 ${WORK_MAX} 班了，明天再來`,2800); return; } if(en()<EN_SHIFT){ toast(`精力不夠（要 ${EN_SHIFT}，你有 ${en()}），先吃點東西或去休息`,3000); return; } closeSheet(); workStart(); } else { closeSheet(); buyStart(); } };
 SX.station=k=>{ if(k==="cvs"){ cvsMenu(); return true; } if(k==="claw"){ clawStart(); return true; } if(k==="cloth"){ clothStart(); return true; } return false; };
 
 /* ======================= 購物: standing at the counter, the clerk behind it ======================= */
-function buyStart(){ const S=buildStore(); const o={exposure:1.05,avs:[]}; const el=enterMode("cvs-buy",o); try{ sfx.dingdong(); }catch(e){}
+function buyStart(){ const S=buildStore(); const o={exposure:.7,avs:[]}; const el=enterMode("cvs-buy",o); try{ sfx.dingdong(); }catch(e){}
   S.shelves.forEach(sh=>shelfSet(sh,Math.round(sh.cap*(.55+Math.random()*.45))));
   const clerk=shopAv(S.R,randomLook(),CASHIER[0],CASHIER[1]); clerk.rotY=Math.PI/2; clerk.faceGoal=Math.PI/2; o.avs.push(clerk);
   const meS=shopAv(S.R,meAv.look,DOOR_IN[0],DOOR_IN[1],2.6); o.avs.push(meS); walkAv(meS,COUNTER_SPOT[0],COUNTER_SPOT[1]); meS.arrive=()=>{ meS.faceGoal=-Math.PI/2; };
   const browsers=[]; for(let i=0;i<2;i++){ const sh=STORE_SHELVES[(Math.random()*6)|0]; const b=shopAv(S.R,randomLook(),sh.ap[0]+(Math.random()-.5)*.6,sh.ap[1],1.6); b.faceGoal=sh.face; b.idle=2+Math.random()*4; browsers.push(b); o.avs.push(b); }
-  el.insertAdjacentHTML("beforeend",`<div class="shx-top"><span class="shx-title">🏪 M超商</span><span class="shx-pill" id="bCoins"></span><span class="shx-pill" id="bEn"></span><button class="shx-x" id="bX">離開</button></div><div class="shx-panel"><div class="shx-grid" id="bGrid"></div><p style="margin:8px 2px 0;font-size:12px;color:#d9c9a8">「買」放進背包，想吃的時候再拿出來；「買來吃」直接補精力。</p></div>`);
+  el.insertAdjacentHTML("beforeend",`<div class="shx-top"><span class="shx-title">🏪 M超商</span><span class="shx-pill" id="bCoins"></span><span class="shx-pill" id="bEn"></span><button class="shx-x" id="bX">離開</button></div><div class="shx-panel"><div class="shx-grid" id="bGrid"></div></div>`);
   const draw=()=>{ el.querySelector("#bCoins").textContent=`💰 ${bag.coins}`; el.querySelector("#bEn").textContent=`⚡ ${en()}`;
     el.querySelector("#bGrid").innerHTML=`<div class="shx-item"><span style="font-size:36px;line-height:46px">🎟️</span><b>扭蛋幣</b><span><span class="pr">${GACHA_PRICE} 幣</span></span><span style="font-size:11px;color:#bba">你有 ${bag.gacha||0} 枚</span><div class="bt"><button class="shx-btn" data-g="1">買一枚</button></div></div>`+SNACKS.map(s=>`<div class="shx-item">${snImg(s.k,46)}<b>${s.n}</b><span><span class="pr">${s.p} 幣</span>・<span class="en">⚡+${s.e}</span></span><span style="font-size:11px;color:#bba">背包有 ${bag.snk[s.k]||0}</span><div class="bt"><button class="shx-btn sec" data-b="${s.k}">買</button><button class="shx-btn" data-e="${s.k}">買來吃</button></div></div>`).join(""); };
   draw(); let greeted=false;
@@ -36,7 +35,7 @@ const breakDown=n=>{ const out=[]; for(const d of NT_DEN){ while(n>=d){ out.push
 function payFor(t){ const r=Math.random(); if(r<.16) return breakDown(t); if(r<.58){ const b=[100,500,1000].find(b=>b>=t)||1000; return [b]; }
   if(r<.84){ const b=Math.ceil(t/100)*100, extra=t%10; return breakDown(b).concat(extra&&b>t?breakDown(extra):[]); } const b=Math.ceil(t/50)*50; return breakDown(b===t?b+50:b); }
 function workStart(){ const S=buildStore(); bag.en=Math.max(0,bag.en-EN_SHIFT); dayAdd("wk"); saveBag(); statInc("cvsWork");
-  const o={exposure:1.05,avs:[]}; const el=enterMode("cvs-work",o); SX.busy=true;
+  const o={exposure:.7,avs:[]}; const el=enterMode("cvs-work",o); SX.busy=true;
   const W={t:100,run:false,done:false,pay:0,served:0,miss:0,err:0,rest:0,carry:null,cust:[],queue:[],spawnT:2,cash:null,dismiss:false};
   S.shelves.forEach(sh=>shelfSet(sh,Math.round(sh.cap*(.3+Math.random()*.45))));
   const P=shopAv(S.R,meAv.look,CASHIER[0],CASHIER[1],3.1); P.faceGoal=Math.PI/2; o.avs.push(P); let box3=null;

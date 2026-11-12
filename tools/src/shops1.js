@@ -9,7 +9,7 @@ SX.walk=()=>false; SX.inP=()=>false; /* (the street is part of the 禪房 ground
 if(typeof bag.en!=="number") bag.en=100; bag.snk=bag.snk&&typeof bag.snk==="object"?bag.snk:{}; bag.clo=bag.clo|0;
 const EN_SHIFT=33, CLAW_COST=50, EN_REC_MAX=66; /* 精力: 100 each day; a shift costs 33 (three a day); up to 66 can be won back per day */
 /* daily limits: 打工 five shifts a day, 夾娃娃 five wins a day */
-const WORK_MAX=3, CLAW_WIN_MAX=5;
+const WORK_MAX=5, CLAW_WIN_MAX=5; /* 打工: 100 精力 is three shifts; with the day's 66 won back, five */
 function dayCount(k){ if(bag[k+"Day"]!==today){ bag[k+"Day"]=today; bag[k]=0; } return bag[k]|0; }
 function dayAdd(k){ dayCount(k); bag[k]=(bag[k]|0)+1; saveBag(); }
 const GACHA_PRICE=1000;
@@ -48,20 +48,20 @@ enDay();
 const recLeft=()=>{ enDay(); return Math.max(0,EN_REC_MAX-(bag.enRec||0)); };
 const en=()=>Math.round(bag.en);
 SX.wallet=()=>{ let e=$("#enCap"); const cap=document.querySelector("#bagBtn .cap"); if(!e&&cap){ e=document.createElement("span"); e.id="enCap"; cap.appendChild(e); } if(e) e.textContent=`⚡${en()}`; };
-SX.bagTop=()=>`<div class="inv-top"><span class="inv-coin">⚡<b>${en()}</b>精力</span><span class="inv-note">每天 100；打工一班要 ${EN_SHIFT}。今天還能恢復 ${Math.round(recLeft())}（每天最多 ${EN_REC_MAX}）：套房的床最快，再來通鋪、溫泉、禪堂靜坐，吃東西最方便</span></div>`;
+SX.bagTop=()=>`<div class="inv-top"><span class="inv-coin">⚡<b>${en()}</b>精力</span><span class="inv-note">每天 100；打工一班要 ${EN_SHIFT}。今天還能恢復 ${Math.round(recLeft())}（每天最多 ${EN_REC_MAX}）：泡溫泉每分鐘 +1，吃東西最快</span></div>`;
 function enAdd(v){ const b=en(); let g=v; if(v>0){ g=Math.min(v,100-bag.en,recLeft()); bag.enRec=(bag.enRec||0)+Math.max(0,g); } bag.en=Math.max(0,Math.min(100,bag.en+g)); if(Math.round(bag.en)!==b){ SX.wallet(); } return g; }
 let enAcc=0, enSave=0, enWhy="", enNote=0;
 /* 恢復速度 (精力 per second): 套房的床 fastest, then 通鋪, 溫泉, 禪堂靜坐 */
 /* 恢復: the dearer, the faster. 套房 (100 幣) 66 in a minute (all of a day's rest in one stay); 通鋪 (50 幣) 33 in a minute;
    溫泉 and 禪堂 are free but slow (33 in about 3½ and 5½ minutes). Snacks are instant and cost the most per point. */
-const REGEN={bed:1.1,futon:.55,onsen:.15,zen:.1}, SESS_MAX={bed:66,futon:33,onsen:99,zen:99}; let sess=0;
+const REGEN={bed:0,futon:0,onsen:1/60,zen:.1}, SESS_MAX={bed:66,futon:33,onsen:99,zen:99}; /* (sleeping gives no 精力 for now; the hot spring one point a real minute) */ let sess=0;
 SX.tick=dt=>{ let why="";
   try{ const st=meAv.seat>=0?SEATS[meAv.seat]:null; if(st&&meAv.kneel>.6){ if(st.kind==="bed") why="bed"; else if(st.kind==="futon") why="futon"; else if(st.zen) why="zen"; else if(st.kind==="tub") why="onsen"; }
     if(!why&&(meAv.gy||0)<1&&innPool(meAv.pos.x,meAv.pos.y)) why="onsen"; }catch(e){}
   if(why!==enWhy) sess=0;
-  if(why&&bag.en<100&&recLeft()>0&&sess<SESS_MAX[why]){ const b=Math.floor(bag.en); const g=enAdd(Math.min(REGEN[why]*dt,SESS_MAX[why]-sess)); sess+=g; if(Math.floor(bag.en)!==b) SX.wallet(); enSave+=dt; if(enSave>8){ enSave=0; save("mz.bag",bag); }
+  if(why&&REGEN[why]>0&&bag.en<100&&recLeft()>0&&sess<SESS_MAX[why]){ const b=Math.floor(bag.en); const g=enAdd(Math.min(REGEN[why]*dt,SESS_MAX[why]-sess)); sess+=g; if(Math.floor(bag.en)!==b) SX.wallet(); enSave+=dt; if(enSave>8){ enSave=0; save("mz.bag",bag); }
     if(recLeft()<=0||sess>=SESS_MAX[why]-.01){ toast(recLeft()<=0?"今天的精力恢復已經到上限了（每天最多 66）":why==="futon"?"睡飽了，通鋪一次最多恢復 33":"恢復飽滿了 ⚡",2800); }
-    if(why!==enWhy&&performance.now()-enNote>20000){ enNote=performance.now(); toast({bed:"躺在套房的床上，精力恢復得最快（一次最多 66）⚡",futon:"在通鋪睡一下，精力恢復中（一次最多 33）⚡",onsen:"泡溫泉，精力慢慢恢復 ⚡",zen:"靜坐養神，精力慢慢恢復 ⚡"}[why],2600); } }
+    if(why!==enWhy&&performance.now()-enNote>20000){ enNote=performance.now(); toast({bed:"躺在套房的床上，精力恢復得最快（一次最多 66）⚡",futon:"在通鋪睡一下，精力恢復中（一次最多 33）⚡",onsen:"泡溫泉，精力慢慢恢復（每分鐘 1 點）⚡",zen:"靜坐養神，精力慢慢恢復 ⚡"}[why],2600); } }
   else if(enWhy&&!why) save("mz.bag",bag);
   enWhy=why; if(SX.on&&SX.cur&&SX.cur.update) SX.cur.update(dt); if(!SX.on&&WORLD.ready) worldTick(dt); };
 /* ---------- bag: snacks ---------- */

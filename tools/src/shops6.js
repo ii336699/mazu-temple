@@ -38,3 +38,74 @@ function clothStart(){ const D=buildCloth(); const o={exposure:1.0}; const el=en
 setTimeout(()=>{ try{ buildWorld(); }catch(e){ console.warn("shop street",e); } },1200);
 SX.enter=enterMode; SX.leave=leaveMode; /* other screens (我的房間) borrow the shop layer */
 return SX; })();
+
+/* ---------- 小地圖 (top left): where you are, and a big map of every place you can go to, one tap to walk there ---------- */
+const MMAP=(()=>{
+  const CAT=[["god","神明","#e0453a",["altar","guanyin","zhusheng","jiutian","doumu","dizang","wenchang","tudi","caishen","yuelao","xuantian","guangong","huye"]],
+    ["pray","參拜","#d9aa3d",["shop","tiangong","burn","donate","lot","jieqian","lamp","bell","drum","wish","fountain"]],
+    ["game","遊戲","#ff6fae",["claw","gacha","cats","fortune","nm:qq","nm:sausage","nm:bbq","nm:fish","nm:pachinko","nm:boba","nm:balloon"]],
+    ["shop","商店","#4fb3ff",["cvs","cloth","innDesk","catMom"]]];
+  const LBL={innDesk:"禪房櫃台"}; const SKIP=new Set(["lampR"]);
+  const catOf=k=>{ for(const c of CAT) if(c[3].includes(k)) return c; return ["etc","其他","#7fd08a",[]]; };
+  const label=k=>LBL[k]||(typeof STATION_LABEL!=="undefined"&&STATION_LABEL[k])||"";
+  const pois=()=>Object.keys(stations).filter(k=>!SKIP.has(k)&&label(k)).map(k=>({k,n:label(k),x:stations[k].approach.x,z:stations[k].approach.y,c:catOf(k)}));
+  /* the ground: every walkable spot, sampled once in small steps after the game has loaded */
+  let B=[-76,66,-50.5,46.5], ST=.5, W=1, H=1; const base=document.createElement("canvas"); let ready=false, row=0, img=null;
+  const sizeUp=()=>{ try{ if(typeof TOWNX!=="undefined"&&TOWNX){ const r=TOWNX.ZR||[-8,182,-137.5,-50.5]; B=[Math.min(B[0],r[0]),Math.max(B[1],r[1]),Math.min(B[2],r[2]),Math.max(B[3],r[3])]; } }catch(e){} /* (the town, when this version has it) */
+    ST=Math.max(.5,Math.sqrt((B[1]-B[0])*(B[3]-B[2])/90000)); W=Math.ceil((B[1]-B[0])/ST); H=Math.ceil((B[3]-B[2])/ST); base.width=W; base.height=H; };
+  const sample=()=>{ if(!img){ sizeUp(); img=new ImageData(W,H); } const t0=performance.now(); const d=img.data;
+    while(row<H&&performance.now()-t0<12){ const z=B[2]+(row+.5)*ST; for(let i=0;i<W;i++){ let ok=false; try{ ok=walkable(B[0]+(i+.5)*ST,z); }catch(e){} if(ok){ const p=(row*W+i)*4; d[p]=236; d[p+1]=223; d[p+2]=196; d[p+3]=255; } } row++; }
+    if(row<H){ setTimeout(sample,30); return; }
+    const t=document.createElement("canvas"); t.width=W; t.height=H; t.getContext("2d").putImageData(img,0,0); const x=base.getContext("2d");
+    const e=document.createElement("canvas"); e.width=W; e.height=H; const ge=e.getContext("2d"); ge.drawImage(t,0,0); ge.globalCompositeOperation="source-in"; ge.fillStyle="#8a6a44"; ge.fillRect(0,0,W,H); /* a brown edge round the paths */ for(const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]]) x.drawImage(e,dx,dy); x.drawImage(t,0,0); ready=true; img=null; };
+  setTimeout(sample,4000);
+  const px=(x)=>(x-B[0])/ST, pz=(z)=>(z-B[2])/ST;
+  /* the small map + the 精力 bar, above the guide */
+  const css=document.createElement("style"); css.textContent=`.mm-row{display:flex;gap:6px;align-items:flex-start}
+#mmBox{position:relative;width:92px;height:92px;border-radius:16px;overflow:hidden;border:1.5px solid var(--gold-soft);background:rgba(30,18,14,.72);padding:0;flex:none;cursor:pointer}
+#mmBox canvas{width:100%;height:100%;display:block}#mmBox span{position:absolute;left:0;right:0;bottom:2px;text-align:center;font-size:10px;font-weight:900;color:#ffe2a0;text-shadow:0 1px 2px #000}
+#enPill{display:flex;align-items:center;gap:6px;padding:6px 10px 6px 8px;border-radius:14px;border:1.5px solid var(--gold-soft);font-weight:900;color:#fff3da;font-size:15px;line-height:1;cursor:pointer}
+#enPill .bar{width:64px;height:10px;border-radius:5px;background:rgba(255,255,255,.18);overflow:hidden}#enPill .bar i{display:block;height:100%;border-radius:5px;transition:width .4s,background .4s}
+#enPill .ic{font-size:17px}#enPill small{font-size:11px;color:#e9d9b8;font-weight:700}
+#mmBig{position:fixed;inset:0;z-index:60;background:rgba(10,6,4,.78);display:flex;flex-direction:column;align-items:center;padding:calc(env(safe-area-inset-top) + 10px) 10px calc(env(safe-area-inset-bottom) + 10px);gap:8px}
+#mmBig .hd{display:flex;align-items:center;gap:8px;width:100%;max-width:560px}#mmBig .hd b{font-size:17px;color:#ffe2a0;flex:1}
+#mmBig .cats{display:flex;gap:6px;flex-wrap:wrap;width:100%;max-width:560px}#mmBig .cats button{border-radius:999px;padding:5px 12px;font-weight:900;font-size:13px;border:1.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff}
+#mmBig .cats button[aria-pressed="true"]{background:var(--c);border-color:var(--c);color:#1a0f08}
+#mmBig .map{position:relative;width:100%;max-width:560px;flex:1 1 auto;min-height:160px;border-radius:14px;overflow:hidden;background:#22160f;border:1.5px solid var(--gold-soft)}#mmBig .map canvas{position:absolute;inset:0;width:100%;height:100%}
+#mmBig .list{display:flex;gap:6px;flex-wrap:wrap;width:100%;max-width:560px;max-height:30vh;overflow:auto}#mmBig .list button{border-radius:12px;padding:8px 12px;font-weight:900;font-size:14px;color:#fff;background:rgba(255,255,255,.1);border:1.5px solid var(--c)}
+#mmBig .x{border-radius:999px;padding:6px 14px;font-weight:900;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.3)}`; document.head.appendChild(css);
+  const hall=document.querySelector(".top .hall"); const rowEl=document.createElement("div"); rowEl.className="mm-row";
+  rowEl.innerHTML=`<button id="mmBox" class="glass" aria-label="地圖"><canvas id="mmCv"></canvas><span>地圖・導航</span></button><div id="enPill" class="glass" role="button" aria-label="精力"><span class="ic">⚡</span><span class="bar"><i></i></span><b id="enNum">100</b><small>精力</small></div>`;
+  if(hall) hall.prepend(rowEl);
+  const cv=rowEl.querySelector("#mmCv"), cx=cv.getContext("2d"); const DPR=Math.min(2,devicePixelRatio||1); cv.width=cv.height=Math.round(92*DPR);
+  const enUpd=()=>{ try{ const v=Math.max(0,Math.min(100,Math.round(bag.en))); const el=document.querySelector("#enNum"); if(!el) return; if(el.textContent!==String(v)) el.textContent=v; const i=document.querySelector("#enPill .bar i"); i.style.width=v+"%"; i.style.background=v>50?"#4cd964":v>20?"#ffcc00":"#ff3b30"; }catch(e){} };
+  rowEl.querySelector("#enPill").onclick=()=>{ try{ toast(`精力 ${Math.round(bag.en)} / 100・打工一班要 33・泡溫泉每分鐘 +1，吃東西最快`,3200); }catch(e){} };
+  const arrow=(g,x,y,a,s,c)=>{ g.save(); g.translate(x,y); g.rotate(a); g.fillStyle=c; g.strokeStyle="#000"; g.lineWidth=1.5*DPR; g.beginPath(); g.moveTo(0,-s); g.lineTo(s*.7,s*.75); g.lineTo(0,s*.35); g.lineTo(-s*.7,s*.75); g.closePath(); g.fill(); g.stroke(); g.restore(); };
+  const drawMini=()=>{ const w=cv.width, h=cv.height, k=2.2*DPR*ST; /* px per sample */ cx.fillStyle="#2a1a12"; cx.fillRect(0,0,w,h); if(!ready){ return; }
+    const mx=meAv.pos.x, mz=meAv.pos.y; cx.imageSmoothingEnabled=true; cx.drawImage(base,w/2-px(mx)*k,h/2-pz(mz)*k,W*k,H*k);
+    for(const p of pois()){ const x=w/2+(p.x-mx)/ST*k, y=h/2+(p.z-mz)/ST*k; if(x<-4||y<-4||x>w+4||y>h+4) continue; cx.fillStyle=p.c[2]; cx.beginPath(); cx.arc(x,y,2.6*DPR,0,7); cx.fill(); }
+    arrow(cx,w/2,h/2,Math.PI-meAv.rotY,6*DPR,"#ffe14a"); };
+  setInterval(()=>{ enUpd(); if(document.hidden||document.body.classList.contains("shopmode")) return; try{ drawMini(); }catch(e){} },250);
+  /* the big map */
+  let cat="god";
+  const open=()=>{ try{ ensureAudio(); }catch(e){} try{ closeSheet(); }catch(e){} let o=document.querySelector("#mmBig"); if(o) o.remove(); o=document.createElement("div"); o.id="mmBig";
+    o.innerHTML=`<div class="hd"><b>🗺️ 地圖・點一下就走過去</b><button class="x" id="mmX">關閉</button></div><div class="cats">${CAT.map(c=>`<button data-c="${c[0]}" style="--c:${c[2]}" aria-pressed="${c[0]===cat}">${c[1]}</button>`).join("")}</div><div class="map"><canvas></canvas></div><div class="list"></div>`;
+    document.body.appendChild(o); const mc=o.querySelector(".map canvas"), box=o.querySelector(".map"); let fit=null;
+    const go=k=>{ o.remove(); if(stations[k]) goStation(k); else toast("那裡現在去不了",2000); };
+    const draw=()=>{ const r=box.getBoundingClientRect(), d=Math.min(2,devicePixelRatio||1); mc.width=Math.round(r.width*d); mc.height=Math.round(r.height*d); const g=mc.getContext("2d");
+      const P=pois(), sel=P.filter(p=>p.c[0]===cat); /* fit the whole grounds, centred */ const s=Math.min(mc.width/W,mc.height/H)*.96, ox=(mc.width-W*s)/2, oy=(mc.height-H*s)/2; fit={s,ox,oy,d};
+      g.fillStyle="#22160f"; g.fillRect(0,0,mc.width,mc.height); if(ready) g.drawImage(base,ox,oy,W*s,H*s); else { g.fillStyle="#e9d9b8"; g.font=`${14*d}px sans-serif`; g.textAlign="center"; g.fillText("地圖準備中…",mc.width/2,mc.height/2); }
+      const X=x=>ox+px(x)*s, Y=z=>oy+pz(z)*s;
+      for(const p of P){ if(p.c[0]===cat) continue; g.fillStyle="rgba(255,255,255,.35)"; g.beginPath(); g.arc(X(p.x),Y(p.z),2.2*d,0,7); g.fill(); }
+      g.font=`900 ${11*d}px sans-serif`; g.textAlign="center"; g.lineJoin="round";
+      for(const p of sel){ const x=X(p.x), y=Y(p.z); g.fillStyle=p.c[2]; g.strokeStyle="#1a0f08"; g.lineWidth=2*d; g.beginPath(); g.arc(x,y,5*d,0,7); g.fill(); g.stroke(); g.lineWidth=3*d; g.strokeText(p.n,x,y-8*d); g.fillStyle="#fff"; g.fillText(p.n,x,y-8*d); }
+      arrow(g,X(meAv.pos.x),Y(meAv.pos.y),Math.PI-meAv.rotY,8*d,"#ffe14a");
+      o.querySelector(".list").innerHTML=sel.map(p=>`<button data-k="${p.k}" style="--c:${p.c[2]}">${p.n}</button>`).join("")||`<span style="color:#d9c9a8;font-size:13px">這一類現在沒有地方可以去</span>`;
+      o.querySelectorAll(".list button").forEach(b=>b.onclick=()=>go(b.dataset.k)); };
+    o.querySelector("#mmX").onclick=()=>o.remove(); o.querySelectorAll(".cats button").forEach(b=>b.onclick=()=>{ cat=b.dataset.c; o.querySelectorAll(".cats button").forEach(x=>x.setAttribute("aria-pressed",x===b)); draw(); });
+    mc.addEventListener("click",e=>{ if(!fit) return; const r=mc.getBoundingClientRect(), x=(e.clientX-r.left)*fit.d, y=(e.clientY-r.top)*fit.d; let best=null, bd=22*fit.d;
+      for(const p of pois()){ if(p.c[0]!==cat) continue; const dx=fit.ox+px(p.x)*fit.s-x, dy=fit.oy+pz(p.z)*fit.s-y, dd=Math.hypot(dx,dy); if(dd<bd){ bd=dd; best=p; } } if(best) go(best.k); });
+    requestAnimationFrame(draw); };
+  rowEl.querySelector("#mmBox").onclick=open;
+  return {open};
+})();
