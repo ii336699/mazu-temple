@@ -13,9 +13,9 @@
 TOWNX=(()=>{
 const TW={on:false};
 const LINK=[28,-49.8], MOUTH=[28,-51.3];
-const ZR=[-8,182,-137.5,-50.5]; /* (out to the beach since 11/12) */
+const ZR=[-8,182,-258,-50.5]; /* (south over the river to the mountain since 11/13) */ /* (out to the beach since 11/12) */
 /* where you can walk: streets, the square, the park, the pier — minus the solid things standing on them */
-const WALK=[[22.8,33.2,-131,-51.6],[33.2,88,-81,-73],[33.2,60,-100,-90],[-8,66,-111,-105],[-8,66,-131,-117],[26.2,29.8,-137.5,-130.5],[4,22.8,-90,-84],[57.4,66.6,-73,-66.2]]; /* (+ the west alley and the fountain square, 11/13) */
+const WALK=[[22.8,33.2,-131,-51.6],[33.2,88,-81,-73],[33.2,60,-100,-90],[-8,66,-111,-105],[-8,66,-131,-117],[26.2,29.8,-137.5,-130.5],[4,22.8,-90,-84],[57.4,66.6,-73,-66.2],[59.9,63.1,-143.8,-131]]; /* (+ the west alley and the fountain square, 11/13) */
 /* (the old street runs east only: west of the main street stands the great 媽祖 statue, 42 m tall, at x 0, z −65) */
 const SHOPS_N=[["家具行","#c96a3a",34.5,"tw:furn"],["花店","#5f9a6a",43.5,"tw:flower"],["釣具行","#3f7fa8",52.5,"tw:tackle"],["早餐店","#e2a23a",61.5,"tw:soon:早餐店"],["飲料店","#d9628a",70.5,"tw:soon:飲料店"],["書店","#7a6aa8",79.5,"tw:soon:書店"]];
 const SHOPS_S=[["理髮廳","#4a8fb0",34.5],["五金行","#8a6a4a",43.5],["中藥行","#7a4a3a",52.5],["雜貨店","#b0863a",61.5],["照相館","#6a7a8a",70.5],["鐘錶行","#5a6a5a",79.5]];
@@ -24,7 +24,8 @@ const STALLS=[38,44,50,56], BEDS=[38,42,46,50,54,58];
 const BLOCK=[[23.1,24.1,-58.5,-57.5],[31.9,32.9,-58.5,-57.5],[60.2,63.8,-71.3,-67.7],[38.2,39,-123.4,-122.6],[45,45.8,-123.4,-122.6]].concat(STALLS.map(x=>[x-1.5,x+1.5,-99.6,-97.4]),[[10.2,10.8,-125.8,-125.2],[13.2,13.8,-125.8,-125.2],[10.2,10.8,-122.8,-122.2],[13.2,13.8,-122.8,-122.2]]);
 const inR=(r,x,z)=>x>=r[0]&&x<=r[1]&&z>=r[2]&&z<=r[3];
 TW.in=(x,z)=>z<-50.5;
-TW.walk=(x,z)=>{ for(const b of BLOCK) if(inR(b,x,z)) return false; for(const w of WALK) if(inR(w,x,z)) return true; return x>86&&NT.walk(x,z); };
+TW.walk=(x,z)=>{ for(const b of BLOCK) if(inR(b,x,z)) return false; for(const w of WALK) if(inR(w,x,z)) return true; if(z<-143.6) return SW.walk(x,z); return x>86&&NT.walk(x,z); };
+TW.ground=(x,z)=>z<-143.6?southH(x,z):null;
 /* ---- finding the way: straight if nothing is in between, otherwise along a one-metre grid (A*) and then straightened ---- */
 const clear=(ax,az,bx,bz)=>{ const d=Math.hypot(bx-ax,bz-az), n=Math.max(1,Math.ceil(d/.4)); for(let i=1;i<=n;i++){ const t=i/n; if(!TW.walk(ax+(bx-ax)*t,az+(bz-az)*t)) return false; } return true; };
 let GRID=null; const GX0=ZR[0]-1, GZ0=ZR[2]-1, GNX=Math.ceil(ZR[1]-ZR[0])+2, GNZ=Math.ceil(ZR[3]-ZR[2])+2;
@@ -33,7 +34,7 @@ function tpath(fx,fz,tx,tz){ if(clear(fx,fz,tx,tz)) return [[tx,tz]]; const g=gr
   const near=(i,j)=>{ if(g[j*GNX+i]) return [i,j]; for(let r=1;r<6;r++) for(let dj=-r;dj<=r;dj++) for(let di=-r;di<=r;di++){ const a=i+di, b=j+dj; if(a>=0&&b>=0&&a<GNX&&b<GNZ&&g[b*GNX+a]) return [a,b]; } return null; };
   const s=near(ci(fx),cj(fz)), e=near(ci(tx),cj(tz)); if(!s||!e) return [[tx,tz]]; const S=s[1]*GNX+s[0], E=e[1]*GNX+e[0];
   const cost=new Float32Array(GNX*GNZ).fill(1e9), from=new Int32Array(GNX*GNZ).fill(-1), open=[S]; cost[S]=0; const hx=k=>Math.hypot(k%GNX-e[0],Math.floor(k/GNX)-e[1]); let guard=0;
-  while(open.length&&guard++<20000){ let bi=0; for(let k=1;k<open.length;k++) if(cost[open[k]]+hx(open[k])<cost[open[bi]]+hx(open[bi])) bi=k; const c=open.splice(bi,1)[0]; if(c===E) break; const ci0=c%GNX, cj0=Math.floor(c/GNX);
+  while(open.length&&guard++<60000){ let bi=0; for(let k=1;k<open.length;k++) if(cost[open[k]]+hx(open[k])<cost[open[bi]]+hx(open[bi])) bi=k; const c=open.splice(bi,1)[0]; if(c===E) break; const ci0=c%GNX, cj0=Math.floor(c/GNX);
     for(let dj=-1;dj<=1;dj++) for(let di=-1;di<=1;di++){ if(!di&&!dj) continue; const a=ci0+di, b=cj0+dj; if(a<0||b<0||a>=GNX||b>=GNZ||!g[b*GNX+a]) continue; if(di&&dj&&(!g[cj0*GNX+a]||!g[b*GNX+ci0])) continue; const n=b*GNX+a, nc=cost[c]+(di&&dj?1.414:1); if(nc<cost[n]){ if(cost[n]>=1e9) open.push(n); cost[n]=nc; from[n]=c; } } }
   if(from[E]<0&&E!==S) return [[tx,tz]]; const cells=[]; for(let c=E;c>=0&&c!==S;c=from[c]) cells.unshift([GX0+c%GNX+.5,GZ0+Math.floor(c/GNX)+.5]);
   const out=[]; let ax=fx, az=fz, k=0; while(k<cells.length){ let far=k; for(let m=cells.length-1;m>k;m--) if(clear(ax,az,cells[m][0],cells[m][1])){ far=m; break; } out.push(cells[far]); ax=cells[far][0]; az=cells[far][1]; k=far+1; }
@@ -380,6 +381,90 @@ function sound(dt){ try{ if(typeof meAv==="undefined"||!meAv) return; const px=m
     const b=lineD(BROOK,px,pz)[0], fall=Math.hypot(px-110,pz+55.5), kb=Math.max(1-sstep(3,24,b),(1-sstep(4,30,fall))*1.3), ks=1-sstep(6,48,Math.abs(shoreX(pz)-px)+Math.max(0,pz+60)*1.5+Math.max(0,-128-pz)*1.5);
     const swell=.55+.45*Math.sin(NA.t*.82)*Math.sin(NA.t*.31+1);
     NA.bG.gain.setTargetAtTime(v*.16*kb*(.85+.15*Math.sin(NA.t*3.1)),a.currentTime,.25); NA.wG.gain.setTargetAtTime(v*.5*ks*swell,a.currentTime,.3); }catch(e){} }
+/* ================= 南岸 (11/13): over a footbridge from the riverside park — a forest with three springs (the deepest one is the
+   goddess's), and 天后山 rising behind it: a real mountain 34 m high, a path winding round it up to a flat top with a campsite.
+   The mountain's height is a function of the distance from its middle, and the path is a spiral cut into it at the height of the
+   slope where it runs, so the path lies level across and climbs gently (about 1 in 10). ================= */
+const SW={};
+const MT={cx:66,cz:-212,H:34,R:42,top:7.4};
+const mtProf=r=>MT.H*(1-sstep(MT.top-.4,MT.R,r));
+const SPIRAL=(()=>{ const P=[]; for(let i=0;i<=320;i++){ const t=i/320, a=t*2.35*Math.PI*2, r=40-(40-MT.top-.3)*t; P.push([MT.cx+Math.sin(a)*r,MT.cz+Math.cos(a)*r,r]); } return P; })();
+const SPI2=SPIRAL.map(p=>[p[0],p[1]]);
+const FOREST=[14,118,-176,-143.6]; /* x0,x1,z0,z1: the level forest floor north of the mountain */
+NT.springs=[[34,-157,3.3,"s",-.22],[100,-158.5,3.6,"s",-.22],[104,-183,4.4,"g",-.22]]; /* x, z, radius, kind, water level */
+/* a path through the forest from the footbridge: to the springs, round the mountain's foot, to the start of the climb */
+const FPATH=[[61.5,-144],[61.5,-150],[55,-155],[44,-157.5],[38.4,-157.6],[44,-160],[56,-163],[66,-168.4],[78,-165],[92,-161.2],[96.2,-160],[92,-164],[98,-172],[100.5,-178.6]];
+const TREES=(()=>{ const r=krng(77), out=[]; for(let k=0;k<150;k++){ const x=FOREST[0]+2+r()*(FOREST[1]-FOREST[0]-4), z=FOREST[2]+r()*(FOREST[3]-FOREST[2]-3); const d=Math.hypot(x-MT.cx,z-MT.cz);
+    if(Math.abs(x-61.5)<5&&z>-158) continue; if(NT.springs.some(S=>Math.hypot(x-S[0],z-S[1])<S[2]+2.5)) continue; if(lineD(SPI2,x,z)[0]<3.5||d<MT.R-1.5) continue; if(Math.abs(x-28)<9&&z>-152) continue; if(lineD(FPATH,x,z)[0]<2.6) continue; out.push([x,z,.9+r()*.7,r()<.5?1:0]); } return out; })();
+function southH(x,z){ if(z>-143.6) return 0; const r=Math.hypot(x-MT.cx,z-MT.cz); let h=r<MT.R+2?mtProf(r)+(sstep(MT.R,MT.R-12,r)*sstep(MT.top+2,MT.top+8,r))*1.1*nz(x*.6,z*.6):0;
+  if(r<MT.R+3){ const L=lineD(SPI2,x,z); if(L[0]<4){ const i=L[1], t=L[2], rr=SPIRAL[i][2]+(SPIRAL[Math.min(SPIRAL.length-1,i+1)][2]-SPIRAL[i][2])*t, th=mtProf(rr), k=sstep(1.5,3.6,L[0]); h=th*(1-k)+h*k; } }
+  for(const S of NT.springs){ const d=Math.hypot(x-S[0],z-S[1]); if(d<S[2]+1.2) h=Math.min(h,-.55*sstep(S[2]+1.2,S[2]-.6,d)); }
+  return h; }
+SW.walk=(x,z)=>{ if(x<FOREST[0]||x>FOREST[1]||z>-143.6||z<-256) return false; for(const S of NT.springs) if(Math.hypot(x-S[0],z-S[1])<S[2]+.35) return false;
+  const r=Math.hypot(x-MT.cx,z-MT.cz); if(r<MT.top+.2) return !CAMPB.some(b=>Math.hypot(x-b[0],z-b[1])<b[2]);
+  if(r<MT.R-1.2) return lineD(SPI2,x,z)[0]<1.35;
+  if(z<FOREST[2]&&r>MT.R+.5) return false;
+  for(const t of TREES) if(Math.hypot(x-t[0],z-t[1])<.55*t[2]) return false; return true; };
+const CAMPB=[[MT.cx,MT.cz,.9],[MT.cx-3.2,MT.cz-2.4,1.3],[MT.cx+3.3,MT.cz-1.8,1.3],[MT.cx+2.4,MT.cz+3.1,.9]]; /* fire, two tents, the table */
+const VS=s=>new T.Color(s).convertSRGBToLinear();
+const SC={g1:VS("#7cc46a"),g2:VS("#5aa45c"),dark:VS("#3f8a5a"),rock:VS("#9a9a8e"),path:VS("#d8c49a"),moss:VS("#6aa880"),top:VS("#a8d07a")};
+function southC(x,z,h,c){ const n=.5+.5*nz(x*1.3,z*1.3); c.copy(SC.g1).lerp(SC.g2,n*.8); const r=Math.hypot(x-MT.cx,z-MT.cz);
+  if(r<MT.R){ c.lerp(SC.dark,sstep(4,16,h)*.5); c.lerp(SC.rock,sstep(22,30,h)*.55*(r>MT.top+1?1:0)); if(r<MT.top+.6) c.copy(SC.top); }
+  const L=lineD(SPI2,x,z)[0], P=lineD(FPATH,x,z)[0]; if(r<MT.R+2) c.lerp(SC.path,sstep(1.5,.9,L)); c.lerp(SC.path,sstep(1.4,.8,P)*.85);
+  for(const S of NT.springs){ const d=Math.hypot(x-S[0],z-S[1]); if(d<S[2]+2) c.lerp(SC.moss,sstep(S[2]+2,S[2],d)); } }
+function pine(C,x,y,z,s,r){ put(C,gsph(),NM.trunk,x,y+.7*s,z,.14*s,.75*s,.14*s); const m=NM.pine||(NM.pine=new T.MeshStandardMaterial({color:"#4f9a6a",roughness:.9})); for(let k=0;k<3;k++) put(C,gcone(),m,x,y+(1.3+k*.75)*s,z,(1.1-k*.27)*s,1.2*s,(1.1-k*.27)*s,r()*6); }
+function mushroom(C,x,z,r){ const y=0; put(C,GEO.cy||(GEO.cy=new T.CylinderGeometry(1,1,1,16)),NM.white,x,y+.07,z,.035,.14,.035); put(C,gsph(),r()<.5?NM.red:NM.maple,x,y+.15,z,.1,.06,.1); }
+function springPool(C,S,r){ const [x,z,R,k,y]=S; const g=new T.CircleGeometry(R+.2,32); g.rotateX(-Math.PI/2); const m=new T.Mesh(g,wmat(`varying vec3 vL; void main(){ vL=position; vec4 mvPosition=modelViewMatrix*vec4(position,1.); gl_Position=projectionMatrix*mvPosition;\n#include <fog_vertex>\n}`,
+   `uniform float uT; uniform float uNight; varying vec3 vL; void main(){ float r=length(vL.xz)/${(R+.2).toFixed(2)}; vec3 c=mix(vec3(.55,.92,.95),vec3(.25,.62,.82),r); ${k==="g"?"c=mix(c,vec3(.75,.95,1.),.35+.15*sin(uT*1.3));":""} float ring=smoothstep(.06,0.,abs(fract(r*3.-uT*.25)-.5)-.44)*.25; c+=ring; c*=mix(1.,${k==="g"?".7":".42"},uNight); gl_FragColor=vec4(c,.88);\n#include <fog_fragment>\n}`));
+  m.position.set(x,y,z); m.renderOrder=2; m.userData.keep=1; m.userData.own=1; m.raycast=()=>{}; C.g.add(m);
+  for(let k2=0;k2<22;k2++){ const a=k2/22*6.283+r()*.2, d=R+.15+r()*.3; rock(C,r,x+Math.cos(a)*d,-.05,z+Math.sin(a)*d,.35+r()*.35); } for(let k2=0;k2<6;k2++){ const a=r()*6.283; reeds(C,r,x+Math.cos(a)*(R+.9),z+Math.sin(a)*(R+.9)); }
+  for(let k2=0;k2<5;k2++){ const a=r()*6.283, d=r()*R*.7; const pad=put(C,GEO.pad||(GEO.pad=new T.CircleGeometry(1,12).rotateX(-Math.PI/2)),NM.pad,x+Math.cos(a)*d,y+.02,z+Math.sin(a)*d,.3); pad.userData.keep=1; }
+  if(k==="g"){ /* the goddess's spring: white stone steps, two lamps, a carved stone tablet */ for(const s of [-1,1]) lantern(C,x+s*2.6,z+R+1.4); sign(C,"女神泉",1.4,.42,x,1.0,z+R+1.9,0,"#9fd8e8","#2a4a5a"); cyl(.05,.05,1,mat("#8f6b4f"),x,.5,z+R+1.9,C.g,6); fireflies(C,40,x,z,R+3,21); }
+  else sign(C,"泉池",1.1,.36,x+R+1.2,1.0,z,-Math.PI/2,"#9fd8e8","#2a4a5a"); }
+SW.build=C=>{ nmat(); lawnHole2(); const r=krng(5);
+  terrain(C,FOREST[0],FOREST[1],-176,-143.6,southH,southC,.012);
+  /* the footbridge over the river */ for(let k=0;k<=16;k++){ const z=-131.2-k*.8, y=.2+.55*Math.sin(Math.PI*k/16); put(C,GEO.b||(GEO.b=new T.BoxGeometry(1,1,1)),NM.wood,61.5,y,z,3.4,.1,.78); }
+   for(const x of [59.9,63.1]){ for(let k=0;k<=8;k++){ const z=-131.2-k*1.6, y=.2+.55*Math.sin(Math.PI*k/8); put(C,GEO.b,NM.woodD,x,y+.45,z,.08,.85,.08); } for(let k=0;k<8;k++){ const z=-132-k*1.6, y=.2+.55*Math.sin(Math.PI*(k+.5)/8); put(C,GEO.b,NM.wood,x,y+.85,z,.08,.08,1.62,0,Math.sin(Math.PI*(k+.5)/8-Math.PI/2)*.0); } }
+  sign(C,"南岸森林・天后山",2.6,.5,61.5,2.2,-130.6,0,"#5f9a6a","#ffffff"); for(const dx of [-1.2,1.2]) cyl(.05,.05,2.2,mat("#8f6b4f"),61.5+dx,1.1,-130.6,C.g,6);
+  TREES.forEach(([x,z,s,k])=>{ if(k) pine(C,x,0,z,s*1.3,r); else softTree(C,r,x,z,s*1.25,r()<.15?"maple":""); });
+  for(let k=0;k<60;k++){ const x=FOREST[0]+r()*(FOREST[1]-FOREST[0]), z=-174+r()*29; if(!SW.walk(x,z)) continue; if(lineD(FPATH,x,z)[0]<1.6) continue; if(r()<.5) mushroom(C,x,z,r); else if(r()<.5) put(C,gsph(),NM.bush,x,.25,z,.5,.32,.5); else flowers(C,r,x,z,.8,5); }
+  for(let k=0;k<14;k++){ const x=FOREST[0]+r()*(FOREST[1]-FOREST[0]), z=-174+r()*28; if(lineD(FPATH,x,z)[0]<2) continue; put(C,GEO.cy||(GEO.cy=new T.CylinderGeometry(1,1,1,16)),NM.woodD,x,.22,z,.22,1.8,.22,r()*6,0,Math.PI/2); }
+  NT.springs.forEach(S=>springPool(C,S,r)); for(const [x,z] of [[55,-155],[88,-161.5],[70,-167.5]]) lantern(C,x,z);
+  sign(C,"↑ 天后山登山口",2,.42,66,1.4,-169.4,0,"#7a6a4a","#ffffff"); cyl(.05,.05,1.4,mat("#8f6b4f"),66,.7,-169.4,C.g,6);
+  fireflies(C,60,60,-160,18,31); };
+SW.buildMt=C=>{ nmat(); const r=krng(9);
+  terrain(C,MT.cx-MT.R-3,MT.cx+MT.R+3,MT.cz-MT.R-3,-176,southH,southC,.012);
+  /* trees on the slopes, off the path */ for(let k=0;k<180;k++){ const a=r()*6.283, d=MT.top+3+r()*(MT.R-MT.top-4), x=MT.cx+Math.sin(a)*d, z=MT.cz+Math.cos(a)*d; if(z>-170.5) continue; if(lineD(SPI2,x,z)[0]<3.2) continue; const h=southH(x,z); if(r()<.65) pine(C,x,h-.1,z,1+r()*.6,r); else { softTree(C,r,x,z,1+r()*.4,""); C.g.children.slice(-5).forEach(o=>o.position.y+=h-.1); } }
+  for(let k=0;k<40;k++){ const a=r()*6.283, d=MT.top+2+r()*(MT.R-MT.top-3), x=MT.cx+Math.sin(a)*d, z=MT.cz+Math.cos(a)*d; if(z>-170.5||lineD(SPI2,x,z)[0]<2.6) continue; rock(C,r,x,southH(x,z),z,.5+r()*.9); }
+  /* rails on the outer edge of the path, every few metres, and resting benches */ for(let i=6;i<SPIRAL.length-4;i+=6){ const p=SPIRAL[i], q=SPIRAL[i+1], dx=q[0]-p[0], dz=q[1]-p[1], L=Math.hypot(dx,dz)||1, ox=(p[0]-MT.cx)/p[2], oz=(p[1]-MT.cz)/p[2], x=p[0]+ox*1.45, z=p[1]+oz*1.45, h=mtProf(p[2]); if(z>-171) continue;
+     put(C,GEO.b||(GEO.b=new T.BoxGeometry(1,1,1)),NM.woodD,x,h+.45,z,.1,.9,.1); const p2=SPIRAL[i+6]; if(p2){ const x2=p2[0]+(p2[0]-MT.cx)/p2[2]*1.45, z2=p2[1]+(p2[1]-MT.cz)/p2[2]*1.45, h2=mtProf(p2[2]); const m=put(C,GEO.b,NM.wood,(x+x2)/2,(h+h2)/2+.82,(z+z2)/2,.07,.07,Math.hypot(x2-x,z2-z,h2-h)); m.lookAt(x2,h2+.82,z2); } }
+  for(const i of [90,180,260]){ const p=SPIRAL[i], ox=(p[0]-MT.cx)/p[2], oz=(p[1]-MT.cz)/p[2]; const g=new T.Group(); g.position.set(p[0]-ox*1.6,mtProf(p[2]),p[1]-oz*1.6); g.rotation.y=Math.atan2(ox,oz); C.g.add(g); const B=GEO.b; for(const [sx,sy,sz,y,z] of [[1.4,.07,.4,.45,0],[1.4,.35,.06,.72,-.18]]){ const m=new T.Mesh(B,NM.wood); m.scale.set(sx,sy,sz); m.position.set(0,y,z); g.add(m); } }
+  /* the top: a meadow with the campsite — a fire ring, two tents, logs to sit on, a picnic table, lanterns, a telescope, a sign */
+  const y=MT.H, cx=MT.cx, cz=MT.cz; for(let k=0;k<10;k++){ const a=k/10*6.283; rock(C,r,cx+Math.cos(a)*.75,y,cz+Math.sin(a)*.75,.22,1); }
+  for(const [dx,dz,ry] of [[0,0,0],[.3,.2,1.1],[-.2,.25,2.2]]) put(C,GEO.cy||(GEO.cy=new T.CylinderGeometry(1,1,1,16)),NM.woodD,cx+dx*.3,y+.12,cz+dz*.3,.07,.8,.07,ry,0,Math.PI/2.4);
+  const fire=new T.Mesh(new T.ConeGeometry(.35,.9,8),new T.MeshBasicMaterial({color:"#ffb040",transparent:true,opacity:.85,blending:T.AdditiveBlending,depthWrite:false})); fire.position.set(cx,y+.5,cz); fire.userData.keep=1; fire.userData.own=1; C.g.add(fire); C.fire=fire;
+  const fl=new T.PointLight("#ff9a4a",1.4,10,2); fl.position.set(cx,y+1,cz); C.g.add(fl); C.fl=fl;
+  for(const [dx,dz,c] of [[-3.2,-2.4,"#e8706a"],[3.3,-1.8,"#5fa0d0"]]){ const t=new T.Mesh(kprism(),km(c,{roughness:.8})); t.scale.set(2.2,1.7,2.4); t.position.set(cx+dx,y,cz+dz); t.rotation.y=Math.atan2(dx,dz); C.g.add(t); kp(C.g,kbox(),km("#3a2a20"),cx+dx*.62,y+.5,cz+dz*.62,.7,1,.05,Math.atan2(dx,dz)); }
+  for(const a of [.6,2.3,4.0]) put(C,GEO.cy,NM.wood,cx+Math.cos(a)*1.9,y+.2,cz+Math.sin(a)*1.9,.2,1.3,.2,-a,0,Math.PI/2);
+  { const g=new T.Group(); g.position.set(cx+2.4,y,cz+3.1); C.g.add(g); KB(g,1.6,.08,.8,km("#b08a68"),0,.75,0); for(const sx of [-.7,.7]) KB(g,.08,.75,.7,km("#8f6b4f"),sx,.37,0); for(const sz of [-.75,.75]) KB(g,1.6,.06,.3,km("#b08a68"),0,.42,sz); }
+  for(const a of [1.2,3.0,4.9]) lantern(C,cx+Math.cos(a)*5.6,cz+Math.sin(a)*5.6); for(let k=0;k<6;k++){ const a=r()*6.283; flowers(C,r,cx+Math.cos(a)*5,cz+Math.sin(a)*5,1,8); C.g.children.slice(-8).forEach(o=>o.position.y+=y); }
+  { const g=new T.Group(); g.position.set(cx-4.6,y,cz+3.4); C.g.add(g); for(const a of [0,2.1,4.2]){ const l=KB(g,.04,1.2,.04,km("#3a3a3a"),Math.cos(a)*.25,.55,Math.sin(a)*.25); l.rotation.set(Math.sin(a)*.25,0,-Math.cos(a)*.25); } kp(g,kcyl(),km("#e8e8e4",{roughness:.4}),0,1.2,0,.12,.8,.12,0,1.1); }
+  sign(C,"天后山・露營區　海拔 34 m",3,.5,cx,1.6+y,cz+6.3,0,"#7a6a4a","#ffffff"); cyl(.05,.05,1.6,mat("#8f6b4f"),cx,y+.8,cz+6.3,C.g,6);
+  fireflies(C,40,cx,cz,9,41); C.g.children.slice(-1)[0].position.y=y; };
+function lawnHole2(){ try{ lawnHole(); const m=outsideGround.material; if(m.userData.hole2) return; m.userData.hole2=1; const prev=m.onBeforeCompile; m.onBeforeCompile=sh=>{ prev&&prev(sh); sh.fragmentShader=sh.fragmentShader.replace("if(vHW.x>86.5&&vHW.z<-50.&&vHW.z>-140.) discard;","if(vHW.x>86.5&&vHW.z<-50.&&vHW.z>-140.) discard; if(vHW.z<-143.&&vHW.x>13.&&vHW.x<119.) discard;"); }; m.customProgramCacheKey=()=>"lawnhole2"; m.needsUpdate=true; }catch(e){} }
+NCH.push({id:"forest",c:[66,-160],r:50,build:C=>SW.build(C)},{id:"mount",c:[66,-212],r:44,build:C=>SW.buildMt(C)});
+
+/* 望海沙灘: a beach café (a wooden kiosk with a striped awning, tables under parasols) and a row of loungers */
+NT.block.push([146,-113.2,2.2],[141.8,-108.6,.7],[141.8,-116.4,.7],[150.6,-108.4,.7]);
+NCH.push({id:"cafe",c:[148,-112],r:14,build:C=>{ nmat(); const r=krng(12), g=new T.Group(); g.position.set(146,0,-113.2); g.rotation.y=-Math.PI/2; C.g.add(g);
+  KB(g,4.2,2.4,3.2,km("#f6efe2"),0,1.2,-1.6); KB(g,4.4,.14,3.4,km("#b08a68"),0,2.47,-1.6); const n=10; for(let i=0;i<n;i++) kp(g,kbox(),km(i%2?"#ffffff":"#4fb0a8"),-2.2+(i+.5)*4.4/n,2.7,.35,4.4/n+.01,.06,1.1,0,.32);
+  KB(g,3.6,1.05,.6,km("#b08a68"),0,.52,.25); KB(g,3.8,.08,.75,km("#8f6b4f"),0,1.08,.25); KB(g,2.8,1.0,.04,winM(1),0,1.75,0.02); ksign(g,"海邊咖啡",2.6,.6,0,3.2,.36,0,"#4fb0a8","#ffffff");
+  kp(g,kcyl(),km("#f2c230"),-1.2,1.22,.25,.09,.2,.09); kp(g,ksph(),km("#7cc08a"),1.3,1.25,.3,.12,.12,.12); kp(g,kbox(),km("#2a2a2a"),1.6,1.75,.03,.6,.8,.02);
+  for(const [x,z,c] of [[141.8,-108.6,"#e8706a"],[141.8,-116.4,"#f2c230"],[150.6,-108.4,"#5fa0d0"]]){ const t=new T.Group(); t.position.set(x,0,z); C.g.add(t); kp(t,kcyl(),km("#ffffff"),0,.72,0,.45,.05,.45); kp(t,kcyl(),km("#bbbbbb"),0,.36,0,.04,.72,.04); kp(t,kcyl(),km("#ffffff"),0,1.3,0,.03,2.6,.03); kp(t,new T.ConeGeometry(1.3,.5,8),km(c),0,2.55,0,1,1,1); for(const a of [0,2.1,4.2]) kp(t,kcyl(),km("#d8c8a8"),Math.cos(a)*.75,.24,Math.sin(a)*.75,.18,.48,.18); }
+  for(let k=0;k<4;k++){ const z=-120.5-k*2.2, x=152.6; const L=new T.Group(); L.position.set(x,0,z); L.rotation.y=Math.PI/2; C.g.add(L); const c=km(["#4fb0a8","#e8706a","#f2c230","#8a7ad0"][k]); KB(L,.65,.08,1.7,c,0,.32,0); KB(L,.65,.08,.75,c,0,.62,-.75).rotation.x=-.6; for(const sx of [-.28,.28]) for(const sz of [-.7,.7]) KB(L,.05,.3,.05,km("#ffffff"),sx,.15,sz); kp(L,ksph(),km("#ffffff"),0,.42,.7,.18,.06,.12); }
+  { const p=new T.Group(); p.position.set(152.6,0,-123.8); C.g.add(p); kp(p,kcyl(),km("#ffffff"),0,1.2,0,.04,2.4,.04); for(let k=0;k<8;k++) kp(p,new T.ConeGeometry(1.7,.7,8,1,true,0,Math.PI/4),km(k%2?"#4fb0a8":"#ffffff",{side:T.DoubleSide}),0,2.45,0,1,1,1,k*Math.PI/4); }
+  sign(C,"海邊咖啡・躺椅",2.2,.42,140.2,1.4,-112,-Math.PI/2,"#4fb0a8","#ffffff"); cyl(.04,.04,1.4,mat("#8f6b4f"),140.25,.7,-112,C.g,6); }});
+
 /*NATURE>>*/
 CH.push(...NCH);
 /* ---- a district is merged into a few big meshes (one per paint) once it is built, so it costs only a few draws ---- */
@@ -401,9 +486,9 @@ TW.tick=dt=>{ try{ NT.tick(dt,LIVE); }catch(e){} wt+=dt; for(const id in LIVE){ 
   if(TW.on&&!greeted&&pz<-56){ greeted=true; try{ toast("🏮 歡迎來到天后小鎮",2600); statInc("townIn"); }catch(e){} } if(!TW.on&&pz>-40) greeted=false; };
 /* ---- things you can walk up to ---- */
 const ST=[["tw:board",22.6,-61,Math.PI/2*-1,21.9,-61,1.2,2.2],["tw:bus",33.0,-64,Math.PI/2,34.2,-64,1.5,2.4],["tw:fish",28,-136.4,Math.PI,28,-137.6,1.8,1.2],
-    ["tw:ice",38,-96.6,Math.PI,38,-98.5,1.6,2.4],["tw:herb",44,-96.6,Math.PI,44,-98.5,1.6,2.4],["tw:garden",42,-121.4,Math.PI,42,-123,2.6,3]]
+    ["tw:ice",38,-96.6,Math.PI,38,-98.5,1.6,2.4],["tw:goddess",104,-188.6,Math.PI,104,-183,4.4,2],["tw:camp",66,-209.6,Math.PI,66,-212,1.2,1.6+34],["tw:cafe",143.4,-113.2,Math.PI/2,145.2,-113.2,2,2.6],["tw:lounge",151.4,-121.6,Math.PI/2,152.6,-121.6,1.2,1],["tw:herb",44,-96.6,Math.PI,44,-98.5,1.6,2.4],["tw:garden",42,-121.4,Math.PI,42,-123,2.6,3]]
   .concat(TOWNB.filter(b=>b.key).map(b=>{ const d=bDoor(b); return [b.key,d.ax,d.az,d.face,d.hx,d.hz,Math.min(2.6,b.w/2),3.2]; }));
-const STN={"tw:board":"公告欄","tw:bus":"公車站","tw:fish":"釣魚碼頭","tw:ice":"擠冰淇淋","tw:herb":"中藥對對碰","tw:garden":"我的花圃"}; TOWNB.forEach(b=>{ if(b.key) STN[b.key]=b.name||"鄰居的家"; });
+const STN={"tw:goddess":"女神泉","tw:camp":"營火","tw:cafe":"海邊咖啡","tw:lounge":"躺椅","tw:board":"公告欄","tw:bus":"公車站","tw:fish":"釣魚碼頭","tw:ice":"擠冰淇淋","tw:herb":"中藥對對碰","tw:garden":"我的花圃"}; TOWNB.forEach(b=>{ if(b.key) STN[b.key]=b.name||"鄰居的家"; });
 setTimeout(()=>{ try{ ST.forEach(s=>{ station(s[0],[s[1],s[2]],s[3]); addHit(s[0],s[4],0,s[5],s[6],s[7]); try{ if(STN[s[0]]) STATION_LABEL[s[0]]=STN[s[0]]; }catch(e){} }); }catch(e){ console.warn("town stations",e); } },1500);
 function warp(x,z){ try{ if(meAv.seat>=0) meAv.seat=-1; }catch(e){} meAv.pos.set(x,z); meAv.target.set(x,z); meAv.path=[]; try{ pendingStation=null; }catch(e){} markDirty(); }
 TW.station=k=>{ if(k.indexOf("tw:")!==0) return false;

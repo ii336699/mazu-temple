@@ -183,6 +183,46 @@ L.bagActs=(k,e)=>`<button class="chip" data-act="lfDex">看圖鑑</button>`;
 /* ---------- stations in the town ---------- */
 L.station=k=>{ if(k==="tw:tackle"){ tackle(); return true; } if(k==="tw:grocer"){ grocer(); return true; } if(k==="tw:fish"){ toast(LF().rod||me.sp?"站到水邊就能釣魚，按「🎣 釣魚」":"先到老街的釣具行買釣竿，就能在水邊釣魚",3000); return true; } return L.more?L.more(k):false; };
 L.tick=dt=>{ try{ fishTick(dt); }catch(e){ console.warn("fish",e); F&&endFish(); } try{ L.tick2&&L.tick2(dt); }catch(e){ console.warn("life",e); } };
+
+/* ---------- 女神泉: toss a coin in, the goddess rises and asks which one was yours (once a day) ---------- */
+const today=()=>{ try{ return dayN(); }catch(e){ return Math.floor((Date.now()+288e5)/864e5); } };
+let GD=null;
+function goddessRise(){ const g=new T.Group(); g.position.set(104,-2.4,-183); scene.add(g); const M=(c,o)=>new T.MeshStandardMaterial(Object.assign({color:c,roughness:.5},o||{}));
+  const robe=new T.Mesh(new T.ConeGeometry(.75,2.2,20,1,true),M("#e8f4ff",{side:T.DoubleSide,emissive:"#9fd8ff",emissiveIntensity:.35})); robe.position.y=1.1; g.add(robe);
+  const body=new T.Mesh(new T.CylinderGeometry(.24,.34,.8,14),M("#f6fbff",{emissive:"#cfeaff",emissiveIntensity:.3})); body.position.y=2.25; g.add(body);
+  const head=new T.Mesh(new T.SphereGeometry(.27,18,14),M("#ffe3d2")); head.position.y=2.86; g.add(head);
+  const hair=new T.Mesh(new T.SphereGeometry(.3,18,14,0,6.283,0,1.9),M("#d6ecff",{emissive:"#9fd8ff",emissiveIntensity:.3})); hair.position.set(0,2.92,-.04); g.add(hair);
+  const back=new T.Mesh(new T.CylinderGeometry(.26,.42,1.1,14,1,true,Math.PI*.6,Math.PI*.8),M("#d6ecff",{side:T.DoubleSide,emissive:"#9fd8ff",emissiveIntensity:.3})); back.position.set(0,2.35,-.08); g.add(back);
+  for(const s of [-1,1]){ const e=new T.Mesh(new T.SphereGeometry(.035,8,6),M("#3a4a6a")); e.position.set(s*.09,2.88,.25); g.add(e); const a=new T.Mesh(new T.CylinderGeometry(.06,.07,.7,8),M("#f6fbff",{emissive:"#cfeaff",emissiveIntensity:.3})); a.position.set(s*.36,2.3,.12); a.rotation.z=s*.5; a.rotation.x=-.6; g.add(a); }
+  const halo=new T.Mesh(new T.TorusGeometry(.38,.035,8,32),new T.MeshBasicMaterial({color:"#ffe58a",toneMapped:false})); halo.position.set(0,3.25,-.12); halo.rotation.x=-.3; g.add(halo);
+  const glow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#bfe8ff"),transparent:true,depthWrite:false,blending:T.AdditiveBlending,toneMapped:false,opacity:.8})); glow.scale.set(5,6,1); glow.position.y=2; g.add(glow);
+  const coins=[]; [["#ffd84a",-.9],["#e0e4ea",0],["#c9a24a",.9]].forEach(([c,x])=>{ const k=new T.Mesh(new T.CylinderGeometry(.18,.18,.04,20),new T.MeshStandardMaterial({color:c,metalness:.7,roughness:.25,emissive:c,emissiveIntensity:.15})); k.rotation.x=Math.PI/2; k.position.set(x,3.7,.3); k.visible=false; g.add(k); coins.push(k); });
+  GD={g,t:0,coins,ph:"up"}; try{ [523,784,1047,1319,1568].forEach((f,k)=>tone(f,.4,.04,"sine",k*.18)); }catch(e){} }
+function goddessTick(dt){ if(!GD) return; GD.t+=dt; const g=GD.g; if(GD.ph==="up"){ g.position.y=-2.4+Math.min(1,GD.t/2.2)*2.2; if(GD.t>2.4){ GD.ph="ask"; GD.coins.forEach(c=>c.visible=true); askGoddess(); } }
+  if(GD.ph==="down"){ g.position.y-=dt*1.4; if(g.position.y<-3){ scene.remove(g); g.traverse(o=>{ if(o.geometry) o.geometry.dispose(); if(o.material&&o.material!==glowTex) o.material.dispose(); }); GD=null; return; } }
+  g.children.forEach(o=>{ if(o.isMesh&&o.geometry.type==="CylinderGeometry"&&o.visible&&o.position.y>3.5) o.rotation.z+=dt*2; }); g.rotation.y=Math.sin(GD.t*.6)*.08; g.position.y+=Math.sin(GD.t*1.5)*.002; }
+function askGoddess(){ openSheet("lfGod","✨ 湖之女神",`<p class="lead">泉水發出光，一位女神緩緩升起：「你掉進泉裡的，是這枚<b>金色</b>的平安幣、這枚<b>銀色</b>的，還是這枚<b>普通</b>的平安幣呢？」</p><div class="row"><button class="secondary" data-act="lfGodPick" data-v="g">金色的</button><button class="secondary" data-act="lfGodPick" data-v="s">銀色的</button><button class="primary" data-act="lfGodPick" data-v="n">普通的</button></div>`); }
+HANDLERS.lfGodPick=v=>{ closeSheet(); const d=LF(); if(GD) GD.ph="down"; if(v==="n"){ bag.coins+=100+500; bag.gacha=Math.min(255,(bag.gacha||0)+1); d.godOK=(d.godOK|0)+1; save(); try{ profSave(true); chaChing(); }catch(e){}
+    setTimeout(()=>openSheet("lfGod2","✨ 湖之女神",`<p class="lead">「誠實的孩子，這三枚都送給你吧。」</p><p class="note">拿回你的平安幣，另外得到 500 平安幣和 1 枚扭蛋幣。明天再來吧。</p>`),400); }
+  else { save(); try{ tone(220,.4,.05,"sine"); }catch(e){} setTimeout(()=>openSheet("lfGod2","✨ 湖之女神",`<p class="lead">女神微微一笑，什麼也沒說，帶著光沉回了泉底……</p><p class="note">你丟下去的平安幣沒有回來。明天再來試試吧。</p>`),400); } };
+function goddess(){ const d=LF(); if(GD) return; if(d.god===today()&&!me.sp){ toast("泉水靜靜的。女神今天已經出現過了，明天再來吧",2600); return; }
+  openSheet("lfGodAsk","⛲ 女神泉",`<p class="lead">清澈的泉水微微發光。傳說丟一枚平安幣下去許願，會發生好事。</p><div class="row"><button class="primary" data-act="lfGodToss">丟 100 平安幣下去</button></div><p class="note">一天一次。</p>`); }
+HANDLERS.lfGodToss=()=>{ const d=LF(); if(bag.coins<100&&!me.sp){ toast("平安幣不夠",2000); return; } if(!me.sp) bag.coins-=100; d.god=today(); save(); closeSheet(); try{ tone(1200,.08,.05,"sine"); tone(600,.3,.04,"sine",.15); }catch(e){} toast("噗通——",1400); setTimeout(goddessRise,900); };
+/* ---------- 營火, 海邊咖啡, 躺椅 ---------- */
+const energy=n=>{ bag.en=Math.min(100,(bag.en??100)+n); save(); try{ SHOPX&&SHOPX.wallet&&SHOPX.wallet(); }catch(e){} };
+function camp(){ const d=LF(); const n=d.mm===today()?(d.mmN|0):0; openSheet("lfCamp","🔥 營火",`<p class="lead">營火劈哩啪啦地燒著，從山頂看得到整個小鎮。</p><div class="row"><button class="primary" data-act="lfMallow" ${n>=3?"disabled":""}>🍡 烤棉花糖（今天 ${n}/3）</button></div><p class="note">烤到金黃色就拿起來：太早不熟，太晚會焦。烤得好精力 +5。</p>`); }
+let MM=null;
+HANDLERS.lfMallow=()=>{ const d=LF(); if(d.mm!==today()){ d.mm=today(); d.mmN=0; } if(d.mmN>=3) return; MM={t:0,ready:2.5+Math.random()*2}; openSheet("lfMallow","🍡 烤棉花糖",`<p class="lead" id="lfMm">慢慢轉……</p><div class="row"><button class="primary" data-act="lfMallowUp">拿起來！</button></div>`); };
+HANDLERS.lfMallowUp=()=>{ if(!MM) return; const d=LF(), dt=MM.t-MM.ready; MM=null; d.mmN=(d.mmN|0)+1; save(); let t;
+  if(dt<0) t="還是白白的，沒烤熟……"; else if(dt<1.4){ t="金黃酥脆，完美！精力 +5"; energy(5); try{ [784,988,1175].forEach((f,k)=>tone(f,.12,.05,"triangle",k*.08)); }catch(e){} } else t="烤焦了，黑黑的……還是吃掉吧。";
+  openSheet("lfMallow","🍡 烤棉花糖",`<p class="lead">${t}</p><div class="row"><button class="secondary" data-act="lfCamp">回營火</button></div>`); };
+HANDLERS.lfCamp=()=>camp();
+function mmTick(dt){ if(!MM) return; MM.t+=dt; const el=document.getElementById("lfMm"); if(el){ const k=MM.t-MM.ready; el.textContent=k<-1?"慢慢轉……":k<0?"快好了……":k<1.4?"✨ 金黃色了！":"冒煙了！"; } }
+const DRINKS=[["coco","椰子汁",60,15],["mango","芒果冰",90,25],["latte","冰咖啡",45,10]];
+function cafe(){ openSheet("lfCafe","☕ 海邊咖啡",`<p class="lead">「來杯涼的吧！」</p>${DRINKS.map(k=>`<div class="lf-row"><div class="t"><b>${k[1]}</b>　${k[2]} 幣<br><small>精力 +${k[3]}</small></div><button class="primary" data-act="lfDrink" data-v="${k[0]}">買來喝</button></div>`).join("")}`); }
+HANDLERS.lfDrink=v=>{ const k=DRINKS.find(q=>q[0]===v); if(!k) return; if(!me.sp){ if(bag.coins<k[2]){ try{ buzz(); }catch(e){} toast("平安幣不夠",2000); return; } bag.coins-=k[2]; } energy(k[3]); try{ chaChing(); }catch(e){} toast(`喝了${k[1]}，精力 +${k[3]}`,2200); cafe(); };
+L.more=k=>{ if(k==="tw:goddess"){ goddess(); return true; } if(k==="tw:camp"){ camp(); return true; } if(k==="tw:cafe"){ cafe(); return true; } if(k==="tw:lounge"){ toast("🏖️ 躺在躺椅上，聽著一波一波的海浪……",2800); return true; } return L.more2?L.more2(k):false; };
+L.tick2=dt=>{ goddessTick(dt); mmTick(dt); if(L.tick3) L.tick3(dt); };
 setTimeout(()=>{ try{ chipInit(); }catch(e){} },1800);
 L.dbg=()=>({F,near,LF:LF(),pool}); L.press=()=>press(); L.start=()=>startFish();
 return L; })();
