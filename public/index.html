@@ -7213,7 +7213,8 @@ Object.assign(HAT_FIT.h_xlb,{rx:.1}); for(const k of ["h_angel","h_hibiscus","h_
 /* the chair's own fitting of every hat (頭飾定位, 2026-11-08): these are the built-in positions now */
 const HAT_FIT_CHAIR={"hat_crown":{"y":0.005},"hat_guanmao":{"xs":0.99},"hat_douli":{"y":-0.49},"hat_tiger":{"y":-0.215,"rx":-0.01},"hat_witch":{"y":0.01,"z":-0.035,"zs":1.04,"ey":-0.19,"ez":0.23,"ex":0.06},"hat_fu":{"y":-0.045,"z":-0.015,"zs":1.04,"xs":1.06,"ez":-0.02},"hat_fox":{"y":-0.115,"z":0.03,"rz":0.02,"ry":-0.02},"h_jiangshi":{"y":-0.12,"z":-0.085,"zs":0.89,"xs":0.98},"h_apple":{"w":0.72,"z":-0.035,"xs":1.04},"h_angel":{"z":-0.035,"zs":0.95},"h_starhat":{"w":0.74,"y":-0.08,"z":-0.065,"x":0.045,"xs":1.14},"h_shark":{"z":-0.045,"zs":1.02,"xs":1.14},"h_egg":{"y":-0.01},"h_onigiri":{"w":0.76,"y":-0.105,"z":-0.08},"h_frog":{"w":0.71,"y":-0.07,"z":-0.05,"zs":1.13},"h_hibiscus":{"y":-0.01,"z":0.06},"h_shades":{"y":-0.11,"z":-0.02,"rx":-0.06},"h_xlb":{"w":0.79,"y":-0.075,"z":-0.11},"h_beer":{"w":0.74,"y":-0.08,"z":-0.09,"zs":1.1,"xs":1.08},"h_tv":{"w":0.74,"z":-0.015},"h_sheep":{"w":0.8,"z":-0.065,"zs":1.25,"xs":1.14},"h_sakura":{"w":0.82,"z":-0.16,"xs":1.15},"h_melon":{"w":0.82,"z":-0.13,"ey":0.02},"h_gamecat":{"w":0.79,"z":-0.11,"xs":1},"h_steam":{"w":0.76,"z":-0.16},"h_devil":{"w":0.8,"y":-0.07,"z":-0.025,"zs":1.11,"xs":1.22},"h_lion":{"w":0.79,"z":-0.04,"zs":1.12,"xs":1.15},"h_cow":{"w":0.83,"z":-0.09,"xs":1.06},"h_sushi":{"w":0.79,"y":-0.1,"z":-0.08,"zs":1.11,"xs":1.05},"h_pumpkin":{"w":0.71,"z":-0.09,"zs":0.97,"xs":1.1},"h_samurai":{"w":0.84,"y":-0.12,"z":0.04,"zs":1.08,"xs":1.1},"h_pirate":{"z":-0.13,"zs":0.94,"xs":1.12},"h_flower":{"w":0.9,"y":-0.11,"z":-0.05,"xs":1.06},"h_paw":{"w":0.69,"z":-0.085,"xs":1.11},"h_lotus":{"w":0.78,"z":-0.17,"x":0.025}};
 for(const [id,v] of Object.entries(HAT_FIT_CHAIR)) if(HAT_FIT[id]) Object.assign(HAT_FIT[id],v);
-for(const k of ["h_astro","h_geisha","h_ramen","h_crane","h_cake"]) HAT_FIT_CHAIR[k]=HAT_FIT_CHAIR[k]||{}; /* these five come out of the 扭蛋機 (its pool is the fitted hats); the claw only from the claw machine */
+Object.assign(HAT_FIT_CHAIR,{h_astro:{y:-.335,z:-.07,x:0,xs:1.15},h_geisha:{y:-.205,z:-.005,rx:0,zs:1.19,xs:1.16},h_ramen:{zs:1.21,xs:1.26},h_cake:{z:-.01,zs:1.17,xs:1.14,ez:-.08}}); /* the chair's fit (11/12) */
+for(const k of ["h_astro","h_geisha","h_ramen","h_crane","h_cake"]){ HAT_FIT_CHAIR[k]=HAT_FIT_CHAIR[k]||{}; if(HAT_FIT[k]) Object.assign(HAT_FIT[k],HAT_FIT_CHAIR[k]); } /* these five come out of the 扭蛋機 (its pool is the fitted hats); the claw only from the claw machine */
 const HAT_FIT0=JSON.parse(JSON.stringify(HAT_FIT)), HF_KEYS=[["w","大小",.3,1.6,.01],["y","上下",-.5,.5,.005],["z","前後",-.35,.35,.005],["x","左右",-.25,.25,.005],["rx","前後傾",-1,1,.01],["rz","左右歪",-1,1,.01],["ry","轉向",-3.14,3.14,.02],["zs","前後厚度",.5,2.4,.01],["xs","左右厚度",.5,2.4,.01],["ey","特效上下",-.6,.6,.01],["ez","特效前後",-.5,.5,.01],["ex","特效左右",-.5,.5,.01]];
 const HFIT={id:null,dirty:{},t:0};
 function hatFitApply(fit){ if(!fit||typeof fit!=="object") return; for(const [id,v] of Object.entries(fit)){ if(!HAT_FIT[id]||!v) continue; Object.assign(HAT_FIT[id],v); } }
@@ -7351,7 +7352,7 @@ function clawFloat(av,dt){ const free=av.seat<0&&!(av.act>=0)&&!av.innLie&&!av._
   const tx=cl(-fa*.045), tz=cl(ra*.045); S.wx+=(-(S.rx-tx)*30-S.wx*3)*dt; S.wz+=(-(S.rz-tz)*30-S.wz*3)*dt; S.rx+=S.wx*dt; S.rz+=S.wz*dt; S.t+=dt;
   const P=1.45, lift=.3+Math.sin(S.t*1.7)*.025, e=av.parts.rotation; e.set(S.rx+Math.sin(S.t*1.1)*.025,0,S.rz+Math.sin(S.t*.8)*.03);
   const V=clawFloat.v||(clawFloat.v=new T.Vector3()); V.set(0,P,0).applyEuler(e); av.parts.position.set(-V.x,P-V.y+lift,-V.z);
-  if(av.legs&&av.legs.length>1){ const d=Math.max(-.25,Math.min(.25,-S.wx*.05)); av.legs[0].rotation.x=.1+d; av.legs[1].rotation.x=.04+d*1.2; } /* hanging: the legs dangle (no walking steps), just trailing the swing a little */ }
+  if(av.legs&&av.legs.length>1){ const d=Math.max(-.25,Math.min(.25,-S.wx*.05)); av.legs[0].rotation.x=.1+d; av.legs[1].rotation.x=.04+d*1.2; } if(av.arms&&av.arms.length>1&&!av.hold){ const d=Math.max(-.2,Math.min(.2,-S.wx*.04)); av.arms[0].rotation.x=d; av.arms[1].rotation.x=d; } /* the arms hang still too (no swinging as if walking) */ /* hanging: the legs dangle (no walking steps), just trailing the swing a little */ }
 function hfxTick(av,dt,near){ const h=av.accHead, id=h&&h.userData.hfx, F=id&&HFX[id];
   if(F&&F.claw) clawFloat(av,dt); else if(av._clw){ av._clw=null; if(av.seat<0&&!(av.act>=0)&&!av.innLie&&!av._hop){ av.parts.rotation.set(0,0,0); av.parts.position.set(0,0,0); } }
   foxTail(av,!!(F&&F.tail)); if(av.foxTail){ const t=performance.now()/1000+(av.t||0); av.foxTail.userData.segs.forEach((s,i)=>{ s.rotation.z=Math.sin(t*2.2-i*.55)*.16*(i?1:.5); }); }
@@ -10725,6 +10726,8 @@ const MMAP=(()=>{
   rowEl.querySelector("#mmBox").onclick=open;
   return {open};
 })();
+/* 主委: unlimited 平安幣 and 扭蛋幣 — topped up again straight after anything is spent */
+setInterval(()=>{ try{ if(!(me&&me.sp)) return; let ch=0; if((bag.coins|0)<999999){ bag.coins=999999; ch=1; } if((bag.gacha|0)<200){ bag.gacha=200; ch=1; } if(ch) saveBag(); }catch(e){} },400);
 /*SHOPS>>*/
 /*<<DAILY*/
 /* ================= 今日功課: 每日簽到, 三件每日功課＋寶箱, 回鍋禮, 功德簿 (long goals) and 香火位階 (a title before your name) =================

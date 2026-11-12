@@ -109,3 +109,5 @@ const MMAP=(()=>{
   rowEl.querySelector("#mmBox").onclick=open;
   return {open};
 })();
+/* 主委: unlimited 平安幣 and 扭蛋幣 — topped up again straight after anything is spent */
+setInterval(()=>{ try{ if(!(me&&me.sp)) return; let ch=0; if((bag.coins|0)<999999){ bag.coins=999999; ch=1; } if((bag.gacha|0)<200){ bag.gacha=200; ch=1; } if(ch) saveBag(); }catch(e){} },400);
