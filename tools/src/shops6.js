@@ -45,7 +45,7 @@ const MMAP=(()=>{
     ["pray","參拜","#d9aa3d",["shop","tiangong","burn","donate","lot","jieqian","lamp","bell","drum","wish","fountain"]],
     ["game","遊戲","#ff6fae",["claw","gacha","cats","fortune","nm:qq","nm:sausage","nm:bbq","nm:fish","nm:pachinko","nm:boba","nm:balloon"]],
     ["shop","商店","#4fb3ff",["cvs","cloth","innDesk","catMom"]]];
-  const LBL={innDesk:"禪房櫃台"}; const MM_TOWN=false; /* the town, brook and beach are not open yet: left off the map until they are (set true then) */ const SKIP=new Set(["lampR"]);
+  const LBL={innDesk:"禪房櫃台"}; const MM_TOWN=true; /* the town, brook and beach on the map (11/12 night: the chair opened the town in the test version to keep building it; the shops-only live version has no town) */ const SKIP=new Set(["lampR"]);
   const catOf=k=>{ for(const c of CAT) if(c[3].includes(k)) return c; return ["etc","其他","#7fd08a",[]]; };
   const label=k=>LBL[k]||(typeof STATION_LABEL!=="undefined"&&STATION_LABEL[k])||"";
   const pois=()=>Object.keys(stations).filter(k=>!SKIP.has(k)&&label(k)).map(k=>({k,n:label(k),x:stations[k].approach.x,z:stations[k].approach.y,c:catOf(k)}));
