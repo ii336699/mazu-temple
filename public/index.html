@@ -9970,12 +9970,13 @@ function dayAdd(k){ dayCount(k); bag[k]=(bag[k]|0)+1; saveBag(); }
 const GACHA_PRICE=1000;
 /* snacks: 平安幣 price in the shop, 精力 they give back, and the NT$ shelf price used in the cashier game */
 const SNACKS=[
-  {k:"drink",n:"古早味紅茶",p:20,e:6,nt:25,col:"#b4502e",tag:"飲料"},
-  {k:"cookie",n:"蔥香餅乾",p:15,e:5,nt:35,col:"#e7b33c",tag:"餅乾"},
-  {k:"noodle",n:"紅燒牛肉泡麵",p:45,e:15,nt:45,col:"#cf3b2a",tag:"泡麵"},
-  {k:"energy",n:"提神飲料",p:99,e:33,nt:59,col:"#2d78d2",tag:"提神飲料"},
-  {k:"beer",n:"金黃啤酒",p:35,e:10,nt:49,col:"#d9a628",tag:"啤酒"},
-  {k:"bread",n:"菠蘿麵包",p:30,e:10,nt:32,col:"#d39a4c",tag:"麵包"}];
+  {k:"drink",n:"草莓汽水",p:35,e:10,nt:30,col:"#ef7d98",tag:"汽水"},
+  {k:"cookie",n:"奶油餅乾",p:15,e:5,nt:35,col:"#e7b33c",tag:"餅乾"},
+  {k:"noodle",n:"洋芋片",p:45,e:15,nt:39,col:"#efb02e",tag:"洋芋片"},
+  {k:"energy",n:"柳橙汁",p:99,e:33,nt:35,col:"#f39a3a",tag:"果汁"},
+  {k:"beer",n:"礦泉水",p:20,e:6,nt:20,col:"#5aa7e6",tag:"礦泉水"},
+  {k:"bread",n:"水果糖",p:30,e:10,nt:29,col:"#f08bb4",tag:"糖果"}];
+/* (the keys stay as they were so old save codes keep their counts: drink 汽水, cookie 餅乾, noodle 洋芋片, energy 柳橙汁, beer 礦泉水, bread 糖果) */
 const SN=Object.fromEntries(SNACKS.map(s=>[s.k,s]));
 /* ---------- snack pictures (drawn once, used in the bag, the shop and the cashier) ---------- */
 function drawSnack(x,k,w,h){ x.clearRect(0,0,w,h); x.save(); x.translate(w/2,h/2); const s=w/100; x.scale(s,s); x.lineJoin="round"; x.lineCap="round";
@@ -9992,7 +9993,7 @@ function drawSnack(x,k,w,h){ x.clearRect(0,0,w,h); x.save(); x.translate(w/2,h/2
   if(k==="bread"){ x.fillStyle="rgba(255,255,255,.55)"; rr(-40,-32,80,66,14); x.fill(); x.strokeStyle="rgba(180,190,200,.8)"; x.lineWidth=2; x.stroke(); x.fillStyle="#c27a2c"; x.beginPath(); x.ellipse(0,4,32,24,0,0,7); x.fill(); x.fillStyle="#e7ae52"; x.beginPath(); x.ellipse(0,0,30,21,0,0,7); x.fill(); x.strokeStyle="#c78533"; x.lineWidth=2;
     for(let i=-3;i<=3;i++){ x.beginPath(); x.moveTo(i*9-14,-18); x.lineTo(i*9+14,20); x.stroke(); x.beginPath(); x.moveTo(i*9+14,-18); x.lineTo(i*9-14,20); x.stroke(); } x.fillStyle="#d84b3a"; x.fillRect(-8,-36,16,6); }
   x.restore(); }
-const ICON={}; function snackIcon(k){ if(ICON[k]) return ICON[k]; const c=document.createElement("canvas"); c.width=c.height=128; drawSnack(c.getContext("2d"),k,128,128); return ICON[k]=c.toDataURL("image/png"); }
+function snackIcon(k){ return "shop/sn-"+k+".webp"; } /* the chair's pictures (public/shop/sn-*.webp) */
 SX.bic=(k,cls="")=>`<span class="bic ${cls}" style="background:url(${snackIcon(k.slice(3))}) center/contain no-repeat"></span>`;
 const snImg=(k,sz=40)=>`<img src="${snackIcon(k)}" width="${sz}" height="${sz}" alt="" style="display:block">`;
 /* ---------- 精力 ---------- */
@@ -10269,9 +10270,12 @@ function storePath(fx,fz,tx,tz){ const C=.2, X0=-5, Z0=-4, NX=50, NZ=47; const i
   const out=[]; let cur=[fx,fz]; let k=0; while(k<pts.length){ let far=k; for(let m=pts.length-1;m>k;m--) if(clear(cur,pts[m])){ far=m; break; } cur=pts[far]; out.push(cur); k=far+1; } return out; }
 function walkAv(a,x,z){ const p=storePath(a.pos.x,a.pos.y,x,z); a.seat=-1; a.faceGoal=null; const f=p.shift(); a.target.set(f[0],f[1]); a.path=p; }
 const atGoal=a=>(!a.path||!a.path.length)&&a.pos.distanceTo(a.target)<.06;
-function prodTex(k){ return cvs(64,64,(x,w,h)=>{ const s=SN[k]; x.fillStyle=s.col; x.fillRect(0,0,w,h); if(k==="drink"){ x.fillStyle="#fff7e0"; x.fillRect(0,26,w,16); x.fillStyle="#9c2b16"; x.fillRect(0,32,w,4); x.fillStyle="#f2efe6"; x.fillRect(0,0,w,6); }
+function prodTex(k){ return cvs(64,64,(x,w,h)=>{ const s=SN[k]; x.fillStyle=s.col; x.fillRect(0,0,w,h); if(k==="drink"){ x.fillStyle="#f6eee6"; x.beginPath(); x.moveTo(0,30); for(let i=0;i<=w;i+=4) x.lineTo(i,26+Math.sin(i/w*Math.PI*2)*5); for(let i=w;i>=0;i-=4) x.lineTo(i,36+Math.sin(i/w*Math.PI*2)*5); x.fill(); x.fillStyle="#f8d77a"; x.beginPath(); for(let i=0;i<=w;i+=4) x.lineTo(i,36+Math.sin(i/w*Math.PI*2)*5); for(let i=w;i>=0;i-=4) x.lineTo(i,42+Math.sin(i/w*Math.PI*2)*5); x.fill(); x.fillStyle="#d9dde2"; x.fillRect(0,0,w,5); x.fillRect(0,h-5,w,5); }
     if(k==="energy"){ x.fillStyle="#ffe14a"; x.fillRect(0,28,w,8); } if(k==="beer"){ x.fillStyle="#fff"; x.fillRect(0,24,w,14); x.fillStyle="#2f6a3a"; x.fillRect(0,38,w,4); } if(k==="noodle"){ x.fillStyle="#f2efe8"; x.fillRect(0,0,w,18); x.fillRect(0,46,w,18); x.fillStyle="#fff"; x.fillRect(0,28,w,4); } if(k==="bread"){ x.fillStyle="#e7ae52"; x.fillRect(0,0,w,h); x.strokeStyle="#c78533"; for(let i=0;i<8;i++){ x.beginPath(); x.moveTo(i*10,0); x.lineTo(i*10+20,h); x.stroke(); } } }); }
-function prodGeo(k){ if(k==="drink"){ const g=new T.CylinderGeometry(.036,.038,.22,10); g.translate(0,.11,0); return g; } if(k==="energy"){ const g=new T.CylinderGeometry(.03,.03,.16,10); g.translate(0,.08,0); return g; } if(k==="beer"){ const g=new T.CylinderGeometry(.036,.036,.14,10); g.translate(0,.07,0); return g; }
+const PROD_SZ={drink:.32,energy:.32,beer:.32,cookie:.28,noodle:.29,bread:.28}; const PMAT={};
+function prodMat(k){ if(PMAT[k]) return PMAT[k]; const t=new T.TextureLoader().load(snackIcon(k)); t.encoding=T.sRGBEncoding; t.anisotropy=4; return PMAT[k]=new T.MeshBasicMaterial({map:t,alphaTest:.5,side:T.DoubleSide,toneMapped:false}); }
+function prodGeo(k){ const z=PROD_SZ[k]; const g=new T.PlaneGeometry(z,z); g.translate(0,z*.47,0); return g; }
+function prodGeoOld(k){ if(k==="drink"){ const g=new T.CylinderGeometry(.036,.038,.22,10); g.translate(0,.11,0); return g; } if(k==="energy"){ const g=new T.CylinderGeometry(.03,.03,.16,10); g.translate(0,.08,0); return g; } if(k==="beer"){ const g=new T.CylinderGeometry(.036,.036,.14,10); g.translate(0,.07,0); return g; }
   if(k==="cookie"){ const g=new T.BoxGeometry(.16,.2,.06); g.translate(0,.1,0); return g; } if(k==="noodle"){ const g=new T.CylinderGeometry(.07,.052,.12,12); g.translate(0,.06,0); return g; } const g=new T.SphereGeometry(.08,12,8); g.scale(1,.62,1); g.translate(0,.05,0); return g; }
 function buildStore(){ if(STORE) return STORE; const R=new T.Scene(); R.background=new T.Color("#2a2530"); R.environment=scene.environment; const S={R,shelves:[],hits:[]};
   R.add(new T.HemisphereLight("#fffaf0","#6a5f52",.8)); const dl=new T.DirectionalLight("#ffffff",.8); dl.position.set(4,9,6); R.add(dl); R.add(new T.AmbientLight("#ffffff",.15));
@@ -10283,7 +10287,7 @@ function buildStore(){ if(STORE) return STORE; const R=new T.Scene(); R.backgrou
   const matT=cvs(256,128,(x,w,h)=>{ x.fillStyle="#2f4a6a"; x.fillRect(0,0,w,h); x.strokeStyle="#7fd0f2"; x.lineWidth=4; x.strokeRect(8,8,w-16,h-16); x.fillStyle="#e9fff4"; x.font=`900 44px ${UI_FONT}`; x.textAlign="center"; x.fillText("歡迎光臨",w/2,82); });
   const mt=new T.Mesh(new T.PlaneGeometry(1.6,.8),new T.MeshStandardMaterial({map:matT,roughness:.9})); mt.rotation.x=-Math.PI/2; mt.position.set(3.35,.01,3.4); R.add(mt);
   const poster=(txt,c,x)=>{ const p=new T.Mesh(new T.PlaneGeometry(1.5,.5),new T.MeshBasicMaterial({map:cvs(300,100,(g,w,h)=>{ g.fillStyle=c; g.fillRect(0,0,w,h); g.fillStyle="#fff"; g.font=`900 40px ${UI_FONT}`; g.textAlign="center"; g.fillText(txt,w/2,66); })})); p.position.set(x,2.82,-3.98); R.add(p); };
-  poster("冰涼一夏","#2d78d2",-1.78); poster("提神醒腦","#e0453a",.38); poster("乾杯！","#d9a628",2.53);
+  poster("冰涼一夏","#ef7d98",-1.78); poster("鮮榨果汁","#f39a3a",.38); poster("清涼解渴","#5aa7e6",2.53);
   const door=new T.Mesh(new T.PlaneGeometry(1.1,2.1),new T.MeshStandardMaterial({roughness:.6,map:cvs(110,210,(x,w,h)=>{ x.fillStyle="#8b9aa3"; x.fillRect(0,0,w,h); x.strokeStyle="#5f6b72"; x.lineWidth=4; x.strokeRect(6,6,w-12,h-12); x.fillStyle="#fff"; x.fillRect(15,40,80,34); x.fillStyle="#333"; x.font=`900 22px ${UI_FONT}`; x.textAlign="center"; x.fillText("倉庫",55,64); x.fillStyle="#d9d9d9"; x.fillRect(80,110,14,6); })}));
   door.position.set(-4.99,1.05,-2.95); door.rotation.y=Math.PI/2; R.add(door);
   const packs=new T.Mesh(new T.PlaneGeometry(2.6,.9),new T.MeshStandardMaterial({roughness:.6,map:cvs(312,108,(x,w,h)=>{ x.fillStyle="#5a4636"; x.fillRect(0,0,w,h); for(let r=0;r<4;r++) for(let i=0;i<20;i++){ x.fillStyle=["#e8e1d2","#c0392b","#2c3e8f","#e6b422","#1e8449","#ffffff","#8e44ad"][(i*3+r)%7]; x.fillRect(4+i*15.3,4+r*26,12,21); } })})); packs.position.set(-4.98,1.95,1.75); packs.rotation.y=Math.PI/2; R.add(packs);
@@ -10302,7 +10306,7 @@ function buildStore(){ if(STORE) return STORE; const R=new T.Scene(); R.backgrou
   /* shelves with their goods (one instanced mesh per shelf; showing n of them is just .count) */
   const glassM=new T.MeshStandardMaterial({color:"#dff1ff",transparent:true,opacity:.16,roughness:.05,metalness:.2,depthWrite:false});
   STORE_SHELVES.forEach((d,si)=>{ const sh={...d,i:si,slots:[]}; const s=SN[d.k];
-    if(d.kind==="fridge"){ const w=d.x1-d.x0, cx=(d.x0+d.x1)/2; box(w,2.15,.8,mat("#d9dde2",{roughness:.35,metalness:.3}),cx,1.075,-3.62,R); box(w-.12,1.8,.05,mat("#23282d"),cx,1.0,-3.95,R);
+    if(d.kind==="fridge"){ const w=d.x1-d.x0, cx=(d.x0+d.x1)/2; { const fm=mat("#d9dde2",{roughness:.35,metalness:.3}); box(w,2.15,.8,[fm,fm,fm,fm,new T.MeshBasicMaterial({visible:false}),fm],cx,1.075,-3.62,R); } /* open at the front so the drinks show through the glass */ box(w-.12,1.8,.05,mat("#23282d"),cx,1.0,-3.95,R);
       const lab=new T.Mesh(new T.PlaneGeometry(w-.1,.24),new T.MeshBasicMaterial({map:cvs(256,48,(x,W,H)=>{ x.fillStyle=s.col; x.fillRect(0,0,W,H); x.fillStyle="#fff"; x.font=`900 30px ${UI_FONT}`; x.textAlign="center"; x.fillText(s.tag,W/2,36); })})); lab.position.set(cx,2.0,-3.21); R.add(lab);
       for(const y of [.32,.82,1.32]) box(w-.14,.025,.62,mat("#eef1f4",{roughness:.3}),cx,y,-3.6,R); const gl=new T.Mesh(new T.PlaneGeometry(w-.12,1.72),glassM); gl.position.set(cx,1.0,-3.215); R.add(gl);
       for(const y of [.335,.835,1.335]) for(let i=0;i<5;i++) sh.slots.push([d.x0+.27+i*(w-.54)/4,y,-3.45]); sh.hit=box(w,2.2,.9,new T.MeshBasicMaterial({visible:false}),cx,1.1,-3.55,R); }
@@ -10313,8 +10317,8 @@ function buildStore(){ if(STORE) return STORE; const R=new T.Scene(); R.backgrou
       for(const y of [.22,.52,.82]) box(w,.025,len,mat("#f2f3f5",{roughness:.35}),cx,y,cz,R); const lab=new T.Mesh(new T.PlaneGeometry(len*.6,.22),new T.MeshBasicMaterial({map:cvs(256,48,(x,W,H)=>{ x.fillStyle=s.col; x.fillRect(0,0,W,H); x.fillStyle="#fff"; x.font=`900 30px ${UI_FONT}`; x.textAlign="center"; x.fillText(s.tag,W/2,36); }),side:T.DoubleSide})); lab.position.set(cx,1.25,cz); lab.rotation.y=Math.PI/2; R.add(lab);
       for(const y of [.235,.535,.835]) for(let i=0;i<6;i++) sh.slots.push([d.x1-.18,y,d.z0+.25+i*(len-.5)/5]); sh.hit=box(w+.3,1.3,len,new T.MeshBasicMaterial({visible:false}),cx,.65,cz,R); }
     sh.hit.userData.shelf=si+1; S.hits.push(sh.hit); sh.cap=sh.slots.length;
-    const tx=prodTex(d.k); const im=new T.InstancedMesh(prodGeo(d.k),new T.MeshStandardMaterial({map:tx,roughness:.45}),sh.cap); const M=new T.Matrix4(), Q=new T.Quaternion();
-    sh.slots.forEach((p,i)=>{ Q.setFromAxisAngle(new T.Vector3(0,1,0),(Math.random()-.5)*.3+(d.kind==="gondolaX"?Math.PI/2:0)); M.compose(new T.Vector3(p[0],p[1],p[2]),Q,new T.Vector3(1,1,1)); im.setMatrixAt(i,M); }); R.add(im); sh.im=im; sh.n=sh.cap; S.shelves.push(sh); });
+    const im=new T.InstancedMesh(prodGeo(d.k),prodMat(d.k),sh.cap); const M=new T.Matrix4(), Q=new T.Quaternion().setFromUnitVectors(new T.Vector3(0,0,1),new T.Vector3(Math.cos(.62)*Math.sin(Math.PI/4),Math.sin(.62),Math.cos(.62)*Math.cos(Math.PI/4)));
+    sh.slots.forEach((p,i)=>{ const s=.92+Math.random()*.12; const fx=d.kind==="gondolaX"?.11:0, fz=d.kind==="gondola"?.11:0; /* at the shelf's front edge, out from under the shelf above */ M.compose(new T.Vector3(p[0]+fx+(Math.random()-.5)*.03,p[1],p[2]+fz),Q,new T.Vector3(s,s,s)); im.setMatrixAt(i,M); }); R.add(im); sh.im=im; sh.n=sh.cap; S.shelves.push(sh); });
   S.cam=new T.OrthographicCamera(-5,5,5,-5,.1,80); S.ray=new T.Raycaster(); STORE=S; return S; }
 function shelfSet(sh,n){ sh.n=Math.max(0,Math.min(sh.cap,n)); sh.im.count=sh.n; }
 /* the iso camera: looking from the front-right corner, the room centred at a chosen spot and size */
@@ -10325,7 +10329,7 @@ function tapLayer(o,fn){ const t=o.el.querySelector(".shx-touch"); let sx=0, sy=
   t.addEventListener("pointerup",e=>{ if(Math.hypot(e.clientX-sx,e.clientY-sy)<14&&performance.now()-st<700){ try{ ensureAudio(); }catch(_){} fn(e.clientX,e.clientY); } }); }
 /* ---------- the door: shop or work ---------- */
 function cvsMenu(){ const e=en(), left=WORK_MAX-dayCount("wk"); openSheet("cvs","M超商",`<p class="lead">叮咚～歡迎光臨！要進去買東西，還是來打工？</p><div class="goods">
-  <button class="good" data-act="cvsGo" data-v="buy"><span class="name">🛒 進去買東西</span><span class="meta">飲料、餅乾、泡麵、提神飲料、啤酒、麵包，吃了會恢復精力</span></button>
+  <button class="good" data-act="cvsGo" data-v="buy"><span class="name">🛒 進去買東西</span><span class="meta">汽水、柳橙汁、礦泉水、餅乾、洋芋片、糖果，吃了會恢復精力</span></button>
   <button class="good" data-act="cvsGo" data-v="work"${e<EN_SHIFT||left<=0?' style="opacity:.55"':""}><span class="name">🧑‍💼 打工一班（100 秒）</span><span class="meta">要花 ${EN_SHIFT} 精力・你現在有 ${e} 精力・今天還能打工 ${left} 班（每天最多 ${WORK_MAX} 班）。結帳找零、補貨上架，賺平安幣</span></button></div>
   <p class="note">每天有 100 精力，一班要 ${EN_SHIFT}，每天最多打工 ${WORK_MAX} 班。精力每天最多能恢復 ${EN_REC_MAX}（今天還剩 ${Math.round(recLeft())}）：套房的床最快，再來是通鋪、溫泉、禪堂靜坐；吃東西最快但最貴。</p>`); }
 HANDLERS.cvsGo=v=>{ if(v==="work"){ if(dayCount("wk")>=WORK_MAX){ toast(`今天已經打工 ${WORK_MAX} 班了，明天再來`,2800); return; } if(en()<EN_SHIFT){ toast(`精力不夠（要 ${EN_SHIFT}，你有 ${en()}），先吃點東西或去休息`,3000); return; } closeSheet(); workStart(); } else { closeSheet(); buyStart(); } };
@@ -10437,7 +10441,7 @@ function workStart(){ const S=buildStore(); bag.en=Math.max(0,bag.en-EN_SHIFT); 
 let CLAW=null;
 const CLW={x0:-.46,x1:.46,z0:-.34,z1:.36,floor:.82,top:1.66,home:[-.38,.28],chute:[-.55,-.2,.08,.45]};
 const inChute=(x,z)=>x>CLW.chute[0]&&x<CLW.chute[1]&&z>CLW.chute[2]&&z<CLW.chute[3];
-const PRIZE={cat:{n:"招財貓娃娃",grip:.8},cap:{n:"扭蛋殼",grip:.62},gift:{n:"神秘禮物盒",grip:.5},can:{n:"古早味紅茶",grip:.56},cup:{n:"牛肉泡麵",grip:.66}};
+const PRIZE={cat:{n:"招財貓娃娃",grip:.8},cap:{n:"扭蛋殼",grip:.62},gift:{n:"神秘禮物盒",grip:.5},can:{n:"草莓汽水",grip:.56},cup:{n:"洋芋片",grip:.66}};
 function prizeMesh(type){ const g=new T.Group(); let r=.08, h=.16;
   if(type==="cat"){ const w=mat("#fbf7f0",{roughness:.9}); const b=new T.Mesh(gx('pz-body',()=>new T.SphereGeometry(.075,14,10)),w); b.scale.set(1,.85,.9); b.position.y=.065; g.add(b); const hd=new T.Mesh(gx('pz-head',()=>new T.SphereGeometry(.062,14,10)),w); hd.position.set(0,.16,.01); g.add(hd);
     for(const s of [-1,1]){ const e=new T.Mesh(gx('pz-ear',()=>new T.ConeGeometry(.022,.04,8)),w); e.position.set(s*.036,.215,0); e.rotation.z=-s*.3; g.add(e); const ey=new T.Mesh(gx('pz-eye',()=>new T.SphereGeometry(.009,6,5)),mat("#222")); ey.position.set(s*.022,.167,.064); g.add(ey); }
@@ -10445,18 +10449,18 @@ function prizeMesh(type){ const g=new T.Group(); let r=.08, h=.16;
   if(type==="cap"){ const c=["#ff6b9a","#ffb02e","#4fc3ff","#8f6bff","#3fd28a"][(Math.random()*5)|0]; const t=new T.Mesh(gx('pz-cap-t',()=>new T.SphereGeometry(.07,16,8,0,Math.PI*2,0,Math.PI/2)),mat(c,{roughness:.25})); t.position.y=.07; g.add(t); const bt=new T.Mesh(gx('pz-cap-b',()=>new T.SphereGeometry(.07,16,8,0,Math.PI*2,Math.PI/2,Math.PI/2)),new T.MeshStandardMaterial({color:"#ffffff",roughness:.1,transparent:true,opacity:.55})); bt.position.y=.07; g.add(bt); r=.07; h=.14; }
   if(type==="gift"){ const c=["#d84b6a","#3d8be0","#3cbf6a"][(Math.random()*3)|0]; box(.13,.12,.13,mat(c,{roughness:.6}),0,.06,0,g); box(.135,.125,.03,mat("#ffd24a"),0,.06,0,g); box(.03,.125,.135,mat("#ffd24a"),0,.06,0,g); const bw=new T.Mesh(gx('pz-bow',()=>new T.TorusGeometry(.025,.008,6,12)),mat("#ffd24a")); bw.position.y=.13; g.add(bw); r=.075; h=.15; }
   if(type==="can"){ const m=new T.Mesh(gx('pz-can',()=>new T.CylinderGeometry(.038,.038,.13,14)),new T.MeshStandardMaterial({map:prodTex("drink"),roughness:.35})); m.position.y=.065; g.add(m); r=.05; h=.13; }
-  if(type==="cup"){ const m=new T.Mesh(gx('pz-cup',()=>new T.CylinderGeometry(.06,.045,.1,14)),new T.MeshStandardMaterial({map:prodTex("noodle"),roughness:.5})); m.position.y=.05; g.add(m); const l=new T.Mesh(gx('pz-lid',()=>new T.CylinderGeometry(.062,.062,.008,14)),mat("#efe8d7")); l.position.y=.104; g.add(l); r=.065; h=.11; }
+  if(type==="cup"){ const m=new T.Mesh(gx('pz-bag',()=>{ const q=new T.PlaneGeometry(.17,.17); q.translate(0,.08,0); return q; }),prodMat("noodle")); g.add(m); const m2=m.clone(); m2.rotation.y=Math.PI/2; m2.scale.set(.35,1,1); g.add(m2); r=.06; h=.15; }
   g.rotation.y=Math.random()*6.28; return {g,type,r,h,grip:PRIZE[type].grip}; }
-function buildClaw(){ if(CLAW) return CLAW; const R=new T.Scene(); R.background=new T.Color("#160c22"); R.environment=scene.environment; const C={R,pz:[],x:CLW.home[0],z:CLW.home[1],y:CLW.top,open:.5,sw:0,swv:0,swz:0,swzv:0};
-  R.add(new T.HemisphereLight("#ffffff","#4a3550",.75)); const dl=new T.DirectionalLight("#ffffff",.6); dl.position.set(1,3,4); R.add(dl); const pl=new T.PointLight("#fff4e0",.9,3.2); pl.position.set(0,1.95,.1); R.add(pl);
+function buildClaw(){ if(CLAW) return CLAW; const R=new T.Scene(); R.background=new T.Color("#160c22"); /* no environment map here: it made every pixel of this close-up costly on phones */ const C={R,pz:[],x:CLW.home[0],z:CLW.home[1],y:CLW.top,open:.5,sw:0,swv:0,swz:0,swzv:0};
+  R.add(new T.HemisphereLight("#ffffff","#4a3550",1.0)); const dl=new T.DirectionalLight("#ffffff",.8); dl.position.set(1,3,4); R.add(dl); const pl=new T.PointLight("#fff4e0",.9,3.2); pl.position.set(0,1.95,.1); R.add(pl);
   const wall=new T.Mesh(new T.PlaneGeometry(8,4),new T.MeshBasicMaterial({map:cvs(512,256,(x,w,h)=>{ const g=x.createLinearGradient(0,0,0,h); g.addColorStop(0,"#2a1442"); g.addColorStop(1,"#120a1c"); x.fillStyle=g; x.fillRect(0,0,w,h); for(let i=0;i<40;i++){ x.fillStyle=["rgba(255,95,168,.5)","rgba(85,214,255,.5)","rgba(255,210,63,.5)"][i%3]; x.beginPath(); x.arc(Math.random()*w,Math.random()*h*.7,1+Math.random()*2.5,0,7); x.fill(); } })}));
-  wall.position.set(0,2,-1.6); R.add(wall); const fl=new T.Mesh(new T.PlaneGeometry(8,6),new T.MeshStandardMaterial({color:"#2a2033",roughness:.7})); fl.rotation.x=-Math.PI/2; R.add(fl);
+  wall.position.set(0,2,-1.6); R.add(wall); const fl=new T.Mesh(new T.PlaneGeometry(8,6),new T.MeshStandardMaterial({color:"#211928",roughness:.7})); fl.rotation.x=-Math.PI/2; R.add(fl);
   const pink=mat("#ff7fb8",{roughness:.35}), white=mat("#fbf6f9",{roughness:.3});
   const base=new T.Mesh(new T.BoxGeometry(1.2,.8,1.0),[pink,pink,white,pink,new T.MeshStandardMaterial({roughness:.4,map:cvs(256,170,(x,w,h)=>{ x.fillStyle="#ff7fb8"; x.fillRect(0,0,w,h); for(let i=0;i<14;i++){ x.fillStyle="rgba(255,255,255,.5)"; x.beginPath(); x.arc(Math.random()*w,Math.random()*h,2+Math.random()*4,0,7); x.fill(); } x.fillStyle="#fff"; x.font=`900 40px ${DISPLAY_FONT}`; x.textAlign="center"; x.fillText("好運夾",w/2,70); x.fillStyle="#2a1440"; x.fillRect(w/2-50,98,100,46); x.fillStyle="#ffd24a"; x.font=`900 20px ${UI_FONT}`; x.fillText("取物口",w/2,128); })}),pink]); base.position.y=.4; R.add(base);
   const bed=new T.Mesh(new T.BoxGeometry(1.1,.04,.9),mat("#ffe0ee",{roughness:.95})); bed.position.y=.8; R.add(bed);
   const ch=CLW.chute, cw=ch[1]-ch[0], cd=ch[3]-ch[2], ccx=(ch[0]+ch[1])/2, ccz=(ch[2]+ch[3])/2; const hole=new T.Mesh(new T.PlaneGeometry(cw,cd),new T.MeshBasicMaterial({color:"#120818"})); hole.rotation.x=-Math.PI/2; hole.position.set(ccx,.825,ccz); R.add(hole);
-  const acr=new T.MeshStandardMaterial({color:"#e8f6ff",transparent:true,opacity:.28,roughness:.05,depthWrite:false,side:T.DoubleSide}); const aw=(w,d,x,z,ry)=>{ const m=new T.Mesh(new T.PlaneGeometry(w,.22),acr); m.position.set(x,.93,z); m.rotation.y=ry; R.add(m); }; aw(cw,0,ccx,ch[2],0); aw(cd,0,ch[1],ccz,Math.PI/2);
-  const glass=new T.MeshStandardMaterial({color:"#dff2ff",transparent:true,opacity:.1,roughness:.02,metalness:.1,depthWrite:false,side:T.DoubleSide});
+  const acr=new T.MeshBasicMaterial({color:"#e8f6ff",transparent:true,opacity:.28,depthWrite:false,side:T.DoubleSide}); const aw=(w,d,x,z,ry)=>{ const m=new T.Mesh(new T.PlaneGeometry(w,.22),acr); m.position.set(x,.93,z); m.rotation.y=ry; R.add(m); }; aw(cw,0,ccx,ch[2],0); aw(cd,0,ch[1],ccz,Math.PI/2);
+  const glass=new T.MeshBasicMaterial({color:"#dff2ff",transparent:true,opacity:.1,depthWrite:false,side:T.DoubleSide}); /* plain see-through panes (lit glass cost a lot on phones) */
   const gp=(w,h,x,y,z,ry)=>{ const m=new T.Mesh(new T.PlaneGeometry(w,h),glass); m.position.set(x,y,z); m.rotation.y=ry; R.add(m); }; gp(1.1,1.1,0,1.37,.45,0); gp(1.1,1.1,0,1.37,-.45,0); gp(.9,1.1,-.55,1.37,0,Math.PI/2); gp(.9,1.1,.55,1.37,0,Math.PI/2);
   const streak=new T.Mesh(new T.PlaneGeometry(.08,1.0),new T.MeshBasicMaterial({color:"#ffffff",transparent:true,opacity:.09,depthWrite:false})); streak.position.set(.25,1.4,.451); streak.rotation.z=.4; R.add(streak);
   for(const sx of [-1,1]) for(const sz of [-1,1]) box(.05,1.12,.05,white,sx*.575,1.37,sz*.475,R);
@@ -10492,7 +10496,7 @@ function clawStart(){ const C=buildClaw(); const o={exposure:1.05}; const el=ent
   const keyH=e=>{ if(G.st!=="move") return; const d=e.type==="keydown"; if(e.key==="ArrowLeft") jx=d?-1:0; if(e.key==="ArrowRight") jx=d?1:0; if(e.key==="ArrowUp") jz=d?-1:0; if(e.key==="ArrowDown") jz=d?1:0; if(d&&(e.key===" "||e.key==="Enter")) drop(); };
   addEventListener("keydown",keyH); addEventListener("keyup",keyH);
   const win=p=>{ let what="", ic="🎁"; const t=p.type; dayAdd("clw");
-    if(t==="cat"){ bag.coins+=30; what="平安幣 +30"; ic="🐱"; } if(t==="cap"){ bag.gacha=Math.min(255,(bag.gacha||0)+1); what="扭蛋幣 +1 枚"; ic="🥚"; } if(t==="can"){ bag.snk.drink=(bag.snk.drink||0)+1; what="古早味紅茶 ×1（放進背包）"; ic="🧃"; } if(t==="cup"){ bag.snk.noodle=(bag.snk.noodle||0)+1; what="牛肉泡麵 ×1（放進背包）"; ic="🍜"; }
+    if(t==="cat"){ bag.coins+=30; what="平安幣 +30"; ic="🐱"; } if(t==="cap"){ bag.gacha=Math.min(255,(bag.gacha||0)+1); what="扭蛋幣 +1 枚"; ic="🥚"; } if(t==="can"){ bag.snk.drink=(bag.snk.drink||0)+1; what="草莓汽水 ×1（放進背包）"; ic="🥤"; } if(t==="cup"){ bag.snk.noodle=(bag.snk.noodle||0)+1; what="洋芋片 ×1（放進背包）"; ic="🍟"; }
     if(t==="gift"){ let L=[]; try{ L=gachaLeft(); }catch(e){} if(L.length&&!me.sp){ const k=L[(Math.random()*L.length)|0]; accState().owned[k]=1; what=`頭飾「${ACC[k].name}」！（放進背包的飾品）`; ic=""; G.hat=k; } else { bag.coins+=60; what="平安幣 +60"; } }
     saveBag(); markDirty(); try{ profSave(true); }catch(e){} statInc("clawWin"); coins();
     const c=document.createElement("div"); c.className="shx-card"; c.innerHTML=`<h3>🎉 夾到了！</h3><div style="font-size:52px;line-height:1.2">${G.hat?bic(G.hat,"gc-ic"):ic}</div><p style="text-align:center;font-size:16px"><b>${PRIZE[t].n}</b></p><p style="text-align:center">${what}</p><div class="row"><button class="shx-btn sec" id="wOut">離開</button><button class="shx-btn" id="wAg">再玩一次（${CLAW_COST} 幣）</button></div>`; el.appendChild(c); G.hat=null;
@@ -10504,16 +10508,16 @@ function clawStart(){ const C=buildClaw(); const o={exposure:1.05}; const el=ent
     const s=supportAt(C,x,z,p); if(p.g.position.y<=s){ p.g.position.y=s; p.fall=false; p.vy=0; try{ tone(140,.08,.08,"sine"); }catch(e){} return "land"; } };
   o.update=dt=>{ const t=performance.now()/1000; C.leds.forEach((m,i)=>m.color.set(((i+Math.floor(t*6))%3)===0?"#ffffff":i%2?"#ff5fa8":"#ffd23f"));
     let vx=0, vz=0;
-    if(G.st==="move"){ G.timer-=dt; $k("#kT").textContent=`⏱ ${Math.ceil(G.timer)}`; vx=jx*.22; vz=jz*.22; humSet(!!(jx||jz)); if(G.timer<=0) drop(); }
-    else if(G.st==="drop"){ C.y-=.42*dt; if(C.y<=G.stopY){ C.y=G.stopY; G.st="grab"; G.t=0; humSet(false); try{ tone(220,.25,.06,"square"); }catch(e){} } }
+    if(G.st==="move"){ G.timer-=dt; $k("#kT").textContent=`⏱ ${Math.ceil(G.timer)}`; vx=jx*.3; vz=jz*.3; humSet(!!(jx||jz)); if(G.timer<=0) drop(); }
+    else if(G.st==="drop"){ C.y-=.6*dt; if(C.y<=G.stopY){ C.y=G.stopY; G.st="grab"; G.t=0; humSet(false); try{ tone(220,.25,.06,"square"); }catch(e){} } }
     else if(G.st==="grab"){ G.t+=dt; C.open=Math.max(.06,.5-G.t*.9);
       if(G.t>.55){ const best=G.tgt; G.tgt=null;
         if(best&&!best.fall){ const d=Math.hypot(best.g.position.x-C.x,best.g.position.z-C.z), aim=Math.max(0,1-d/(best.r+.05)), pw=.85+Math.random()*.15; const ch=best.grip*(.5+.5*aim)*pw+(best.g.position.y>CLW.floor+.05?.08:0);
           if(Math.random()<ch){ G.held=best; best.held=true; best.slip=.05+(1-aim)*.15+(1-best.grip)*.1; best.dy=C.y-best.g.position.y; best.dx=best.g.position.x-C.x; best.dz=best.g.position.z-C.z; } else { best.g.rotation.y+=(Math.random()-.5)*.8; best.g.position.x+=(Math.random()-.5)*.03; } }
         G.st="lift"; humSet(true); } }
-    else if(G.st==="lift"){ C.y+=.33*dt; if(G.held&&C.y>CLW.floor+.5&&!G.slipDone){ G.slipDone=true; if(Math.random()<G.held.slip){ G.held.held=false; G.held.fall=true; G.held.vy=0; G.held=null; C.open=.2; try{ tone(300,.15,.08,"sawtooth"); }catch(e){} } }
+    else if(G.st==="lift"){ C.y+=.45*dt; if(G.held&&C.y>CLW.floor+.5&&!G.slipDone){ G.slipDone=true; if(Math.random()<G.held.slip){ G.held.held=false; G.held.fall=true; G.held.vy=0; G.held=null; C.open=.2; try{ tone(300,.15,.08,"sawtooth"); }catch(e){} } }
       if(C.y>=CLW.top){ C.y=CLW.top; G.st="carry"; } }
-    else if(G.st==="carry"){ const dx=CLW.home[0]-C.x, dz=CLW.home[1]-C.z, L=Math.hypot(dx,dz); if(L<.01){ G.st="release"; G.t=0; humSet(false); } else { const s=Math.min(L,.26*dt); vx=dx/L*s/dt; vz=dz/L*s/dt; }
+    else if(G.st==="carry"){ const dx=CLW.home[0]-C.x, dz=CLW.home[1]-C.z, L=Math.hypot(dx,dz); if(L<.01){ G.st="release"; G.t=0; humSet(false); } else { const s=Math.min(L,.38*dt); vx=dx/L*s/dt; vz=dz/L*s/dt; }
       if(G.held&&Math.random()<.025*dt*(1-G.held.grip)*3){ G.held.held=false; G.held.fall=true; G.held.vy=0; G.held=null; C.open=.2; } }
     else if(G.st==="release"){ G.t+=dt; C.open=Math.min(.5,C.open+dt*1.2); if(G.held&&G.t>.25){ G.held.held=false; G.held.fall=true; G.held.vy=0; G.held=null; } if(G.t>1.6&&!C.pz.some(p=>p.fall)){ G.slipDone=false; if(G.won){ const p=G.won; G.won=null; win(p); toIdle(); } else { toIdle(); try{ tone(392,.2,.06,"triangle"); tone(330,.3,.06,"triangle",.2); }catch(e){} } } }
     C.x=Math.max(CLW.x0,Math.min(CLW.x1,C.x+vx*dt)); C.z=Math.max(CLW.z0,Math.min(CLW.z1,C.z+vz*dt));
@@ -10523,7 +10527,7 @@ function clawStart(){ const C=buildClaw(); const o={exposure:1.05}; const el=ent
     if(G.held){ const p=G.held; p.dx*=Math.pow(.05,dt); p.dz*=Math.pow(.05,dt); p.g.position.set(C.head.position.x+p.dx,C.head.position.y-p.dy,C.head.position.z+p.dz); }
     for(const p of C.pz.slice()) if(p.fall){ const r=fallTick(p,dt); if(r==="win"){ G.won=p; } } };
   o.render=dt=>{ const asp=innerWidth/innerHeight, cam=C.cam; cam.aspect=asp; const ht=Math.tan(cam.fov*Math.PI/360)*asp; const d=Math.max(1.75,.78/ht); cam.position.set(0,1.55+d*.12,d); cam.lookAt(0,G.st==="idle"?1.05:1.2,0); cam.updateProjectionMatrix();
-    renderer.render(C.R,cam); const pip=$k("#kPip"); const pw=Math.round(Math.min(150,innerWidth*.3)), ph=Math.round(pw*1.25); pip.style.width=pw+"px"; pip.style.height=ph+"px"; const r=pip.getBoundingClientRect();
+    renderer.render(C.R,cam); const pip=$k("#kPip"); const pw=Math.round(Math.min(150,innerWidth*.3)), ph=Math.round(pw*1.25); if(G.pipW!==pw||G.pipIH!==innerHeight){ G.pipW=pw; G.pipIH=innerHeight; pip.style.width=pw+"px"; pip.style.height=ph+"px"; G.pipR=null; } const r=G.pipR||(G.pipR=pip.getBoundingClientRect()); /* (measured once, not every frame) */
     C.pip.aspect=pw/ph; C.pip.position.set(2.1,1.45,0); C.pip.lookAt(0,1.25,0); C.pip.updateProjectionMatrix(); const vp=new T.Vector4(); renderer.getViewport(vp); renderer.setScissorTest(true); const y=innerHeight-r.bottom+2; renderer.setScissor(r.left+2,y,pw-4,ph-4); renderer.setViewport(r.left+2,y,pw-4,ph-4); renderer.render(C.R,C.pip); renderer.setScissorTest(false); renderer.setViewport(vp.x,vp.y,vp.z,vp.w); };
   o.dispose=()=>{ humSet(false); removeEventListener("keydown",keyH); removeEventListener("keyup",keyH); renderer.setScissorTest(false); if(G.held){ G.held.held=false; G.held.fall=false; G.held.g.position.y=supportAt(C,G.held.g.position.x,G.held.g.position.z,G.held); G.held=null; } C.y=CLW.top; C.x=CLW.home[0]; C.z=CLW.home[1]; C.open=.5; C.pz.forEach(p=>{ if(p.fall){ p.fall=false; p.g.position.y=supportAt(C,p.g.position.x,p.g.position.z,p); } }); }; }
 /* ======================= 衣漾服飾: try each outfit on your own character, buy, wear ======================= */
