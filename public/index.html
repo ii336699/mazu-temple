@@ -10846,7 +10846,7 @@ function build(){ if(R) return R; const S=new T.Scene(); const D={S};
   /* the sun comes in through the window: from behind and to the left */
   D.sun=new T.DirectionalLight("#ffe2b0",.7); D.sun.position.set(-3.2,4.2,-5); D.sun.target.position.set(.4,0,.6); S.add(D.sun); S.add(D.sun.target);
   D.ft=canTex(); D.wt=canTex();
-  D.floor=new T.Mesh(uvPlane(RW,RD,RW/2,RD/2),new T.MeshStandardMaterial({map:D.ft,bumpMap:D.ft,bumpScale:.012,roughness:.4,metalness:0,envMapIntensity:.55})); D.floor.rotation.x=-Math.PI/2; S.add(D.floor);
+  D.floor=new T.Mesh(uvPlane(RW,RD,RW/2,RD/2),new T.MeshStandardMaterial({map:D.ft,roughness:1,metalness:0,envMapIntensity:.22})); D.rt=canTex(); D.rt.encoding=T.LinearEncoding; D.floor.material.roughnessMap=D.rt; D.floor.material.bumpMap=D.rt; D.floor.material.bumpScale=.02; D.floor.rotation.x=-Math.PI/2; S.add(D.floor);
   const wm=new T.MeshStandardMaterial({map:D.wt,roughness:.95}); D.wm=wm; D.walls=[];
   const wall=(w,x,z,ry)=>{ const m=new T.Mesh(new T.PlaneGeometry(w,RH),wm); m.position.set(x,RH/2,z); m.rotation.y=ry; m.userData.w=w; S.add(m); D.walls.push(m); };
   wall(RW,0,-RD/2,0); wall(RD,-RW/2,0,Math.PI/2); wall(RD,RW/2,0,-Math.PI/2);
@@ -10883,13 +10883,17 @@ function daylight(){ const D=R, h=new Date(Date.now()+288e5).getUTCHours(), mode
   hill(H*.84,8,["#3f7d4f","#5a4030","#0c1628"][mode],4.2);
   x.fillStyle=["#5a3a22","#3a2416","#0a0a14"][mode]; x.fillRect(W*.06,H*.4,10,H*.6); x.fillStyle=["#3d8a4c","#7a5a2e","#0f2030"][mode]; for(const [cx,cy,rr] of [[W*.08,H*.38,40],[W*.0,H*.5,34],[W*.17,H*.5,30]]){ x.beginPath(); x.arc(cx,cy,rr,0,6.283); x.fill(); }
   D.skyTex.needsUpdate=true;
-  const col=["#ffe9c0","#ffb070","#9fb6ff"][mode], op=[.36,.3,.1][mode]; D.patch.material.color.set(col); D.patch.material.opacity=op; D.shafts.forEach((m,i)=>{ m.material.color.set(col); m.material.opacity=[.1,.085,.03][mode]*(i?.75:1); });
-  D.sun.color.set(["#ffe2b0","#ff9a55","#8ea4ff"][mode]); D.sun.intensity=[.75,.6,.22][mode]; D.hemi.intensity=[.8,.7,.55][mode]; D.hemi.color.set(["#fff6ea","#ffe2c4","#c9d2ff"][mode]); }
+  const col=["#ffe9c0","#ffb070","#9fb6ff"][mode], op=[.2,.17,.06][mode]; D.patch.material.color.set(col); D.patch.material.opacity=op; D.shafts.forEach((m,i)=>{ m.material.color.set(col); m.material.opacity=[.05,.045,.015][mode]*(i?.75:1); });
+  D.sun.color.set(["#ffe2b0","#ff9a55","#8ea4ff"][mode]); D.sun.intensity=[.42,.36,.14][mode]; D.hemi.intensity=[.78,.7,.55][mode]; D.hemi.color.set(["#fff6ea","#ffe2c4","#c9d2ff"][mode]); }
 /* how shiny each floor is (wood, tile, marble, tatami...) */
-const GLOSS=[.42,.42,.22,.13,.25,.92,.28,.3,.42,.24];
+const GLOSS=[.5,.5,.32,.24,.34,.95,.36,.38,.5,.33];
+/* the shine follows the pattern: the same floor drawn in white shows where the joints are; joints are matt and sit a little lower,
+   the tiles or boards between them shine. Red = height, green = roughness (what three.js reads for the bump and the roughness). */
+function relief(t,P,g){ const c=t.image, x=c.getContext("2d"); x.setTransform(1,0,0,1,0,0); x.fillStyle="#fff"; x.fillRect(0,0,512,512); P.d(x,"#ffffff","#ffffff"); const im=x.getImageData(0,0,512,512), d=im.data, gv=Math.round(g*255);
+  for(let i=0;i<d.length;i+=4){ const joint=d[i]<216; d[i]=joint?40:255; d[i+1]=joint?255:gv; d[i+2]=0; d[i+3]=255; } x.putImageData(im,0,0); t.needsUpdate=true; }
 /* what is showing right now (may be a preview of something not bought yet) */
 let V=null;
-function apply(){ const D=R; paint(D.ft,FLOORS[V.f],V.fa,V.fb); D.floor.material.roughness=GLOSS[V.f]; D.floor.material.bumpScale=V.f===3?.004:.012; paint(D.wt,WALLS[V.w],V.wa,V.wb);
+function apply(){ const D=R; paint(D.ft,FLOORS[V.f],V.fa,V.fb); relief(D.rt,FLOORS[V.f],GLOSS[V.f]); paint(D.wt,WALLS[V.w],V.wa,V.wb);
   const vr=WALLS[V.w].vr||2; D.walls.forEach(m=>{ const uv=m.geometry.attributes.uv, ru=m.userData.w/(RH/vr); const base=[[0,1],[1,1],[0,0],[1,0]]; for(let i=0;i<4;i++) uv.setXY(i,base[i][0]*ru,base[i][1]*vr); uv.needsUpdate=true; });
   rugApply(); }
 function rugApply(){ const D=R; if(V.r<0){ D.rug.visible=false; return; } const n=RUGS[V.r][0]; let t=D.rugTex[n];
