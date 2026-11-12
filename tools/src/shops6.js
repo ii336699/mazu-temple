@@ -45,16 +45,16 @@ const MMAP=(()=>{
     ["pray","參拜","#d9aa3d",["shop","tiangong","burn","donate","lot","jieqian","lamp","bell","drum","wish","fountain"]],
     ["game","遊戲","#ff6fae",["claw","gacha","cats","fortune","nm:qq","nm:sausage","nm:bbq","nm:fish","nm:pachinko","nm:boba","nm:balloon"]],
     ["shop","商店","#4fb3ff",["cvs","cloth","innDesk","catMom"]]];
-  const LBL={innDesk:"禪房櫃台"}; const SKIP=new Set(["lampR"]);
+  const LBL={innDesk:"禪房櫃台"}; const MM_TOWN=false; /* the town, brook and beach are not open yet: left off the map until they are (set true then) */ const SKIP=new Set(["lampR"]);
   const catOf=k=>{ for(const c of CAT) if(c[3].includes(k)) return c; return ["etc","其他","#7fd08a",[]]; };
   const label=k=>LBL[k]||(typeof STATION_LABEL!=="undefined"&&STATION_LABEL[k])||"";
   const pois=()=>Object.keys(stations).filter(k=>!SKIP.has(k)&&label(k)).map(k=>({k,n:label(k),x:stations[k].approach.x,z:stations[k].approach.y,c:catOf(k)}));
   /* the ground: every walkable spot, sampled once in small steps after the game has loaded */
   let B=[-76,66,-50.5,46.5], ST=.5, W=1, H=1; const base=document.createElement("canvas"); let ready=false, row=0, img=null;
-  const sizeUp=()=>{ try{ if(typeof TOWNX!=="undefined"&&TOWNX){ const r=TOWNX.ZR||[-8,182,-137.5,-50.5]; B=[Math.min(B[0],r[0]),Math.max(B[1],r[1]),Math.min(B[2],r[2]),Math.max(B[3],r[3])]; } }catch(e){} /* (the town, when this version has it) */
+  const sizeUp=()=>{ try{ if(MM_TOWN&&typeof TOWNX!=="undefined"&&TOWNX){ const r=TOWNX.ZR||[-8,182,-137.5,-50.5]; B=[Math.min(B[0],r[0]),Math.max(B[1],r[1]),Math.min(B[2],r[2]),Math.max(B[3],r[3])]; } }catch(e){} /* (the town, when this version has it) */
     ST=Math.max(.5,Math.sqrt((B[1]-B[0])*(B[3]-B[2])/90000)); W=Math.ceil((B[1]-B[0])/ST); H=Math.ceil((B[3]-B[2])/ST); base.width=W; base.height=H; };
   const sample=()=>{ if(!img){ sizeUp(); img=new ImageData(W,H); } const t0=performance.now(); const d=img.data;
-    while(row<H&&performance.now()-t0<12){ const z=B[2]+(row+.5)*ST; for(let i=0;i<W;i++){ let ok=false; try{ ok=walkable(B[0]+(i+.5)*ST,z); }catch(e){} if(ok){ const p=(row*W+i)*4; d[p]=236; d[p+1]=223; d[p+2]=196; d[p+3]=255; } } row++; }
+    while(row<H&&performance.now()-t0<12){ const z=B[2]+(row+.5)*ST; for(let i=0;i<W;i++){ let ok=false; try{ ok=(MM_TOWN||z>-50.5)&&walkable(B[0]+(i+.5)*ST,z); }catch(e){} if(ok){ const p=(row*W+i)*4; d[p]=236; d[p+1]=223; d[p+2]=196; d[p+3]=255; } } row++; }
     if(row<H){ setTimeout(sample,30); return; }
     const t=document.createElement("canvas"); t.width=W; t.height=H; t.getContext("2d").putImageData(img,0,0); const x=base.getContext("2d");
     const e=document.createElement("canvas"); e.width=W; e.height=H; const ge=e.getContext("2d"); ge.drawImage(t,0,0); ge.globalCompositeOperation="source-in"; ge.fillStyle="#8a6a44"; ge.fillRect(0,0,W,H); /* a brown edge round the paths */ for(const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]]) x.drawImage(e,dx,dy); x.drawImage(t,0,0); ready=true; img=null; };
@@ -89,7 +89,7 @@ const MMAP=(()=>{
   /* the big map */
   let cat="god";
   const open=()=>{ try{ ensureAudio(); }catch(e){} try{ closeSheet(); }catch(e){} let o=document.querySelector("#mmBig"); if(o) o.remove(); o=document.createElement("div"); o.id="mmBig";
-    o.innerHTML=`<div class="hd"><b>🗺️ 地圖・點一下就走過去</b><button class="x" id="mmX">關閉</button></div><div class="cats">${CAT.map(c=>`<button data-c="${c[0]}" style="--c:${c[2]}" aria-pressed="${c[0]===cat}">${c[1]}</button>`).join("")}</div><div class="map"><canvas></canvas></div><div class="list"></div>`;
+    o.innerHTML=`<div class="hd"><b>🗺️ 地圖・點一下就走過去</b>${(bag.cat&&bag.cat.pet&&!bag.cat.pet.home&&!bag.cat.pet.vet&&typeof catRescue==="function")?`<button class="x" id="mmCat">🆘 貓咪救援</button>`:""}<button class="x" id="mmX">關閉</button></div><div class="cats">${CAT.map(c=>`<button data-c="${c[0]}" style="--c:${c[2]}" aria-pressed="${c[0]===cat}">${c[1]}</button>`).join("")}</div><div class="map"><canvas></canvas></div><div class="list"></div>`;
     document.body.appendChild(o); const mc=o.querySelector(".map canvas"), box=o.querySelector(".map"); let fit=null;
     const go=k=>{ o.remove(); if(stations[k]) goStation(k); else toast("那裡現在去不了",2000); };
     const draw=()=>{ const r=box.getBoundingClientRect(), d=Math.min(2,devicePixelRatio||1); mc.width=Math.round(r.width*d); mc.height=Math.round(r.height*d); const g=mc.getContext("2d");
@@ -102,7 +102,7 @@ const MMAP=(()=>{
       arrow(g,X(meAv.pos.x),Y(meAv.pos.y),Math.PI-meAv.rotY,8*d,"#ffe14a");
       o.querySelector(".list").innerHTML=sel.map(p=>`<button data-k="${p.k}" style="--c:${p.c[2]}">${p.n}</button>`).join("")||`<span style="color:#d9c9a8;font-size:13px">這一類現在沒有地方可以去</span>`;
       o.querySelectorAll(".list button").forEach(b=>b.onclick=()=>go(b.dataset.k)); };
-    o.querySelector("#mmX").onclick=()=>o.remove(); o.querySelectorAll(".cats button").forEach(b=>b.onclick=()=>{ cat=b.dataset.c; o.querySelectorAll(".cats button").forEach(x=>x.setAttribute("aria-pressed",x===b)); draw(); });
+    o.querySelector("#mmX").onclick=()=>o.remove(); { const c=o.querySelector("#mmCat"); if(c) c.onclick=()=>{ o.remove(); catRescue(); }; } o.querySelectorAll(".cats button").forEach(b=>b.onclick=()=>{ cat=b.dataset.c; o.querySelectorAll(".cats button").forEach(x=>x.setAttribute("aria-pressed",x===b)); draw(); });
     mc.addEventListener("click",e=>{ if(!fit) return; const r=mc.getBoundingClientRect(), x=(e.clientX-r.left)*fit.d, y=(e.clientY-r.top)*fit.d; let best=null, bd=22*fit.d;
       for(const p of pois()){ if(p.c[0]!==cat) continue; const dx=fit.ox+px(p.x)*fit.s-x, dy=fit.oy+pz(p.z)*fit.s-y, dd=Math.hypot(dx,dy); if(dd<bd){ bd=dd; best=p; } } if(best) go(best.k); });
     requestAnimationFrame(draw); };

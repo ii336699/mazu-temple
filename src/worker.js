@@ -605,9 +605,10 @@ export class Lobby extends DurableObject {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
       let b = {}; try { b = await req.json(); } catch {}
       const cur = this.hb || (await this.ctx.storage.get("hb")); if (cur && Date.now() - cur.at < 8000) return json({ ok: false, busy: true });
-      const n = 30, id = Math.random().toString(36).slice(2, 10), seed = (Math.random() * 4294967295) >>> 0, at = Date.now();
+      const n = 10, id = Math.random().toString(36).slice(2, 10), seed = (Math.random() * 4294967295) >>> 0, at = Date.now();
       const pick = () => { const r = Math.random(); return r < .02 ? 500 : r < .12 ? 100 : 50; }; // only 50 / 100 / 500 (chair's choice, 11/04): 500 2%, 100 10%, 50 88%
-      this.hb = { id, at, n, amt: Array.from({ length: n }, pick), taken: {}, per: {} }; await this.ctx.storage.put("hb", this.hb);
+      const tk = () => { if (Math.random() >= .1) return 0; const r = Math.random(); return r < .6 ? 1 : r < .9 ? 2 : 3; }; // 1 envelope in 10 holds 1–3 扭蛋幣 instead of coins (chair, 11/12)
+      const tok = Array.from({ length: n }, tk); this.hb = { id, at, n, amt: Array.from({ length: n }, (_, i) => tok[i] ? 0 : pick()), tok, taken: {}, per: {} }; await this.ctx.storage.put("hb", this.hb);
       const x = Math.max(-40, Math.min(40, Number(b.x) || 0)), z = Math.max(-50, Math.min(60, Number(b.z) || 0));
       await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/hongbao", { method: "POST", body: JSON.stringify({ id, seed, n, x, z, at }) }).catch(() => {})));
       return json({ ok: true, id, seed, n, x, z, at });
@@ -678,7 +679,7 @@ export class Lobby extends DurableObject {
       if ((hb.per[uid] || 0) >= 3) return json({ ok: false, max: true });
       if (hb.taken[i]) return json({ ok: false, taken: true });
       hb.taken[i] = uid; hb.per[uid] = (hb.per[uid] || 0) + 1; await this.ctx.storage.put("hb", hb);
-      return json({ ok: true, amt: hb.amt[i], got: hb.per[uid] });
+      return json({ ok: true, amt: hb.amt[i], tok: (hb.tok && hb.tok[i]) || 0, got: hb.per[uid] });
     }
     if (url.pathname === "/fireworks" && req.method === "POST") {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
