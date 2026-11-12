@@ -79,7 +79,7 @@ const MMAP=(()=>{
   if(hall) hall.prepend(rowEl);
   const cv=rowEl.querySelector("#mmCv"), cx=cv.getContext("2d"); const DPR=Math.min(2,devicePixelRatio||1); cv.width=cv.height=Math.round(92*DPR);
   const enUpd=()=>{ try{ const v=Math.max(0,Math.min(100,Math.round(bag.en))); const el=document.querySelector("#enNum"); if(!el) return; if(el.textContent!==String(v)) el.textContent=v; const i=document.querySelector("#enPill .bar i"); i.style.width=v+"%"; i.style.background=v>50?"#4cd964":v>20?"#ffcc00":"#ff3b30"; }catch(e){} };
-  rowEl.querySelector("#enPill").onclick=()=>{ try{ toast(`精力 ${Math.round(bag.en)} / 100・打工一班要 33・泡溫泉每分鐘 +1，吃東西最快`,3200); }catch(e){} };
+  rowEl.querySelector("#enPill").onclick=()=>{ try{ toast(`精力 ${Math.round(bag.en)} / 100・打工一班要 33・泡溫泉每分鐘 +2、靜坐 +1，吃東西最快`,3200); }catch(e){} };
   const arrow=(g,x,y,a,s,c)=>{ g.save(); g.translate(x,y); g.rotate(a); g.fillStyle=c; g.strokeStyle="#000"; g.lineWidth=1.5*DPR; g.beginPath(); g.moveTo(0,-s); g.lineTo(s*.7,s*.75); g.lineTo(0,s*.35); g.lineTo(-s*.7,s*.75); g.closePath(); g.fill(); g.stroke(); g.restore(); };
   const drawMini=()=>{ const w=cv.width, h=cv.height, k=2.2*DPR*ST; /* px per sample */ cx.fillStyle="#2a1a12"; cx.fillRect(0,0,w,h); if(!ready){ return; }
     const mx=meAv.pos.x, mz=meAv.pos.y; cx.imageSmoothingEnabled=true; cx.drawImage(base,w/2-px(mx)*k,h/2-pz(mz)*k,W*k,H*k);

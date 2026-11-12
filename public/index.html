@@ -3768,8 +3768,8 @@ function planPath0(fx,fz,tx,tz,fg,tg){ const a0=zoneOf(fx,fz), b0=zoneOf(tx,tz);
   if(TOWNX&&(a0==="T"||b0==="T")) return TOWNX.route(fx,fz,tx,tz,fg,tg); /* 天后小鎮 */
   if(a0==="R"||b0==="R"){ /* the guest house: through the right gate, then along its own routes (both levels) */
     if(a0==="R"&&b0==="R") return innRoute(fx,fz,fg,tx,tz,tg);
-    if(a0==="R") return innRoute(fx,fz,fg,24.3,G,0).concat([[23.6,G],[22.1,G]],planPath(22.1,G,tx,tz));
-    return planPath(fx,fz,22.1,G).slice(0,-1).concat([[22.1,G],[23.6,G]],innRoute(24.3,G,0,tx,tz,tg)); }
+    if(a0==="R") return innRoute(fx,fz,fg,26.4,G,0).concat([[23.6,G],[22.1,G]],planPath(22.1,G,tx,tz)); /* (26.4: out past the balustrade before turning) */
+    return planPath(fx,fz,22.1,G).slice(0,-1).concat([[22.1,G],[23.6,G],[26.4,G]],innRoute(26.4,G,0,tx,tz,tg)); }
   const a=a0, b=b0; if(a===b){ if(a==="Z"){ const HX0=ZEN.plat.x1+.4; if((fx>HX0)!==(tx>HX0)) return [[HX0,ZEN.GZ],[tx,tz]]; } return [[tx,tz]]; }
   const prev={[a]:null}, q=[a]; while(q.length){ const z=q.shift(); if(z===b) break; for(const n of (tx<0?ZLINK[z].slice().reverse():ZLINK[z])) if(!(n in prev)){ prev[n]=z; q.push(n); } }
   const chain=[]; for(let z=b;z;z=prev[z]) chain.unshift(z); const pts=[]; for(let k=0;k<chain.length-1;k++) pts.push(...doorPts(chain[k],chain[k+1],fx,tx,k===0?fz:null)); pts.push([tx,tz]); return opDetour([fx,fz],pts); }
@@ -8913,7 +8913,7 @@ function innWalkableL(x,z,gy){ const G=INN.G; gy=gy==null?(meAv.gy||0):gy;
     return true; }
   if(innOnRampStrip(x,z)&&innRampH(z)<1.9) return false;                                                               /* too low to walk under */
   /* outside: the road in front (with its sidewalks) up to the house and the shop fronts, the doorway, the foot of the stairs — no wandering round the back of the house */
-  return (x>17.9&&x<INN.X0-.12&&z>G-1.6)||(x>17.5&&x<INN.X0+.1&&Math.abs(z-G)<1.35)||  /* south of the zebra crossing: the road and its near sidewalk, on to the town */(x>17.9&&x<27.2&&z>-51&&z<=G-1.6)||(x>INN.RX0-.25&&x<INN.RX1+.25&&z>INN.RZB-.7&&z<G); }
+  return (x>19.9&&x<INN.X0-.12&&z>G-1.6)||(x>17.5&&x<INN.X0+.1&&Math.abs(z-G)<1.35)||  /* south of the zebra crossing: the road and its near sidewalk, on to the town */(x>19.9&&x<27.2&&z>-51&&z<=G-1.6)||(x>INN.RX0-.25&&x<INN.RX1+.25&&z>INN.RZB-.7&&z<G); }
 /* routes inside the grounds of the guest house (both levels): area → area through doors and up the ramp */
 function innArea(x,z,gy){ if(gy>2.3||innUp(x,z)&&gy>2.3){ const i=innSuiteAtL(x,z); if(i>=0&&x>INN.suites[i].xa+.1) return "s"+i; if(innCorr(x,z)&&z>INN.Z0-.1) return "k"; if(x>INN.CX1&&z<INN.Z0) return "b"; return "c"; } if(innInL(x,z)){ if(x<41) return "l"; return z>-27.5?"d":"o"; } if(SHOPX&&SHOPX.inP(x+INN.DX,z)) return "p"; return "out"; }
 function innRouteL(fx,fz,fg,tx,tz,tg){ const G=INN.G, a=innArea(fx,fz,fg), b=innArea(tx,tz,tg); if(a===b) return a==="p"?[...shopLeg(fx,fz,tx,tz),[tx,tz]]:[[tx,tz]];
@@ -9131,7 +9131,7 @@ for(let i=INN_SEAT0;i<SEATS.length;i++) SEATS[i].x+=INN.DX; INN.shower.forEach(s
     for(const z of [-24,-18]) sc(X1,2.6,z,1,0); for(const z of [-39.6,-33.75,-27.5,-21.25,-15.4]) sc(X1,F2+2.5,z,1,0); /* back: between the big windows */
     for(const x of [36.1,40.7,45.3,49.9]) sc(x,2.7,Z1,0,1); for(const x of [33,38,47,52]) sc(x,F2+2.5,Z1,0,1); /* the street side */
     /* street lamps along the path from the gate: dark posts, a lantern head that glows at night */
-    for(const [x,z] of [[25.75,-48],[25.75,-36.5],[25.75,-20],[25.75,-6],[25.75,6.5]]){ /* along the edge of the sidewalk */ cyl(.06,.08,2.9,bp,x,1.45,z,root,8); box(.34,.1,.34,bp,x,.05,z,root); const h=new T.Mesh(new T.BoxGeometry(.26,.36,.26),INN.scM); h.position.set(x,3.08,z); root.add(h); box(.36,.06,.36,bp,x,3.29,z,root); box(.08,.12,.08,bp,x,3.38,z,root);
+    for(const [x,z] of [[26.35,-48],[26.35,-36.5],[26.35,-20],[26.35,-6],[26.35,6.5]]){ /* along the edge of the sidewalk */ cyl(.06,.08,2.9,bp,x,1.45,z,root,8); box(.34,.1,.34,bp,x,.05,z,root); const h=new T.Mesh(new T.BoxGeometry(.26,.36,.26),INN.scM); h.position.set(x,3.08,z); root.add(h); box(.36,.06,.36,bp,x,3.29,z,root); box(.08,.12,.08,bp,x,3.38,z,root);
       const gl=new T.Sprite(gm.clone()); gl.position.set(x,3.08,z); gl.scale.set(2.2,2.2,1); root.add(gl); INN.scG.push(gl); } }
   /* 暖簾 over the two doors off the lobby: 湯 for the bath, ZZ for the dorm — two cloth panels each, split up the middle */
   { const nr=(z,txt,bg)=>{ const c=cvs(256,192,(x,w,h)=>{ x.fillStyle=bg; x.fillRect(0,0,w,h); x.fillStyle="rgba(255,255,255,.12)"; x.fillRect(0,0,w,16); x.fillStyle="#f6f0e2"; x.font=txt==="湯"?'700 120px "LXGW WenKai TC","Noto Serif TC",serif':'800 104px sans-serif'; x.textAlign="center"; x.textBaseline="middle"; x.fillText(txt,w/2,h/2+10); });
@@ -10041,20 +10041,20 @@ enDay();
 const recLeft=()=>{ enDay(); return Math.max(0,EN_REC_MAX-(bag.enRec||0)); };
 const en=()=>Math.round(bag.en);
 SX.wallet=()=>{ let e=$("#enCap"); const cap=document.querySelector("#bagBtn .cap"); if(!e&&cap){ e=document.createElement("span"); e.id="enCap"; cap.appendChild(e); } if(e) e.textContent=`⚡${en()}`; };
-SX.bagTop=()=>`<div class="inv-top"><span class="inv-coin">⚡<b>${en()}</b>精力</span><span class="inv-note">每天 100；打工一班要 ${EN_SHIFT}。今天還能恢復 ${Math.round(recLeft())}（每天最多 ${EN_REC_MAX}）：泡溫泉每分鐘 +1，吃東西最快</span></div>`;
+SX.bagTop=()=>`<div class="inv-top"><span class="inv-coin">⚡<b>${en()}</b>精力</span><span class="inv-note">每天 100；打工一班要 ${EN_SHIFT}。今天還能恢復 ${Math.round(recLeft())}（每天最多 ${EN_REC_MAX}）：泡溫泉每分鐘 +2、靜坐每分鐘 +1，吃東西最快</span></div>`;
 function enAdd(v){ const b=en(); let g=v; if(v>0){ g=Math.min(v,100-bag.en,recLeft()); bag.enRec=(bag.enRec||0)+Math.max(0,g); } bag.en=Math.max(0,Math.min(100,bag.en+g)); if(Math.round(bag.en)!==b){ SX.wallet(); } return g; }
 let enAcc=0, enSave=0, enWhy="", enNote=0;
 /* 恢復速度 (精力 per second): 套房的床 fastest, then 通鋪, 溫泉, 禪堂靜坐 */
 /* 恢復: the dearer, the faster. 套房 (100 幣) 66 in a minute (all of a day's rest in one stay); 通鋪 (50 幣) 33 in a minute;
    溫泉 and 禪堂 are free but slow (33 in about 3½ and 5½ minutes). Snacks are instant and cost the most per point. */
-const REGEN={bed:0,futon:0,onsen:1/60,zen:.1}, SESS_MAX={bed:66,futon:33,onsen:99,zen:99}; /* (sleeping gives no 精力 for now; the hot spring one point a real minute) */ let sess=0;
+const REGEN={bed:0,futon:0,onsen:2/60,zen:1/60}, SESS_MAX={bed:66,futon:33,onsen:99,zen:99}; /* (sleeping gives no 精力 for now; the hot spring one point a real minute) */ let sess=0;
 SX.tick=dt=>{ let why="";
   try{ const st=meAv.seat>=0?SEATS[meAv.seat]:null; if(st&&meAv.kneel>.6){ if(st.kind==="bed") why="bed"; else if(st.kind==="futon") why="futon"; else if(st.zen) why="zen"; else if(st.kind==="tub") why="onsen"; }
     if(!why&&(meAv.gy||0)<1&&innPool(meAv.pos.x,meAv.pos.y)) why="onsen"; }catch(e){}
   if(why!==enWhy) sess=0;
   if(why&&REGEN[why]>0&&bag.en<100&&recLeft()>0&&sess<SESS_MAX[why]){ const b=Math.floor(bag.en); const g=enAdd(Math.min(REGEN[why]*dt,SESS_MAX[why]-sess)); sess+=g; if(Math.floor(bag.en)!==b) SX.wallet(); enSave+=dt; if(enSave>8){ enSave=0; save("mz.bag",bag); }
     if(recLeft()<=0||sess>=SESS_MAX[why]-.01){ toast(recLeft()<=0?"今天的精力恢復已經到上限了（每天最多 66）":why==="futon"?"睡飽了，通鋪一次最多恢復 33":"恢復飽滿了 ⚡",2800); }
-    if(why!==enWhy&&performance.now()-enNote>20000){ enNote=performance.now(); toast({bed:"躺在套房的床上，精力恢復得最快（一次最多 66）⚡",futon:"在通鋪睡一下，精力恢復中（一次最多 33）⚡",onsen:"泡溫泉，精力慢慢恢復（每分鐘 1 點）⚡",zen:"靜坐養神，精力慢慢恢復 ⚡"}[why],2600); } }
+    if(why!==enWhy&&performance.now()-enNote>20000){ enNote=performance.now(); toast({bed:"躺在套房的床上，精力恢復得最快（一次最多 66）⚡",futon:"在通鋪睡一下，精力恢復中（一次最多 33）⚡",onsen:"泡溫泉，精力慢慢恢復（每分鐘 2 點）⚡",zen:"靜坐養神，精力慢慢恢復（每分鐘 1 點）⚡"}[why],2600); } }
   else if(enWhy&&!why) save("mz.bag",bag);
   enWhy=why; if(SX.on&&SX.cur&&SX.cur.update) SX.cur.update(dt); if(!SX.on&&WORLD.ready) worldTick(dt); };
 /* ---------- bag: snacks ---------- */
@@ -10117,7 +10117,7 @@ function glassTex(){ return cvs(128,256,(x,w,h)=>{ const g=x.createLinearGradien
 /* the shops stand in a row north of the 禪房, their fronts in line with its front wall, facing the road.
    They are laid out in a frame of their own (fronts toward -z, as drawn) which is turned to face the road: local (x,z) → world (45.6+z, 21−x). */
 const SHOP_P={x:45.6,z:21}; const shopW=(lx,lz)=>[SHOP_P.x+lz,SHOP_P.z-lx];
-const ROAD={x0:24.6,x1:31.4,z0:-52,z1:12.6}, WALK_IN={x0:31.4,x1:37}, WALK_OUT={x0:22.8,x1:24.6};
+const ROAD={x0:26.2,x1:32,z0:-52,z1:12.6}, WALK_IN={x0:32,x1:37}, WALK_OUT={x0:25.75,x1:26.2}; /* (11/12: the road starts outside the temple's stone balustrade at x 25.6; inside it is temple paving) */
 /* ---- the upper floor of a Taiwanese shophouse: tiled wall, aluminium windows, air-conditioners, a parapet; a lit vertical sign ---- */
 function tileTex(base,seed){ return cvs(256,256,(x,w,h)=>{ x.fillStyle="#9a9286"; x.fillRect(0,0,w,h); const tw=32, th=12; let r=seed; const rnd=()=>{ r=(r*9301+49297)%233280; return r/233280; };
   for(let j=0;j<h/th;j++) for(let i=-1;i<w/tw+1;i++){ const X=i*tw+(j%2)*tw/2, Y=j*th; const c=new T.Color(base); const k=.9+rnd()*.18; x.fillStyle=`rgb(${c.r*255*k|0},${c.g*255*k|0},${c.b*255*k|0})`; x.fillRect(X+1,Y+1,tw-2,th-2); } }); }
@@ -10148,13 +10148,13 @@ function buildWorld(){ if(WORLD.ready) return; const G=new T.Group(); G.name="sh
     const dia=new T.MeshStandardMaterial(po({color:"#f2f2ee",roughness:.7,polygonOffsetFactor:-4,polygonOffsetUnits:-4})); for(const [x,z] of [[cx-W/4,zc1+9],[cx+W/4,zc0-9]]){ const d=new T.Mesh(new T.PlaneGeometry(.9,2.2),new T.MeshStandardMaterial(po({roughness:.7,transparent:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4,map:cvs(64,160,(x,w,h)=>{ x.strokeStyle="#f2f2ee"; x.lineWidth=7; x.beginPath(); x.moveTo(w/2,6); x.lineTo(w-6,h/2); x.lineTo(w/2,h-6); x.lineTo(6,h/2); x.closePath(); x.stroke(); })}))); d.rotation.x=-Math.PI/2; d.position.set(x,.017,z); G.add(d); } /* the diamond that warns of a crossing ahead */
     /* sidewalks: paving bricks, a granite kerb along the road */
     const pt=paverTex(); pt.wrapS=pt.wrapT=T.RepeatWrapping; const pv=(x0,x1)=>{ const t=pt.clone(); t.needsUpdate=true; t.repeat.set((x1-x0)/2,L/2); flat(x1-x0,L,(x0+x1)/2,cz,.03,new T.MeshStandardMaterial(po({map:t,roughness:.9})),true); };
-    pv(WALK_IN.x0+.22,WALK_IN.x1); pv(WALK_OUT.x0,WALK_OUT.x1-.22); const kerb=mat("#b9b6ae",{roughness:.8}); box(.22,.05,L,kerb,WALK_IN.x0+.11,.025,cz,G); box(.22,.05,L,kerb,WALK_OUT.x1-.11,.025,cz,G);
+    pv(WALK_IN.x0+.22,WALK_IN.x1); pv(WALK_OUT.x0,WALK_OUT.x1-.22); { const w=WALK_OUT.x0-22.75; flat(w,L,22.75+w/2,cz,.03,new T.MeshStandardMaterial(po({map:texRep(yardTex,w/5.15,L/4.05),roughness:.75}))); } /* between the temple wall and the balustrade: the temple's own paving tiles */ const kerb=mat("#b9b6ae",{roughness:.8}); box(.22,.05,L,kerb,WALK_IN.x0+.11,.025,cz,G); box(.22,.05,L,kerb,WALK_OUT.x1-.11,.025,cz,G);
     /* (the road south of the crossing was closed with water barriers until the town opened; kept here switched off) */
     if(0){ const bt=cvs(128,64,(x,w,h)=>{ for(let i=0;i<4;i++){ x.fillStyle=i%2?"#f4f4f2":"#d8332b"; x.fillRect(i*32,0,32,h); } }); const bm=new T.MeshStandardMaterial({map:bt,roughness:.5}); const zb=INN.G-2.0;
-      for(let x=22.95;x<36.8;x+=1.12){ if(x>32&&x<34.3) continue; const b=new T.Mesh(gx('barrier',()=>{ const g=new T.BoxGeometry(1.05,.8,.42); return g; }),bm); b.position.set(x+.52,.4,zb); G.add(b); box(.9,.06,.32,mat("#c92a22",{roughness:.5}),x+.52,.83,zb,G); }
+      for(let x=25.85;x<36.8;x+=1.12){ if(x>32&&x<34.3) continue; const b=new T.Mesh(gx('barrier',()=>{ const g=new T.BoxGeometry(1.05,.8,.42); return g; }),bm); b.position.set(x+.52,.4,zb); G.add(b); box(.9,.06,.32,mat("#c92a22",{roughness:.5}),x+.52,.83,zb,G); }
       const sg=new T.Mesh(new T.PlaneGeometry(1.4,.9),new T.MeshStandardMaterial({side:T.DoubleSide,roughness:.6,map:cvs(256,164,(x,w,h)=>{ x.fillStyle="#f2c230"; x.fillRect(0,0,w,h); x.strokeStyle="#222"; x.lineWidth=8; x.strokeRect(6,6,w-12,h-12); x.fillStyle="#222"; x.font=`900 46px ${UI_FONT}`; x.textAlign="center"; x.fillText("前方施工",w/2,72); x.fillText("暫停通行",w/2,128); })}));
       sg.position.set(28,1.45,zb-.02); G.add(sg); for(const dx of [-.6,.6]) cyl(.03,.03,1.1,mat("#777"),28+dx,.85,zb-.05,G); }
-    /* a ramp in the kerb at each end of the crossing (painted yellow dots: tactile paving) */ const tac=mat("#e7c13a",{roughness:.8}); box(.6,.035,3.0,tac,WALK_IN.x0+.55,.03,G0,G); box(.6,.035,2.0,tac,WALK_OUT.x1-.5,.03,G0,G); }
+    /* a ramp in the kerb at each end of the crossing (painted yellow dots: tactile paving) */ const tac=mat("#e7c13a",{roughness:.8}); box(.6,.035,3.0,tac,WALK_IN.x0+.55,.03,G0,G); box(.4,.035,2.0,tac,WALK_OUT.x1-.24,.03,G0,G); }
   /* ---- shop fronts: the painted picture sits behind real glass and real window frames, inside a wall with depth ---- */
   /* a shopfront in two layers: the window frames, door frames and stickers stay out at the street wall (glass layer, the panes cut out),
      and the shop's inside — the same picture with its frames painted out — hangs 1.6 m further in, inside a lit room (floor, ceiling, side walls).
@@ -10652,7 +10652,7 @@ const MMAP=(()=>{
   if(hall) hall.prepend(rowEl);
   const cv=rowEl.querySelector("#mmCv"), cx=cv.getContext("2d"); const DPR=Math.min(2,devicePixelRatio||1); cv.width=cv.height=Math.round(92*DPR);
   const enUpd=()=>{ try{ const v=Math.max(0,Math.min(100,Math.round(bag.en))); const el=document.querySelector("#enNum"); if(!el) return; if(el.textContent!==String(v)) el.textContent=v; const i=document.querySelector("#enPill .bar i"); i.style.width=v+"%"; i.style.background=v>50?"#4cd964":v>20?"#ffcc00":"#ff3b30"; }catch(e){} };
-  rowEl.querySelector("#enPill").onclick=()=>{ try{ toast(`精力 ${Math.round(bag.en)} / 100・打工一班要 33・泡溫泉每分鐘 +1，吃東西最快`,3200); }catch(e){} };
+  rowEl.querySelector("#enPill").onclick=()=>{ try{ toast(`精力 ${Math.round(bag.en)} / 100・打工一班要 33・泡溫泉每分鐘 +2、靜坐 +1，吃東西最快`,3200); }catch(e){} };
   const arrow=(g,x,y,a,s,c)=>{ g.save(); g.translate(x,y); g.rotate(a); g.fillStyle=c; g.strokeStyle="#000"; g.lineWidth=1.5*DPR; g.beginPath(); g.moveTo(0,-s); g.lineTo(s*.7,s*.75); g.lineTo(0,s*.35); g.lineTo(-s*.7,s*.75); g.closePath(); g.fill(); g.stroke(); g.restore(); };
   const drawMini=()=>{ const w=cv.width, h=cv.height, k=2.2*DPR*ST; /* px per sample */ cx.fillStyle="#2a1a12"; cx.fillRect(0,0,w,h); if(!ready){ return; }
     const mx=meAv.pos.x, mz=meAv.pos.y; cx.imageSmoothingEnabled=true; cx.drawImage(base,w/2-px(mx)*k,h/2-pz(mz)*k,W*k,H*k);
