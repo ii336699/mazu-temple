@@ -3874,7 +3874,9 @@ const BOT_WALK={STOP_RATE:.2, STOP_SECS:[.5,2.8], HESITATE:.35};
 const BOT_ROLES=[["lot",.4],["guide",.3],["afk",.2],["fun",.1]];
 function pickRole(){ const w=npcs.filter(n=>!n.classic&&!n.leaving&&n.role), tot=w.length+1; let best="lot", gap=-1e9;
   for(const [r,f] of BOT_ROLES){ const g=f-w.filter(n=>n.role===r).length/tot+Math.random()*.02; if(g>gap){ gap=g; best=r; } } return best; }
-function planAfk(){ return [{go:Math.random()<.5?hallSpot():botSpot()},{afk:rand(300,1500)}]; }
+/* a spot in the 後殿 (or a 側殿) to stand in, so the back halls are not empty */
+function rearSpot(){ for(let k=0;k<20;k++){ const r=Math.random(), x=r<.6?rand(-7.5,7.5):(Math.random()<.5?-1:1)*rand(13,20), z=r<.6?rand(-42,-34.5):rand(-38,-33); if(walkable(x,z)) return [x,z]; } return [rand(-3,3),-36]; }
+function planAfk(){ const r=Math.random(); return [{go:r<.35?rearSpot():r<.65?hallSpot():botSpot()},{afk:rand(300,1500)}]; }
 // the 參拜指引 route: 請香 at the shop, 天公爐, offerings and incense at Mazu's altar, then each god's censer in order, then burn paper
 function planGuide(from=0){ const gods=CENSER_ORDER.filter(k=>k!=="tiangong"&&k!=="mazu"&&stations[k]);
   const stops=[["shop",[{look:rand(5,10)},{hold:1}]],["tiangong",[{look:rand(1,3)},{bow:1},{look:rand(1,3)},{plant:"tiangong"},{look:rand(1,3)}]],["altar",[{look:rand(1,3)},{bow:1},{look:rand(2,4)},{plant:"mazu"},{look:rand(2,4)}]],
@@ -3894,7 +3896,7 @@ function planFun(n){ if(n){ const k=npcs.filter(o=>o.buskD).length, p=k<2?.85:k<
 function botPlan(n){ if(!n.role) n.role=pickRole(); let p;
   if(n.role==="afk") p=planAfk();
   else if(n.role==="lot") p=Math.random()<.85?planLot():planStroll();
-  else if(n.role==="guide") p=planGuide();
+  else if(n.role==="guide") p=Math.random()<.5?planGuide(CENSER_ORDER.filter(k=>k!=="tiangong"&&k!=="mazu"&&stations[k]).indexOf("guanyin")+3):planGuide(); /* half go straight to the 後殿 and 側殿 gods with their incense */
   else p=planFun(n);
   n.steps=p.filter(st=>!st.go||st.go[0]!=null); n.steps.push({look:rand(3,8)}); n.step=null; }
 function botWalk(n,x,z){ const p=planPath(n.pos.x,n.pos.y,x,z); n.seat=-1; n.goalSeat=false; n.faceGoal=null; n.danceT=0; n.target.set(p[0][0],p[0][1]); n.path=p.slice(1); }
@@ -4017,7 +4019,7 @@ function botHear(av,text){ if(!DANCE_CALL.ON||!DANCE_RE.test(text)||performance.
 const LOD={fr:new T.Frustum(), m:new T.Matrix4(), s:new T.Sphere(new T.Vector3(),1.1), cam:new T.Vector3(), frame:-1};
 function lodPrep(){ const f=renderer.info.render.frame; if(LOD.frame===f) return; LOD.frame=f; camera.updateMatrixWorld(); LOD.m.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse); LOD.fr.setFromProjectionMatrix(LOD.m); LOD.cam.copy(camera.position); }
 function lodUpdate(n,dt){ const p=n.root.position; LOD.s.center.set(p.x,.85,p.z); const d=Math.hypot(p.x-LOD.cam.x,p.z-LOD.cam.z), seen=LOD.fr.intersectsSphere(LOD.s);
-  if(n.label){ const show=d<22; if(n.label.visible!==show) n.label.visible=show; }
+  if(n.label){ const show=d<40; if(n.label.visible!==show) n.label.visible=show; } /* (names out to 40 m now; was 22) */
   const every=!n.root.visible?.5:!seen?(d>30?.33:.2):d>30?.12:d>20?.066:0;
   if(!every||n===meAv||n.bubbleT>0||n.fuAnim){ if(n.lodAcc){ dt+=n.lodAcc; n.lodAcc=0; } n.update(dt); return; }
   n.lodAcc=(n.lodAcc||0)+dt; if(n.lodAcc>=every){ n.update(Math.min(.4,n.lodAcc)); n.lodAcc=0; } }
@@ -4066,13 +4068,13 @@ function botTick(dt){ const now=performance.now(); botFps(dt);
     if(Math.random()<dt/160){ const ph=PHRASES[(Math.random()*PHRASES.length)|0]; n.say(ph,"#f7ecd6"); if(Math.random()<.25) logChat(n.name,ph,false); }
     if(Math.random()<dt/240) showEmo(n,BOT_EMO[(Math.random()*BOT_EMO.length)|0]); } }
 function placeBot(){ const role=pickRole(); let a;
-  if(role==="afk"){ a=makeBot(Math.random()<.5?hallSpot():botSpot()); a.rotY=rand(-Math.PI,Math.PI); a.steps=[{afk:rand(120,1500)}]; }
+  if(role==="afk"){ const r=Math.random(); a=makeBot(r<.35?rearSpot():r<.65?hallSpot():botSpot()); a.rotY=rand(-Math.PI,Math.PI); a.steps=[{afk:rand(120,1500)}]; }
   else if(role==="lot"){ const r=Math.random();
     if(r<.55){ a=makeBot(stNear("lot",.5)); a.steps=[{face:stFace("lot")},{shake:rand(8,45)},...planLot().slice(3)]; }
     else if(r<.75){ a=makeBot(stNear("lot")); a.steps=[{face:stFace("lot")},{jiao:1+((Math.random()*2)|0)},...planLot().slice(5)]; }
     else { a=makeBot(stNear("jieqian",.5)); a.steps=[{face:stFace("jieqian")},{read:rand(8,40)}]; } }
   else if(role==="guide"&&Math.random()<.25){ const i=Math.random()<.5?0:1, g=SJ.g[i]; a=makeBot([g.x+3+rand(0,3),g.z+rand(-.4,.4)]); a.steps=[{sj:i}]; }
-  else if(role==="guide"){ const plan=planGuide(1+((Math.random()*8)|0)), at=plan.find(st=>st.go); a=makeBot(at?at.go:botSpot()); a.steps=plan.filter(st=>st!==at); if(at) a.hold=1; }
+  else if(role==="guide"){ const plan=planGuide(1+((Math.random()*14)|0)), at=plan.find(st=>st.go); /* (anywhere along the route, the back halls too) */ a=makeBot(at?at.go:botSpot()); a.steps=plan.filter(st=>st!==at); if(at) a.hold=1; }
   else { a=makeBot(Math.random()<.4?hallSpot():botSpot()); a.steps=planFun().slice(1); }
   a.role=role; return a; }
 function buildNpcs(){ npcs.forEach(n=>n.dispose()); npcs.length=0;
