@@ -77,7 +77,7 @@ function fishIcon(id,dark){ const k=id+(dark?"_d":""); if(ICON[k]) return ICON[k
     if(f.mk==="whisk"&&!dark){ x.strokeStyle=b; x.lineWidth=1.6; x.beginPath(); x.moveTo(cx-L0/2+4,cy+2); x.quadraticCurveTo(cx-L0/2-10,cy+12,cx-L0/2-14,cy+20); x.moveTo(cx-L0/2+4,cy); x.quadraticCurveTo(cx-L0/2-12,cy-6,cx-L0/2-16,cy-2); x.stroke(); }
     /* eye */ x.fillStyle=dark?"#4a525c":"#ffffff"; x.beginPath(); x.arc(cx-L0/2+12,cy-H0/8,dark?2.5:4,0,6.283); x.fill(); if(!dark){ x.fillStyle="#1a1a1a"; x.beginPath(); x.arc(cx-L0/2+12.6,cy-H0/8,2.2,0,6.283); x.fill(); } }
   x.restore(); return ICON[k]=c.toDataURL(); }
-L.bic=(k,cls)=>{ const id=k.slice(3); return `<span class="bic ${cls||""}" style="background:url(${fishIcon(id)}) center/contain no-repeat"></span>`; };
+L.bic=(k,cls)=>{ const id=k.slice(3); if(id.startsWith("c_")&&SB[id.slice(2)]) return `<span class="bic ${cls||""}" style="display:flex;align-items:center;justify-content:center;font-size:34px;background:none">${SB[id.slice(2)][5]}</span>`; if(id==="dex") return `<span class="bic ${cls||""}" style="display:flex;align-items:center;justify-content:center;font-size:34px;background:none">📖</span>`; return `<span class="bic ${cls||""}" style="background:url(${fishIcon(id)}) center/contain no-repeat"></span>`; };
 /* a fish as a 3D thing (held up when caught): a stand-in until the models arrive */
 const FISHGLB={};
 function fishMesh(f){ const g=new T.Group(); const t=new T.CanvasTexture(Object.assign(document.createElement("canvas"),{width:2,height:2})); const im=new Image(); im.onload=()=>{ t.image=im; t.needsUpdate=true; }; im.src=fishIcon(f.id); t.encoding=T.sRGBEncoding;
@@ -178,8 +178,8 @@ HANDLERS.lfRod=v=>{ const d=LF(), n=+v, p=n===1?300:1800; if(d.rod>=n) return; i
 HANDLERS.lfSell=v=>{ const [k,id]=v.split(":"); sell(id); if(k==="t") tackle(); else grocer(); };
 function grocer(){ openSheet("lfGrocer","🧺 雜貨店",`<p class="lead">阿姨：「魚啊、種的菜跟花，我都收。」</p><h4 style="margin:10px 0 4px">收購魚</h4>${sellSheet("g")}${L.cropSell?L.cropSell():""}`); }
 /* ---------- the bag ---------- */
-L.bagEntries=(out,tab)=>{ if(tab!=="all"&&tab!=="goods") return; const d=LF(), cnt={}; d.inv.forEach(([id])=>cnt[id]=(cnt[id]||0)+1); Object.keys(cnt).forEach(id=>{ const f=FBY[id]; out.push({id:"lf:"+id,ic:"lf_"+id,n:cnt[id],name:f.n,desc:`${f.w.includes("o")?"海水魚":"淡水魚"}・${RN[f.r]}。${f.d}可以到釣具行或雜貨店賣。`}); }); };
-L.bagActs=(k,e)=>`<button class="chip" data-act="lfDex">看圖鑑</button>`;
+L.bagEntries=(out,tab)=>{ if(tab!=="all"&&tab!=="goods") return; const d=LF(), cnt={}; out.push({id:"lf:dex",ic:"lf_dex",name:"圖鑑",desc:`釣過的魚都記在這裡（${FISH.filter(f=>d.fish[f.id]).length}/${FISH.length}）。之後會加上蟲、花、貝殼。`}); L.cropList().forEach(c=>out.push({id:"lf:c_"+c.id,ic:"lf_c_"+c.id,n:c.k,name:c.n,desc:"在自己的花圃種出來的。可以賣給花店、雜貨店，或送給鎮上的人。"})); d.inv.forEach(([id])=>cnt[id]=(cnt[id]||0)+1); Object.keys(cnt).forEach(id=>{ const f=FBY[id]; out.push({id:"lf:"+id,ic:"lf_"+id,n:cnt[id],name:f.n,desc:`${f.w.includes("o")?"海水魚":"淡水魚"}・${RN[f.r]}。${f.d}可以到釣具行或雜貨店賣。`}); }); };
+L.bagActs=(k,e)=>k.startsWith("c_")?"":`<button class="chip" data-act="lfDex">看圖鑑</button>`;
 /* ---------- stations in the town ---------- */
 L.station=k=>{ if(k==="tw:tackle"){ tackle(); return true; } if(k==="tw:grocer"){ grocer(); return true; } if(k==="tw:fish"){ toast(LF().rod||me.sp?"站到水邊就能釣魚，按「🎣 釣魚」":"先到老街的釣具行買釣竿，就能在水邊釣魚",3000); return true; } return L.more?L.more(k):false; };
 L.tick=dt=>{ try{ fishTick(dt); }catch(e){ console.warn("fish",e); F&&endFish(); } try{ L.tick2&&L.tick2(dt); }catch(e){ console.warn("life",e); } };
