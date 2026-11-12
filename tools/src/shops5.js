@@ -1,5 +1,5 @@
 /* ======================= 夾娃娃機: move the claw with the stick, drop it, hope it holds ======================= */
-let CLAW=null;
+let CLAW=null; SX.clawDbg=()=>CLAW; /* (for tests) */
 const CLW={x0:-.46,x1:.46,z0:-.34,z1:.36,floor:.82,top:1.66,home:[-.38,.28],chute:[-.55,-.2,.08,.45]};
 const inChute=(x,z)=>x>CLW.chute[0]&&x<CLW.chute[1]&&z>CLW.chute[2]&&z<CLW.chute[3];
 const PRIZE={cat:{n:"招財貓娃娃",grip:.8},cap:{n:"扭蛋球",grip:.62},gift:{n:"神秘禮物盒",grip:.5},can:{n:"草莓汽水",grip:.56},cup:{n:"洋芋片",grip:.66}};
@@ -48,7 +48,7 @@ function clawStart(){ const C=buildClaw(); const o={exposure:1.05}; const el=ent
     try{ tone(1200,.05,.08,"square"); tone(900,.05,.08,"square",.08); [523,659,784,1047].forEach((f,i)=>tone(f,.12,.07,"triangle",.2+i*.09)); }catch(e){}
     for(const k in held) held[k]=0; jx=jz=0; J.querySelectorAll("button").forEach(b=>b.classList.remove("on")); G.st="move"; G.timer=20; $k("#kP").hidden=true; $k("#kJ").hidden=false; $k("#kD").hidden=false; $k("#kT").hidden=false; };
   $k("#kGo").onclick=play;
-  const drop=()=>{ if(G.st!=="move") return; G.st="drop"; jx=jz=0; knob(0,0); $k("#kJ").hidden=true; $k("#kD").hidden=true; humSet(true); try{ tone(330,.12,.08,"square"); }catch(e){} G.tgt=null; let best=null, bs=-1; const hx=C.head.position.x, hz=C.head.position.z; /* (where the claw head really is — it can still be swinging) */ for(const p of C.pz){ if(p.fall) continue; const d=Math.hypot(p.g.position.x-hx,p.g.position.z-hz); if(d<p.r+.06){ const top=p.g.position.y+p.h; const sc=top-d*.6; if(sc>bs){ bs=sc; best=p; } } } G.tgt=best; G.stopY=best?Math.max(best.g.position.y+best.h*.55+.06,CLW.floor+.12):CLW.floor+.12; };
+  const drop=()=>{ if(G.st!=="move") return; G.st="drop"; jx=jz=0; knob(0,0); $k("#kJ").hidden=true; $k("#kD").hidden=true; humSet(true); try{ tone(330,.12,.08,"square"); }catch(e){} G.tgt=null; let best=null, bs=-1; const hx=C.head.position.x, hz=C.head.position.z; /* (where the claw head really is — it can still be swinging) */ for(const p of C.pz){ if(p.fall) continue; const d=Math.hypot(p.g.position.x-hx,p.g.position.z-hz); if(d<p.r+.06){ const top=p.g.position.y+p.h; const sc=top-d*.6; if(sc>bs){ bs=sc; best=p; } } } G.tgt=best; G.stopY=best?Math.max(best.g.position.y+best.h*.5+.15,CLW.floor+.12):CLW.floor+.12; /* the claw stops with the prize's middle level with its fingers, so a prize it lifts hangs inside the claw, not on top of it */ };
   $k("#kD").addEventListener("pointerdown",e=>{ e.preventDefault(); drop(); });
   /* the arrow buttons: hold to move, like the buttons on a real machine (no stick: more exact) */
   const J=$k("#kJ"); const held={}; const knob=()=>{}; const padSet=()=>{ jx=(held.r?1:0)-(held.l?1:0); jz=(held.d?1:0)-(held.u?1:0); };
