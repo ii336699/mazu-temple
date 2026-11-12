@@ -1,6 +1,6 @@
 /* ---------- the door: shop or work ---------- */
 function cvsMenu(){ const e=en(), left=WORK_MAX-dayCount("wk"); openSheet("cvs","M超商",`<p class="lead">叮咚～歡迎光臨！要進去買東西，還是來打工？</p><div class="goods">
-  <button class="good" data-act="cvsGo" data-v="buy"><span class="name">🛒 進去買東西</span><span class="meta">飲料、餅乾、泡麵、提神飲料、啤酒、麵包，吃了會恢復精力</span></button>
+  <button class="good" data-act="cvsGo" data-v="buy"><span class="name">🛒 進去買東西</span><span class="meta">汽水、柳橙汁、礦泉水、餅乾、洋芋片、糖果，吃了會恢復精力</span></button>
   <button class="good" data-act="cvsGo" data-v="work"${e<EN_SHIFT||left<=0?' style="opacity:.55"':""}><span class="name">🧑‍💼 打工一班（100 秒）</span><span class="meta">要花 ${EN_SHIFT} 精力・你現在有 ${e} 精力・今天還能打工 ${left} 班（每天最多 ${WORK_MAX} 班）。結帳找零、補貨上架，賺平安幣</span></button></div>
   <p class="note">每天有 100 精力，一班要 ${EN_SHIFT}，每天最多打工 ${WORK_MAX} 班。精力每天最多能恢復 ${EN_REC_MAX}（今天還剩 ${Math.round(recLeft())}）：套房的床最快，再來是通鋪、溫泉、禪堂靜坐；吃東西最快但最貴。</p>`); }
 HANDLERS.cvsGo=v=>{ if(v==="work"){ if(dayCount("wk")>=WORK_MAX){ toast(`今天已經打工 ${WORK_MAX} 班了，明天再來`,2800); return; } if(en()<EN_SHIFT){ toast(`精力不夠（要 ${EN_SHIFT}，你有 ${en()}），先吃點東西或去休息`,3000); return; } closeSheet(); workStart(); } else { closeSheet(); buyStart(); } };

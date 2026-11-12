@@ -15,12 +15,13 @@ function dayAdd(k){ dayCount(k); bag[k]=(bag[k]|0)+1; saveBag(); }
 const GACHA_PRICE=1000;
 /* snacks: 平安幣 price in the shop, 精力 they give back, and the NT$ shelf price used in the cashier game */
 const SNACKS=[
-  {k:"drink",n:"古早味紅茶",p:20,e:6,nt:25,col:"#b4502e",tag:"飲料"},
-  {k:"cookie",n:"蔥香餅乾",p:15,e:5,nt:35,col:"#e7b33c",tag:"餅乾"},
-  {k:"noodle",n:"紅燒牛肉泡麵",p:45,e:15,nt:45,col:"#cf3b2a",tag:"泡麵"},
-  {k:"energy",n:"提神飲料",p:99,e:33,nt:59,col:"#2d78d2",tag:"提神飲料"},
-  {k:"beer",n:"金黃啤酒",p:35,e:10,nt:49,col:"#d9a628",tag:"啤酒"},
-  {k:"bread",n:"菠蘿麵包",p:30,e:10,nt:32,col:"#d39a4c",tag:"麵包"}];
+  {k:"drink",n:"草莓汽水",p:35,e:10,nt:30,col:"#ef7d98",tag:"汽水"},
+  {k:"cookie",n:"奶油餅乾",p:15,e:5,nt:35,col:"#e7b33c",tag:"餅乾"},
+  {k:"noodle",n:"洋芋片",p:45,e:15,nt:39,col:"#efb02e",tag:"洋芋片"},
+  {k:"energy",n:"柳橙汁",p:99,e:33,nt:35,col:"#f39a3a",tag:"果汁"},
+  {k:"beer",n:"礦泉水",p:20,e:6,nt:20,col:"#5aa7e6",tag:"礦泉水"},
+  {k:"bread",n:"水果糖",p:30,e:10,nt:29,col:"#f08bb4",tag:"糖果"}];
+/* (the keys stay as they were so old save codes keep their counts: drink 汽水, cookie 餅乾, noodle 洋芋片, energy 柳橙汁, beer 礦泉水, bread 糖果) */
 const SN=Object.fromEntries(SNACKS.map(s=>[s.k,s]));
 /* ---------- snack pictures (drawn once, used in the bag, the shop and the cashier) ---------- */
 function drawSnack(x,k,w,h){ x.clearRect(0,0,w,h); x.save(); x.translate(w/2,h/2); const s=w/100; x.scale(s,s); x.lineJoin="round"; x.lineCap="round";
@@ -37,7 +38,7 @@ function drawSnack(x,k,w,h){ x.clearRect(0,0,w,h); x.save(); x.translate(w/2,h/2
   if(k==="bread"){ x.fillStyle="rgba(255,255,255,.55)"; rr(-40,-32,80,66,14); x.fill(); x.strokeStyle="rgba(180,190,200,.8)"; x.lineWidth=2; x.stroke(); x.fillStyle="#c27a2c"; x.beginPath(); x.ellipse(0,4,32,24,0,0,7); x.fill(); x.fillStyle="#e7ae52"; x.beginPath(); x.ellipse(0,0,30,21,0,0,7); x.fill(); x.strokeStyle="#c78533"; x.lineWidth=2;
     for(let i=-3;i<=3;i++){ x.beginPath(); x.moveTo(i*9-14,-18); x.lineTo(i*9+14,20); x.stroke(); x.beginPath(); x.moveTo(i*9+14,-18); x.lineTo(i*9-14,20); x.stroke(); } x.fillStyle="#d84b3a"; x.fillRect(-8,-36,16,6); }
   x.restore(); }
-const ICON={}; function snackIcon(k){ if(ICON[k]) return ICON[k]; const c=document.createElement("canvas"); c.width=c.height=128; drawSnack(c.getContext("2d"),k,128,128); return ICON[k]=c.toDataURL("image/png"); }
+function snackIcon(k){ return "shop/sn-"+k+".webp"; } /* the chair's pictures (public/shop/sn-*.webp) */
 SX.bic=(k,cls="")=>`<span class="bic ${cls}" style="background:url(${snackIcon(k.slice(3))}) center/contain no-repeat"></span>`;
 const snImg=(k,sz=40)=>`<img src="${snackIcon(k)}" width="${sz}" height="${sz}" alt="" style="display:block">`;
 /* ---------- 精力 ---------- */

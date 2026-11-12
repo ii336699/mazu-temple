@@ -74,8 +74,8 @@ function buildWorld(){ if(WORLD.ready) return; const G=new T.Group(); G.name="sh
     /* sidewalks: paving bricks, a granite kerb along the road */
     const pt=paverTex(); pt.wrapS=pt.wrapT=T.RepeatWrapping; const pv=(x0,x1)=>{ const t=pt.clone(); t.needsUpdate=true; t.repeat.set((x1-x0)/2,L/2); flat(x1-x0,L,(x0+x1)/2,cz,.03,new T.MeshStandardMaterial(po({map:t,roughness:.9})),true); };
     pv(WALK_IN.x0+.22,WALK_IN.x1); pv(WALK_OUT.x0,WALK_OUT.x1-.22); const kerb=mat("#b9b6ae",{roughness:.8}); box(.22,.05,L,kerb,WALK_IN.x0+.11,.025,cz,G); box(.22,.05,L,kerb,WALK_OUT.x1-.11,.025,cz,G);
-    /* the road south of the crossing is closed for now: a row of red-and-white water barriers and a sign */
-    { const bt=cvs(128,64,(x,w,h)=>{ for(let i=0;i<4;i++){ x.fillStyle=i%2?"#f4f4f2":"#d8332b"; x.fillRect(i*32,0,32,h); } }); const bm=new T.MeshStandardMaterial({map:bt,roughness:.5}); const zb=INN.G-2.0;
+    /* (the road south of the crossing was closed with water barriers until the town opened; kept here switched off) */
+    if(0){ const bt=cvs(128,64,(x,w,h)=>{ for(let i=0;i<4;i++){ x.fillStyle=i%2?"#f4f4f2":"#d8332b"; x.fillRect(i*32,0,32,h); } }); const bm=new T.MeshStandardMaterial({map:bt,roughness:.5}); const zb=INN.G-2.0;
       for(let x=22.95;x<36.8;x+=1.12){ if(x>32&&x<34.3) continue; const b=new T.Mesh(gx('barrier',()=>{ const g=new T.BoxGeometry(1.05,.8,.42); return g; }),bm); b.position.set(x+.52,.4,zb); G.add(b); box(.9,.06,.32,mat("#c92a22",{roughness:.5}),x+.52,.83,zb,G); }
       const sg=new T.Mesh(new T.PlaneGeometry(1.4,.9),new T.MeshStandardMaterial({side:T.DoubleSide,roughness:.6,map:cvs(256,164,(x,w,h)=>{ x.fillStyle="#f2c230"; x.fillRect(0,0,w,h); x.strokeStyle="#222"; x.lineWidth=8; x.strokeRect(6,6,w-12,h-12); x.fillStyle="#222"; x.font=`900 46px ${UI_FONT}`; x.textAlign="center"; x.fillText("前方施工",w/2,72); x.fillText("暫停通行",w/2,128); })}));
       sg.position.set(28,1.45,zb-.02); G.add(sg); for(const dx of [-.6,.6]) cyl(.03,.03,1.1,mat("#777"),28+dx,.85,zb-.05,G); }
