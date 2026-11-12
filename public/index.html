@@ -503,6 +503,7 @@ body.hideui .joy,body.customizing .joy,body.hideui .camreset,body.customizing .c
       <label class="vol-row"><span>背景音樂</span><input type="range" min="0" max="100" step="5" data-vol="m" aria-label="背景音樂音量"><b id="volm"></b></label>
       <label class="vol-row"><span>音效</span><input type="range" min="0" max="100" step="5" data-vol="s" aria-label="音效音量"><b id="vols"></b></label>
       <label class="vol-row"><span>街頭藝人</span><input type="range" min="0" max="100" step="5" data-vol="b" aria-label="街頭藝人玖玖的歌聲音量"><b id="volb"></b></label>
+      <label class="vol-row"><span>歌仔戲・布袋戲</span><input type="range" min="0" max="100" step="5" data-vol="o" aria-label="歌仔戲和布袋戲音量"><b id="volo"></b></label>
       <button class="chip vol-mute" id="muteBtn"></button>
     </div>
     <button class="icon-btn glass fold-btn" id="foldBtn" aria-label="收起功能列" aria-expanded="true"><svg viewBox="0 0 24 24"><path class="fo-open" d="M6 15l6-6 6 6"/><path class="fo-shut" d="M4 7h16M4 12h16M4 17h16"/></svg><span class="cap" id="foldCap">收起</span></button>
@@ -4269,7 +4270,7 @@ document.addEventListener("visibilitychange",()=>{ if(room) sendPresence(); });
 
 /* ================= audio ================= */
 let ac=null, soundOn=load("mz.sound",true);
-const VOL=Object.assign({m:100,s:100,b:100},load("mz.vol",{})); const mVol=()=>Math.max(0,Math.min(100,+VOL.m||0))/100, sVol=()=>Math.max(0,Math.min(100,+VOL.s||0))/100, bVol=()=>Math.max(0,Math.min(100,VOL.b==null?100:+VOL.b||0))/100; /* b: 街頭藝人玖玖 (each player can turn him down or off) */
+const VOL=Object.assign({m:100,s:100,b:100,o:50},load("mz.vol",{})); const oVol=()=>Math.max(0,Math.min(100,VOL.o==null?50:+VOL.o||0))/100; /* o: 歌仔戲・布袋戲, its own slider (starts at half) */ const mVol=()=>Math.max(0,Math.min(100,+VOL.m||0))/100, sVol=()=>Math.max(0,Math.min(100,+VOL.s||0))/100, bVol=()=>Math.max(0,Math.min(100,VOL.b==null?100:+VOL.b||0))/100; /* b: 街頭藝人玖玖 (each player can turn him down or off) */
 const bgm=$("#bgm"); bgm.volume=.38*mVol(); let audioUnlocked=false, catMode=false; let curTrack="main"; let rearZone=false, rearDwell=0; /* 後殿 has its own song: walking into the 後埕/後殿 fades the temple music out and the rear song in, and back */
 // Sound effects all go through one bus. Muting, hiding the page or switching away disconnects it, which silences
 // anything still ringing at once, and new sounds are refused while the page is hidden so nothing piles up for later.
@@ -4338,7 +4339,7 @@ const sfx={ // 叮咚: a two-note door chime (high then low), each note with a s
   rattle(){ for(let i=0;i<8;i++) noiseBurst(.05,.2,1800+Math.random()*900,i*.09); }, fire(){ noiseBurst(1.4,.25,600); noiseBurst(.9,.15,1600,.2); } };
 function renderSound(){ $("#soundBtn").setAttribute("aria-pressed",String(soundOn)); $("#soundWave").style.display=soundOn?"":"none"; $("#soundOff").style.display=soundOn?"none":""; $("#soundBtn").setAttribute("aria-label",soundOn?"關閉音樂":"開啟音樂"); }
 // The speaker button opens a small volume panel: music and sound-effect sliders plus mute-all.
-function renderVolPop(){ for(const k of ["m","s","b"]){ const r=$(`[data-vol="${k}"]`); if(r) r.value=VOL[k]; $("#vol"+k).textContent=VOL[k]+"%"; } $("#muteBtn").textContent=soundOn?"🔇 全部靜音":"🔊 開啟聲音"; }
+function renderVolPop(){ for(const k of ["m","s","b","o"]){ const r=$(`[data-vol="${k}"]`); if(r) r.value=VOL[k]; $("#vol"+k).textContent=VOL[k]+"%"; } $("#muteBtn").textContent=soundOn?"🔇 全部靜音":"🔊 開啟聲音"; }
 $("#soundBtn").onclick=e=>{ e.stopPropagation(); const p=$("#volPop"); p.hidden=!p.hidden; if(!p.hidden) renderVolPop(); };
 $("#muteBtn").onclick=()=>{ soundOn=!soundOn; save("mz.sound",soundOn); renderSound(); if(soundOn) ensureAudio(); else stopAllSound(); renderVolPop(); toast(soundOn?"聲音已開啟":"已全部靜音"); };
 document.addEventListener("pointerdown",e=>{ const p=$("#volPop"); if(!p.hidden&&!p.contains(e.target)&&!$("#soundBtn").contains(e.target)) p.hidden=true; },true);
@@ -6644,7 +6645,7 @@ function opMusic(dt){ const want=OP.on&&soundOn&&audioUnlocked&&OP.prox>.01; if(
   const [ti,off]=opTrackAt(); const now=performance.now();
   if(OP.track!==ti||OP.aud.paused||(now-OP.lastSync>4000&&Math.abs(OP.aud.currentTime-off)>2.5)){ OP.lastSync=now;
     if(OP.track!==ti){ OP.track=ti; OP.aud.src=OP_TRACKS[ti][0]; } try{ OP.aud.currentTime=off; }catch(e){} const p=OP.aud.play(); if(p&&p.catch) p.catch(()=>{}); }
-  const v=OP.prox*mVol()*.42; if(OP.musicGain) OP.musicGain.gain.setTargetAtTime(v,ac.currentTime,.12); else OP.aud.volume=Math.min(1,v); }
+  const v=OP.prox*oVol()*.42; if(OP.musicGain) OP.musicGain.gain.setTargetAtTime(v,ac.currentTime,.12); else OP.aud.volume=Math.min(1,v); }
 // one sung or spoken syllable: a sawtooth voice through two vowel formants, Taiwanese-like tone contour, vibrato on long notes
 const OP_VOWELS=[[800,1200],[400,2200],[300,2700],[500,900],[350,800],[600,1700]];
 function opSyllable(a,r,at,dur,f0,contour,sung){ const o=a.createOscillator(); o.type=r.rough?"square":"sawtooth";
@@ -6694,7 +6695,7 @@ function opTick(dt){ if(!OP.on||!OP.root){ opMusic(dt); if(OP.voiceGain) OP.voic
   OP.spots.forEach(s=>{ const h=(el*.05+s.i/3)%1, sw=Math.sin(el*.7+s.i*2.1); const aim=new T.Vector3((s.i-1)*.12*OP.k+sw*.9,.15*OP.k,.02*OP.k+Math.cos(el*.5+s.i)*.4);
     s.tgt.position.copy(aim); if(s.sl){ s.sl.color.setHSL(h,1,.55); s.sl.intensity=(1.6+1.6*nt); }
     const dir=aim.clone().sub(s.from), L=dir.length(); s.beam.scale.set(1,L,1); s.beam.quaternion.setFromUnitVectors(new T.Vector3(0,-1,0),dir.normalize()); s.bm.color.setHSL(h,1,.5); s.bm.opacity=.05+.08*nt; });
-  if(OP.voiceGain&&ac) OP.voiceGain.gain.setTargetAtTime(OP.prox*sVol()*(soundOn?1:0),ac.currentTime,.12);
+  if(OP.voiceGain&&ac) OP.voiceGain.gain.setTargetAtTime(OP.prox*oVol()*(soundOn?1:0),ac.currentTime,.12);
   opMusic(dt); }
 
 /* ================= 布袋戲台 (event) ================= */
@@ -7074,7 +7075,7 @@ function ptAudio(){ const a=ac; if(!a) return false; if(!PT.voiceGain){ PT.voice
 function ptMusic(){ const want=PT.on&&soundOn&&audioUnlocked&&PT.prox>.01; if(!want){ if(PT.aud&&!PT.aud.paused) PT.aud.pause(); return; } if(!ptAudio()) return;
   let t=((Date.now()-PT.at)/1000)%OP_TOTAL, ti=0; for(;ti<OP_TRACKS.length;ti++){ if(t<OP_TRACKS[ti][1]) break; t-=OP_TRACKS[ti][1]; } ti%=OP_TRACKS.length; const now=performance.now();
   if(PT.track!==ti||PT.aud.paused||(now-PT.lastSync>4000&&Math.abs(PT.aud.currentTime-t)>2.5)){ PT.lastSync=now; if(PT.track!==ti){ PT.track=ti; PT.aud.src=OP_TRACKS[ti][0]; } try{ PT.aud.currentTime=t; }catch(e){} const p=PT.aud.play(); if(p&&p.catch) p.catch(()=>{}); }
-  const v=PT.prox*mVol()*.2*(OP.on&&OP.prox>PT.prox?.4:1); if(PT.musicGain) PT.musicGain.gain.setTargetAtTime(v,ac.currentTime,.12); else PT.aud.volume=Math.min(1,v); }
+  const v=PT.prox*oVol()*.2*(OP.on&&OP.prox>PT.prox?.4:1); if(PT.musicGain) PT.musicGain.gain.setTargetAtTime(v,ac.currentTime,.12); else PT.aud.volume=Math.min(1,v); }
 function ptNoise(a,dur){ const n=Math.floor(a.sampleRate*dur), b=a.createBuffer(1,n,a.sampleRate), d=b.getChannelData(0); for(let i=0;i<n;i++) d[i]=Math.random()*2-1; const s=a.createBufferSource(); s.buffer=b; return s; }
 const PT_SFX={
   clang(big){ const a=ac, at=a.currentTime+.01, g=a.createGain(); g.gain.setValueAtTime(big?.5:.32,at); g.gain.exponentialRampToValueAtTime(.001,at+(big?1.1:.45)); g.connect(PT.voiceGain); // metal on metal
@@ -7160,7 +7161,7 @@ function ptTick(dt){ if(!PT.on||!PT.root||!PT.root.visible){ ptMusic(); if(PT.vo
     const dir=aim.clone().sub(sp.from), Lr=dir.length(); sp.beam.scale.set(1,Lr,1); sp.beam.quaternion.setFromUnitVectors(new T.Vector3(0,-1,0),dir.normalize()); sp.bm.color.setHSL(h,1,.55); sp.bm.opacity=.06+.1*nt; });
   PT.fog.forEach(o=>{ const v=(el*.06+o.ph)%1, f=Math.sin(v*Math.PI); if(o.win){ o.sp.position.set(o.x*.14*k,(PT_FLOOR+.01+v*.05)*k,(PT_DEPTH+.01+v*.05)*k); o.sp.scale.setScalar((.25+v*.5)); o.sp.material.opacity=f*.45; }
     else { o.sp.position.set(o.x*.55*k,.15+v*.25,(.2+v*.5)*k); o.sp.scale.setScalar(1.2+v*2.2); o.sp.material.opacity=f*.32; } });
-  if(PT.voiceGain&&ac) PT.voiceGain.gain.setTargetAtTime(PT.prox*sVol()*(soundOn?1:0),ac.currentTime,.12);
+  if(PT.voiceGain&&ac) PT.voiceGain.gain.setTargetAtTime(PT.prox*oVol()*(soundOn?1:0),ac.currentTime,.12);
   ptMusic(); }
 
 const tmpV=new T.Vector3();
