@@ -3368,7 +3368,7 @@ function faceTexture(l){ const key=[l[0],l[7],l[8],l[9],l[10],l[11]].join(","); 
    removed canvas's memory until its size is set to 0). Without this every bubble and every visitor who left stayed in memory, and after a
    long while (a long pachinko session) the page ran out and closed itself. */
 function relSprite(sp){ if(!sp||!sp.material) return; const m=sp.material, t=m.map; if(t){ const im=t.image; t.dispose(); if(im&&im.getContext){ try{ im.width=0; im.height=0; }catch(e){} } } m.dispose(); }
-const LBL_RES=2, LBL_FAR=30; /* label pictures drawn at 2× · names/bubbles shown within 30 m of the camera (was 16: you had to stand right next to someone) (fading out over the last 3 m) */
+const LBL_RES=2, LBL_FAR=40; /* label pictures drawn at 2× · names/bubbles shown within 40 m of the camera (same as the demo people) (was 16: you had to stand right next to someone) (fading out over the last 3 m) */
 function bubbleSprite(text,color){ const fs=36, pad=18, maxW=430; const c=document.createElement("canvas"); const x=c.getContext("2d"); const font=`700 ${fs}px ${DISPLAY_FONT}`; x.font=font;
   const lines=[]; let cur=""; for(const ch of Array.from(text)){ if(x.measureText(cur+ch).width>maxW&&cur){ lines.push(cur); cur=ch; } else cur+=ch; } if(cur) lines.push(cur);
   const tw=Math.ceil(Math.max(...lines.map(l=>x.measureText(l).width))); const lh=fs*1.3, S=LBL_RES, w=tw+pad*2, h=Math.ceil(lines.length*lh+pad*1.4); c.width=w*S; c.height=h*S; x.scale(S,S);
