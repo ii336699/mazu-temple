@@ -1,0 +1,13 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0;background:transparent"><canvas id="c"></canvas>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script>
+<script type="module">
+import * as T from "three"; import {GLTFLoader} from "three/addons/loaders/GLTFLoader.js"; import {MeshoptDecoder} from "three/addons/libs/meshopt_decoder.module.js";
+const r=new T.WebGLRenderer({canvas:document.getElementById("c"),antialias:true,alpha:true,preserveDrawingBuffer:true}); r.outputColorSpace=T.SRGBColorSpace;
+const L=new GLTFLoader(); L.setMeshoptDecoder(MeshoptDecoder);
+window.shot=async(url,size,yaw,pitch,bg)=>{ r.setSize(size,size,false); r.setClearColor(bg||0x000000,bg?1:0); const s=new T.Scene(); s.add(new T.HemisphereLight(0xffffff,0x8a7a70,2.2)); const d=new T.DirectionalLight(0xffffff,1.6); d.position.set(2,4,3); s.add(d);
+  const g=(await L.loadAsync(url)).scene; s.add(g); const b=new T.Box3().setFromObject(g), c=b.getCenter(new T.Vector3()), sz=b.getSize(new T.Vector3()); const R=Math.max(sz.x,sz.y,sz.z)*.62;
+  const cam=new T.OrthographicCamera(-R,R,R,-R,.001,100); cam.position.set(c.x+Math.sin(yaw)*Math.cos(pitch)*5,c.y+Math.sin(pitch)*5,c.z+Math.cos(yaw)*Math.cos(pitch)*5); cam.lookAt(c); r.render(s,cam);
+  let tris=0; g.traverse(o=>{ if(o.isMesh){ tris+=(o.geometry.index?o.geometry.index.count:o.geometry.attributes.position.count)/3; o.geometry.dispose(); o.material.map&&o.material.map.dispose(); o.material.dispose(); } });
+  return [document.getElementById("c").toDataURL("image/png"),tris]; };
+window.ready=1;
+</script>
