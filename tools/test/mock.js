@@ -9,7 +9,7 @@
   var real=window.fetch.bind(window);
   window.fetch=async function(input,init){
     init=init||{}; var u; try{ u=new URL(typeof input==="string"?input:input.url,location.href); }catch(e){ return real(input,init); }
-    var p=u.pathname, isApi=/^\/(lb|me|me\/claim|gift|gifts|halls|board|msg|msgs|reply|letters|stage|puppet|crowd|market|nmrec|announce|fireworks|lanterns|zhan|lamps|lamp|wishes|wish)$/.test(p);
+    var p=u.pathname, isApi=/^\/(lb|me|me\/claim|gift|gifts|halls|board|msg|msgs|reply|letters|stage|puppet|crowd|market|nmrec|announce|fireworks|lanterns|zhan|lamps|lamp|wishes|wish|meteor)$/.test(p);
     if(!isApi) return real(input,init);
     var method=(init.method||"GET").toUpperCase(), h=init.headers||{}, key=String(h["x-key"]||h["X-Key"]||"").trim();
     var body={}; try{ body=JSON.parse(init.body||"{}"); }catch(e){}
@@ -24,6 +24,7 @@
         if(method==="POST"){ var tt=Math.round(+body.t||0); if(tt>=1500){ var cu=null; L.forEach(function(e){ if(e.id===body.id) cu=e; }); if(!cu) L.push({id:body.id,name:body.name||"香客",t:tt,at:now}); else if(tt<cu.t){ cu.t=tt; cu.at=now; cu.name=body.name||cu.name; }
           L.sort(function(a,c){ return a.t-c.t||a.at-c.at; }); L=L.slice(0,20); put("lb:"+gg,L); } }
         return J({ok:true,top:L.slice(0,10)}); }
+      case "/meteor": { var MT=get("met",{}), mid=String(body.id); if(!MT[mid]){ MT[mid]={uid:uid,name:body.name||"香客"}; put("met",MT); return J({ok:true,first:true}); } return J({ok:true,first:MT[mid].uid===uid,by:MT[mid].name}); }
       case "/me": { var P=get("P:"+uid,null);
         if(method!=="POST") return J({ok:true,p:P?{code:P.code,snap:P.snap}:null});
         var snap=String(body.snap||""); if(!/^MZ-[A-Za-z0-9_-]{10,900}$/.test(snap)) return J({ok:false});

@@ -315,6 +315,131 @@ HANDLERS.lfWear=v=>{ const [i,n]=v.split(":").map(Number); wearNow(i,n); i===1?b
 HANDLERS.lfBuy=v=>{ const [i,n]=v.split(":").map(Number), [k,j,P]=slotOf(i,n), o=OWN(); if(owned2(k,j)) return; if(bag.coins<P[j]&&!me.sp){ try{ buzz(); }catch(e){} toast(`平安幣不夠（還差 ${P[j]-bag.coins}）`,2400); return; } if(!me.sp) bag.coins-=P[j]; o[k]=(o[k]|0)|(1<<j); save(); try{ chaChing(); statInc("lfBuy"+k); }catch(e){} wearNow(i,n); toast("換好了！好看喔",2200); i===1?barber():beauty(); };
 L.tick3=dt=>{ if(PV&&!(sheetKind==="lfBarber"||sheetKind==="lfBeauty")) endTry(); if(L.tick4) L.tick4(dt); };
 L.more2=k=>{ if(k==="tw:barber"){ barber(); return true; } if(k==="tw:beauty"){ beauty(); return true; } return L.more3?L.more3(k):false; };
+
+/* ---------- 小吃廣場的兩個攤位: 擠冰淇淋 (stack the swirls straight) and 中藥對對碰 (find the pairs) ---------- */
+const MG=()=>{ const d=LF(); if(!d.mg||d.mg.d!==today()) d.mg={d:today(),n:0}; return d.mg; };
+const PLAY=30;
+function mgOverlay(title){ const ov=document.createElement("div"); ov.className="lf-ov"; ov.style.background="rgba(20,14,10,.72)"; ov.innerHTML=`<div style="position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 14px);text-align:center;color:#ffe2a0;font-weight:900;font-size:20px">${title}</div><button class="lf-x" id="mgX">離開</button><div id="mgB" style="position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 54px);bottom:0;display:flex;flex-direction:column;align-items:center"></div>`; document.body.appendChild(ov); return ov; }
+function pay(){ if(me.sp) return true; if(bag.coins<PLAY){ try{ buzz(); }catch(e){} toast("平安幣不夠",2000); return false; } bag.coins-=PLAY; save(); return true; }
+function reward(score,max,line){ const m=MG(); m.n++; const paid=m.n<=10; const coins=paid?Math.round(PLAY*3*score/max):0; if(coins) bag.coins+=coins; if(paid&&score>=max*.6) energy(3); save(); try{ profSave(true); if(coins) chaChing(); }catch(e){}
+  return `${line}<br>${paid?`拿到 ${coins} 平安幣${score>=max*.6?"，精力 +3":""}。`:"今天的獎勵已經拿完了（每天前 10 次有獎勵），玩開心的～"}`; }
+let IC=null;
+function iceStart(){ if(!pay()) return; const ov=mgOverlay("🍦 擠冰淇淋"), B=ov.querySelector("#mgB"); B.innerHTML=`<p style="color:#fff;margin:4px 12px 8px;text-align:center;font-size:14px">出口會左右移動，按下去擠一圈。對準就疊得高，歪太多會倒！疊 7 層就完美。</p><canvas id="icC" width="320" height="420" style="width:320px;height:420px;border-radius:16px;background:linear-gradient(#ffe8f0,#fff6e0)"></canvas><button class="lf-btn" style="position:static;transform:none;margin-top:12px" id="icB">擠！</button>`;
+  const cv=B.querySelector("#icC"), x=cv.getContext("2d"); IC={ov,x,t:0,stack:[{x:160,w:84}],drop:null,over:false,done:false};
+  const tap=e=>{ e.preventDefault(); if(!IC||IC.drop||IC.over) return; IC.drop={x:IC.nx,y:70,w:IC.stack[IC.stack.length-1].w*.94}; try{ tone(520+IC.stack.length*60,.08,.05,"triangle"); }catch(err){} };
+  B.querySelector("#icB").addEventListener("pointerdown",tap); cv.addEventListener("pointerdown",tap); ov.querySelector("#mgX").onclick=()=>{ IC=null; ov.remove(); }; }
+function iceTick(dt){ if(!IC) return; const I=IC, x=I.x; I.t+=dt; const n=I.stack.length, sp=1.2+n*.32; I.nx=160+Math.sin(I.t*sp)*110;
+  x.clearRect(0,0,320,420); x.fillStyle="#d9a066"; x.beginPath(); x.moveTo(118,330); x.lineTo(202,330); x.lineTo(160,412); x.closePath(); x.fill(); x.strokeStyle="#b07a40"; x.lineWidth=2; for(let k=0;k<5;k++){ x.beginPath(); x.moveTo(124+k*16,330); x.lineTo(150+k*6,400); x.stroke(); }
+  const top=k=>330-k*30; I.stack.forEach((s,k)=>{ if(!k) return; const y=top(k); x.fillStyle=k%2?"#fff8ee":"#fde6ee"; x.beginPath(); x.ellipse(s.x,y+8,s.w/2,16,0,0,6.283); x.fill(); x.strokeStyle="rgba(200,160,140,.5)"; x.lineWidth=2; x.beginPath(); x.ellipse(s.x,y+4,s.w/2-6,9,0,Math.PI*.1,Math.PI*.9); x.stroke(); });
+  x.fillStyle="#c8c8d0"; x.fillRect(I.nx-16,0,32,46); x.fillStyle="#a0a0ac"; x.beginPath(); x.moveTo(I.nx-12,46); x.lineTo(I.nx+12,46); x.lineTo(I.nx,62); x.closePath(); x.fill();
+  if(I.drop){ const d=I.drop; d.y+=dt*520; const ty=top(n); x.fillStyle="#fff8ee"; x.beginPath(); x.ellipse(d.x,Math.min(d.y,ty)+8,d.w/2,16,0,0,6.283); x.fill();
+    if(d.y>=ty){ const below=I.stack[n-1], off=d.x-below.x; I.drop=null; if(Math.abs(off)>below.w*.45){ I.over=true; try{ tone(200,.3,.06,"sawtooth"); }catch(e){} iceEnd(n-1,"歪掉了，倒下來了……"); return; } I.stack.push({x:below.x+off*.6,w:d.w}); if(I.stack.length>7){ I.over=true; try{ [784,988,1175,1568].forEach((f,k)=>tone(f,.14,.06,"triangle",k*.08)); }catch(e){} iceEnd(7,"完美！七層的冰淇淋塔！"); } } }
+  if(I.over&&I.stack.length>7){ const s=I.stack[7]; x.fillStyle="#e8402e"; x.beginPath(); x.arc(s.x,top(7)-14,9,0,6.283); x.fill(); } }
+function iceEnd(layers,line){ const I=IC; setTimeout(()=>{ if(I.ov.parentNode) I.ov.remove(); if(IC===I) IC=null; openSheet("lfIce","🍦 擠冰淇淋",`<p class="lead">${reward(layers,7,`疊了 ${layers} 層。${line}`)}</p><div class="row"><button class="primary" data-act="lfIce">再玩一次（${PLAY} 幣）</button></div>`); },900); }
+HANDLERS.lfIce=()=>{ closeSheet(); iceStart(); };
+const HERBS=[["當歸","#a0704a"],["枸杞","#e8402e"],["紅棗","#b3261e"],["人參","#e8c87a"],["黃耆","#f2c230"],["甘草","#c9a46a"],["川芎","#8a6a4a"],["菊花","#f6d84a"]];
+let HM=null;
+function herbStart(){ if(!pay()) return; const ov=mgOverlay("🌿 中藥對對碰"), B=ov.querySelector("#mgB"); const cards=[...HERBS.keys(),...HERBS.keys()].sort(()=>Math.random()-.5);
+  B.innerHTML=`<p style="color:#fff;margin:4px 12px 8px;text-align:center;font-size:14px">翻兩張，一樣的藥材就配對成功。60 秒內全部找到！</p><div id="hmT" style="color:#ffe2a0;font-weight:900;margin-bottom:8px">60</div><div id="hmG" style="display:grid;grid-template-columns:repeat(4,72px);gap:8px">${cards.map((c,i)=>`<button data-i="${i}" style="height:86px;border-radius:12px;border:2px solid #d9aa3d;background:linear-gradient(#7a4a3a,#5a3226);color:#fff;font:900 16px ${UI_FONT}">中藥</button>`).join("")}</div>`;
+  HM={ov,cards,open:[],got:0,miss:0,t:60}; B.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>flip(+b.dataset.i,b)); ov.querySelector("#mgX").onclick=()=>{ HM=null; ov.remove(); }; }
+function face(b,c,up){ const H=HERBS[c]; b.innerHTML=up?`<span style="display:block;width:30px;height:30px;margin:0 auto 4px;border-radius:50%;background:${H[1]};box-shadow:inset -4px -4px 0 rgba(0,0,0,.2)"></span>${H[0]}`:"中藥"; b.style.background=up?"#fff6e0":"linear-gradient(#7a4a3a,#5a3226)"; b.style.color=up?"#3a2a1a":"#fff"; }
+function flip(i,b){ if(!HM||HM.open.length>=2||b.dataset.done||HM.open.some(o=>o[0]===i)) return; face(b,HM.cards[i],true); try{ tone(700,.04,.04,"triangle"); }catch(e){} HM.open.push([i,b]);
+  if(HM.open.length===2){ const [[i1,b1],[i2,b2]]=HM.open; if(HM.cards[i1]===HM.cards[i2]){ b1.dataset.done=b2.dataset.done=1; b1.style.opacity=b2.style.opacity=.7; HM.open=[]; HM.got++; try{ [880,1175].forEach((f,k)=>tone(f,.08,.05,"triangle",k*.06)); }catch(e){} if(HM.got===8) herbEnd(true); }
+    else { HM.miss++; setTimeout(()=>{ if(!HM) return; face(b1,0,false); face(b2,0,false); HM.open=[]; },650); } } }
+function herbTick(dt){ if(!HM) return; HM.t-=dt; const el=HM.ov.querySelector("#hmT"); if(el) el.textContent=Math.max(0,Math.ceil(HM.t))+" 秒"; if(HM.t<=0) herbEnd(false); }
+function herbEnd(all){ const H=HM; HM=null; const score=all?Math.max(4,8-Math.max(0,H.miss-4)*.5):H.got; setTimeout(()=>{ H.ov.remove(); openSheet("lfHerb","🌿 中藥對對碰",`<p class="lead">${reward(score,8,all?`全部配對成功！錯了 ${H.miss} 次。`:`時間到，配對了 ${H.got} 組。`)}</p><div class="row"><button class="primary" data-act="lfHerb">再玩一次（${PLAY} 幣）</button></div>`); },500); }
+HANDLERS.lfHerb=()=>{ closeSheet(); herbStart(); };
+L.more3=k=>{ if(k==="tw:ice"){ openSheet("lfIce","🍦 擠冰淇淋",`<p class="lead">「來試試看能疊幾層！」</p><div class="row"><button class="primary" data-act="lfIce">玩一次（${PLAY} 幣）</button></div><p class="note">每天前 10 次（兩個攤位合計）有平安幣獎勵。</p>`); return true; }
+  if(k==="tw:herb"){ openSheet("lfHerb","🌿 中藥對對碰",`<p class="lead">中藥行阿嬤：「認得這些藥材嗎？來玩玩看。」</p><div class="row"><button class="primary" data-act="lfHerb">玩一次（${PLAY} 幣）</button></div><p class="note">每天前 10 次（兩個攤位合計）有平安幣獎勵。</p>`); return true; }
+  return L.more4?L.more4(k):false; };
+L.tick4=dt=>{ iceTick(dt); herbTick(dt); if(L.tick5) L.tick5(dt); };
+
+/* ---------- 流星: on about one game night in three, a meteor falls somewhere in or around the town — the same night, the same
+   moment and the same place for everyone (worked out from the game day). A beam of light shows where it came down; whoever gets
+   there first (the server keeps track) gets a special prize, everyone after still gets a little stardust. ---------- */
+const MSPOT=[[61.5,-150,"南岸森林"],[66,-206.6,"天后山頂"],[148,-100,"望海沙灘"],[12,-125,"河濱公園"],[62,-68.5,"噴水池廣場"],[114,-80,"溪谷草地"],[44,-170,"森林深處"],[150,-74,"燈塔附近"],[8,-87,"西側巷弄"],[50,-129,"河堤邊"]];
+const hsh=n=>{ n=(n^61)^(n>>>16); n=Math.imul(n,9); n^=n>>>4; n=Math.imul(n,0x27d4eb2d); n^=n>>>15; return n>>>0; };
+function meteorOf(D){ const h=hsh(D*7919+13); if(h%3&&!(L.forceD===D)) return null; const p=.58+((h>>>3)%100)/100*.2, at=(D+p)*TOD_LEN*1000; const sp=MSPOT[(h>>>11)%MSPOT.length]; return {id:D,at,end:(D+.86)*TOD_LEN*1000,x:sp[0],z:sp[1],nm:sp[2]}; }
+const curD=()=>Math.floor(Date.now()/1000/TOD_LEN);
+let MET=null; /* the live one: {m, ph, t, streak, beam, rock, got} */
+L.meteorHint=()=>{ for(let k=0;k<4;k++){ const m=meteorOf(curD()+k); if(m&&m.end>Date.now()){ const mins=Math.max(0,Math.round((m.at-Date.now())/60000)); return mins<=0?`流星已經掉下來了，在${m.nm}那邊，快去找！`:`我觀察星象……大概 ${mins} 分鐘後的晚上會有流星，可能掉在${m.nm}一帶。`; } } return "這幾個晚上大概不會有流星。"; };
+function metMake(m){ const g=new T.Group(); scene.add(g); const y=(TOWNX&&TOWNX.ground?TOWNX.ground(m.x,m.z):0)||0;
+  const rock=new T.Mesh(new T.IcosahedronGeometry(.28,1),new T.MeshStandardMaterial({color:"#8a7ad0",emissive:"#b8a8ff",emissiveIntensity:1.4,roughness:.3,metalness:.4})); rock.position.set(m.x,y+.3,m.z); g.add(rock);
+  const beam=new T.Mesh(new T.CylinderGeometry(.35,.9,60,16,1,true),new T.MeshBasicMaterial({color:"#c8b8ff",transparent:true,opacity:.28,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide,toneMapped:false})); beam.position.set(m.x,y+30,m.z); g.add(beam);
+  const glow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#c8b8ff"),transparent:true,depthWrite:false,blending:T.AdditiveBlending,toneMapped:false})); glow.scale.set(3,3,1); glow.position.set(m.x,y+.5,m.z); g.add(glow);
+  const streak=new T.Mesh(new T.CylinderGeometry(.05,.5,14,8,1,true),new T.MeshBasicMaterial({color:"#fff6d8",transparent:true,opacity:.9,blending:T.AdditiveBlending,depthWrite:false,toneMapped:false})); g.add(streak);
+  return {g,rock,beam,glow,streak,y}; }
+function metFree(){ if(!MET) return; scene.remove(MET.o.g); MET.o.g.traverse(q=>{ if(q.geometry) q.geometry.dispose(); if(q.material) q.material.dispose(); }); MET=null; }
+let metChip=null, metT=0;
+function meteorTick(dt){ metT-=dt; if(metT<=0){ metT=1; const now=Date.now(); let m=meteorOf(curD()); if(L.testMet) m=L.testMet; L.starNight=!!(m&&now>=m.at&&now<m.end);
+    if(m&&now>=m.at-4000&&now<m.end){ if(!MET||MET.m.id!==m.id){ metFree(); MET={m,o:metMake(m),t:(now-m.at)/1000,got:!!(LF().met&&LF().met[m.id])}; if(now<m.at+60000){ setTimeout(()=>{ try{ toast(`🌠 流星掉到「${m.nm}」了！第一個找到的人有特別的獎勵！`,4200); [1568,1319,1047,784].forEach((f,k)=>tone(f,.25,.04,"sine",k*.12)); }catch(e){} },Math.max(0,m.at-now+2600)); } } }
+    else if(MET) metFree(); }
+  if(!MET) return; const M=MET, o=M.o; M.t+=dt; const k=Math.min(1,Math.max(0,(M.t+4)/3)); /* the fall: from high in the sky down to its spot over 3 s */
+  const sx=M.m.x-60, sy=70, sz=M.m.z+40; if(k<1){ const x=sx+(M.m.x-sx)*k, y=sy+(o.y-sy)*k, z=sz+(M.m.z-sz)*k; o.streak.visible=true; o.streak.position.set(x,y,z); o.streak.lookAt(M.m.x,o.y,M.m.z); o.streak.rotateX(Math.PI/2); o.rock.visible=false; o.beam.visible=false; o.glow.visible=false; return; }
+  o.streak.visible=false; o.rock.visible=!M.got; o.glow.visible=!M.got; o.beam.visible=!M.got; o.rock.rotation.y+=dt; o.rock.position.y=o.y+.3+Math.sin(M.t*2)*.05; o.beam.material.opacity=.18+.1*Math.sin(M.t*3); o.glow.material.opacity=.7+.3*Math.sin(M.t*4);
+  if(!metChip){ metChip=document.createElement("button"); metChip.style.cssText="position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 226px);z-index:9;border:0;border-radius:999px;padding:11px 20px;font:900 16px "+UI_FONT+";color:#fff;background:linear-gradient(#a890ff,#6a50d8);box-shadow:0 4px 14px rgba(0,0,0,.35)"; metChip.textContent="🌠 撿起流星碎片"; metChip.hidden=true; metChip.onclick=claimMet; document.body.appendChild(metChip); }
+  metChip.hidden=M.got||busy()||Math.hypot(meAv.pos.x-M.m.x,meAv.pos.y-M.m.z)>2.4; }
+async function claimMet(){ if(!MET||MET.got||MET.busy) return; const M=MET; M.busy=1; let j={ok:false}; try{ const r=await fetch("/meteor",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({id:M.m.id,uid:load("mz.id",""),name:(me.name||"香客").slice(0,10)})}); j=await r.json(); }catch(e){} M.busy=0;
+  const d=LF(); d.met=d.met||{}; d.met[M.m.id]=1; M.got=true; if(metChip) metChip.hidden=true; let msg2;
+  if(j.ok&&j.first){ bag.gacha=Math.min(255,(bag.gacha||0)+3); bag.coins+=1000; d.stone=(d.stone|0)+1; msg2=`🌠 你是第一個找到流星的人！<br>得到「流星石」、3 枚扭蛋幣和 1000 平安幣。`; try{ [784,988,1175,1568,2093].forEach((f,k)=>tone(f,.2,.06,"triangle",k*.1)); statInc("metFirst"); }catch(e){} }
+  else { bag.coins+=200; d.dust=(d.dust|0)+1; msg2=`✨ 撿到一些星砂和 200 平安幣。${j.by?`<br>第一個找到的是「${String(j.by).replace(/[<>&"]/g,"")}」。`:""}`; try{ [988,1319].forEach((f,k)=>tone(f,.15,.05,"triangle",k*.1)); }catch(e){} }
+  save(); try{ profSave(true); }catch(e){} openSheet("lfMet","🌠 流星",`<p class="lead">${msg2}</p><p class="note">流星夜裡，女神泉和大海會出現平常看不到的魚。</p>`); }
+L.meteorTest=(x,z)=>{ const D=curD(); L.testMet={id:"t"+Date.now(),at:Date.now()+500,end:Date.now()+600000,x:x??meAv.pos.x+4,z:z??meAv.pos.y,nm:"附近"}; metT=0; };
+L.tick5=dt=>{ try{ meteorTick(dt); }catch(e){ console.warn("meteor",e); } if(L.tick6) L.tick6(dt); };
+
+/* ---------- 我的花圃: your own garden (its own little scene, like your room — nobody else's plants are in it). Twelve beds; seeds
+   from the 花店. A plant grows in three steps (sprout, young plant, flowers or fruit) on real time, but only while it has been
+   watered: water it, and again after each step. Forgetting does not kill it, it just waits. Sell the harvest at the 花店 or the
+   雜貨店, or give it to someone. ---------- */
+const SEEDS=[["sun","向日葵",60,20,150,"🌻","#f2c230"],["tulip","鬱金香",80,30,200,"🌷","#e8607a"],["tomato","番茄",70,25,180,"🍅","#e8402e"],["straw","草莓",100,40,260,"🍓","#d8303e"],["cabbage","高麗菜",120,60,330,"🥬","#8fd06a"],["rose","玫瑰",150,90,450,"🌹","#c8203e"],["pumpkin","南瓜",200,120,600,"🎃","#f08a2a"]];
+const SB={}; SEEDS.forEach(q=>SB[q[0]]=q);
+const GD2=()=>{ const d=LF(); d.gd=d.gd||{beds:Array(12).fill(null),seed:{},crop:{}}; if(!Array.isArray(d.gd.beds)||d.gd.beds.length!==12) d.gd.beds=Array(12).fill(null); return d.gd; };
+/* a bed: {s:seed id, p:0..3 progress (steps), w:1 if watered for the step it is in, t:last update} */
+function grow(b,now){ if(!b) return; const S=SB[b.s]; if(!S){ return; } if(b.w&&b.p<3){ const step=Math.floor(b.p)+1, per=S[3]*60000/3; let np=b.p+(now-b.t)/per; if(np>=step){ np=step; b.w=0; } b.p=Math.min(3,np); } b.t=now; }
+const stage=b=>!b?-1:b.p>=3?3:Math.floor(b.p);
+L.cropList=()=>{ const c=GD2().crop; return Object.keys(c).filter(k=>c[k]>0).map(k=>({id:k,n:SB[k][1],k:c[k],ic:SB[k][5]})); };
+L.cropTake=id=>{ const c=GD2().crop; if(!(c[id]>0)) return false; c[id]--; save(); return true; };
+L.cropSell=()=>{ const L2=L.cropList(); if(!L2.length) return ""; const tot=L2.reduce((a,c)=>a+SB[c.id][4]*c.k,0); return `<h4 style="margin:12px 0 4px">收購花和菜</h4>${L2.map(c=>`<div class="lf-row"><span style="font-size:30px;width:64px;text-align:center">${c.ic}</span><div class="t"><b>${c.n}</b> ×${c.k}<br><small>一個 ${SB[c.id][4]} 幣</small></div></div>`).join("")}<div class="row" style="margin-top:8px"><button class="primary" data-act="lfCropSell">全部賣掉・${tot} 幣</button></div>`; };
+HANDLERS.lfCropSell=()=>{ const g=GD2(); let tot=0, n=0; for(const k in g.crop){ tot+=SB[k][4]*g.crop[k]; n+=g.crop[k]; g.crop[k]=0; } if(!n) return; bag.coins+=tot; save(); try{ profSave(true); chaChing(); }catch(e){} toast(`賣了 ${n} 個，拿到 ${tot} 平安幣`,2400); closeSheet(); };
+function flower(){ const g=GD2(); openSheet("lfFlower","🌷 花店",`<p class="lead">「種子在這裡買，到河濱公園的『我的花圃』種。記得澆水喔！」</p>${SEEDS.map(q=>`<div class="lf-row"><span style="font-size:30px;width:56px;text-align:center">${q[5]}</span><div class="t"><b>${q[1]}種子</b>　${q[2]} 幣<br><small>約 ${q[3]} 分鐘長大（要澆 3 次水），收成賣 ${q[4]} 幣${g.seed[q[0]]?`｜有 ${g.seed[q[0]]} 包`:""}</small></div><button class="primary" data-act="lfSeed" data-v="${q[0]}">買</button></div>`).join("")}${L.cropSell()}`); }
+HANDLERS.lfSeed=v=>{ const q=SB[v], g=GD2(); if(!me.sp){ if(bag.coins<q[2]){ try{ buzz(); }catch(e){} toast("平安幣不夠",2000); return; } bag.coins-=q[2]; } g.seed[v]=(g.seed[v]|0)+1; save(); try{ chaChing(); }catch(e){} flower(); };
+let GS=null;
+function gardenOpen(){ if(!SHOPX||!SHOPX.enter) return; const S=new T.Scene(); S.background=new T.Color("#9fd4f5").convertSRGBToLinear(); S.add(new T.HemisphereLight("#fff6e0","#4a6a3a",.5)); const sun=new T.DirectionalLight("#fff2d8",.55); sun.position.set(4,8,5); S.add(sun);
+  const M=(c,o)=>{ const m=new T.MeshStandardMaterial(Object.assign({color:c,roughness:.9},o||{})); m.color.convertSRGBToLinear(); return m; }; const add=(geo,m,x,y,z)=>{ const o=new T.Mesh(geo,m); o.position.set(x,y,z); S.add(o); return o; };
+  const grass=add(new T.PlaneGeometry(30,30),M("#8fd06a"),0,0,0); grass.rotation.x=-Math.PI/2;
+  for(let i=0;i<40;i++){ const a=Math.random()*6.283, d=8+Math.random()*6; add(new T.SphereGeometry(.12,8,6),M(["#ff8fb0","#fff1a0","#ffffff","#c5a8f5"][i%4]),Math.cos(a)*d,.12,Math.sin(a)*d); }
+  for(const [x,z,w,d] of [[0,-6,12.4,.2],[0,6,12.4,.2],[-6.2,0,.2,12],[6.2,0,.2,12]]){ add(new T.BoxGeometry(w,.6,d),M("#d8b890"),x,.3,z); }
+  for(const [x,z] of [[-8,-8],[8,-9],[-9,7],[9,8]]){ add(new T.CylinderGeometry(.18,.24,1.6,8),M("#8a6a4a"),x,.8,z); add(new T.SphereGeometry(1.4,14,10),M("#5fae5f"),x,2.3,z); }
+  { const sh=new T.Group(); sh.position.set(-4.6,0,-8.2); S.add(sh); const b=new T.Mesh(new T.BoxGeometry(2.6,2,2),M("#f6e2c8")); b.position.y=1; sh.add(b); const r=new T.Mesh(new T.ConeGeometry(2.1,1.1,4),M("#d9624a")); r.rotation.y=Math.PI/4; r.position.y=2.55; sh.add(r); }
+  const beds=[]; for(let i=0;i<12;i++){ const cx=-3.9+(i%4)*2.6, cz=-2.6+Math.floor(i/4)*2.6; const soil=add(new T.BoxGeometry(2.1,.22,2.1),M("#7a5236"),cx,.11,cz); const top=add(new T.BoxGeometry(1.9,.04,1.9),M("#5a3a24"),cx,.24,cz); const g=new T.Group(); g.position.set(cx,.26,cz); S.add(g); beds.push({cx,cz,soil,top,g}); }
+  const cam=new T.PerspectiveCamera(40,1,.1,100); const o={exposure:1.0}; const el=SHOPX.enter("garden",o); const D=GD2(); let sel=-1;
+  el.insertAdjacentHTML("beforeend",`<div class="shx-top"><span class="shx-title">🌱 我的花圃</span><span class="shx-pill" id="gC"></span><button class="shx-x" id="gX">離開</button></div><div class="shx-panel" id="gP"></div>`);
+  const $g=q=>el.querySelector(q);
+  const draw=()=>{ const now=Date.now(); D.beds.forEach(b=>grow(b,now)); $g("#gC").textContent=`💰 ${bag.coins}`; const b=sel>=0?D.beds[sel]:null; const seeds=SEEDS.filter(q=>D.seed[q[0]]>0);
+    let h=`<p class="rm-tip" style="font-size:13.5px;color:#f3e7d0;margin:0 2px 8px">${sel<0?"點一塊田。種子在小鎮主街的花店買。":b?`${SB[b.s][5]} ${SB[b.s][1]}：${["剛種下","發芽了","長大了","可以收成了！"][stage(b)]}${stage(b)<3?(b.w?"（澆過水，正在長）":"（需要澆水）"):""}`:"空的田，可以種東西。"}</p>`;
+    if(sel>=0&&!b) h+=seeds.length?`<div class="rm-chips">${seeds.map(q=>`<button data-sd="${q[0]}">${q[5]} ${q[1]} ×${D.seed[q[0]]}</button>`).join("")}</div>`:`<p class="rm-tip">身上沒有種子，先到花店買。</p>`;
+    if(b&&stage(b)<3) h+=`<div class="rm-row"><button class="shx-btn" id="gW" ${b.w?"disabled":""}>💧 澆水</button></div>`;
+    if(b&&stage(b)>=3) h+=`<div class="rm-row"><button class="shx-btn" id="gH">🧺 收成</button></div>`;
+    h+=`<div class="rm-row"><button class="shx-btn alt" id="gWA">💧 全部澆水</button></div><p class="rm-tip">收成的東西可以賣給花店、雜貨店，或送給鎮上的人。</p>`; $g("#gP").innerHTML=h;
+    $g("#gP").querySelectorAll("[data-sd]").forEach(q=>q.onclick=()=>{ const id=q.dataset.sd; if(!(D.seed[id]>0)) return; D.seed[id]--; D.beds[sel]={s:id,p:0,w:0,t:Date.now()}; save(); try{ tone(440,.08,.05,"triangle"); }catch(e){} paint(); draw(); });
+    const w=$g("#gW"); if(w) w.onclick=()=>{ b.w=1; b.t=Date.now(); save(); try{ tone(880,.1,.04,"sine"); tone(660,.12,.03,"sine",.08); }catch(e){} splash(sel); draw(); };
+    $g("#gWA").onclick=()=>{ let n=0; D.beds.forEach((q,i)=>{ if(q&&stage(q)<3&&!q.w){ q.w=1; q.t=Date.now(); n++; splash(i); } }); save(); if(n) try{ tone(880,.1,.04,"sine"); }catch(e){} draw(); };
+    const hv=$g("#gH"); if(hv) hv.onclick=()=>{ const n=b.s==="straw"||b.s==="tomato"?3:1; D.crop[b.s]=(D.crop[b.s]|0)+n; D.beds[sel]=null; save(); try{ [659,784,988].forEach((f,k)=>tone(f,.1,.05,"triangle",k*.07)); statInc("gdHarvest"); }catch(e){} toast(`收成了 ${n} 個${SB[b.s][1]}！`,2000); paint(); draw(); }; };
+  const drops=[]; const splash=i=>{ const B=beds[i]; for(let k=0;k<10;k++){ const m=new T.Mesh(new T.SphereGeometry(.05,6,4),new T.MeshBasicMaterial({color:"#7ec8f0"})); m.position.set(B.cx+(Math.random()-.5)*1.4,1.6+Math.random()*.5,B.cz+(Math.random()-.5)*1.4); S.add(m); drops.push({m,v:0}); } };
+  const paint=()=>{ const now=Date.now(); beds.forEach((B,i)=>{ while(B.g.children.length){ const c=B.g.children[0]; B.g.remove(c); c.geometry.dispose(); c.material.dispose(); } const b=D.beds[i]; grow(b,now); B.top.material.color.set(b&&b.w?"#3e2616":"#5a3a24").convertSRGBToLinear(); if(!b) return; const st=stage(b), S2=SB[b.s], col=S2[6];
+      const add2=(geo,c,x,y,z)=>{ const o=new T.Mesh(geo,M(c)); o.position.set(x,y,z); B.g.add(o); return o; };
+      for(const [dx,dz] of [[-.45,-.45],[.45,-.45],[-.45,.45],[.45,.45]]){ if(st===0) add2(new T.SphereGeometry(.07,6,4),"#8a6a4a",dx,.02,dz); else if(st===1){ add2(new T.ConeGeometry(.08,.3,6),"#6fbf5a",dx,.15,dz); } else { add2(new T.CylinderGeometry(.03,.03,st===3?.7:.5,6),"#4f9a4a",dx,st===3?.35:.25,dz); add2(new T.SphereGeometry(.16,8,6),"#6fbf5a",dx,st===3?.45:.4,dz).scale.set(1.3,.6,1.3);
+          if(st===3){ if(["sun","tulip","rose"].includes(b.s)) add2(new T.SphereGeometry(b.s==="sun"?.16:.12,10,8),col,dx,.78,dz); else if(b.s==="cabbage") add2(new T.SphereGeometry(.22,10,8),col,dx,.25,dz); else if(b.s==="pumpkin") add2(new T.SphereGeometry(.2,10,8),col,dx,.2,dz).scale.set(1.2,.8,1.2); else for(let k=0;k<3;k++) add2(new T.SphereGeometry(.07,8,6),col,dx+(k-1)*.1,.6-k*.05,dz+.05); } } } }); };
+  paint(); draw();
+  const ray=new T.Raycaster(), v2=new T.Vector2(); const tl=el.querySelector(".shx-touch"); let yaw=0, drag=null;
+  tl.addEventListener("pointerdown",e=>{ drag={x:e.clientX,y0:yaw,mv:0}; }); tl.addEventListener("pointermove",e=>{ if(!drag) return; drag.mv=Math.max(drag.mv,Math.abs(e.clientX-drag.x)); if(drag.mv>8) yaw=Math.max(-.7,Math.min(.7,drag.y0-(e.clientX-drag.x)*.006)); });
+  tl.addEventListener("pointerup",e=>{ const d=drag; drag=null; if(!d||d.mv>8) return; v2.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1); ray.setFromCamera(v2,cam); const hits=ray.intersectObjects(beds.flatMap(B=>[B.soil,B.top]),false); if(hits.length){ sel=beds.findIndex(B=>B.soil===hits[0].object||B.top===hits[0].object); try{ tone(700,.04,.04,"triangle"); }catch(err){} draw(); } });
+  $g("#gX").onclick=()=>SHOPX.leave(); let tt=0;
+  o.update=dt=>{ tt+=dt; for(let i=drops.length-1;i>=0;i--){ const q=drops[i]; q.v+=dt*9; q.m.position.y-=q.v*dt; if(q.m.position.y<.3){ S.remove(q.m); q.m.geometry.dispose(); q.m.material.dispose(); drops.splice(i,1); } } if(tt>5){ tt=0; paint(); if(sel>=0) draw(); } };
+  o.render=dt=>{ const asp=innerWidth/innerHeight; cam.aspect=asp; const ph=Math.min(.55,(($g("#gP").offsetHeight||200))/innerHeight); const d=Math.max(16,9/asp); cam.position.set(Math.sin(yaw)*d,d*.85,Math.cos(yaw)*d); cam.lookAt(0,-ph*d*.55,0); cam.updateProjectionMatrix(); renderer.render(S,cam); };
+  o.dispose=()=>{ S.traverse(q=>{ if(q.geometry) q.geometry.dispose(); if(q.material) q.material.dispose(); }); save(); try{ profSave(true); }catch(e){} }; }
+L.more4=k=>{ if(k==="tw:garden"){ gardenOpen(); return true; } if(k==="tw:flower"){ flower(); return true; } return false; };
+L.garden=gardenOpen;
 L.tick2=dt=>{ goddessTick(dt); mmTick(dt); try{ npcTick(dt); }catch(e){ console.warn("npcs",e); } if(L.tick3) L.tick3(dt); };
 setTimeout(()=>{ try{ chipInit(); }catch(e){} },1800);
 L.dbg=()=>({F,near,LF:LF(),pool}); L.press=()=>press(); L.start=()=>startFish();

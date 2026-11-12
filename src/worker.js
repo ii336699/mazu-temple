@@ -8,7 +8,7 @@ function snapInfo(str) { try { const raw = atob(String(str).slice(3).replace(/-/
   if (get(4) !== 1) return {}; get(65); const coins = get(16); get(30); get(1); const pn = get(3); get(pn * 6); get(24); const nl = get(4); let name = ""; for (let i = 0; i < nl; i++) name += String.fromCharCode(get(16)); return { name, coins }; } catch { return {}; } }
 const HALLS = 10, CAP = 100, MAX_MSG = 4000;
 const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000, "/puppet": 5000, "/crowd": 5000, "/market": 5000, "/layout": 5000 };
-const LOBBY_PATHS = ["/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather", "/stat", "/nev", "/paper", "/sponsor", "/hatfit", "/honor", "/lookup", "/crash"];
+const LOBBY_PATHS = ["/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather", "/stat", "/nev", "/paper", "/sponsor", "/hatfit", "/honor", "/lookup", "/crash", "/meteor"];
 const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage", "/puppet": "/puppet", "/crowd": "/crowd", "/market": "/market", "/layout": "/layout" }; // a POST here makes that cached list stale
 
 export default {
@@ -671,6 +671,14 @@ export class Lobby extends DurableObject {
       }
       if (url.pathname === "/gifts") { const G = (await this.ctx.storage.get("G:" + uid)) || []; if (G.length) await this.ctx.storage.delete("G:" + uid); const now = Date.now(), GA = ((await this.ctx.storage.get("GA")) || []).filter(g => now - g.at < 14 * 86400000); return json({ ok: true, gifts: G.concat(GA) }); } /* server-wide gifts ride along; the page remembers which it already took */
       return json({ ok: false });
+    }
+    // 流星 (天后小鎮): the first player to reach a fallen meteor gets the special prize; later finders are told who it was. Meteor ids are game days (24-minute days).
+    if (url.pathname === "/meteor" && req.method === "POST") {
+      let b = {}; try { b = await req.json(); } catch {} const id = Math.floor(Number(b.id)), uid = clean(b.uid, 40) || "", name = clean(b.name, 10) || "香客", D = Math.floor(Date.now() / 1000 / 1440);
+      if (!uid || !(id >= D - 1 && id <= D)) return json({ ok: false });
+      const k = "met:" + id; const got = await this.ctx.storage.get(k);
+      if (!got) { await this.ctx.storage.put(k, { uid, name, at: Date.now() }); try { const old = "met:" + (id - 3); await this.ctx.storage.delete(old); } catch {} return json({ ok: true, first: true }); }
+      return json({ ok: true, first: got.uid === uid, by: got.name });
     }
     if (url.pathname === "/hbclaim" && req.method === "POST") {
       let b = {}; try { b = await req.json(); } catch {}
