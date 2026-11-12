@@ -12203,7 +12203,81 @@ const DRINKS=[["coco","椰子汁",60,15],["mango","芒果冰",90,25],["latte","�
 function cafe(){ openSheet("lfCafe","☕ 海邊咖啡",`<p class="lead">「來杯涼的吧！」</p>${DRINKS.map(k=>`<div class="lf-row"><div class="t"><b>${k[1]}</b>　${k[2]} 幣<br><small>精力 +${k[3]}</small></div><button class="primary" data-act="lfDrink" data-v="${k[0]}">買來喝</button></div>`).join("")}`); }
 HANDLERS.lfDrink=v=>{ const k=DRINKS.find(q=>q[0]===v); if(!k) return; if(!me.sp){ if(bag.coins<k[2]){ try{ buzz(); }catch(e){} toast("平安幣不夠",2000); return; } bag.coins-=k[2]; } energy(k[3]); try{ chaChing(); }catch(e){} toast(`喝了${k[1]}，精力 +${k[3]}`,2200); cafe(); };
 L.more=k=>{ if(k==="tw:goddess"){ goddess(); return true; } if(k==="tw:camp"){ camp(); return true; } if(k==="tw:cafe"){ cafe(); return true; } if(k==="tw:lounge"){ toast("🏖️ 躺在躺椅上，聽著一波一波的海浪……",2800); return true; } return L.more2?L.more2(k):false; };
-L.tick2=dt=>{ goddessTick(dt); mmTick(dt); if(L.tick3) L.tick3(dt); };
+
+/* ---------- 鎮民: ten townsfolk, each a different shape and age (scaled bodies plus a few things of their own: a cane, glasses,
+   an apron, a backpack, a beard...). They wander near their spot, turn to you when you talk, and remember you: talking once a
+   day +1, a gift once a day +3 (+5 if it is what they like). The closer you are, the more they tell you (tips about rare fish,
+   the meteor, the goddess), and at 10 / 30 / 60 they give you something back. ---------- */
+const NPCS=[
+ {id:"tu",n:"阿土伯",look:[1,18,5,0,1,3,0,1,1,0,0,2,0],sc:[1.02,.84,1.02],home:[61,-66.8],rad:2.6,sp:.55,hunch:.32,cane:1,likes:["koi","springkoi"],kind:"old",
+  L:[["年輕人，小鎮住得慣嗎？","這座噴水池啊，比我年紀還大喔。"],["你常來找我聊天，阿伯很開心。","早上的溪谷空氣最好，去走走吧。"],["我年輕的時候，也在大河釣過一條錦鯉。","你是個好孩子。"],["有你這個朋友，阿伯每天都很期待。"]],tip:"fish"},
+ {id:"lin",n:"林阿姨",look:[0,22,1,11,3,0,0,1,1,1,1,0,0],sc:[1.32,.98,1.28],home:[49.5,-74.6],rad:2,sp:.9,apron:1,likes:["tilapia","carp","mackerel"],kind:"aunt",
+  L:[["要買什麼？雜貨店什麼都有喔！","今天的菜很新鮮呢。"],["你釣的魚阿姨都收，價錢公道啦。","吃飽了沒？"],["來，這個給你帶著路上吃。","有空多來店裡坐坐。"],["你就像我自己的孩子一樣。"]],tip:"garden"},
+ {id:"pang",n:"小胖",look:[2,13,0,15,8,4,4,0,0,1,1,6,0],sc:[1.28,.7,1.22],home:[41,-94],rad:3.5,sp:1.3,likes:["puffer","guppy"],kind:"kid",
+  L:[["冰淇淋！我最愛冰淇淋了！","你會擠冰淇淋嗎？我都擠歪掉。"],["你擠的冰淇淋好高喔！","我長大要開冰淇淋店！"],["我跟你說一個秘密……中藥行阿嬤其實很愛吃甜的。","我們是好朋友對不對？"],["你是我最好的朋友！"]],tip:"games"},
+ {id:"xiang",n:"阿翔",look:[1,13,1,5,5,1,4,0,1,0,0,1,5],sc:[.86,1.22,.86],home:[63.2,-208.6],rad:2.2,sp:1.0,likes:["masu","ayu"],kind:"hiker",
+  L:[["爬上來不容易吧？這裡看得到整個小鎮。","山頂的晚上，星星多到數不完。"],["你也喜歡露營嗎？","營火烤棉花糖，要等它金黃色再拿起來。"],["我在山上看過流星掉進森林裡。","下次一起看日出吧。"],["我的帳篷隨時歡迎你。"]],tip:"meteor"},
+ {id:"ling",n:"美玲",look:[0,7,6,7,7,4,0,2,1,1,1,3,1],sc:[.9,1.14,.9],home:[143.6,-109.6],rad:2,sp:.8,likes:["seahorse","angel","flowers"],kind:"lady",
+  L:[["歡迎光臨海邊咖啡～","海風好舒服對吧？"],["你的髮型很好看呢。理髮廳最近出了新款喔。","美容院可以換眼睛、鼻子跟嘴巴。"],["我其實是為了看海才開這家店的。","下次請你喝咖啡。"],["跟你聊天是我一天最開心的時候。"]],tip:"salon"},
+ {id:"wang",n:"老王",look:[2,0,0,8,4,2,1,9,2,3,0,2,0],sc:[1.24,1.02,1.2],home:[28,-135.8],rad:.8,sp:.6,likes:["sturgeon","catfish","bighead","eel"],kind:"fisher",
+  L:[["噓——魚會被你嚇跑。","釣魚啊，要有耐心。"],["浮標沉下去的那一下，馬上拉！","拉力太大線會斷，放鬆一點。"],["我釣了四十年，還沒釣過皇帶魚。","你的手感越來越好了。"],["我的釣魚秘訣，只告訴你一個人。"]],tip:"fish"},
+ {id:"po",n:"阿嬤",look:[0,22,2,0,7,1,0,1,1,0,1,0,9],sc:[.94,.76,.94],home:[6,-107.8],rad:4,sp:.5,hunch:.2,likes:["crucian","loach"],kind:"granny",
+  L:[["乖孫，吃飽沒？","天氣涼了，要多穿一點。"],["阿嬤種的菜很好吃喔。","花圃的菜要記得澆水。"],["來，阿嬤給你的。","你小時候阿嬤就認識你了……咦，是嗎？"],["阿嬤最疼你了。"]],tip:"garden"},
+ {id:"kai",n:"阿凱",look:[2,20,0,2,0,3,4,9,2,2,0,4,0],sc:[1.38,1.12,1.25],home:[76,-77.2],rad:4,sp:1.1,likes:["shark","mahi","grouper"],kind:"buff",
+  L:[["喔！你好！","今天也要元氣滿滿！"],["你應該多爬爬山，練腿力！","我每天都爬天后山兩趟。"],["你知道嗎，女神泉要說實話才有好東西。","兄弟！"],["有事儘管找我！"]],tip:"goddess"},
+ {id:"yu",n:"小雨",look:[0,1,6,14,7,4,13,2,0,1,1,11,8],sc:[.84,.66,.84],home:[9,-121.5],rad:4,sp:1.2,likes:["medaka","seahorse","flowers"],kind:"girl",
+  L:[["你看你看，蝴蝶！","我在等我的氣球飛回來。"],["我們來玩捉迷藏好不好？","晚上公園有螢火蟲喔。"],["這是我最寶貝的東西，借你看一下下。","你是我的好朋友！"],["我長大要跟你一樣厲害！"]],tip:"games"},
+ {id:"doc",n:"博士",look:[0,18,5,13,2,4,0,0,3,0,0,1,0],sc:[.86,1.16,.86],home:[45,-157],rad:3,sp:.7,coat:1,likes:["goldscale","dragonbream","oarfish","sunfish"],kind:"prof",
+  L:[["嗯？你對自然有興趣嗎？","這片森林的泉水，是從天后山流下來的。"],["圖鑑做得怎麼樣了？","淡水魚跟海水魚，可是完全不一樣的喔。"],["流星掉下來的石頭，叫做隕石，很珍貴的。","你的觀察力很好。"],["你是我最得意的研究夥伴。"]],tip:"meteor"},
+];
+const NB={}; NPCS.forEach(n=>NB[n.id]=n);
+const NR=id=>{ const d=LF(); d.npc=d.npc||{}; return d.npc[id]||(d.npc[id]={a:0,d:0,g:0,r:0}); };
+const tier=a=>a>=60?3:a>=30?2:a>=10?1:0, hearts=a=>{ const h=Math.min(10,Math.floor(a/6)); return "❤️".repeat(Math.ceil(h/2))+"🤍".repeat(5-Math.ceil(h/2)); };
+function tipFor(n){ const r=FISH.filter(f=>f.r>=2); const f=r[(Math.random()*r.length)|0]; const when=f.t?f.t.split("").map(c=>SLOTN[+c]).join("、"):"任何時候";
+  const fishTip=`聽說${f.w.split("").map(c=>WN[c]).join("或")}在${when}${f.need==="rain"?"、而且下雨的時候":f.need==="star"?"、有流星的晚上":""}，會出現${f.n}。`;
+  if(n.tip==="fish") return fishTip; if(n.tip==="meteor") return L.meteorHint?L.meteorHint():"晚上偶爾會有流星，第一個找到的人會有好運。";
+  if(n.tip==="goddess") return "森林最裡面有一座女神泉，丟一枚平安幣下去，女神問你的時候要說實話喔。";
+  if(n.tip==="garden") return "河濱公園的「我的花圃」可以種東西，種子在花店買，記得澆水才長得快。";
+  if(n.tip==="salon") return "西側巷弄的理髮廳有新的精緻髮型，美容院可以換眼睛、鼻子、嘴巴。";
+  if(n.tip==="games") return "小吃廣場有擠冰淇淋跟中藥對對碰，玩得好會有平安幣喔。"; return fishTip; }
+const GIFTS={10:[300,0,""],30:[0,1,"q"],60:[1000,2,"q"]};
+function npcSheet(n,line){ const R=NR(n.id), t=tier(R.a); openSheet("lfNpc","💬 "+n.n,`<p class="note" style="margin:0 0 6px">${hearts(R.a)}　好感 ${R.a}</p><p class="lead">「${line}」</p>
+   <div class="row"><button class="primary" data-act="lfNpcTalk" data-v="${n.id}">聊聊天</button><button class="secondary" data-act="lfNpcGift" data-v="${n.id}">送禮物</button>${t>=2?`<button class="secondary" data-act="lfNpcTip" data-v="${n.id}">打聽消息</button>`:""}</div>
+   <p class="note">每天聊天、送禮物，好感會增加。${t<2?"再熟一點，會跟你說一些小道消息。":""}</p>`); }
+function talk(n){ const R=NR(n.id), day=today(); let gain=0; if(R.d!==day){ R.d=day; R.a=Math.min(100,R.a+1); gain=1; } const t=tier(R.a), pool=n.L[t].concat(t?n.L[t-1]:[]); let line=pool[(Math.random()*pool.length)|0];
+  for(const k of [10,30,60]) if(R.a>=k&&!(R.r&k)){ R.r|=k; const G=GIFTS[k]; bag.coins+=G[0]; if(G[1]) bag.gacha=Math.min(255,(bag.gacha||0)+G[1]); let fu=""; if(G[2]&&typeof ROOMX!=="undefined"&&ROOMX) try{ fu=ROOMX.grant(G[2]); }catch(e){}
+    line+=`……對了，這個送你。`; setTimeout(()=>toast(`🎁 ${n.n}送你：${[G[0]?G[0]+" 平安幣":"",G[1]?G[1]+" 枚扭蛋幣":"",fu?"「"+fu+"」":""].filter(Boolean).join("、")}`,3600),600); try{ profSave(true); }catch(e){} }
+  save(); if(gain) try{ tone(880,.08,.04,"triangle"); }catch(e){} npcSheet(n,line); }
+HANDLERS.lfNpcTalk=v=>talk(NB[v]);
+HANDLERS.lfNpcTip=v=>{ const n=NB[v]; npcSheet(n,tipFor(n)); };
+HANDLERS.lfNpcGift=v=>{ const n=NB[v], R=NR(v), d=LF(); if(R.g===today()){ npcSheet(n,"今天已經收過你的禮物了，謝謝你！"); return; } const cnt={}; d.inv.forEach(([id])=>cnt[id]=(cnt[id]||0)+1); const crops=L.cropList?L.cropList():[];
+  if(!Object.keys(cnt).length&&!crops.length){ npcSheet(n,"心意到了就好～（你身上還沒有可以送的東西：去釣魚或種東西吧）"); return; }
+  openSheet("lfNpcG","🎁 送給"+n.n,`<p class="lead">要送什麼呢？</p>${Object.keys(cnt).map(id=>`<div class="lf-row"><img src="${fishIcon(id)}" alt=""><div class="t"><b>${FBY[id].n}</b> ×${cnt[id]}</div><button class="primary" data-act="lfNpcGive" data-v="${v}:f:${id}">送</button></div>`).join("")}${crops.map(c=>`<div class="lf-row"><span style="font-size:30px;width:64px;text-align:center">${c.ic}</span><div class="t"><b>${c.n}</b> ×${c.k}</div><button class="primary" data-act="lfNpcGive" data-v="${v}:c:${c.id}">送</button></div>`).join("")}`); };
+HANDLERS.lfNpcGive=v=>{ const [nid,k,id]=v.split(":"), n=NB[nid], R=NR(nid), d=LF(); let ok=false, liked=false;
+  if(k==="f"){ const i=d.inv.findIndex(e=>e[0]===id); if(i>=0){ d.inv.splice(i,1); ok=true; liked=n.likes.includes(id)||n.likes.includes("fish"); } } else if(L.cropTake&&L.cropTake(id)){ ok=true; liked=n.likes.includes("flowers")||n.likes.includes(id); }
+  if(!ok) return; R.g=today(); R.a=Math.min(100,R.a+(liked?5:3)); save(); try{ [659,784,988].forEach((f,q)=>tone(f,.1,.05,"triangle",q*.07)); }catch(e){}
+  npcSheet(n,liked?"哇！這是我最喜歡的！太謝謝你了！":"謝謝你，我收下了！"); };
+/* bodies */
+const NL={}; let talkChip=null, talkN=null;
+function npcMake(n){ const look=sanitizeLook(n.look.slice()); const av=new Avatar(look,{npc:true,x:n.home[0],z:n.home[1]}); av.isMe=true; try{ av.setLook(look); }finally{ av.isMe=false; } av.setName(n.n); av.moveSpeed=n.sp; av.root.scale.set(...n.sc);
+  const M=c=>new T.MeshStandardMaterial({color:c,roughness:.7});
+  if(n.cane){ const c=new T.Mesh(new T.CylinderGeometry(.018,.018,.75,6),M("#6b4a2e")); c.position.set(0,-.55,.06); av.arms[1].add(c); }
+  if(n.apron){ const a=new T.Mesh(new T.BoxGeometry(.36,.42,.02),M("#f2e6c8")); a.position.set(0,.18,.2); av.torso.add(a); }
+  if(n.pack){ const b=new T.Mesh(new T.BoxGeometry(.32,.4,.18),M("#d9624a")); b.position.set(0,.3,-.22); av.torso.add(b); const r=new T.Mesh(new T.CylinderGeometry(.07,.07,.34,10),M("#3f6a52")); r.rotation.z=Math.PI/2; r.position.set(0,.55,-.24); av.torso.add(r); }
+  if(n.coat){ const c=new T.Mesh(new T.CylinderGeometry(.24,.3,.62,12,1,true),new T.MeshStandardMaterial({color:"#fbfaf6",roughness:.7,side:T.DoubleSide})); c.position.y=.2; av.torso.add(c); }
+  return av; }
+function npcTick(dt){ const p=meAv.pos, inTown=TOWNX&&TOWNX.on; let best=null, bd=2.4;
+  for(const n of NPCS){ const d=Math.hypot(p.x-n.home[0],p.y-n.home[1]); let o=NL[n.id];
+    if(!o&&inTown&&d<55){ try{ o=NL[n.id]={av:npcMake(n),t:2+Math.random()*4}; }catch(e){ console.warn("npc",e); continue; } }
+    if(o&&(!inTown||d>75)){ try{ scene.remove(o.av.root); o.av.dispose&&o.av.dispose(); }catch(e){} delete NL[n.id]; continue; } if(!o) continue;
+    const av=o.av; o.t-=dt; const talking=sheetKind&&sheetKind.indexOf("lfNpc")===0&&talkN===n;
+    if(talking){ av.target.copy(av.pos); av.path=[]; av.faceGoal=Math.atan2(p.x-av.pos.x,p.y-av.pos.y); }
+    else if(o.t<=0){ o.t=6+Math.random()*9; av.faceGoal=null; for(let k=0;k<6;k++){ const a=Math.random()*6.283, rr=Math.random()*n.rad, x=n.home[0]+Math.sin(a)*rr, z=n.home[1]+Math.cos(a)*rr; if(TOWNX.walk(x,z)){ av.moveTo(x,z); break; } } }
+    av.update(dt); if(n.hunch) av.torso.rotation.x+=n.hunch; const dd=Math.hypot(p.x-av.pos.x,p.y-av.pos.y); if(dd<bd){ bd=dd; best=n; } }
+  if(!talkChip){ talkChip=document.createElement("button"); talkChip.id="lfTalk"; talkChip.style.cssText="position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 178px);z-index:9;border:0;border-radius:999px;padding:10px 18px;font:900 15px "+UI_FONT+";color:#3a2a10;background:linear-gradient(#ffe7a8,#f2c25a);box-shadow:0 4px 14px rgba(0,0,0,.35)"; talkChip.hidden=true; talkChip.onclick=()=>{ if(talkN) talk(talkN); }; document.body.appendChild(talkChip); }
+  const show=best&&!busy()&&!F; if(show&&talkN!==best){ talkChip.textContent=`💬 跟${best.n}說話`; } talkN=best||talkN; if(!best) talkN=sheetKind&&sheetKind.indexOf("lfNpc")===0?talkN:null; talkChip.hidden=!show; }
+L.npcs=()=>NL;
+L.tick2=dt=>{ goddessTick(dt); mmTick(dt); try{ npcTick(dt); }catch(e){ console.warn("npcs",e); } if(L.tick3) L.tick3(dt); };
 setTimeout(()=>{ try{ chipInit(); }catch(e){} },1800);
 L.dbg=()=>({F,near,LF:LF(),pool}); L.press=()=>press(); L.start=()=>startFish();
 return L; })();
