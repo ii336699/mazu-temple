@@ -665,3 +665,11 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - 還沒做的：角色不會跟著地形高低（可走的地方都是平的）；不能下水、不能坐長椅和躺椅；撿貝殼、溪邊釣魚等互動都還沒有。
 - 模擬手機測過：走得到、路徑（老街→沙灘）、白天黑夜截圖、無錯誤；全鎮在場約 214 次繪製。**真手機沒測。**
 - 測試頁重新發佈的做法（這次照做了）：`build_test.py` → 把 `public/` 所有非 .glb 檔複製過去（.m4a 改名 .mp4）→ `make_model_js.py` → index.html `sed 's/\.m4a/.mp4/g; s/if(window\.MZ_FPACK)/if(1)/'` → 每類家具包成 `room/f/pack-<類別>.wasm`（4 位元組長度＋JSON 索引 {id:[位移,長度]}＋各 glb 接在一起）。
+
+## 11/12 17:40 — 三間店單獨上線的準備（還沒部署）
+主委問：「能單獨先上架夾娃娃機、超商跟服裝店嗎」。
+- 做法：開分支 `shops-only` 指在 d4ee59c（11/11 22:30「夾娃娃一次 50 幣」），不另外改程式。那版的商店程式跟 audio-fix 現在幾乎一樣（只差：施工水馬、夾到禮物盒可能給家具、借用商店畫面給房間——都是後來的功能）。
+- 這版一起上的（主委都選保留）：11/10 貼圖共用（臉頭髮不縮）、搖桿過門、禪房前馬路＋往南施工水馬、精力系統、夜市每天 17:00–24:00 自動開收（worker schedSeed）、夜市攤位給扭蛋幣、彈珠台換扭蛋幣。
+- 不會上的：每日簽到／任務、初一十五節慶、我的房間、家具、天后小鎮、溪谷沙灘。
+- 單獨測試頁：https://claude.ai/artifact/FwCukqPNabndCtwNJAVJZV（模擬手機載入無錯誤，商店街白天截圖正常）。
+- 主委說「部署」時：`git fetch origin main && git merge-base --is-ancestor origin/main shops-only && git push origin shops-only:main`（worker.js 有改，會一起上）。之後 main 仍是 audio-fix 的祖先，全部上線時照舊推 audio-fix:main。
