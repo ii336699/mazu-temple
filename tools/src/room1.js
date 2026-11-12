@@ -83,10 +83,25 @@ function uvPlane(w,h,ru,rv){ const g=new T.PlaneGeometry(w,h); const uv=g.attrib
 function canTex(){ const c=document.createElement("canvas"); c.width=c.height=512; const t=new T.CanvasTexture(c); t.encoding=T.sRGBEncoding; t.wrapS=t.wrapT=T.RepeatWrapping; t.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy()); return t; }
 function paint(t,P,a,b){ const x=t.image.getContext("2d"); x.setTransform(1,0,0,1,0,0); x.clearRect(0,0,512,512); P.d(x,PAL[a]||PAL[0],PAL[b]||PAL[1]); t.needsUpdate=true; }
 function build(){ if(R) return R; const S=new T.Scene(); const D={S};
-  S.background=cvs(32,256,(x,w,h)=>{ const g=x.createLinearGradient(0,0,0,h); g.addColorStop(0,"#2a2230"); g.addColorStop(1,"#15121a"); x.fillStyle=g; x.fillRect(0,0,w,h); });
-  try{ S.environment=scene.environment; }catch(e){} D.hemi=new T.HemisphereLight("#fff6ea","#6a5a52",.8); S.add(D.hemi); const dl=new T.DirectionalLight("#fff2dc",.4); dl.position.set(2.5,5,4); S.add(dl);
+  S.background=cvs(32,256,(x,w,h)=>{ const g=x.createLinearGradient(0,0,0,h); g.addColorStop(0,"#3a2a22"); g.addColorStop(.55,"#24180f"); g.addColorStop(1,"#120c08"); x.fillStyle=g; x.fillRect(0,0,w,h); }); /* (a warm dark round the little house, not a cold void) */
+  try{ S.environment=scene.environment; }catch(e){} D.hemi=new T.HemisphereLight("#fff1dc","#7a5a48",.8); S.add(D.hemi); const dl=new T.DirectionalLight("#fff2dc",.4); dl.position.set(2.5,5,4); S.add(dl);
   /* the sun comes in through the window: from behind and to the left */
   D.sun=new T.DirectionalLight("#ffe2b0",.7); D.sun.position.set(-3.2,4.2,-5); D.sun.target.position.set(.4,0,.6); S.add(D.sun); S.add(D.sun.target);
+  /* 溫馨: a warm wall lamp on the left wall that lights the room (brightest at night), a pool of its light on the floor,
+     and soft shade where the floor meets the walls and in the corners, so the room has depth instead of flat even light */
+  D.lamp=new T.PointLight("#ffb46b",.6,7.5,1.6); D.lamp.position.set(-RW/2+.45,1.95,.6); S.add(D.lamp);
+  { const sh=new T.Mesh(new T.SphereGeometry(.13,16,10,0,Math.PI*2,0,Math.PI/2),new T.MeshStandardMaterial({color:"#fff0d8",emissive:new T.Color("#ffc27a"),emissiveIntensity:1,roughness:.6,side:T.DoubleSide})); sh.rotation.z=Math.PI; sh.position.set(-RW/2+.16,1.95,.6); S.add(sh); D.lampShade=sh;
+    const arm=new T.Mesh(new T.CylinderGeometry(.015,.015,.14,6),GOLD()); arm.rotation.z=Math.PI/2; arm.position.set(-RW/2+.07,1.98,.6); S.add(arm);
+    D.lampGlow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffb46b"),transparent:true,depthWrite:false,blending:T.AdditiveBlending,toneMapped:false,opacity:.55})); D.lampGlow.position.set(-RW/2+.2,1.9,.6); D.lampGlow.scale.set(1.3,1.3,1); S.add(D.lampGlow);
+    const pool=new T.Mesh(new T.PlaneGeometry(3.4,3.4),new T.MeshBasicMaterial({map:glowTex,color:new T.Color("#ffb46b"),transparent:true,opacity:.16,blending:T.AdditiveBlending,depthWrite:false})); pool.rotation.x=-Math.PI/2; pool.position.set(-RW/2+1.1,.014,.6); pool.renderOrder=2; S.add(pool); D.lampPool=pool;
+    const grad=(vert)=>cvs(vert?8:64,vert?64:8,(x,w,h)=>{ const g=vert?x.createLinearGradient(0,h,0,0):x.createLinearGradient(0,0,w,0); g.addColorStop(0,"rgba(40,22,10,.5)"); g.addColorStop(.45,"rgba(40,22,10,.16)"); g.addColorStop(1,"rgba(40,22,10,0)"); x.fillStyle=g; x.fillRect(0,0,w,h); });
+    const ao=(w,h,tex,x,y,z,rx,ry)=>{ const m=new T.Mesh(new T.PlaneGeometry(w,h),new T.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3})); m.position.set(x,y,z); m.rotation.set(rx,ry,0); m.renderOrder=1; S.add(m); return m; };
+    const gf=grad(false), gv=grad(true);
+    ao(RW,.55,gv,0,.013,-RD/2+.275,-Math.PI/2,0).rotation.set(-Math.PI/2,0,Math.PI); /* floor along the back wall */
+    ao(RD,.55,gv,-RW/2+.275,.013,0,-Math.PI/2,0).rotation.set(-Math.PI/2,0,-Math.PI/2); ao(RD,.55,gv,RW/2-.275,.013,0,-Math.PI/2,0).rotation.set(-Math.PI/2,0,Math.PI/2);
+    ao(RW,.45,gv,0,.225,-RD/2+.012,0,0); ao(RD,.45,gv,-RW/2+.012,.225,0,0,Math.PI/2); ao(RD,.45,gv,RW/2-.012,.225,0,0,-Math.PI/2); /* the foot of each wall */
+    for(const [x,ry,flip] of [[-RW/2+.2,0,1],[RW/2-.2,0,-1]]){ const m=ao(.4,RH,gf,x,RH/2,-RD/2+.011,0,ry); if(flip<0) m.rotation.y=Math.PI; } /* the two back corners */
+    for(const [z,ry] of [[-RD/2+.2,Math.PI/2],[-RD/2+.2,-Math.PI/2]]){ const m=ao(.4,RH,gf,ry>0?-RW/2+.011:RW/2-.011,RH/2,z,0,ry); if(ry<0) m.rotation.y=-Math.PI/2+Math.PI; } }
   D.ft=canTex(); D.wt=canTex();
   D.floor=new T.Mesh(uvPlane(RW,RD,RW/2,RD/2),new T.MeshStandardMaterial({map:D.ft,roughness:1,metalness:0,envMapIntensity:.22})); D.rt=canTex(); D.rt.encoding=T.LinearEncoding; D.floor.material.roughnessMap=D.rt; D.floor.material.bumpMap=D.rt; D.floor.material.bumpScale=.02; D.floor.rotation.x=-Math.PI/2; S.add(D.floor);
   const wm=new T.MeshStandardMaterial({map:D.wt,roughness:.95}); D.wm=wm; D.walls=[];
@@ -97,7 +112,11 @@ function build(){ if(R) return R; const S=new T.Scene(); const D={S};
   bx(RW,.12,.04,trim,0,.06,-RD/2+.02); bx(.04,.12,RD,trim,-RW/2+.02,.06,0); bx(.04,.12,RD,trim,RW/2-.02,.06,0);
   bx(RW+.3,.3,.15,dark,0,-.16,RD/2+.07); bx(RW+.3,.3,RD+.3,dark,0,-.16,0).position.y=-.16;
   /* a window and a door on the back wall */
-  D.skyTex=new T.CanvasTexture(Object.assign(document.createElement("canvas"),{width:384,height:288})); D.skyTex.encoding=T.sRGBEncoding; D.sky=new T.MeshBasicMaterial({map:D.skyTex}); const win=new T.Mesh(new T.PlaneGeometry(1.5,1.1),D.sky); win.position.set(-1.2,1.55,-RD/2+.03); S.add(win);
+  D.skyTex=new T.CanvasTexture(Object.assign(document.createElement("canvas"),{width:384,height:288})); D.skyTex.encoding=T.sRGBEncoding; D.sky=new T.MeshBasicMaterial({map:D.skyTex}); /* the view out of the window is real: a small 3D landscape behind the back wall (grass, a path, trees, a temple down the hill, far hills,
+     sky with sun or moon), seen only through the window — the window pane marks the stencil, the landscape draws only there — so it
+     shifts properly as you turn the room */
+  { const win=new T.Mesh(new T.PlaneGeometry(1.5,1.1),new T.MeshBasicMaterial({colorWrite:false,depthWrite:false,stencilWrite:true,stencilRef:1,stencilFunc:T.AlwaysStencilFunc,stencilZPass:T.ReplaceStencilOp}));
+    win.position.set(-1.2,1.55,-RD/2+.03); win.renderOrder=10; S.add(win); D.view=roomView(S); }
   /* the patch of light the window throws on the floor, and two faint sheets of light from the window down to it */
   { const c=document.createElement("canvas"); c.width=c.height=128; const x=c.getContext("2d"); for(const [px,py] of [[6,6],[67,6],[6,67],[67,67]]){ const g=x.createLinearGradient(0,py,0,py+55); g.addColorStop(0,"rgba(255,255,255,.95)"); g.addColorStop(1,"rgba(255,255,255,.55)"); x.fillStyle=g; x.fillRect(px,py,55,55); }
     const t=new T.CanvasTexture(c); const quad=(P,tex,op)=>{ const g=new T.BufferGeometry(); g.setAttribute("position",new T.Float32BufferAttribute(P.flat(),3)); g.setAttribute("uv",new T.Float32BufferAttribute([0,1,1,1,1,0,0,0],2)); g.setIndex([0,2,1,0,3,2]); const m=new T.Mesh(g,new T.MeshBasicMaterial({map:tex,color:"#ffe9c0",transparent:true,opacity:op,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide})); m.renderOrder=3; S.add(m); return m; };
@@ -112,8 +131,45 @@ function build(){ if(R) return R; const S=new T.Scene(); const D={S};
   D.rugMat=new T.MeshStandardMaterial({roughness:.95,transparent:true,alphaTest:.35,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}); D.rug=new T.Mesh(new T.PlaneGeometry(1,1),D.rugMat); D.rug.rotation.x=-Math.PI/2; D.rug.position.y=.012; D.rug.visible=false; S.add(D.rug); D.rugTex={};
   D.fg=new T.Group(); S.add(D.fg); D.sel=new T.Mesh(new T.PlaneGeometry(1,1),new T.MeshBasicMaterial({color:"#ffd76a",transparent:true,opacity:.45,depthWrite:false})); D.sel.rotation.x=-Math.PI/2; D.sel.position.y=.02; D.sel.visible=false; S.add(D.sel);
   D.cam=new T.PerspectiveCamera(36,1,.1,80); D.ray=new T.Raycaster(); D.plane=new T.Plane(new T.Vector3(0,1,0),0); R=D; return D; }
+/* the landscape behind the window (see build): plain unlit colours, shaded by vertex colour, recoloured for day / dusk / night */
+function roomView(S){ const V={g:new T.Group(),m:{},O:new T.Scene(),cam:new T.PerspectiveCamera(42,1,.1,300),wpos:new T.Vector3(-1.2,1.55,-RD/2),wc:new T.Vector3()}; V.O.add(V.g); let ro=11; /* (its own little scene, drawn after the room with its own camera looking straight out from the window — see o.render — and only where the window pane marked the stencil) */
+  const mat=(k,o={})=>V.m[k]||(V.m[k]=new T.MeshBasicMaterial(Object.assign({vertexColors:true,depthTest:false,depthWrite:false,stencilWrite:true,stencilWriteMask:0,stencilRef:1,stencilFunc:T.EqualStencilFunc},o)));
+  const shade=(g,top,bot,ax="y")=>{ g.computeBoundingBox(); const b=g.boundingBox, p=g.attributes.position, c=[]; const lo=b.min[ax], hi=b.max[ax]||1; for(let i=0;i<p.count;i++){ const v=(p["get"+ax.toUpperCase()](i)-lo)/((hi-lo)||1); c.push(bot+(top-bot)*v); } g.setAttribute("shade",new T.Float32BufferAttribute(c,1)); return g; };
+  const put=(g,k,x,y,z,order)=>{ const m=new T.Mesh(g,mat(k)); m.position.set(x,y,z); m.renderOrder=order??ro++; m.frustumCulled=false; V.g.add(m); return m; };
+  /* (drawn back to front: painter's order, since the window shows them over the wall) */
+  put(shade(new T.PlaneGeometry(160,70,1,8),1,0),"sky",0,24,-60,11);
+  V.sun=put(shade(new T.CircleGeometry(2.2,24),1,1),"sun",9,15,-58,12);
+  const ridge=(w,h,n,seed)=>{ const r=rnd(seed), P=[], I=[]; for(let i=0;i<=n;i++){ const x=-w/2+w*i/n, y=h*(.55+.45*Math.sin(i/n*7+seed)*.6+r()*.35); P.push(x,y,0,x,-2,0); if(i<n){ const a=i*2; I.push(a,a+1,a+2,a+1,a+3,a+2); } } const g=new T.BufferGeometry(); g.setAttribute("position",new T.Float32BufferAttribute(P,3)); g.setIndex(I); return shade(g,1,.55); };
+  put(ridge(140,9,26,3),"hill3",0,-1,-48,13); put(ridge(110,6,22,7),"hill2",0,-1.2,-34,14); /* (the house stands up on a hill: the land falls away below the window) */
+  /* a temple down the hill: red walls and a curved tiled roof with swept-up ends */
+  { const tg=new T.Group(); tg.position.set(6,-1.4,-26); V.g.add(tg); const add=(g,k)=>{ const m=new T.Mesh(g,mat(k)); m.renderOrder=15; m.frustumCulled=false; tg.add(m); return m; };
+    add(shade(new T.BoxGeometry(6,2.2,3).translate(0,1.1,0),1,.7),"twall"); const roof=new T.CylinderGeometry(.01,1,1,4,1).rotateY(Math.PI/4).scale(4.6,1.5,2.6).translate(0,2.95,0); add(shade(roof,1,.65),"troof");
+    for(const s of [-1,1]) add(shade(new T.ConeGeometry(.2,.9,4).rotateZ(-s*1.1).translate(s*3.3,2.6,0),1,.7),"troof"); add(shade(new T.BoxGeometry(.5,.18,.18).translate(0,3.7,0),1,.7),"tgold");
+    V.lit=[]; for(const x of [-1.6,0,1.6]){ const w=add(new T.PlaneGeometry(.55,.75).translate(x,1.1,1.51),"twin"); V.lit.push(w); } }
+  put(ridge(80,2.5,18,11),"hill1",0,-1.6,-18,16);
+  /* the garden right outside: grass falling away from the house, a stone path, trees, a few flowers */
+  put(shade(new T.PlaneGeometry(90,40,1,6).rotateX(-Math.PI/2),.75,1,"z"),"grass",0,-1.2,-26,17);
+  { const sl=new T.PlaneGeometry(14,8,1,4).rotateX(-Math.PI/2); const p=sl.attributes.position; for(let i=0;i<p.count;i++){ const z=p.getZ(i); p.setY(i,z>0?-.35:-.35-Math.min(1,-z/4)*.85); } put(shade(sl,1,.7),"grass",0,0,-4,17); } /* the slope just outside: level by the house, then down */
+  put(shade(new T.PlaneGeometry(1.1,4).rotateX(-Math.PI/2),1,.85,"z"),"path",1.4,-.33,-2,18);
+  const tree=(x,z,s,seed,y=-.35)=>{ const r=rnd(seed); put(shade(new T.CylinderGeometry(.12*s,.18*s,1.6*s,6).translate(0,.8*s,0),1,.6),"trunk",x,y,z,ro++);
+    for(let i=0;i<4;i++) put(shade(new T.IcosahedronGeometry((.75+r()*.35)*s,1).translate((r()-.5)*1.1*s,(1.9+r()*.8)*s,(r()-.5)*.8*s),1,.55),i%2?"leaf2":"leaf",x,y,z,ro++); };
+  tree(-6,-14,1.6,2,-1.2); tree(5,-11,1.3,5,-1.2); tree(-2.8,-6,1,9,-1.2); tree(3.4,-4.2,.9,4,-.9); tree(-10,-19,1.8,7,-1.2);
+  const fr=rnd(21); for(let i=0;i<26;i++){ put(shade(new T.SphereGeometry(.09,6,4),1,.7),["fl1","fl2","fl3"][i%3],(fr()-.5)*6,-.28,-.4-fr()*1.4,ro++); }
+  V.stars=new T.Points(new T.BufferGeometry().setAttribute("position",new T.Float32BufferAttribute(Array.from({length:240},(_,i)=>i%3===0?(Math.random()-.5)*150:i%3===1?14+Math.random()*30:-59),3)),new T.PointsMaterial({color:"#ffffff",size:.35,depthTest:false,depthWrite:false,stencilWrite:true,stencilWriteMask:0,stencilRef:1,stencilFunc:T.EqualStencilFunc,transparent:true,opacity:.9})); V.stars.renderOrder=12; V.stars.frustumCulled=false; V.g.add(V.stars);
+  /* vertex colours: each material's colour times the shade attribute (set in roomViewTint) */
+  for(const o of V.g.children.concat(V.g.children.flatMap(c=>c.children||[]))) if(o.isMesh&&o.geometry.attributes.shade&&!o.geometry.attributes.color){ const s=o.geometry.attributes.shade.array; o.geometry.setAttribute("color",new T.Float32BufferAttribute(Array.from(s).flatMap(v=>[v,v,v]),3)); }
+  for(const k in V.m) if(!["sky"].includes(k)) V.m[k].vertexColors=true; return V; }
+function roomViewTint(V,mode){ const C={ /* day, dusk, night */
+    sky:["#7cc0f5","#f2925a","#0d1838"], sun:["#fff6d6","#ffd28a","#f6f0d8"], hill3:["#9cc4c8","#b98a8a","#1d2a48"], hill2:["#7fae86","#a0705e","#16233c"], hill1:["#5e9a62","#7a5a40","#112032"],
+    twall:["#c8423a","#a03a2c","#3a1c24"], troof:["#d8a04a","#b07a3a","#4a3a3a"], tgold:["#ffd24a","#ffb24a","#8a7040"], twin:["#5a2a20","#4a2418","#ffc870"],
+    grass:["#7cbc5e","#8a8a4a","#1c3428"], path:["#d8c8a8","#c09878","#3a3a48"], trunk:["#7a5232","#5a3a24","#1e1a20"], leaf:["#4f9e4e","#7a7a38","#16302a"], leaf2:["#63b45a","#8a6a34","#1a3a30"],
+    fl1:["#ff8fb8","#ff9a7a","#5a3a5a"], fl2:["#fff1a0","#ffd08a","#5a5a4a"], fl3:["#ffffff","#ffe0c0","#4a4a5a"] };
+  for(const k in V.m){ const c=C[k]; if(c) V.m[k].color.set(c[mode]).convertSRGBToLinear(); } /* (colours as they should look on screen) */
+  /* the sky: lighter towards the horizon */ const sk=V.g.children[0].geometry, sp=sk.attributes.position, top=new T.Color(["#4aa0ea","#7a4a8a","#050a20"][mode]), bot=new T.Color(["#d6efff","#ffcf98","#22305a"][mode]), col=[];
+  sk.computeBoundingBox(); for(let i=0;i<sp.count;i++){ const v=(sp.getY(i)-sk.boundingBox.min.y)/(sk.boundingBox.max.y-sk.boundingBox.min.y); const c=bot.clone().lerp(top,v).convertSRGBToLinear(); col.push(c.r,c.g,c.b); } sk.setAttribute("color",new T.Float32BufferAttribute(col,3)); V.m.sky.color.set("#ffffff");
+  V.sun.position.set(mode===1?-8:9,mode===1?3.5:15,-58); V.sun.scale.setScalar(mode===2?.8:1); V.stars.visible=mode===2; }
 /* the view from the window and the light in the room, by the hour in Taiwan: day, dusk or night */
-function daylight(){ const D=R, h=new Date(Date.now()+288e5).getUTCHours(), mode=h>=6&&h<17?0:h>=17&&h<19?1:2; const c=D.skyTex.image, x=c.getContext("2d"), W=c.width, H=c.height;
+function daylight(force){ const D=R, h=new Date(Date.now()+288e5).getUTCHours(), mode=force!=null?force:h>=6&&h<17?0:h>=17&&h<19?1:2; const c=D.skyTex.image, x=c.getContext("2d"), W=c.width, H=c.height;
   const sky=[["#6fb7f2","#d5eeff"],["#f08a4b","#ffd9a0"],["#0b1230","#27345e"]][mode], g=x.createLinearGradient(0,0,0,H*.75); g.addColorStop(0,sky[0]); g.addColorStop(1,sky[1]); x.fillStyle=g; x.fillRect(0,0,W,H);
   if(mode===2){ const r=rnd(5); x.fillStyle="#fff"; for(let i=0;i<60;i++){ x.globalAlpha=.3+r()*.7; x.fillRect(r()*W,r()*H*.6,1.6,1.6); } x.globalAlpha=1; x.fillStyle="#fdf6d8"; x.beginPath(); x.arc(W*.78,H*.2,20,0,6.283); x.fill(); x.fillStyle=sky[0]; x.beginPath(); x.arc(W*.78+9,H*.2-5,18,0,6.283); x.fill(); }
   else { x.fillStyle=mode?"#fff1c9":"#fffbe6"; x.beginPath(); x.arc(W*.2,mode?H*.5:H*.2,mode?26:20,0,6.283); x.fill(); x.fillStyle=mode?"rgba(255,220,190,.8)":"rgba(255,255,255,.9)"; for(const [cx,cy,s] of [[W*.55,H*.18,1],[W*.86,H*.3,.7],[W*.36,H*.34,.6]]) for(const [dx,dy,rr] of [[0,0,16],[16,4,13],[-15,5,12],[4,-8,12]]){ x.beginPath(); x.arc(cx+dx*s,cy+dy*s,rr*s,0,6.283); x.fill(); } }
@@ -124,9 +180,10 @@ function daylight(){ const D=R, h=new Date(Date.now()+288e5).getUTCHours(), mode
   x.fillStyle=["#e9dcc0","#c9a888","#2a2a40"][mode]; x.fillRect(W*.6,H*.68,W*.2,H*.12); if(mode===2){ x.fillStyle="#ffcf70"; x.fillRect(W*.64,H*.71,10,12); x.fillRect(W*.72,H*.71,10,12); }
   hill(H*.84,8,["#3f7d4f","#5a4030","#0c1628"][mode],4.2);
   x.fillStyle=["#5a3a22","#3a2416","#0a0a14"][mode]; x.fillRect(W*.06,H*.4,10,H*.6); x.fillStyle=["#3d8a4c","#7a5a2e","#0f2030"][mode]; for(const [cx,cy,rr] of [[W*.08,H*.38,40],[W*.0,H*.5,34],[W*.17,H*.5,30]]){ x.beginPath(); x.arc(cx,cy,rr,0,6.283); x.fill(); }
-  D.skyTex.needsUpdate=true;
+  D.skyTex.needsUpdate=true; try{ roomViewTint(D.view,mode); }catch(err){}
   const col=["#ffe9c0","#ffb070","#9fb6ff"][mode], op=[.2,.17,.06][mode]; D.patch.material.color.set(col); D.patch.material.opacity=op; D.shafts.forEach((m,i)=>{ m.material.color.set(col); m.material.opacity=[.05,.045,.015][mode]*(i?.75:1); });
-  D.sun.color.set(["#ffe2b0","#ff9a55","#8ea4ff"][mode]); D.sun.intensity=[.42,.36,.14][mode]; D.hemi.intensity=[.78,.7,.55][mode]; D.hemi.color.set(["#fff6ea","#ffe2c4","#c9d2ff"][mode]); }
+  D.sun.color.set(["#ffe2b0","#ff9a55","#8ea4ff"][mode]); D.sun.intensity=[.42,.36,.1][mode]; D.hemi.intensity=[.7,.6,.38][mode]; D.hemi.color.set(["#fff1dc","#ffdcb8","#d9cfff"][mode]);
+  D.lamp.intensity=[.35,.75,1.15][mode]; D.lampGlow.material.opacity=[.25,.5,.7][mode]; D.lampPool.material.opacity=[.08,.14,.22][mode]; D.lampShade.material.emissiveIntensity=[.5,.9,1.2][mode]; /* the wall lamp: on all day, warmest at night */ }
 /* how shiny each floor is (wood, tile, marble, tatami...) */
 const GLOSS=[.5,.5,.32,.24,.34,.95,.36,.38,.5,.33];
 /* the shine follows the pattern: the same floor drawn in white shows where the joints are; joints are matt and sit a little lower,
@@ -192,6 +249,7 @@ function css(){ if($("#rmCss")) return; const st=document.createElement("style")
 .rm-it .ico{display:block;width:66px;height:52px;line-height:52px;font-size:30px;border-radius:6px;margin:0 auto 3px;background:#3a2f2a}
 .rm-chips{display:flex;gap:5px;overflow-x:auto;padding:0 2px 7px;touch-action:pan-x}.rm-chips button{flex:none;border:1px solid rgba(255,220,150,.3);border-radius:999px;padding:5px 11px;background:rgba(255,255,255,.05);color:#f3e7d0;font-size:12.5px;font-family:inherit}.rm-chips button.on{background:#ffe2a0;color:#2a1a08;font-weight:800}
 .rm-tip{font-size:12px;color:#bba;margin:6px 0 0}`; document.head.appendChild(st); }
+RM.dbg=()=>R; RM.tint=m=>daylight(m); /* (for tests) */
 RM.open=()=>{ if(!SHOPX||!SHOPX.enter){ toast("房間還沒準備好，請稍等一下",2200); return; } const D=build(), s=ST(); css(); V={...s}; const o={exposure:1.0}; const el=SHOPX.enter("room",o); try{ statInc("roomOpen"); }catch(e){}
   daylight();
   apply(); furnDraw(-1);
@@ -258,7 +316,13 @@ RM.open=()=>{ if(!SHOPX||!SHOPX.enter){ toast("房間還沒準備好，請稍等
   o.update=dt=>{ tIn+=dt; const op=tIn<2.3?Math.min(1,tIn/.45):Math.max(0,1-(tIn-2.3)/.5); D.door.rotation.y=-1.45*op*op*(3-2*op); if(!went&&tIn>.4){ went=true; av.root.visible=true; av.moveSpeed=1.7; av.moveTo(.9,.5); try{ tone(180,.12,.05,"sine"); }catch(e){} } if(tIn>3.2) av.moveSpeed=2.2; av.update(dt); av.root.position.y=0; };
   o.render=dt=>{ const c=D.cam, asp=innerWidth/innerHeight; c.aspect=asp; const ph=Math.min(.6,(($r("#rP").offsetHeight||220))/innerHeight); const vt=Math.tan(c.fov*Math.PI/360), ht=vt*asp;
     const need=Math.max((RW/2+.5)/ht,(RH+2.2)/(2*vt*Math.max(.3,1-ph))); const d0=Math.min(40,need), pit=.5; let k=Math.min(1,Math.max(0,(tIn-.5)/2.2)); k=k*k*(3-2*k); const d=d0*(.5+.5*k), ty=(1.0-ph*d*vt*.95), tx=1.5*(1-k), tz=-1.2*(1-k);
-    c.position.set(tx+Math.sin(yaw)*Math.cos(pit)*d,ty+Math.sin(pit)*d,tz+Math.cos(yaw)*Math.cos(pit)*d); c.lookAt(tx,ty,tz); c.updateProjectionMatrix(); renderer.render(D.S,c); };
+    c.position.set(tx+Math.sin(yaw)*Math.cos(pit)*d,ty+Math.sin(pit)*d,tz+Math.cos(yaw)*Math.cos(pit)*d); c.lookAt(tx,ty,tz); c.updateProjectionMatrix(); renderer.render(D.S,c);
+    if(D.view){ /* the view out of the window: a camera standing at the window looking straight out (turning a little as you turn the room), its picture centred on the window */
+      const V=D.view, C2=V.cam, W=innerWidth, H=innerHeight; let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+      for(const [dx,dy] of [[-.75,-.55],[.75,-.55],[.75,.55],[-.75,.55]]){ V.wc.set(V.wpos.x+dx,V.wpos.y+dy,V.wpos.z).project(c); const sx=(V.wc.x*.5+.5)*W, sy=(V.wc.y*.5+.5)*H; x0=Math.min(x0,sx); x1=Math.max(x1,sx); y0=Math.min(y0,sy); y1=Math.max(y1,sy); }
+      if(x1>x0+2&&y1>y0+2){ C2.aspect=(x1-x0)/(y1-y0); C2.fov=48; C2.position.set(0,1.5,1); C2.rotation.set(-.03,yaw*.45,0,"YXZ"); C2.updateProjectionMatrix();
+        const vp=V.vp||(V.vp=new T.Vector4()); renderer.getViewport(vp); const ac=renderer.autoClear; renderer.autoClear=false; renderer.setViewport(x0,y0,x1-x0,y1-y0);
+        try{ renderer.render(V.O,C2); } finally{ renderer.autoClear=ac; renderer.setViewport(vp.x,vp.y,vp.z,vp.w); } } } };
   o.dispose=()=>{ try{ commit(); }catch(e){} while(D.fg.children.length) D.fg.remove(D.fg.children[0]); D.sel.visible=false; modelsFree(); D.S.remove(av.root); try{ av.dispose(); }catch(e){} saveBag(); markDirty(); try{ profSave(true); }catch(e){} V=null; }; };
 HANDLERS.roomOpen=()=>{ closeSheet(); RM.open(); };
 /* 取回碼 */
