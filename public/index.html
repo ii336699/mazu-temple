@@ -4288,7 +4288,7 @@ const ZEN_SONGS=[["music.mp3","廟裡音樂","廟裡音樂"],["rearsong.mp3","�
   ["fwsong.mp3","經典煙火歌","煙火"],["fw1.mp3","春櫻","煙火"],["fw2.mp3","龍騰","煙火"],["fw3.mp3","眾神","煙火"],
   ...[0,10,9,8,11,7,6,5,4,3,2,1].map(i=>["busk/b"+String(i+1).padStart(2,"0")+".m4a",["記得我忘記","慢慢欣賞","可鹽可甜","妳沒有說","龜毛先生","詩情難忘","一個人的旅程","禁止正常","撲火","晚安以前","那個我","城市停電了"][i],"街頭藝人玖玖"])];
 const TRK_SRC={main:"music.mp3",rear:"rearsong.mp3",cat:"catsong.mp3",fw:"fwsong.mp3",claw:"clawsong.mp3",out:"outsong.mp3",room:"roomsong.mp3",zen:(()=>{ try{ const v=JSON.parse(localStorage.getItem("mz.zenSong")); if(ZEN_SONGS.some(q=>q[0]===v)) return v; }catch(e){} return "rearsong.mp3"; })()}, TRK_TOP={main:.38,rear:.38,cat:.55,fw:.6,claw:.5,zen:.4,out:.25,room:.26} /* (out, room: the chair's songs are mixed about 3.5 dB louder than music.mp3) */;
-const TRK={main:bgm}, TRG={}, MIX={main:1,rear:0,cat:0,fw:0,claw:0,zen:0}, STALL={t:0,last:-1,n:0}; let duckF=1;
+const TRK={main:bgm}, TRG={}, MIX={main:1,rear:0,cat:0,fw:0,claw:0,zen:0,out:0,room:0}, STALL={t:0,last:-1,n:0}; let duckF=1;
 function trkRoute(n){ if(!ac||TRG[n]!==undefined||!TRK[n]) return; try{ const sN=ac.createMediaElementSource(TRK[n]), g=ac.createGain(); g.gain.value=0; sN.connect(g).connect(audioOut(ac)); TRK[n].volume=1; TRG[n]=g; }catch(e){ TRG[n]=null; } }
 function trk(n){ let a=TRK[n]; if(!a){ a=new Audio(); a.loop=n!=="zen"||ZM.mode==="one"; if(n==="zen") a.addEventListener("ended",zenNext); a.preload="auto"; a.src=TRK_SRC[n]; a.volume=0; TRK[n]=a; trkRoute(n); } return a; }
 function musicRoute(){ if(!ac) return; for(const n in TRK) trkRoute(n); }
@@ -4316,7 +4316,7 @@ HANDLERS.zenMode=v=>{ const [m,cat]=String(v).split("|"); ZM.mode=m; ZM.cat=cat;
 function setTrack(name){ if(name===curTrack) return; curTrack=name; const a=trk(name); if(audioUnlocked&&soundOn&&!document.hidden) trkPlay(a); }
 /* phones only let a player start inside a tap, so a song that is about to be needed (walking toward the 後殿 or the cats, fireworks on)
    is started silently on the next tap and parked */
-function trkPrime(){ const soon=[]; if(meAv&&meAv.pos.y<RY0+14) soon.push("rear"); if(!CATS.off&&Math.hypot(meAv.pos.x-CATS.c.x,meAv.pos.y-CATS.c.z)<12) soon.push("cat"); if(FW.on||FW.pendingAt) soon.push("fw"); if(meAv&&meAv.pos.x<-16&&meAv.pos.y<RY0+4) soon.push("zen"); if(meAv&&meAv.pos.x>30&&Math.abs(meAv.pos.y+1.2)<6) soon.push("claw"); /* near the claw shop */
+function trkPrime(){ const soon=[]; if(meAv&&meAv.pos.y<RY0+14) soon.push("rear"); if(!CATS.off&&Math.hypot(meAv.pos.x-CATS.c.x,meAv.pos.y-CATS.c.z)<12) soon.push("cat"); if(FW.on||FW.pendingAt) soon.push("fw"); if(meAv&&meAv.pos.x<-16&&meAv.pos.y<RY0+4) soon.push("zen"); if(meAv&&meAv.pos.x>30&&Math.abs(meAv.pos.y+1.2)<6) soon.push("claw"); /* near the claw shop */ if(meAv&&(Math.abs(meAv.pos.x)>22||meAv.pos.y<-47)) soon.push("out"); /* near the balustrade */
   for(const n of soon){ const a=trk(n); if(a._primed) continue; a._primed=1; if(n!==curTrack){ const p=a.play(); if(p&&p.then) p.then(()=>{ if(n!==curTrack&&MIX[n]<.01) a.pause(); }).catch(()=>{ a._primed=0; }); } } }
 function playMusic(){ if(!soundOn||document.hidden) return; audioUnlocked=true; setTrack(FW.on?"fw":catMode?"cat":rearZone?"rear":"main"); trkPlay(trk(curTrack)); try{ trkPrime(); }catch(e){} }
 function musicTick(dt){ const z=meAv.pos.y, inRear=z<RY0||meAv.pos.x<-23.5; if(inRear!==rearZone){ rearDwell+=dt; if(rearDwell>2.5){ rearZone=inRear; rearDwell=0; } } else rearDwell=0; /* stay 2.5 s in an area before its song takes over */
