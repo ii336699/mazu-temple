@@ -259,12 +259,12 @@ function tipFor(n){ const r=FISH.filter(f=>f.r>=2); const f=r[(Math.random()*r.l
   if(n.tip==="garden") return "河濱公園的「我的花圃」可以種東西，種子在花店買，記得澆水才長得快。";
   if(n.tip==="salon") return "西側巷弄的理髮廳有新的精緻髮型，美容院可以換眼睛、鼻子、嘴巴。";
   if(n.tip==="games") return "小吃廣場有擠冰淇淋跟中藥對對碰，玩得好會有平安幣喔。"; return fishTip; }
-const GIFTS={10:[300,0,""],30:[0,1,"q"],60:[1000,2,"q"]};
+const GIFTS={10:[300,0,""],30:[0,1,"q"],60:[1000,2,"q"]}, GF={10:1,30:2,60:4}; /* (which return gifts were given: one bit each) */
 function npcSheet(n,line){ const R=NR(n.id), t=tier(R.a); openSheet("lfNpc","💬 "+n.n,`<p class="note" style="margin:0 0 6px">${hearts(R.a)}　好感 ${R.a}</p><p class="lead">「${line}」</p>
    <div class="row"><button class="primary" data-act="lfNpcTalk" data-v="${n.id}">聊聊天</button><button class="secondary" data-act="lfNpcGift" data-v="${n.id}">送禮物</button>${t>=2?`<button class="secondary" data-act="lfNpcTip" data-v="${n.id}">打聽消息</button>`:""}</div>
    <p class="note">每天聊天、送禮物，好感會增加。${t<2?"再熟一點，會跟你說一些小道消息。":""}</p>`); }
 function talk(n){ const R=NR(n.id), day=today(); let gain=0; if(R.d!==day){ R.d=day; R.a=Math.min(100,R.a+1); gain=1; } const t=tier(R.a), pool=n.L[t].concat(t?n.L[t-1]:[]); let line=pool[(Math.random()*pool.length)|0];
-  for(const k of [10,30,60]) if(R.a>=k&&!(R.r&k)){ R.r|=k; const G=GIFTS[k]; bag.coins+=G[0]; if(G[1]) bag.gacha=Math.min(255,(bag.gacha||0)+G[1]); let fu=""; if(G[2]&&typeof ROOMX!=="undefined"&&ROOMX) try{ fu=ROOMX.grant(G[2]); }catch(e){}
+  for(const k of [10,30,60]) if(R.a>=k&&!(R.r&GF[k])){ R.r|=GF[k]; const G=GIFTS[k]; bag.coins+=G[0]; if(G[1]) bag.gacha=Math.min(255,(bag.gacha||0)+G[1]); let fu=""; if(G[2]&&typeof ROOMX!=="undefined"&&ROOMX) try{ fu=ROOMX.grant(G[2]); }catch(e){}
     line+=`……對了，這個送你。`; setTimeout(()=>toast(`🎁 ${n.n}送你：${[G[0]?G[0]+" 平安幣":"",G[1]?G[1]+" 枚扭蛋幣":"",fu?"「"+fu+"」":""].filter(Boolean).join("、")}`,3600),600); try{ profSave(true); }catch(e){} }
   save(); if(gain) try{ tone(880,.08,.04,"triangle"); }catch(e){} npcSheet(n,line); }
 HANDLERS.lfNpcTalk=v=>talk(NB[v]);
@@ -440,6 +440,27 @@ function gardenOpen(){ if(!SHOPX||!SHOPX.enter) return; const S=new T.Scene(); S
   o.dispose=()=>{ S.traverse(q=>{ if(q.geometry) q.geometry.dispose(); if(q.material) q.material.dispose(); }); save(); try{ profSave(true); }catch(e){} }; }
 L.more4=k=>{ if(k==="tw:garden"){ gardenOpen(); return true; } if(k==="tw:flower"){ flower(); return true; } return false; };
 L.garden=gardenOpen;
+
+/* ---------- into the save code (the 取回碼 and the server's copy): rod, bought styles, the fish book, fish in the bag (how many of
+   each kind; sizes come back as a typical size), the townsfolk's affinity, the garden (seeds, harvest, what grows in each bed), and
+   meteor finds. Order matters: FISH, NPCS and SEEDS may only ever be added to at the end. ---------- */
+L.pack=put=>{ const d=LF(), o=d.own||{}, g=GD2(); put(1,3); /* (version) */ put(d.rod|0,2); ["h","e","m","n"].forEach(k=>put(o[k]|0,10));
+  FISH.forEach(f=>{ const e=d.fish[f.id]; put(e?Math.min(63,e[0]):0,6); if(e) put(Math.min(511,Math.round(e[1])),9); });
+  const ic={}; d.inv.forEach(([id])=>ic[id]=(ic[id]||0)+1); FISH.forEach(f=>put(Math.min(40,ic[f.id]||0),6));
+  NPCS.forEach(n=>{ const R=(d.npc||{})[n.id]||{}; put(Math.min(100,R.a|0),7); put((R.r|0)&7,3); });
+  SEEDS.forEach(q=>put(Math.min(31,g.seed[q[0]]|0),5)); SEEDS.forEach(q=>put(Math.min(127,g.crop[q[0]]|0),7));
+  g.beds.forEach(b=>{ const i=b?SEEDS.findIndex(q=>q[0]===b.s):-1; put(i+1,3); if(i>=0){ grow(b,Date.now()); put(Math.min(15,Math.round(b.p*5)),4); put(b.w?1:0,1); } });
+  put(Math.min(63,d.stone|0),6); put(Math.min(255,d.dust|0),8); };
+L.unpack=get=>{ const v=get(3); if(v!==1) return null; const o={rod:get(2),own:{h:get(10),e:get(10),m:get(10),n:get(10)},fish:{},inv:[],npc:{},seed:{},crop:{},beds:[]};
+  FISH.forEach(f=>{ const n=get(6); if(n) o.fish[f.id]=[n,get(9),Date.now()]; }); FISH.forEach(f=>{ const n=get(6); for(let k=0;k<n;k++) o.inv.push([f.id,Math.round((f.sz[0]+f.sz[1])/2)]); });
+  NPCS.forEach(n=>{ o.npc[n.id]={a:get(7),r:get(3),d:0,g:0}; }); SEEDS.forEach(q=>o.seed[q[0]]=get(5)); SEEDS.forEach(q=>o.crop[q[0]]=get(7));
+  for(let i=0;i<12;i++){ const k=get(3); if(k){ const p=get(4)/5, w=get(1); o.beds.push(SEEDS[k-1]?{s:SEEDS[k-1][0],p,w,t:Date.now()}:null); } else o.beds.push(null); }
+  o.stone=get(6); o.dust=get(8); return o; };
+L.restore=o=>{ if(!o) return; const d=LF(), g=GD2(); d.rod=Math.max(d.rod|0,o.rod); d.own=d.own||{}; for(const k in o.own) d.own[k]=(d.own[k]|0)|o.own[k];
+  for(const id in o.fish){ const e=d.fish[id], n=o.fish[id]; d.fish[id]=e?[Math.max(e[0],n[0]),Math.max(e[1],n[1]),e[2]]:n; }
+  if(o.inv.length>=d.inv.length) d.inv=o.inv; d.npc=d.npc||{}; for(const id in o.npc){ const R=d.npc[id]; if(!R||R.a<o.npc[id].a) d.npc[id]=Object.assign(R||{d:0,g:0},{a:o.npc[id].a,r:(R?R.r|0:0)|o.npc[id].r}); }
+  for(const k in o.seed) g.seed[k]=Math.max(g.seed[k]|0,o.seed[k]); for(const k in o.crop) g.crop[k]=Math.max(g.crop[k]|0,o.crop[k]); if(o.beds.some(b=>b)&&!g.beds.some(b=>b)) g.beds=o.beds;
+  d.stone=Math.max(d.stone|0,o.stone); d.dust=Math.max(d.dust|0,o.dust); save(); };
 L.tick2=dt=>{ goddessTick(dt); mmTick(dt); try{ npcTick(dt); }catch(e){ console.warn("npcs",e); } if(L.tick3) L.tick3(dt); };
 setTimeout(()=>{ try{ chipInit(); }catch(e){} },1800);
 L.dbg=()=>({F,near,LF:LF(),pool}); L.press=()=>press(); L.start=()=>startFish();
