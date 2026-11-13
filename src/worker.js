@@ -8,7 +8,7 @@ function snapInfo(str) { try { const raw = atob(String(str).slice(3).replace(/-/
   if (get(4) !== 1) return {}; get(65); const coins = get(16); get(30); get(1); const pn = get(3); get(pn * 6); get(24); const nl = get(4); let name = ""; for (let i = 0; i < nl; i++) name += String.fromCharCode(get(16)); return { name, coins }; } catch { return {}; } }
 const HALLS = 10, CAP = 100, MAX_MSG = 4000;
 const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000, "/puppet": 5000, "/crowd": 5000, "/market": 5000, "/layout": 5000 };
-const LOBBY_PATHS = ["/rank", "/rankclaim", "/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather", "/stat", "/nev", "/paper", "/sponsor", "/hatfit", "/honor", "/lookup", "/crash", "/meteor"];
+const LOBBY_PATHS = ["/photospots", "/photospot", "/rank", "/rankclaim", "/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather", "/stat", "/nev", "/paper", "/sponsor", "/hatfit", "/honor", "/lookup", "/crash", "/meteor"];
 const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage", "/puppet": "/puppet", "/crowd": "/crowd", "/market": "/market", "/layout": "/layout" }; // a POST here makes that cached list stale
 
 export default {
@@ -673,6 +673,17 @@ export class Lobby extends DurableObject {
       return json({ ok: false });
     }
     // 流星 (天后小鎮): the first player to reach a fallen meteor gets the special prize; later finders are told who it was. Meteor ids are game days (24-minute days).
+    /* 照相館委託 (11/14): up to 50 spots the chair sets (with a picture of the spot, grandpa and grandma in it). Reading is open; setting
+       needs the chair's key. The list holds the places; each picture is its own entry (pictures are fetched one by one). */
+    if (url.pathname === "/photospots" && req.method === "GET") { const L = (await this.ctx.storage.get("ps:meta")) || []; return json({ ok: true, list: L }); }
+    if (url.pathname === "/photospot" && req.method === "GET") { const i = url.searchParams.get("i") | 0; const img = await this.ctx.storage.get("ps:img:" + i); return json({ ok: !!img, img: img || "" }); }
+    if (url.pathname === "/photospot" && req.method === "POST") { const ck = await this.checkKey(req); if (!ck.ok) return json(ck, 403); let b = {}; try { b = await req.json(); } catch {}
+      const L = (await this.ctx.storage.get("ps:meta")) || [];
+      if (b.del != null) { const i = b.del | 0; const k = L.findIndex(q => q.i === i); if (k >= 0) L.splice(k, 1); await this.ctx.storage.put("ps:meta", L); await this.ctx.storage.delete("ps:img:" + i); return json({ ok: true, list: L }); }
+      const img = String(b.img || ""); if (!/^data:image\/jpeg;base64,/.test(img) || img.length > 120000) return json({ ok: false, big: true });
+      let i = b.i != null ? b.i | 0 : -1; if (i < 0) { for (let k = 0; k < 50; k++) if (!L.some(q => q.i === k)) { i = k; break; } } if (i < 0 || i >= 50) return json({ ok: false, full: true });
+      const m = { i, x: +Number(b.x).toFixed(2), z: +Number(b.z).toFixed(2), yaw: +Number(b.yaw).toFixed(3), name: clean(b.name, 20) || ("第 " + (i + 1) + " 張"), area: clean(b.area, 20) || "", at: Date.now() };
+      const k = L.findIndex(q => q.i === i); if (k >= 0) L[k] = m; else L.push(m); L.sort((a, b2) => a.i - b2.i); await this.ctx.storage.put("ps:meta", L); await this.ctx.storage.put("ps:img:" + i, img); return json({ ok: true, i, list: L }); }
     /* 小鎮遊戲每日排名 (11/14): each game keeps one table per Taiwan day, best score per player; GET reads it, POST puts a score in,
        /rankclaim tells a player once where they finished yesterday (for prizes) */
     if (url.pathname === "/rank" || url.pathname === "/rankclaim") {
