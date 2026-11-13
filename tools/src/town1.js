@@ -133,18 +133,23 @@ function KW(g,w,h,d,m,x,y,z){ const geo=new T.BoxGeometry(w,h,d), uv=geo.attribu
   const o=new T.Mesh(geo,m); o.position.set(x,y,z); g.add(o); return o; }
 /* 鐵皮 (corrugated metal) for rooftop sheds */
 const TIN_M={}; function tinMat(c){ return TIN_M[c]||(TIN_M[c]=new T.MeshStandardMaterial({color:c,roughness:.45,metalness:.25,map:TILE_T.tin||(TILE_T.tin=(()=>{ const t=cvs(64,64,(x,W,H)=>{ for(let i=0;i<W;i++){ const v=200+Math.round(40*Math.sin(i/W*Math.PI*8)); x.fillStyle=`rgb(${v},${v},${v})`; x.fillRect(i,0,1,H); } }); t.wrapS=t.wrapT=T.RepeatWrapping; t.repeat.set(4,1); return t; })())})); }
+/* the chair's own sign pictures: list a shop key here once public/signs/<id>-h.webp (橫招 1620×216) and/or <id>-v.webp (直招 186×750) exist,
+   and that picture replaces the drawn sign (id = the key without "tw:", e.g. bfast-h.webp) */
+const SIGN_IMG={/* "tw:bfast":"hv" */};
+function signPic(m,key,hv){ const has=key&&SIGN_IMG[key]; if(!m||!has||has.indexOf(hv)<0) return m; const id=key.replace(/^tw:/,"").replace(/[^a-z0-9_-]/gi,"_");
+  new T.TextureLoader().load("signs/"+id+"-"+hv+".webp",t=>{ t.encoding=T.sRGBEncoding; t.anisotropy=4; m.material.map=t; m.material.emissiveMap=t; m.material.needsUpdate=true; }); return m; }
 /* the building */
 function kbld(C,o){ const r=krng(o.seed||7), pick=a=>a[(r()*a.length)|0], g=new T.Group(); g.position.set(o.x,0,o.z); g.rotation.y=o.ry||0; C.g.add(g);
   const w=o.w, d=o.d||7, fl=o.fl||1+(r()*3|0), FH=3.05, H=fl*FH, shop=o.kind==="shop", col=o.col||pick(KP.wall), brick=o.brick??(r()<.18&&!o.col), tk=brick?"ercd":(o.tile||pick(["ercd","mosaic","sq","vert","paint","ercd","sq"])), wm=tk==="paint"?tileMat("paint",col):tileMat(tk,brick?"#b8705a":pick(TILE_C[tk])), tm=km(o.trim||pick(KP.trim));
   const arc=o.arcade??(shop&&fl>1&&r()<.6), A=arc?1.8:0, roofK=o.roof||(fl<=2&&(brick||r()<.2)?"tile":pick(["flat","tin","flat","tin","flat"])) /* (11/14: Taiwanese towns are flat roofs with tin sheds and water tanks; pitched roofs only on a few old brick houses) */, rcol=o.rcol||pick(KP.roof), rm=km(rcol,{roughness:.7});
-  const winK=r()<.5?1:0, grille=r()<.38, acs=r()<.6, bal=r()<.55, round=r()<.4, vsg=shop&&!!o.name&&fl>1&&(o.vsign??r()<.6);
+  const winK=r()<.5?1:0, grille=r()<.38, acs=r()<.6, bal=r()<.55, round=r()<.4, vsg=shop&&!!o.name&&fl>1&&o.vsign!==false; /* (11/14: every named shop with an upper floor has an upright sign too, all the same size) */
   /* walls */ if(A){ KW(g,w,FH,d-A,wm,0,FH/2,-A-(d-A)/2); if(fl>1) KW(g,w,H-FH,d,wm,0,FH+(H-FH)/2,-d/2); KB(g,w,.2,A,tm,0,FH-.1,-A/2); const n=Math.max(2,Math.round(w/3.2)); for(let i=0;i<=n;i++) KB(g,.36,FH-.2,.36,tm,-w/2+.2+i*(w-.4)/n,(FH-.2)/2,-.2); KB(g,w,.03,A,km("#d8cfc0"),0,.015,-A/2); }
   else KW(g,w,H,d,wm,0,H/2,-d/2);
   for(let f=1;f<fl;f++) KB(g,w+.1,.16,.12,tm,0,f*FH,.04); KB(g,.16,H,.16,tm,-w/2+.06,H/2,.06); KB(g,.16,H,.16,tm,w/2-.06,H/2,.06);
   /* ground floor */ const gz=-A;
   if(shop){ const ac=o.awn||pick(KP.awn); KB(g,w-.9,2.05,.08,winM(1),-.35,1.25,gz+.03); KB(g,w-.7,.12,.14,tm,-.35,2.32,gz+.06); const dx=w/2-.9; KB(g,1.0,2.25,.1,km(pick(KP.door)),dx,1.12,gz+.05);
     if(!A){ const n=Math.max(3,Math.round(w/.6)); for(let i=0;i<n;i++) kp(g,kbox(),km(i%2?"#ffffff":ac),-w/2+(i+.5)*w/n,2.62,gz+.6,w/n+.01,.06,1.25,0,.38); KB(g,w,.12,.06,km(ac),0,2.4,gz+1.18); }
-    if(o.name){ /* 橫招 on the front, where the ground floor meets the first floor (Taiwan style), clear of the awning and the windows */ ksign(g,o.name,Math.min(w-.5,5.4),.72,0,A?FH+.42:3.3,A?.14:.16,0,o.sbg||ac,"#ffffff"); if(vsg) ksign(g,o.name,.62,Math.min(2.6,fl*FH-3.6),w/2-.15,FH+Math.min(2.6,fl*FH-3.6)/2+.45,.72,Math.PI/2,o.sbg||ac,"#ffffff",true); }
+    if(o.name){ (TW.signs||(TW.signs={}))[o.name]={key:o.key,h:[+Math.min(w-.5,5.4).toFixed(2),.72],v:vsg?[.62,2.5]:null,arcade:!!A,fl}; /* (sizes, for the chair's sign pictures) */ /* 橫招 on the front, where the ground floor meets the first floor (Taiwan style), clear of the awning and the windows */ signPic(ksign(g,o.name,Math.min(w-.5,5.4),.72,0,A?FH+.42:3.3,A?.14:.16,0,o.sbg||ac,"#ffffff"),o.key,"h"); if(vsg) signPic(ksign(g,o.name,.62,2.5,w/2-.15,FH+1.25+.45,.72,Math.PI/2,o.sbg||ac,"#ffffff",true),o.key,"v"); }
     for(let k=0;k<2;k++) if(r()<.7) pot(g,-w/2+.45+k*.6,gz+.45,1,r); }
   else { const dx=(r()<.5?-1:1)*(w/2-1.3); KB(g,1.25,2.35,.12,tm,dx,1.17,gz+.05); KB(g,1.0,2.15,.14,km(pick(KP.door)),dx,1.08,gz+.06); kp(g,ksph(),km("#d9aa3d",{roughness:.4,metalness:.3}),dx+.32,1.05,gz+.15,.05,.05,.05);
     kp(g,kbox(),km(pick(KP.awn)),dx,2.55,gz+.38,1.6,.08,.8,0,.3); KB(g,1.4,.16,.6,km("#cfc6b6"),dx,.08,gz+.3); /* door, its little roof, a step */
@@ -195,10 +200,10 @@ const TOWNB=(()=>{ const out=[]; let sd=101;
   const S=(a,w,name,key,o)=>Object.assign({a,w,kind:"shop",name,key,fl:2},o||{});
   /* 老街, north side (fronts face −z) and south side (+z); the gap at x 57–67 opens onto the fountain square */
   row("oN","x",-73,Math.PI,33.6,57,"mix",[S(34,8,"家具行","tw:furn",{fl:3,arcade:true,sbg:"#c96a3a"}),S(46,7,"元氣早餐店","tw:bfast",{fl:2,sbg:"#e2a23a"})]);
-  row("oN2","x",-73,Math.PI,67,88,"mix",[S(70,6.5,"書店","tw:soon:書店",{fl:3,sbg:"#7a6aa8"}),S(80,6,"飲料店","tw:soon:飲料店",{fl:1,sbg:"#d9628a"})]);
-  row("oS","x",-81,0,33.6,88,"mix",[S(34.2,7.4,"釣具行","tw:tackle",{fl:2,sbg:"#3f7fa8"}),S(51,6,"中藥行","tw:soon:中藥行",{fl:3,brick:true,roof:"tile",sbg:"#7a4a3a"}),S(64,7,"雜貨店","tw:grocer",{fl:2,sbg:"#b0863a"}),S(76,6,"照相館","tw:soon:照相館",{fl:4,sbg:"#6a7a8a"})]);
+  row("oN2","x",-73,Math.PI,67,88,"mix",[S(70,6.5,"書店","tw:book",{fl:3,sbg:"#7a6aa8"}),S(80,6,"飲料店","tw:drink",{fl:1,sbg:"#d9628a"})]);
+  row("oS","x",-81,0,33.6,88,"mix",[S(34.2,7.4,"釣具行","tw:tackle",{fl:2,sbg:"#3f7fa8"}),S(51,6,"中藥行","tw:herb",{fl:3,brick:true,roof:"tile",sbg:"#7a4a3a"}),S(64,7,"一粥七天","tw:congee",{fl:2,sbg:"#c0392b"}),S(76,6,"照相館","tw:photo",{fl:4,sbg:"#6a7a8a"})]);
   /* the main street's west side: two short runs either side of the west alley; 花店 just above the houses */
-  row("mW","z",22.8,Math.PI/2,-83.6,-73.6,"mix",[],{fl:r=>1+(r()*3|0)});
+  row("mW","z",22.8,Math.PI/2,-83.6,-73.6,"mix",[S(-83.4,6.6,"雜貨店","tw:grocer",{fl:2,sbg:"#b0863a",arcade:false})],{fl:r=>1+(r()*3|0)});
   row("mW2","z",22.8,Math.PI/2,-98.8,-90.4,"mix",[S(-98.6,8,"花店","tw:flower",{fl:2,sbg:"#5f9a6a",arcade:false})]);
   /* 西側巷弄: a narrow lane off the main street with the barber's and the beauty salon */
   row("aN","x",-84,Math.PI,4,15.4,"mix",[S(8.2,7,"文具店","tw:soon:文具店",{fl:2,sbg:"#4a8fb0",arcade:false})]);
@@ -529,12 +534,13 @@ TW.tick=dt=>{ try{ NT.tick(dt,LIVE); }catch(e){} /* in the town the camera never
   if(TW.on&&!greeted&&pz<-56){ greeted=true; try{ toast("🏮 歡迎來到天后小鎮",2600); statInc("townIn"); }catch(e){} } if(!TW.on&&pz>-40) greeted=false; };
 /* ---- things you can walk up to ---- */
 const ST=[["tw:board",22.6,-61,Math.PI/2*-1,21.9,-61,1.2,2.2],["tw:bus",33.0,-64,Math.PI/2,34.2,-64,1.5,2.4],["tw:fish",28,-136.4,Math.PI,28,-137.6,1.8,1.2],
-    ["tw:ice",38,-96.6,Math.PI,38,-98.5,1.6,2.4],["tw:goddess",104,-188.6,Math.PI,104,-183,4.4,2],["tw:camp",66,-209.6,Math.PI,66,-212,1.2,1.6+34],["tw:cafe",143.4,-113.2,Math.PI/2,145.2,-113.2,2,2.6],["tw:lounge",151.4,-121.6,Math.PI/2,152.6,-121.6,1.2,1],["tw:herb",44,-96.6,Math.PI,44,-98.5,1.6,2.4],["tw:garden",42,-121.4,Math.PI,42,-123,2.6,3]]
+    ["tw:ice",38,-96.6,Math.PI,38,-98.5,1.6,2.4],["tw:goddess",104,-188.6,Math.PI,104,-183,4.4,2],["tw:camp",66,-209.6,Math.PI,66,-212,1.2,1.6+34],["tw:cafe",143.4,-113.2,Math.PI/2,145.2,-113.2,2,2.6],["tw:lounge",151.4,-121.6,Math.PI/2,152.6,-121.6,1.2,1],["tw:garden",42,-121.4,Math.PI,42,-123,2.6,3]]
   .concat(TOWNB.filter(b=>b.key).map(b=>{ const d=bDoor(b); return [b.key,d.ax,d.az,d.face,d.hx,d.hz,Math.min(2.6,b.w/2),3.2]; }));
-const STN={"tw:bfast":"元氣早餐店・疊漢堡","tw:goddess":"女神泉","tw:camp":"營火","tw:cafe":"海邊咖啡","tw:lounge":"躺椅","tw:board":"公告欄","tw:bus":"公車站","tw:fish":"釣魚碼頭","tw:ice":"擠冰淇淋","tw:herb":"中藥對對碰","tw:garden":"我的花圃"}; TOWNB.forEach(b=>{ if(b.key) STN[b.key]=b.name||"鄰居的家"; });
+const STN={"tw:bfast":"元氣早餐店・疊漢堡","tw:goddess":"女神泉","tw:camp":"營火","tw:cafe":"海邊咖啡","tw:lounge":"躺椅","tw:board":"公告欄","tw:bus":"公車站","tw:fish":"釣魚碼頭","tw:ice":"擠冰淇淋","tw:herb":"中藥行","tw:garden":"我的花圃"}; TOWNB.forEach(b=>{ if(b.key) STN[b.key]=b.name||"鄰居的家"; });
 setTimeout(()=>{ try{ ST.forEach(s=>{ station(s[0],[s[1],s[2]],s[3]); addHit(s[0],s[4],0,s[5],s[6],s[7]); try{ if(STN[s[0]]) STATION_LABEL[s[0]]=STN[s[0]]; }catch(e){} }); }catch(e){ console.warn("town stations",e); } },1500);
 function warp(x,z){ try{ if(meAv.seat>=0) meAv.seat=-1; }catch(e){} meAv.pos.set(x,z); meAv.target.set(x,z); meAv.path=[]; try{ pendingStation=null; }catch(e){} markDirty(); }
-TW.station=k=>{ if(k.indexOf("tw:")!==0) return false;
+TW.bOf=k=>{ const b=TOWNB.find(q=>q.key===k); return b?{x:b.x,z:b.z,ry:b.ry,w:b.w}:null; };
+TW.station=k=>{ if(k.indexOf("tw:")!==0) return false; try{ if(typeof LIFE!=="undefined"&&LIFE&&LIFE.keeper&&!TW._kp&&LIFE.keeper(k,()=>{ TW._kp=1; try{ TW.station(k); }finally{ TW._kp=0; } })) return true; }catch(e){ console.warn("keeper",e); }
   if(k==="tw:board"){ try{ DQ.open(); }catch(e){} return true; }
   if(k==="tw:home"){ try{ ROOMX.open(); }catch(e){} return true; }
   if(k==="tw:bus"){ openSheet("townBus","🚌 公車站",`<p class="lead">搭公車回天后宮，一下子就到廟埕。</p><div class="row"><button class="primary" data-act="twBus" data-v="temple">回天后宮廟埕</button><button class="secondary" data-act="twBus" data-v="inn">到禪房門口</button></div><p class="note">之後車站蓋好，這裡也會有去別的地方的車。</p>`); return true; }

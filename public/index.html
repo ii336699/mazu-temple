@@ -11753,18 +11753,23 @@ function KW(g,w,h,d,m,x,y,z){ const geo=new T.BoxGeometry(w,h,d), uv=geo.attribu
   const o=new T.Mesh(geo,m); o.position.set(x,y,z); g.add(o); return o; }
 /* 鐵皮 (corrugated metal) for rooftop sheds */
 const TIN_M={}; function tinMat(c){ return TIN_M[c]||(TIN_M[c]=new T.MeshStandardMaterial({color:c,roughness:.45,metalness:.25,map:TILE_T.tin||(TILE_T.tin=(()=>{ const t=cvs(64,64,(x,W,H)=>{ for(let i=0;i<W;i++){ const v=200+Math.round(40*Math.sin(i/W*Math.PI*8)); x.fillStyle=`rgb(${v},${v},${v})`; x.fillRect(i,0,1,H); } }); t.wrapS=t.wrapT=T.RepeatWrapping; t.repeat.set(4,1); return t; })())})); }
+/* the chair's own sign pictures: list a shop key here once public/signs/<id>-h.webp (橫招 1620×216) and/or <id>-v.webp (直招 186×750) exist,
+   and that picture replaces the drawn sign (id = the key without "tw:", e.g. bfast-h.webp) */
+const SIGN_IMG={/* "tw:bfast":"hv" */};
+function signPic(m,key,hv){ const has=key&&SIGN_IMG[key]; if(!m||!has||has.indexOf(hv)<0) return m; const id=key.replace(/^tw:/,"").replace(/[^a-z0-9_-]/gi,"_");
+  new T.TextureLoader().load("signs/"+id+"-"+hv+".webp",t=>{ t.encoding=T.sRGBEncoding; t.anisotropy=4; m.material.map=t; m.material.emissiveMap=t; m.material.needsUpdate=true; }); return m; }
 /* the building */
 function kbld(C,o){ const r=krng(o.seed||7), pick=a=>a[(r()*a.length)|0], g=new T.Group(); g.position.set(o.x,0,o.z); g.rotation.y=o.ry||0; C.g.add(g);
   const w=o.w, d=o.d||7, fl=o.fl||1+(r()*3|0), FH=3.05, H=fl*FH, shop=o.kind==="shop", col=o.col||pick(KP.wall), brick=o.brick??(r()<.18&&!o.col), tk=brick?"ercd":(o.tile||pick(["ercd","mosaic","sq","vert","paint","ercd","sq"])), wm=tk==="paint"?tileMat("paint",col):tileMat(tk,brick?"#b8705a":pick(TILE_C[tk])), tm=km(o.trim||pick(KP.trim));
   const arc=o.arcade??(shop&&fl>1&&r()<.6), A=arc?1.8:0, roofK=o.roof||(fl<=2&&(brick||r()<.2)?"tile":pick(["flat","tin","flat","tin","flat"])) /* (11/14: Taiwanese towns are flat roofs with tin sheds and water tanks; pitched roofs only on a few old brick houses) */, rcol=o.rcol||pick(KP.roof), rm=km(rcol,{roughness:.7});
-  const winK=r()<.5?1:0, grille=r()<.38, acs=r()<.6, bal=r()<.55, round=r()<.4, vsg=shop&&!!o.name&&fl>1&&(o.vsign??r()<.6);
+  const winK=r()<.5?1:0, grille=r()<.38, acs=r()<.6, bal=r()<.55, round=r()<.4, vsg=shop&&!!o.name&&fl>1&&o.vsign!==false; /* (11/14: every named shop with an upper floor has an upright sign too, all the same size) */
   /* walls */ if(A){ KW(g,w,FH,d-A,wm,0,FH/2,-A-(d-A)/2); if(fl>1) KW(g,w,H-FH,d,wm,0,FH+(H-FH)/2,-d/2); KB(g,w,.2,A,tm,0,FH-.1,-A/2); const n=Math.max(2,Math.round(w/3.2)); for(let i=0;i<=n;i++) KB(g,.36,FH-.2,.36,tm,-w/2+.2+i*(w-.4)/n,(FH-.2)/2,-.2); KB(g,w,.03,A,km("#d8cfc0"),0,.015,-A/2); }
   else KW(g,w,H,d,wm,0,H/2,-d/2);
   for(let f=1;f<fl;f++) KB(g,w+.1,.16,.12,tm,0,f*FH,.04); KB(g,.16,H,.16,tm,-w/2+.06,H/2,.06); KB(g,.16,H,.16,tm,w/2-.06,H/2,.06);
   /* ground floor */ const gz=-A;
   if(shop){ const ac=o.awn||pick(KP.awn); KB(g,w-.9,2.05,.08,winM(1),-.35,1.25,gz+.03); KB(g,w-.7,.12,.14,tm,-.35,2.32,gz+.06); const dx=w/2-.9; KB(g,1.0,2.25,.1,km(pick(KP.door)),dx,1.12,gz+.05);
     if(!A){ const n=Math.max(3,Math.round(w/.6)); for(let i=0;i<n;i++) kp(g,kbox(),km(i%2?"#ffffff":ac),-w/2+(i+.5)*w/n,2.62,gz+.6,w/n+.01,.06,1.25,0,.38); KB(g,w,.12,.06,km(ac),0,2.4,gz+1.18); }
-    if(o.name){ /* 橫招 on the front, where the ground floor meets the first floor (Taiwan style), clear of the awning and the windows */ ksign(g,o.name,Math.min(w-.5,5.4),.72,0,A?FH+.42:3.3,A?.14:.16,0,o.sbg||ac,"#ffffff"); if(vsg) ksign(g,o.name,.62,Math.min(2.6,fl*FH-3.6),w/2-.15,FH+Math.min(2.6,fl*FH-3.6)/2+.45,.72,Math.PI/2,o.sbg||ac,"#ffffff",true); }
+    if(o.name){ (TW.signs||(TW.signs={}))[o.name]={key:o.key,h:[+Math.min(w-.5,5.4).toFixed(2),.72],v:vsg?[.62,2.5]:null,arcade:!!A,fl}; /* (sizes, for the chair's sign pictures) */ /* 橫招 on the front, where the ground floor meets the first floor (Taiwan style), clear of the awning and the windows */ signPic(ksign(g,o.name,Math.min(w-.5,5.4),.72,0,A?FH+.42:3.3,A?.14:.16,0,o.sbg||ac,"#ffffff"),o.key,"h"); if(vsg) signPic(ksign(g,o.name,.62,2.5,w/2-.15,FH+1.25+.45,.72,Math.PI/2,o.sbg||ac,"#ffffff",true),o.key,"v"); }
     for(let k=0;k<2;k++) if(r()<.7) pot(g,-w/2+.45+k*.6,gz+.45,1,r); }
   else { const dx=(r()<.5?-1:1)*(w/2-1.3); KB(g,1.25,2.35,.12,tm,dx,1.17,gz+.05); KB(g,1.0,2.15,.14,km(pick(KP.door)),dx,1.08,gz+.06); kp(g,ksph(),km("#d9aa3d",{roughness:.4,metalness:.3}),dx+.32,1.05,gz+.15,.05,.05,.05);
     kp(g,kbox(),km(pick(KP.awn)),dx,2.55,gz+.38,1.6,.08,.8,0,.3); KB(g,1.4,.16,.6,km("#cfc6b6"),dx,.08,gz+.3); /* door, its little roof, a step */
@@ -11815,10 +11820,10 @@ const TOWNB=(()=>{ const out=[]; let sd=101;
   const S=(a,w,name,key,o)=>Object.assign({a,w,kind:"shop",name,key,fl:2},o||{});
   /* 老街, north side (fronts face −z) and south side (+z); the gap at x 57–67 opens onto the fountain square */
   row("oN","x",-73,Math.PI,33.6,57,"mix",[S(34,8,"家具行","tw:furn",{fl:3,arcade:true,sbg:"#c96a3a"}),S(46,7,"元氣早餐店","tw:bfast",{fl:2,sbg:"#e2a23a"})]);
-  row("oN2","x",-73,Math.PI,67,88,"mix",[S(70,6.5,"書店","tw:soon:書店",{fl:3,sbg:"#7a6aa8"}),S(80,6,"飲料店","tw:soon:飲料店",{fl:1,sbg:"#d9628a"})]);
-  row("oS","x",-81,0,33.6,88,"mix",[S(34.2,7.4,"釣具行","tw:tackle",{fl:2,sbg:"#3f7fa8"}),S(51,6,"中藥行","tw:soon:中藥行",{fl:3,brick:true,roof:"tile",sbg:"#7a4a3a"}),S(64,7,"雜貨店","tw:grocer",{fl:2,sbg:"#b0863a"}),S(76,6,"照相館","tw:soon:照相館",{fl:4,sbg:"#6a7a8a"})]);
+  row("oN2","x",-73,Math.PI,67,88,"mix",[S(70,6.5,"書店","tw:book",{fl:3,sbg:"#7a6aa8"}),S(80,6,"飲料店","tw:drink",{fl:1,sbg:"#d9628a"})]);
+  row("oS","x",-81,0,33.6,88,"mix",[S(34.2,7.4,"釣具行","tw:tackle",{fl:2,sbg:"#3f7fa8"}),S(51,6,"中藥行","tw:herb",{fl:3,brick:true,roof:"tile",sbg:"#7a4a3a"}),S(64,7,"一粥七天","tw:congee",{fl:2,sbg:"#c0392b"}),S(76,6,"照相館","tw:photo",{fl:4,sbg:"#6a7a8a"})]);
   /* the main street's west side: two short runs either side of the west alley; 花店 just above the houses */
-  row("mW","z",22.8,Math.PI/2,-83.6,-73.6,"mix",[],{fl:r=>1+(r()*3|0)});
+  row("mW","z",22.8,Math.PI/2,-83.6,-73.6,"mix",[S(-83.4,6.6,"雜貨店","tw:grocer",{fl:2,sbg:"#b0863a",arcade:false})],{fl:r=>1+(r()*3|0)});
   row("mW2","z",22.8,Math.PI/2,-98.8,-90.4,"mix",[S(-98.6,8,"花店","tw:flower",{fl:2,sbg:"#5f9a6a",arcade:false})]);
   /* 西側巷弄: a narrow lane off the main street with the barber's and the beauty salon */
   row("aN","x",-84,Math.PI,4,15.4,"mix",[S(8.2,7,"文具店","tw:soon:文具店",{fl:2,sbg:"#4a8fb0",arcade:false})]);
@@ -12149,12 +12154,13 @@ TW.tick=dt=>{ try{ NT.tick(dt,LIVE); }catch(e){} /* in the town the camera never
   if(TW.on&&!greeted&&pz<-56){ greeted=true; try{ toast("🏮 歡迎來到天后小鎮",2600); statInc("townIn"); }catch(e){} } if(!TW.on&&pz>-40) greeted=false; };
 /* ---- things you can walk up to ---- */
 const ST=[["tw:board",22.6,-61,Math.PI/2*-1,21.9,-61,1.2,2.2],["tw:bus",33.0,-64,Math.PI/2,34.2,-64,1.5,2.4],["tw:fish",28,-136.4,Math.PI,28,-137.6,1.8,1.2],
-    ["tw:ice",38,-96.6,Math.PI,38,-98.5,1.6,2.4],["tw:goddess",104,-188.6,Math.PI,104,-183,4.4,2],["tw:camp",66,-209.6,Math.PI,66,-212,1.2,1.6+34],["tw:cafe",143.4,-113.2,Math.PI/2,145.2,-113.2,2,2.6],["tw:lounge",151.4,-121.6,Math.PI/2,152.6,-121.6,1.2,1],["tw:herb",44,-96.6,Math.PI,44,-98.5,1.6,2.4],["tw:garden",42,-121.4,Math.PI,42,-123,2.6,3]]
+    ["tw:ice",38,-96.6,Math.PI,38,-98.5,1.6,2.4],["tw:goddess",104,-188.6,Math.PI,104,-183,4.4,2],["tw:camp",66,-209.6,Math.PI,66,-212,1.2,1.6+34],["tw:cafe",143.4,-113.2,Math.PI/2,145.2,-113.2,2,2.6],["tw:lounge",151.4,-121.6,Math.PI/2,152.6,-121.6,1.2,1],["tw:garden",42,-121.4,Math.PI,42,-123,2.6,3]]
   .concat(TOWNB.filter(b=>b.key).map(b=>{ const d=bDoor(b); return [b.key,d.ax,d.az,d.face,d.hx,d.hz,Math.min(2.6,b.w/2),3.2]; }));
-const STN={"tw:bfast":"元氣早餐店・疊漢堡","tw:goddess":"女神泉","tw:camp":"營火","tw:cafe":"海邊咖啡","tw:lounge":"躺椅","tw:board":"公告欄","tw:bus":"公車站","tw:fish":"釣魚碼頭","tw:ice":"擠冰淇淋","tw:herb":"中藥對對碰","tw:garden":"我的花圃"}; TOWNB.forEach(b=>{ if(b.key) STN[b.key]=b.name||"鄰居的家"; });
+const STN={"tw:bfast":"元氣早餐店・疊漢堡","tw:goddess":"女神泉","tw:camp":"營火","tw:cafe":"海邊咖啡","tw:lounge":"躺椅","tw:board":"公告欄","tw:bus":"公車站","tw:fish":"釣魚碼頭","tw:ice":"擠冰淇淋","tw:herb":"中藥行","tw:garden":"我的花圃"}; TOWNB.forEach(b=>{ if(b.key) STN[b.key]=b.name||"鄰居的家"; });
 setTimeout(()=>{ try{ ST.forEach(s=>{ station(s[0],[s[1],s[2]],s[3]); addHit(s[0],s[4],0,s[5],s[6],s[7]); try{ if(STN[s[0]]) STATION_LABEL[s[0]]=STN[s[0]]; }catch(e){} }); }catch(e){ console.warn("town stations",e); } },1500);
 function warp(x,z){ try{ if(meAv.seat>=0) meAv.seat=-1; }catch(e){} meAv.pos.set(x,z); meAv.target.set(x,z); meAv.path=[]; try{ pendingStation=null; }catch(e){} markDirty(); }
-TW.station=k=>{ if(k.indexOf("tw:")!==0) return false;
+TW.bOf=k=>{ const b=TOWNB.find(q=>q.key===k); return b?{x:b.x,z:b.z,ry:b.ry,w:b.w}:null; };
+TW.station=k=>{ if(k.indexOf("tw:")!==0) return false; try{ if(typeof LIFE!=="undefined"&&LIFE&&LIFE.keeper&&!TW._kp&&LIFE.keeper(k,()=>{ TW._kp=1; try{ TW.station(k); }finally{ TW._kp=0; } })) return true; }catch(e){ console.warn("keeper",e); }
   if(k==="tw:board"){ try{ DQ.open(); }catch(e){} return true; }
   if(k==="tw:home"){ try{ ROOMX.open(); }catch(e){} return true; }
   if(k==="tw:bus"){ openSheet("townBus","🚌 公車站",`<p class="lead">搭公車回天后宮，一下子就到廟埕。</p><div class="row"><button class="primary" data-act="twBus" data-v="temple">回天后宮廟埕</button><button class="secondary" data-act="twBus" data-v="inn">到禪房門口</button></div><p class="note">之後車站蓋好，這裡也會有去別的地方的車。</p>`); return true; }
@@ -12724,6 +12730,79 @@ function gardenOpen(){ if(!SHOPX||!SHOPX.enter) return; const S=new T.Scene(); S
   o.update=dt=>{ tt+=dt; for(let i=drops.length-1;i>=0;i--){ const q=drops[i]; q.v+=dt*9; q.m.position.y-=q.v*dt; if(q.m.position.y<.3){ S.remove(q.m); q.m.geometry.dispose(); q.m.material.dispose(); drops.splice(i,1); } } if(tt>5){ tt=0; paint(); if(sel>=0) draw(); } };
   o.render=dt=>{ const asp=innerWidth/innerHeight; cam.aspect=asp; const ph=Math.min(.55,(($g("#gP").offsetHeight||200))/innerHeight); const d=Math.max(16,9/asp); cam.position.set(Math.sin(yaw)*d,d*.85,Math.cos(yaw)*d); cam.lookAt(0,-ph*d*.55,0); cam.updateProjectionMatrix(); renderer.render(S,cam); };
   o.dispose=()=>{ S.traverse(q=>{ if(q.geometry) q.geometry.dispose(); if(q.material) q.material.dispose(); }); save(); try{ profSave(true); }catch(e){} }; }
+/* ---------- 店家老闆 (11/14): every shop has its own people standing at the door with a little counter. Tapping the shop plays a short
+   scene — the tackle man hums and fiddles with a rod, the furniture lady dozes and wakes with a start, the breakfast couple bicker — in
+   bubbles with a babbling voice pitched for each person (old men low and slow, girls high and quick; a question rises, a shout is
+   louder), then the shop's panel or game opens. The full scene plays when you haven't been in for a while; otherwise a quick hello. ---------- */
+const KV={oldm:{p:.66,r:.9},man:{p:.82,r:1},woman:{p:1.18,r:1},oldw:{p:1.02,r:.9},girl:{p:1.38,r:1.15},boy:{p:1.12,r:1.1}};
+const KEEP={
+ "tw:tackle":{ppl:[{n:"阿財伯",v:"oldm",look:[2,18,2,8,1,2,4,7,0,1,0,2,0,1],sh:{leg:.94,tor:1.02,w:1.12,d:1.1,head:1,arm:1},rod:1}],mode:"hum",openAt:0,
+   lines:[[0,"♪～竿子要彈、線要韌，耐心等魚來咬～♪"],[0,"喔！少年仔來啦？竿子、餌都在這，自己挑！"]],quick:[[0,"♪～今天魚會咬喔～♪"]]},
+ "tw:furn":{ppl:[{n:"美雲姐",v:"woman",look:[0,14,1,11,7,1,0,0,0,2,1,0,3,2],sh:{leg:.94,tor:.98,w:1.16,d:1.12,head:1,arm:.96}}],mode:"doze",
+   lines:[[0,"呼……呼……zzZ"],["wake"],[0,"！！！"],[0,"啊、啊！歡迎光臨！我、我沒有在睡喔！"]],quick:[[0,"歡迎光臨～慢慢看喔！"]]},
+ "tw:bfast":{ppl:[{n:"阿龍老闆",v:"man",look:[1,13,0,11,2,3,12,2,0,3,0,0,0,1],sh:{leg:1.02,tor:1.06,w:1.2,d:1.16,head:1,arm:1.04}},{n:"秀琴老闆娘",v:"woman",look:[0,22,1,11,3,4,2,1,1,4,1,0,0,2],sh:{leg:.92,tor:.96,w:1.08,d:1.04,head:1,arm:.96}}],mode:"argue",
+   fights:[[[0,"剛剛就說要大冰奶！你做快一點啦，人家等很久了！"],[1,"我就說是蘿蔔糕啊！你自己聽錯還怪我！"]],[[1,"鐵板上的蛋都焦了啦！"],[0,"是妳一直叫我去拿吐司啊！"]],[[0,"火腿蛋吐司不要美乃滋，妳又加了！"],[1,"客人說『要』美乃滋！耳朵拿去洗啦！"]],
+     [[1,"豆漿是溫的還是冰的啦？"],[0,"單子上寫『溫』！妳寫的字只有妳自己看得懂！"]],[[0,"鐵板麵要黑胡椒還是蘑菇？"],[1,"兩個都要！他剛剛講過三次了啦！"]],[[1,"你又把奶茶做成全糖！"],[0,"單子上畫一個圈，誰知道是全糖還是無糖！"]],
+     [[0,"蛋餅要加起司還是玉米？"],[1,"起司玉米！起司玉米！我喊到喉嚨都啞了！"]],[[1,"外帶的袋子又不夠了啦！"],[0,"昨天叫妳叫貨，妳說『好好好』！"]]],
+   end:[[-1,"你！要不要來幫忙！？當然我們會給你報酬！"]],quick:[[-1,"來來來，幫忙疊漢堡！"]]},
+ "tw:herb":{ppl:[{n:"陳伯",v:"oldm",look:[0,18,5,0,1,0,0,7,0,1,0,1,0,1],sh:{leg:.86,tor:.92,w:.96,d:.96,head:1,arm:.94},hunch:.18}],mode:"squint",
+   lines:[[0,"嗯……嗯？"],[0,"年輕人，我眼睛看不太清楚，你能不能幫我一起分類這些藥材呢？"]],quick:[[0,"喔，是你啊，又來幫忙啦？"]]},
+ "tw:book":{ppl:[{n:"文雄老闆",v:"man",look:[0,26,0,13,6,2,0,0,0,1,0,1,1,1],sh:{leg:1.14,tor:1.06,w:.9,d:.9,head:.98,arm:1.08}}],mode:"stuck",
+   lines:[[0,"欸欸，等一下……"],[0,"最近書進貨太多了，我的書架亂七八糟，我都出不去了……能不能幫我一起整理一下呢？"]],quick:[[0,"書架又塞住了，拜託你啦！"]]},
+ "tw:ice":{ppl:[{n:"冰淇淋奶奶",v:"oldw",look:[0,22,5,11,7,1,0,1,0,2,1,0,0,1],sh:{leg:.8,tor:.88,w:1.06,d:1.04,head:1.02,arm:.92}}],mode:"wave",spot:{x:38,z:-99.3,ry:0},
+   lines:[[0,"小朋友，你要不要來試試看超巨～～～～～～～～～～大冰淇淋呀？加量不加價唷！"]],quick:[[0,"又來啦？今天也要擠得高高的喔！"]]},
+ "tw:congee":{ppl:[{n:"阿秀姨",v:"woman",look:[1,14,1,11,3,2,2,0,0,3,1,0,0,2],sh:{leg:.9,tor:.96,w:1.14,d:1.1,head:1,arm:.98}}],mode:"panic",
+   lines:[[0,"糟糕了糟糕了……"],[0,"一忙就記不住大家的菜單怎麼辦……@NAME，你能不能來幫幫我？"]],quick:[[0,"@NAME！又滿桌了，快來幫我記！"]]},
+ "tw:flower":{ppl:[{n:"雅琪老師",v:"woman",look:[0,23,0,14,7,3,15,15,1,4,1,3,0,2],sh:{leg:1.12,tor:1.04,w:.88,d:.88,head:.98,arm:1.06}}],mode:"grace",
+   lines:[[0,"你是要來學插花的嗎？請進。"]],quick:[[0,"歡迎，今天的花很漂亮喔。"]]},
+ "tw:drink":{ppl:[{n:"小安",v:"girl",look:[0,5,11,3,5,3,4,2,0,3,0,0,0,1],sh:{leg:1.02,tor:.98,w:.92,d:.92,head:1.04,arm:1}},{n:"阿哲",v:"boy",look:[1,25,0,3,5,3,4,1,0,2,0,6,0,1],sh:{leg:1.08,tor:1.02,w:1,d:.98,head:1,arm:1.02}}],mode:"cheer",
+   lines:[[-1,"歡迎光臨！珍奶第二杯半價喔！"],[-1,"要不要加入我們的工作行列啊？當然老闆會給薪水的！"]],quick:[[-1,"歡迎光臨～！"]]},
+ "tw:beauty":{ppl:[{n:"設計師 Kevin",v:"man",look:[0,27,9,1,0,5,0,10,0,3,0,0,2,1],sh:{leg:1.12,tor:1.04,w:.92,d:.9,head:.98,arm:1.04}}],mode:"pose",
+   lines:[[0,"您好，請問有預約、有指定設計師嗎？"]],quick:[[0,"今天想換什麼風格呢？"]]},
+};
+const KS={}; /* the keepers standing at their shops: key → {avs, spot, t, mode, until, last} */
+function keepSpot(k){ const K=KEEP[k]; if(K.spot) return K.spot; const b=TOWNX&&TOWNX.bOf?TOWNX.bOf(k):null; if(!b) return null; const fx=Math.sin(b.ry), fz=Math.cos(b.ry); return {x:b.x+fx*.35,z:b.z+fz*.35,ry:b.ry,fx,fz,shop:1}; }
+function keepMake(k){ const K=KEEP[k], sp=keepSpot(k); if(!sp) return null; const n=K.ppl.length, px=Math.cos(sp.ry), pz=-Math.sin(sp.ry), avs=[];
+  K.ppl.forEach((P,i)=>{ const off=n>1?(i-(n-1)/2)*1.1:0, x=sp.x+px*off, z=sp.z+pz*off; const look=sanitizeLook(P.look.slice()); const av=new Avatar(look,{npc:true,x,z,r:sp.ry}); av.isMe=true; try{ av.setLook(look); }finally{ av.isMe=false; } av.setName(P.n); av.moveSpeed=0; av.rotY=sp.ry; av.faceGoal=sp.ry; bodyShape(av,P.sh);
+    if(P.rod){ const r=new T.Mesh(new T.CylinderGeometry(.012,.02,1.3,6),new T.MeshStandardMaterial({color:"#6b4a2e",roughness:.6})); r.position.set(0,-.3,.35); r.rotation.x=1.1; av.arms[1].add(r); }
+    av._P=P; avs.push(av); });
+  /* the counter in front of them (shops only) */ let ctr=null; if(sp.shop){ ctr=new T.Mesh(new T.BoxGeometry(Math.max(1.3,n*1.2),.92,.42),new T.MeshStandardMaterial({color:"#8a5a3a",roughness:.7})); ctr.position.set(sp.x+sp.fx*.62,.46,sp.z+sp.fz*.62); ctr.rotation.y=sp.ry; scene.add(ctr); }
+  return KS[k]={avs,sp,ctr,t:0,mode:K.mode,step:-1,last:0,busy:false}; }
+function keepDrop(k){ const S=KS[k]; if(!S) return; S.avs.forEach(av=>{ try{ scene.remove(av.root); av.dispose&&av.dispose(); }catch(e){} }); if(S.ctr){ scene.remove(S.ctr); S.ctr.geometry.dispose(); } delete KS[k]; }
+/* talk: the bubble and a babble pitched for the speaker; "？" rises at the end, "！" is louder and higher */
+function keepSay(av,text,secs){ const P=av._P||{}, V=KV[P.v]||KV.man; text=text.replace(/@NAME/g,me.name||"你"); av.say(text,"#ffe2a0",secs||Math.min(6,1.6+text.length*.12));
+  const ex=/[！!]/.test(text), q=/[？?]$/.test(text); try{ babble(Math.min(2.4,.35+text.length*.09/V.r),V.p*(ex?1.12:1)); if(q){ const f=420*V.p; setTimeout(()=>{ try{ tone(f,.12,.05,"triangle"); tone(f*1.3,.14,.05,"triangle",.1); }catch(e){} },Math.min(2200,text.length*80)); } }catch(e){} }
+/* the scene: a list of [who, text] (who −1 = everyone together, "wake" = the start), one after another; open the shop at openAt or at the end */
+L.keeper=(k,open)=>{ const K=KEEP[k]; if(!K) return false; const S=KS[k]||keepMake(k); const go=()=>{ try{ (K.go||(()=>open&&open()))(); }catch(e){ console.warn(e); } };
+  if(!S){ go(); return true; } if(S.busy){ go(); return true; } /* (tapping again during the scene skips to the shop) */
+  const full=Date.now()-S.last>180e3; S.last=Date.now(); let lines=full?(K.fights?[...K.fights[(Math.random()*K.fights.length)|0],...K.end]:K.lines):K.quick; const openAt=full&&K.openAt!=null?K.openAt:lines.length;
+  S.busy=true; S.mode=K.mode; S.t=0; S.woke=0; let i=0;
+  const next=()=>{ if(KS[k]!==S) return; if(i===openAt) go(); if(i>=lines.length){ S.busy=false; S.mode=K.mode==="doze"?"idle":K.mode; return; } const [w,text]=lines[i++];
+    if(w==="wake"){ S.mode="wake"; S.t=0; try{ tone(880,.08,.06,"square"); }catch(e){} setTimeout(next,700); return; }
+    const who=w===-1?S.avs:[S.avs[w]]; who.forEach(av=>keepSay(av,text)); if(K.mode==="argue"&&w>=0){ S.spk=w; } setTimeout(next,Math.min(3400,900+text.length*95)); };
+  next(); return true; };
+/* little body language, every frame, after the avatar's own update */
+function keepTick(dt){ const p=meAv.pos; for(const k in KS){ const S=KS[k]; if(Math.hypot(p.x-S.sp.x,p.y-S.sp.z)>70){ keepDrop(k); continue; } S.t+=dt; const t=S.t;
+    S.avs.forEach((av,i)=>{ av.pos.set(av.root.position.x,av.root.position.z); av.target.copy(av.pos); try{ av.update(dt); }catch(e){} const H=av.head, A=av.arms, P=av._P||{};
+      if(P.hunch) av.torso.rotation.x+=P.hunch;
+      switch(S.mode){
+        case "hum": H.rotation.z=Math.sin(t*3)*.16; A[1].rotation.x=-.9+Math.sin(t*2.2)*.25; A[1].rotation.z=Math.sin(t*1.7)*.12; break;
+        case "doze": H.rotation.x=.42+Math.sin(t*1.4)*.1; H.rotation.z=Math.sin(t*.7)*.08; if(Math.random()<dt*.5) av.say("zzZ","#cfe3ff",1.2); break;
+        case "wake": { const k2=Math.min(1,t/.5); av.lift&&(av.lift.position.y=(av._ly??(av._ly=av.lift.position.y))+Math.sin(k2*Math.PI)*.18); H.rotation.x=-.2*(1-k2); A[0].rotation.z=-1.2*Math.sin(k2*Math.PI); A[1].rotation.z=1.2*Math.sin(k2*Math.PI); if(t>.6) S.mode="idle"; break; }
+        case "argue": { const me2=S.spk===i; const o=S.avs[1-i]; if(o){ const yaw=Math.atan2(o.root.position.x-av.root.position.x,o.root.position.z-av.root.position.z); av.root.rotation.y=yaw; } if(me2){ A[0].rotation.x=-1.2+Math.sin(t*9)*.4; A[1].rotation.z=.4+Math.sin(t*7)*.3; H.rotation.x=Math.sin(t*10)*.08; } else { A[0].rotation.z=-.5; A[1].rotation.z=.5; } break; }
+        case "squint": H.rotation.x=-.12; H.rotation.y=Math.sin(t*.8)*.3; break;
+        case "stuck": A[0].rotation.x=-2.6+Math.sin(t*6)*.2; A[1].rotation.x=-2.6+Math.cos(t*6)*.2; H.rotation.z=Math.sin(t*2)*.1; break;
+        case "wave": A[1].rotation.z=2.3+Math.sin(t*7)*.35; H.rotation.z=Math.sin(t*2)*.08; break;
+        case "panic": H.rotation.y=Math.sin(t*4)*.5; A[0].rotation.x=-1.5+Math.sin(t*8)*.3; A[1].rotation.x=-1.5+Math.cos(t*8)*.3; break;
+        case "grace": H.rotation.z=.08+Math.sin(t*.9)*.05; A[0].rotation.x=-.5; A[0].rotation.z=.4; A[1].rotation.x=-.5; A[1].rotation.z=-.4; break;
+        case "cheer": { const hop=Math.abs(Math.sin(t*5+i)); av.lift&&(av.lift.position.y=(av._ly??(av._ly=av.lift.position.y))+hop*.08); A[i?0:1].rotation.z=(i?-1:1)*(2.4+Math.sin(t*10)*.3); break; }
+        case "pose": H.rotation.z=-.1; A[1].rotation.x=-1.9; A[1].rotation.z=.6; break;
+        default: H.rotation.x=Math.sin(t*.6)*.04; } });
+    if(S.mode!=="argue") S.avs.forEach(av=>{ av.root.rotation.y=S.sp.ry; }); } }
+/* spawn the keepers of shops near you (so the street looks lived in) */
+let keepAcc=0; function keepNear(dt){ keepAcc+=dt; if(keepAcc<1) return; keepAcc=0; if(!(TOWNX&&TOWNX.on)) return; const p=meAv.pos; for(const k in KEEP){ if(KS[k]) continue; const sp=keepSpot(k); if(sp&&Math.hypot(p.x-sp.x,p.y-sp.z)<38){ keepMake(k); break; } } }
+L.tick6=dt=>{ try{ keepNear(dt); keepTick(dt); }catch(e){ console.warn("keepers",e); } if(L.tick7) L.tick7(dt); };
+L.keepers=()=>KS;
 /* ---------- 元氣早餐店：疊漢堡 (11/14) — the 擠冰淇淋 rules: the next layer swings left and right above the stack, tap to drop it; land it
    over the layer below or it slides off and the game ends. A bun at the bottom, a bun on top (it goes on by itself when you stop, or when
    something falls), fillings in between at random. The higher the stack, the higher the camera climbs: the shop table, the clouds and the
@@ -12816,7 +12895,8 @@ function bgResult(n,line,perfect){ const d=BGD(), D=d.bgd, b=d.bg; D.n++; const 
   openSheet("lfBf2","🍔 疊漢堡",`<p class="lead">疊了 ${n} 層${perfect?`（完美 ${perfect} 次）`:""}。${line}${rec?"<br>🏆 新紀錄！":""}</p>
    <p class="lead">${paid?(coins||gacha?`拿到 ${coins} 平安幣${gacha?` 和 ${gacha} 枚扭蛋幣`:""}。`:"這次沒有獎勵。"):"今天的獎勵已經拿完了（每天前 10 次有獎勵），玩開心的～"}${big}${extra}</p>
    <div class="row"><button class="primary" data-act="lfBg">再玩一次（30 幣）</button></div>`); }
-L.more4=k=>{ if(k==="tw:bfast"){ bfastOpen(); return true; } if(k==="tw:garden"){ gardenOpen(); return true; } if(k==="tw:flower"){ flower(); return true; } return false; };
+const SOON={"tw:book":["📚 書店","整理書架的推積木遊戲"],"tw:drink":["🧋 飲料店","調飲料的打工遊戲"],"tw:congee":["🥣 一粥七天","記菜單的遊戲"],"tw:photo":["📷 照相館","爺爺奶奶的相簿任務"]};
+L.more4=k=>{ if(SOON[k]&&!(L.games&&L.games[k])){ openSheet("lfSoon",SOON[k][0],`<p class="lead">${SOON[k][1]}正在準備中，很快就好！</p>`); return true; } if(L.games&&L.games[k]){ L.games[k](); return true; } if(k==="tw:bfast"){ bfastOpen(); return true; } if(k==="tw:garden"){ gardenOpen(); return true; } if(k==="tw:flower"){ flower(); return true; } return false; };
 L.garden=gardenOpen;
 
 /* ---------- into the save code (the 取回碼 and the server's copy): rod, bought styles, the fish book, fish in the bag (how many of
