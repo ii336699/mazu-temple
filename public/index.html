@@ -904,7 +904,17 @@ function saveBag(){ save("mz.bag",bag); renderWallet(); }
 function sanitizeLook(l,allowChair=false){ const out=[]; for(let i=0;i<LOOK_RANGE.length;i++){ const v=Array.isArray(l)?l[i]|0:0; out.push(Math.max(0,Math.min(LOOK_RANGE[i]-1, Number.isFinite(v)?v:0))); } if(!allowChair&&out[3]===16) out[3]=0; return out; }
 
 /* ================= quality ================= */
-const Q={mode:load("mz.q","auto")}; Q.lite=Q.mode==="lite"; Q.low=Q.mode==="low"||Q.lite; Q.phone=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Mac/.test(navigator.userAgent)); Q.safe=Date.now()-(+load("mz.crash",0)||0)<20*60e3; if(Q.safe&&Q.mode==="auto") Q.low=true; /* the 3D drawing crashed in the last 20 minutes: run lighter for a while */ // 低配 (lite) = 省電 plus lighter models, small textures and no anti-aliasing
+const Q={mode:load("mz.q","auto")}; Q.lite=Q.mode==="lite"; Q.low=Q.mode==="low"||Q.lite; Q.phone=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Mac/.test(navigator.userAgent)); Q.safe=Date.now()-(+load("mz.crash",0)||0)<20*60e3; if(Q.safe&&Q.mode==="auto") Q.low=true; /* 閃退後省電 (KQ): when the phone itself closed the game (out of memory), the next visits start lighter instead of crashing the same way
+   again — iPhones that crash right while loading kept reloading into the same crash until Safari gave up ("重複發生問題").
+   Closed within the first 1½ minutes, or twice within 10 minutes: one step lighter (1 = 省電, 2 = 低配). Three days without being
+   closed: one step back. Phones only; picking a 畫質 by hand (or 維持原本 on the card) turns it off. */
+const KQ=(()=>{ const c=load("mz.kq",null)||{}; return {lv:c.lv|0,at:c.at||0,man:c.man||0,ks:Array.isArray(c.ks)?c.ks.slice(-5):[],say:0}; })();
+const kqSave=()=>save("mz.kq",{lv:KQ.lv,at:KQ.at,man:KQ.man,ks:KQ.ks});
+if(Q.phone){ const now=Date.now(), prev=load("mz.alive",null), ctx=now-(+load("mz.crash",0)||0)<60e3;
+  if(prev&&!prev.bye&&now-prev.t<15*60e3&&!ctx){ const early=(prev.min||0)<1.5, twice=KQ.ks.some(t=>prev.t-t<10*60e3&&prev.t-t>0); KQ.ks.push(prev.t); KQ.ks=KQ.ks.slice(-5);
+    if((early||twice)&&KQ.lv<2&&!(KQ.man&&now-KQ.man<6*3600e3)){ KQ.lv++; KQ.at=now; KQ.say=KQ.lv; } kqSave(); }
+  else if(KQ.lv>0&&now-KQ.at>3*864e5){ KQ.lv--; KQ.at=now; kqSave(); }
+  if(KQ.lv>=1&&(Q.mode==="auto"||Q.mode==="low")) Q.low=true; if(KQ.lv>=2&&Q.mode!=="high"){ Q.lite=true; Q.low=true; } } /* the 3D drawing crashed in the last 20 minutes: run lighter for a while */ // 低配 (lite) = 省電 plus lighter models, small textures and no anti-aliasing
 /* ================= renderer & scene ================= */
 const canvas=$("#c");
 const renderer=new T.WebGLRenderer({canvas,antialias:!Q.lite,powerPreference:"high-performance"});
@@ -4822,7 +4832,7 @@ HANDLERS.preDl=async(v,b)=>{ if(PREDL.busy) return; if(IN_ARTIFACT||!("serviceWo
   toast(PREDL.done?`下載完成（${(bytes/1e6).toFixed(0)} MB），之後開啟會快很多`:`有 ${list.length-ok} 個檔案沒下載到，可以再按一次`,3600); };
 HANDLERS.perfPanel=(v,b)=>{ perfPanel(!PERF.on); b.setAttribute("aria-pressed",String(PERF.on)); };
 HANDLERS.fps60=(v,b)=>{ PACE.smooth=!PACE.smooth; save("mz.fps60",PACE.smooth); b.setAttribute("aria-pressed",String(PACE.smooth)); toast(PACE.smooth?"流暢模式開啟：一直 60 格":"省電：沒在操作時降低格數"); };
-HANDLERS.quality=v=>{ if((v==="lite")!==Q.lite){ Q.mode=v; save("mz.q",v); toast(v==="lite"?"切換為低配，重新載入中…":"離開低配，重新載入中…",2500); setTimeout(()=>location.reload(),900); return; } applyQuality(v==="auto"?(perf.done&&Q.low?"low":"high"):v,false); if(v==="auto"){ Q.mode="auto"; save("mz.q","auto"); } openGfx(); toast(v==="low"?"已切換為省電畫質":v==="high"?"已切換為高畫質":"畫質改為自動偵測"); };
+HANDLERS.quality=v=>{ if(KQ.lv){ KQ.lv=0; KQ.man=Date.now(); kqSave(); Q.mode=v; save("mz.q",v); toast("畫質已改好，重新載入中…",2200); setTimeout(()=>location.reload(),900); return; } if((v==="lite")!==Q.lite){ Q.mode=v; save("mz.q",v); toast(v==="lite"?"切換為低配，重新載入中…":"離開低配，重新載入中…",2500); setTimeout(()=>location.reload(),900); return; } applyQuality(v==="auto"?(perf.done&&Q.low?"low":"high"):v,false); if(v==="auto"){ Q.mode="auto"; save("mz.q","auto"); } openGfx(); toast(v==="low"?"已切換為省電畫質":v==="high"?"已切換為高畫質":"畫質改為自動偵測"); };
 HANDLERS.toggleNpc=(v,b)=>{ showNpc=!showNpc; save("mz.npc",showNpc); b.setAttribute("aria-pressed",String(showNpc)); buildNpcs(); toast(showNpc?"已顯示示範香客":"已隱藏示範香客"); };
 HANDLERS.showPoem=v=>openPoem(+v,true);
 
@@ -10007,6 +10017,11 @@ HANDLERS.paperOpen=async()=>{ closeSheet(); if(!(await paperFetch())){ toast("�
 function cutCard(){ const lv=CUT.say; if(!lv) return; CUT.say=0; const d=document.createElement("div"); d.className="gift-card"; d.style.zIndex="9500";
   d.innerHTML=`<div class="gc-in"><b>${lv===1?"📱 剛剛遊戲被手機關掉了":"📱 遊戲又被手機關掉了"}</b><p style="margin:12px 0;line-height:1.7;text-align:left">${lv===1?"這通常是手機記憶體不夠（廟裡人多的時候比較容易發生）。<br>為了讓你玩得順，這次先幫你把畫面上的<b>其他人物減少一半</b>，遊戲比較不會再被關掉。":"這次先幫你把畫面上的<b>其他人物全部關掉</b>（看不到其他香客，只留下你和廟裡的工作人員），讓手機少用一點記憶體。<br>聊天、參拜、小遊戲都照常可以玩。"}</p><p class="gc-sub">之後不會再當掉的話，過幾天會自動恢復；也可以到「設定 → 畫面上的人物」自己調整。</p><div class="row"><button class="secondary" data-x="undo">維持原本</button><button class="primary" data-x="ok">好，就這樣</button></div></div>`;
   document.body.appendChild(d); d.querySelector('[data-x="ok"]').onclick=()=>d.remove(); d.querySelector('[data-x="undo"]').onclick=()=>{ d.remove(); CUT.lv=0; CUT.man=true; CUT.at=Date.now(); cutSave(); toast("好的，人物全部顯示（如果又被關掉，建議改回來）",3600); setTimeout(()=>location.reload(),1800); }; }
+/* the 閃退後省電 card: says why the picture is plainer this time (it replaces the people card, and says both) */
+function kqCard(){ const lv=KQ.say; if(!lv) return; KQ.say=0; const d=document.createElement("div"); d.className="gift-card"; d.style.zIndex="9500";
+  d.innerHTML=`<div class="gc-in"><b>📱 剛剛遊戲被手機關掉了</b><p style="margin:12px 0;line-height:1.7;text-align:left">這通常是手機記憶體不夠。為了不要一直被關掉，這次先幫你改用<b>${lv>=2?"低配畫質":"省電畫質"}</b>${lv>=2?"（畫面會比較簡單、比較糊）":"（畫面會稍微不那麼細緻）"}${CUT.lv?"，畫面上的其他人物也先減少":""}。<br>參拜、聊天、小遊戲都照常可以玩。</p><p class="gc-sub">之後三天都沒有再被關掉，會自動一步一步恢復；也可以到「設定 → 畫質」自己改。</p><div class="row"><button class="secondary" data-x="undo">維持原本</button><button class="primary" data-x="ok">好，就這樣</button></div></div>`;
+  document.body.appendChild(d); d.querySelector('[data-x="ok"]').onclick=()=>d.remove(); d.querySelector('[data-x="undo"]').onclick=()=>{ d.remove(); KQ.lv=0; KQ.man=Date.now(); kqSave(); CUT.lv=0; CUT.man=true; CUT.at=Date.now(); cutSave(); toast("好的，改回原本的畫面（如果又被關掉，建議改回省電）",3600); setTimeout(()=>location.reload(),1800); }; }
+if(KQ.say){ CUT.say=0; const w=()=>{ const ld=$("#loading"); if(!ld||ld.hasAttribute("data-done")) setTimeout(kqCard,600); else setTimeout(w,200); }; w(); }
 if(CUT.say){ const w=()=>{ const ld=$("#loading"); if(!ld||ld.hasAttribute("data-done")) setTimeout(cutCard,600); else setTimeout(w,200); }; w(); }
 /* once a day, when the page has loaded (not on someone's very first visit, while they make their character) */
 setTimeout(async()=>{ if(firstVisitPending) return; const p=await paperFetch(); if(!p) return; const seen=load("mz.paperSeen","")===p.d+(p.rev?"#"+p.rev:"");
