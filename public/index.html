@@ -3452,6 +3452,21 @@ function actPose(av,dt){ const a=ACTS[av.act]; av.actT+=dt; const t=av.actT; if(
       P.position.y=air*.9-sq*.08; av.hips.position.y=.3-sq*.08; L[0].rotation.set(-sq*1.1-air*.3,0,air*.55); L[1].rotation.set(-sq*1.1-air*.3,0,-air*.55); A[0].rotation.set(-.4-air*2.2,0,air*.4); A[1].rotation.set(-.4-air*2.2,0,-air*.4); B.rotation.x=sq*.35-air*.1; break; }
     case 9: { P.rotation.x=-1.5; P.position.y=.16; A[0].rotation.set(-3.0,0,-.5); A[1].rotation.set(-3.0,0,.5); L[0].rotation.x=-.35+s(t*1.6)*.28; L[1].rotation.x=0; H.rotation.x=.25; break; } // 躺平耍廢
   } }
+/* 合併 (11/13, for speed — the picture is exactly the same): a person is built from about 80 small pieces (every lock of hair, every
+   button), and each piece is one job for the phone, every frame, for every person in view. The hair, the hat and the clothes never
+   move within themselves, so the pieces of each that share a material are joined into one piece, where they already stand. */
+const _mm=new T.Matrix4(), _mi=new T.Matrix4(), _mn=new T.Matrix3(), _mv=new T.Vector3();
+function mergeGroup(g,keepList){ g.updateWorldMatrix(true,true); _mi.copy(g.matrixWorld).invert(); const by=new Map();
+  g.traverse(o=>{ if(!o.isMesh||o.isInstancedMesh||o.isSkinnedMesh||Array.isArray(o.material)||!o.geometry||!o.geometry.attributes.position||o.geometry.morphAttributes.position||o.geometry.attributes.color||o.material.vertexColors||o.geometry.groups.length>1||o.userData.noMerge) return; /* (pieces painted per point, e.g. two-tone hair, stay as they are) */ for(let q=o;q&&q!==g;q=q.parent) if(!q.visible||q.userData.noMerge) return;
+    const ge=o.geometry, uv=!!ge.attributes.uv; if(o.material.map&&!uv) return; const k=o.material.uuid+(o.material.map?"u":"")+(o.renderOrder||0); (by.get(k)||by.set(k,[]).get(k)).push(o); });
+  by.forEach(list=>{ if(list.length<2) return; const mat=list[0].material, useUV=!!mat.map; let nv=0, ni=0; list.forEach(o=>{ const ge=o.geometry; nv+=ge.attributes.position.count; ni+=ge.index?ge.index.count:ge.attributes.position.count; });
+    const P=new Float32Array(nv*3), N=new Float32Array(nv*3), U=useUV?new Float32Array(nv*2):null, I=nv>65535?new Uint32Array(ni):new Uint16Array(ni); let vo=0, io=0;
+    list.forEach(o=>{ const ge=o.geometry, pa=ge.attributes.position, na=ge.attributes.normal, ua=ge.attributes.uv, n=pa.count; _mm.multiplyMatrices(_mi,o.matrixWorld); _mn.getNormalMatrix(_mm); const flip=_mm.determinant()<0;
+      for(let i=0;i<n;i++){ _mv.fromBufferAttribute(pa,i).applyMatrix4(_mm); P[(vo+i)*3]=_mv.x; P[(vo+i)*3+1]=_mv.y; P[(vo+i)*3+2]=_mv.z; if(na){ _mv.fromBufferAttribute(na,i).applyMatrix3(_mn).normalize(); N[(vo+i)*3]=_mv.x; N[(vo+i)*3+1]=_mv.y; N[(vo+i)*3+2]=_mv.z; } if(U&&ua){ U[(vo+i)*2]=ua.getX(i); U[(vo+i)*2+1]=ua.getY(i); } }
+      const ix=ge.index, cnt=ix?ix.count:n; for(let t=0;t<cnt;t+=3){ const a=ix?ix.getX(t):t, b=ix?ix.getX(t+1):t+1, c=ix?ix.getX(t+2):t+2; I[io+t]=vo+a; I[io+t+1]=vo+(flip?c:b); I[io+t+2]=vo+(flip?b:c); } vo+=n; io+=cnt; });
+    const G2=new T.BufferGeometry(); G2.setAttribute("position",new T.BufferAttribute(P,3)); G2.setAttribute("normal",new T.BufferAttribute(N,3)); if(U) G2.setAttribute("uv",new T.BufferAttribute(U,2)); G2.setIndex(new T.BufferAttribute(I,1)); if(list.some(o=>!o.geometry.attributes.normal)) G2.computeVertexNormals();
+    const m=new T.Mesh(G2,mat); m.renderOrder=list[0].renderOrder; m.castShadow=list[0].castShadow; m.receiveShadow=list[0].receiveShadow; m.name="merged"; list.forEach(o=>o.parent.remove(o)); g.add(m); keepList.push(G2); }); }
+function avMerge(av){ if(window.NO_AVMERGE) return; const gs=[]; av.parts.traverse(o=>{ if(o.isGroup&&/^(hair|hat|outfit)-/.test(o.name)) gs.push(o); }); gs.forEach(g=>{ let inner=false; for(let q=g.parent;q;q=q.parent) if(gs.includes(q)) inner=true; if(!inner) mergeGroup(g,av._mg); }); }
 class Avatar{
   constructor(look,o={}){ this.root=new T.Group(); this.root.userData.noMerge=1; this.root.userData.isAvatar=1; scene.add(this.root); this.isMe=!!o.isMe; this.npc=!!o.npc; this.sp=!!o.sp;
     this.pos=new T.Vector2(o.x||0,o.z||0); this.target=this.pos.clone(); this.root.position.set(this.pos.x,0,this.pos.y); this.rotY=o.r||Math.PI; this.root.rotation.y=this.rotY;
@@ -3459,7 +3474,9 @@ class Avatar{
     const sh=new T.Mesh(shadowGeo,shadowMat); sh.position.y=.015; this.root.add(sh); this.shadow=sh;
     this.parts=new T.Group(); this.root.add(this.parts); this.setLook(look); this.label=null; this.bubble=null; this.bubbleT=0; }
   setLook(l){ const lo=!this.isMe; if(!lo) return this._setLook(l); const keep=Object.assign({},G); LOWPOLY=true; Object.assign(G,G_LO); try{ return this._setLook(l); } finally{ Object.assign(G,keep); LOWPOLY=false; } }
-  _setLook(l){ l=sanitizeLook(l,!!this.sp); this.shoulderPet=null; this.look=l.slice(); const p=this.parts; while(p.children.length) p.remove(p.children[0]);
+  _setLook(l){ l=sanitizeLook(l,!!this.sp); this.shoulderPet=null; this.look=l.slice(); const p=this.parts; while(p.children.length) p.remove(p.children[0]); if(this._mg){ this._mg.forEach(g=>g.dispose()); } this._mg=[];
+    try{ return this._setLook0(l); } finally{ try{ avMerge(this); }catch(e){ console.warn("avMerge",e); } } }
+  _setLook0(l){ const p=this.parts;
     const sp=!!this.sp; // Role controls the name badge and privileges, never wardrobe.
     const out=OUTFIT[l[4]], acc=ACCENT[l[5]], skinM=mat(SKIN[l[0]],{roughness:.6}), outM=mat(out,{roughness:.75});
     const pants=mat(l[3]===8?out:new T.Color(out).multiplyScalar(.6).getStyle(),{roughness:.82});
