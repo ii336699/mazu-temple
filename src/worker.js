@@ -8,7 +8,7 @@ function snapInfo(str) { try { const raw = atob(String(str).slice(3).replace(/-/
   if (get(4) !== 1) return {}; get(65); const coins = get(16); get(30); get(1); const pn = get(3); get(pn * 6); get(24); const nl = get(4); let name = ""; for (let i = 0; i < nl; i++) name += String.fromCharCode(get(16)); return { name, coins }; } catch { return {}; } }
 const HALLS = 10, CAP = 100, MAX_MSG = 4000;
 const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000, "/puppet": 5000, "/crowd": 5000, "/market": 5000, "/layout": 5000 };
-const LOBBY_PATHS = ["/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather", "/stat", "/nev", "/paper", "/sponsor", "/hatfit", "/honor", "/lookup", "/crash", "/meteor"];
+const LOBBY_PATHS = ["/rank", "/rankclaim", "/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather", "/stat", "/nev", "/paper", "/sponsor", "/hatfit", "/honor", "/lookup", "/crash", "/meteor"];
 const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage", "/puppet": "/puppet", "/crowd": "/crowd", "/market": "/market", "/layout": "/layout" }; // a POST here makes that cached list stale
 
 export default {
@@ -673,6 +673,18 @@ export class Lobby extends DurableObject {
       return json({ ok: false });
     }
     // 流星 (天后小鎮): the first player to reach a fallen meteor gets the special prize; later finders are told who it was. Meteor ids are game days (24-minute days).
+    /* 小鎮遊戲每日排名 (11/14): each game keeps one table per Taiwan day, best score per player; GET reads it, POST puts a score in,
+       /rankclaim tells a player once where they finished yesterday (for prizes) */
+    if (url.pathname === "/rank" || url.pathname === "/rankclaim") {
+      const GAMES = ["burger", "ice", "drink", "congee", "herb", "book", "flower"], TW = () => Math.floor((Date.now() + 8 * 3600e3) / 864e5);
+      const top = t => Object.entries(t || {}).map(([u, v]) => [u, v[0], v[1]]).sort((a, b) => b[1] - a[1]);
+      if (req.method === "GET") { const g = url.searchParams.get("g"); if (!GAMES.includes(g)) return json({ ok: false }); const d = TW() - (url.searchParams.get("y") ? 1 : 0); const t = await this.ctx.storage.get("rk:" + g + ":" + d); const L = top(t); return json({ ok: true, d, n: L.length, top: L.slice(0, 20).map(r => [r[2], r[1]]) }); }
+      let b = {}; try { b = await req.json(); } catch {} const g = String(b.g || ""), uid = clean(b.uid, 40) || "", name = clean(b.name, 10) || "香客"; if (!GAMES.includes(g) || !uid) return json({ ok: false });
+      if (url.pathname === "/rankclaim") { const d = TW() - 1, ck = "rkc:" + g + ":" + d, got = (await this.ctx.storage.get(ck)) || {}; if (got[uid]) return json({ ok: true, done: true }); const L = top(await this.ctx.storage.get("rk:" + g + ":" + d)); const i = L.findIndex(r => r[0] === uid); if (i < 0) return json({ ok: true, none: true }); got[uid] = 1; await this.ctx.storage.put(ck, got); return json({ ok: true, rank: i + 1, n: L.length }); }
+      const sc = Math.floor(Number(b.s)); if (!(sc >= 0 && sc < 1e7)) return json({ ok: false }); const d = TW(), k = "rk:" + g + ":" + d; const t = (await this.ctx.storage.get(k)) || {};
+      if (!t[uid] || sc > t[uid][0]) { t[uid] = [sc, name]; const L = top(t); if (L.length > 400) { for (const r of L.slice(400)) delete t[r[0]]; } await this.ctx.storage.put(k, t); try { await this.ctx.storage.delete("rk:" + g + ":" + (d - 3)); await this.ctx.storage.delete("rkc:" + g + ":" + (d - 3)); } catch {} }
+      const L = top(t), i = L.findIndex(r => r[0] === uid); return json({ ok: true, rank: i + 1, n: L.length, best: t[uid][0], top: L.slice(0, 10).map(r => [r[2], r[1]]) });
+    }
     if (url.pathname === "/meteor" && req.method === "POST") {
       let b = {}; try { b = await req.json(); } catch {} const id = Math.floor(Number(b.id)), uid = clean(b.uid, 40) || "", name = clean(b.name, 10) || "香客", D = Math.floor(Date.now() / 1000 / 1440);
       if (!uid || !(id >= D - 1 && id <= D)) return json({ ok: false });

@@ -9,7 +9,7 @@
   var real=window.fetch.bind(window);
   window.fetch=async function(input,init){
     init=init||{}; var u; try{ u=new URL(typeof input==="string"?input:input.url,location.href); }catch(e){ return real(input,init); }
-    var p=u.pathname, isApi=/^\/(lb|me|me\/claim|gift|gifts|halls|board|msg|msgs|reply|letters|stage|puppet|crowd|market|nmrec|announce|fireworks|lanterns|zhan|lamps|lamp|wishes|wish|meteor)$/.test(p);
+    var p=u.pathname, isApi=/^\/(lb|me|me\/claim|gift|gifts|halls|board|msg|msgs|reply|letters|stage|puppet|crowd|market|nmrec|announce|fireworks|lanterns|zhan|lamps|lamp|wishes|wish|meteor|rank|rankclaim)$/.test(p);
     if(!isApi) return real(input,init);
     var method=(init.method||"GET").toUpperCase(), h=init.headers||{}, key=String(h["x-key"]||h["X-Key"]||"").trim();
     var body={}; try{ body=JSON.parse(init.body||"{}"); }catch(e){}
@@ -24,6 +24,8 @@
         if(method==="POST"){ var tt=Math.round(+body.t||0); if(tt>=1500){ var cu=null; L.forEach(function(e){ if(e.id===body.id) cu=e; }); if(!cu) L.push({id:body.id,name:body.name||"香客",t:tt,at:now}); else if(tt<cu.t){ cu.t=tt; cu.at=now; cu.name=body.name||cu.name; }
           L.sort(function(a,c){ return a.t-c.t||a.at-c.at; }); L=L.slice(0,20); put("lb:"+gg,L); } }
         return J({ok:true,top:L.slice(0,10)}); }
+      case "/rank": { var RK=get("rk",{}), g=String((body&&body.g)||u.searchParams.get("g")||""); var T0=RK[g]||(RK[g]={}); if(method==="POST"&&body&&body.s!=null){ if(!T0[uid]||body.s>T0[uid][0]) T0[uid]=[body.s|0,body.name||"香客"]; put("rk",RK); } var L=Object.keys(T0).map(function(u){ return [u,T0[u][0],T0[u][1]]; }).sort(function(a,b){ return b[1]-a[1]; }); var i=L.findIndex(function(r){ return r[0]===uid; }); return J({ok:true,rank:i+1,n:L.length,best:T0[uid]?T0[uid][0]:0,top:L.slice(0,10).map(function(r){ return [r[2],r[1]]; })}); }
+      case "/rankclaim": return J({ok:true,none:true});
       case "/meteor": { var MT=get("met",{}), mid=String(body.id); if(!MT[mid]){ MT[mid]={uid:uid,name:body.name||"香客"}; put("met",MT); return J({ok:true,first:true}); } return J({ok:true,first:MT[mid].uid===uid,by:MT[mid].name}); }
       case "/me": { var P=get("P:"+uid,null);
         if(method!=="POST") return J({ok:true,p:P?{code:P.code,snap:P.snap}:null});
