@@ -319,25 +319,25 @@ L.more=k=>{ if(k==="tw:goddess"){ goddess(); return true; } if(k==="tw:camp"){ c
    day +1, a gift once a day +3 (+5 if it is what they like). The closer you are, the more they tell you (tips about rare fish,
    the meteor, the goddess), and at 10 / 30 / 60 they give you something back. ---------- */
 const NPCS=[
- {id:"tu",n:"阿土伯",look:[1,18,5,0,1,3,0,1,1,0,0,2,0],sc:[1.02,.84,1.02],home:[61,-66.8],rad:2.6,sp:.55,hunch:.32,cane:1,likes:["koi","springkoi"],kind:"old",
+ {id:"tu",n:"阿土伯",look:[1,18,5,0,1,3,0,1,1,0,0,2,0],sh:{leg:.86,tor:.92,w:1.12,d:1.08,head:1,arm:.94},home:[61,-66.8],rad:2.6,sp:.55,hunch:.32,cane:1,likes:["koi","springkoi"],kind:"old",
   L:[["年輕人，小鎮住得慣嗎？","這座噴水池啊，比我年紀還大喔。"],["你常來找我聊天，阿伯很開心。","早上的溪谷空氣最好，去走走吧。"],["我年輕的時候，也在大河釣過一條錦鯉。","你是個好孩子。"],["有你這個朋友，阿伯每天都很期待。"]],tip:"fish"},
- {id:"lin",n:"林阿姨",look:[0,22,1,11,3,0,0,1,1,1,1,0,0],sc:[1.32,.98,1.28],home:[49.5,-74.6],rad:2,sp:.9,apron:1,likes:["tilapia","carp","mackerel"],kind:"aunt",
+ {id:"lin",n:"林阿姨",look:[0,22,1,11,3,0,0,1,1,1,1,0,0],sh:{leg:.92,tor:1,w:1.34,d:1.3,head:1,arm:.96},home:[49.5,-74.6],rad:2,sp:.9,apron:1,likes:["tilapia","carp","mackerel"],kind:"aunt",
   L:[["要買什麼？雜貨店什麼都有喔！","今天的菜很新鮮呢。"],["你釣的魚阿姨都收，價錢公道啦。","吃飽了沒？"],["來，這個給你帶著路上吃。","有空多來店裡坐坐。"],["你就像我自己的孩子一樣。"]],tip:"garden"},
- {id:"pang",n:"小胖",look:[2,13,0,15,8,4,4,0,0,1,1,6,0],sc:[1.28,.7,1.22],home:[41,-94],rad:3.5,sp:1.3,likes:["puffer","guppy"],kind:"kid",
+ {id:"pang",n:"小胖",look:[2,13,0,15,8,4,4,0,0,1,1,6,0],sh:{leg:.72,tor:.82,w:1.3,d:1.28,head:1.12,arm:.82},home:[41,-94],rad:3.5,sp:1.3,likes:["puffer","guppy"],kind:"kid",
   L:[["冰淇淋！我最愛冰淇淋了！","你會擠冰淇淋嗎？我都擠歪掉。"],["你擠的冰淇淋好高喔！","我長大要開冰淇淋店！"],["我跟你說一個秘密……中藥行阿嬤其實很愛吃甜的。","我們是好朋友對不對？"],["你是我最好的朋友！"]],tip:"games"},
- {id:"xiang",n:"阿翔",look:[1,13,1,5,5,1,4,0,1,0,0,1,5],sc:[.86,1.22,.86],home:[63.2,-208.6],rad:2.2,sp:1.0,likes:["masu","ayu"],kind:"hiker",
+ {id:"xiang",n:"阿翔",look:[1,13,1,5,5,1,4,0,1,0,0,1,5],sh:{leg:1.28,tor:1.08,w:.9,d:.9,head:.95,arm:1.14},home:[63.2,-208.6],rad:2.2,sp:1.0,likes:["masu","ayu"],kind:"hiker",
   L:[["爬上來不容易吧？這裡看得到整個小鎮。","山頂的晚上，星星多到數不完。"],["你也喜歡露營嗎？","營火烤棉花糖，要等它金黃色再拿起來。"],["我在山上看過流星掉進森林裡。","下次一起看日出吧。"],["我的帳篷隨時歡迎你。"]],tip:"meteor"},
- {id:"ling",n:"美玲",look:[0,7,6,7,7,4,0,2,1,1,1,3,1],sc:[.9,1.14,.9],home:[143.6,-109.6],rad:2,sp:.8,likes:["seahorse","angel","flowers"],kind:"lady",
+ {id:"ling",n:"美玲",look:[0,7,6,7,7,4,0,2,1,1,1,3,1],sh:{leg:1.2,tor:1.05,w:.86,d:.86,head:.96,arm:1.08},home:[143.6,-109.6],rad:2,sp:.8,likes:["seahorse","angel","flowers"],kind:"lady",
   L:[["歡迎光臨海邊咖啡～","海風好舒服對吧？"],["你的髮型很好看呢。理髮廳最近出了新款喔。","美容院可以換眼睛、鼻子跟嘴巴。"],["我其實是為了看海才開這家店的。","下次請你喝咖啡。"],["跟你聊天是我一天最開心的時候。"]],tip:"salon"},
- {id:"wang",n:"老王",look:[2,0,0,8,4,2,1,9,2,3,0,2,0],sc:[1.24,1.02,1.2],home:[28,-135.8],rad:.8,sp:.6,likes:["sturgeon","catfish","bighead","eel"],kind:"fisher",
+ {id:"wang",n:"老王",look:[2,0,0,8,4,2,1,9,2,3,0,2,0],sh:{leg:.98,tor:1.04,w:1.28,d:1.24,head:1,arm:1.02},home:[28,-135.8],rad:.8,sp:.6,likes:["sturgeon","catfish","bighead","eel"],kind:"fisher",
   L:[["噓——魚會被你嚇跑。","釣魚啊，要有耐心。"],["浮標沉下去的那一下，馬上拉！","拉力太大線會斷，放鬆一點。"],["我釣了四十年，還沒釣過皇帶魚。","你的手感越來越好了。"],["我的釣魚秘訣，只告訴你一個人。"]],tip:"fish"},
- {id:"po",n:"阿嬤",look:[0,22,2,0,7,1,0,1,1,0,1,0,9],sc:[.94,.76,.94],home:[6,-107.8],rad:4,sp:.5,hunch:.2,likes:["crucian","loach"],kind:"granny",
+ {id:"po",n:"阿嬤",look:[0,22,2,0,7,1,0,1,1,0,1,0,9],sh:{leg:.78,tor:.86,w:1,d:1,head:.98,arm:.9},home:[6,-107.8],rad:4,sp:.5,hunch:.2,likes:["crucian","loach"],kind:"granny",
   L:[["乖孫，吃飽沒？","天氣涼了，要多穿一點。"],["阿嬤種的菜很好吃喔。","花圃的菜要記得澆水。"],["來，阿嬤給你的。","你小時候阿嬤就認識你了……咦，是嗎？"],["阿嬤最疼你了。"]],tip:"garden"},
- {id:"kai",n:"阿凱",look:[2,20,0,2,0,3,4,9,2,2,0,4,0],sc:[1.38,1.12,1.25],home:[76,-77.2],rad:4,sp:1.1,likes:["shark","mahi","grouper"],kind:"buff",
+ {id:"kai",n:"阿凱",look:[2,20,0,2,0,3,4,9,2,2,0,4,0],sh:{leg:1.14,tor:1.14,w:1.42,d:1.22,head:.94,arm:1.12,thick:1.35},home:[76,-77.2],rad:4,sp:1.1,likes:["shark","mahi","grouper"],kind:"buff",
   L:[["喔！你好！","今天也要元氣滿滿！"],["你應該多爬爬山，練腿力！","我每天都爬天后山兩趟。"],["你知道嗎，女神泉要說實話才有好東西。","兄弟！"],["有事儘管找我！"]],tip:"goddess"},
- {id:"yu",n:"小雨",look:[0,1,6,14,7,4,13,2,0,1,1,11,8],sc:[.84,.66,.84],home:[9,-121.5],rad:4,sp:1.2,likes:["medaka","seahorse","flowers"],kind:"girl",
+ {id:"yu",n:"小雨",look:[0,1,6,14,7,4,13,2,0,1,1,11,8],sh:{leg:.66,tor:.76,w:.88,d:.88,head:1.16,arm:.8},home:[9,-121.5],rad:4,sp:1.2,likes:["medaka","seahorse","flowers"],kind:"girl",
   L:[["你看你看，蝴蝶！","我在等我的氣球飛回來。"],["我們來玩捉迷藏好不好？","晚上公園有螢火蟲喔。"],["這是我最寶貝的東西，借你看一下下。","你是我的好朋友！"],["我長大要跟你一樣厲害！"]],tip:"games"},
- {id:"doc",n:"博士",look:[0,18,5,13,2,4,0,0,3,0,0,1,0],sc:[.86,1.16,.86],home:[45,-157],rad:3,sp:.7,coat:1,likes:["goldscale","dragonbream","oarfish","sunfish"],kind:"prof",
+ {id:"doc",n:"博士",look:[0,18,5,13,2,4,0,0,3,0,0,1,0],sh:{leg:1.2,tor:1.08,w:.86,d:.86,head:1.02,arm:1.08},home:[45,-157],rad:3,sp:.7,coat:1,likes:["goldscale","dragonbream","oarfish","sunfish"],kind:"prof",
   L:[["嗯？你對自然有興趣嗎？","這片森林的泉水，是從天后山流下來的。"],["圖鑑做得怎麼樣了？","淡水魚跟海水魚，可是完全不一樣的喔。"],["流星掉下來的石頭，叫做隕石，很珍貴的。","你的觀察力很好。"],["你是我最得意的研究夥伴。"]],tip:"meteor"},
 ];
 const NB={}; NPCS.forEach(n=>NB[n.id]=n);
@@ -369,12 +369,25 @@ HANDLERS.lfNpcGive=v=>{ const [nid,k,id]=v.split(":"), n=NB[nid], R=NR(nid), d=L
   npcSheet(n,liked?"哇！這是我最喜歡的！太謝謝你了！":"謝謝你，我收下了！"); };
 /* bodies */
 const NL={}; let talkChip=null, talkN=null;
-function npcMake(n){ const look=sanitizeLook(n.look.slice()); const av=new Avatar(look,{npc:true,x:n.home[0],z:n.home[1]}); av.isMe=true; try{ av.setLook(look); }finally{ av.isMe=false; } av.setName(n.n); av.moveSpeed=n.sp; av.root.scale.set(...n.sc);
+/* 鎮民的身材 (11/14, the chair: "don't stretch the whole person — make people with different proportions"): no scaling of the whole
+   body any more. Legs get longer or shorter (the body is lifted to match), the torso wider, deeper or taller, arms longer, the head a
+   size of its own — and small things (shoes, hands, buttons) keep their shape and just move with the part they sit on. */
+function bodyShape(av,P){ if(!P) return; const L=P.leg||1, Tt=P.tor||1, W=P.w||1, D=P.d||W, Hd=P.head||1, A=P.arm||1, TH=P.thick||(1+(W-1)*.6), bb=new T.Box3(), sz=new T.Vector3();
+  const big=o=>{ bb.setFromObject(o); bb.getSize(sz); return sz.y>.14; };
+  if(!av.lift){ av.lift=new T.Group(); av.root.add(av.lift); av.root.remove(av.parts); av.lift.add(av.parts); } av.lift.position.y=.3*(L-1);
+  av.legs.forEach(lg=>{ lg.position.x*=W>1?1+(W-1)*.7:W; lg.children.slice().forEach(c=>{ if(big(c)){ c.scale.y*=L; c.scale.x*=TH; c.scale.z*=TH; c.position.y*=L; } else c.position.y*=L; }); });
+  const skip=new Set([av.head,...av.arms,av.amulet].filter(Boolean));
+  av.torso.children.slice().forEach(c=>{ if(skip.has(c)) return; c.scale.x*=W; c.scale.z*=D; c.scale.y*=Tt; c.position.x*=W; c.position.z*=D; c.position.y*=Tt; });
+  av.arms.forEach((a,i)=>{ a.position.x*=W; a.position.y*=Tt; a.children.slice().forEach(c=>{ if(av.hands.includes(c)||!big(c)){ c.position.y*=A; c.position.x*=TH; } else { c.scale.y*=A; c.scale.x*=TH; c.scale.z*=TH; c.position.y*=A; } }); });
+  if(av.amulet){ av.amulet.position.y*=Tt; av.amulet.position.z*=D; }
+  av.head.position.y*=Tt; av.head.scale.setScalar(Hd); }
+function npcMake(n){ const look=sanitizeLook(n.look.slice()); const av=new Avatar(look,{npc:true,x:n.home[0],z:n.home[1]}); av.isMe=true; try{ av.setLook(look); }finally{ av.isMe=false; } av.setName(n.n); av.moveSpeed=n.sp;
   const M=c=>new T.MeshStandardMaterial({color:c,roughness:.7});
   if(n.cane){ const c=new T.Mesh(new T.CylinderGeometry(.018,.018,.75,6),M("#6b4a2e")); c.position.set(0,-.55,.06); av.arms[1].add(c); }
-  if(n.apron){ const a=new T.Mesh(new T.BoxGeometry(.36,.42,.02),M("#f2e6c8")); a.position.set(0,.18,.2); av.torso.add(a); }
+  if(n.apron){ const a=new T.Mesh(new T.CylinderGeometry(.215,.25,.46,20,1,true,-1.05,2.1),new T.MeshStandardMaterial({color:"#f2e6c8",roughness:.8,side:T.DoubleSide})); a.position.set(0,.16,0); av.torso.add(a); } /* (an apron that wraps round the front, not a board) */
   if(n.pack){ const b=new T.Mesh(new T.BoxGeometry(.32,.4,.18),M("#d9624a")); b.position.set(0,.3,-.22); av.torso.add(b); const r=new T.Mesh(new T.CylinderGeometry(.07,.07,.34,10),M("#3f6a52")); r.rotation.z=Math.PI/2; r.position.set(0,.55,-.24); av.torso.add(r); }
   if(n.coat){ const c=new T.Mesh(new T.CylinderGeometry(.24,.3,.62,12,1,true),new T.MeshStandardMaterial({color:"#fbfaf6",roughness:.7,side:T.DoubleSide})); c.position.y=.2; av.torso.add(c); }
+  bodyShape(av,n.sh); /* (after the apron, backpack and coat, so they fit the body) */
   return av; }
 function npcTick(dt){ const p=meAv.pos, inTown=TOWNX&&TOWNX.on; let best=null, bd=2.4;
   for(const n of NPCS){ const d=Math.hypot(p.x-n.home[0],p.y-n.home[1]); let o=NL[n.id];
@@ -386,7 +399,7 @@ function npcTick(dt){ const p=meAv.pos, inTown=TOWNX&&TOWNX.on; let best=null, b
     av.update(dt); if(n.hunch) av.torso.rotation.x+=n.hunch; const dd=Math.hypot(p.x-av.pos.x,p.y-av.pos.y); if(dd<bd){ bd=dd; best=n; } }
   if(!talkChip){ talkChip=document.createElement("button"); talkChip.id="lfTalk"; talkChip.style.cssText="position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 178px);z-index:9;border:0;border-radius:999px;padding:10px 18px;font:900 15px "+UI_FONT+";color:#3a2a10;background:linear-gradient(#ffe7a8,#f2c25a);box-shadow:0 4px 14px rgba(0,0,0,.35)"; talkChip.hidden=true; talkChip.onclick=()=>{ if(talkN) talk(talkN); }; document.body.appendChild(talkChip); }
   const show=best&&!busy()&&!F; if(show&&talkN!==best){ talkChip.textContent=`💬 跟${best.n}說話`; } talkN=best||talkN; if(!best) talkN=sheetKind&&sheetKind.indexOf("lfNpc")===0?talkN:null; talkChip.hidden=!show; }
-L.npcs=()=>NL;
+L.npcs=()=>NL; L.npcLine=(x0,z,old)=>NPCS.map((n,i)=>{ const keep=n.sh; if(old) n.sh=null; const av=npcMake(n); n.sh=keep; if(old&&old[n.id]) av.root.scale.set(...old[n.id]); av.pos.set(x0+i*1.3,z); av.target.copy(av.pos); av.root.position.set(x0+i*1.3,0,z); av.rotY=0; av.root.rotation.y=0; return av; }); /* (test: the ten in a row) */
 
 /* ---------- 理髮廳 and 美容院: pay once for a style, then wear it whenever you like (it also shows in 換裝 once bought) ---------- */
 const HP=[1800,2000,1600,2200,1800,2400,2000,2600,2200,3000], EP=[900,800,1000,1200,900,1100,800,1000,900,800], MP=[800,900,700,800,1000,800,700,800,900,1200], NP=[600,700,700,800,900,1000,800,600,600,900];

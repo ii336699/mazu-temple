@@ -100,7 +100,7 @@ const KB=(g,sx,sy,sz,m,x,y,z,ry)=>kp(g,kbox(),m,x,y,z,sx,sy,sz,ry);
 function ksign(g,text,w,h,x,y,z,ry,bg,fg,vert){ const W=vert?96:256, Hh=Math.round(W*h/w); const t=cvs(W,Hh,(c,Wd,Ht)=>{ c.fillStyle=bg; c.fillRect(0,0,Wd,Ht); c.strokeStyle="rgba(255,255,255,.75)"; c.lineWidth=5; c.strokeRect(5,5,Wd-10,Ht-10); c.fillStyle=fg; c.textAlign="center"; c.textBaseline="middle";
     if(vert){ const ch=[...text], fs=Math.min(Wd*.66,(Ht-16)/ch.length*.9); c.font=`900 ${fs}px ${DISPLAY_FONT}`; ch.forEach((k,i)=>c.fillText(k,Wd/2,8+(i+.5)*(Ht-16)/ch.length)); }
     else { let fs=Ht*.6; c.font=`900 ${fs}px ${DISPLAY_FONT}`; const tw=c.measureText(text).width; if(tw>Wd*.86){ fs*=Wd*.86/tw; c.font=`900 ${fs}px ${DISPLAY_FONT}`; } c.fillText(text,Wd/2,Ht/2+2); } });
-  const m=new T.Mesh(new T.PlaneGeometry(w,h),new T.MeshStandardMaterial({map:t,roughness:.6,emissive:"#ffffff",emissiveMap:t,emissiveIntensity:.22})); m.position.set(x,y,z); m.rotation.y=ry||0; m.userData.keep=1; m.userData.own=1; g.add(m);
+  const m=new T.Mesh(new T.PlaneGeometry(w,h),new T.MeshStandardMaterial({map:t,roughness:.6,emissive:"#ffffff",emissiveMap:t,emissiveIntensity:.22,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-4})); m.position.set(x,y,z); if(!vert) m.translateZ(.025); /* (11/14: a little off the wall and the door, and it wins any tie — signs were flickering) */ m.rotation.y=ry||0; m.userData.keep=1; m.userData.own=1; g.add(m);
   if(vert){ const b=new T.Mesh(new T.PlaneGeometry(w,h),m.material); b.position.set(x,y,z); b.rotation.y=(ry||0)+Math.PI; b.userData.keep=1; g.add(b); } return m; }
 function pot(g,x,z,s,r,y=0){ const m=km(["#c9744a","#e8dccb","#6a8aa0","#b85a4a"][r()*4|0]); kp(g,kcyl(),m,x,y+.18*s,z,.2*s,.36*s,.2*s); const f=km(["#5f9a6a","#4f8a5a","#7cb06a"][r()*3|0]); kp(g,ksph(),f,x,y+.5*s,z,.28*s,.26*s,.28*s); if(r()<.6) kp(g,ksph(),km(["#ff8fb0","#fff1a0","#ffffff","#c5a8f5","#ff9f6a"][r()*5|0]),x+.08*s,y+.68*s,z+.05*s,.09*s,.09*s,.09*s); }
 /* the building */
@@ -165,9 +165,9 @@ const TOWNB=(()=>{ const out=[]; let sd=101;
     fx.forEach(nx=>out.push(Object.assign({row:id,axis,f,ry,c:nx.a+nx.w/2,seed:sd+(nx.a|0)},nx))); };
   const S=(a,w,name,key,o)=>Object.assign({a,w,kind:"shop",name,key,fl:2},o||{});
   /* 老街, north side (fronts face −z) and south side (+z); the gap at x 57–67 opens onto the fountain square */
-  row("oN","x",-73,Math.PI,33.6,57,"mix",[S(34,8,"家具行","tw:furn",{fl:3,arcade:true,sbg:"#c96a3a"}),S(46,7,"雜貨店","tw:grocer",{fl:2,sbg:"#b0863a"})]);
+  row("oN","x",-73,Math.PI,33.6,57,"mix",[S(34,8,"家具行","tw:furn",{fl:3,arcade:true,sbg:"#c96a3a"}),S(46,7,"元氣早餐店","tw:bfast",{fl:2,sbg:"#e2a23a"})]);
   row("oN2","x",-73,Math.PI,67,88,"mix",[S(70,6.5,"書店","tw:soon:書店",{fl:3,sbg:"#7a6aa8"}),S(80,6,"飲料店","tw:soon:飲料店",{fl:1,sbg:"#d9628a"})]);
-  row("oS","x",-81,0,33.6,88,"mix",[S(34.2,7.4,"釣具行","tw:tackle",{fl:2,sbg:"#3f7fa8"}),S(51,6,"中藥行","tw:soon:中藥行",{fl:3,brick:true,roof:"tile",sbg:"#7a4a3a"}),S(64,7,"早餐店","tw:bfast",{fl:2,sbg:"#e2a23a"}),S(76,6,"照相館","tw:soon:照相館",{fl:4,sbg:"#6a7a8a"})]);
+  row("oS","x",-81,0,33.6,88,"mix",[S(34.2,7.4,"釣具行","tw:tackle",{fl:2,sbg:"#3f7fa8"}),S(51,6,"中藥行","tw:soon:中藥行",{fl:3,brick:true,roof:"tile",sbg:"#7a4a3a"}),S(64,7,"雜貨店","tw:grocer",{fl:2,sbg:"#b0863a"}),S(76,6,"照相館","tw:soon:照相館",{fl:4,sbg:"#6a7a8a"})]);
   /* the main street's west side: two short runs either side of the west alley; 花店 just above the houses */
   row("mW","z",22.8,Math.PI/2,-83.6,-73.6,"mix",[],{fl:r=>1+(r()*3|0)});
   row("mW2","z",22.8,Math.PI/2,-98.8,-90.4,"mix",[S(-98.6,8,"花店","tw:flower",{fl:2,sbg:"#5f9a6a",arcade:false})]);
@@ -485,7 +485,7 @@ function unload(id){ const C=LIVE[id]; if(!C) return; scene.remove(C.g); C.picks
 let hid=[]; function fogCull(px,pz){ try{ if(typeof MERGED==="undefined") return; if(pz>-58){ if(hid.length){ hid.forEach(M=>{ M.visible=true; }); hid=[]; } return; } const far=(scene.fog&&scene.fog.far||90)+8, cx=camera.position.x, cz=camera.position.z;
     for(const M of MERGED){ const bs=M.geometry.boundingSphere; if(!bs) continue; const out=Math.hypot(bs.center.x-cx,bs.center.z-cz)-bs.radius>far; if(out&&M.visible){ M.visible=false; hid.push(M); } else if(!out&&!M.visible&&hid.includes(M)){ M.visible=true; hid.splice(hid.indexOf(M),1); } } }catch(e){} }
 let acc=0, greeted=false, wt=0;
-TW.tick=dt=>{ try{ NT.tick(dt,LIVE); }catch(e){} wt+=dt; for(const id in LIVE){ const w=LIVE[id].water; if(w){ w.material.map.offset.x=wt*.02; } } acc+=dt; if(acc<.4) return; acc=0; if(typeof meAv==="undefined"||!meAv) return; const px=meAv.pos.x, pz=meAv.pos.y; TW.on=TW.in(px,pz); fogCull(px,pz);
+TW.tick=dt=>{ try{ NT.tick(dt,LIVE); }catch(e){} /* in the town the camera never comes closer than ~1 m to anything, so the near plane can move out: the depth test gets ~2.7× finer and close-together surfaces (signs, windows, doors on walls) stop flickering on phones */ { const nn=camera.position.z<-50.5?.4:.15; if(camera.near!==nn){ camera.near=nn; camera.updateProjectionMatrix(); } } wt+=dt; for(const id in LIVE){ const w=LIVE[id].water; if(w){ w.material.map.offset.x=wt*.02; } } acc+=dt; if(acc<.4) return; acc=0; if(typeof meAv==="undefined"||!meAv) return; const px=meAv.pos.x, pz=meAv.pos.y; TW.on=TW.in(px,pz); fogCull(px,pz);
   let built=false; for(const d of CH){ const dist=Math.hypot(px-d.c[0],pz-d.c[1])-d.r; if(!LIVE[d.id]){ if(dist<75&&!built){ load(d); built=true; } } else if(dist>105) unload(d.id); }
   if(TW.on&&!greeted&&pz<-56){ greeted=true; try{ toast("🏮 歡迎來到天后小鎮",2600); statInc("townIn"); }catch(e){} } if(!TW.on&&pz>-40) greeted=false; };
 /* ---- things you can walk up to ---- */
