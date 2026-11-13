@@ -3456,17 +3456,21 @@ function actPose(av,dt){ const a=ACTS[av.act]; av.actT+=dt; const t=av.actT; if(
    button), and each piece is one job for the phone, every frame, for every person in view. The hair, the hat and the clothes never
    move within themselves, so the pieces of each that share a material are joined into one piece, where they already stand. */
 const _mm=new T.Matrix4(), _mi=new T.Matrix4(), _mn=new T.Matrix3(), _mv=new T.Vector3();
-function mergeGroup(g,keepList){ g.updateWorldMatrix(true,true); _mi.copy(g.matrixWorld).invert(); const by=new Map();
+/* (hair: when a modelled hat goes on, setAcc hides just the pieces of hair that stick up through it — so those pieces are joined
+   among themselves and the rest among themselves, by the very same test, and a hat still takes off only what it should) */
+const _mb=new T.Box3(), _mh=new T.Matrix4();
+function mergeGroup(g,keepList,head){ g.updateWorldMatrix(true,true); _mi.copy(g.matrixWorld).invert(); const by=new Map(); if(head){ head.updateWorldMatrix(true,false); _mh.copy(head.matrixWorld).invert(); }
   g.traverse(o=>{ if(!o.isMesh||o.isInstancedMesh||o.isSkinnedMesh||Array.isArray(o.material)||!o.geometry||!o.geometry.attributes.position||o.geometry.morphAttributes.position||o.geometry.attributes.color||o.material.vertexColors||o.geometry.groups.length>1||o.userData.noMerge) return; /* (pieces painted per point, e.g. two-tone hair, stay as they are) */ for(let q=o;q&&q!==g;q=q.parent) if(!q.visible||q.userData.noMerge) return;
-    const ge=o.geometry, uv=!!ge.attributes.uv; if(o.material.map&&!uv) return; const k=o.material.uuid+(o.material.map?"u":"")+(o.renderOrder||0); (by.get(k)||by.set(k,[]).get(k)).push(o); });
+    const ge=o.geometry, uv=!!ge.attributes.uv; if(o.material.map&&!uv) return; let top=""; if(head){ if(!ge.boundingBox) ge.computeBoundingBox(); _mm.multiplyMatrices(_mh,o.matrixWorld); _mb.copy(ge.boundingBox).applyMatrix4(_mm); if(_mb.min.y>.12||_mb.max.y>.4) top="T"; }
+    const k=o.material.uuid+(o.material.map?"u":"")+(o.renderOrder||0)+top; const L=by.get(k)||by.set(k,[]).get(k); L.top=!!top; L.push(o); });
   by.forEach(list=>{ if(list.length<2) return; const mat=list[0].material, useUV=!!mat.map; let nv=0, ni=0; list.forEach(o=>{ const ge=o.geometry; nv+=ge.attributes.position.count; ni+=ge.index?ge.index.count:ge.attributes.position.count; });
     const P=new Float32Array(nv*3), N=new Float32Array(nv*3), U=useUV?new Float32Array(nv*2):null, I=nv>65535?new Uint32Array(ni):new Uint16Array(ni); let vo=0, io=0;
     list.forEach(o=>{ const ge=o.geometry, pa=ge.attributes.position, na=ge.attributes.normal, ua=ge.attributes.uv, n=pa.count; _mm.multiplyMatrices(_mi,o.matrixWorld); _mn.getNormalMatrix(_mm); const flip=_mm.determinant()<0;
       for(let i=0;i<n;i++){ _mv.fromBufferAttribute(pa,i).applyMatrix4(_mm); P[(vo+i)*3]=_mv.x; P[(vo+i)*3+1]=_mv.y; P[(vo+i)*3+2]=_mv.z; if(na){ _mv.fromBufferAttribute(na,i).applyMatrix3(_mn).normalize(); N[(vo+i)*3]=_mv.x; N[(vo+i)*3+1]=_mv.y; N[(vo+i)*3+2]=_mv.z; } if(U&&ua){ U[(vo+i)*2]=ua.getX(i); U[(vo+i)*2+1]=ua.getY(i); } }
       const ix=ge.index, cnt=ix?ix.count:n; for(let t=0;t<cnt;t+=3){ const a=ix?ix.getX(t):t, b=ix?ix.getX(t+1):t+1, c=ix?ix.getX(t+2):t+2; I[io+t]=vo+a; I[io+t+1]=vo+(flip?c:b); I[io+t+2]=vo+(flip?b:c); } vo+=n; io+=cnt; });
     const G2=new T.BufferGeometry(); G2.setAttribute("position",new T.BufferAttribute(P,3)); G2.setAttribute("normal",new T.BufferAttribute(N,3)); if(U) G2.setAttribute("uv",new T.BufferAttribute(U,2)); G2.setIndex(new T.BufferAttribute(I,1)); if(list.some(o=>!o.geometry.attributes.normal)) G2.computeVertexNormals();
-    const m=new T.Mesh(G2,mat); m.renderOrder=list[0].renderOrder; m.castShadow=list[0].castShadow; m.receiveShadow=list[0].receiveShadow; m.name="merged"; list.forEach(o=>o.parent.remove(o)); g.add(m); keepList.push(G2); }); }
-function avMerge(av){ if(window.NO_AVMERGE) return; const gs=[]; av.parts.traverse(o=>{ if(o.isGroup&&/^(hair|hat|outfit)-/.test(o.name)) gs.push(o); }); gs.forEach(g=>{ let inner=false; for(let q=g.parent;q;q=q.parent) if(gs.includes(q)) inner=true; if(!inner) mergeGroup(g,av._mg); }); }
+    const m=new T.Mesh(G2,mat); m.renderOrder=list[0].renderOrder; m.castShadow=list[0].castShadow; m.receiveShadow=list[0].receiveShadow; m.name="merged"; if(head) m.userData.hatHide=list.top?1:0; /* (the answer to "does a hat hide this?", decided piece by piece before joining) */ list.forEach(o=>o.parent.remove(o)); g.add(m); keepList.push(G2); }); }
+function avMerge(av){ if(window.NO_AVMERGE) return; const gs=[]; av.parts.traverse(o=>{ if(o.isGroup&&/^(hair|hat|outfit)-/.test(o.name)) gs.push(o); }); gs.forEach(g=>{ let inner=false; for(let q=g.parent;q;q=q.parent) if(gs.includes(q)) inner=true; if(!inner) mergeGroup(g,av._mg,/^hair-/.test(g.name)?av.head:null); }); }
 class Avatar{
   constructor(look,o={}){ this.root=new T.Group(); this.root.userData.noMerge=1; this.root.userData.isAvatar=1; scene.add(this.root); this.isMe=!!o.isMe; this.npc=!!o.npc; this.sp=!!o.sp;
     this.pos=new T.Vector2(o.x||0,o.z||0); this.target=this.pos.clone(); this.root.position.set(this.pos.x,0,this.pos.y); this.rotY=o.r||Math.PI; this.root.rotation.y=this.rotY;
@@ -7532,7 +7536,7 @@ Avatar.prototype.setAcc=function(eq){ eq=[...(eq||[]),0,0,0,0].slice(0,4).map(v=
       this.head.children.forEach(o=>{ if(o===this.accHead||!o.visible) return; const nm=o.name||"";
         if(nm.startsWith("hat-")){ o.visible=false; this.baldHid.push(o); return; }
         if(nm.startsWith("hair-")) o.traverse(q=>{ if(!q.isMesh||!q.visible) return; if(!q.geometry.boundingBox) q.geometry.computeBoundingBox(); mm.multiplyMatrices(hInv,q.matrixWorld); bb.copy(q.geometry.boundingBox).applyMatrix4(mm);
-          if(bb.min.y>.12||bb.max.y>.4){ q.visible=false; this.baldHid.push(q); } }); }); } }
+          if(q.userData.hatHide!=null?q.userData.hatHide:(bb.min.y>.12||bb.max.y>.4)){ q.visible=false; this.baldHid.push(q); } }); }); } }
   { const top=!!(eq[0]&&HAT_FIT[eq[0]]); if(this.autoBake&&!this._relook&&top!==!!this._bakeTop){ this._bakeTop=top; this._relook=1; try{ this.setLook(this.look); }finally{ this._relook=0; } return; } this._bakeTop=top; } /* a baked person: rebuild so the hidden hair stays hidden */
   if(eq[1]&&this.hands&&this.hands[0]){ this.accHand=buildAccHand(eq[1]); this.hands[0].add(this.accHand); }
   if(eq[2]&&this.head){ this.accMouth=buildAccMouth(eq[2]); this.accMouth.position.set(0,-.15,.215); /* at the mouth (it sat up by the nose before) */ this.head.add(this.accMouth); }
