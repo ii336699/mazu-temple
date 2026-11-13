@@ -17,7 +17,7 @@ const FISH=[
  ["tilapia","吳郭魚","rb",1,"","",[18,35],40,2,["#6a7a6a","#c9d2c0","#4a5a4a"],"bars","河邊最常見的魚，很好養也很好釣。"],
  ["carp","鯉魚","r",1,"","",[30,70],90,4,["#b08a4a","#f0d8a0","#8a6a3a"],"scale","河裡的老面孔，力氣不小。"],
  ["crucian","鯽魚","rb",1,"","",[10,25],35,2,["#8a8a6a","#d8d8b8","#6a6a4a"],"plain","小小一隻，煮湯很鮮。"],
- ["guppy","大肚魚","rbs",1,"","",[3,6],20,1,["#9aa8a0","#e8eee8","#ffb060"],"tailcol","小水溝裡也看得到的小魚。"],
+ ["guppy","孔雀魚","rbs",1,"","",[3,6],20,1,["#9aa8a0","#e8eee8","#ffb060"],"tailcol","尾巴像一把彩色的小扇子。"],
  ["zacco","溪哥","b",1,"01","",[8,16],60,1,["#7a9aa8","#e8f0f0","#e8604a"],"bars","公魚身上有漂亮的紅綠條紋。"],
  ["ayu","香魚","b",2,"1","",[15,28],180,2,["#8a9a7a","#f0f0e0","#f2c230"],"spot","帶著西瓜香的溪魚，白天在清澈的溪裡。"],
  ["kuhua","苦花","b",2,"01","",[15,30],220,2,["#5a6a5a","#d8dcd0","#3a4a3a"],"plain","愛在急流石頭邊刮青苔吃。"],
@@ -47,6 +47,11 @@ const FISH=[
  ["sunfish","翻車魚","o",3,"1","",[150,250],2500,6,["#8a98a8","#e0e4ea","#6a7888"],"plain","圓滾滾的，白天在海面上曬太陽。"],
  ["shark","鯊魚","o",3,"23","",[150,300],3000,6,["#6a7888","#e8ecf0","#4a5868"],"plain","海邊的大傢伙，背鰭露出水面。"],
  ["dragonbream","龍王鯛","o",4,"0","star",[50,90],7000,4,["#e84a3a","#ffd0b0","#f2c230"],"scale","流星劃過的清晨，海邊會出現紅金色的龍王鯛。"],
+ /* (11/13, with the chair's models: new kinds go at the end — the save code counts on the order) */
+ ["bass","鱸魚","r",2,"02","",[25,60],240,4,["#6a7a4a","#e8ecd8","#3a4a2a"],"line","嘴巴很大，清晨和黃昏最愛追小魚。"],
+ ["arowana","龍魚","r",3,"3","",[50,90],1600,5,["#c8c8b8","#f0f0e4","#a8a898"],"scale","大河深處的銀龍，夜裡才浮上來。"],
+ ["trout","虹鱒","b",2,"01","",[20,45],260,3,["#8a9a9a","#f0f0f0","#e88aa0"],"spot","身上一道粉紅色的彩虹，喜歡冰涼的溪水。"],
+ ["goldfish","金魚","s",2,"","",[6,15],300,1,["#f08a2a","#ffd8a0","#ffffff"],"plain","不知道是誰放進泉池的，尾巴像一朵花。"],
 ].map(a=>({id:a[0],n:a[1],w:a[2],r:a[3],t:a[4],need:a[5],sz:a[6],p:a[7],sh:a[8],c:a[9],mk:a[10],d:a[11]}));
 const FBY={}; FISH.forEach(f=>FBY[f.id]=f);
 const RW={1:10,2:3.2,3:.7,4:.25}, RN=["","常見","少見","稀有","傳說"];
@@ -57,7 +62,8 @@ function pool(kind){ const s=String(L.slot()), rain=L.rain(), star=!!L.starNight
 function roll(kind){ const P=pool(kind); let tot=0; P.forEach(f=>tot+=RW[f.r]*(LF().rod>=2&&f.r>=3?1.5:1)); let x=Math.random()*tot; for(const f of P){ x-=RW[f.r]*(LF().rod>=2&&f.r>=3?1.5:1); if(x<=0) return f; } return P[0]; }
 /* ---------- a fish drawn in code: for the book, the bag and the catch card ---------- */
 const ICON={};
-function fishIcon(id,dark){ const k=id+(dark?"_d":""); if(ICON[k]) return ICON[k]; const f=FBY[id]; const c=document.createElement("canvas"); c.width=128; c.height=80; const x=c.getContext("2d");
+const FMODEL={bass:1,carp:1,tilapia:1,catfish:1,arowana:1,trout:1,goldfish:1,guppy:1,zacco:1,koi:1}; /* the kinds that have the chair's model (public/fish.glb, icons in public/fish/) */
+function fishIcon(id,dark){ if(FMODEL[id]) return (window.FISH_PACK&&window.FISH_PACK[id+(dark?"-d":"")])||`fish/${id}${dark?"-d":""}.webp`; const k=id+(dark?"_d":""); if(ICON[k]) return ICON[k]; const f=FBY[id]; const c=document.createElement("canvas"); c.width=128; c.height=80; const x=c.getContext("2d");
   const [b,bl,mk]=f.c, eel=f.mk==="eel"||f.mk==="oar", sq=f.mk==="squid", L0=eel?108:84, H0=eel?18:f.id==="sunfish"?56:f.id==="flounder"?40:f.id==="puffer"?46:30, cx=58, cy=40;
   const fill=(col)=>dark?"#2a3038":col; x.save();
   if(sq){ x.fillStyle=fill(b); x.beginPath(); x.moveTo(20,cy); x.quadraticCurveTo(70,cy-22,104,cy); x.quadraticCurveTo(70,cy+22,20,cy); x.fill(); for(let i=0;i<6;i++){ x.strokeStyle=fill(mk); x.lineWidth=3; x.beginPath(); x.moveTo(22,cy-8+i*3); x.quadraticCurveTo(8,cy-12+i*5,2,cy-14+i*6); x.stroke(); } }
@@ -79,9 +85,14 @@ function fishIcon(id,dark){ const k=id+(dark?"_d":""); if(ICON[k]) return ICON[k
   x.restore(); return ICON[k]=c.toDataURL(); }
 L.bic=(k,cls)=>{ const id=k.slice(3); if(id.startsWith("c_")&&SB[id.slice(2)]) return `<span class="bic ${cls||""}" style="display:flex;align-items:center;justify-content:center;font-size:34px;background:none">${SB[id.slice(2)][5]}</span>`; if(id==="dex") return `<span class="bic ${cls||""}" style="display:flex;align-items:center;justify-content:center;font-size:34px;background:none">📖</span>`; return `<span class="bic ${cls||""}" style="background:url(${fishIcon(id)}) center/contain no-repeat"></span>`; };
 /* a fish as a 3D thing (held up when caught): a stand-in until the models arrive */
-const FISHGLB={};
-function fishMesh(f){ const g=new T.Group(); const t=new T.CanvasTexture(Object.assign(document.createElement("canvas"),{width:2,height:2})); const im=new Image(); im.onload=()=>{ t.image=im; t.needsUpdate=true; }; im.src=fishIcon(f.id); t.encoding=T.sRGBEncoding;
-  const m=new T.Mesh(new T.PlaneGeometry(.64,.4),new T.MeshBasicMaterial({map:t,transparent:true,side:T.DoubleSide,toneMapped:false})); g.add(m); g.userData.tex=t; return g; }
+let FGLB=null, FGLBwait=false; const WU={uT:{value:0}};
+function fishLoad(){ if(FGLB||FGLBwait) return; FGLBwait=true; try{ loadRaw0("fish",false,sc=>{ FGLB={}; sc.traverse(o=>{ if(o.isMesh){ let n=o; while(n&&!FMODEL[n.name]) n=n.parent; if(n) FGLB[n.name]=o; } }); },()=>{}); }catch(e){} }
+/* the body bends like a swimming fish: a wave runs from the head (−x) to the tail (+x), growing towards the tail */
+let WM=null; function wagMat(src){ if(WM) return WM; WM=src.clone(); WM.onBeforeCompile=sh=>{ sh.uniforms.uT=WU.uT; sh.vertexShader="uniform float uT;\n"+sh.vertexShader.replace("#include <begin_vertex>","#include <begin_vertex>\n float fw=smoothstep(-.5,.5,position.x); transformed.z+=sin(position.x*6.5-uT*17.)*(.025+.16*fw*fw); transformed.x-=.03*fw*sin(uT*17.)*sin(uT*17.);"); }; WM.customProgramCacheKey=()=>"fishwag"; return WM; }
+function fishMesh(f){ const g=new T.Group(); const src=FGLB&&FGLB[f.id];
+  if(src){ const m=new T.Mesh(src.geometry,wagMat(src.material)); m.frustumCulled=false; g.add(m); g.userData.model=1; return g; }
+  const t=new T.CanvasTexture(Object.assign(document.createElement("canvas"),{width:2,height:2})); const im=new Image(); im.onload=()=>{ t.image=im; t.needsUpdate=true; }; im.src=fishIcon(f.id); t.encoding=T.sRGBEncoding;
+  const m=new T.Mesh(new T.PlaneGeometry(1,.62),new T.MeshBasicMaterial({map:t,transparent:true,side:T.DoubleSide,toneMapped:false})); g.add(m); g.userData.tex=t; return g; }
 /* ---------- the water: where it is and which kind ---------- */
 const waterAt=(x,z)=>{ try{ return TOWNX&&TOWNX.water?TOWNX.water(x,z):null; }catch(e){ return null; } };
 let near=null, nearT=0;
@@ -111,50 +122,62 @@ const busy=()=>{ try{ return !!(sheetKind||customizing||(SHOPX&&SHOPX.on)||miniO
 function startFish(){ if(F) return; const d=LF(); if(!d.rod&&!me.sp){ toast("🎣 要先到老街的釣具行買一支釣竿",2800); return; } const w=near||findWater(); if(!w){ toast("離水邊再近一點",1800); return; }
   if(d.inv.length>=40){ toast("背包裡的魚滿了（40 條），先到釣具行或雜貨店賣掉一些",3000); return; }
   meAv.target.copy(meAv.pos); meAv.path=[]; const face=Math.atan2(w.x-meAv.pos.x,w.z-meAv.pos.y); meAv.rotY=face; meAv.faceGoal=face;
-  const ov=document.createElement("div"); ov.className="lf-ov"; ov.innerHTML=`<div class="lf-top" id="lfMsg">拋竿……</div><button class="lf-x" id="lfX">收竿</button><button class="lf-btn" id="lfB">拉！</button>`; document.body.appendChild(ov);
-  const bob=new T.Group(); const b1=new T.Mesh(new T.SphereGeometry(.07,12,8),new T.MeshStandardMaterial({color:"#e8402e",roughness:.4})); b1.position.y=.03; bob.add(b1); const b2=new T.Mesh(new T.SphereGeometry(.072,12,8,0,6.283,0,1.2),new T.MeshStandardMaterial({color:"#ffffff",roughness:.4})); b2.position.y=.04; bob.add(b2); scene.add(bob);
+  const ov=document.createElement("div"); ov.className="lf-ov"; ov.innerHTML=`<div class="lf-top" id="lfMsg">拋竿……</div><button class="lf-x" id="lfX">收竿</button><button class="lf-btn" id="lfB">拉竿！</button>`; fishLoad(); document.body.appendChild(ov);
+  /* the float: a slim stick float standing in the water — red tip, white body, the thin stem below the surface */
+  const bob=new T.Group(); { const M=c=>new T.MeshStandardMaterial({color:c,roughness:.4}); const tip=new T.Mesh(new T.CylinderGeometry(.018,.03,.2,10),M("#e8402e")); tip.position.y=.26; bob.add(tip); const top=new T.Mesh(new T.SphereGeometry(.03,10,8),M("#ffd84a")); top.position.y=.37; bob.add(top);
+    const body=new T.Mesh(new T.SphereGeometry(.07,14,10),M("#ffffff")); body.scale.set(1,1.5,1); body.position.y=.08; bob.add(body); const band=new T.Mesh(new T.CylinderGeometry(.071,.071,.03,14),M("#e8402e")); band.position.y=.1; bob.add(band); const stem=new T.Mesh(new T.CylinderGeometry(.008,.008,.3,6),M("#3a3a3a")); stem.position.y=-.15; bob.add(stem); } scene.add(bob);
   const sh=new T.Mesh(new T.CircleGeometry(1,20),new T.MeshBasicMaterial({color:"#0a1a24",transparent:true,opacity:0,depthWrite:false})); sh.rotation.x=-Math.PI/2; scene.add(sh);
   const ring=new T.Mesh(new T.RingGeometry(.12,.16,24),new T.MeshBasicMaterial({color:"#ffffff",transparent:true,opacity:0,depthWrite:false,side:T.DoubleSide})); ring.rotation.x=-Math.PI/2; scene.add(ring);
   const line=new T.Mesh(new T.CylinderGeometry(.006,.006,1,4),new T.MeshBasicMaterial({color:"#f4f4f0"})); scene.add(line);
   const rod=new T.Mesh(new T.CylinderGeometry(.012,.024,1.7,6),new T.MeshStandardMaterial({color:"#6b4a2e",roughness:.6})); rod.position.set(.18,1.15,.55); rod.rotation.x=1.0; meAv.root.add(rod);
   F={ph:"cast",t:0,w,ov,bob,sh,ring,line,rod,y:w.w.y,fish:null,taps:0,nib:0};
   try{ tone(900,.12,.04,"sine"); tone(500,.2,.03,"sine",.1); }catch(e){} chip.hidden=true;
-  const B=ov.querySelector("#lfB"); const down=e=>{ e.preventDefault(); B.classList.add("on"); F&&(F.hold=true); press(); }, upf=e=>{ B.classList.remove("on"); F&&(F.hold=false); };
+  const B=ov.querySelector("#lfB"); const down=e=>{ e.preventDefault(); B.classList.add("on"); press(); }, upf=e=>{ B.classList.remove("on"); };
   B.addEventListener("pointerdown",down); B.addEventListener("pointerup",upf); B.addEventListener("pointercancel",upf); B.addEventListener("pointerleave",upf);
   ov.querySelector("#lfX").onclick=()=>endFish(); statInc&&statInc("lfCast"); }
 const msg=t=>{ const m=F&&F.ov.querySelector("#lfMsg"); if(m) m.textContent=t; };
-function press(){ if(!F) return; if(F.ph==="wait"||F.ph==="nibble"){ msg("太早拉了，魚嚇跑了……"); try{ tone(240,.15,.05,"triangle"); }catch(e){} F.ph="miss"; F.t=0; return; }
-  if(F.ph==="bite"){ F.ph="fight"; F.t=0; startFight(); return; } }
-function startFight(){ const f=F.fish, d=LF(); F.tn=.35; F.prog=.15; F.gc=.5; F.gw=Math.max(.14,(f.r===1?.34:f.r===2?.27:f.r===3?.21:.17)+(d.rod>=2?.06:0)); F.over=0; F.slack=0;
-  F.ov.insertAdjacentHTML("beforeend",`<div class="lf-prog"><i id="lfP"></i></div><div class="lf-bar"><div class="g" id="lfG"></div><div class="p" id="lfPt"></div></div>`); msg("上鉤了！按住「拉」收線，讓白線留在綠色裡"); try{ navigator.vibrate&&navigator.vibrate(60); }catch(e){} }
+/* you watch the float and choose the moment: little dips are the fish tasting the bait (strike now and it bolts); when the whole
+   float goes under, strike — the rarer the fish, the shorter that moment, and the more it teases with deeper dips first */
+function press(){ if(!F) return; if(F.ph==="cast"||F.ph==="reel"||F.ph==="miss") return;
+  if(F.ph==="bite"){ F.ph="reel"; F.t=0; msg(F.bt<.25?"漂亮！抓得剛剛好！":"中魚了！"); try{ tone(660,.08,.06,"triangle"); tone(990,.12,.05,"triangle",.07); navigator.vibrate&&navigator.vibrate(60); }catch(e){} return; }
+  msg(F.ph==="nibble"?"太早拉了，魚嚇跑了……":"還沒有魚咬餌，再等等"); if(F.ph==="nibble"){ try{ tone(240,.15,.05,"triangle"); }catch(e){} F.ph="miss"; F.t=0; } }
+const biteWin=f=>[0,.95,.8,.62,.5][f.r]+(LF().rod>=2?.18:0);
 function endFish(){ if(!F) return; const o=F; F=null; [o.bob,o.sh,o.ring,o.line].forEach(m=>{ scene.remove(m); m.traverse(q=>{ if(q.isMesh){ q.geometry.dispose(); q.material.dispose(); } }); }); if(o.rod.parent) o.rod.parent.remove(o.rod); o.rod.geometry.dispose(); o.ov.remove(); meAv.faceGoal=null; }
 function caught(){ const f=F.fish, d=LF(), size=Math.round((f.sz[0]+(f.sz[1]-f.sz[0])*Math.pow(Math.random(),1.6))*10)/10; const e=d.fish[f.id]||(d.fish[f.id]=[0,0,Date.now()]); const first=!e[0]; e[0]++; e[1]=Math.max(e[1],size);
   d.inv.push([f.id,size]); save(); try{ statInc("lfFish"); statInc("lfR"+f.r); }catch(e2){}
-  const hold=fishMesh(f); hold.position.set(0,2.1,0); meAv.root.add(hold); setTimeout(()=>{ if(hold.parent) hold.parent.remove(hold); hold.children[0].geometry.dispose(); hold.children[0].material.dispose(); hold.userData.tex.dispose(); },2600);
+  /* the fish leaps out of the water to your hand and hangs there, thrashing */
+  const hold=fishMesh(f), len=Math.max(.3,Math.min(1.5,size/100*1.5+.22)), from=F.bob.position.clone(); hold.scale.setScalar(len); scene.add(hold); HELD={g:hold,t:0,from,len};
   try{ [523,659,784,1047].forEach((q,k)=>tone(q,.14,.06,"triangle",k*.09)); if(f.r>=3) [1319,1568].forEach((q,k)=>tone(q,.2,.05,"sine",.4+k*.12)); }catch(e2){}
-  endFish(); setTimeout(()=>card(f,size,first),700); }
+  endFish(); setTimeout(()=>card(f,size,first),2700); }
+let HELD=null; const _hv2=new T.Vector3(), _c1=new T.Vector3(), _c2=new T.Vector3(); let camK=0;
+/* while you fish the view swings to one side and a little above, so the float is in plain sight between you and the water */
+const _cl=new T.Vector3(), _cp=new T.Vector3(); let camL=0;
+function fishCam(dt,fx,fz,fy,held){ const a=meAv.root.position, dx=fx-a.x, dz=fz-a.z, L=Math.hypot(dx,dz)||1, ux=dx/L, uz=dz/L; camK=Math.min(1,camK+dt*1.6); const k=camK*camK*(3-2*camK);
+  if(held){ /* the catch: the view comes round in front, on you and the fish beside you */ _c1.set(.3,1.55,3.2).applyMatrix4(meAv.root.matrixWorld); _c2.set(.27,.85,0).applyMatrix4(meAv.root.matrixWorld); }
+  else { _c1.set(a.x-ux*2.3+uz*2.1,a.y+2.5,a.z-uz*2.3-ux*2.1); _c2.set(a.x+dx*.62,fy+.5,a.z+dz*.62); }
+  if(!camL){ _cl.copy(_c2); _cp.copy(camera.position); camL=1; } _cl.lerp(_c2,Math.min(1,dt*4)); _cp.lerp(_c1,Math.min(1,dt*3.5)); camera.position.copy(_cp); camera.lookAt(_cl); } /* (its own position, eased: the game's camera is put back behind you every frame) */
+function heldTick(dt){ WU.uT.value+=dt; if(!F&&!HELD){ camK=0; camL=0; return; } if(!HELD) return; const H=HELD, g=H.g; H.t+=dt; fishCam(dt,H.from.x,H.from.z,0,H.t>.35); const k=Math.min(1,H.t/.55), to=_hv2.set(.52,.5+H.len*.5,.28).applyMatrix4(meAv.root.matrixWorld);
+  g.position.lerpVectors(H.from,to,k); g.position.y+=Math.sin(k*Math.PI)*1.3; const hang=k*k; /* leaps out, then hangs head up from the line */
+  g.rotation.set(0,meAv.rotY,-Math.PI/2*hang+Math.sin(H.t*9)*.18); /* (its side towards the view, head up) */ if(!g.userData.model) g.rotation.set(0,meAv.rotY,0);
+  if(L.heldFreeze&&H.t>2) H.t=1.2; if(H.t>3.6||(sheetKind==="lfCard"&&H.t>3.3)){ scene.remove(g); if(!g.userData.model) g.traverse(q=>{ if(q.isMesh){ q.geometry.dispose(); q.material.dispose(); } }); if(g.userData.tex) g.userData.tex.dispose(); HELD=null; } }
 function card(f,size,first){ openSheet("lfCard","🎣 釣到了！",`<div class="lf-card"><img src="${fishIcon(f.id)}" alt=""><div class="nm">${f.n}</div><div class="st">${"★".repeat(f.r)}${"☆".repeat(4-f.r)}　${RN[f.r]}・${f.w.includes("o")?"海水魚":"淡水魚"}</div>
   ${first?`<div class="lf-new">第一次釣到！已登錄圖鑑</div>`:""}<p class="lead" style="margin:8px 0">${size} 公分。${f.d}</p><div class="row"><button class="primary" data-act="lfAgain">再釣一次</button><button class="secondary" data-act="lfRelease">放生</button></div><p class="note">釣到的魚收在背包裡，可以到釣具行或雜貨店賣，一條 ${price(f,size)} 平安幣左右。</p></div>`); }
 const price=(f,size)=>Math.round(f.p*(.8+.4*(size-f.sz[0])/Math.max(1,f.sz[1]-f.sz[0])));
 HANDLERS.lfAgain=()=>{ closeSheet(); setTimeout(startFish,250); };
-HANDLERS.lfRelease=()=>{ const d=LF(); const e=d.inv.pop(); save(); closeSheet(); if(e) toast(`放生了「${FBY[e[0]].n}」，牠開心地游走了`,2200); };
-function fishTick(dt){ if(!F){ nearT-=dt; if(nearT<=0){ nearT=.35; const can=!busy()&&TOWNX&&TOWNX.on; near=can?findWater():null; if(chip) chip.hidden=!near; } return; }
-  F.t+=dt; const w=F.w, y=F.y, a=meAv.root.position;
+HANDLERS.lfRelease=()=>{ if(HELD) HELD.t=9; const d=LF(); const e=d.inv.pop(); save(); closeSheet(); if(e) toast(`放生了「${FBY[e[0]].n}」，牠開心地游走了`,2200); };
+function fishTick(dt){ if(!F){ nearT-=dt; if(nearT<=0){ nearT=.35; const can=!busy()&&TOWNX&&TOWNX.on; near=can&&!HELD?findWater():null; if(chip) chip.hidden=!near; } return; }
+  F.t+=dt; const w=F.w, y=F.y, a=meAv.root.position; fishCam(dt,w.x,w.z,y);
   /* the line from the rod tip to the float */ const tip=new T.Vector3(.18,1.15+.85*Math.cos(1.0),.55+.85*Math.sin(1.0)).applyMatrix4(meAv.root.matrixWorld), bp=F.bob.position, mid=tip.clone().add(bp).multiplyScalar(.5), L=tip.distanceTo(bp); F.line.position.copy(mid); F.line.scale.set(1,L,1); F.line.lookAt(bp); F.line.rotateX(Math.PI/2);
-  if(F.ph==="cast"){ const k=Math.min(1,F.t/.6); bp.set(a.x+(w.x-a.x)*k,y+Math.sin(k*Math.PI)*1.4+(1-k)*1.2,a.z+(w.z-a.z)*k); if(k>=1){ F.ph="wait"; F.t=0; F.wt=2+Math.random()*4.5; F.fish=roll(w.w.k); msg("等魚靠過來……"); F.ring.position.set(w.x,y+.01,w.z); F.ring.material.opacity=.7; F.rt=0; try{ tone(300,.08,.05,"sine"); }catch(e){} } return; }
+  if(F.ph==="cast"){ const k=Math.min(1,F.t/.6); bp.set(a.x+(w.x-a.x)*k,y+Math.sin(k*Math.PI)*1.4+(1-k)*1.2,a.z+(w.z-a.z)*k); if(k>=1){ F.ph="wait"; F.t=0; F.wt=2+Math.random()*4.5; F.fish=roll(w.w.k); msg("等魚靠過來……浮標整個沉下去再拉"); F.ring.position.set(w.x,y+.01,w.z); F.ring.material.opacity=.7; F.rt=0; try{ tone(300,.08,.05,"sine"); }catch(e){} } return; }
   F.rt=(F.rt||0)+dt; F.ring.scale.setScalar(1+F.rt*3); F.ring.material.opacity=Math.max(0,.7-F.rt*.8);
   const bob=Math.sin(F.t*2.2)*.012; bp.set(w.x,y+bob,w.z);
   if(F.ph==="wait"){ const f=F.fish, s=.12+f.sh*.07; if(F.t>F.wt*.4){ const k=sm(F.wt*.4,F.wt,F.t), an=F.an??(F.an=Math.random()*6.283), dd=(1-k)*2.6+.25; F.sh.position.set(w.x+Math.sin(an)*dd,y-.03,w.z+Math.cos(an)*dd); F.sh.scale.set(s,s*1.8,1); F.sh.rotation.z=-an; F.sh.material.opacity=.45*sm(F.wt*.4,F.wt*.6,F.t); }
-    if(F.t>F.wt){ F.ph="nibble"; F.t=0; F.nn=1+(Math.random()*3|0); F.nt=.5; } return; }
-  if(F.ph==="nibble"){ F.nt-=dt; if(F.nt<=0){ if(F.nn<=0){ F.ph="bite"; F.t=0; bp.y=y-.12; F.rt=0; F.ring.material.opacity=.9; msg("咕咚！快拉！"); try{ tone(180,.18,.08,"sine"); tone(120,.25,.06,"sine",.05); navigator.vibrate&&navigator.vibrate(120); }catch(e){} return; } F.nn--; F.nt=.7+Math.random()*.8; bp.y=y-.04; F.rt=0; F.ring.material.opacity=.5; try{ tone(420,.05,.03,"sine"); }catch(e){} } return; }
-  if(F.ph==="bite"){ bp.y=y-.12+Math.sin(F.t*30)*.02; if(F.t>(F.fish.r>=3?.75:.95)){ msg("魚跑掉了……"); F.ph="miss"; F.t=0; } return; }
-  if(F.ph==="miss"){ F.sh.material.opacity=Math.max(0,F.sh.material.opacity-dt); if(F.t>1.4){ F.ph="wait"; F.t=0; F.wt=2+Math.random()*4.5; F.fish=roll(w.w.k); F.an=null; msg("再等等……"); } return; }
-  if(F.ph==="fight"){ const f=F.fish, pull=(f.r+f.sh*.35)*.18; F.tn+=(F.hold?.95:-.75)*dt; F.tn+=(Math.sin(F.t*(2+f.r))*pull+(Math.random()-.5)*pull*2.2)*dt; F.gc=.5+Math.sin(F.t*.9*(1+f.r*.3))*.22*(f.r>1?1:.5); F.tn=Math.max(0,Math.min(1,F.tn));
-    const inG=Math.abs(F.tn-F.gc)<F.gw/2; F.prog+=(inG?.2/(1+f.r*.18):-.07)*dt; F.over=F.tn>=.99?F.over+dt:0; F.slack=F.tn<=.01?F.slack+dt:0;
-    bp.set(w.x+Math.sin(F.t*3)*.15*(1-F.prog),y-.05,w.z+Math.cos(F.t*2.3)*.15*(1-F.prog)); F.sh.material.opacity=.5; F.sh.position.set(bp.x,y-.03,bp.z);
-    const g=F.ov.querySelector("#lfG"), p=F.ov.querySelector("#lfPt"), pr=F.ov.querySelector("#lfP"); if(g){ g.style.left=((F.gc-F.gw/2)*100)+"%"; g.style.width=(F.gw*100)+"%"; p.style.left=(F.tn*100)+"%"; pr.style.width=(Math.max(0,F.prog)*100)+"%"; }
-    if(F.prog>=1){ caught(); return; } if(F.over>.6||F.prog<-.05){ msg(F.over>.6?"線斷了！拉太用力了……":"魚掙脫了……"); try{ tone(200,.2,.06,"sawtooth"); }catch(e){} F.ov.querySelectorAll(".lf-prog,.lf-bar").forEach(e=>e.remove()); F.ph="miss"; F.t=0; }
-    if(F.slack>2.2){ msg("線太鬆，魚掙脫了……"); F.ov.querySelectorAll(".lf-prog,.lf-bar").forEach(e=>e.remove()); F.ph="miss"; F.t=0; } } }
+    if(F.t>F.wt){ F.ph="nibble"; F.t=0; F.nn=1+(Math.random()*(1+f.r)|0); F.nt=.5; F.dip=0; msg("有動靜了……看浮標"); } return; }
+  if(F.ph==="nibble"){ F.dip=Math.max(0,F.dip-dt*.35); bp.y=y+bob-F.dip; F.nt-=dt; if(F.nt<=0){ if(F.nn<=0){ F.ph="bite"; F.t=0; F.bt=0; F.rt=0; F.ring.material.opacity=.95; msg("浮標沉下去了！"); try{ tone(180,.18,.08,"sine"); tone(120,.25,.06,"sine",.05); navigator.vibrate&&navigator.vibrate(120); }catch(e){} return; }
+      F.nn--; F.nt=.65+Math.random()*.9; F.dip=F.fish.r>=2&&Math.random()<.35?.2:.07+Math.random()*.05; /* (a teasing deeper dip now and then) */ F.rt=0; F.ring.material.opacity=.5; try{ tone(420,.05,.03,"sine"); }catch(e){} } return; }
+  if(F.ph==="bite"){ F.bt=F.t; bp.y=y-.42+Math.sin(F.t*30)*.015; F.sh.position.set(w.x,y-.03,w.z); if(F.t>biteWin(F.fish)){ msg("慢了一步，魚吃完餌跑掉了……"); try{ tone(200,.2,.05,"triangle"); }catch(e){} F.ph="miss"; F.t=0; } return; }
+  if(F.ph==="reel"){ const k=Math.min(1,F.t/.5); bp.set(w.x+(a.x-w.x)*k*.35,y-.3+k*.3,w.z+(a.z-w.z)*k*.35); F.rod.rotation.x=1.0-k*.7; F.sh.material.opacity=.5*(1-k); if(F.t>.5){ caught(); } return; }
+  if(F.ph==="miss"){ F.sh.material.opacity=Math.max(0,F.sh.material.opacity-dt); bp.y=y+bob; if(F.t>1.4){ F.ph="wait"; F.t=0; F.wt=2+Math.random()*4.5; F.fish=roll(w.w.k); F.an=null; msg("再等等……"); } return; } }
 /* ---------- the fish book ---------- */
 let dexTab="r";
 function dex(){ const d=LF(), got=FISH.filter(f=>d.fish[f.id]).length; const tabs=[["r","淡水"],["o","海水"]];
@@ -170,7 +193,7 @@ HANDLERS.lfDex=()=>dex(); L.dex=dex;
 function sellSheet(kind){ const d=LF(), cnt={}; d.inv.forEach(([id,s])=>{ const c=cnt[id]||(cnt[id]={n:0,v:0}); c.n++; c.v+=price(FBY[id],s); }); const tot=Object.values(cnt).reduce((a,c)=>a+c.v,0);
   return `${Object.keys(cnt).length?Object.keys(cnt).map(id=>`<div class="lf-row"><img src="${fishIcon(id)}" alt=""><div class="t"><b>${FBY[id].n}</b> ×${cnt[id].n}<br><small>共 ${cnt[id].v} 平安幣</small></div><button class="secondary" data-act="lfSell" data-v="${kind}:${id}">賣</button></div>`).join("")+`<div class="row" style="margin-top:8px"><button class="primary" data-act="lfSell" data-v="${kind}:*">全部賣掉・${tot} 幣</button></div>`:`<p class="note">背包裡還沒有魚。</p>`}`; }
 function sell(id){ const d=LF(); let got=0, n=0; d.inv=d.inv.filter(([i,s])=>{ if(id==="*"||i===id){ got+=price(FBY[i],s); n++; return false; } return true; }); if(!n) return 0; bag.coins+=got; save(); try{ profSave(true); chaChing(); }catch(e){} toast(`賣了 ${n} 條魚，拿到 ${got} 平安幣`,2400); return got; }
-function tackle(){ const d=LF(); const rods=[[1,"竹釣竿",300,"可以在所有水邊釣魚。"],[2,"好釣竿",1800,"綠色區比較寬，也比較容易遇到稀有的魚。"]];
+function tackle(){ const d=LF(); const rods=[[1,"竹釣竿",300,"可以在所有水邊釣魚。"],[2,"好釣竿",1800,"浮標沉下去時魚咬得比較久（比較來得及拉），也比較容易遇到稀有的魚。"]];
   openSheet("lfTackle","🎣 釣具行",`<p class="lead">老闆：「河、溪、泉水、海邊都能釣，有水的地方就有魚。淡水魚跟海水魚不一樣喔。」</p>
    ${rods.map(r=>`<div class="lf-row"><div class="t"><b>${r[1]}</b>　${r[2]} 幣<br><small>${r[3]}</small></div>${d.rod>=r[0]?`<button class="secondary" disabled>已擁有</button>`:`<button class="primary" data-act="lfRod" data-v="${r[0]}">${me.sp?"拿":"買"}</button>`}</div>`).join("")}
    <h4 style="margin:14px 0 4px">收購魚</h4>${sellSheet("t")}<div class="row" style="margin-top:10px"><button class="secondary" data-act="lfDex">📖 魚圖鑑</button></div>`); }
@@ -182,7 +205,7 @@ L.bagEntries=(out,tab)=>{ if(tab!=="all"&&tab!=="goods") return; const d=LF(), c
 L.bagActs=(k,e)=>k.startsWith("c_")?"":`<button class="chip" data-act="lfDex">看圖鑑</button>`;
 /* ---------- stations in the town ---------- */
 L.station=k=>{ if(k==="tw:tackle"){ tackle(); return true; } if(k==="tw:grocer"){ grocer(); return true; } if(k==="tw:fish"){ toast(LF().rod||me.sp?"站到水邊就能釣魚，按「🎣 釣魚」":"先到老街的釣具行買釣竿，就能在水邊釣魚",3000); return true; } return L.more?L.more(k):false; };
-L.tick=dt=>{ try{ fishTick(dt); }catch(e){ console.warn("fish",e); F&&endFish(); } try{ L.tick2&&L.tick2(dt); }catch(e){ console.warn("life",e); } };
+L.tick=dt=>{ try{ fishTick(dt); heldTick(dt); }catch(e){ console.warn("fish",e); F&&endFish(); } try{ L.tick2&&L.tick2(dt); }catch(e){ console.warn("life",e); } };
 
 /* ---------- 女神泉: toss a coin in, the goddess rises and asks which one was yours (once a day) ---------- */
 const today=()=>{ try{ return dayN(); }catch(e){ return Math.floor((Date.now()+288e5)/864e5); } };
@@ -444,15 +467,15 @@ L.garden=gardenOpen;
 /* ---------- into the save code (the 取回碼 and the server's copy): rod, bought styles, the fish book, fish in the bag (how many of
    each kind; sizes come back as a typical size), the townsfolk's affinity, the garden (seeds, harvest, what grows in each bed), and
    meteor finds. Order matters: FISH, NPCS and SEEDS may only ever be added to at the end. ---------- */
-L.pack=put=>{ const d=LF(), o=d.own||{}, g=GD2(); put(1,3); /* (version) */ put(d.rod|0,2); ["h","e","m","n"].forEach(k=>put(o[k]|0,10));
+L.pack=put=>{ const d=LF(), o=d.own||{}, g=GD2(); put(2,3); /* (version 2: says how many kinds of fish follow) */ put(FISH.length,7); put(d.rod|0,2); ["h","e","m","n"].forEach(k=>put(o[k]|0,10));
   FISH.forEach(f=>{ const e=d.fish[f.id]; put(e?Math.min(63,e[0]):0,6); if(e) put(Math.min(511,Math.round(e[1])),9); });
   const ic={}; d.inv.forEach(([id])=>ic[id]=(ic[id]||0)+1); FISH.forEach(f=>put(Math.min(40,ic[f.id]||0),6));
   NPCS.forEach(n=>{ const R=(d.npc||{})[n.id]||{}; put(Math.min(100,R.a|0),7); put((R.r|0)&7,3); });
   SEEDS.forEach(q=>put(Math.min(31,g.seed[q[0]]|0),5)); SEEDS.forEach(q=>put(Math.min(127,g.crop[q[0]]|0),7));
   g.beds.forEach(b=>{ const i=b?SEEDS.findIndex(q=>q[0]===b.s):-1; put(i+1,3); if(i>=0){ grow(b,Date.now()); put(Math.min(15,Math.round(b.p*5)),4); put(b.w?1:0,1); } });
   put(Math.min(63,d.stone|0),6); put(Math.min(255,d.dust|0),8); };
-L.unpack=get=>{ const v=get(3); if(v!==1) return null; const o={rod:get(2),own:{h:get(10),e:get(10),m:get(10),n:get(10)},fish:{},inv:[],npc:{},seed:{},crop:{},beds:[]};
-  FISH.forEach(f=>{ const n=get(6); if(n) o.fish[f.id]=[n,get(9),Date.now()]; }); FISH.forEach(f=>{ const n=get(6); for(let k=0;k<n;k++) o.inv.push([f.id,Math.round((f.sz[0]+f.sz[1])/2)]); });
+L.unpack=get=>{ const v=get(3); if(v!==1&&v!==2) return null; const NF=v===1?33:Math.min(FISH.length,get(7)), FL=FISH.slice(0,NF); const o={rod:get(2),own:{h:get(10),e:get(10),m:get(10),n:get(10)},fish:{},inv:[],npc:{},seed:{},crop:{},beds:[]};
+  FL.forEach(f=>{ const n=get(6); if(n) o.fish[f.id]=[n,get(9),Date.now()]; }); FL.forEach(f=>{ const n=get(6); for(let k=0;k<n;k++) o.inv.push([f.id,Math.round((f.sz[0]+f.sz[1])/2)]); });
   NPCS.forEach(n=>{ o.npc[n.id]={a:get(7),r:get(3),d:0,g:0}; }); SEEDS.forEach(q=>o.seed[q[0]]=get(5)); SEEDS.forEach(q=>o.crop[q[0]]=get(7));
   for(let i=0;i<12;i++){ const k=get(3); if(k){ const p=get(4)/5, w=get(1); o.beds.push(SEEDS[k-1]?{s:SEEDS[k-1][0],p,w,t:Date.now()}:null); } else o.beds.push(null); }
   o.stone=get(6); o.dust=get(8); return o; };
@@ -463,5 +486,5 @@ L.restore=o=>{ if(!o) return; const d=LF(), g=GD2(); d.rod=Math.max(d.rod|0,o.ro
   d.stone=Math.max(d.stone|0,o.stone); d.dust=Math.max(d.dust|0,o.dust); save(); };
 L.tick2=dt=>{ goddessTick(dt); mmTick(dt); try{ npcTick(dt); }catch(e){ console.warn("npcs",e); } if(L.tick3) L.tick3(dt); };
 setTimeout(()=>{ try{ chipInit(); }catch(e){} },1800);
-L.dbg=()=>({F,near,LF:LF(),pool}); L.press=()=>press(); L.start=()=>startFish();
+L.dbg=()=>({F,near,LF:LF(),pool,FGLB,HELD}); L.press=()=>press(); L.start=()=>startFish(); L.hold=id=>{ fishLoad(); const go=()=>{ if(!FGLB){ setTimeout(go,300); return; } const f=FBY[id], g=fishMesh(f); g.scale.setScalar(.8); scene.add(g); HELD={g,t:.6,from:meAv.root.position.clone().add(new T.Vector3(Math.sin(meAv.rotY)*3,0,Math.cos(meAv.rotY)*3)),len:.8}; L.heldFreeze=1; }; go(); };
 return L; })();
