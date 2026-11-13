@@ -4,7 +4,7 @@
    FISHGLB[id] is the only thing that has to be filled in. ================= */
 LIFE=(()=>{
 const L={};
-const LF=()=>{ if(!bag.lf||typeof bag.lf!=="object") bag.lf={}; const d=bag.lf; d.fish=d.fish||{}; d.inv=Array.isArray(d.inv)?d.inv:[]; d.rod=d.rod|0; return d; };
+const LF=()=>{ if(!bag.lf||typeof bag.lf!=="object") bag.lf={}; const d=bag.lf; d.fish=d.fish||{}; d.inv=Array.isArray(d.inv)?d.inv:[]; d.rod=d.rod|0; if(d.rod&&!d.rods) d.rods=d.rod>=2?0b1000011:1; /* (the first version had two rods) */ d.rods=d.rods|0; if(!Array.isArray(d.bait)||d.bait.length!==20) d.bait=Array(20).fill(0); return d; };
 const save=()=>{ try{ saveBag(); markDirty(); }catch(e){} };
 const sm=(a,b,v)=>{ const t=Math.max(0,Math.min(1,(v-a)/(b-a))); return t*t*(3-2*t); };
 /* the hour of the game's day: 0 清晨 (dawn), 1 白天, 2 黃昏, 3 夜晚 — the same sky everyone sees */
@@ -59,7 +59,50 @@ const WN={r:"大河",b:"溪谷",s:"泉池",g:"女神泉",o:"大海"};
 L.FISH=FISH;
 /* which fish can bite here, now */
 function pool(kind){ const s=String(L.slot()), rain=L.rain(), star=!!L.starNight; return FISH.filter(f=>f.w.includes(kind)&&(!f.t||f.t.includes(s))&&(f.need!=="rain"||rain)&&(f.need!=="star"||star)); }
-function roll(kind){ const P=pool(kind); let tot=0; P.forEach(f=>tot+=RW[f.r]*(LF().rod>=2&&f.r>=3?1.5:1)); let x=Math.random()*tot; for(const f of P){ x-=RW[f.r]*(LF().rod>=2&&f.r>=3?1.5:1); if(x<=0) return f; } return P[0]; }
+/* ---------- 釣竿 and 釣餌 (11/13). Rods: five for fresh water (溪釣: river, brook, springs), five for the sea, and one hidden one
+   each. ctl widens the green zone and forgives pulling too hard, pow reels faster and tires the fish, luck brings rarer fish, win
+   is extra time to strike when the float goes under. Baits follow what anglers really use: each has the fish that like it (they
+   bite about four times as often, come sooner, and stay hooked better). One bait is used up each time a fish takes it. ---------- */
+const RODS=[
+ {k:"f",n:"竹製手竿",p:300,ctl:0,pow:1,luck:1,win:0,d:"一根竹子加一條線，最單純的釣法。"},
+ {k:"f",n:"玻纖溪流竿",p:1500,ctl:.03,pow:1.12,luck:1.15,win:.05,d:"輕巧有彈性，溪邊走跳很順手。"},
+ {k:"f",n:"碳纖長竿",p:4000,ctl:.06,pow:1.25,luck:1.3,win:.1,d:"又長又輕，大鯉魚也拉得住。"},
+ {k:"f",n:"路亞竿",p:9000,ctl:.085,pow:1.4,luck:1.6,win:.14,d:"配捲線器的假餌竿，專門對付會追餌的大魚。"},
+ {k:"f",n:"和竿",p:22000,ctl:.11,pow:1.55,luck:1.9,win:.18,d:"老師傅用竹節一段一段接成的名竿，手感細膩。"},
+ {k:"f",n:"女神的金釣竿",p:0,hid:1,ctl:.15,pow:1.75,luck:2.6,win:.25,d:"泉水裡升起的釣竿，握著會微微發光。"},
+ {k:"s",n:"岸拋入門竿",p:500,ctl:0,pow:1,luck:1,win:0,d:"站在沙灘就能拋出去，海釣的第一支竿。"},
+ {k:"s",n:"磯釣竿",p:2500,ctl:.03,pow:1.12,luck:1.15,win:.05,d:"在礁石上釣黑鯛用的細長竿子。"},
+ {k:"s",n:"遠投竿",p:6000,ctl:.06,pow:1.25,luck:1.3,win:.1,d:"能把餌拋到很遠的深水區。"},
+ {k:"s",n:"船釣竿",p:14000,ctl:.085,pow:1.4,luck:1.6,win:.14,d:"又短又粗，專門跟大魚拔河。"},
+ {k:"s",n:"石鯛竿",p:30000,ctl:.11,pow:1.55,luck:1.9,win:.18,d:"磯釣人的夢幻逸品，腰力驚人。"},
+ {k:"s",n:"星辰釣竿",p:0,hid:1,ctl:.15,pow:1.75,luck:2.6,win:.25,d:"用天上掉下來的石頭打造的，夜裡像一道流星。"},
+];
+const BAITS=[
+ {k:"f",n:"練餌",p:40,t:["tilapia","crucian","goldfish","carp"],d:"粉加水揉成的餌團，池塘河邊釣鯽魚、吳郭魚的基本款。"},
+ {k:"f",n:"蚯蚓",p:60,t:["carp","crucian","catfish","loach","eel","tilapia"],d:"萬用活餌，河裡大多數的魚都吃。"},
+ {k:"f",n:"紅蟲",p:60,t:["guppy","medaka","zacco","goldfish","angel"],d:"細細小小的紅色蟲，小型魚最愛。"},
+ {k:"f",n:"地瓜玉米餌",p:80,t:["carp","koi","springkoi","bighead"],d:"蒸過的地瓜拌玉米粒，甜甜的，鯉魚抗拒不了。"},
+ {k:"f",n:"溪蝦肉",p:90,t:["kuhua","zacco","bass","catfish"],d:"剝好的小蝦肉，溪流和河邊的肉食魚都會咬。"},
+ {k:"f",n:"川蟲",p:120,t:["trout","masu","kuhua","ayu"],d:"翻溪裡石頭找到的水棲昆蟲，鱒魚的天然食物。"},
+ {k:"f",n:"毛鉤",p:150,t:["trout","masu","ayu","zacco"],d:"用羽毛綁成的假蟲，在急流水面上輕輕點。"},
+ {k:"f",n:"雞肝",p:100,t:["catfish","eel","sturgeon"],d:"味道很重，夜裡的鯰魚聞到就來。"},
+ {k:"f",n:"活餌小魚",p:200,t:["bass","arowana","catfish","sturgeon"],d:"活蹦亂跳的小魚，引大型掠食魚出來。"},
+ {k:"f",n:"路亞假餌",p:260,t:["bass","arowana","koi","goldscale"],d:"會閃會游的假魚，拋出去再慢慢收回來。"},
+ {k:"s",n:"南極蝦",p:50,t:["mackerel","sardine","terapon","seahorse"],d:"海釣最常用的小蝦，什麼小魚都吃。"},
+ {k:"s",n:"青蟲",p:70,t:["flounder","terapon","seabream"],d:"住在沙裡的海蟲，沙灘底棲魚的最愛。"},
+ {k:"s",n:"活蝦",p:120,t:["seabream","grouper","puffer"],d:"鉤在尾巴上讓牠游，黑鯛和石斑最難抗拒。"},
+ {k:"s",n:"誘餌粉",p:80,t:["mackerel","sardine","terapon"],d:"撒下去會散開一片，把成群的魚聚過來。"},
+ {k:"s",n:"魷魚條",p:110,t:["hairtail","grouper","puffer","oarfish"],d:"切成長條的魷魚，又韌又耐咬，夜釣常用。"},
+ {k:"s",n:"魚肉塊",p:130,t:["hairtail","shark","grouper"],d:"切塊的鯖魚肉，血水味會引來大傢伙。"},
+ {k:"s",n:"木蝦",p:180,t:["squid"],d:"做成蝦子樣子的假餌，專門釣透抽、軟絲。"},
+ {k:"s",n:"小螃蟹",p:160,t:["seabream","dragonbream","puffer"],d:"鯛魚會用牙齒咬碎殼來吃，釣大鯛的秘密武器。"},
+ {k:"s",n:"活餌鯖魚",p:240,t:["mahi","shark","grouper","sunfish"],d:"整條活的小鯖魚，鬼頭刀看到會衝過來。"},
+ {k:"s",n:"鐵板",p:280,t:["mahi","mackerel","hairtail","dragonbream"],d:"沉甸甸的金屬假餌，抽動時像受傷的小魚一樣閃。"},
+];
+const hasRod=i=>!!me.sp||!!(LF().rods&(1<<i));
+function rodFor(kind){ const k=kind==="o"?"s":"f", d=LF(), eq=k==="f"?d.eqF:d.eqS; if(eq&&RODS[eq-1]&&RODS[eq-1].k===k&&hasRod(eq-1)) return RODS[eq-1]; let best=null; RODS.forEach((r,i)=>{ if(r.k===k&&hasRod(i)) best=r; }); return best; }
+function baitFor(kind){ const k=kind==="o"?"s":"f", d=LF(), i=(k==="f"?d.bF:d.bS)|0; return i&&BAITS[i-1]&&BAITS[i-1].k===k&&d.bait[i-1]>0?BAITS[i-1]:null; }
+function roll(kind,rod,bait){ const P=pool(kind), W=f=>RW[f.r]*(f.r>=3&&rod?rod.luck:1)*(bait&&bait.t.includes(f.id)?4:1); let tot=0; P.forEach(f=>tot+=W(f)); let x=Math.random()*tot; for(const f of P){ x-=W(f); if(x<=0) return f; } return P[0]; }
 /* ---------- a fish drawn in code: for the book, the bag and the catch card ---------- */
 const ICON={};
 const FMODEL={bass:1,carp:1,tilapia:1,catfish:1,arowana:1,trout:1,goldfish:1,guppy:1,zacco:1,koi:1}; /* the kinds that have the chair's model (public/fish.glb, icons in public/fish/) */
@@ -119,10 +162,10 @@ function chipInit(){ css(); chip=document.createElement("button"); chip.id="lfCh
 /* ---------- fishing ---------- */
 let F=null;
 const busy=()=>{ try{ return !!(sheetKind||customizing||(SHOPX&&SHOPX.on)||miniOpen||meAv.seat>=0||(typeof pendingStation!=="undefined"&&pendingStation)); }catch(e){ return false; } };
-function startFish(){ if(F) return; const d=LF(); if(!d.rod&&!me.sp){ toast("🎣 要先到老街的釣具行買一支釣竿",2800); return; } const w=near||findWater(); if(!w){ toast("離水邊再近一點",1800); return; }
+function startFish(){ if(F) return; const d=LF(); const w=near||findWater(); if(!w){ toast("離水邊再近一點",1800); return; } const rodS=rodFor(w.w.k); if(!rodS){ toast(w.w.k==="o"?"🎣 海邊要用海釣竿，老街的釣具行有賣":"🎣 要先到老街的釣具行買一支溪釣竿",3000); return; }
   if(d.inv.length>=40){ toast("背包裡的魚滿了（40 條），先到釣具行或雜貨店賣掉一些",3000); return; }
   meAv.target.copy(meAv.pos); meAv.path=[]; const face=Math.atan2(w.x-meAv.pos.x,w.z-meAv.pos.y); meAv.rotY=face; meAv.faceGoal=face;
-  const ov=document.createElement("div"); ov.className="lf-ov"; ov.innerHTML=`<div class="lf-top" id="lfMsg">拋竿……</div><button class="lf-x" id="lfX">收竿</button><button class="lf-btn" id="lfB">拉竿！</button>`; fishLoad(); document.body.appendChild(ov);
+  const ov=document.createElement("div"); ov.className="lf-ov"; ov.innerHTML=`<div class="lf-top" id="lfMsg">拋竿……</div><button class="lf-x" id="lfX">收竿</button><button id="lfBait" style="position:absolute;left:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 262px);border:1px solid rgba(255,255,255,.4);border-radius:12px;background:rgba(0,0,0,.5);color:#fff;font:800 13px ${UI_FONT};padding:7px 10px;text-align:left;max-width:60%"></button><button class="lf-btn" id="lfB">拉竿！</button>`; fishLoad(); document.body.appendChild(ov);
   /* the float: a slim stick float standing in the water — red tip, white body, the thin stem below the surface */
   const bob=new T.Group(); { const M=c=>new T.MeshStandardMaterial({color:c,roughness:.4}); const tip=new T.Mesh(new T.CylinderGeometry(.018,.03,.2,10),M("#e8402e")); tip.position.y=.26; bob.add(tip); const top=new T.Mesh(new T.SphereGeometry(.03,10,8),M("#ffd84a")); top.position.y=.37; bob.add(top);
     const body=new T.Mesh(new T.SphereGeometry(.07,14,10),M("#ffffff")); body.scale.set(1,1.5,1); body.position.y=.08; bob.add(body); const band=new T.Mesh(new T.CylinderGeometry(.071,.071,.03,14),M("#e8402e")); band.position.y=.1; bob.add(band); const stem=new T.Mesh(new T.CylinderGeometry(.008,.008,.3,6),M("#3a3a3a")); stem.position.y=-.15; bob.add(stem); } scene.add(bob);
@@ -130,24 +173,32 @@ function startFish(){ if(F) return; const d=LF(); if(!d.rod&&!me.sp){ toast("�
   const ring=new T.Mesh(new T.RingGeometry(.12,.16,24),new T.MeshBasicMaterial({color:"#ffffff",transparent:true,opacity:0,depthWrite:false,side:T.DoubleSide})); ring.rotation.x=-Math.PI/2; scene.add(ring);
   const line=new T.Mesh(new T.CylinderGeometry(.006,.006,1,4),new T.MeshBasicMaterial({color:"#f4f4f0"})); scene.add(line);
   const rod=new T.Mesh(new T.CylinderGeometry(.012,.024,1.7,6),new T.MeshStandardMaterial({color:"#6b4a2e",roughness:.6})); rod.position.set(.18,1.15,.55); rod.rotation.x=1.0; meAv.root.add(rod);
-  F={ph:"cast",t:0,w,ov,bob,sh,ring,line,rod,y:w.w.y,fish:null,taps:0,nib:0};
+  F={ph:"cast",t:0,w,ov,bob,sh,ring,line,rod,y:w.w.y,fish:null,taps:0,nib:0,R:rodS};
+  const bk=w.w.k==="o"?"s":"f", bb=ov.querySelector("#lfBait"), showBait=()=>{ const b=baitFor(w.w.k); bb.innerHTML=`🎣 ${F?F.R.n:rodS.n}<br>${b?`🪱 ${b.n} ×${d.bait[BAITS.indexOf(b)]}`:"🪱 沒有用餌"}　<span style="opacity:.7">換餌 ▸</span>`; };
+  bb.onclick=()=>{ if(!F||["bite","fight","reel"].includes(F.ph)) return; const own=BAITS.map((b,i)=>i).filter(i=>BAITS[i].k===bk&&d.bait[i]>0), cur=(bk==="f"?d.bF:d.bS)|0, at=own.indexOf(cur-1), nx=at+1<own.length?own[at+1]+1:(at<0&&own.length?own[0]+1:0); if(bk==="f") d.bF=nx; else d.bS=nx; save(); showBait(); if(!own.length) toast("沒有這種水域的釣餌，釣具行有賣",2200); if(F.ph==="wait"){ F.fish=roll(w.w.k,F.R,baitFor(w.w.k)); } }; showBait(); F.showBait=showBait;
   try{ tone(900,.12,.04,"sine"); tone(500,.2,.03,"sine",.1); }catch(e){} chip.hidden=true;
-  const B=ov.querySelector("#lfB"); const down=e=>{ e.preventDefault(); B.classList.add("on"); press(); }, upf=e=>{ B.classList.remove("on"); };
+  const B=ov.querySelector("#lfB"); const down=e=>{ e.preventDefault(); B.classList.add("on"); F&&(F.hold=true); press(); }, upf=e=>{ B.classList.remove("on"); F&&(F.hold=false); };
   B.addEventListener("pointerdown",down); B.addEventListener("pointerup",upf); B.addEventListener("pointercancel",upf); B.addEventListener("pointerleave",upf);
   ov.querySelector("#lfX").onclick=()=>endFish(); statInc&&statInc("lfCast"); }
 const msg=t=>{ const m=F&&F.ov.querySelector("#lfMsg"); if(m) m.textContent=t; };
 /* you watch the float and choose the moment: little dips are the fish tasting the bait (strike now and it bolts); when the whole
    float goes under, strike — the rarer the fish, the shorter that moment, and the more it teases with deeper dips first */
 function press(){ if(!F) return; if(F.ph==="cast"||F.ph==="reel"||F.ph==="miss") return;
-  if(F.ph==="bite"){ F.ph="reel"; F.t=0; msg(F.bt<.25?"漂亮！抓得剛剛好！":"中魚了！"); try{ tone(660,.08,.06,"triangle"); tone(990,.12,.05,"triangle",.07); navigator.vibrate&&navigator.vibrate(60); }catch(e){} return; }
+  if(F.ph==="fight") return;
+  if(F.ph==="bite"){ F.good=F.bt<.25; F.ph="fight"; F.t=0; startFight(); try{ tone(660,.08,.06,"triangle"); tone(990,.12,.05,"triangle",.07); navigator.vibrate&&navigator.vibrate(60); }catch(e){} return; }
   msg(F.ph==="nibble"?"太早拉了，魚嚇跑了……":"還沒有魚咬餌，再等等"); if(F.ph==="nibble"){ try{ tone(240,.15,.05,"triangle"); }catch(e){} F.ph="miss"; F.t=0; } }
-const biteWin=f=>[0,.95,.8,.62,.5][f.r]+(LF().rod>=2?.18:0);
+const biteWin=f=>[0,.95,.8,.62,.5][f.r]+(F&&F.R?F.R.win:0)+(F&&F.bm?.1:0);
+/* the tug of war: hold 拉 to reel in, let go to give line; keep the white mark inside the green zone until the bar fills. The rarer and
+   bigger the fish, the narrower the zone, the harder it runs and the slower the bar — a better rod and the right bait make up for it */
+function startFight(){ const f=F.fish, R=F.R; F.tn=.35; F.prog=F.good?.25:.12; F.gc=.5; F.gw=Math.max(.13,[0,.34,.27,.2,.16][f.r]+R.ctl+(F.bm?.02:0)); F.over=0; F.slack=0; F.hold=true;
+  F.ov.insertAdjacentHTML("beforeend",`<div class="lf-prog"><i id="lfP"></i></div><div class="lf-bar"><div class="g" id="lfG"></div><div class="p" id="lfPt"></div></div>`); F.ov.querySelector("#lfB").textContent="收線"; msg((F.good?"漂亮！":"中魚了！")+"按住收線、放開放線，白線留在綠色裡"); }
+function fightOff(){ F.ov.querySelectorAll(".lf-prog,.lf-bar").forEach(e=>e.remove()); F.ov.querySelector("#lfB").textContent="拉竿！"; }
 function endFish(){ if(!F) return; const o=F; F=null; [o.bob,o.sh,o.ring,o.line].forEach(m=>{ scene.remove(m); m.traverse(q=>{ if(q.isMesh){ q.geometry.dispose(); q.material.dispose(); } }); }); if(o.rod.parent) o.rod.parent.remove(o.rod); o.rod.geometry.dispose(); o.ov.remove(); meAv.faceGoal=null; }
 function caught(){ const f=F.fish, d=LF(), size=Math.round((f.sz[0]+(f.sz[1]-f.sz[0])*Math.pow(Math.random(),1.6))*10)/10; const e=d.fish[f.id]||(d.fish[f.id]=[0,0,Date.now()]); const first=!e[0]; e[0]++; e[1]=Math.max(e[1],size);
   d.inv.push([f.id,size]); save(); try{ statInc("lfFish"); statInc("lfR"+f.r); }catch(e2){}
   /* the fish leaps out of the water to your hand and hangs there, thrashing */
   const hold=fishMesh(f), len=Math.max(.3,Math.min(1.5,size/100*1.5+.22)), from=F.bob.position.clone(); hold.scale.setScalar(len); scene.add(hold); HELD={g:hold,t:0,from,len};
-  try{ [523,659,784,1047].forEach((q,k)=>tone(q,.14,.06,"triangle",k*.09)); if(f.r>=3) [1319,1568].forEach((q,k)=>tone(q,.2,.05,"sine",.4+k*.12)); }catch(e2){}
+  try{ /* a little fanfare, two seconds: a run up, three bright notes, a held chord */ [[392,0,.12],[523,.11,.12],[659,.22,.12],[784,.33,.2],[784,.6,.1],[880,.72,.1],[1047,.86,.9]].forEach(([q,at,du])=>tone(q,du,.06,"triangle",at)); [[523,.86],[659,.86],[1319,1.1]].forEach(([q,at])=>tone(q,.85,.03,"sine",at)); [[196,0],[262,.33],[262,.86]].forEach(([q,at])=>tone(q,.3,.045,"sine",at)); if(f.r>=3) [1568,2093].forEach((q,k)=>tone(q,.5,.03,"sine",1.2+k*.15)); }catch(e2){}
   endFish(); setTimeout(()=>card(f,size,first),2700); }
 let HELD=null; const _hv2=new T.Vector3(), _c1=new T.Vector3(), _c2=new T.Vector3(); let camK=0;
 /* while you fish the view swings to one side and a little above, so the float is in plain sight between you and the water */
@@ -168,16 +219,23 @@ HANDLERS.lfRelease=()=>{ if(HELD) HELD.t=9; const d=LF(); const e=d.inv.pop(); s
 function fishTick(dt){ if(!F){ nearT-=dt; if(nearT<=0){ nearT=.35; const can=!busy()&&TOWNX&&TOWNX.on; near=can&&!HELD?findWater():null; if(chip) chip.hidden=!near; } return; }
   F.t+=dt; const w=F.w, y=F.y, a=meAv.root.position; fishCam(dt,w.x,w.z,y);
   /* the line from the rod tip to the float */ const tip=new T.Vector3(.18,1.15+.85*Math.cos(1.0),.55+.85*Math.sin(1.0)).applyMatrix4(meAv.root.matrixWorld), bp=F.bob.position, mid=tip.clone().add(bp).multiplyScalar(.5), L=tip.distanceTo(bp); F.line.position.copy(mid); F.line.scale.set(1,L,1); F.line.lookAt(bp); F.line.rotateX(Math.PI/2);
-  if(F.ph==="cast"){ const k=Math.min(1,F.t/.6); bp.set(a.x+(w.x-a.x)*k,y+Math.sin(k*Math.PI)*1.4+(1-k)*1.2,a.z+(w.z-a.z)*k); if(k>=1){ F.ph="wait"; F.t=0; F.wt=2+Math.random()*4.5; F.fish=roll(w.w.k); msg("等魚靠過來……浮標整個沉下去再拉"); F.ring.position.set(w.x,y+.01,w.z); F.ring.material.opacity=.7; F.rt=0; try{ tone(300,.08,.05,"sine"); }catch(e){} } return; }
+  if(F.ph==="cast"){ const k=Math.min(1,F.t/.6); bp.set(a.x+(w.x-a.x)*k,y+Math.sin(k*Math.PI)*1.4+(1-k)*1.2,a.z+(w.z-a.z)*k); if(k>=1){ F.ph="wait"; F.t=0; F.wt=(2+Math.random()*4.5)*(baitFor(w.w.k)?.6:1); F.fish=roll(w.w.k,F.R,baitFor(w.w.k)); msg("等魚靠過來……浮標整個沉下去再拉"); F.ring.position.set(w.x,y+.01,w.z); F.ring.material.opacity=.7; F.rt=0; try{ tone(300,.08,.05,"sine"); }catch(e){} } return; }
   F.rt=(F.rt||0)+dt; F.ring.scale.setScalar(1+F.rt*3); F.ring.material.opacity=Math.max(0,.7-F.rt*.8);
   const bob=Math.sin(F.t*2.2)*.012; bp.set(w.x,y+bob,w.z);
   if(F.ph==="wait"){ const f=F.fish, s=.12+f.sh*.07; if(F.t>F.wt*.4){ const k=sm(F.wt*.4,F.wt,F.t), an=F.an??(F.an=Math.random()*6.283), dd=(1-k)*2.6+.25; F.sh.position.set(w.x+Math.sin(an)*dd,y-.03,w.z+Math.cos(an)*dd); F.sh.scale.set(s,s*1.8,1); F.sh.rotation.z=-an; F.sh.material.opacity=.45*sm(F.wt*.4,F.wt*.6,F.t); }
-    if(F.t>F.wt){ F.ph="nibble"; F.t=0; F.nn=1+(Math.random()*(1+f.r)|0); F.nt=.5; F.dip=0; msg("有動靜了……看浮標"); } return; }
+    if(F.t>F.wt){ F.ph="nibble"; F.t=0; F.nn=1+(Math.random()*(1+f.r)|0); F.nt=.5; F.dip=0; msg("有動靜了……看浮標"); const b=baitFor(w.w.k); F.bm=!!(b&&b.t.includes(f.id)); if(b){ const d=LF(), bi=BAITS.indexOf(b); d.bait[bi]--; save(); F.showBait(); } } return; }
   if(F.ph==="nibble"){ F.dip=Math.max(0,F.dip-dt*.35); bp.y=y+bob-F.dip; F.nt-=dt; if(F.nt<=0){ if(F.nn<=0){ F.ph="bite"; F.t=0; F.bt=0; F.rt=0; F.ring.material.opacity=.95; msg("浮標沉下去了！"); try{ tone(180,.18,.08,"sine"); tone(120,.25,.06,"sine",.05); navigator.vibrate&&navigator.vibrate(120); }catch(e){} return; }
       F.nn--; F.nt=.65+Math.random()*.9; F.dip=F.fish.r>=2&&Math.random()<.35?.2:.07+Math.random()*.05; /* (a teasing deeper dip now and then) */ F.rt=0; F.ring.material.opacity=.5; try{ tone(420,.05,.03,"sine"); }catch(e){} } return; }
   if(F.ph==="bite"){ F.bt=F.t; bp.y=y-.42+Math.sin(F.t*30)*.015; F.sh.position.set(w.x,y-.03,w.z); if(F.t>biteWin(F.fish)){ msg("慢了一步，魚吃完餌跑掉了……"); try{ tone(200,.2,.05,"triangle"); }catch(e){} F.ph="miss"; F.t=0; } return; }
+  if(F.ph==="fight"){ const f=F.fish, R=F.R, pull=(f.r*.9+f.sh*.3)*.2/(.75+R.pow*.25); F.tn+=(F.hold?.95:-.75)*dt; F.tn+=(Math.sin(F.t*(2+f.r))*pull+(Math.random()-.5)*pull*2.2)*dt; F.gc=.5+Math.sin(F.t*.9*(1+f.r*.3))*(.1+f.r*.05); F.tn=Math.max(0,Math.min(1,F.tn));
+    const inG=Math.abs(F.tn-F.gc)<F.gw/2; F.prog+=(inG?.21/(1+f.r*.22)*R.pow*(F.bm?1.15:1):-(.05+f.r*.012))*dt; F.over=F.tn>=.99?F.over+dt:0; F.slack=F.tn<=.01?F.slack+dt:0;
+    bp.set(w.x+Math.sin(F.t*3)*.18*(1-F.prog),y-.3,w.z+Math.cos(F.t*2.3)*.18*(1-F.prog)); F.sh.material.opacity=.5; F.sh.position.set(bp.x,y-.03,bp.z); F.rod.rotation.x=1.0-.25*F.tn;
+    const g=F.ov.querySelector("#lfG"), pp=F.ov.querySelector("#lfPt"), pr=F.ov.querySelector("#lfP"); if(g){ g.style.left=((F.gc-F.gw/2)*100)+"%"; g.style.width=(F.gw*100)+"%"; pp.style.left=(F.tn*100)+"%"; pr.style.width=(Math.max(0,F.prog)*100)+"%"; }
+    if(F.prog>=1){ fightOff(); F.ph="reel"; F.t=0; msg("拉上來了！"); return; }
+    if(F.over>.55+R.ctl*2.5){ msg("線斷了！拉太用力了……"); try{ tone(200,.2,.06,"sawtooth"); }catch(e){} fightOff(); F.ph="miss"; F.t=0; return; }
+    if(F.prog<-.04||F.slack>2){ msg(F.slack>2?"線太鬆，魚掙脫了……":"魚掙脫了……"); try{ tone(200,.2,.05,"triangle"); }catch(e){} fightOff(); F.ph="miss"; F.t=0; } return; }
   if(F.ph==="reel"){ const k=Math.min(1,F.t/.5); bp.set(w.x+(a.x-w.x)*k*.35,y-.3+k*.3,w.z+(a.z-w.z)*k*.35); F.rod.rotation.x=1.0-k*.7; F.sh.material.opacity=.5*(1-k); if(F.t>.5){ caught(); } return; }
-  if(F.ph==="miss"){ F.sh.material.opacity=Math.max(0,F.sh.material.opacity-dt); bp.y=y+bob; if(F.t>1.4){ F.ph="wait"; F.t=0; F.wt=2+Math.random()*4.5; F.fish=roll(w.w.k); F.an=null; msg("再等等……"); } return; } }
+  if(F.ph==="miss"){ F.sh.material.opacity=Math.max(0,F.sh.material.opacity-dt); bp.y=y+bob; if(F.t>1.4){ F.ph="wait"; F.t=0; F.wt=(2+Math.random()*4.5)*(baitFor(w.w.k)?.6:1); F.fish=roll(w.w.k,F.R,baitFor(w.w.k)); F.an=null; msg("再等等……"); } return; } }
 /* ---------- the fish book ---------- */
 let dexTab="r";
 function dex(){ const d=LF(), got=FISH.filter(f=>d.fish[f.id]).length; const tabs=[["r","淡水"],["o","海水"]];
@@ -187,24 +245,34 @@ function dex(){ const d=LF(), got=FISH.filter(f=>d.fish[f.id]).length; const tab
 HANDLERS.lfDexTab=v=>{ dexTab=v; dex(); };
 HANDLERS.lfDexOne=v=>{ const f=FBY[v], e=LF().fish[v]; if(!f) return; const when=f.t?f.t.split("").map(c=>SLOTN[+c]).join("、"):"整天";
   openSheet("lfDexOne","📖 "+(e?f.n:"？？？"),`<div class="lf-card"><img src="${fishIcon(f.id,!e)}" alt=""><div class="nm">${e?f.n:"還沒釣到"}</div><div class="st">${"★".repeat(f.r)}${"☆".repeat(4-f.r)}　${RN[f.r]}・${f.w.includes("o")?"海水魚":"淡水魚"}</div>
-   ${e?`<p class="lead" style="margin:8px 0">${f.d}</p><p class="note">出沒：${f.w.split("").map(c=>WN[c]).join("、")}｜時段：${when}${f.need==="rain"?"｜要下雨":""}${f.need==="star"?"｜流星夜":""}<br>釣過 ${e[0]} 條，最大 ${e[1]} 公分。</p>`:`<p class="lead" style="margin:8px 0">出沒：${f.w.split("").map(c=>WN[c]).join("、")}。其他的要自己釣釣看，或問問鎮上的人。</p>`}<div class="row"><button class="secondary" data-act="lfDex">回圖鑑</button></div></div>`); };
+   ${e?`<p class="lead" style="margin:8px 0">${f.d}</p><p class="note">出沒：${f.w.split("").map(c=>WN[c]).join("、")}｜時段：${when}${f.need==="rain"?"｜要下雨":""}${f.need==="star"?"｜流星夜":""}<br>釣過 ${e[0]} 條，最大 ${e[1]} 公分。${BAITS.some(b=>b.t.includes(f.id))?`<br>愛吃：${BAITS.filter(b=>b.t.includes(f.id)).map(b=>b.n).join("、")}`:""}</p>`:`<p class="lead" style="margin:8px 0">出沒：${f.w.split("").map(c=>WN[c]).join("、")}。其他的要自己釣釣看，或問問鎮上的人。</p>`}<div class="row"><button class="secondary" data-act="lfDex">回圖鑑</button></div></div>`); };
 HANDLERS.lfDex=()=>dex(); L.dex=dex;
 /* ---------- selling, the tackle shop ---------- */
 function sellSheet(kind){ const d=LF(), cnt={}; d.inv.forEach(([id,s])=>{ const c=cnt[id]||(cnt[id]={n:0,v:0}); c.n++; c.v+=price(FBY[id],s); }); const tot=Object.values(cnt).reduce((a,c)=>a+c.v,0);
   return `${Object.keys(cnt).length?Object.keys(cnt).map(id=>`<div class="lf-row"><img src="${fishIcon(id)}" alt=""><div class="t"><b>${FBY[id].n}</b> ×${cnt[id].n}<br><small>共 ${cnt[id].v} 平安幣</small></div><button class="secondary" data-act="lfSell" data-v="${kind}:${id}">賣</button></div>`).join("")+`<div class="row" style="margin-top:8px"><button class="primary" data-act="lfSell" data-v="${kind}:*">全部賣掉・${tot} 幣</button></div>`:`<p class="note">背包裡還沒有魚。</p>`}`; }
 function sell(id){ const d=LF(); let got=0, n=0; d.inv=d.inv.filter(([i,s])=>{ if(id==="*"||i===id){ got+=price(FBY[i],s); n++; return false; } return true; }); if(!n) return 0; bag.coins+=got; save(); try{ profSave(true); chaChing(); }catch(e){} toast(`賣了 ${n} 條魚，拿到 ${got} 平安幣`,2400); return got; }
-function tackle(){ const d=LF(); const rods=[[1,"竹釣竿",300,"可以在所有水邊釣魚。"],[2,"好釣竿",1800,"浮標沉下去時魚咬得比較久（比較來得及拉），也比較容易遇到稀有的魚。"]];
-  openSheet("lfTackle","🎣 釣具行",`<p class="lead">老闆：「河、溪、泉水、海邊都能釣，有水的地方就有魚。淡水魚跟海水魚不一樣喔。」</p>
-   ${rods.map(r=>`<div class="lf-row"><div class="t"><b>${r[1]}</b>　${r[2]} 幣<br><small>${r[3]}</small></div>${d.rod>=r[0]?`<button class="secondary" disabled>已擁有</button>`:`<button class="primary" data-act="lfRod" data-v="${r[0]}">${me.sp?"拿":"買"}</button>`}</div>`).join("")}
-   <h4 style="margin:14px 0 4px">收購魚</h4>${sellSheet("t")}<div class="row" style="margin-top:10px"><button class="secondary" data-act="lfDex">📖 魚圖鑑</button></div>`); }
-HANDLERS.lfRod=v=>{ const d=LF(), n=+v, p=n===1?300:1800; if(d.rod>=n) return; if(!me.sp){ if(bag.coins<p){ try{ buzz(); }catch(e){} toast(`平安幣不夠（還差 ${p-bag.coins}）`,2400); return; } bag.coins-=p; } d.rod=n; save(); try{ profSave(true); chaChing(); }catch(e){} toast(n===1?"買了竹釣竿！走到水邊就會出現「🎣 釣魚」":"換了好釣竿！",3000); tackle(); };
+let tkTab="rf";
+const stars=(v,lo,hi)=>{ const n=Math.max(1,Math.min(5,Math.round(1+4*(v-lo)/(hi-lo)))); return "★".repeat(n)+"☆".repeat(5-n); };
+function tackle(){ const d=LF(); const tabs=[["rf","溪釣竿"],["rs","海釣竿"],["bf","溪釣餌"],["bs","海釣餌"],["sell","賣魚"]]; let body="";
+  if(tkTab==="rf"||tkTab==="rs"){ const k=tkTab==="rf"?"f":"s", eq=k==="f"?d.eqF:d.eqS, cur=rodFor(k==="f"?"r":"o");
+    body=`<p class="note" style="margin:6px 0">${k==="f"?"溪釣竿用在大河、溪谷和泉池。":"海釣竿用在海邊。"}釣竿不會壞。越稀有的魚越難拉，好竿子拉起來比較穩。</p>`+RODS.map((r,i)=>{ if(r.k!==k) return ""; const own=hasRod(i), using=cur===r;
+      if(r.hid&&!own){ const can=i===11&&((d.stone|0)>=1||(d.dust|0)>=8); return `<div class="lf-row"><div class="t"><b>？？？</b><br><small>${can?"老闆：「這石頭……我可以幫你打一支特別的竿子。」":"聽說有人見過一支很特別的釣竿……"}</small></div>${can?`<button class="primary" data-act="lfForge">打造</button>`:""}</div>`; }
+      return `<div class="lf-row"><div class="t"><b>${r.n}</b>${r.hid?"":`　${r.p} 幣`}<br><small>${r.d}<br>操控 ${stars(r.ctl,0,.15)}　力量 ${stars(r.pow,1,1.75)}　魚運 ${stars(r.luck,1,2.6)}</small></div>${own?`<button class="${using?"secondary":"primary"}" data-act="lfRodEq" data-v="${i}" ${using?"disabled":""}>${using?"使用中":"換這支"}</button>`:`<button class="primary" data-act="lfRod" data-v="${i}">買</button>`}</div>`; }).join(""); }
+  else if(tkTab==="bf"||tkTab==="bs"){ const k=tkTab==="bf"?"f":"s"; body=`<p class="note" style="margin:6px 0">一包 10 份，魚咬一次用掉一份。不用餌也能釣，只是魚來得慢。釣魚時按左上角可以換餌。</p>`+BAITS.map((b,i)=>b.k!==k?"":`<div class="lf-row"><div class="t"><b>${b.n}</b>　${b.p} 幣／10 份${d.bait[i]?`｜有 ${d.bait[i]} 份`:""}<br><small>${b.d}</small></div><button class="primary" data-act="lfBait" data-v="${i}">買</button></div>`).join(""); }
+  else body=`<h4 style="margin:10px 0 4px">收購魚</h4>${sellSheet("t")}`;
+  openSheet("lfTackle","🎣 釣具行",`<p class="lead">老闆：「河、溪、泉水用溪釣竿，海邊用海釣竿。什麼魚吃什麼餌，學問可大了。」</p><div style="display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px">${tabs.map(t=>`<button class="${tkTab===t[0]?"primary":"secondary"}" style="flex:none;width:auto;min-height:0;padding:8px 12px;font-size:14px" data-act="lfTk" data-v="${t[0]}">${t[1]}</button>`).join("")}</div>${body}<div class="row" style="margin-top:10px"><button class="secondary" data-act="lfDex">📖 魚圖鑑</button></div>`); }
+HANDLERS.lfTk=v=>{ tkTab=v; tackle(); };
+HANDLERS.lfRod=v=>{ const d=LF(), i=+v, r=RODS[i]; if(!r||r.hid||hasRod(i)) return; if(!me.sp){ if(bag.coins<r.p){ try{ buzz(); }catch(e){} toast(`平安幣不夠（還差 ${r.p-bag.coins}）`,2400); return; } bag.coins-=r.p; } d.rods|=1<<i; if(r.k==="f") d.eqF=i+1; else d.eqS=i+1; save(); try{ profSave(true); chaChing(); }catch(e){} toast(`買了${r.n}！走到${r.k==="f"?"河邊、溪邊或泉池":"海邊"}就會出現「🎣 釣魚」`,3200); tackle(); };
+HANDLERS.lfRodEq=v=>{ const d=LF(), i=+v, r=RODS[i]; if(!r||!hasRod(i)) return; if(r.k==="f") d.eqF=i+1; else d.eqS=i+1; save(); tackle(); };
+HANDLERS.lfBait=v=>{ const d=LF(), i=+v, b=BAITS[i]; if(!b) return; if(d.bait[i]>=90){ toast("這種餌帶太多了",1800); return; } if(!me.sp){ if(bag.coins<b.p){ try{ buzz(); }catch(e){} toast(`平安幣不夠（還差 ${b.p-bag.coins}）`,2400); return; } bag.coins-=b.p; } d.bait[i]+=10; if(b.k==="f"){ if(!d.bF) d.bF=i+1; } else if(!d.bS) d.bS=i+1; save(); try{ chaChing(); }catch(e){} tackle(); };
+HANDLERS.lfForge=()=>{ const d=LF(); if(hasRod(11)) return; if((d.stone|0)>=1) d.stone--; else if((d.dust|0)>=8) d.dust-=8; else return; d.rods|=1<<11; d.eqS=12; save(); try{ profSave(true); [784,988,1175,1568,2093].forEach((f,k)=>tone(f,.2,.06,"triangle",k*.1)); }catch(e){} toast("✨ 老闆把流星的石頭打成了「星辰釣竿」！",3600); tkTab="rs"; tackle(); };
 HANDLERS.lfSell=v=>{ const [k,id]=v.split(":"); sell(id); if(k==="t") tackle(); else grocer(); };
 function grocer(){ openSheet("lfGrocer","🧺 雜貨店",`<p class="lead">阿姨：「魚啊、種的菜跟花，我都收。」</p><h4 style="margin:10px 0 4px">收購魚</h4>${sellSheet("g")}${L.cropSell?L.cropSell():""}`); }
 /* ---------- the bag ---------- */
 L.bagEntries=(out,tab)=>{ if(tab!=="all"&&tab!=="goods") return; const d=LF(), cnt={}; out.push({id:"lf:dex",ic:"lf_dex",name:"圖鑑",desc:`釣過的魚都記在這裡（${FISH.filter(f=>d.fish[f.id]).length}/${FISH.length}）。之後會加上蟲、花、貝殼。`}); L.cropList().forEach(c=>out.push({id:"lf:c_"+c.id,ic:"lf_c_"+c.id,n:c.k,name:c.n,desc:"在自己的花圃種出來的。可以賣給花店、雜貨店，或送給鎮上的人。"})); d.inv.forEach(([id])=>cnt[id]=(cnt[id]||0)+1); Object.keys(cnt).forEach(id=>{ const f=FBY[id]; out.push({id:"lf:"+id,ic:"lf_"+id,n:cnt[id],name:f.n,desc:`${f.w.includes("o")?"海水魚":"淡水魚"}・${RN[f.r]}。${f.d}可以到釣具行或雜貨店賣。`}); }); };
 L.bagActs=(k,e)=>k.startsWith("c_")?"":`<button class="chip" data-act="lfDex">看圖鑑</button>`;
 /* ---------- stations in the town ---------- */
-L.station=k=>{ if(k==="tw:tackle"){ tackle(); return true; } if(k==="tw:grocer"){ grocer(); return true; } if(k==="tw:fish"){ toast(LF().rod||me.sp?"站到水邊就能釣魚，按「🎣 釣魚」":"先到老街的釣具行買釣竿，就能在水邊釣魚",3000); return true; } return L.more?L.more(k):false; };
+L.station=k=>{ if(k==="tw:tackle"){ tackle(); return true; } if(k==="tw:grocer"){ grocer(); return true; } if(k==="tw:fish"){ toast(rodFor("r")?"站到水邊就能釣魚，按「🎣 釣魚」":"先到老街的釣具行買釣竿，就能在水邊釣魚",3000); return true; } return L.more?L.more(k):false; };
 L.tick=dt=>{ try{ fishTick(dt); heldTick(dt); }catch(e){ console.warn("fish",e); F&&endFish(); } try{ L.tick2&&L.tick2(dt); }catch(e){ console.warn("life",e); } };
 
 /* ---------- 女神泉: toss a coin in, the goddess rises and asks which one was yours (once a day) ---------- */
@@ -225,7 +293,7 @@ function goddessTick(dt){ if(!GD) return; GD.t+=dt; const g=GD.g; if(GD.ph==="up
   if(GD.ph==="down"){ g.position.y-=dt*1.4; if(g.position.y<-3){ scene.remove(g); g.traverse(o=>{ if(o.geometry) o.geometry.dispose(); if(o.material&&o.material!==glowTex) o.material.dispose(); }); GD=null; return; } }
   g.children.forEach(o=>{ if(o.isMesh&&o.geometry.type==="CylinderGeometry"&&o.visible&&o.position.y>3.5) o.rotation.z+=dt*2; }); g.rotation.y=Math.sin(GD.t*.6)*.08; g.position.y+=Math.sin(GD.t*1.5)*.002; }
 function askGoddess(){ openSheet("lfGod","✨ 湖之女神",`<p class="lead">泉水發出光，一位女神緩緩升起：「你掉進泉裡的，是這枚<b>金色</b>的平安幣、這枚<b>銀色</b>的，還是這枚<b>普通</b>的平安幣呢？」</p><div class="row"><button class="secondary" data-act="lfGodPick" data-v="g">金色的</button><button class="secondary" data-act="lfGodPick" data-v="s">銀色的</button><button class="primary" data-act="lfGodPick" data-v="n">普通的</button></div>`); }
-HANDLERS.lfGodPick=v=>{ closeSheet(); const d=LF(); if(GD) GD.ph="down"; if(v==="n"){ bag.coins+=100+500; bag.gacha=Math.min(255,(bag.gacha||0)+1); d.godOK=(d.godOK|0)+1; save(); try{ profSave(true); chaChing(); }catch(e){}
+HANDLERS.lfGodPick=v=>{ closeSheet(); const d=LF(); if(GD) GD.ph="down"; if(v==="n"){ bag.coins+=100+500; bag.gacha=Math.min(255,(bag.gacha||0)+1); d.godOK=(d.godOK|0)+1; if(d.godOK>=3&&!(d.rods&32)){ d.rods|=32; d.eqF=6; setTimeout(()=>toast("✨ 女神：「你一直都很誠實。這支釣竿也送給你。」得到「女神的金釣竿」！",5000),2600); } save(); try{ profSave(true); chaChing(); }catch(e){}
     setTimeout(()=>openSheet("lfGod2","✨ 湖之女神",`<p class="lead">「誠實的孩子，這三枚都送給你吧。」</p><p class="note">拿回你的平安幣，另外得到 500 平安幣和 1 枚扭蛋幣。明天再來吧。</p>`),400); }
   else { save(); try{ tone(220,.4,.05,"sine"); }catch(e){} setTimeout(()=>openSheet("lfGod2","✨ 湖之女神",`<p class="lead">女神微微一笑，什麼也沒說，帶著光沉回了泉底……</p><p class="note">你丟下去的平安幣沒有回來。明天再來試試吧。</p>`),400); } };
 function goddess(){ const d=LF(); if(GD) return; if(d.god===today()&&!me.sp){ toast("泉水靜靜的。女神今天已經出現過了，明天再來吧",2600); return; }
@@ -467,19 +535,19 @@ L.garden=gardenOpen;
 /* ---------- into the save code (the 取回碼 and the server's copy): rod, bought styles, the fish book, fish in the bag (how many of
    each kind; sizes come back as a typical size), the townsfolk's affinity, the garden (seeds, harvest, what grows in each bed), and
    meteor finds. Order matters: FISH, NPCS and SEEDS may only ever be added to at the end. ---------- */
-L.pack=put=>{ const d=LF(), o=d.own||{}, g=GD2(); put(2,3); /* (version 2: says how many kinds of fish follow) */ put(FISH.length,7); put(d.rod|0,2); ["h","e","m","n"].forEach(k=>put(o[k]|0,10));
+L.pack=put=>{ const d=LF(), o=d.own||{}, g=GD2(); put(3,3); /* (version 3: + rods, baits) */ put(FISH.length,7); put(d.rod|0,2); ["h","e","m","n"].forEach(k=>put(o[k]|0,10));
   FISH.forEach(f=>{ const e=d.fish[f.id]; put(e?Math.min(63,e[0]):0,6); if(e) put(Math.min(511,Math.round(e[1])),9); });
   const ic={}; d.inv.forEach(([id])=>ic[id]=(ic[id]||0)+1); FISH.forEach(f=>put(Math.min(40,ic[f.id]||0),6));
   NPCS.forEach(n=>{ const R=(d.npc||{})[n.id]||{}; put(Math.min(100,R.a|0),7); put((R.r|0)&7,3); });
   SEEDS.forEach(q=>put(Math.min(31,g.seed[q[0]]|0),5)); SEEDS.forEach(q=>put(Math.min(127,g.crop[q[0]]|0),7));
   g.beds.forEach(b=>{ const i=b?SEEDS.findIndex(q=>q[0]===b.s):-1; put(i+1,3); if(i>=0){ grow(b,Date.now()); put(Math.min(15,Math.round(b.p*5)),4); put(b.w?1:0,1); } });
-  put(Math.min(63,d.stone|0),6); put(Math.min(255,d.dust|0),8); };
-L.unpack=get=>{ const v=get(3); if(v!==1&&v!==2) return null; const NF=v===1?33:Math.min(FISH.length,get(7)), FL=FISH.slice(0,NF); const o={rod:get(2),own:{h:get(10),e:get(10),m:get(10),n:get(10)},fish:{},inv:[],npc:{},seed:{},crop:{},beds:[]};
+  put(Math.min(63,d.stone|0),6); put(Math.min(255,d.dust|0),8); put(d.rods&4095,12); put(d.eqF|0,4); put(d.eqS|0,4); put(Math.min(15,d.godOK|0),4); d.bait.forEach(n=>put(Math.min(127,n|0),7)); put(d.bF|0,5); put(d.bS|0,5); };
+L.unpack=get=>{ const v=get(3); if(v<1||v>3) return null; const NF=v===1?33:Math.min(FISH.length,get(7)), FL=FISH.slice(0,NF); const o={rod:get(2),own:{h:get(10),e:get(10),m:get(10),n:get(10)},fish:{},inv:[],npc:{},seed:{},crop:{},beds:[]};
   FL.forEach(f=>{ const n=get(6); if(n) o.fish[f.id]=[n,get(9),Date.now()]; }); FL.forEach(f=>{ const n=get(6); for(let k=0;k<n;k++) o.inv.push([f.id,Math.round((f.sz[0]+f.sz[1])/2)]); });
   NPCS.forEach(n=>{ o.npc[n.id]={a:get(7),r:get(3),d:0,g:0}; }); SEEDS.forEach(q=>o.seed[q[0]]=get(5)); SEEDS.forEach(q=>o.crop[q[0]]=get(7));
   for(let i=0;i<12;i++){ const k=get(3); if(k){ const p=get(4)/5, w=get(1); o.beds.push(SEEDS[k-1]?{s:SEEDS[k-1][0],p,w,t:Date.now()}:null); } else o.beds.push(null); }
-  o.stone=get(6); o.dust=get(8); return o; };
-L.restore=o=>{ if(!o) return; const d=LF(), g=GD2(); d.rod=Math.max(d.rod|0,o.rod); d.own=d.own||{}; for(const k in o.own) d.own[k]=(d.own[k]|0)|o.own[k];
+  o.stone=get(6); o.dust=get(8); if(v>=3){ o.rods=get(12); o.eqF=get(4); o.eqS=get(4); o.godOK=get(4); o.bait=[]; for(let i=0;i<20;i++) o.bait.push(get(7)); o.bF=get(5); o.bS=get(5); } return o; };
+L.restore=o=>{ if(!o) return; const d=LF(), g=GD2(); d.rod=Math.max(d.rod|0,o.rod); if(o.rods!=null){ d.rods=(d.rods|0)|o.rods; d.eqF=d.eqF||o.eqF; d.eqS=d.eqS||o.eqS; d.godOK=Math.max(d.godOK|0,o.godOK); o.bait.forEach((n,i)=>{ d.bait[i]=Math.max(d.bait[i]|0,n); }); d.bF=d.bF||o.bF; d.bS=d.bS||o.bS; } else if(o.rod&&!d.rods) d.rods=o.rod>=2?0b1000011:1; d.own=d.own||{}; for(const k in o.own) d.own[k]=(d.own[k]|0)|o.own[k];
   for(const id in o.fish){ const e=d.fish[id], n=o.fish[id]; d.fish[id]=e?[Math.max(e[0],n[0]),Math.max(e[1],n[1]),e[2]]:n; }
   if(o.inv.length>=d.inv.length) d.inv=o.inv; d.npc=d.npc||{}; for(const id in o.npc){ const R=d.npc[id]; if(!R||R.a<o.npc[id].a) d.npc[id]=Object.assign(R||{d:0,g:0},{a:o.npc[id].a,r:(R?R.r|0:0)|o.npc[id].r}); }
   for(const k in o.seed) g.seed[k]=Math.max(g.seed[k]|0,o.seed[k]); for(const k in o.crop) g.crop[k]=Math.max(g.crop[k]|0,o.crop[k]); if(o.beds.some(b=>b)&&!g.beds.some(b=>b)) g.beds=o.beds;
