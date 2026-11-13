@@ -77,7 +77,16 @@ function tree(C,x,z,s){ s=s||1; cyl(.12*s,.16*s,1.6*s,mat("#6b4a2e",{roughness:.
 function lamp(C,x,z){ cyl(.05,.07,3.4,mat("#3a3a3e",{roughness:.6}),x,1.7,z,C.g,6); const b=new T.Mesh(new T.SphereGeometry(.2,8,6),mat("#fff0c8",{emissive:"#ffd98a",emissiveIntensity:1.2,roughness:.6})); b.position.set(x,3.5,z); C.g.add(b); }
 function bench(C,x,z,ry){ const g=new T.Group(); g.position.set(x,0,z); g.rotation.y=ry||0; C.g.add(g); box(1.5,.07,.42,mat("#8a6246",{roughness:.8}),0,.45,0,g); box(1.5,.4,.06,mat("#8a6246",{roughness:.8}),0,.75,-.2,g); for(const s of [-.6,.6]) box(.07,.45,.4,mat("#3a3a3e"),s,.22,0,g); }
 const ROAD_A0=26.2, ROAD_A1=32; /* the main street's asphalt lines up with the old road past the temple (moved outside the balustrade 11/12) */
-function street(C,x0,x1,z0,z1,along,a0,a1){ /* asphalt with a paved walk on each side; along "z" or "x" (a0..a1: where the asphalt runs, if not centred) */ if(along==="z"){ a0=a0??x0+1.8; a1=a1??x1-1.8; ground(C,"asphalt",a0,a1,z0,z1,.012,true); ground(C,"pave",x0,a0,z0,z1,.02,true,2); ground(C,"pave",a1,x1,z0,z1,.02,true,2); const y=mat("#f2c230",{roughness:.7}); for(let z=z0+1;z<z1-1;z+=4) box(.12,.012,2,y,(a0+a1)/2,.022,z+1,C.g); }
+/* the streets that run along x, so a street along z knows where side streets come in (11/14: its sidewalk used to run straight across the
+   mouth of each side street, and its yellow centre dashes carried on through the crossing) */
+const XSTREETS=[[33.2,88,-81,-73],[-8,22.8,-111,-105],[33.2,66,-111,-105]];
+function street(C,x0,x1,z0,z1,along,a0,a1){ /* asphalt with a paved walk on each side; along "z" or "x" (a0..a1: where the asphalt runs, if not centred) */
+  if(along==="z"){ a0=a0??x0+1.8; a1=a1??x1-1.8; ground(C,"asphalt",a0,a1,z0,z1,.012,true);
+    const side=(sx0,sx1,edge)=>{ /* the sidewalk on one side, cut where a side street joins; the gap is road */ const cuts=XSTREETS.filter(r=>(Math.abs(r[0]-edge)<.15||Math.abs(r[1]-edge)<.15)&&r[3]>z0&&r[2]<z1).map(r=>[Math.max(z0,r[2]+1.4),Math.min(z1,r[3]-1.4)]).sort((a,b)=>a[0]-b[0]);
+      let z=z0; for(const [c0,c1] of cuts){ if(c0>z) ground(C,"pave",sx0,sx1,z,c0,.02,true,2); ground(C,"asphalt",sx0,sx1,c0,c1,.012,true); z=Math.max(z,c1); } if(z<z1) ground(C,"pave",sx0,sx1,z,z1,.02,true,2); };
+    side(x0,a0,x0); side(a1,x1,x1);
+    const y=mat("#f2c230",{roughness:.7}), cross=XSTREETS.filter(r=>(Math.abs(r[0]-x1)<.15||Math.abs(r[1]-x0)<.15)&&r[3]>z0&&r[2]<z1);
+    for(let z=z0+1;z<z1-1;z+=4){ if(cross.some(r=>z+2>r[2]-.5&&z<r[3]+.5)) continue; box(.12,.012,2,y,(a0+a1)/2,.022,z+1,C.g); } } /* (no centre line across a crossing) */
   else { ground(C,"asphalt",x0,x1,z0+1.4,z1-1.4,.012,true); ground(C,"pave",x0,x1,z0,z0+1.4,.02,true,2); ground(C,"pave",x0,x1,z1-1.4,z1,.02,true,2); } }
 const krng=seed=>()=>{ seed|=0; seed=seed+0x6D2B79F5|0; let t=Math.imul(seed^seed>>>15,1|seed); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; };
 /* ================= 房子組件 (11/13, the chair: "buildings not all the same, heights can differ, mix a few parts; the street needs a soul").
@@ -172,7 +181,7 @@ const TOWNB=(()=>{ const out=[]; let sd=101;
   row("mW","z",22.8,Math.PI/2,-83.6,-73.6,"mix",[],{fl:r=>1+(r()*3|0)});
   row("mW2","z",22.8,Math.PI/2,-98.8,-90.4,"mix",[S(-98.6,8,"花店","tw:flower",{fl:2,sbg:"#5f9a6a",arcade:false})]);
   /* 西側巷弄: a narrow lane off the main street with the barber's and the beauty salon */
-  row("aN","x",-84,Math.PI,4,15.4,"mix",[S(8.2,7,"理髮廳","tw:barber",{fl:2,sbg:"#4a8fb0",arcade:false})]);
+  row("aN","x",-84,Math.PI,4,15.4,"mix",[S(8.2,7,"文具店","tw:soon:文具店",{fl:2,sbg:"#4a8fb0",arcade:false})]);
   row("aS","x",-90,0,4,15.4,"mix",[S(8.6,6.6,"美容院","tw:beauty",{fl:2,sbg:"#d9628a",arcade:false})]);
   /* 住宅巷: houses, each a little different; the first one west of the main street is yours */
   row("hN","x",-105,Math.PI,-8,22.4,"house",[{a:15.5,w:6,kind:"house",name:"我的家",key:"tw:home",fl:2,col:"#f6d6cf",rcol:"#d9624a",roof:"gable"}]);
@@ -478,13 +487,18 @@ function bake(C){ const g=C.g; g.updateMatrixWorld(true); const bk=new Map(), go
     const G=new T.BufferGeometry(); G.setAttribute("position",new T.BufferAttribute(P,3)); G.setAttribute("normal",new T.BufferAttribute(N,3)); G.setAttribute("uv",new T.BufferAttribute(U,2)); G.setIndex(new T.BufferAttribute(I,1)); G.computeBoundingSphere(); const M=new T.Mesh(G,m); M.matrixAutoUpdate=false; M.raycast=()=>{}; M.userData.keep=1; C.baked.push(M); });
   gone.forEach(o=>{ if(o.parent) o.parent.remove(o); o.geometry.dispose(); }); C.baked.forEach(M=>g.add(M)); }
 const LIVE={};
-function load(d){ const C={g:new T.Group(),picks:[],baked:[]}; C.g.userData.noMerge=1; d.build(C); bake(C); scene.add(C.g); LIVE[d.id]=C; try{ if(typeof WORLD!=="undefined") WORLD.warm=2; }catch(e){} }
+function load(d){ const C={g:new T.Group(),picks:[],baked:[]}; C.g.userData.noMerge=1; const t0=performance.now(); d.build(C); const t1=performance.now(); bake(C); scene.add(C.g); (TW.loadLog||(TW.loadLog=[])).push([d.id,Math.round(t1-t0),Math.round(performance.now()-t1)]); LIVE[d.id]=C; try{ if(typeof WORLD!=="undefined") WORLD.warm=2; }catch(e){} }
 function unload(id){ const C=LIVE[id]; if(!C) return; scene.remove(C.g); C.picks.forEach(m=>{ const i=pickables.indexOf(m); if(i>=0) pickables.splice(i,1); }); C.g.traverse(o=>{ if(o.isMesh){ o.geometry.dispose(); if(o.userData.own){ if(o.material.map) o.material.map.dispose(); o.material.dispose(); } } }); delete LIVE[id]; }
 /* near enough to see through the haze: build; well out of sight: throw away. One district per look, so a step never builds two. */
 /* deep in the town the temple is behind the haze: its big merged meshes are skipped until you come back within sight of them */
 let hid=[]; function fogCull(px,pz){ try{ if(typeof MERGED==="undefined") return; if(pz>-58){ if(hid.length){ hid.forEach(M=>{ M.visible=true; }); hid=[]; } return; } const far=(scene.fog&&scene.fog.far||90)+8, cx=camera.position.x, cz=camera.position.z;
     for(const M of MERGED){ const bs=M.geometry.boundingSphere; if(!bs) continue; const out=Math.hypot(bs.center.x-cx,bs.center.z-cz)-bs.radius>far; if(out&&M.visible){ M.visible=false; hid.push(M); } else if(!out&&!M.visible&&hid.includes(M)){ M.visible=true; hid.splice(hid.indexOf(M),1); } } }catch(e){} }
 let acc=0, greeted=false, wt=0;
+/* 禪房一帶卡住 (11/14): the town districts next to the 禪房 and the temple used to be built the first time you came near, and their
+   materials compiled on the spot (on a phone that is seconds of frozen screen). They are built while the game is still loading now,
+   and the warm-up then compiles them behind the loading screen. */
+TW.preload=()=>{ for(const id of ["gate","oldE1","oldE2","mid"]){ const d=CH.find(q=>q.id===id); if(d&&!LIVE[id]) try{ load(d); }catch(e){ console.warn("town preload",e); } } };
+try{ whenEssential(()=>setTimeout(()=>TW.preload(),50)); }catch(e){} setTimeout(()=>TW.preload(),8000); /* (and in any case soon after the start) */
 TW.tick=dt=>{ try{ NT.tick(dt,LIVE); }catch(e){} /* in the town the camera never comes closer than ~1 m to anything, so the near plane can move out: the depth test gets ~2.7× finer and close-together surfaces (signs, windows, doors on walls) stop flickering on phones */ { const nn=camera.position.z<-50.5?.4:.15; if(camera.near!==nn){ camera.near=nn; camera.updateProjectionMatrix(); } } wt+=dt; for(const id in LIVE){ const w=LIVE[id].water; if(w){ w.material.map.offset.x=wt*.02; } } acc+=dt; if(acc<.4) return; acc=0; if(typeof meAv==="undefined"||!meAv) return; const px=meAv.pos.x, pz=meAv.pos.y; TW.on=TW.in(px,pz); fogCull(px,pz);
   let built=false; for(const d of CH){ const dist=Math.hypot(px-d.c[0],pz-d.c[1])-d.r; if(!LIVE[d.id]){ if(dist<75&&!built){ load(d); built=true; } } else if(dist>105) unload(d.id); }
   if(TW.on&&!greeted&&pz<-56){ greeted=true; try{ toast("🏮 歡迎來到天后小鎮",2600); statInc("townIn"); }catch(e){} } if(!TW.on&&pz>-40) greeted=false; };

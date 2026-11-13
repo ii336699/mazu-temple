@@ -410,14 +410,17 @@ function endTry(){ if(!PV) return; try{ meAv.setLook(me.look); }catch(e){} PV=nu
 function wearNow(i,n){ const l=me.look.slice(); l[i]=n; me.look=sanitizeLook(l,!!me.sp); PV=null; try{ localStorage.setItem("mz.me",JSON.stringify(me)); }catch(e){} try{ draftLook=me.look.slice(); }catch(e){} meAv.setLook(me.look); markDirty(); try{ profSave(true); }catch(e){} try{ [659,880,1175].forEach((f,k)=>tone(f,.12,.05,"triangle",k*.07)); }catch(e){} }
 const owned2=(k,n)=>me.sp||!!((OWN()[k]|0)&(1<<n));
 function barber(){ const rows=(lo,hi,lab)=>`<h4 style="margin:10px 0 4px">${lab}</h4>`+[...Array(hi-lo)].map((_,j)=>{ const n=lo+j, k=n-25, own=owned2("h",k), on=me.look[1]===n; return `<div class="lf-row"><div class="t"><b>${HAIRS[n].replace("✂️ ","")}</b>　${own?"<small>已擁有</small>":HP[k]+" 幣"}</div><button class="secondary" data-act="lfTry" data-v="1:${n}">試試看</button>${own?`<button class="primary" data-act="lfWear" data-v="1:${n}" ${on?"disabled":""}>${on?"現在的髮型":"換上"}</button>`:`<button class="primary" data-act="lfBuy" data-v="1:${n}">剪這個</button>`}</div>`; }).join("");
-  openSheet("lfBarber","✂️ 理髮廳",`<p class="lead">設計師：「要不要換個新造型？這幾款比較精緻，買過以後在換裝裡也能隨時換回來。」</p>${rows(25,30,"男生款")}${rows(30,35,"女生款")}<p class="note">髮色在「換裝」裡可以另外換。</p>`); }
+  salonOpen("h",`${rows(25,30,"男生款")}${rows(30,35,"女生款")}<p class="note">髮色在「換裝」裡可以另外換。</p>`); }
 function beauty(){ const sec=(i,lo,cnt,P,k,lab,names)=>`<h4 style="margin:10px 0 4px">${lab}</h4>`+[...Array(cnt)].map((_,j)=>{ const n=lo+j, own=owned2(k,j), on=me.look[i]===n; return `<div class="lf-row"><div class="t"><b>${names[n].replace("💄 ","")}</b>　${own?"<small>已擁有</small>":P[j]+" 幣"}</div><button class="secondary" data-act="lfTry" data-v="${i}:${n}">試試看</button>${own?`<button class="primary" data-act="lfWear" data-v="${i}:${n}" ${on?"disabled":""}>${on?"現在的":"換上"}</button>`:`<button class="primary" data-act="lfBuy" data-v="${i}:${n}">買</button>`}</div>`; }).join("");
-  openSheet("lfBeauty","💄 美容院",`<p class="lead">「眼睛、鼻子、嘴巴，各有十款可以挑喔。」</p>${sec(7,15,10,EP,"e","眼睛",EYES)}${sec(13,1,10,NP,"n","鼻子",NOSES)}${sec(9,4,10,MP,"m","嘴巴",MOUTHS)}<p class="note">買過的在「換裝」的臉部也能換。想拿掉鼻子：換裝裡選「無」。</p>`); }
+  salonOpen("f",`${sec(7,15,10,EP,"e","眼睛",EYES)}${sec(13,1,10,NP,"n","鼻子",NOSES)}${sec(9,4,10,MP,"m","嘴巴",MOUTHS)}<p class="note">買過的在「換裝」的臉部也能換。想拿掉鼻子：換裝裡選「無」。</p>`); }
+/* 美容院 (11/14: the barber and the beauty salon are one shop now): hair and face on two tabs */
+function salonOpen(tab,body){ openSheet("lfSalon","💇 美容院",`<p class="lead">設計師：「您好，請問有預約、有指定設計師嗎？」</p><div class="row" style="margin-bottom:6px"><button class="${tab==="h"?"primary":"secondary"}" data-act="lfSalon" data-v="h">✂️ 髮型</button><button class="${tab==="f"?"primary":"secondary"}" data-act="lfSalon" data-v="f">💄 五官</button></div>${body}`); }
+HANDLERS.lfSalon=v=>v==="f"?beauty():barber();
 const slotOf=(i,n)=>i===1?["h",n-25,HP]:i===7?["e",n-15,EP]:i===13?["n",n-1,NP]:["m",n-4,MP];
 HANDLERS.lfTry=v=>{ const [i,n]=v.split(":").map(Number); tryOn(i,n); toast("試試看：關掉面板就會換回原本的樣子",2000); };
 HANDLERS.lfWear=v=>{ const [i,n]=v.split(":").map(Number); wearNow(i,n); i===1?barber():beauty(); };
 HANDLERS.lfBuy=v=>{ const [i,n]=v.split(":").map(Number), [k,j,P]=slotOf(i,n), o=OWN(); if(owned2(k,j)) return; if(bag.coins<P[j]&&!me.sp){ try{ buzz(); }catch(e){} toast(`平安幣不夠（還差 ${P[j]-bag.coins}）`,2400); return; } if(!me.sp) bag.coins-=P[j]; o[k]=(o[k]|0)|(1<<j); save(); try{ chaChing(); statInc("lfBuy"+k); }catch(e){} wearNow(i,n); toast("換好了！好看喔",2200); i===1?barber():beauty(); };
-L.tick3=dt=>{ if(PV&&!(sheetKind==="lfBarber"||sheetKind==="lfBeauty")) endTry(); if(L.tick4) L.tick4(dt); };
+L.tick3=dt=>{ if(PV&&sheetKind!=="lfSalon") endTry(); if(L.tick4) L.tick4(dt); };
 L.more2=k=>{ if(k==="tw:barber"){ barber(); return true; } if(k==="tw:beauty"){ beauty(); return true; } return L.more3?L.more3(k):false; };
 
 /* ---------- 小吃廣場的兩個攤位: 擠冰淇淋 (stack the swirls straight) and 中藥對對碰 (find the pairs) ---------- */
