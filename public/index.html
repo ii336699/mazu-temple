@@ -12784,7 +12784,7 @@ L.keeper=(k,open)=>{ const K=KEEP[k]; if(!K) return false; const S=KS[k]||keepMa
   next(); return true; };
 /* little body language, every frame, after the avatar's own update */
 function keepTick(dt){ const p=meAv.pos; for(const k in KS){ const S=KS[k]; if(Math.hypot(p.x-S.sp.x,p.y-S.sp.z)>70){ keepDrop(k); continue; } S.t+=dt; const t=S.t;
-    S.avs.forEach((av,i)=>{ av.pos.set(av.root.position.x,av.root.position.z); av.target.copy(av.pos); try{ av.update(dt); }catch(e){} const H=av.head, A=av.arms, P=av._P||{};
+    S.avs.forEach((av,i)=>{ if(av._out){ try{ av.update(dt); }catch(e){} return; } /* (out walking: just walk) */ av.pos.set(av.root.position.x,av.root.position.z); av.target.copy(av.pos); try{ av.update(dt); }catch(e){} const H=av.head, A=av.arms, P=av._P||{};
       if(P.hunch) av.torso.rotation.x+=P.hunch;
       switch(S.mode){
         case "hum": H.rotation.z=Math.sin(t*3)*.16; A[1].rotation.x=-.9+Math.sin(t*2.2)*.25; A[1].rotation.z=Math.sin(t*1.7)*.12; break;
@@ -12799,7 +12799,7 @@ function keepTick(dt){ const p=meAv.pos; for(const k in KS){ const S=KS[k]; if(M
         case "cheer": { const hop=Math.abs(Math.sin(t*5+i)); av.lift&&(av.lift.position.y=(av._ly??(av._ly=av.lift.position.y))+hop*.08); A[i?0:1].rotation.z=(i?-1:1)*(2.4+Math.sin(t*10)*.3); break; }
         case "pose": H.rotation.z=-.1; A[1].rotation.x=-1.9; A[1].rotation.z=.6; break;
         default: H.rotation.x=Math.sin(t*.6)*.04; } });
-    if(S.mode!=="argue") S.avs.forEach(av=>{ av.root.rotation.y=S.sp.ry; }); } }
+    if(S.mode!=="argue") S.avs.forEach(av=>{ if(!av._out) av.root.rotation.y=S.sp.ry; }); } }
 /* spawn the keepers of shops near you (so the street looks lived in) */
 let keepAcc=0; function keepNear(dt){ keepAcc+=dt; if(keepAcc<1) return; keepAcc=0; if(!(TOWNX&&TOWNX.on)) return; const p=meAv.pos; for(const k in KEEP){ if(KS[k]) continue; const sp=keepSpot(k); if(sp&&Math.hypot(p.x-sp.x,p.y-sp.z)<38){ keepMake(k); break; } } }
 L.tick6=dt=>{ try{ keepNear(dt); keepTick(dt); }catch(e){ console.warn("keepers",e); } if(L.tick7) L.tick7(dt); };
@@ -13163,6 +13163,34 @@ async function chairSetSpot(close){ const key=ck(); if(!key){ toast("先在主�
   const hideMe=meAv.root.visible; meAv.root.visible=false; await new Promise(r=>setTimeout(r,120)); const url=snap(420); meAv.root.visible=hideMe; avs.forEach(av=>{ try{ scene.remove(av.root); av.dispose&&av.dispose(); }catch(e){} });
   close(); openSheet("lfPhSet","📌 設為委託地點",`<img src="${url}" style="width:100%;border-radius:10px"><p class="lead">替這張照片取個名字，再寫個地點提示：</p><input id="phN" maxlength="20" placeholder="例如：老街的燈籠" style="width:100%;margin:4px 0;padding:8px;border-radius:8px"><input id="phA" maxlength="20" placeholder="例如：小鎮・老街" style="width:100%;margin:4px 0;padding:8px;border-radius:8px"><div class="row"><button class="primary" data-act="lfPhSave">存成委託地點</button></div>`);
   HANDLERS.lfPhSave=async()=>{ const name=(document.getElementById("phN")||{}).value||"", area=(document.getElementById("phA")||{}).value||""; try{ const r=await fetch("/photospot",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({x:meAv.pos.x,z:meAv.pos.y,yaw:camYaw(),name,area,img:url})}); const j=await r.json(); if(j.ok){ PS=j.list; PSI[j.i]=url; toast(`📌 存好了，第 ${j.i+1} 張`,2400); album(); } else toast(j.full?"已經 50 張了":j.big?"照片太大":"存不進去（密碼？）",2600); }catch(e){ toast("連不上伺服器",2000); } }; }
+
+/* ---------- 營業時間與鎮民生活 (11/14): each shop keeps (Taiwan) hours. Outside them the shop shows its hours and its people are out
+   walking up and down their street; the chair can always go in. Every day you visit a shop its people like you a little more
+   (+1, up to 100); at 10, 30 and 60 they start telling you things — gossip about the others, a secret, a request. ---------- */
+const HOURS={"tw:bfast":[6,13],"tw:congee":[18,26],"tw:drink":[10,22],"tw:ice":[11,21],"tw:herb":[9,20],"tw:book":[10,21],"tw:flower":[9,19],"tw:beauty":[10,20],"tw:photo":[10,19],"tw:tackle":[5,20],"tw:furn":[10,21]};
+const twHour=()=>{ const d=new Date(Date.now()+8*3600e3); return d.getUTCHours()+d.getUTCMinutes()/60; };
+const isOpen=k=>{ const h=HOURS[k]; if(!h) return true; const t=twHour(); return h[1]>24?(t>=h[0]||t<h[1]-24):(t>=h[0]&&t<h[1]); };
+const hrs=k=>{ const h=HOURS[k], f=v=>String(v%24).padStart(2,"0")+":00"; return `${f(h[0])}–${f(h[1])}`; };
+const GOSSIP={
+ "tw:bfast":[["阿龍：「其實……我們每天吵，是因為她記性比我好，我不想輸啦。」"],["秀琴：「偷偷跟你說，阿龍年輕時追我，每天送我一份蘿蔔糕。」"],["兩個人一起：「你可以幫我們找一張『結婚那天』的照片嗎？聽說照相館阿光的爺爺有拍……」（隱藏任務）"]],
+ "tw:herb":[["陳伯：「冰淇淋奶奶年輕的時候，可是鎮上最漂亮的姑娘。」"],["陳伯：「我年輕時常常去她的攤子買冰……一買就是五十年。」"],["陳伯：「我想送她一包桂圓，可是……你能幫我拿過去嗎？」（隱藏任務）"]],
+ "tw:ice":[["奶奶：「中藥行的陳伯每天下午都來買一支香草的，從來不換口味。」"],["奶奶：「他以為我不知道他眼睛不好……其實我都幫他擠大支一點。」"],["奶奶：「我想吃他的藥膳，可是開不了口……」"]],
+ "tw:drink":[["小安：「阿哲每天偷喝一杯全糖珍奶，然後說他在試新口味。」"],["阿哲：「小安喜歡書店的文雄老闆，每次都多送他一顆布丁。」"],["小安：「可以幫我送一杯烏龍奶茶給文雄老闆嗎？不要說是我送的！」（隱藏任務）"]],
+ "tw:book":[["文雄：「書店裡最貴的書，是一本沒有名字的相簿，我一直在等它的主人。」"],["文雄：「照相館的阿光小時候常來看圖鑑，看到睡著。」"],["文雄：「那本相簿……好像是阿光爺爺寄放在這裡的。」（照相館隱藏線索）"]],
+ "tw:photo":[["阿光：「爺爺說，奶奶最喜歡天后宮廟埕的燈籠。」"],["阿光：「書店的文雄老闆好像知道一些爺爺的事，可是他每次都說『時候還沒到』。」"],["阿光：「如果相簿拍滿五十張……爺爺說，最後一頁會告訴我一件事。」（相簿最後的秘密）"]],
+ "tw:flower":[["雅琪：「美容院的 Kevin 每週都來買一枝白色桔梗，從來不說要送誰。」"],["雅琪：「我以前在台北教花，是為了照顧媽媽才回小鎮的。」"],["雅琪：「Kevin 說的『那個人』……好像就是我？」"]],
+ "tw:beauty":[["Kevin：「花店的雅琪老師，是我國中時的家教老師。」"],["Kevin：「我開美容院，是因為她說過『你剪頭髮很有天分』。」"],["Kevin：「幫我想想，要怎麼跟她說謝謝比較好？」（隱藏任務）"]],
+ "tw:tackle":[["阿財伯：「女神泉那裡，傳說有人釣到過金色的魚。」"],["阿財伯：「老王跟我年輕時比釣魚，比了三十年還沒分出勝負。」"],["阿財伯：「流星夜的海邊，會有平常看不到的魚……噓，別說是我講的。」"]],
+ "tw:furn":[["美雲：「我會打瞌睡，是因為半夜都在做木工，送給鎮上的小朋友。」"],["美雲：「一粥七天的阿秀，是我小學同學，每天半夜我都去她那裡吃粥。」"],["美雲：「你房間要不要一張特別的椅子？我做給你。」（隱藏任務）"]],
+ "tw:congee":[["阿秀：「家具行的美雲每天半夜一點來，一碗鹹粥不加芹菜。」"],["阿秀：「早餐店的阿龍和秀琴，其實是我介紹認識的。」"],["阿秀：「我的鹹粥秘方，是用陳伯的陳皮熬的高湯。」"]]};
+const KA=k=>{ const d=LF(); d.ka=d.ka||{}; return d.ka[k]=d.ka[k]||{a:0,d:0}; };
+/* wrap the keeper scene: closed → a sign; open → the day's affection, and now and then a piece of gossip after the scene */
+{ const K0=L.keeper; L.keeper=(k,open)=>{ if(!KEEP[k]) return K0(k,open); if(!isOpen(k)&&!me.sp){ toast(`🕒 ${KEEP[k].ppl.map(p=>p.n).join("和")}不在店裡（營業時間 ${hrs(k)}）`,3000); return true; }
+    const A=KA(k); if(A.d!==today()){ A.d=today(); A.a=Math.min(100,A.a+1); save(); } const r=K0(k,open); const t=A.a>=60?3:A.a>=30?2:A.a>=10?1:0;
+    if(t&&GOSSIP[k]&&Math.random()<.45){ const line=GOSSIP[k][Math.min(t,GOSSIP[k].length)-1+0][0]; setTimeout(()=>{ try{ const S=KS[k]; if(S) keepSay(S.avs[0],line.replace(/^[^：]+：「?|」?（.*）$|」$/g,"").slice(0,40)); toast("💬 "+line,5200); }catch(e){} },4200); } return r; }; }
+/* outside the hours: the shop people stroll along the street in front of their shop */
+L.tick7=dt=>{ try{ for(const k in KS){ const S=KS[k]; const open=isOpen(k); S.avs.forEach((av,i)=>{ if(open){ if(av._out){ av._out=0; av.moveSpeed=0; av.pos.set(av._home[0],av._home[1]); av.target.copy(av.pos); av.root.position.set(av._home[0],0,av._home[1]); } return; }
+      if(!av._home) av._home=[av.root.position.x,av.root.position.z]; if(!av._out){ av._out=1; av.moveSpeed=1.1; } if(av.target.distanceTo(av.pos)<.2){ const sp=S.sp, along=[Math.cos(sp.ry),-Math.sin(sp.ry)], o=(Math.random()*2-1)*14; av.target.set(av._home[0]+sp.fx*1.6+along[0]*o,av._home[1]+sp.fz*1.6+along[1]*o); } }); if(!open&&S.ctr) S.ctr.visible=false; else if(S.ctr) S.ctr.visible=true; } }catch(e){} if(L.tick8) L.tick8(dt); };
 
 L.flowerShop=()=>flower();
 const SOON={};
