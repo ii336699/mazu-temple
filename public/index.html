@@ -9343,6 +9343,34 @@ INN.cut=[]; INN.cutMode=""; INN.cutKey="";
     parts.forEach(g=>{ P.set(g.attributes.position.array,vo*3); N.set(g.attributes.normal.array,vo*3); U.set(g.attributes.uv.array,vo*2); const ix=g.index.array; for(let i=0;i<ix.length;i++) I[io+i]=ix[i]+vo; vo+=g.attributes.position.count; io+=ix.length; g.dispose(); });
     const G=new T.BufferGeometry(); G.setAttribute("position",new T.BufferAttribute(P,3)); G.setAttribute("normal",new T.BufferAttribute(N,3)); G.setAttribute("uv",new T.BufferAttribute(U,2)); G.setIndex(new T.BufferAttribute(I,1)); G.computeBoundingSphere();
     const M=new T.Mesh(G,list[0].material); M.raycast=()=>{}; INN.g.add(M); list.forEach(o=>INN.g.remove(o)); n+=list.length; }); INN.merged=n; })();
+/* fewer draw calls, same picture (11/14): the 禪房's walls, roofs and their 清水模 skins (about 600 pieces) are what the cut-away view
+   moves, so innMerge leaves them alone. Here they get a merged copy (one mesh per material) that is drawn whenever no cut-away is
+   active — i.e. always from outside and on the ground floor; the moment you step into a room upstairs the merged copy hides and the
+   separate pieces come back for the cut-away. Taps never hit walls (only floors/seats/act objects), and floors are left separate. */
+function innMergeMeshes(arr,inv){ const uv=!!arr[0].geometry.attributes.uv; let vc=0, ic=0;
+    const parts=arr.map(o=>{ let g=o.geometry.clone(); if(!g.index){ const c=g.attributes.position.count, idx=new Uint32Array(c); for(let i=0;i<c;i++) idx[i]=i; g.setIndex(new T.BufferAttribute(idx,1)); }
+      const mw=new T.Matrix4().multiplyMatrices(inv,o.matrixWorld); g.applyMatrix4(mw); if(mw.determinant()<0){ const ix=g.index.array; for(let i=0;i<ix.length;i+=3){ const t=ix[i+1]; ix[i+1]=ix[i+2]; ix[i+2]=t; } }
+      vc+=g.attributes.position.count; ic+=g.index.count; return g; });
+    const P=new Float32Array(vc*3), N=new Float32Array(vc*3), U=uv?new Float32Array(vc*2):null, I=new Uint32Array(ic); let vo=0, io=0;
+    parts.forEach(g=>{ P.set(g.attributes.position.array,vo*3); N.set(g.attributes.normal.array,vo*3); if(U) U.set(g.attributes.uv.array,vo*2); const ix=g.index.array; for(let i=0;i<ix.length;i++) I[io+i]=ix[i]+vo; vo+=g.attributes.position.count; io+=ix.length; g.dispose(); });
+    const G=new T.BufferGeometry(); G.setAttribute("position",new T.BufferAttribute(P,3)); G.setAttribute("normal",new T.BufferAttribute(N,3)); if(U) G.setAttribute("uv",new T.BufferAttribute(U,2)); G.setIndex(new T.BufferAttribute(I,1)); G.computeBoundingSphere();
+    const o0=arr[0], mm=new T.Mesh(G,o0.material); mm.castShadow=o0.castShadow; mm.receiveShadow=o0.receiveShadow; mm.renderOrder=o0.renderOrder; mm.raycast=()=>{}; mm.userData.noMerge=1; mm.name="inn-cutmerged"; return mm; }
+(function innCutMerge(){ if(window.NO_INNMERGE) return; INN.g.updateMatrixWorld(true); const inv=new T.Matrix4().copy(INN.g.matrixWorld).invert(), groups=new Map(), list=[];
+  for(const e of INN.cut){ if(!e.vis) continue; e.o.traverse(o=>{ if(!o.isMesh||!o.visible||o.isInstancedMesh||o.isSkinnedMesh||o.userData.floor||Array.isArray(o.material)) return; let p=o.parent; while(p&&p!==INN.g){ if(!p.visible) return; p=p.parent; }
+    const m=o.material, a=o.geometry.attributes; if(!m||m.transparent||!a.position||!a.normal||a.color||o.morphTargetInfluences) return; /* (face groups only matter with several materials) */
+    const k=m.uuid+"|"+(a.uv?1:0)+"|"+(o.castShadow?1:0)+(o.receiveShadow?1:0)+"|"+o.renderOrder; if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(o); }); }
+  const M=[]; groups.forEach(arr=>{ if(arr.length<2) return; const mm=innMergeMeshes(arr,inv); INN.g.add(mm); M.push(mm); list.push(...arr); });
+  INN.mg={M,list,on:false}; innMgSet(true);
+  /* the floors (about 120 boards and tiles): merged the same way and always drawn merged; the separate floors stay, hidden, because taps
+     and "where is the floor" look them up (hidden floors still answer taps, like the path floors by the side halls) */
+  const cut=new Set(); INN.cut.forEach(e=>e.o.traverse(o=>cut.add(o))); const fg=new Map(), fl=[];
+  INN.g.traverse(o=>{ if(!o.isMesh||!o.userData.floor||cut.has(o)||!o.visible||o.isInstancedMesh||Array.isArray(o.material)) return; let p=o.parent; while(p&&p!==INN.g){ if(!p.visible||cut.has(p)) return; p=p.parent; }
+    const m=o.material, a=o.geometry.attributes; if(!m||m.transparent||!a.position||!a.normal||a.color) return;
+    const k=m.uuid+"|"+(a.uv?1:0)+"|"+(o.castShadow?1:0)+(o.receiveShadow?1:0)+"|"+o.renderOrder; if(!fg.has(k)) fg.set(k,[]); fg.get(k).push(o); });
+  const FM=[]; fg.forEach(arr=>{ if(arr.length<2) return; const mm=innMergeMeshes(arr,inv); INN.g.add(mm); FM.push(mm); arr.forEach(o=>{ o.visible=false; o.userData.mergedOff=1; }); fl.push(...arr); });
+  INN.fm={M:FM,list:fl}; })();
+function innMgSet(on){ const g=INN.mg; if(!g||g.on===on) return; g.on=on; g.M.forEach(m=>m.visible=on); g.list.forEach(o=>{ o.visible=!on; o.userData.mergedOff=on?1:0; }); }
+/* test hook: show the separate pieces instead of the merged copies (to compare pictures) */ INN.mgTest=off=>{ innMgSet(!off&&INN.cutMode===""); if(INN.fm){ INN.fm.M.forEach(m=>m.visible=!off); INN.fm.list.forEach(o=>o.visible=!!off); } };
 function innCutTick(){ const me=meAv; if(!me) return; const x=me.pos.x-INN.DX, z=me.pos.y, gy=me.gy||0; let m="";
   let si=gy>2.3?innSuiteAtL(x,z):-1; if(si>=0&&x<INN.suites[si].xa+.1) si=-1; if(si<0&&gy>2.3&&innCorr(x,z)&&z>INN.Z0-.1) si=8; /* 8 = the inside corridor */ if(si>=0) m="2"; INN.cutSi=si; /* (the ground floor is 5.6 m high now and keeps its roof and walls) */ /* upstairs only inside a suite (the walkway is outdoors) */
   const cx=camera.position.x-INN.DX, cz=camera.position.z, dx=cx-x, dz=cz-z, L=Math.hypot(dx,dz)*.3, XE=m==="2"?INN.SX1:INN.X1, cross=(p,c,w)=>(c-w)*(p-w)<0; /* a wall drops when the camera is on its outer side, or when it stands between the camera and you */
@@ -9354,12 +9382,13 @@ function innCutTick(){ const me=meAv; if(!me) return; const x=me.pos.x-INN.DX, z
     e.drop=hit; ib+=hit?1:0; }
   const key=m?m+si+(tw.W?1:0)+(tw.E?1:0)+(tw.N?1:0)+(tw.S?1:0)+ib:""; INN.cutMode=m; if(key===INN.cutKey) return; INN.cutKey=key;
   const fb=m==="2"?INN.F2:0;
+  innMgSet(false); /* (pieces back first; merged copy again below when no cut-away) */
   for(const e of INN.cut){ const o=e.o; o.visible=e.vis; o.scale.y=e.sy; o.position.y=e.py; if(!m) continue;
     if(m==="1"&&(e.roof||e.up)){ o.visible=false; continue; }
     if(m==="2"&&e.roof){ if(e.sr==null||e.sr===si) o.visible=false; continue; } /* only your own room opens up; the others keep their roofs */
     if(!e.face||e.lvl!==+m) continue;
     if(m==="2"){ const S=INN.suites[si]; if(!S||e.party||e.cz<S.s0-.2||e.cz>S.s1+.2||e.cx<S.xa-.5||e.cx>S.xb+.5) continue; } /* party walls stay full height: you never look into the next room */ const top=fb+(e.face==="I"?(e.drop?INN.H2/2:99):(tw[e.face]?.5:99)); if(top>=e.y0+e.h) continue;
-    if(top<=e.y0+.05){ o.visible=false; continue; } const k=(top-e.y0)/e.h; o.scale.y=e.sy*k; o.position.y=e.py-e.h*(1-k)/2; } }
+    if(top<=e.y0+.05){ o.visible=false; continue; } const k=(top-e.y0)/e.h; o.scale.y=e.sy*k; o.position.y=e.py-e.h*(1-k)/2; } if(!m) innMgSet(true); }
 /* the tatami room: with bedding in your bag, "睡在這裡" lays a futon right where you stand (the nearest free spot) and you lie down on it */
 { const b=document.createElement("button"); b.id="frogBtn"; b.className="spark-btn glass act-mid"; b.hidden=true; b.textContent="🐸 跳"; b.style.bottom="calc(env(safe-area-inset-bottom,0px) + 205px)";
   b.onclick=e=>{ e.stopPropagation(); if(meAv.act===15&&meAv.actT<.9) return; HANDLERS.doAct(15); }; document.body.appendChild(b); } /* 青蛙帽: an extra button to jump */
