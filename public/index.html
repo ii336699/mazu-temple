@@ -178,6 +178,7 @@ body.auto-on .auto-btn{border-color:var(--gold);background:rgba(142,28,20,.55)}
 .chips{display:flex;flex-wrap:wrap;gap:7px}
 .chip{border:1px solid var(--gold-soft);background:rgba(255,255,255,.04);border-radius:999px;padding:7px 13px;font-size:14px}
 .chip[aria-pressed="true"]{background:var(--lacquer);border-color:var(--gold);color:#fff3da}
+.chip.fpic{padding:0;border-radius:12px;position:relative;border-width:2px;flex:none}.chip.fpic[aria-pressed="true"]{border-color:#ffd24a;box-shadow:0 0 0 2px #ffd24a}.chip.fpic i{position:absolute;right:1px;bottom:0;font-style:normal;font-size:12px}
 .sw{width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,255,255,.18);padding:0}
 .sw[aria-pressed="true"]{border-color:var(--gold);box-shadow:0 0 0 2px var(--lacquer)}
 .tabs{display:flex;gap:4px;border-bottom:1px solid var(--gold-soft)}
@@ -808,17 +809,17 @@ const JQ_CATS=["功名","婚姻","求財","疾病","出外","家運","失物","�
 const CN_NUM = n => { const d="〇一二三四五六七八九"; if(n<=10) return n===10?"十":d[n]; if(n<20) return "十"+d[n-10]; const t=Math.floor(n/10),u=n%10; return d[t]+"十"+(u?d[u]:""); };
 
 const SKIN=["#f4d4b6","#e3b18c","#c68c63","#8e5b3c"];
-const HAIRS=["光頭", "01 粉色捲雙馬尾", "02 金色編髮丸子", "03 藍色雙丸子", "04 紫色花飾高髻", "05 橘色貓耳短鮑伯", "06 綠色精靈短髮", "07 紅色長波浪", "08 彩虹漸層高馬尾", "09 棕色雙麻花辮", "10 灰金半束編髮", "11 黑色長馬尾", "12 薄荷綠半束丸子", "13 灰金層次刺髮", "14 栗棕波浪鮑伯", "15 深藍凌亂馬尾", "16 薰衣草側削髮", "17 橘色凌亂高髻", "18 銀色中分瀏海", "19 紅色螺旋捲", "20 綠色飛鷹頭", "21 金色編辮莫霍克", "22 棕色後梳丸子", "23 黑色層次長髮", "24 薄荷綠短飛機頭","✂️ 韓系逗號瀏海","✂️ 紳士油頭","✂️ 狼尾髮","✂️ 蓬鬆捲毛","✂️ 武士丸子頭","✂️ 公主捲長髮","✂️ 空氣瀏海鮑伯","✂️ 緞帶雙丸子","✂️ 蝴蝶結高馬尾","✂️ 花冠編髮"];
+const HAIRS=["光頭", "01 粉色捲雙馬尾", "02 金色編髮丸子", "03 藍色雙丸子", "04 紫色花飾高髻", "05 橘色貓耳短鮑伯", "06 綠色精靈短髮", "07 紅色長波浪", "08 彩虹漸層高馬尾", "09 棕色雙麻花辮", "10 灰金半束編髮", "11 黑色長馬尾", "12 薄荷綠半束丸子", "13 灰金層次刺髮", "14 栗棕波浪鮑伯", "15 深藍凌亂馬尾", "16 薰衣草側削髮", "17 橘色凌亂高髻", "18 銀色中分瀏海", "19 紅色螺旋捲", "20 綠色飛鷹頭", "21 金色編辮莫霍克", "22 棕色後梳丸子", "23 黑色層次長髮", "24 薄荷綠短飛機頭","✂️ 凌亂刺蝟頭","✂️ 中分捲翹","✂️ 狂野碎髮","✂️ 層次亂翹","✂️ 斜瀏海刺髮","✂️ 鍋蓋頭","✂️ 旁分油頭","✂️ 清爽短刺","✂️ 中分小馬尾","✂️ 飛揚刺髮","✂️ 齊瀏海鮑伯","✂️ 外翹短髮","✂️ 中分內彎","✂️ 雙丸子捲","✂️ 旁分鮑伯","✂️ 空氣瀏海短髮","✂️ 齊肩直髮","✂️ 俏麗短髮","✂️ 側馬尾","✂️ 雙麻花辮","✂️ 中分波浪"]; /* (11/15: 25–45 are the chair's hair models — public/hair2.glb, 男 25–34, 女 35–45; any hair colour) */ const HAIR2_AT=25, HAIR2_M=10, HAIR2_N=21;
 const HAIRC=["#1c1512", "#4b2d1d", "#8d8882", "#6e2b2b", "#d9b45a", "#e8e4dc", "#e89ab4", "#3f6fb5", "#4c9a6a", "#7b56b3", "#e8c68d", "#ef9a54", "#bd4f49", "#8bd0bb", "#aaa297", "#465779", "#bca9ce", "#dad9e3", "#78503e", "#916b53"];
-const HAIR_PRESET_COLOR=[0,6,10,7,9,11,8,12,13,1,14,0,13,10,18,15,16,11,17,12,8,10,19,0,13,1,0,19,18,0,4,10,6,11,16];
+const HAIR_PRESET_COLOR=[0,6,10,7,9,11,8,12,13,1,14,0,13,10,18,15,16,11,17,12,8,10,19,0,13,1,0,19,18,0,4,10,6,11,16,1,0,18,0,19,0,1,18,0,4, 0,1,18,6,1,19,0,18,11,1,10];
 const STYLES=["唐衫","潮流帽T寬褲","陣頭背心","T恤","西裝","運動外套","道袍","旗袍","吊帶褲","夏日短褲T恤","披風","圍裙","盔甲","學院開襟衫","花瓣洋裝","軟萌連帽衫","主委背心","公主蓬裙","宮廷漢服","夏日浴衣","海軍水手服","星空魔法袍","醒獅舞衣","西部牛仔","太空人裝","紳士燕尾服","偶像打歌服"];
 const ROBE_STYLES=new Set([6,7,14]);
 const OUTFIT=["#2b2521","#6c4b2f","#ebe1ce","#a8261d","#2f507b","#3f6c50","#d9aa3d","#d990a2","#4f86c9"];
 const ACCENT=["#d9aa3d","#a8261d","#f2ece0","#3f6c50","#2f507b","#1c1512"];
 const HATS=["無","斗笠","頭巾","進香帽","棒球帽","毛線帽","皇冠","光環","兔耳","貓耳","花圈","紳士帽","廚師帽","蝴蝶結","珍珠貝雷帽","山茶花髮夾","星月髮箍"];
-const EYES=["圓眼","笑眼","大眼","閉目","豆豆眼","星星眼","愛心眼","瞇瞇眼","眨眼","下垂眼","鳳眼","漩渦眼","淚眼","半睡眼","驚訝眼","💄 閃亮大眼","💄 睫毛圓眼","💄 貓眼","💄 星星瞳","💄 愛睏眼","💄 水汪汪","💄 彎月笑眼","💄 狐狸眼","💄 長睫毛豆豆眼","💄 驚喜圓眼"];
+const EYES=["棕色大眼", "微笑閉眼", "藍色大眼", "閉眼睫毛", "小黑點", "紫色大眼", "空白圓眼", "一字眼", "開心眼", "垂眼皮", "慵懶棕眼", "半睜無神", "睫毛彎彎", "豆豆直眼", "長睫毛閉眼", "💄 星光金瞳", "💄 愛心眼", "💄 金色貓眼", "💄 閃亮星星眼", "💄 斜眼看", "💄 淚汪汪", "💄 細長黑瞳", "💄 兇狠瞪眼", "💄 得意閃亮", "💄 驚嚇白眼", "💄 怒目紅瞳", "💄 漩渦眼", "💄 用力閉眼", "💄 十字眼", "💄 像素墨鏡", "💄 尷尬流汗", "💄 叉叉眼", "💄 嚇到發青", "💄 瀑布淚", "💄 紅光十字", "💄 邪氣白眼", "💄 青色龍瞳", "💄 無瞳白眼", "💄 火焰瞳", "💄 冰晶瞳", "💄 星空瞳", "💄 太極眼", "💄 傷疤閉眼", "💄 黑線陰沉", "💄 亂線眼", "💄 像素愛心", "💄 像素擠眼", "💄 寬麵條淚"]; /* (11/15: the chair's eye sheet — public/face/eyes.webp, one tile each in this order; the first 15 are free) */
 const BROWS=["無","細眉","粗眉","八字眉"];
-const MOUTHS=["微笑","小口","大笑","貓嘴","💄 小虎牙","💄 吐舌頭","💄 圓圓嘴","💄 嘟嘴","💄 開心大口","💄 害羞波浪","💄 一字嘴","💄 驚訝三角","💄 酒窩笑","💄 口紅唇"]; const NOSES=["無","💄 小圓點","💄 粉紅小鼻","💄 三角鼻","💄 勾勾鼻","💄 豬豬鼻","💄 紅鼻頭","💄 貓鼻","💄 小點點","💄 線條鼻","💄 狗狗鼻"];
+const MOUTHS=["微笑", "小點嘴", "大笑", "貓嘴", "開心笑", "得意笑", "一字嘴", "小圓口", "驚訝口", "波浪嘴", "露齒笑", "半月笑", "💄 小虎牙", "💄 吐舌", "💄 哈哈大笑", "💄 波浪貓嘴", "💄 親親", "💄 愛心親親", "💄 舔嘴", "💄 咬牙", "💄 緊張咬牙", "💄 鯊魚牙", "💄 鋸齒牙", "💄 大吼", "💄 抿嘴", "💄 笑到哭", "💄 張口笑", "💄 流口水", "💄 口水直流", "💄 吹泡泡", "💄 嘆氣", "💄 氣噗噗", "💄 鼓嘴", "💄 愛心嘴", "💄 嘟愛心", "💄 嘟嘟唇", "💄 紅唇", "💄 小橢圓", "💄 伸舌頭", "💄 俏皮吐舌", "💄 方口", "💄 發抖嘴", "💄 豆豆嘴", "💄 垮嘴", "💄 封口膠帶", "💄 拉鍊嘴", "💄 泡泡糖", "💄 叼葉子", "💄 棕色鬍子", "💄 白鬍子", "💄 兔寶牙", "💄 豬鼻", "💄 狗狗嘴", "💄 貓鬍鬚", "💄 鴨嘴", "💄 鳥嘴", "💄 縫線嘴", "💄 小丑鼻嘴", "💄 奶嘴", "💄 微張嘴", "💄 流口水微張", "💄 冰柱嘴", "💄 噴火", "💄 吐彩虹"]; /* (11/15: the chair's mouth sheet — public/face/mouths.webp; the first 12 are free) */ const NOSES=["無", "💄 小圓鼻", "💄 粉紅小鼻", "💄 三角鼻", "💄 勾勾鼻", "💄 豬豬鼻", "💄 紅鼻頭", "💄 貓鼻", "💄 小鼻孔", "💄 高挺鼻", "💄 狗狗鼻"]; /* (11/15: real 3D noses on the head, not drawn — see buildNose) */
 const BLUSH=["無","腮紅"];
 const EXTRA=["無","眼鏡","鬍子","美人痣","墨鏡","口罩","雀斑","OK繃","單片眼鏡","山羊鬍","眉心紅點","愛心貼紙","貓鬍鬚","星星彩繪"];
 const GEAR=["無","圍巾","領結","金項鍊","佛珠","背包","天使翅膀","進香旗","小氣球","肩上小鳥"];
@@ -3135,7 +3136,29 @@ function tailVolume(parent,col,pts,width,depth){const geo=gx('reference-tail-v5:
 function scalpLock(parent,col,pts,width=.05,lift=.021){const key='sculpted-lock-v5:'+JSON.stringify([pts,width,lift]);const geo=gx(key,()=>{const c=new T.CatmullRomCurve3(pts.map(p=>new T.Vector3(...p))),N=LOWPOLY?12:26,R=LOWPOLY?6:10,pos=[],uv=[],idx=[];for(let i=0;i<=N;i++){const u=i/N,center=c.getPointAt(u),normal=center.clone().normalize(),tangent=c.getTangentAt(u),lateral=new T.Vector3().crossVectors(normal,tangent).normalize();const taper=Math.pow(Math.sin(Math.PI*u),.45);for(let j=0;j<=R;j++){const side=j/R*2-1,p=center.clone().addScaledVector(lateral,side*width*taper).normalize();const radius=.286+(lift+Math.max(0,center.length()-.29))*Math.sin(Math.PI*u)*Math.pow(Math.max(0,1-side*side),.65);p.multiplyScalar(radius);pos.push(p.x,p.y,p.z);uv.push(j/R,1-u);if(i<N&&j<R){const q=i*(R+1)+j;idx.push(q,q+R+1,q+1,q+1,q+R+1,q+R+2);}}}const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();return g;});return mk(parent,geo,hairMaterial(col,1));}
 function braidVolume(g,col,pts,r=.034){const core=tailVolume(g,col,pts,r*.82,r*.75),curve=new T.CatmullRomCurve3(pts.map(p=>new T.Vector3(...p))),frames=curve.computeFrenetFrames(28,false);for(let side=0;side<2;side++){const p=[];for(let i=0;i<=28;i++){const u=i/28,a=u*Math.PI*8+side*Math.PI,c=curve.getPointAt(u),taper=1-u*.35;c.addScaledVector(frames.normals[i],Math.cos(a)*r*.52*taper).addScaledVector(frames.binormals[i],Math.sin(a)*r*.52*taper);p.push(c.toArray());}tailVolume(g,col,p,r*.49,r*.42);}return core;}
 function rainbowHair(mesh){const geo=gx('rainbow-v5:'+mesh.geometry.uuid,()=>{const g=mesh.geometry.clone(),p=g.attributes.position,c=[],bounds=new T.Box3().setFromBufferAttribute(p),stops=['#a686d5','#79d2da','#e8a6c6','#efc68b'].map(x=>new T.Color(x));for(let i=0;i<p.count;i++){const u=T.MathUtils.clamp((bounds.max.y-p.getY(i))/Math.max(.001,bounds.max.y-bounds.min.y),0,.999)*3,k=Math.floor(u),color=stops[k].clone().lerp(stops[Math.min(3,k+1)],u-k);c.push(color.r,color.g,color.b);}g.setAttribute('color',new T.Float32BufferAttribute(c,3));return g;});mesh.geometry=geo;mesh.material=mat('#ffffff',{vertexColors:true,roughness:.62,side:T.DoubleSide});return mesh;}
-function buildHair(h,v,col,acc='#d9aa3d',hat=0){const g=new T.Group();g.name='hair-'+v;h.add(g);if(v===0)return;const cover=[1,3,4,5,11,12,14].includes(hat),shell=v===21?null:hairShell(g,v===16?new T.Color(col).multiplyScalar(.75).getStyle():col,v>=25?[24,22,13,13,16,7,14,23,11,10][v-25]:v,cover);
+/* 11/15: the chair's hair models (public/hair2.glb: h00…h20, fitted to the head, grey → any hair colour). They load once, the first
+   time someone wears one; whoever was waiting is dressed again when they arrive. */
+let CUR_AV=null, HAIR2=null, HAIR2_ST=0; const HAIR2_WAIT=new Set();
+function hair2Load(){ if(HAIR2_ST) return; HAIR2_ST=1; try{ loadRaw0("hair2",false,m=>{ const H={}; m.traverse(o=>{ if(!o.isMesh||!/^h\d\d$/.test(o.name)) return; const g=o.geometry, P=g.attributes.position, N=g.attributes.normal, n=P.count, pa=new Float32Array(n*3), na=new Float32Array(n*3); const K=(P.array instanceof Int16Array&&Math.abs(P.getX(0))+Math.abs(P.getY(0))+Math.abs(P.getZ(0))>4)?.8/32767:.8; /* (this three.js hands back the stored whole numbers as they are) */
+      for(let i=0;i<n;i++){ pa[i*3]=P.getX(i)*K; pa[i*3+1]=P.getY(i)*K; pa[i*3+2]=P.getZ(i)*K; const a=N.getX(i), b=N.getY(i), c=N.getZ(i), L=Math.hypot(a,b,c)||1; na[i*3]=a/L; na[i*3+1]=b/L; na[i*3+2]=c/L; } /* (stored as small whole numbers; back to plain ones here) */
+      const ge=new T.BufferGeometry(); ge.setAttribute("position",new T.BufferAttribute(pa,3)); ge.setAttribute("normal",new T.BufferAttribute(na,3)); ge.setIndex(g.index); H[+o.name.slice(1)]=ge; });
+    HAIR2=H; HAIR2_ST=2; const w=[...HAIR2_WAIT]; HAIR2_WAIT.clear(); w.forEach(av=>{ try{ if(av&&av.root&&av.root.parent&&av.look&&av.look[1]>=HAIR2_AT) av.setLook(av.look); }catch(e){} }); },()=>{}); }catch(e){ HAIR2_ST=0; } }
+function buildHair2(g,v,col){ const ge=HAIR2&&HAIR2[v-HAIR2_AT]; if(!ge){ if(CUR_AV) HAIR2_WAIT.add(CUR_AV); hair2Load(); return; } const m=new T.Mesh(ge,mat(col,{roughness:.78,side:T.DoubleSide})); g.add(m); }
+/* 3D noses (the chair, 11/15: a drawn nose looked like a second nose): small shapes on the front of the head, between the eyes and the mouth */
+function buildNose(h,v,skin){ const g=new T.Group(); g.name="nose-"+v; g.position.set(0,-.085,.252); h.add(g); const dk=new T.Color(skin).multiplyScalar(.86).getStyle(), ink="#3a2418", S=gx("soft-unit",()=>new T.SphereGeometry(1,18,12));
+  const b=(c,x,y,z,sx,sy,sz,o)=>mk(g,S,mat(c,Object.assign({roughness:.6},o||{})),x,y,z,0,0,0,sx,sy,sz);
+  if(v===1) b(dk,0,0,.004,.022,.019,.02);
+  if(v===2) b("#f0a0a8",0,0,.004,.028,.02,.02);
+  if(v===3){ const c=mk(g,gx("nose-tri",()=>new T.ConeGeometry(1,1,3)),mat(dk,{roughness:.6}),0,.004,.006,0,Math.PI,0,.026,.044,.03); }
+  if(v===4){ b(dk,0,.012,.006,.017,.03,.024); b(dk,0,-.012,.016,.019,.016,.02); }
+  if(v===5){ const c=mk(g,gx("nose-pig",()=>new T.CylinderGeometry(1,1,1,20)),mat("#f5b5b5",{roughness:.6}),0,0,.006,Math.PI/2,0,0,.036,.022,.027); for(const s of [-1,1]) b("#b56a6a",s*.013,0,.018,.006,.009,.004); }
+  if(v===6) b("#d8303e",0,0,.012,.03,.03,.028,{roughness:.3});
+  if(v===7){ mk(g,gx("nose-tri",()=>new T.ConeGeometry(1,1,3)),mat("#f08aa0",{roughness:.5}),0,0,.004,Math.PI,Math.PI,0,.02,.02,.016); }
+  if(v===8){ for(const s of [-1,1]) b(ink,s*.011,-.004,.003,.006,.006,.004); }
+  if(v===9){ b(dk,0,.014,.004,.012,.036,.02); b(dk,0,-.014,.01,.018,.014,.018); }
+  if(v===10) b("#1a1412",0,0,.008,.03,.021,.022,{roughness:.25});
+  return g; }
+function buildHair(h,v,col,acc='#d9aa3d',hat=0){const g=new T.Group();g.name='hair-'+v;h.add(g);if(v===0)return;if(v>=HAIR2_AT){buildHair2(g,v,col);return;}const cover=[1,3,4,5,11,12,14].includes(hat),shell=v===21?null:hairShell(g,v===16?new T.Color(col).multiplyScalar(.75).getStyle():col,v>=25?[24,22,13,13,16,7,14,23,11,10][v-25]:v,cover);
  const lock=(p,w=.053,l=.025,c=col)=>scalpLock(g,c,p,w,l),tail=(p,w=.055,d=.030,c=col)=>tailVolume(g,c,p,w,d);
  const fringe=()=>{for(let i=0;i<7;i++){const x=(i-3)*.047;lock([[x*.62,.25,.12],[x,.175,.205],[x,.055+(i%2)*.018,.28]],.035+(i%2)*.006,.024);}};
  const part=(bias=0)=>{for(const side of [-1,1]){lock([[bias,.277,.065],[side*.095+bias*.5,.23,.16],[side*.205,.09,.185],[side*.235,-.035,.125]],.069,.034);lock([[side*.06,.256,.13],[side*.155,.175,.215],[side*.24,.015,.11]],.042,.018);}};
@@ -3417,37 +3440,23 @@ function premNose(x,v,cx,ny,ink){ x.save(); x.fillStyle=ink; x.strokeStyle=ink; 
   if(v===9){ x.beginPath(); x.moveTo(cx,ny-6); x.lineTo(cx,ny+2); x.stroke(); }
   if(v===10){ x.beginPath(); x.moveTo(cx-5,ny-3); x.quadraticCurveTo(cx,ny-6,cx+5,ny-3); x.quadraticCurveTo(cx+3,ny+4,cx,ny+4); x.quadraticCurveTo(cx-3,ny+4,cx-5,ny-3); x.fill(); x.fillStyle="rgba(255,255,255,.6)"; x.beginPath(); x.ellipse(cx-1.5,ny-2.5,1.6,.9,0,0,7); x.fill(); }
   x.restore(); }
-function faceTexture(l){ const key=[l[0],l[7],l[8],l[9],l[10],l[11],l[13]|0].join(","); if(faceCache.has(key)) return faceCache.get(key);
-  const t=cvsLo(512,256,(x,w,h)=>{ x.fillStyle=SKIN[l[0]]; x.fillRect(0,0,w,h); const cx=128, ey=140, ink="#2a1a14"; x.lineCap="round"; x.lineJoin="round";
+/* 11/15 (the chair): the eyes and the mouth are the chair's pictures — one tile per style in two sheets (public/face/eyes.webp 8 across,
+   192×96 each, a pair of eyes centred; mouths.webp 8 across, 144×96). Until a sheet has arrived a plain pair of dots / a small line is
+   drawn; when it arrives every face already made is drawn again. The nose is no longer drawn here (see buildNose). */
+const FACE_AT={}; ["eyes","mouths"].forEach(n=>{ const im=new Image(); im.onload=()=>{ FACE_AT[n]=im; faceCache.forEach(t=>{ try{ redraw(t); }catch(e){} }); try{ if(sheetKind==="look") renderLook(); }catch(e){} }; im.src=(window.IMG_PACK&&window.IMG_PACK["face/"+n+".webp"])||("face/"+n+".webp"); });
+function faceEyes(x,v,cx,ey){ const im=FACE_AT.eyes; if(im){ const W=110, H=55; x.drawImage(im,(v%8)*192,Math.floor(v/8)*96,192,96,cx-W/2,ey-H/2,W,H); return; } x.fillStyle="#2a1a14"; for(const s of [-1,1]){ x.beginPath(); x.arc(cx+s*26,ey,5,0,7); x.fill(); } }
+function faceMouth(x,v,cx,my){ const im=FACE_AT.mouths; if(im){ const W=54, H=36; x.drawImage(im,(v%8)*144,Math.floor(v/8)*96,144,96,cx-W/2,my-H/2-1,W,H); return; } x.strokeStyle="#2a1a14"; x.lineWidth=3; x.beginPath(); x.arc(cx,my-6,8,Math.PI*.2,Math.PI*.8); x.stroke(); }
+function faceTexture(l){ const key=[l[0],l[7],l[8],l[9],l[10],l[11]].join(","); if(faceCache.has(key)) return faceCache.get(key);
+  const t=cvs(512,256,(x,w,h)=>{ x.fillStyle=SKIN[l[0]]; x.fillRect(0,0,w,h); const cx=128, ey=140, ink="#2a1a14"; x.lineCap="round"; x.lineJoin="round";
     if(l[10]){ x.fillStyle="rgba(240,110,120,.45)"; for(const s of [-1,1]){ x.beginPath(); x.ellipse(cx+s*42,ey+18,17,9,0,0,7); x.fill(); } }
     x.fillStyle=ink; x.strokeStyle=ink;
-    for(const s of [-1,1]){ const ex=cx+s*26;
-      if(l[7]===0){ x.beginPath(); x.ellipse(ex,ey,9,12,0,0,7); x.fill(); x.fillStyle="#815642"; x.beginPath(); x.ellipse(ex,ey+3,6,7,0,0,7); x.fill(); x.fillStyle=ink; x.beginPath(); x.ellipse(ex,ey-1,4.5,8,0,0,7); x.fill(); x.fillStyle="#fff"; x.beginPath(); x.arc(ex+2.5,ey-3.5,2.6,0,7); x.fill(); x.fillStyle=ink; }
-      if(l[7]===1){ x.lineWidth=4; x.beginPath(); x.arc(ex,ey+4,8,Math.PI*1.15,Math.PI*1.85); x.stroke(); }
-      if(l[7]===2){ x.beginPath(); x.ellipse(ex,ey,11,14,0,0,7); x.fill(); x.fillStyle="#fff"; x.beginPath(); x.arc(ex+3,ey-5,3.6,0,7); x.fill(); x.beginPath(); x.arc(ex-3,ey+5,1.8,0,7); x.fill(); x.fillStyle=ink; }
-      if(l[7]===3){ x.lineWidth=3.5; x.beginPath(); x.arc(ex,ey-3,8,Math.PI*.15,Math.PI*.85); x.stroke(); }
-      if(l[7]===4){ x.beginPath(); x.arc(ex,ey,4.5,0,7); x.fill(); }
-      if(l[7]===5){ x.fillStyle="#e8a91f"; x.beginPath(); for(let k=0;k<10;k++){ const r=k%2?5:12, a=-Math.PI/2+k*Math.PI/5; x.lineTo(ex+Math.cos(a)*r,ey+Math.sin(a)*r); } x.closePath(); x.fill(); x.fillStyle=ink; }
-      if(l[7]===6){ x.fillStyle="#d8304a"; x.beginPath(); x.moveTo(ex,ey+9); x.bezierCurveTo(ex-14,ey-1,ex-7,ey-13,ex,ey-5); x.bezierCurveTo(ex+7,ey-13,ex+14,ey-1,ex,ey+9); x.fill(); x.fillStyle=ink; }
-      if(l[7]===7){ x.lineWidth=4; x.beginPath(); x.moveTo(ex-8,ey); x.lineTo(ex+8,ey); x.stroke(); }
-      if(l[7]===8){ if(s<0){ x.beginPath(); x.ellipse(ex,ey,9,12,0,0,7); x.fill(); x.fillStyle="#815642"; x.beginPath(); x.ellipse(ex,ey+3,6,7,0,0,7); x.fill(); x.fillStyle=ink; x.beginPath(); x.ellipse(ex,ey-1,4.5,8,0,0,7); x.fill(); x.fillStyle="#fff"; x.beginPath(); x.arc(ex+2.5,ey-3.5,2.6,0,7); x.fill(); x.fillStyle=ink; } else { x.lineWidth=4; x.beginPath(); x.moveTo(ex+8,ey-4); x.lineTo(ex-6,ey); x.lineTo(ex+8,ey+4); x.stroke(); } }
-      if(l[7]===9){ x.beginPath(); x.ellipse(ex,ey+2,7,8,0,0,7); x.fill(); x.lineWidth=3; x.beginPath(); x.moveTo(ex-s*10,ey-4); x.lineTo(ex+s*7,ey-8); x.stroke(); }
-      if(l[7]===10){ x.beginPath(); x.moveTo(ex-s*11,ey+3); x.quadraticCurveTo(ex,ey-9,ex+s*12,ey-5); x.quadraticCurveTo(ex,ey+5,ex-s*11,ey+3); x.fill(); }
-      if(l[7]===11){ x.lineWidth=2.4; x.beginPath(); for(let a=0;a<Math.PI*4;a+=.25){ const r=1+a*.9; x.lineTo(ex+Math.cos(a*s)*r,ey+Math.sin(a*s)*r); } x.stroke(); }
-      if(l[7]===12){ x.beginPath(); x.ellipse(ex,ey,9,12,0,0,7); x.fill(); x.fillStyle="#815642"; x.beginPath(); x.ellipse(ex,ey+3,6,7,0,0,7); x.fill(); x.fillStyle=ink; x.beginPath(); x.ellipse(ex,ey-1,4.5,8,0,0,7); x.fill(); x.fillStyle="#fff"; x.beginPath(); x.arc(ex+2.5,ey-3.5,2.6,0,7); x.fill(); x.fillStyle="#6fc3ef"; x.beginPath(); x.moveTo(ex+s*5,ey+9); x.quadraticCurveTo(ex+s*1,ey+20,ex+s*5,ey+24); x.quadraticCurveTo(ex+s*10,ey+20,ex+s*5,ey+9); x.fill(); x.fillStyle=ink; }
-      if(l[7]===13){ x.beginPath(); x.ellipse(ex,ey+2,8,7,0,0,Math.PI); x.fill(); x.lineWidth=3.5; x.beginPath(); x.moveTo(ex-10,ey+1); x.lineTo(ex+10,ey+1); x.stroke(); }
-      if(l[7]===14){ x.lineWidth=2.6; x.beginPath(); x.arc(ex,ey,11,0,7); x.stroke(); x.beginPath(); x.arc(ex,ey,3.2,0,7); x.fill(); }
-      if(l[7]>=15) premEye(x,l[7],ex,ey,s,ink);
+    faceEyes(x,l[7],cx,ey);
+    for(const s of [-1,1]){ const ex=cx+s*26; x.save(); x.translate(0,-9); /* (brows sit a little higher over the new, bigger eyes) */
       if(l[8]===1){ x.lineWidth=2.5; x.beginPath(); x.moveTo(ex-9,ey-17); x.quadraticCurveTo(ex,ey-21,ex+9,ey-17); x.stroke(); }
       if(l[8]===2){ x.lineWidth=6; x.beginPath(); x.moveTo(ex-9,ey-18); x.lineTo(ex+9,ey-19); x.stroke(); }
       if(l[8]===3){ x.lineWidth=4; x.beginPath(); x.moveTo(ex-s*9,ey-22); x.lineTo(ex+s*8,ey-16); x.stroke(); }
-    }
-    const my=ey+26; x.lineWidth=3.2;
-    if(l[9]===0){ x.beginPath(); x.arc(cx,my-6,8,Math.PI*.2,Math.PI*.8); x.stroke(); }
-    if(l[9]===1){ x.beginPath(); x.ellipse(cx,my,3.4,2.6,0,0,7); x.fill(); }
-    if(l[9]===2){ x.fillStyle="#7a1e1a"; x.beginPath(); x.arc(cx,my-4,9,0,Math.PI); x.closePath(); x.fill(); x.fillStyle="#e86a6a"; x.beginPath(); x.ellipse(cx,my+2,5,2.5,0,0,7); x.fill(); x.fillStyle=ink; }
-    if(l[9]===3){ x.beginPath(); x.arc(cx-5,my-2,5,0,Math.PI); x.stroke(); x.beginPath(); x.arc(cx+5,my-2,5,0,Math.PI); x.stroke(); }
-    if(l[9]>=4) premMouth(x,l[9],cx,my,ink); if(l[13]) premNose(x,l[13],cx,ey+13,ink); x.fillStyle=ink; x.strokeStyle=ink; x.lineWidth=3.2;
+    x.restore(); }
+    const my=ey+26; faceMouth(x,l[9],cx,my); x.fillStyle=ink; x.strokeStyle=ink; x.lineWidth=3.2;
     if(l[11]===1){ x.lineWidth=2.6; x.strokeStyle="#3a2a20"; for(const s of [-1,1]){ x.beginPath(); x.arc(cx+s*26,ey,15,0,7); x.stroke(); } x.beginPath(); x.moveTo(cx-11,ey-2); x.quadraticCurveTo(cx,ey-7,cx+11,ey-2); x.stroke(); }
     if(l[11]===2){ x.fillStyle="#2a1a14"; for(const s of [-1,1]){ x.beginPath(); x.ellipse(cx+s*9,my-11,10,3.4,s*.25,0,7); x.fill(); } }
     if(l[11]===3){ x.fillStyle="#3a2018"; x.beginPath(); x.arc(cx+20,my+2,2.2,0,7); x.fill(); }
@@ -3596,7 +3605,7 @@ class Avatar{
     // head
     this.head=new T.Group(); this.head.position.y=.66; this.torso.add(this.head); this.head.rotation.y=this.headYaw||0;
     const hm=new T.Mesh(G.head,new T.MeshStandardMaterial({map:faceTexture(l),roughness:.6})); this.head.add(hm);
-    buildHair(this.head,l[1],HAIRC[l[2]],acc,l[6]);
+    CUR_AV=this; buildHair(this.head,l[1],HAIRC[l[2]],acc,l[6]); CUR_AV=null; if(l[13]) buildNose(this.head,l[13],SKIN[l[0]]);
     buildHat(this.head,l[6],out,acc);
     if(l[12]) buildGear(this.torso,l[12],out,acc,this);
     this.amulet=new T.Group(); this.amulet.position.set(0,.27,.2); this.amulet.rotation.x=-.2; this.torso.add(this.amulet);
@@ -3780,6 +3789,7 @@ function updateFlyers(dt){ for(let i=flyers.length-1;i>=0;i--){ const f=flyers[i
 /* ================= state, input, camera ================= */
 if(me.sp&&me.name!==SP_NAME) me.sp=0;
 function myLabel(){ const tl=DQ&&DQ.ttl()?DQ.ttl()+"・":""; return tl+(me.name?me.name+"（你）":(me.no?`香客${me.no}（你）`:"你")); }
+if(me.look&&me.look[6]){ me.look[6]=0; try{ save("mz.me",me); }catch(e){} } /* (頭飾 is gone from 換裝, 11/15) */
 const meAv=new Avatar(me.look,{isMe:true,sp:!!me.sp,x:(Math.random()<.5?-1:1)*rand(2.4,8),z:HZ+rand(3.4,6.5),r:Math.PI});
 meAv.setName(myLabel());
 let camYaw=0, camPitch=.3, camDist=4.6, camTarget=new T.Vector3(); let customizing=false; let pvYaw=0, pvMode="full", pvSpin=0, rotAnim=null;
@@ -4726,17 +4736,19 @@ function renderOthersBtn(){ const b=$("#othersBtn"); if(!b) return; b.setAttribu
 $("#othersBtn").onclick=()=>{ othersShown=!othersShown; save("mz.others",othersShown); if(!customizing) setOthersVisible(true); renderOthersBtn(); toast(othersShown?"其他玩家回來了":"已隱藏其他玩家",2200); };
 renderOthersBtn();
 function syncPvSeg(){ sheetBody.querySelectorAll("[data-act=pv]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===pvMode))); }
+function picRow(label,idx,names){ const E=idx===7, im=FACE_AT[E?"eyes":"mouths"]; if(!im) return chipRow(label,idx,names.map(n=>n.replace("💄 ",""))); const tw=E?88:66, th=44, src=im.src, rows=Math.ceil(names.length/8), skin=SKIN[draftLook[0]]||SKIN[0];
+  return `<div class="group"><span class="group-label">${label}</span><div class="chips">${names.map((n,i)=>{ const lock=!premOwned(idx,i); return `<button class="chip fpic" data-act="look" data-v="${idx}:${i}" aria-pressed="${draftLook[idx]===i}" aria-label="${esc(n.replace("💄 ",""))}" title="${esc(n.replace("💄 ",""))}" style="width:${tw+6}px;height:${th+6}px;background:${skin} url(${src}) ${3-(i%8)*tw}px ${3-Math.floor(i/8)*th}px / ${tw*8}px ${th*rows}px no-repeat;${lock?"opacity:.5;":""}">${lock?"<i>🔒</i>":""}</button>`; }).join("")}</div><p class="note">🔒 的款式到小鎮西側巷弄的美容院購買。</p></div>`; }
 function chipRow(label,idx,names){ return `<div class="group"><span class="group-label">${label}</span><div class="chips">${names.map((n,i)=>idx===3&&i===16&&!me.sp?"":`<button class="chip" data-act="look" data-v="${idx}:${i}" aria-pressed="${draftLook[idx]===i}">${(idx===3&&isStyleX(i)&&!styleOwned(i))||!premOwned(idx,i)?"🔒 ":""}${n}</button>`).join("")}</div>${idx===3?`<p class="note">🔒 的款式到禪房旁的服飾店購買。服飾店的衣服有自己的配色，不會跟著下面的顏色改變。</p>`:""}</div>`; }
-function premOwned(i,n){ if(me.sp) return true; const b=(bag.lf&&bag.lf.own)||{}; if(i===1) return n<25||!!((b.h|0)&(1<<(n-25))); if(i===7) return n<15||!!((b.e|0)&(1<<(n-15))); if(i===9) return n<4||!!((b.m|0)&(1<<(n-4))); if(i===13) return n<1||!!((b.n|0)&(1<<(n-1))); return true; }
+const bitOf=(v,n)=>Math.floor((+v||0)/2**n)%2===1; function premOwned(i,n){ if(me.sp) return true; const b=(bag.lf&&bag.lf.own)||{}; if(i===1) return n<25||bitOf(b.h,n-25); if(i===7) return n<15||bitOf(b.e,n-15); if(i===9) return n<12||bitOf(b.m,n-12); if(i===13) return n<1||bitOf(b.n,n-1); return true; }
 function styleOwned(v){ return !isStyleX(v)||!!me.sp||!!((bag.clo||0)&(1<<(v-STYLEX0))); }
 function swRow(label,idx,cols){ return `<div class="group"><span class="group-label">${label}</span><div class="chips">${cols.map((c,i)=>`<button class="sw" style="background:${c}" data-act="look" data-v="${idx}:${i}" aria-pressed="${draftLook[idx]===i}" aria-label="${label} ${i+1}"></button>`).join("")}</div></div>`; }
 // ---- 造型代碼: name, look and bag packed into a self-contained code (no server needed) ----
 const SNACK_KEYS=["drink","cookie","noodle","energy","beer","bread"]; /* 便利商店 snacks, in save-code order */
 const CODE_ITEMS=["xiang","hua","guo","bing","jin","fu"];
 function lookCode(){ const bits=[]; const put=(v,n)=>{ v=Math.max(0,Math.min((2**n)-1,v|0)); for(let i=n-1;i>=0;i--) bits.push((v/2**i|0)&1); };
-  put(1,4); for(let i=0;i<13;i++) put(me.look[i]||0,5); put(bag.coins,16); CODE_ITEMS.forEach(k=>put(bag.items[k]||0,5)); put(bag.redThread?1:0,1);
+  put(1,4); for(let i=0;i<13;i++) put((me.look[i]||0)&31,5); /* (the low 5 bits; hair, eyes and mouth have a 6th bit further on) */ put(bag.coins,16); CODE_ITEMS.forEach(k=>put(bag.items[k]||0,5)); put(bag.redThread?1:0,1);
   const ps=(bag.poems||[]).slice(-5); put(ps.length,3); ps.forEach(n=>put(n,6)); put(me.no||0,24);
-  const nm=[...String(me.sp?"":(me.name||""))].slice(0,10).join(""); const cu=[]; for(let i=0;i<nm.length;i++) cu.push(nm.charCodeAt(i)); put(Math.min(15,cu.length),4); cu.slice(0,15).forEach(c=>put(c,16)); { const a=accState(); put(Math.min(15,ACC_IDS.length),4); ACC_IDS.slice(0,15).forEach(id=>put(a.owned[id]?1:0,1)); } put(Math.min(255,bag.gacha||0),8); { const a=accState(), more=ACC_IDS.slice(15); put(more.length,6); more.forEach(id=>put(a.owned[id]?1:0,1)); } { const c=bag.cat&&bag.cat.pet; put(1,1); put(Math.min(255,bag.items.can||0),8); put(Math.min(255,bag.items.treat||0),8); put(c?1:0,1); if(c){ put(c.t,4); put(c.sd,16); const cn=[...String(c.nm||"")].slice(0,6); put(cn.length,3); cn.forEach(ch=>put(ch.charCodeAt(0),16)); TRICKS.forEach(([k])=>put(Math.min(7,c.tr&&c.tr[k]||0),3)); } } /* 貓: cans and your cat (older codes read as none) */ put(1,1); put(bag.clo||0,16); put(Math.max(0,Math.min(100,Math.round(bag.en??100))),7); SNACK_KEYS.forEach(k=>put(Math.min(63,(bag.snk||{})[k]||0),6)); put(Math.max(0,(bag.coins|0)-65535),24); { const z=DQ?DQ.pack():null; put(z?1:0,1); if(z) z.forEach(v=>put(v[0],v[1])); } /* 今日功課: sign-in, claims, 功德簿 */ { const z=ROOMX?ROOMX.pack():null; put(z?1:0,1); if(z) z.forEach(v=>put(v[0],v[1])); } /* 我的房間 */ put(1,1); put(((me.look[1]|0)>>5)&1,1); put(me.look[13]|0,4); /* 理髮廳・美容院: the hair's 6th bit and the nose */ if(LIFE&&LIFE.pack){ put(1,1); LIFE.pack(put); } else put(0,1); /* 小鎮生活: fish, garden, townsfolk */ /* (coins above the old 16-bit field) */ /* 商店街: outfits bought, 精力, snacks (older codes read as none) */ /* 扭蛋幣 (codes made before it was added simply read as 0) */
+  const nm=[...String(me.sp?"":(me.name||""))].slice(0,10).join(""); const cu=[]; for(let i=0;i<nm.length;i++) cu.push(nm.charCodeAt(i)); put(Math.min(15,cu.length),4); cu.slice(0,15).forEach(c=>put(c,16)); { const a=accState(); put(Math.min(15,ACC_IDS.length),4); ACC_IDS.slice(0,15).forEach(id=>put(a.owned[id]?1:0,1)); } put(Math.min(255,bag.gacha||0),8); { const a=accState(), more=ACC_IDS.slice(15); put(more.length,6); more.forEach(id=>put(a.owned[id]?1:0,1)); } { const c=bag.cat&&bag.cat.pet; put(1,1); put(Math.min(255,bag.items.can||0),8); put(Math.min(255,bag.items.treat||0),8); put(c?1:0,1); if(c){ put(c.t,4); put(c.sd,16); const cn=[...String(c.nm||"")].slice(0,6); put(cn.length,3); cn.forEach(ch=>put(ch.charCodeAt(0),16)); TRICKS.forEach(([k])=>put(Math.min(7,c.tr&&c.tr[k]||0),3)); } } /* 貓: cans and your cat (older codes read as none) */ put(1,1); put(bag.clo||0,16); put(Math.max(0,Math.min(100,Math.round(bag.en??100))),7); SNACK_KEYS.forEach(k=>put(Math.min(63,(bag.snk||{})[k]||0),6)); put(Math.max(0,(bag.coins|0)-65535),24); { const z=DQ?DQ.pack():null; put(z?1:0,1); if(z) z.forEach(v=>put(v[0],v[1])); } /* 今日功課: sign-in, claims, 功德簿 */ { const z=ROOMX?ROOMX.pack():null; put(z?1:0,1); if(z) z.forEach(v=>put(v[0],v[1])); } /* 我的房間 */ put(1,1); put(((me.look[1]|0)>>5)&1,1); put(me.look[13]|0,4); /* 理髮廳・美容院: the hair's 6th bit and the nose */ if(LIFE&&LIFE.pack){ put(1,1); LIFE.pack(put); } else put(0,1); put(((me.look[7]|0)>>5)&1,1); put(((me.look[9]|0)>>5)&1,1); /* (11/15: 48 eyes, 64 mouths) */ /* 小鎮生活: fish, garden, townsfolk */ /* (coins above the old 16-bit field) */ /* 商店街: outfits bought, 精力, snacks (older codes read as none) */ /* 扭蛋幣 (codes made before it was added simply read as 0) */
   while(bits.length%8) bits.push(0); const bytes=[]; for(let i=0;i<bits.length;i+=8){ let b=0; for(let j=0;j<8;j++) b=b*2+bits[i+j]; bytes.push(b); } bytes.push(bytes.reduce((a,b)=>(a+b)&255,0x5a));
   return "MZ-"+btoa(String.fromCharCode(...bytes)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }
 function readCode(str){ try{ str=String(str||"").trim().replace(/\s+/g,""); if(!/^MZ-[A-Za-z0-9_-]{10,}$/.test(str)) return null; const raw=atob(str.slice(3).replace(/-/g,"+").replace(/_/g,"/")); const bytes=[...raw].map(c=>c.charCodeAt(0));
@@ -4744,7 +4756,7 @@ function readCode(str){ try{ str=String(str||"").trim().replace(/\s+/g,""); if(!
   if(get(4)!==1) return null; const look=[]; for(let i=0;i<13;i++) look.push(get(5)); const coins=get(16); const items={}; CODE_ITEMS.forEach(k=>{ const v=get(5); if(v) items[k]=v; }); const red=get(1);
   const pn=get(3), poems=[]; for(let i=0;i<pn;i++){ const n=get(6); if(n>=1&&n<=60) poems.push(n); } const no=get(24); const nl=get(4); let name=""; for(let i=0;i<nl;i++) name+=String.fromCharCode(get(16));
   const an=get(4), acc=[]; for(let i=0;i<an;i++) if(get(1)&&ACC_IDS[i]) acc.push(ACC_IDS[i]); const gacha=get(8); { const an2=get(6); for(let i=0;i<an2;i++) if(get(1)&&ACC_IDS[15+i]) acc.push(ACC_IDS[15+i]); } let cans=0, treat=0, cat=null; if(get(1)){ cans=get(8); treat=get(8); if(get(1)){ cat={t:get(4)%11,sd:get(16)}; const l=get(3); let nm=""; for(let i=0;i<l;i++) nm+=String.fromCharCode(get(16)); cat.nm=nm||"咪咪"; cat.tr={}; TRICKS.forEach(([k])=>{ const v=get(3); if(v) cat.tr[k]=v; }); } }
-  let shop=null; if(get(1)){ shop={clo:get(16),en:get(7),snk:{}}; SNACK_KEYS.forEach(k=>{ const v=get(6); if(v) shop.snk[k]=v; }); shop.xc=get(24); } let daily=null; if(shop&&get(1)&&DQ) daily=DQ.unpack(get); let room=null; if(daily&&get(1)&&ROOMX) room=ROOMX.unpack(get); let life=null; if(get(1)){ look[1]|=get(1)<<5; look[13]=get(4); if(get(1)&&LIFE&&LIFE.unpack) life=LIFE.unpack(get); }
+  let shop=null; if(get(1)){ shop={clo:get(16),en:get(7),snk:{}}; SNACK_KEYS.forEach(k=>{ const v=get(6); if(v) shop.snk[k]=v; }); shop.xc=get(24); } let daily=null; if(shop&&get(1)&&DQ) daily=DQ.unpack(get); let room=null; if(daily&&get(1)&&ROOMX) room=ROOMX.unpack(get); let life=null; if(get(1)){ look[1]|=get(1)<<5; look[13]=get(4); if(get(1)&&LIFE&&LIFE.unpack) life=LIFE.unpack(get); look[7]|=get(1)<<5; look[9]|=get(1)<<5; }
   return {look,coins:coins+(shop&&shop.xc||0),items,red,poems,no,name,acc,gacha,cans,treat,cat,shop,daily,room,life}; }catch(e){ return null; } }
 /* 除霧 (chair only, this screen only): the haze is lifted so the far scenery and the whole sky show reads clearly; press again to bring it back */
 const NOFOG={on:false,near:0,far:0};
@@ -4836,16 +4848,15 @@ HANDLERS.giftPick=v=>{ if(v==="all"){ openGift("all","全伺服器所有玩家")
 function giftTap(rc){ if(!me.sp||!remotes.size) return false; const roots=[...remotes.entries()].filter(([id,av])=>av.root.visible&&!av.sp); if(!roots.length) return false;
   const hit=rc.intersectObjects(roots.map(r=>r[1].root),true)[0]; if(!hit) return false; let o=hit.object; while(o&&!roots.some(r=>r[1].root===o)) o=o.parent; const e=roots.find(r=>r[1].root===o); if(!e) return false; openGift(e[0],e[1].name||"香客"); return true; }
 
-function renderLook(first){ const tabs=[["face","臉"],["hair","髮型"],["wear","服裝"],["hat","頭飾"]];
+function renderLook(first){ if(lookTab==="hat") lookTab="face"; if(draftLook&&draftLook[6]){ draftLook[6]=0; try{ meAv.setLook(draftLook); }catch(e){} } const tabs=[["face","臉"],["eyes","眼睛"],["nose","鼻子"],["mouth","嘴巴"],["hair","髮型"],["wear","服裝"]];
   let body=`<div class="look-head"><div class="preview-ctl"><button class="spin" data-act="spin" data-v="-1" aria-label="向左轉">⟲</button><div class="seg"><button data-act="pv" data-v="full" aria-pressed="${pvMode==="full"}">整體總覽</button><button data-act="pv" data-v="face" aria-pressed="${pvMode==="face"}">臉部特寫</button><button data-act="pv" data-v="turn" aria-pressed="false">轉一圈</button></div><button class="spin" data-act="spin" data-v="1" aria-label="向右轉">⟳</button></div>
   <div class="tabs" role="tablist">${tabs.map(([k,n])=>`<button class="tab" role="tab" data-act="tab" data-v="${k}" aria-selected="${lookTab===k}">${n}</button>`).join("")}</div></div>`;
-  if(lookTab==="face") body+=swRow("膚色",0,SKIN)+chipRow("眼睛",7,EYES)+chipRow("眉毛",8,BROWS)+chipRow("嘴巴",9,MOUTHS)+chipRow("鼻子",13,NOSES)+chipRow("腮紅",10,BLUSH)+chipRow("臉部配件",11,EXTRA);
-  if(lookTab==="hair") body+=`<p class="note">參考圖 01～24 款：選款時套用參考髮色，也可以再自行換色。帽子會遮住部分頭頂造型。</p>`;
+  if(lookTab==="face") body+=swRow("膚色",0,SKIN)+chipRow("眉毛",8,BROWS)+chipRow("腮紅",10,BLUSH)+chipRow("臉部配件",11,EXTRA);
+  if(lookTab==="eyes") body+=picRow("眼睛",7,EYES); if(lookTab==="nose") body+=chipRow("鼻子",13,NOSES); if(lookTab==="mouth") body+=picRow("嘴巴",9,MOUTHS);
+  if(lookTab==="hair") body+=`<p class="note">01～24 款選的時候會套用參考髮色，也可以再自己換色。✂️ 的款式到美容院剪，任何髮色都可以搭。</p>`;
   if(lookTab==="hair") body+=chipRow("髮型",1,HAIRS)+swRow("髮色",2,HAIRC);
   if(lookTab==="wear") body+=`<p class="note">服裝、配色與配件可以自由搭配。${me.sp?"主委背心是你的專屬款式。":""}</p>`;
   if(lookTab==="wear") body+=chipRow("款式",3,STYLES)+swRow("衣服顏色",4,OUTFIT)+swRow("配色（滾邊・領帶・帽子・配件）",5,ACCENT)+chipRow("身上配件",12,GEAR);
-  if(lookTab==="hat") body+=`<p class="note">可以旋轉角色檢查搭配；包覆型帽子會遮住頭頂髮量。</p>`;
-  if(lookTab==="hat") body+=chipRow("頭飾",6,HATS);
   body+=`<div class="field"><label class="group-label" for="nameInput">在殿內顯示的名字</label><div class="name-row"><input id="nameInput" maxlength="10" placeholder="例如：阿豪" value="${esc(me.name)}"><button class="chip" type="button" data-act="rollName">🎲 換一個</button></div></div>`;
   body+=`<div class="group code-box"><span class="group-label">造型代碼</span>
     <div class="mail-row"><input class="mail-box code-in" id="myCode" readonly value="${esc(lookCode())}" aria-label="我的造型代碼"><button class="good mail-copy" data-act="copyCode"><span class="name">複製</span></button></div>
@@ -4863,7 +4874,7 @@ HANDLERS.pv=v=>{ if(v==="turn"){ pvSpin=Math.PI*2; return; } pvMode=v; syncPvSeg
 HANDLERS.rollName=()=>{ const el=$("#nameInput"); if(el){ el.value=randomName(); el.focus(); } };
 HANDLERS.tab=v=>{ me.name=$("#nameInput").value; lookTab=v; renderLook(firstVisitPending); sheetBody.scrollTop=0; };
 HANDLERS.look=v=>{ const [i,n]=v.split(":").map(Number); if(i===3&&n===16&&!me.sp){ toast("這是主委專屬背心"); return; } if(!premOwned(i,n)){ toast(i===1?"這款髮型要到小鎮西側巷弄的理髮廳購買":"這款要到小鎮西側巷弄的美容院購買",3000); return; } if(i===3&&!styleOwned(n)){ toast(`「${STYLES[n]}」要到禪房旁的服飾店購買`,2800); return; } if(!Number.isInteger(i)||i<0||i>=LOOK_RANGE.length||!Number.isInteger(n)||n<0||n>=LOOK_RANGE[i]) return; draftLook[i]=n; if(i===1&&n>0){ draftLook[2]=HAIR_PRESET_COLOR[n]; } draftLook=sanitizeLook(draftLook,!!me.sp); meAv.setLook(draftLook); if(i===1) sheetBody.querySelectorAll(`[data-v^="2:"]`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===`2:${draftLook[2]}`))); sheetBody.querySelectorAll(`[data-v^="${i}:"]`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===v))); };
-HANDLERS.randomLook=()=>{ draftLook=randomLook(!!me.sp); if(!styleOwned(draftLook[3])) draftLook[3]=Math.floor(Math.random()*16); meAv.setLook(draftLook); renderLook(firstVisitPending); };
+HANDLERS.randomLook=()=>{ draftLook=randomLook(!!me.sp); draftLook[6]=0; if(!premOwned(1,draftLook[1])) draftLook[1]=1+Math.floor(Math.random()*24); if(!premOwned(7,draftLook[7])) draftLook[7]=Math.floor(Math.random()*15); if(!premOwned(9,draftLook[9])) draftLook[9]=Math.floor(Math.random()*12); if(!premOwned(13,draftLook[13])) draftLook[13]=0; if(!styleOwned(draftLook[3])) draftLook[3]=Math.floor(Math.random()*16); meAv.setLook(draftLook); renderLook(firstVisitPending); };
 HANDLERS.saveLook=async()=>{ setTimeout(()=>{ if(NET_ME()) profSave(false); },2500); const raw=$("#nameInput").value.trim(); if(hasAddLine(raw)){ toast("名字不能寫加賴",2800); return; } const ok=await _chk(raw);
   if(ok){ me.sp=1; me.name=SP_NAME; } else if(raw===SP_NAME&&me.sp){ me.name=SP_NAME; } else { me.sp=0; me.name=[SP_NAME,SP_OLD].includes(cleanName(raw))?"":cleanName(raw); }
   meAv.setSp(!!me.sp); renderChairBtn(); if(ok) toast("✨ 主委駕到 ✨",3200); me.look=sanitizeLook(draftLook,!!me.sp); meAv.setLook(me.look); save("mz.me",me); meAv.setName(myLabel()); markDirty(); const first=firstVisitPending; firstVisitPending=false; closeSheet(); if(!ok) toast("歡迎來拜拜！先到大殿入口右手邊的服務處，請清香、金紙和供品",4800); };
@@ -12816,24 +12827,34 @@ function npcTick(dt){ const p=meAv.pos, inTown=TOWNX&&TOWNX.on; let best=null, b
 L.npcs=()=>NL; L.npcLine=(x0,z,old)=>NPCS.map((n,i)=>{ const keep=n.sh; if(old) n.sh=null; const av=npcMake(n); n.sh=keep; if(old&&old[n.id]) av.root.scale.set(...old[n.id]); av.pos.set(x0+i*1.3,z); av.target.copy(av.pos); av.root.position.set(x0+i*1.3,0,z); av.rotY=0; av.root.rotation.y=0; return av; }); /* (test: the ten in a row) */
 
 /* ---------- 理髮廳 and 美容院: pay once for a style, then wear it whenever you like (it also shows in 換裝 once bought) ---------- */
-const HP=[1800,2000,1600,2200,1800,2400,2000,2600,2200,3000], EP=[900,800,1000,1200,900,1100,800,1000,900,800], MP=[800,900,700,800,1000,800,700,800,900,1200], NP=[600,700,700,800,900,1000,800,600,600,900];
+/* 11/15 (the chair): 21 hair models (男 10, 女 11), 33 eyes, 52 mouths and 10 noses for sale. What you own is one number per kind,
+   bit n = the n-th one for sale — read and written with plain arithmetic, because there are more than 32 of some. */
+const priceOf=(k,j)=>k==="h"?[1800,2000,1600,2200,1800,2400,2000,2600,2200,3000][j%10]:k==="e"?[900,800,1000,1200,900,1100,800,1000,900,800][j%10]+(j>=10?200:0):k==="m"?[800,900,700,800,1000,800,700,800,900,1200][j%10]:[600,700,700,800,900,1000,800,600,600,900][j%10];
 const OWN=()=>{ const d=LF(); d.own=d.own||{h:0,e:0,m:0,n:0}; return d.own; };
 let PV=null; /* a style being tried on: [look before] */
 function tryOn(i,n){ if(!PV) PV=me.look.slice(); const l=PV.slice(); l[i]=n; try{ meAv.setLook(sanitizeLook(l,!!me.sp)); }catch(e){} }
 function endTry(){ if(!PV) return; try{ meAv.setLook(me.look); }catch(e){} PV=null; }
 function wearNow(i,n){ const l=me.look.slice(); l[i]=n; me.look=sanitizeLook(l,!!me.sp); PV=null; try{ localStorage.setItem("mz.me",JSON.stringify(me)); }catch(e){} try{ draftLook=me.look.slice(); }catch(e){} meAv.setLook(me.look); markDirty(); try{ profSave(true); }catch(e){} try{ [659,880,1175].forEach((f,k)=>tone(f,.12,.05,"triangle",k*.07)); }catch(e){} }
-const owned2=(k,n)=>me.sp||!!((OWN()[k]|0)&(1<<n));
-function barber(){ const rows=(lo,hi,lab)=>`<h4 style="margin:10px 0 4px">${lab}</h4>`+[...Array(hi-lo)].map((_,j)=>{ const n=lo+j, k=n-25, own=owned2("h",k), on=me.look[1]===n; return `<div class="lf-row"><div class="t"><b>${HAIRS[n].replace("✂️ ","")}</b>　${own?"<small>已擁有</small>":HP[k]+" 幣"}</div><button class="secondary" data-act="lfTry" data-v="1:${n}">試試看</button>${own?`<button class="primary" data-act="lfWear" data-v="1:${n}" ${on?"disabled":""}>${on?"現在的髮型":"換上"}</button>`:`<button class="primary" data-act="lfBuy" data-v="1:${n}">剪這個</button>`}</div>`; }).join("");
-  salonOpen("h",`${rows(25,30,"男生款")}${rows(30,35,"女生款")}<p class="note">髮色在「換裝」裡可以另外換。</p>`); }
-function beauty(){ const sec=(i,lo,cnt,P,k,lab,names)=>`<h4 style="margin:10px 0 4px">${lab}</h4>`+[...Array(cnt)].map((_,j)=>{ const n=lo+j, own=owned2(k,j), on=me.look[i]===n; return `<div class="lf-row"><div class="t"><b>${names[n].replace("💄 ","")}</b>　${own?"<small>已擁有</small>":P[j]+" 幣"}</div><button class="secondary" data-act="lfTry" data-v="${i}:${n}">試試看</button>${own?`<button class="primary" data-act="lfWear" data-v="${i}:${n}" ${on?"disabled":""}>${on?"現在的":"換上"}</button>`:`<button class="primary" data-act="lfBuy" data-v="${i}:${n}">買</button>`}</div>`; }).join("");
-  salonOpen("f",`${sec(7,15,10,EP,"e","眼睛",EYES)}${sec(13,1,10,NP,"n","鼻子",NOSES)}${sec(9,4,10,MP,"m","嘴巴",MOUTHS)}<p class="note">買過的在「換裝」的臉部也能換。想拿掉鼻子：換裝裡選「無」。</p>`); }
-/* 美容院 (11/14: the barber and the beauty salon are one shop now): hair and face on two tabs */
-function salonOpen(tab,body){ salonView(); openSheet("lfSalon","💇 美容院",`<p class="lead">設計師：「您好，請問有預約、有指定設計師嗎？」</p><div class="row" style="margin-bottom:6px"><button class="${tab==="h"?"primary":"secondary"}" data-act="lfSalon" data-v="h">✂️ 髮型</button><button class="${tab==="f"?"primary":"secondary"}" data-act="lfSalon" data-v="f">💄 五官</button></div>${body}`); }
-HANDLERS.lfSalon=v=>v==="f"?beauty():barber();
-const slotOf=(i,n)=>i===1?["h",n-25,HP]:i===7?["e",n-15,EP]:i===13?["n",n-1,NP]:["m",n-4,MP];
+const hasBit=(v,n)=>Math.floor((+v||0)/2**n)%2===1;
+const owned2=(k,n)=>me.sp||hasBit(OWN()[k],n);
+const SALON=[["h","✂️ 髮型"],["e","👁 眼睛"],["n","👃 鼻子"],["m","👄 嘴巴"]], SLOT={h:[1,25],e:[7,15],n:[13,1],m:[9,12]}; /* kind → [place in the look, first one for sale] */
+const kindOf=i=>i===1?"h":i===7?"e":i===13?"n":"m";
+function salonPic(k,n){ const sk=SKIN[me.look[0]]||SKIN[0]; if(k==="e"||k==="m"){ const E=k==="e", tw=E?96:72, th=48, rows=E?6:8, src=MZIMG("face/"+(E?"eyes":"mouths")+".webp"); return `<span style="flex:none;width:${tw}px;height:${th}px;border-radius:10px;background:${sk} url(${src}) ${-(n%8)*tw}px ${-Math.floor(n/8)*th}px / ${tw*8}px ${th*rows}px no-repeat"></span>`; } return ""; }
+function salonRows(k,lo,hi){ const [i]=SLOT[k], names=k==="h"?HAIRS:k==="e"?EYES:k==="n"?NOSES:MOUTHS; let h=""; for(let n=lo;n<hi;n++){ const j=n-SLOT[k][1], own=owned2(k,j), on=me.look[i]===n;
+    h+=`<div class="lf-row">${salonPic(k,n)}<div class="t"><b>${names[n].replace(/^(✂️|💄) /,"")}</b><br>${own?"<small>已擁有</small>":priceOf(k,j)+" 幣"}</div><button class="secondary" data-act="lfTry" data-v="${i}:${n}">試試看</button>${own?`<button class="primary" data-act="lfWear" data-v="${i}:${n}" ${on?"disabled":""}>${on?"現在的":"換上"}</button>`:`<button class="primary" data-act="lfBuy" data-v="${i}:${n}">${k==="h"?"剪這個":"買"}</button>`}</div>`; } return h; }
+function salon(k){ k=SLOT[k]?k:"h"; let body="";
+  if(k==="h") body=`<h4 style="margin:10px 0 4px">髮色（免費，隨時可以換）</h4><div style="display:flex;flex-wrap:wrap;gap:6px">${HAIRC.map((c,n)=>`<button data-act="lfHairC" data-v="${n}" aria-label="髮色 ${n+1}" style="width:30px;height:30px;border-radius:50%;border:${me.look[2]===n?"3px solid #ffd24a":"2px solid rgba(255,255,255,.35)"};background:${c};padding:0;flex:none"></button>`).join("")}</div><h4 style="margin:12px 0 4px">男生款</h4>${salonRows("h",25,35)}<h4 style="margin:12px 0 4px">女生款</h4>${salonRows("h",35,46)}`;
+  else if(k==="e") body=salonRows("e",15,EYES.length); else if(k==="n") body=salonRows("n",1,NOSES.length)+`<p class="note">想拿掉鼻子：換裝的「鼻子」裡選「無」。</p>`; else body=salonRows("m",12,MOUTHS.length);
+  salonOpen(k,body+`<p class="note">買過的在「換裝」裡也能換。</p>`); }
+function barber(){ salon("h"); } function beauty(){ salon("e"); }
+/* 美容院: one shop — 髮型 / 眼睛 / 鼻子 / 嘴巴 on four tabs */
+function salonOpen(tab,body){ salonView(); SALON_TAB=tab; openSheet("lfSalon","💇 美容院",`<p class="lead">設計師：「您好，請問有預約、有指定設計師嗎？」</p><div class="row" style="margin-bottom:6px;gap:6px">${SALON.map(([k,t])=>`<button class="${tab===k?"primary":"secondary"}" data-act="lfSalon" data-v="${k}" style="padding:8px 4px;font-size:13.5px">${t}</button>`).join("")}</div>${body}`); }
+let SALON_TAB="h";
+HANDLERS.lfSalon=v=>salon(v);
+HANDLERS.lfHairC=v=>{ wearNow(2,+v); salon("h"); };
 HANDLERS.lfTry=v=>{ const [i,n]=v.split(":").map(Number); tryOn(i,n); toast("試試看：關掉面板就會換回原本的樣子",2000); };
-HANDLERS.lfWear=v=>{ const [i,n]=v.split(":").map(Number); wearNow(i,n); i===1?barber():beauty(); };
-HANDLERS.lfBuy=v=>{ const [i,n]=v.split(":").map(Number), [k,j,P]=slotOf(i,n), o=OWN(); if(owned2(k,j)) return; if(bag.coins<P[j]&&!me.sp){ try{ buzz(); }catch(e){} toast(`平安幣不夠（還差 ${P[j]-bag.coins}）`,2400); return; } if(!me.sp) bag.coins-=P[j]; o[k]=(o[k]|0)|(1<<j); save(); try{ chaChing(); statInc("lfBuy"+k); }catch(e){} wearNow(i,n); toast("換好了！好看喔",2200); i===1?barber():beauty(); };
+HANDLERS.lfWear=v=>{ const [i,n]=v.split(":").map(Number); wearNow(i,n); salon(kindOf(i)); };
+HANDLERS.lfBuy=v=>{ const [i,n]=v.split(":").map(Number), k=kindOf(i), j=n-SLOT[k][1], P=priceOf(k,j), o=OWN(); if(j<0||owned2(k,j)) return; if(bag.coins<P&&!me.sp){ try{ buzz(); }catch(e){} toast(`平安幣不夠（還差 ${P-bag.coins}）`,2400); return; } if(!me.sp) bag.coins-=P; if(!hasBit(o[k],j)) o[k]=(+o[k]||0)+2**j; save(); try{ chaChing(); statInc("lfBuy"+k); }catch(e){} wearNow(i,n); toast("換好了！好看喔",2200); salon(k); };
 L.tick3=dt=>{ if(PV&&sheetKind!=="lfSalon") endTry(); if(L.tick4) L.tick4(dt); };
 L.more2=k=>{ if(k==="tw:barber"){ barber(); return true; } if(k==="tw:beauty"){ beauty(); return true; } return L.more3?L.more3(k):false; };
 
@@ -13048,7 +13069,7 @@ L.testPanel=()=>{ if(!me.sp) return; const b=(act,v,t,cls)=>`<button class="${cl
    <p class="note">現在：${hr==null?"真實時間":hr+" 點"}。各店營業時間：${Object.keys(HOURS).map(k=>`${(TP_SHOPS.find(q=>q[0]===k)||[0,k])[1]} ${hrs_(k)}`).join("、")}</p>
    <h4 style="margin:10px 0 4px">傳送／進店</h4><div>${b("tmGo","town","🏮 小鎮鎮口")}${b("tmGo","zen","🧘 禪房裡（測走出來會不會卡）")}${b("tmGo","temple","⛩️ 廟前")}</div><div>${TP_SHOPS.map(([k,n])=>b("tmShop",k,n)).join("")}</div>
    <h4 style="margin:10px 0 4px">直接玩（不用找店）</h4><div>${[["tw:bfast","🍔 疊漢堡"],["tw:ice","🍦 冰淇淋"],["tw:herb","🌿 中藥對對碰"],["tw:congee","🥣 深夜出餐"],["tw:drink","🧋 調飲料"],["tw:book","📚 推書櫃"],["tw:flower","💐 插花"]].map(([k,n])=>b("tmGame",k,n)).join("")}</div>
-   <h4 style="margin:10px 0 4px">這次改版（11/14）</h4><div>${b("tmRods",1,"🎣 拿到全部 12 支釣竿")}${b("tmRain",1,"🧧 撒紅包＋假人來搶")}</div><h4 style="margin:10px 0 4px">這次改版（11/14 下午）</h4><div>${b("tmIceDrink",1,"🧋 飲料：一定會加冰（看 3 秒提示和藍線）")}${b("tmGo","town","🏠 看屋頂（人字屋頂變少）")}${b("tmGame","tw:ice","🍦 新冰淇淋（照錄影重做）")}${b("tmBait",1,"🪱 每種釣餌各 10 份＋全部釣竿")}${b("tmBait",0,"🪱 清空釣餌（測沒餌不能拋竿）")}</div><h4 style="margin:10px 0 4px">這次改版（11/14 晚上）</h4><div>${b("tmShop","tw:congee","🥣 一粥七天（新櫥窗、招牌）")}${b("tmShop","tw:tackle","🎣 釣具行（立體櫥窗、門）")}${b("tmGo","alley","🏚️ 收藏家小屋")}${b("tmGame","tw:herb","🌿 中藥對對碰（木桌＋碗）")}${b("tmMet",1,"🌠 流星（金色星星）")}</div><h4 style="margin:10px 0 4px">這次改版（11/14 晚上 2）</h4><div>${b("tmGo","beach","🏖️ 海邊（橋、躺椅、太陽、沒霧）")}${b("tmGo","garden","🌱 溫室花圃")}${b("tmGo","pier","🎣 車站旁的河（草皮不再跑出來）")}${b("tmNight",1,"🌙 變晚上（路燈）")}${b("tmNight",0,"☀️ 變白天")}</div><h4 style="margin:10px 0 4px">這次改版（11/14 晚上 3：魚模型）</h4><div>${b("tmFish",1,"🐟 下一隻新魚模型（每按一次換一隻）")}${b("tmDexAll",1,"📖 圖鑑全部點亮（看新圖示）")}</div><h4 style="margin:10px 0 4px">這次改版（11/14 晚上 4）</h4><div>${b("tmBq",1,"💐 花束打工（隨機一張訂單）")}${b("tmGo","furn","🛋️ 得意屋家具（招牌＋櫥窗）")}${b("tmHour",3,"🌙 時鐘撥到 3 點（店都關：招牌不亮、櫥窗暗）")}${b("tmHour",-1,"🕒 時鐘恢復")}${b("tmGo","garden","🌱 三間溫室")}${b("tmGarden",1,"🌱 花圃：每塊田放不同作物和階段")}${b("tmTown",1,"🔎 小鎮讀取狀態（缺一塊時按這個截圖給我）")}</div><h4 style="margin:10px 0 4px">這次改版（11/14 晚上 5：一粥七天）</h4><div>${b("tmCz",1,"🥣 深夜出餐大挑戰（直接開始）")}${b("tmCzEnd",8,"⏩ 直接結算：完成 8 張（看三星與鹹粥 ×3）")}${b("tmEnLow",40,"⚡ 精力設成 40（測吃鹹粥 +100）")}</div>`); };
+   <h4 style="margin:10px 0 4px">這次改版（11/14）</h4><div>${b("tmRods",1,"🎣 拿到全部 12 支釣竿")}${b("tmRain",1,"🧧 撒紅包＋假人來搶")}</div><h4 style="margin:10px 0 4px">這次改版（11/14 下午）</h4><div>${b("tmIceDrink",1,"🧋 飲料：一定會加冰（看 3 秒提示和藍線）")}${b("tmGo","town","🏠 看屋頂（人字屋頂變少）")}${b("tmGame","tw:ice","🍦 新冰淇淋（照錄影重做）")}${b("tmBait",1,"🪱 每種釣餌各 10 份＋全部釣竿")}${b("tmBait",0,"🪱 清空釣餌（測沒餌不能拋竿）")}</div><h4 style="margin:10px 0 4px">這次改版（11/14 晚上）</h4><div>${b("tmShop","tw:congee","🥣 一粥七天（新櫥窗、招牌）")}${b("tmShop","tw:tackle","🎣 釣具行（立體櫥窗、門）")}${b("tmGo","alley","🏚️ 收藏家小屋")}${b("tmGame","tw:herb","🌿 中藥對對碰（木桌＋碗）")}${b("tmMet",1,"🌠 流星（金色星星）")}</div><h4 style="margin:10px 0 4px">這次改版（11/14 晚上 2）</h4><div>${b("tmGo","beach","🏖️ 海邊（橋、躺椅、太陽、沒霧）")}${b("tmGo","garden","🌱 溫室花圃")}${b("tmGo","pier","🎣 車站旁的河（草皮不再跑出來）")}${b("tmNight",1,"🌙 變晚上（路燈）")}${b("tmNight",0,"☀️ 變白天")}</div><h4 style="margin:10px 0 4px">這次改版（11/14 晚上 3：魚模型）</h4><div>${b("tmFish",1,"🐟 下一隻新魚模型（每按一次換一隻）")}${b("tmDexAll",1,"📖 圖鑑全部點亮（看新圖示）")}</div><h4 style="margin:10px 0 4px">這次改版（11/14 晚上 4）</h4><div>${b("tmBq",1,"💐 花束打工（隨機一張訂單）")}${b("tmGo","furn","🛋️ 得意屋家具（招牌＋櫥窗）")}${b("tmHour",3,"🌙 時鐘撥到 3 點（店都關：招牌不亮、櫥窗暗）")}${b("tmHour",-1,"🕒 時鐘恢復")}${b("tmGo","garden","🌱 三間溫室")}${b("tmGarden",1,"🌱 花圃：每塊田放不同作物和階段")}${b("tmTown",1,"🔎 小鎮讀取狀態（缺一塊時按這個截圖給我）")}</div><h4 style="margin:10px 0 4px">這次改版（11/14 晚上 5：一粥七天）</h4><div>${b("tmCz",1,"🥣 深夜出餐大挑戰（直接開始）")}${b("tmCzEnd",8,"⏩ 直接結算：完成 8 張（看三星與鹹粥 ×3）")}${b("tmEnLow",40,"⚡ 精力設成 40（測吃鹹粥 +100）")}</div><h4 style="margin:10px 0 4px">這次改版（11/15：美容院）</h4><div>${b("tmSalon","h","💇 美容院：髮型（21 款新模型＋髮色）")}${b("tmSalon","e","👁 美容院：眼睛")}${b("tmSalon","n","👃 美容院：立體鼻子")}${b("tmSalon","m","👄 美容院：嘴巴")}${b("tmLookOpen",1,"🪞 換造型（眼睛／鼻子／嘴巴分頁，沒有頭飾）")}</div>`); };
 HANDLERS.tmNight=v=>{ window.MZ_TOD=v==="1"?.7:.2; toast(v==="1"?"🌙 晚上":"☀️ 白天",1200); };
 const NEWFISH=["clownfish","mahi","shark","tuna","sunfish","marlin","oarfish","mackerel","seabream","terapon","sardine","milkfish","saury","mullet","puffer","flounder","loach","eel","bighead","masu","sturgeon","medaka","angel","springkoi","goldscale","crucian","ayu","kuhua","hairtail","squid","seahorse","grouper","pomfret","redbream","amberjack","octopus"]; let nfI=0;
 HANDLERS.tmFish=()=>{ closeSheet(); const id=NEWFISH[nfI++%NEWFISH.length]; try{ L.hold(id); toast("🐟 "+FBY[id].n+"（"+nfI+"/"+NEWFISH.length+"）",1800); }catch(e){ console.warn(e); } };
@@ -13057,6 +13078,8 @@ HANDLERS.tmTown=()=>{ let t=""; try{ const X=TOWNX; t=`已載入：${(X.live?X.l
 HANDLERS.tmCz=()=>{ closeSheet(); czGame(); };
 HANDLERS.tmCzEnd=v=>{ closeSheet(); czEnd({close(){}},{done:+v,miss:0}); };
 HANDLERS.tmEnLow=v=>{ bag.en=+v; try{ saveBag(); SHOPX.wallet(); }catch(e){} toast("⚡ 精力 "+v,1500); };
+HANDLERS.tmSalon=v=>{ closeSheet(); setTimeout(()=>salon(v),50); };
+HANDLERS.tmLookOpen=()=>{ closeSheet(); setTimeout(()=>{ try{ openLook(); }catch(e){ console.warn(e); } },50); };
 HANDLERS.tmBq=()=>{ closeSheet(); bqGame(); };
 HANDLERS.tmGarden=()=>{ closeSheet(); const D=GD2(), now=Date.now(); for(let i=0;i<12;i++){ const q=SEEDS[i%SEEDS.length]; D.beds[i]={s:q[0],p:[0,1,2,3][(i+Math.floor(i/7))%4],w:0,t:now}; } save(); gardenOpen(); };
 HANDLERS.tmMet=()=>{ closeSheet(); try{ L.meteorTest(); }catch(e){ console.warn(e); } };
@@ -13708,14 +13731,14 @@ L.garden=gardenOpen;
 /* ---------- into the save code (the 取回碼 and the server's copy): rod, bought styles, the fish book, fish in the bag (how many of
    each kind; sizes come back as a typical size), the townsfolk's affinity, the garden (seeds, harvest, what grows in each bed), and
    meteor finds. Order matters: FISH, NPCS and SEEDS may only ever be added to at the end. ---------- */
-L.pack=put=>{ const d=LF(), o=d.own||{}, g=GD2(); put(6,3); /* (version 3: + rods, baits; 4: + 疊漢堡 best and the 1000 prize; 5: + camera, album, 大還丹, 走路; 6: + 鹹粥) */ put(FISH.length,7); put(d.rod|0,2); ["h","e","m","n"].forEach(k=>put(o[k]|0,10));
+L.pack=put=>{ const d=LF(), o=d.own||{}, g=GD2(); put(7,3); /* (version 3: + rods, baits; 4: + 疊漢堡 best and the 1000 prize; 5: + camera, album, 大還丹, 走路; 6: + 鹹粥; 7: what you own at the 美容院 is longer — 21 hair, 33 eyes, 52 mouths, 10 noses) */ put(FISH.length,7); put(d.rod|0,2); [["h",2],["e",3],["m",4],["n",1]].forEach(([k,c])=>{ let v=+o[k]||0; for(let q=0;q<c;q++){ put(v%32768,15); v=Math.floor(v/32768); } });
   FISH.forEach(f=>{ const e=d.fish[f.id]; put(e?Math.min(63,e[0]):0,6); if(e) put(Math.min(511,Math.round(e[1])),9); });
   const ic={}; d.inv.forEach(([id])=>ic[id]=(ic[id]||0)+1); FISH.forEach(f=>put(Math.min(40,ic[f.id]||0),6));
   NPCS.forEach(n=>{ const R=(d.npc||{})[n.id]||{}; put(Math.min(100,R.a|0),7); put((R.r|0)&7,3); });
   SEEDS.forEach(q=>put(Math.min(31,g.seed[q[0]]|0),5)); SEEDS.forEach(q=>put(Math.min(127,g.crop[q[0]]|0),7));
   g.beds.forEach(b=>{ const i=b?SEEDS.findIndex(q=>q[0]===b.s):-1; put(i+1,3); if(i>=0){ grow(b,Date.now()); put(Math.min(15,Math.round(b.p*5)),4); put(b.w?1:0,1); } });
   put(Math.min(63,d.stone|0),6); put(Math.min(255,d.dust|0),8); put(d.rods&4095,12); put(d.eqF|0,4); put(d.eqS|0,4); put(Math.min(15,d.godOK|0),4); d.bait.forEach(n=>put(Math.min(127,n|0),7)); put(d.bF|0,5); put(d.bS|0,5); const bb=d.bg||{}; put(Math.min(1023,bb.best|0),10); put(bb.h?1:0,1); const ph=d.ph||{}; put(ph.cam?1:0,1); for(let i=0;i<50;i++) put(ph.got&&ph.got[i]?1:0,1); put(Math.min(100,d.dht|0),7); put(Math.min(127,d.dhtI|0),7); put(Math.min(15,d.spd|0),4); put(Math.min(255,d.cg|0),8); };
-L.unpack=get=>{ const v=get(3); if(v<1||v>6) return null; const NF=v===1?33:Math.min(FISH.length,get(7)), FL=FISH.slice(0,NF); const o={rod:get(2),own:{h:get(10),e:get(10),m:get(10),n:get(10)},fish:{},inv:[],npc:{},seed:{},crop:{},beds:[]};
+L.unpack=get=>{ const v=get(3); if(v<1||v>7) return null; const NF=v===1?33:Math.min(FISH.length,get(7)), FL=FISH.slice(0,NF); const own7=()=>{ const r={}; [["h",2],["e",3],["m",4],["n",1]].forEach(([k,c])=>{ let x=0; for(let q=0;q<c;q++) x+=get(15)*32768**q; r[k]=x; }); return r; }; const o={rod:get(2),own:v>=7?own7():{h:get(10),e:get(10),m:0*get(10),n:get(10)},fish:{},inv:[],npc:{},seed:{},crop:{},beds:[]};
   FL.forEach(f=>{ const n=get(6); if(n) o.fish[f.id]=[n,get(9),Date.now()]; }); FL.forEach(f=>{ const n=get(6); for(let k=0;k<n;k++) o.inv.push([f.id,Math.round((f.sz[0]+f.sz[1])/2)]); });
   NPCS.forEach(n=>{ o.npc[n.id]={a:get(7),r:get(3),d:0,g:0}; }); SEEDS.forEach(q=>o.seed[q[0]]=get(5)); SEEDS.forEach(q=>o.crop[q[0]]=get(7));
   for(let i=0;i<12;i++){ const k=get(3); if(k){ const p=get(4)/5, w=get(1); o.beds.push(SEEDS[k-1]?{s:SEEDS[k-1][0],p,w,t:Date.now()}:null); } else o.beds.push(null); }
