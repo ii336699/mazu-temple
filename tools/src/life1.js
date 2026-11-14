@@ -54,6 +54,17 @@ const FISH=[
  ["arowana","龍魚","r",3,"3","",[50,90],1600,5,["#c8c8b8","#f0f0e4","#a8a898"],"scale","大河深處的銀龍，夜裡才浮上來。"],
  ["trout","虹鱒","b",2,"01","",[20,45],260,3,["#8a9a9a","#f0f0f0","#e88aa0"],"spot","身上一道粉紅色的彩虹，喜歡冰涼的溪水。"],
  ["goldfish","金魚","s",2,"","",[6,15],300,1,["#f08a2a","#ffd8a0","#ffffff"],"plain","不知道是誰放進泉池的，尾巴像一朵花。"],
+ /* 11/14: ten more sea fish (the chair) */
+ ["milkfish","虱目魚","o",1,"","",[25,50],60,2,["#9aa8b8","#f0f4f8","#6a7a8a"],"plain","台灣人的早餐魚，煮粥最好吃。"],
+ ["saury","秋刀魚","o",1,"01","",[25,35],55,1,["#3a5a8a","#e8eef4","#f2c230"],"line","細細長長，秋天的味道。"],
+ ["mullet","烏魚","o",1,"23","",[30,60],80,3,["#5a6470","#d8dce0","#3a4048"],"line","冬天成群游過來，魚卵就是烏魚子。"],
+ ["pomfret","白鯧","o",2,"","",[20,35],380,2,["#d8dce4","#ffffff","#b8c0cc"],"plain","扁扁亮亮的，過年桌上的大菜。"],
+ ["redbream","赤鯮","o",2,"12","",[18,30],360,2,["#e8706a","#ffe0d8","#f2c230"],"scale","粉紅色的小鯛魚，清蒸最鮮。"],
+ ["amberjack","紅魽","o",2,"12","",[60,110],520,5,["#6a8098","#f0f0e8","#f2c230"],"line","一道黃線從頭到尾，咬餌很兇。"],
+ ["octopus","章魚","o",2,"3","",[30,60],450,3,["#c86a5a","#f2c8b8","#8a3a2a"],"squid","八隻腳緊緊抓著石頭，晚上才出來。"],
+ ["clownfish","小丑魚","o",2,"1","",[6,11],400,1,["#f07a2a","#ffffff","#2a2a2a"],"bars","住在海葵裡的橘白條紋小魚。"],
+ ["tuna","黑鮪魚","o",3,"0","",[150,280],3500,6,["#2a3a5a","#d8dce4","#f2c230"],"line","清晨從深海衝上來的海中霸王。"],
+ ["marlin","旗魚","o",3,"12","",[180,320],3200,6,["#2a4a8a","#e8eef4","#4a8ad0"],"plain","嘴巴像一把長劍，跳出海面時閃閃發光。"],
 ].map(a=>({id:a[0],n:a[1],w:a[2],r:a[3],t:a[4],need:a[5],sz:a[6],p:a[7],sh:a[8],c:a[9],mk:a[10],d:a[11]}));
 const FBY={}; FISH.forEach(f=>FBY[f.id]=f);
 const RW={1:10,2:3.2,3:.7,4:.25}, RN=["","常見","少見","稀有","傳說"];
@@ -90,16 +101,16 @@ const BAITS=[
  {k:"f",n:"雞肝",p:100,t:["catfish","eel","sturgeon"],d:"味道很重，夜裡的鯰魚聞到就來。"},
  {k:"f",n:"活餌小魚",p:200,t:["bass","arowana","catfish","sturgeon"],d:"活蹦亂跳的小魚，引大型掠食魚出來。"},
  {k:"f",n:"路亞假餌",p:260,t:["bass","arowana","koi","goldscale"],d:"會閃會游的假魚，拋出去再慢慢收回來。"},
- {k:"s",n:"南極蝦",p:50,t:["mackerel","sardine","terapon","seahorse"],d:"海釣最常用的小蝦，什麼小魚都吃。"},
- {k:"s",n:"青蟲",p:70,t:["flounder","terapon","seabream"],d:"住在沙裡的海蟲，沙灘底棲魚的最愛。"},
- {k:"s",n:"活蝦",p:120,t:["seabream","grouper","puffer"],d:"鉤在尾巴上讓牠游，黑鯛和石斑最難抗拒。"},
- {k:"s",n:"白蝦仁",p:80,t:["mackerel","sardine","terapon"],d:"剝好的小白蝦，鯖魚、沙丁魚這些成群的小魚最愛。"},
+ {k:"s",n:"南極蝦",p:50,t:["mackerel","sardine","terapon","seahorse","saury","mullet"],d:"海釣最常用的小蝦，什麼小魚都吃。"},
+ {k:"s",n:"青蟲",p:70,t:["flounder","terapon","seabream","milkfish","mullet"],d:"住在沙裡的海蟲，沙灘底棲魚的最愛。"},
+ {k:"s",n:"活蝦",p:120,t:["seabream","grouper","puffer","redbream","clownfish"],d:"鉤在尾巴上讓牠游，黑鯛和石斑最難抗拒。"},
+ {k:"s",n:"白蝦仁",p:80,t:["mackerel","sardine","terapon","saury","milkfish","pomfret"],d:"剝好的小白蝦，鯖魚、沙丁魚這些成群的小魚最愛。"},
  {k:"s",n:"魷魚條",p:110,t:["hairtail","grouper","puffer","oarfish"],d:"切成長條的魷魚，又韌又耐咬，夜釣常用。"},
- {k:"s",n:"魚肉塊",p:130,t:["hairtail","shark","grouper"],d:"切塊的鯖魚肉，血水味會引來大傢伙。"},
- {k:"s",n:"木蝦",p:180,t:["squid"],d:"做成蝦子樣子的假餌，專門釣透抽、軟絲。"},
+ {k:"s",n:"魚肉塊",p:130,t:["hairtail","shark","grouper","amberjack"],d:"切塊的鯖魚肉，血水味會引來大傢伙。"},
+ {k:"s",n:"木蝦",p:180,t:["squid","octopus"],d:"做成蝦子樣子的假餌，專門釣透抽、軟絲。"},
  {k:"s",n:"小螃蟹",p:160,t:["seabream","dragonbream","puffer"],d:"鯛魚會用牙齒咬碎殼來吃，釣大鯛的秘密武器。"},
- {k:"s",n:"活餌鯖魚",p:240,t:["mahi","shark","grouper","sunfish"],d:"整條活的小鯖魚，鬼頭刀看到會衝過來。"},
- {k:"s",n:"鐵板",p:280,t:["mahi","mackerel","hairtail","dragonbream"],d:"沉甸甸的金屬假餌，抽動時像受傷的小魚一樣閃。"},
+ {k:"s",n:"活餌鯖魚",p:240,t:["mahi","shark","grouper","sunfish","tuna","marlin"],d:"整條活的小鯖魚，鬼頭刀看到會衝過來。"},
+ {k:"s",n:"鐵板",p:280,t:["mahi","mackerel","hairtail","dragonbream","amberjack","tuna"],d:"沉甸甸的金屬假餌，抽動時像受傷的小魚一樣閃。"},
 ];
 /* ---------- the 12 rods as held 3D models (shaped after the chair's rod pictures, public/rods/r0-11.webp) ---------- */
 const ROD_LOOK=[
@@ -551,11 +562,15 @@ const curD=()=>Math.floor(Date.now()/1000/TOD_LEN);
 let MET=null; /* the live one: {m, ph, t, streak, beam, rock, got} */
 L.meteorHint=()=>{ for(let k=0;k<4;k++){ const m=meteorOf(curD()+k); if(m&&m.end>Date.now()){ const mins=Math.max(0,Math.round((m.at-Date.now())/60000)); return mins<=0?`流星已經掉下來了，在${m.nm}那邊，快去找！`:`我觀察星象……大概 ${mins} 分鐘後的晚上會有流星，可能掉在${m.nm}一帶。`; } } return "這幾個晚上大概不會有流星。"; };
 function metMake(m){ const g=new T.Group(); scene.add(g); const y=(TOWNX&&TOWNX.ground?TOWNX.ground(m.x,m.z):0)||0;
-  const rock=new T.Mesh(new T.IcosahedronGeometry(.28,1),new T.MeshStandardMaterial({color:"#8a7ad0",emissive:"#b8a8ff",emissiveIntensity:1.4,roughness:.3,metalness:.4})); rock.position.set(m.x,y+.3,m.z); g.add(rock);
-  const beam=new T.Mesh(new T.CylinderGeometry(.35,.9,60,16,1,true),new T.MeshBasicMaterial({color:"#c8b8ff",transparent:true,opacity:.28,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide,toneMapped:false})); beam.position.set(m.x,y+30,m.z); g.add(beam);
-  const glow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#c8b8ff"),transparent:true,depthWrite:false,blending:T.AdditiveBlending,toneMapped:false})); glow.scale.set(3,3,1); glow.position.set(m.x,y+.5,m.z); g.add(glow);
+  /* 11/14 (the chair): the fallen piece is a glowing golden star, shedding golden sparks, under a golden beam of light */
+  const sh=new T.Shape(); for(let k=0;k<10;k++){ const a=k*Math.PI/5, r=k%2?.15:.36; if(k) sh.lineTo(Math.sin(a)*r,Math.cos(a)*r); else sh.moveTo(0,r); } const sg=new T.ExtrudeGeometry(sh,{depth:.12,bevelEnabled:true,bevelSize:.04,bevelThickness:.05,bevelSegments:2}); sg.center();
+  const rock=new T.Mesh(sg,new T.MeshStandardMaterial({color:"#ffd34a",emissive:"#ffb81a",emissiveIntensity:1.6,roughness:.25,metalness:.6,toneMapped:false})); rock.position.set(m.x,y+.6,m.z); g.add(rock);
+  const beam=new T.Mesh(new T.CylinderGeometry(.35,.9,60,16,1,true),new T.MeshBasicMaterial({color:"#ffd060",transparent:true,opacity:.28,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide,toneMapped:false})); beam.position.set(m.x,y+30,m.z); g.add(beam);
+  const glow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffcc40"),transparent:true,depthWrite:false,blending:T.AdditiveBlending,toneMapped:false})); glow.scale.set(3.4,3.4,1); glow.position.set(m.x,y+.6,m.z); g.add(glow);
+  const N=40, P=new Float32Array(N*3), ph=[]; for(let i=0;i<N;i++){ ph.push([Math.random()*6.28,.3+Math.random()*1.1,Math.random()]); }
+  const pg=new T.BufferGeometry(); pg.setAttribute("position",new T.BufferAttribute(P,3)); const sp=new T.Points(pg,new T.PointsMaterial({map:glowTex,color:"#ffd34a",size:.28,transparent:true,depthWrite:false,blending:T.AdditiveBlending,toneMapped:false})); sp.frustumCulled=false; g.add(sp); sp.userData.ph=ph; sp.userData.c=[m.x,y,m.z];
   const streak=new T.Mesh(new T.CylinderGeometry(.05,.5,14,8,1,true),new T.MeshBasicMaterial({color:"#fff6d8",transparent:true,opacity:.9,blending:T.AdditiveBlending,depthWrite:false,toneMapped:false})); g.add(streak);
-  return {g,rock,beam,glow,streak,y}; }
+  return {g,rock,beam,glow,streak,y,sp}; }
 function metFree(){ if(!MET) return; scene.remove(MET.o.g); MET.o.g.traverse(q=>{ if(q.geometry) q.geometry.dispose(); if(q.material) q.material.dispose(); }); MET=null; }
 let metChip=null, metT=0;
 function meteorTick(dt){ metT-=dt; if(metT<=0){ metT=1; const now=Date.now(); let m=meteorOf(curD()); if(L.testMet) m=L.testMet; L.starNight=!!(m&&now>=m.at&&now<m.end);
@@ -563,7 +578,7 @@ function meteorTick(dt){ metT-=dt; if(metT<=0){ metT=1; const now=Date.now(); le
     else if(MET) metFree(); }
   if(!MET) return; const M=MET, o=M.o; M.t+=dt; const k=Math.min(1,Math.max(0,(M.t+4)/3)); /* the fall: from high in the sky down to its spot over 3 s */
   const sx=M.m.x-60, sy=70, sz=M.m.z+40; if(k<1){ const x=sx+(M.m.x-sx)*k, y=sy+(o.y-sy)*k, z=sz+(M.m.z-sz)*k; o.streak.visible=true; o.streak.position.set(x,y,z); o.streak.lookAt(M.m.x,o.y,M.m.z); o.streak.rotateX(Math.PI/2); o.rock.visible=false; o.beam.visible=false; o.glow.visible=false; return; }
-  o.streak.visible=false; o.rock.visible=!M.got; o.glow.visible=!M.got; o.beam.visible=!M.got; o.rock.rotation.y+=dt; o.rock.position.y=o.y+.3+Math.sin(M.t*2)*.05; o.beam.material.opacity=.18+.1*Math.sin(M.t*3); o.glow.material.opacity=.7+.3*Math.sin(M.t*4);
+  o.streak.visible=false; o.rock.visible=!M.got; o.glow.visible=!M.got; o.beam.visible=!M.got; o.rock.rotation.y+=dt*1.4; o.rock.position.y=o.y+.6+Math.sin(M.t*2)*.08; if(o.sp){ o.sp.visible=!M.got; const P=o.sp.geometry.attributes.position.array, c=o.sp.userData.c; o.sp.userData.ph.forEach((q,i)=>{ const f=(M.t*.35+q[2])%1, a=q[0]+M.t*.6; P[i*3]=c[0]+Math.cos(a)*q[1]*(1-f*.5); P[i*3+1]=c[1]+.3+f*3.2; P[i*3+2]=c[2]+Math.sin(a)*q[1]*(1-f*.5); }); o.sp.geometry.attributes.position.needsUpdate=true; } o.beam.material.opacity=.18+.1*Math.sin(M.t*3); o.glow.material.opacity=.7+.3*Math.sin(M.t*4);
   if(!metChip){ metChip=document.createElement("button"); metChip.style.cssText="position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 226px);z-index:9;border:0;border-radius:999px;padding:11px 20px;font:900 16px "+UI_FONT+";color:#fff;background:linear-gradient(#a890ff,#6a50d8);box-shadow:0 4px 14px rgba(0,0,0,.35)"; metChip.textContent="🌠 撿起流星碎片"; metChip.hidden=true; metChip.onclick=claimMet; document.body.appendChild(metChip); }
   metChip.hidden=M.got||busy()||Math.hypot(meAv.pos.x-M.m.x,meAv.pos.y-M.m.z)>2.4; }
 async function claimMet(){ if(!MET||MET.got||MET.busy) return; const M=MET; M.busy=1; let j={ok:false}; try{ const r=await fetch("/meteor",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({id:M.m.id,uid:load("mz.id",""),name:(me.name||"香客").slice(0,10)})}); j=await r.json(); }catch(e){} M.busy=0;
@@ -708,13 +723,14 @@ L.testPanel=()=>{ if(!me.sp) return; const b=(act,v,t,cls)=>`<button class="${cl
    <p class="note">現在：${hr==null?"真實時間":hr+" 點"}。各店營業時間：${Object.keys(HOURS).map(k=>`${(TP_SHOPS.find(q=>q[0]===k)||[0,k])[1]} ${hrs_(k)}`).join("、")}</p>
    <h4 style="margin:10px 0 4px">傳送／進店</h4><div>${b("tmGo","town","🏮 小鎮鎮口")}${b("tmGo","zen","🧘 禪房裡（測走出來會不會卡）")}${b("tmGo","temple","⛩️ 廟前")}</div><div>${TP_SHOPS.map(([k,n])=>b("tmShop",k,n)).join("")}</div>
    <h4 style="margin:10px 0 4px">直接玩（不用找店）</h4><div>${[["tw:bfast","🍔 疊漢堡"],["tw:ice","🍦 冰淇淋"],["tw:herb","🌿 中藥對對碰"],["tw:congee","🥣 記菜單"],["tw:drink","🧋 調飲料"],["tw:book","📚 推書櫃"],["tw:flower","💐 插花"]].map(([k,n])=>b("tmGame",k,n)).join("")}</div>
-   <h4 style="margin:10px 0 4px">這次改版（11/14）</h4><div>${b("tmRods",1,"🎣 拿到全部 12 支釣竿")}${b("tmRain",1,"🧧 撒紅包＋假人來搶")}</div><h4 style="margin:10px 0 4px">這次改版（11/14 下午）</h4><div>${b("tmIceDrink",1,"🧋 飲料：一定會加冰（看 3 秒提示和藍線）")}${b("tmGo","town","🏠 看屋頂（人字屋頂變少）")}${b("tmGame","tw:ice","🍦 新冰淇淋（照錄影重做）")}${b("tmBait",1,"🪱 每種釣餌各 10 份＋全部釣竿")}${b("tmBait",0,"🪱 清空釣餌（測沒餌不能拋竿）")}</div>`); };
+   <h4 style="margin:10px 0 4px">這次改版（11/14）</h4><div>${b("tmRods",1,"🎣 拿到全部 12 支釣竿")}${b("tmRain",1,"🧧 撒紅包＋假人來搶")}</div><h4 style="margin:10px 0 4px">這次改版（11/14 下午）</h4><div>${b("tmIceDrink",1,"🧋 飲料：一定會加冰（看 3 秒提示和藍線）")}${b("tmGo","town","🏠 看屋頂（人字屋頂變少）")}${b("tmGame","tw:ice","🍦 新冰淇淋（照錄影重做）")}${b("tmBait",1,"🪱 每種釣餌各 10 份＋全部釣竿")}${b("tmBait",0,"🪱 清空釣餌（測沒餌不能拋竿）")}</div><h4 style="margin:10px 0 4px">這次改版（11/14 晚上）</h4><div>${b("tmShop","tw:congee","🥣 一粥七天（新櫥窗、招牌）")}${b("tmShop","tw:tackle","🎣 釣具行（立體櫥窗、門）")}${b("tmGo","alley","🏚️ 收藏家小屋")}${b("tmGame","tw:herb","🌿 中藥對對碰（木桌＋碗）")}${b("tmMet",1,"🌠 流星（金色星星）")}</div>`); };
+HANDLERS.tmMet=()=>{ closeSheet(); try{ L.meteorTest(); }catch(e){ console.warn(e); } };
 HANDLERS.tmBait=v=>{ const d=LF(); if(v==="1"){ d.rods=4095; BAITS.forEach((b,i)=>{ d.bait[i]=Math.max(d.bait[i]|0,10); }); toast("🪱 釣餌、釣竿都給你了。到水邊釣魚，左下角可以換竿換餌",3000); } else { d.bait=d.bait.map(()=>0); d.bF=0; d.bS=0; toast("釣餌清空了",1800); } save(); };
 HANDLERS.tmIceDrink=()=>{ closeSheet(); window.MZ_DRINK_ICE=1; try{ drinkGame(); }finally{ window.MZ_DRINK_ICE=0; } };
 const hrs_=k=>{ try{ return hrs(k); }catch(e){ return ""; } };
 HANDLERS.tmOn=v=>{ TM.on=v==="1"; toast(TM.on?"🧪 測試模式開啟":"測試模式關閉",1600); L.testPanel(); };
 HANDLERS.tmHour=v=>{ const h=+v; TM.hour=h<0?null:h; L.testPanel(); };
-HANDLERS.tmGo=v=>{ closeSheet(); const P={town:[28,-62],zen:[-30,-28],temple:[0,30]}[v]; if(P){ meAv.pos.set(P[0],P[1]); meAv.target.set(P[0],P[1]); meAv.path=[]; } };
+HANDLERS.tmGo=v=>{ closeSheet(); const P={town:[28,-62],zen:[-30,-28],temple:[0,30],alley:[8.2,-86.5]}[v]; if(P){ meAv.pos.set(P[0],P[1]); meAv.target.set(P[0],P[1]); meAv.path=[]; } };
 HANDLERS.tmShop=v=>{ closeSheet(); const b=TOWNX&&TOWNX.bOf&&TOWNX.bOf(v); if(b){ const fx=b.x+Math.sin(b.ry)*2.2, fz=b.z+Math.cos(b.ry)*2.2; meAv.pos.set(fx,fz); meAv.target.set(fx,fz); meAv.path=[]; } setTimeout(()=>{ try{ openStation(v); }catch(e){ console.warn(e); } },b?900:50); };
 HANDLERS.tmGame=v=>{ closeSheet(); try{ GL[v](); }catch(e){ console.warn(e); toast("這個遊戲還打不開",1800); } };
 HANDLERS.tmRain=()=>{ closeSheet(); try{ hbStart({id:"test"+Date.now(),seed:(Math.random()*1e9)|0,n:24,x:meAv.pos.x,z:meAv.pos.y,at:Date.now()}); }catch(e){ console.warn(e); } };
@@ -979,12 +995,12 @@ const HIMG={}; function herbLoad(ids){ return Promise.all(ids.map(id=>HIMG[id]||
 HANDLERS.lfHerbGo=()=>{ closeSheet(); herbPairs(); };
 /* 中藥對對碰 (11/14, the chair: a pairs game, not naming): 16 cards face down, 8 kinds of herb; turn two, the same herb stays open.
    All pairs within 60 s wins (the fewer misses, the higher the score). */
-function herbPairs(){ const G0=gOverlay("🌿 中藥對對碰","linear-gradient(#f3e6cc,#d9bf94)"); G0.B.innerHTML=`<div style="margin-top:40px;color:#5a3a1a;font:900 18px ${UI_FONT}">許伯在抓藥材…</div>`; const kinds=[...HERB].sort(()=>Math.random()-.5).slice(0,8);
-  herbLoad(kinds.map(h=>h[0])).then(()=>{ if(G0.ov.isConnected) herbPairs2(G0,kinds); }); }
+function herbPairs(){ const G0=gOverlay("🌿 中藥對對碰","linear-gradient(#5a3a22,#3a2414)"); G0.B.innerHTML=`<div style="margin-top:40px;color:#ffe2a0;font:900 18px ${UI_FONT}">許伯在抓藥材…</div>`; const kinds=[...HERB].sort(()=>Math.random()-.5).slice(0,8);
+  herbLoad(kinds.map(h=>h[0]).concat(["bowl"])).then(()=>{ if(G0.ov.isConnected) herbPairs2(G0,kinds); }); }
 function herbPairs2(G,kinds){ const B=G.B; const cards=[...kinds,...kinds].sort(()=>Math.random()-.5).map(h=>({h,open:0,done:0}));
   const S={t:60,miss:0,pairs:0,pick:[],lock:false};
-  const draw=()=>{ B.innerHTML=`<div style="display:flex;gap:16px;color:#5a3a1a;font:900 16px ${UI_FONT};margin:4px"><span id="hpT">⏱ ${Math.ceil(S.t)}</span><span>配對 ${S.pairs}/8</span><span>失誤 ${S.miss}</span></div>
-    <div style="display:grid;grid-template-columns:repeat(4,78px);gap:8px;margin-top:8px">${cards.map((c,i)=>`<button data-c="${i}" style="height:96px;border-radius:12px;border:3px solid ${c.done?"#4c9a6a":"#6b4a2e"};background:${c.open||c.done?"#fff8ea":"linear-gradient(#a8744a,#7a5234)"};padding:4px;display:flex;flex-direction:column;align-items:center;justify-content:center">${c.open||c.done?`<img src="herbs/${c.h[0]}.webp" style="max-width:64px;max-height:58px"><span style="font:900 13px ${UI_FONT};color:#5a3a1a;opacity:1">${c.h[1]}</span>`:`<span style="font:900 26px ${UI_FONT};color:#ffe2a0">藥</span>`}</button>`).join("")}</div>`; };
+  const draw=()=>{ B.innerHTML=`<div style="display:flex;gap:16px;color:#ffe2a0;font:900 16px ${UI_FONT};margin:4px"><span id="hpT">⏱ ${Math.ceil(S.t)}</span><span>配對 ${S.pairs}/8</span><span>失誤 ${S.miss}</span></div>
+    <div style="display:grid;grid-template-columns:repeat(4,80px);gap:8px;margin-top:10px;padding:12px;border-radius:18px;background:repeating-linear-gradient(90deg,rgba(60,30,10,.18) 0 2px,transparent 2px 23px),repeating-linear-gradient(0deg,rgba(255,220,170,.06) 0 1px,transparent 1px 7px),linear-gradient(#9a6a3e,#7a4e2a);box-shadow:inset 0 2px 0 rgba(255,220,170,.35),0 6px 16px rgba(40,20,5,.45)">${cards.map((c,i)=>`<button data-c="${i}" style="position:relative;height:84px;border:0;background:none;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center">${c.open||c.done?`<img src="herbs/${c.h[0]}.webp" style="max-width:66px;max-height:54px;filter:drop-shadow(0 3px 2px rgba(0,0,0,.35))${c.done?";opacity:.55":""}"><span style="font:900 12px ${UI_FONT};color:#fff6e0;text-shadow:0 1px 2px #3a1a08">${c.h[1]}</span>`:`<img src="herbs/bowl.webp" style="width:74px;height:74px;filter:drop-shadow(0 4px 3px rgba(0,0,0,.4))">`}</button>`).join("")}</div>`; }; /* (11/14: a wooden table; each herb hides under an upturned blue-and-white bowl) */
   B.onclick=e=>{ const b=e.target.closest("[data-c]"); if(!b||S.lock) return; const c=cards[+b.dataset.c]; if(c.open||c.done) return; c.open=1; S.pick.push(c); try{ tone(620,.04,.04,"triangle"); }catch(_){}
     if(S.pick.length===2){ const [a,b2]=S.pick; S.pick=[]; if(a.h[0]===b2.h[0]){ a.done=b2.done=1; S.pairs++; try{ tone(880,.08,.05,"triangle"); tone(1175,.1,.05,"triangle",.08); }catch(_){} if(S.pairs===8){ draw(); return end(true); } }
       else { S.miss++; S.lock=true; draw(); setTimeout(()=>{ a.open=b2.open=0; S.lock=false; draw(); },650); return; } } draw(); };

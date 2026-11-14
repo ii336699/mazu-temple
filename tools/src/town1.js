@@ -100,10 +100,39 @@ const KP={ wall:["#f3e3c8","#e9d2b4","#f6d6cf","#d7e4d3","#d9e2ee","#f2e6a8","#e
   awn:["#e8706a","#5fa0d0","#7cc08a","#f2c230","#d9628a","#8a7ad0","#f08a4a","#4fb0a8"], door:["#7a5236","#4f7fb0","#b3473e","#5f8a5a","#8a5a9a","#c9853a"] };
 const km=(c,o)=>mat(c,Object.assign({roughness:.85},o||{}));
 /* the chair's shop-window pictures (11/14): shown in the ground-floor window, cropped to fill it; also the back wall inside the shop */
-const SHOP_PIC={"tw:tackle":1,"tw:bfast":1,"tw:furn":1,"tw:grocer":1,"tw:beauty":1,"tw:flower":1,"tw:book":1,"tw:photo":1,"tw:drink":1,"tw:herb":1}; TW.SHOP_PIC=SHOP_PIC;
-const SPT={}; function shopTex(k,cb){ const n=k.slice(3); if(SPT[n]){ SPT[n].img?cb(SPT[n].t):SPT[n].q.push(cb); return; } const E={t:null,q:[cb],img:null}; SPT[n]=E; new T.TextureLoader().load("shopimg/"+n+".webp",t=>{ t.encoding=T.sRGBEncoding; try{ t.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy()); }catch(e){} E.t=t; E.img=t.image; E.q.forEach(f=>f(t)); E.q=[]; try{ WORLD.warm=2; }catch(e){} }); } TW.shopTex=shopTex;
-function shopPic(g,k,w,h,x,y,z){ const m=new T.MeshBasicMaterial({color:"#dcdcdc",transparent:true,opacity:0,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-4}); const me=new T.Mesh(new T.PlaneGeometry(w,h),m); me.position.set(x,y,z); me.userData.keep=1; me.userData.own=1; me.userData.noMerge=1; g.add(me);
-  shopTex(k,t0=>{ const t=t0.clone(); t.needsUpdate=true; const ia=t.image.width/t.image.height, wa=w/h; if(ia>wa){ t.repeat.set(wa/ia,1); t.offset.set((1-wa/ia)/2,0); } else { t.repeat.set(1,ia/wa); t.offset.set(0,(1-ia/wa)/2); } m.map=t; m.opacity=1; m.transparent=false; m.needsUpdate=true; }); }
+const SHOP_PIC={"tw:tackle":"tackle","tw:bfast":"bfast","tw:soon:收藏家小屋":"collect","tw:grocer":"grocer","tw:beauty":"beauty","tw:flower":"flower","tw:book":"book","tw:photo":"photo","tw:drink":"drink","tw:herb":"herb","tw:congee":"congee"}; TW.SHOP_PIC=SHOP_PIC; /* (key → picture file) */
+const SHOP_FRAME={"tackle": "#203b61", "bfast": "#df522e", "collect": "#5f2a1e", "grocer": "#a9392f", "beauty": "#58433a", "flower": "#636c4c", "book": "#643629", "photo": "#423435", "drink": "#5d4746", "herb": "#71402d", "congee": "#482f22"};
+const SHOP_DOOR={"tw:tackle":1,"tw:bfast":3,"tw:soon:收藏家小屋":0,"tw:grocer":11,"tw:beauty":10,"tw:flower":4,"tw:book":9,"tw:photo":7,"tw:drink":5,"tw:herb":2,"tw:congee":6,"tw:furn":8}; /* (the chair's 12 doors) */
+const SPT={}; function shopTex(k,cb){ const n=SHOP_PIC[k]; if(!n) return; if(SPT[n]){ SPT[n].img?cb(SPT[n].t):SPT[n].q.push(cb); return; } const E={t:null,q:[cb],img:null}; SPT[n]=E; new T.TextureLoader().load("shopimg/"+n+".webp",t=>{ t.encoding=T.sRGBEncoding; try{ t.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy()); }catch(e){} E.t=t; E.img=t.image; E.q.forEach(f=>f(t)); E.q=[]; try{ WORLD.warm=2; }catch(e){} }); } TW.shopTex=shopTex;
+/* 11/14 (the chair: like the three old shops — the picture pushed in, a glass in front, the floor carrying on the picture's colours, lit
+   inside): one flat pane, but the shader looks through it into a little room 1.1 m deep — the picture is its back wall, the floor, the
+   ceiling and the side walls carry on the picture's own edge colours, warm downlights, and glass streaks on top. No extra geometry. */
+function shopPic(g,k,w,h,x,y,z){ const U={map:{value:null},rep:{value:new T.Vector2(1,1)},off:{value:new T.Vector2(0,0)},sz:{value:new T.Vector2(w,h)},D:{value:1.1},camL:{value:new T.Vector3(0,0,5)},on:{value:0}};
+  const m=new T.ShaderMaterial({uniforms:U,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-4,
+    vertexShader:`varying vec2 vP; void main(){ vP=position.xy; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
+    fragmentShader:`uniform sampler2D map; uniform vec2 rep,off,sz; uniform float D,on; uniform vec3 camL; varying vec2 vP;
+      vec3 tx(vec2 u){ return texture2D(map,clamp(u,.002,.998)*rep+off).rgb; }
+      void main(){ vec3 P=vec3(vP,0.), d=normalize(P-camL); float t=(-D)/min(d.z,-.001); int f=0;
+        if(d.y<0.){ float q=(-sz.y*.5-P.y)/d.y; if(q<t){ t=q; f=1; } } else { float q=(sz.y*.5-P.y)/max(d.y,.0001); if(q<t){ t=q; f=2; } }
+        if(d.x<0.){ float q=(-sz.x*.5-P.x)/d.x; if(q<t){ t=q; f=3; } } else { float q=(sz.x*.5-P.x)/max(d.x,.0001); if(q<t){ t=q; f=4; } }
+        vec3 H=P+d*t; vec2 u=vec2(H.x/sz.x+.5,H.y/sz.y+.5); float dp=clamp(-H.z/D,0.,1.); vec3 c;
+        if(f==0) c=tx(u);
+        else if(f==1){ c=tx(vec2(u.x,.012))*.82+tx(vec2(u.x,.06+dp*.2))*.12; float pool=0.; for(int i=0;i<3;i++){ float lx=(float(i)-1.)*.32*sz.x; pool+=exp(-((H.x-lx)*(H.x-lx)*5.+(H.z+D*.55)*(H.z+D*.55)*6.)); } c*=.78+.35*pool; }
+        else if(f==2){ c=tx(vec2(u.x,.988))*.62; for(int i=0;i<3;i++){ float lx=(float(i)-1.)*.32*sz.x; float r=length(vec2(H.x-lx,H.z+D*.55)); c+=vec3(1.,.9,.7)*smoothstep(.09,.04,r)*1.2; } }
+        else c=tx(vec2(f==3?.008:.992,u.y))*(.62+.3*dp);
+        c*=mix(1.08,.92,clamp(.5-H.y/sz.y,0.,1.));
+        float s=fract((vP.x+vP.y*.9)/sz.x*1.3+.15), st=smoothstep(0.,.025,s)*smoothstep(.13,.07,s)*.16+smoothstep(.2,.215,s)*smoothstep(.25,.235,s)*.1;
+        c=c*.93+vec3(.75,.85,.95)*(st+.04*(vP.y/sz.y+.5));
+        gl_FragColor=vec4(c*on+vec3(.25,.3,.35)*(1.-on),1.); }`});
+  const me=new T.Mesh(new T.PlaneGeometry(w,h),m); me.position.set(x,y,z); me.userData.keep=1; me.userData.own=1; me.userData.noMerge=1; me.raycast=()=>{}; g.add(me);
+  me.onBeforeRender=(r,sc,cam)=>{ me.worldToLocal(U.camL.value.copy(cam.position)); if(U.camL.value.z<.05) U.camL.value.z=.05; };
+  const fm=km(SHOP_FRAME[SHOP_PIC[k]]||"#5a4030",{roughness:.6}); KB(g,w+.16,.09,.14,fm,x,y+h/2+.045,z); KB(g,w+.16,.12,.2,fm,x,y-h/2-.06,z+.02); KB(g,.09,h,.14,fm,x-w/2-.045,y,z); KB(g,.09,h,.14,fm,x+w/2+.045,y,z); /* a real frame, in the picture's own frame colour */
+  shopTex(k,t=>{ const ia=t.image.width/t.image.height, wa=w/h; if(ia>wa){ U.rep.value.set(wa/ia,1); U.off.value.set((1-wa/ia)/2,0); } else { U.rep.value.set(1,ia/wa); U.off.value.set(0,(1-ia/wa)/2); } U.map.value=t; U.on.value=1; }); }
+/* the chair's doors: a picture door in a dark frame */
+const DOORT={}; function doorPic(g,k,dx,gz){ const i=SHOP_DOOR[k]; KB(g,1.12,2.36,.1,km("#2e2620",{roughness:.7}),dx,1.18,gz+.05); const m=new T.MeshStandardMaterial({color:"#f2f2f2",roughness:.7,transparent:true,alphaTest:.5,opacity:0,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-4});
+  const me=new T.Mesh(new T.PlaneGeometry(1,1),m); me.position.set(dx,1.1,gz+.106); me.scale.set(1,2.2,1); me.userData.keep=1; me.userData.own=1; me.userData.noMerge=1; g.add(me);
+  const use=t=>{ const a=t.image.height/t.image.width, H=Math.min(2.28,1.02*a), W=H/a; me.scale.set(W,H,1); me.position.y=H/2+.02; m.map=t; m.opacity=1; m.needsUpdate=true; };
+  if(DOORT[i]&&DOORT[i].t) use(DOORT[i].t); else { (DOORT[i]||(DOORT[i]={q:[]})).q.push(use); if(DOORT[i].q.length===1) new T.TextureLoader().load("doors/d"+i+".webp",t=>{ t.encoding=T.sRGBEncoding; DOORT[i].t=t; DOORT[i].q.forEach(f=>f(t)); DOORT[i].q=[]; }); } }
 /* 一粥七天's wooden food cart on the pavement (the chair's photo, 11/14): set out only while the shop is open; tapping it goes into the shop */
 function congeeCart(C,x,z){ const g=new T.Group(); g.position.set(x,0,z); const W=km("#c99a62",{roughness:.8}), WD=km("#8f6440",{roughness:.85}), ST=km("#c8ccd2",{roughness:.35,metalness:.6});
   KB(g,2.2,.95,.9,W,0,.48,0); for(let i=0;i<7;i++) KB(g,.02,.9,.92,WD,-1.05+i*.35,.48,0); KB(g,2.4,.06,1.1,WD,0,.98,.05); /* the box and its counter */
@@ -153,9 +182,10 @@ function KW(g,w,h,d,m,x,y,z){ const geo=new T.BoxGeometry(w,h,d), uv=geo.attribu
 const TIN_M={}; function tinMat(c){ return TIN_M[c]||(TIN_M[c]=new T.MeshStandardMaterial({color:c,roughness:.45,metalness:.25,map:TILE_T.tin||(TILE_T.tin=(()=>{ const t=cvs(64,64,(x,W,H)=>{ for(let i=0;i<W;i++){ const v=200+Math.round(40*Math.sin(i/W*Math.PI*8)); x.fillStyle=`rgb(${v},${v},${v})`; x.fillRect(i,0,1,H); } }); t.wrapS=t.wrapT=T.RepeatWrapping; t.repeat.set(4,1); return t; })())})); }
 /* the chair's own sign pictures: list a shop key here once public/signs/<id>-h.webp (橫招 1620×216) and/or <id>-v.webp (直招 186×750) exist,
    and that picture replaces the drawn sign (id = the key without "tw:", e.g. bfast-h.webp) */
-const SIGN_IMG={/* "tw:bfast":"hv" */};
-function signPic(m,key,hv){ const has=key&&SIGN_IMG[key]; if(!m||!has||has.indexOf(hv)<0) return m; const id=key.replace(/^tw:/,"").replace(/[^a-z0-9_-]/gi,"_");
-  new T.TextureLoader().load("signs/"+id+"-"+hv+".webp",t=>{ t.encoding=T.sRGBEncoding; t.anisotropy=4; m.material.map=t; m.material.emissiveMap=t; m.material.needsUpdate=true; }); return m; }
+/* the chair's sign pictures (11/14): horizontal (h) and upright (v); every sign also gets a little thickness (a box behind it) */
+function signPic(m,key,hv){ if(!m) return m; const P=m.geometry.parameters, w=P.width, h=P.height; const back=new T.Mesh(kbox(),km("#2a221c",{roughness:.6})); back.position.z=hv==="v"?-.06:-.045; back.scale.set(1.04,1.06,hv==="v"?.1:.08); m.add(back); m.geometry=new T.PlaneGeometry(1,1); m.scale.set(w,h,1);
+  const id=key&&SHOP_PIC[key]; if(!id) return m;
+  new T.TextureLoader().load("signs/"+id+"-"+hv+".webp",t=>{ t.encoding=T.sRGBEncoding; t.anisotropy=4; const a=t.image.width/t.image.height; if(a>w/h) m.scale.set(w,w/a,1); else m.scale.set(h*a,h,1); const M=m.material; M.map=t; M.emissiveMap=t; M.transparent=true; M.alphaTest=.4; M.needsUpdate=true; if(hv==="v") back.visible=false; }); return m; }
 /* the building */
 function kbld(C,o){ const r=krng(o.seed||7), pick=a=>a[(r()*a.length)|0], g=new T.Group(); g.position.set(o.x,0,o.z); g.rotation.y=o.ry||0; C.g.add(g);
   const w=o.w, d=o.d||7, fl=o.fl||1+(r()*3|0), FH=3.05, H=fl*FH, shop=o.kind==="shop", col=o.col||pick(KP.wall), brick=o.brick??(r()<.18&&!o.col), tk=brick?"ercd":(o.tile||pick(["ercd","mosaic","sq","vert","paint","ercd","sq"])), wm=tk==="paint"?tileMat("paint",col):tileMat(tk,brick?"#b8705a":pick(TILE_C[tk])), tm=km(o.trim||pick(KP.trim));
@@ -165,7 +195,7 @@ function kbld(C,o){ const r=krng(o.seed||7), pick=a=>a[(r()*a.length)|0], g=new 
   else KW(g,w,H,d,wm,0,H/2,-d/2);
   for(let f=1;f<fl;f++) KB(g,w+.1,.16,.12,tm,0,f*FH,.04); KB(g,.16,H,.16,tm,-w/2+.06,H/2,.06); KB(g,.16,H,.16,tm,w/2-.06,H/2,.06);
   /* ground floor */ const gz=-A;
-  if(shop){ const ac=o.awn||pick(KP.awn); KB(g,w-1.55,2.05,.08,winM(1),-.675,1.25,gz+.03); if(o.key&&SHOP_PIC[o.key]) shopPic(g,o.key,w-1.65,1.95,-.675,1.25,gz+.075); /* (the window stops before the door: the two used to overlap 3 cm apart and flickered on phones) */ KB(g,w-.7,.12,.14,tm,-.35,2.32,gz+.06); const dx=w/2-.9; KB(g,1.0,2.25,.1,km(pick(KP.door)),dx,1.12,gz+.05);
+  if(shop){ const ac=o.awn||pick(KP.awn); if(o.key&&SHOP_PIC[o.key]) shopPic(g,o.key,w-1.8,1.95,-.72,1.25,gz+.09); else KB(g,w-1.55,2.05,.08,winM(1),-.675,1.25,gz+.03); /* (the window stops before the door) */ KB(g,w-.7,.12,.14,tm,-.35,2.32,gz+.06); const dx=w/2-.9; if(o.key&&SHOP_DOOR[o.key]!=null) doorPic(g,o.key,dx,gz); else KB(g,1.0,2.25,.1,km(pick(KP.door)),dx,1.12,gz+.05);
     if(!A){ const n=Math.max(3,Math.round(w/.6)); for(let i=0;i<n;i++) kp(g,kbox(),km(i%2?"#ffffff":ac),-w/2+(i+.5)*w/n,2.62+(i%2)*.012,gz+.6,w/n-.004,.06,1.25,0,.38); KB(g,w,.12,.06,km(ac),0,2.4,gz+1.26); /* (awning stripes no longer overlap side by side, the white ones sit a hair higher, and the front strip stands clear of their ends: they flickered on phones — 一粥七天, 11/14) */ }
     if(o.name){ (TW.signs||(TW.signs={}))[o.name]={key:o.key,h:[+Math.min(w-.5,5.4).toFixed(2),.72],v:vsg?[.62,2.5]:null,arcade:!!A,fl}; /* (sizes, for the chair's sign pictures) */ /* 橫招 on the front, where the ground floor meets the first floor (Taiwan style), clear of the awning and the windows */ signPic(ksign(g,o.name,Math.min(w-.5,5.4),.72,0,A?FH+.42:3.3,A?.14:.16,0,o.sbg||ac,"#ffffff"),o.key,"h"); if(vsg) signPic(ksign(g,o.name,.62,2.5,w/2-.15,FH+1.25+.45,.72,Math.PI/2,o.sbg||ac,"#ffffff",true),o.key,"v"); }
     for(let k=0;k<2;k++) if(r()<.7) pot(g,-w/2+.45+k*.6,gz+.45,1,r); }
@@ -224,7 +254,7 @@ const TOWNB=(()=>{ const out=[]; let sd=101;
   row("mW","z",22.8,Math.PI/2,-83.6,-73.6,"mix",[S(-83.4,6.6,"雜貨店","tw:grocer",{fl:2,sbg:"#b0863a",arcade:false})],{fl:r=>1+(r()*3|0)});
   row("mW2","z",22.8,Math.PI/2,-98.8,-90.4,"mix",[S(-98.6,8,"花店","tw:flower",{fl:2,sbg:"#5f9a6a",arcade:false})]);
   /* 西側巷弄: a narrow lane off the main street with the barber's and the beauty salon */
-  row("aN","x",-84,Math.PI,4,15.4,"mix",[S(8.2,7,"文具店","tw:soon:文具店",{fl:2,sbg:"#4a8fb0",arcade:false})]);
+  row("aN","x",-84,Math.PI,4,15.4,"mix",[S(8.2,7,"收藏家小屋","tw:soon:收藏家小屋",{fl:2,sbg:"#6a3a2a",arcade:false})]);
   row("aS","x",-90,0,4,15.4,"mix",[S(8.6,6.6,"美容院","tw:beauty",{fl:2,sbg:"#d9628a",arcade:false})]);
   /* 住宅巷: houses, each a little different; the first one west of the main street is yours */
   row("hN","x",-105,Math.PI,-8,22.4,"house",[{a:15.5,w:6,kind:"house",name:"我的家",key:"tw:home",fl:2,col:"#f6d6cf",rcol:"#d9624a",roof:"gable"}]);
@@ -252,10 +282,10 @@ function oldStreetLife(C,x0,x1){ const g=new T.Group(); C.g.add(g); const glow=K
   const r=krng(x0|0); TOWNB.forEach(b=>{ if(b.axis!=="x"||b.x<x0||b.x>x1||!b.arcade||!(b.row[0]==="o")) return; if(r()<.8){ const s=new T.Group(); s.position.set(b.x,0,b.z); s.rotation.y=b.ry; C.g.add(s); for(let k=0;k<1+(r()*3|0);k++) scooter(s,-b.w/2+1.2+k*.75,-.9,Math.PI/2+(r()-.5)*.3,r); } }); }
 /* ---- the districts: each knows its middle and its size; build(C) puts its things into C.g ---- */
 const CH=[
- {id:"gate",c:[28,-62],r:16,build:C=>{ street(C,22.8,33.2,-73,-52,"z",ROAD_A0,ROAD_A1); ground(C,"grass",17,22.8,-89,-52,.006); ground(C,"grass",33.2,48,-65,-52,.006); /* west of the street stays open: the great statue stands there */ sign(C,"← 媽祖大神像",2.2,.45,22.4,2.0,-70,Math.PI/2,"#8e1c14","#ffe2a0"); cyl(.05,.05,2.2,mat("#3a3a3e"),22.4,1.1,-70,C.g,6);
+ {id:"gate",c:[28,-62],r:16,build:C=>{ street(C,22.8,33.2,-73,-52,"z",ROAD_A0,ROAD_A1); ground(C,"grass",17,22.8,-89,-52,.006); ground(C,"grass",33.2,48,-65,-52,.006); /* west of the street stays open: the great statue stands there */ 
    /* 牌樓 */ const red=mat("#b3261e",{roughness:.6}), gold=mat("#d9aa3d",{roughness:.4,metalness:.3}); for(const x of [23.6,32.4]){ cyl(.32,.36,6,red,x,3,-58,C.g,10); box(.9,.5,.9,mat("#8a8a86"),x,.25,-58,C.g); } box(10.6,.5,.7,red,28,5.6,-58,C.g); box(11.6,.35,1.3,mat("#3f6a52",{roughness:.6}),28,6.55,-58,C.g); box(9,.3,1.0,mat("#3f6a52",{roughness:.6}),28,7.1,-58,C.g); box(4.6,.14,.1,gold,28,5.2,-57.6,C.g);
    sign(C,"天后小鎮",4.2,1.0,28,6.0,-57.62,0,"#8e1c14","#ffe2a0"); sign(C,"天后小鎮",4.2,1.0,28,6.0,-58.38,Math.PI,"#8e1c14","#ffe2a0");
-   /* 公告欄 */ box(2.2,1.5,.12,mat("#6b432c",{roughness:.8}),21.9,1.55,-61,C.g).rotation.y=Math.PI/2; for(const dz of [-1,1]) cyl(.06,.06,2.3,mat("#6b432c"),21.9,1.15,-61+dz,C.g,6); sign(C,"公告欄・今日功課",2.0,.42,21.98,2.1,-61,Math.PI/2);
+   /* (the 公告欄 and every signpost are gone, 主委 11/14) */ 
    /* 公車站 */ box(.1,2.4,3.2,mat("#cfe0ea",{roughness:.3,transparent:true,opacity:.5}),34.4,1.2,-64,C.g).userData.keep=1; box(1.4,.1,3.4,mat("#3f6a8a",{roughness:.5}),34.0,2.45,-64,C.g); for(const dz of [-1.5,1.5]) cyl(.05,.05,2.4,mat("#3a3a3e"),33.5,1.2,-64+dz,C.g,6); bench(C,34.05,-64,-Math.PI/2); sign(C,"公車站・往天后宮",2.4,.42,33.42,2.75,-64,-Math.PI/2,"#3f6a8a","#ffffff");
    for(const z of [-54,-66]){ lamp(C,23,z); lamp(C,33,z); } for(const [x,z] of [[19,-56],[20,-66],[38,-55],[43,-61],[37,-62]]) tree(C,x,z,1.2); }},
  {id:"oldE1",c:[47,-77],r:22,build:C=>{ street(C,33.2,61,-81,-73,"x"); rowBuild(C,["oN","oS"],[33,61]); oldStreetLife(C,33.2,61); for(const x of [46,58]) lamp(C,gapNear(["oS"],x,33.2,61),-79.8); }},
@@ -265,19 +295,19 @@ const CH=[
    for(const [x,z,ry] of [[58.6,-67.4,Math.PI/2],[65.4,-67.4,-Math.PI/2]]) bench(C,x,z,ry); for(const [x,z] of [[58.2,-71.8],[65.8,-71.8]]) tree(C,x,z,1.1); { const r=krng(5); for(let k=0;k<5;k++) pot(g,-3.8+k*1.9,3.0,1.1,r); } shrine(C.g,57.9,-66.7,Math.PI/2+.2); }},
  {id:"mid",c:[22,-91],r:16,build:C=>{ street(C,22.8,33.2,-105,-73,"z",ROAD_A0,ROAD_A1); ground(C,"grass",8,22.8,-104,-73.6,.006); rowBuild(C,["mW","mW2"]); for(const z of [-86,-98]){ lamp(C,23.4,gapNear(["mW","mW2"],z)); lamp(C,33,z); }
    /* 西側巷弄 */ ground(C,"pave",4,22.8,-90,-84,.02,true,2); rowBuild(C,["aN","aS"]); { const g=new T.Group(); C.g.add(g); for(let x=6;x<22;x+=5.5){ kp(g,kcyl(),km("#6b4a2e"),x,2.6,-84.3,.06,5.2,.06); kp(g,kcyl(),km("#6b4a2e"),x,2.6,-89.7,.06,5.2,.06); lanternLine(g,[x,-84.3],[x,-89.7],4.9,5,KM.lan||(KM.lan=new T.MeshStandardMaterial({color:"#e8402e",emissive:"#ff6a3a",emissiveIntensity:.4,roughness:.5}))); }
-     shrine(g,3.3,-87,Math.PI/2); vend(g,4.6,-84.6,Math.PI); tree(C,3.6,-84.2,1); tree(C,3.6,-89.8,1.05); sign(C,"西側巷弄・理髮廳・美容院",3.2,.5,22.6,2.6,-87,Math.PI/2,"#4a8fb0","#ffffff"); cyl(.05,.05,2.6,mat("#3a3a3e"),22.6,1.3,-85.4,C.g,6); } }},
- {id:"plaza",c:[47,-95],r:16,build:C=>{ ground(C,"plaza",33.2,60,-100,-90,.016,true,4); sign(C,"小吃廣場",3,.7,35.2,3.2,-90.2,0,"#b3261e","#ffe2a0"); for(const dx of [-1.4,1.4]) cyl(.06,.06,3.6,mat("#3a3a3e"),35.2+dx,1.8,-90.2,C.g,6);
+     shrine(g,3.3,-87,Math.PI/2); vend(g,4.6,-84.6,Math.PI); tree(C,3.6,-84.2,1); tree(C,3.6,-89.8,1.05);  } }},
+ {id:"plaza",c:[47,-95],r:16,build:C=>{ ground(C,"plaza",33.2,60,-100,-90,.016,true,4); 
    STALLS.forEach((x,i)=>{ const col=["#d9628a","#e2a23a","#5f9a6a","#4a8fb0"][i]; box(3,1.0,2.2,mat("#e9e3d6",{roughness:.8}),x,.5,-98.5,C.g); box(3.4,.12,2.8,mat(col,{roughness:.7}),x,2.5,-98.3,C.g); for(const [dx,dz] of [[-1.5,-1.2],[1.5,-1.2],[-1.5,1.0],[1.5,1.0]]) cyl(.04,.04,2.5,mat("#3a3a3e"),x+dx,1.25,-98.5+dz,C.g,6); sign(C,["擠冰淇淋","中藥對對碰","豆花","紅茶冰"][i],1.8,.5,x,2.1,-97.25,0,col,"#ffffff"); if(i===0){ const cn=new T.Group(); cn.position.set(x+.8,1.0,-98.2); C.g.add(cn); kp(cn,new T.ConeGeometry(.12,.32,10),km("#e2a65a"),0,.16,0,1,-1,1); for(let k=0;k<3;k++) kp(cn,ksph(),km("#fff6e8"),0,.36+k*.1,0,.13-k*.03,.07,.13-k*.03); } });
    for(const [x,z] of [[39,-93],[45,-94],[51,-93],[57,-94]]){ cyl(.5,.5,.06,mat("#f3ece0",{roughness:.6}),x,.74,z,C.g,12); cyl(.05,.05,.74,mat("#3a3a3e"),x,.37,z,C.g,6); for(const a of [0,2.1,4.2]) cyl(.18,.18,.45,mat("#c96a3a",{roughness:.8}),x+Math.cos(a)*.85,.22,z+Math.sin(a)*.85,C.g,8); } for(const x of [36,48,59]) lamp(C,x,-90.6); }},
  {id:"laneW",c:[8,-108],r:22,build:C=>{ street(C,-8,22.8,-111,-105,"x"); rowBuild(C,["hN","hS"]); for(const x of [-2,12]) lamp(C,gapNear(["hN"],x),-105.6); ground(C,"grass",-12,-8,-117,-99,.006); { const g=new T.Group(); C.g.add(g); pole(g,0,-110.6); pole(g,14,-110.6); wire(g,[.4,-110.6],[14.4,-110.6],6.8,.5); scooter(g,20.6,-105.6,0,krng(3)); } }},
  {id:"laneE",c:[50,-108],r:22,build:C=>{ street(C,33.2,66,-111,-105,"x"); rowBuild(C,["hN2","hS2"]); for(const x of [40,54]) lamp(C,gapNear(["hN2"],x),-105.6); ground(C,"grass",62,70,-117,-99,.006); { const g=new T.Group(); C.g.add(g); pole(g,36,-110.6); pole(g,50,-110.6); pole(g,64,-110.6); wire(g,[36.4,-110.6],[50.4,-110.6],6.8,.5); wire(g,[50.4,-110.6],[64.4,-110.6],6.8,.5); vend(g,65.4,-105.6,Math.PI); } }},
  {id:"pier",c:[28,-124],r:18,build:C=>{ street(C,22.8,33.2,-117,-105,"z",ROAD_A0,ROAD_A1); ground(C,"plaza",22.8,33.2,-131,-117,.016,true,4); const wood=mat("#8a6246",{roughness:.85}); box(3.6,.1,7.2,wood,28,0,-134,C.g); { const d=new T.Mesh(new T.PlaneGeometry(3.6,7),mat("#8a6246",{roughness:.85})); d.rotation.x=-Math.PI/2; d.position.set(28,.056,-134); d.userData.floor=1; d.userData.keep=1; pickables.push(d); C.picks.push(d); C.g.add(d); } for(const [x,z] of [[26.2,-131],[29.8,-131],[26.2,-137.4],[29.8,-137.4]]) cyl(.1,.1,1.4,wood,x,.3,z,C.g,6);
-   sign(C,"釣魚碼頭",2,.5,28,2.3,-130.6,0,"#3f6a8a","#ffffff"); for(const dx of [-.9,.9]) cyl(.05,.05,2.5,mat("#3a3a3e"),28+dx,1.25,-130.6,C.g,6);
+   
    /* the river, and the station across it (not reachable yet) */ { const w=new T.Mesh(new T.PlaneGeometry(90,12),new T.MeshStandardMaterial({map:tex().water,roughness:.25,metalness:.1,transparent:true,opacity:.92})); w.material.map.repeat.set(1,1); const uv=w.geometry.attributes.uv; for(let i=0;i<uv.count;i++) uv.setXY(i,uv.getX(i)*15,uv.getY(i)*2); w.rotation.x=-Math.PI/2; w.position.set(28,-.12,-137.5); w.userData.keep=1; C.g.add(w); C.water=w; }
-   ground(C,"grass",-14,72,-150,-143.5,.006); box(14,4.2,6,mat("#d9c7b0",{roughness:.9}),28,2.1,-148,C.g); box(15,.4,7,mat("#8a4a3a",{roughness:.8}),28,4.4,-148,C.g); sign(C,"天后車站（興建中）",6,.9,28,3.3,-144.95,0,"#fbf6ea"); for(const z of [-112,-124]){ lamp(C,23,z); lamp(C,33,z); } }},
+   ground(C,"grass",-14,72,-150,-143.5,.006); box(14,4.2,6,mat("#d9c7b0",{roughness:.9}),28,2.1,-148,C.g); box(15,.4,7,mat("#8a4a3a",{roughness:.8}),28,4.4,-148,C.g);  for(const z of [-112,-124]){ lamp(C,23,z); lamp(C,33,z); } }},
  {id:"parkW",c:[8,-124],r:24,build:C=>{ ground(C,"grass",-8,22.8,-131,-117,.014,true,4); ground(C,"pave",-8,22.8,-120.2,-118.8,.02,true,2); /* 涼亭 */ const red=mat("#b3261e",{roughness:.6}); for(const [x,z] of [[10.5,-125.5],[13.5,-125.5],[10.5,-122.5],[13.5,-122.5]]) cyl(.14,.14,2.8,red,x,1.4,z,C.g,8); { const r=new T.Mesh(new T.ConeGeometry(3.1,1.5,4),mat("#3f6a52",{roughness:.7})); r.position.set(12,3.55,-124); r.rotation.y=Math.PI/4; C.g.add(r); } box(3.6,.12,3.6,mat("#c9b9a2",{roughness:.8}),12,.06,-124,C.g); bench(C,12,-125.1,0);
    for(const [x,z] of [[-4,-123],[2,-128],[6,-122],[18,-128],[20,-122],[-6,-129]]) tree(C,x,z,1.25); bench(C,0,-121,0); bench(C,17,-121,0); for(const x of [-4,8,20]) lamp(C,x,-118.4); ground(C,"grass",-14,22.8,-131.6,-131,.006); }},
- {id:"parkE",c:[50,-124],r:24,build:C=>{ ground(C,"grass",33.2,66,-131,-117,.014,true,4); ground(C,"pave",33.2,66,-120.2,-118.8,.02,true,2); sign(C,"社區花圃",2.4,.55,36.2,1.9,-123.6,0,"#5f9a6a","#ffffff"); for(const dx of [-1,1]) cyl(.05,.05,1.9,mat("#3a3a3e"),36.2+dx,.95,-123.6,C.g,6);
+ {id:"parkE",c:[50,-124],r:24,build:C=>{ ground(C,"grass",33.2,66,-131,-117,.014,true,4); ground(C,"pave",33.2,66,-120.2,-118.8,.02,true,2); 
    /* the gate to your own garden (inside, everyone has their own plot) */ { const g=new T.Group(); g.position.set(42,0,-123); C.g.add(g); const wd=km("#8a6246"); KB(g,.8,2.6,.8,wd,-3.4,1.3,0); KB(g,.8,2.6,.8,wd,3.4,1.3,0); KB(g,7.6,.35,.9,km("#5f9a6a"),0,2.75,0); kp(g,kprism(),km("#d9624a"),0,2.9,0,8.2,.8,1.2);
      ksign(g,"我的花圃",2.4,.6,0,2.3,.48,0,"#5f9a6a","#ffffff"); for(const s2 of [-1,1]) for(let k=0;k<5;k++) kp(g,ksph(),km("#5f9a6a"),s2*(4.2+k*.9),.45,-.1,.55,.5,.4); const r=krng(9); for(let k=0;k<8;k++) kp(g,ksph(),km(["#ff8fb0","#fff1a0","#ffffff","#c5a8f5"][k%4]),-6+r()*12,.85,.2,.1,.1,.1); }
 for(const [x,z] of [[62,-122],[64,-128],[35,-129]]) tree(C,x,z,1.25); bench(C,45,-121,0); bench(C,57,-121,0); for(const x of [38,50,62]) lamp(C,x,-118.4); }},
@@ -431,8 +461,8 @@ const NCH=[
    for(const m of MEADOW) flowers(C,r,m[0],m[1],m[2]+1.2,40); for(let k=0;k<60;k++){ const x=88+r()*46, z=-103+r()*50; if(walkGap(x,z)>1.5&&valleyH(x,z)<1.2&&!NT.walk(x,z)) put(C,gsph(),NM.flower[r()*5|0],x,valleyH(x,z)+.1,z,.08); }
    /* lanterns, benches, signs */ for(const [x,z] of [[93,-78.6],[99,-71],[101.5,-66],[109.6,-79],[118,-81.6],[126,-86.6],[132.5,-88.8]]) lantern(C,x,z);
    nbench(C,101.4,-60.2,Math.PI); nbench(C,114.6,-82.4,0); nbench(C,117.4,-76.6,Math.PI*.9);
-   sign(C,"溪谷步道",1.6,.42,92,1.5,-75.55,0,"#7fb89a","#ffffff"); for(const dx of [-.6,.6]) cyl(.04,.04,1.5,mat("#8f6b4f"),92+dx,.75,-75.55,C.g,6);
-   sign(C,"→ 望海沙灘",1.6,.38,131,1.3,-87.2,0,"#7fb6d6","#ffffff"); cyl(.04,.04,1.3,mat("#8f6b4f"),131,.65,-87.25,C.g,6);
+   
+   
    /* (11/14) grass tufts everywhere off the paths, star flowers, mossy boulders on the slopes */ { const r2=rng(211); for(let k=0;k<420;k++){ const x=87+r2()*47, z=-104+r2()*53, w=walkGap(x,z); if(w<.25) continue; const b=lineD(BROOK,x,z); if(b[0]<brookW(b[1],b[2])+.3) continue; const h=valleyH(x,z), q=r2(); if(q<.78) tuft(C,r2,x,h,z,.5+r2()*.5); else if(q<.93) starFlower(C,r2,x,h,z,.7+r2()*.4); else if(w>2) mossRock(C,r2,x,h-.15,z,.5+r2()*1.1,r2()<.7); } }
    fireflies(C,70,112,-74,16,5); fireflies(C,30,104,-60,6,6); }},
  {id:"coast",c:[154,-94],r:34,build:C=>{ nmat(); lawnHole(); const r=rng(29);
@@ -451,7 +481,7 @@ const NCH=[
    for(const [x,z,ry] of [[141,-110,.4],[155,-119,-.6]]){ put(C,GEO.cy,NM.drift,x,.16,z,.16,2.6,.16,ry,0,Math.PI/2); }
    for(let k=0;k<40;k++){ const z=-60-r()*68, x=135.4+r()*3; for(let j=0;j<4;j++) put(C,gcone(),NM.reed,x+(r()-.5)*.4,.3,z+(r()-.5)*.4,.035,.6+r()*.3,.035,0,(r()-.5)*.4,(r()-.5)*.4); }
    for(const [x,z] of [[135.5,-70],[136,-104],[135.2,-120]]) softTree(C,r,x,z,1.2,"");
-   sign(C,"望海沙灘",1.6,.42,138.4,1.5,-87.1,-Math.PI/2,"#7fb6d6","#ffffff"); cyl(.04,.04,1.5,mat("#8f6b4f"),138.45,.75,-87.1,C.g,6);
+   
    /* gulls: three little white Vs circling over the water */ C.gulls=[]; for(let k=0;k<3;k++){ const g=new T.Group(); for(const s of [-1,1]){ const w=new T.Mesh(GEO.b,NM.white); w.scale.set(.55,.03,.14); w.position.x=s*.26; w.rotation.z=s*.35; g.add(w); } g.userData.keep=1; g.traverse(o=>o.userData.keep=1); C.g.add(g); C.gulls.push({g,ph:k*2.1,r:9+k*3,h:7+k}); }
    NT.coastBuilt=1; }},
 ];
@@ -507,17 +537,17 @@ function springPool(C,S,r){ const [x,z,R,k,y]=S; const g=new T.CircleGeometry(R+
   for(let k2=0;k2<22;k2++){ const a=k2/22*6.283+r()*.2, d=R+.15+r()*.3; rock(C,r,x+Math.cos(a)*d,-.05,z+Math.sin(a)*d,.35+r()*.35); } for(let k2=0;k2<6;k2++){ const a=r()*6.283; reeds(C,r,x+Math.cos(a)*(R+.9),z+Math.sin(a)*(R+.9)); }
   for(let k2=0;k2<5;k2++){ const a=r()*6.283, d=r()*R*.7; const pad=put(C,GEO.pad||(GEO.pad=new T.CircleGeometry(1,12).rotateX(-Math.PI/2)),NM.pad,x+Math.cos(a)*d,y+.02,z+Math.sin(a)*d,.3); pad.userData.keep=1; }
   if(k==="g"){ /* the goddess's spring: white stone steps, two lamps, a carved stone tablet */ for(const s of [-1,1]) lantern(C,x+s*2.6,z+R+1.4); sparkles(C,70,x,z,R+.6,y); shafts(C,x,z,R); fireflies(C,40,x,z,R+3,21); } /* (no name board: only glitter rising off the water and light falling through — 主委 11/14) */
-  else sign(C,"泉池",1.1,.36,x+R+1.2,1.0,z,-Math.PI/2,"#9fd8e8","#2a4a5a"); }
+  }
 SW.build=C=>{ nmat(); lawnHole2(); const r=krng(5);
   terrain(C,FOREST[0],FOREST[1],-176,-143.6,southH,southC,.012);
   /* the footbridge over the river */ for(let k=0;k<=16;k++){ const z=-131.2-k*.8, y=.2+.55*Math.sin(Math.PI*k/16); put(C,GEO.b||(GEO.b=new T.BoxGeometry(1,1,1)),NM.wood,61.5,y,z,3.4,.1,.78); }
    for(const x of [59.9,63.1]){ for(let k=0;k<=8;k++){ const z=-131.2-k*1.6, y=.2+.55*Math.sin(Math.PI*k/8); put(C,GEO.b,NM.woodD,x,y+.45,z,.08,.85,.08); } for(let k=0;k<8;k++){ const z=-132-k*1.6, y=.2+.55*Math.sin(Math.PI*(k+.5)/8); put(C,GEO.b,NM.wood,x,y+.85,z,.08,.08,1.62,0,Math.sin(Math.PI*(k+.5)/8-Math.PI/2)*.0); } }
-  sign(C,"南岸森林・天后山",2.6,.5,61.5,2.2,-130.6,0,"#5f9a6a","#ffffff"); for(const dx of [-1.2,1.2]) cyl(.05,.05,2.2,mat("#8f6b4f"),61.5+dx,1.1,-130.6,C.g,6);
+  
   TREES.forEach(([x,z,s,k])=>{ if(k) pine(C,x,0,z,s*1.3,r); else softTree(C,r,x,z,s*1.25,r()<.15?"maple":""); });
   for(let k=0;k<60;k++){ const x=FOREST[0]+r()*(FOREST[1]-FOREST[0]), z=-174+r()*29; if(!SW.walk(x,z)) continue; if(lineD(FPATH,x,z)[0]<1.6) continue; if(r()<.5) mushroom(C,x,z,r); else if(r()<.5) put(C,gsph(),NM.bush,x,.25,z,.5,.32,.5); else flowers(C,r,x,z,.8,5); }
   for(let k=0;k<14;k++){ const x=FOREST[0]+r()*(FOREST[1]-FOREST[0]), z=-174+r()*28; if(lineD(FPATH,x,z)[0]<2) continue; put(C,GEO.cy||(GEO.cy=new T.CylinderGeometry(1,1,1,16)),NM.woodD,x,.22,z,.22,1.8,.22,r()*6,0,Math.PI/2); }
   NT.springs.forEach(S=>springPool(C,S,r)); for(const [x,z] of [[55,-155],[88,-161.5],[70,-167.5]]) lantern(C,x,z);
-  sign(C,"↑ 天后山登山口",2,.42,66,1.4,-169.4,0,"#7a6a4a","#ffffff"); cyl(.05,.05,1.4,mat("#8f6b4f"),66,.7,-169.4,C.g,6);
+  
   { const r2=rng(223); for(let k=0;k<380;k++){ const x=FOREST[0]+r2()*(FOREST[1]-FOREST[0]), z=-175+r2()*31; if(lineD(FPATH,x,z)[0]<1.3) continue; if(NT.springs.some(S=>Math.hypot(x-S[0],z-S[1])<S[2]+.4)) continue; const h=southH(x,z), q=r2(); if(q<.8) tuft(C,r2,x,h,z,.5+r2()*.5); else if(q<.94) starFlower(C,r2,x,h,z,.7+r2()*.4); else mossRock(C,r2,x,h-.15,z,.5+r2()*1,r2()<.7); } } /* (11/14 low-poly dressing) */
   fireflies(C,60,60,-160,18,31); };
 SW.buildMt=C=>{ nmat(); const r=krng(9);
@@ -537,7 +567,7 @@ SW.buildMt=C=>{ nmat(); const r=krng(9);
   { const g=new T.Group(); g.position.set(cx+2.4,y,cz+3.1); C.g.add(g); KB(g,1.6,.08,.8,km("#b08a68"),0,.75,0); for(const sx of [-.7,.7]) KB(g,.08,.75,.7,km("#8f6b4f"),sx,.37,0); for(const sz of [-.75,.75]) KB(g,1.6,.06,.3,km("#b08a68"),0,.42,sz); }
   for(const a of [1.2,3.0,4.9]) lantern(C,cx+Math.cos(a)*5.6,cz+Math.sin(a)*5.6); for(let k=0;k<6;k++){ const a=r()*6.283; flowers(C,r,cx+Math.cos(a)*5,cz+Math.sin(a)*5,1,8); C.g.children.slice(-8).forEach(o=>o.position.y+=y); }
   { const g=new T.Group(); g.position.set(cx-4.6,y,cz+3.4); C.g.add(g); for(const a of [0,2.1,4.2]){ const l=KB(g,.04,1.2,.04,km("#3a3a3a"),Math.cos(a)*.25,.55,Math.sin(a)*.25); l.rotation.set(Math.sin(a)*.25,0,-Math.cos(a)*.25); } kp(g,kcyl(),km("#e8e8e4",{roughness:.4}),0,1.2,0,.12,.8,.12,0,1.1); }
-  sign(C,"天后山・露營區　海拔 34 m",3,.5,cx,1.6+y,cz+6.3,0,"#7a6a4a","#ffffff"); cyl(.05,.05,1.6,mat("#8f6b4f"),cx,y+.8,cz+6.3,C.g,6);
+  
   fireflies(C,40,cx,cz,9,41); C.g.children.slice(-1)[0].position.y=y; };
 function lawnHole2(){ try{ lawnHole(); const m=outsideGround.material; if(m.userData.hole2) return; m.userData.hole2=1; const prev=m.onBeforeCompile; m.onBeforeCompile=sh=>{ prev&&prev(sh); sh.fragmentShader=sh.fragmentShader.replace("if(vHW.x>86.5&&vHW.z<-50.&&vHW.z>-140.) discard;","if(vHW.x>86.5&&vHW.z<-50.&&vHW.z>-140.) discard; if(vHW.z<-143.&&vHW.x>13.&&vHW.x<119.) discard;"); }; m.customProgramCacheKey=()=>"lawnhole2"; m.needsUpdate=true; }catch(e){} }
 NCH.push({id:"forest",c:[66,-160],r:50,build:C=>SW.build(C)},{id:"mount",c:[66,-212],r:44,build:C=>SW.buildMt(C)});
@@ -551,7 +581,7 @@ NCH.push({id:"cafe",c:[148,-112],r:14,build:C=>{ nmat(); const r=krng(12), g=new
   for(const [x,z,c] of [[141.8,-108.6,"#e8706a"],[141.8,-116.4,"#f2c230"],[150.6,-108.4,"#5fa0d0"]]){ const t=new T.Group(); t.position.set(x,0,z); C.g.add(t); kp(t,kcyl(),km("#ffffff"),0,.72,0,.45,.05,.45); kp(t,kcyl(),km("#bbbbbb"),0,.36,0,.04,.72,.04); kp(t,kcyl(),km("#ffffff"),0,1.3,0,.03,2.6,.03); kp(t,new T.ConeGeometry(1.3,.5,8),km(c),0,2.55,0,1,1,1); for(const a of [0,2.1,4.2]) kp(t,kcyl(),km("#d8c8a8"),Math.cos(a)*.75,.24,Math.sin(a)*.75,.18,.48,.18); }
   for(let k=0;k<4;k++){ const z=-120.5-k*2.2, x=152.6; const L=new T.Group(); L.position.set(x,0,z); L.rotation.y=Math.PI/2; C.g.add(L); const c=km(["#4fb0a8","#e8706a","#f2c230","#8a7ad0"][k]); KB(L,.65,.08,1.7,c,0,.32,0); KB(L,.65,.08,.75,c,0,.62,-.75).rotation.x=-.6; for(const sx of [-.28,.28]) for(const sz of [-.7,.7]) KB(L,.05,.3,.05,km("#ffffff"),sx,.15,sz); kp(L,ksph(),km("#ffffff"),0,.42,.7,.18,.06,.12); }
   { const p=new T.Group(); p.position.set(152.6,0,-123.8); C.g.add(p); kp(p,kcyl(),km("#ffffff"),0,1.2,0,.04,2.4,.04); for(let k=0;k<8;k++) kp(p,new T.ConeGeometry(1.7,.7,8,1,true,0,Math.PI/4),km(k%2?"#4fb0a8":"#ffffff",{side:T.DoubleSide}),0,2.45,0,1,1,1,k*Math.PI/4); }
-  sign(C,"海邊咖啡・躺椅",2.2,.42,140.2,1.4,-112,-Math.PI/2,"#4fb0a8","#ffffff"); cyl(.04,.04,1.4,mat("#8f6b4f"),140.25,.7,-112,C.g,6); }});
+   }});
 
 /*NATURE>>*/
 CH.push(...NCH);
@@ -578,7 +608,7 @@ TW.tick=dt=>{ try{ NT.tick(dt,LIVE); }catch(e){} if(TW.cart&&(TW._ct=(TW._ct||0)
   let built=false; for(const d of CH){ const dist=Math.hypot(px-d.c[0],pz-d.c[1])-d.r; if(!LIVE[d.id]){ if(dist<75&&!built){ load(d); built=true; } } else if(dist>105) unload(d.id); }
   if(TW.on&&!greeted&&pz<-56){ greeted=true; try{ toast("🏮 歡迎來到天后小鎮",2600); statInc("townIn"); }catch(e){} } if(!TW.on&&pz>-40) greeted=false; };
 /* ---- things you can walk up to ---- */
-const ST=[["tw:board",22.6,-61,Math.PI/2*-1,21.9,-61,1.2,2.2],["tw:bus",33.0,-64,Math.PI/2,34.2,-64,1.5,2.4],["tw:fish",28,-136.4,Math.PI,28,-137.6,1.8,1.2],
+const ST=[["tw:bus",33.0,-64,Math.PI/2,34.2,-64,1.5,2.4],["tw:fish",28,-136.4,Math.PI,28,-137.6,1.8,1.2],
     ["tw:ice",38,-96.6,Math.PI,38,-98.5,1.6,2.4],["tw:goddess",104,-188.6,Math.PI,104,-183,4.4,2],["tw:camp",66,-209.6,Math.PI,66,-212,1.2,1.6+34],["tw:cafe",143.4,-113.2,Math.PI/2,145.2,-113.2,2,2.6],["tw:lounge",151.4,-121.6,Math.PI/2,152.6,-121.6,1.2,1],["tw:garden",42,-121.4,Math.PI,42,-123,2.6,3]]
   .concat(TOWNB.filter(b=>b.key).map(b=>{ const d=bDoor(b); return [b.key,d.ax,d.az,d.face,d.hx,d.hz,Math.min(2.6,b.w/2),3.2]; }));
 const STN={"tw:bfast":"元氣早餐店・疊漢堡","tw:goddess":"泉水","tw:camp":"營火","tw:cafe":"海邊咖啡","tw:lounge":"躺椅","tw:board":"公告欄","tw:bus":"公車站","tw:fish":"釣魚碼頭","tw:ice":"擠冰淇淋","tw:herb":"中藥行","tw:garden":"我的花圃"}; TOWNB.forEach(b=>{ if(b.key) STN[b.key]=b.name||"鄰居的家"; });
