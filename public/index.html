@@ -11750,26 +11750,27 @@ const KP={ wall:["#f3e3c8","#e9d2b4","#f6d6cf","#d7e4d3","#d9e2ee","#f2e6a8","#e
   awn:["#e8706a","#5fa0d0","#7cc08a","#f2c230","#d9628a","#8a7ad0","#f08a4a","#4fb0a8"], door:["#7a5236","#4f7fb0","#b3473e","#5f8a5a","#8a5a9a","#c9853a"] };
 const km=(c,o)=>mat(c,Object.assign({roughness:.85},o||{}));
 /* the chair's shop-window pictures (11/14): shown in the ground-floor window, cropped to fill it; also the back wall inside the shop */
-const SHOP_PIC={"tw:tackle":"tackle","tw:bfast":"bfast","tw:soon:收藏家小屋":"collect","tw:grocer":"grocer","tw:beauty":"beauty","tw:flower":"flower","tw:book":"book","tw:photo":"photo","tw:drink":"drink","tw:herb":"herb","tw:congee":"congee"}; TW.SHOP_PIC=SHOP_PIC; /* (key → picture file) */
+const SHOP_PIC={"tw:tackle":"tackle","tw:bfast":"bfast","tw:soon:收藏家小屋":"collect","tw:grocer":"grocer","tw:beauty":"beauty","tw:flower":"flower","tw:book":"book","tw:photo":"photo","tw:drink":"drink","tw:herb":"herb","tw:congee":"congee"}; TW.SHOP_PIC=SHOP_PIC; setTimeout(()=>{ TW.SHOP_ROOM=SHOP_ROOM; },0); /* (key → picture file) */
 const SHOP_FRAME={"tackle": "#203b61", "bfast": "#df522e", "collect": "#5f2a1e", "grocer": "#a9392f", "beauty": "#58433a", "flower": "#636c4c", "book": "#643629", "photo": "#423435", "drink": "#5d4746", "herb": "#71402d", "congee": "#482f22"};
+const SHOP_ROOM={"beauty": ["#d1b498", "#a08b77"], "bfast": ["#705a40", "#9d9785"], "book": ["#6c3e21", "#875735"], "collect": ["#553a2c", "#4e231a"], "congee": ["#f8d198", "#8d6641"], "drink": ["#53493e", "#c88f5a"], "flower": ["#736e45", "#8b775a"], "grocer": ["#585142", "#a97e5d"], "herb": ["#643821", "#733f28"], "photo": ["#af8055", "#7a4d3f"], "tackle": ["#3c6d8c", "#7f665e"]}; /* (each shop's inside wall and floor colour, from its picture — the room round the picture is painted in these, the picture is not stretched) */
 const SHOP_DOOR={"tw:tackle":1,"tw:bfast":3,"tw:soon:收藏家小屋":0,"tw:grocer":11,"tw:beauty":10,"tw:flower":4,"tw:book":9,"tw:photo":7,"tw:drink":5,"tw:herb":2,"tw:congee":6,"tw:furn":8}; /* (the chair's 12 doors) */
 const SPT={}; function shopTex(k,cb){ const n=SHOP_PIC[k]; if(!n) return; if(SPT[n]){ SPT[n].img?cb(SPT[n].t):SPT[n].q.push(cb); return; } const E={t:null,q:[cb],img:null}; SPT[n]=E; new T.TextureLoader().load("shopimg/"+n+".webp",t=>{ t.encoding=T.sRGBEncoding; try{ t.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy()); }catch(e){} E.t=t; E.img=t.image; E.q.forEach(f=>f(t)); E.q=[]; try{ WORLD.warm=2; }catch(e){} }); } TW.shopTex=shopTex;
 /* 11/14 (the chair: like the three old shops — the picture pushed in, a glass in front, the floor carrying on the picture's colours, lit
    inside): one flat pane, but the shader looks through it into a little room 1.1 m deep — the picture is its back wall, the floor, the
    ceiling and the side walls carry on the picture's own edge colours, warm downlights, and glass streaks on top. No extra geometry. */
-function shopPic(g,k,w,h,x,y,z){ const U={map:{value:null},rep:{value:new T.Vector2(1,1)},off:{value:new T.Vector2(0,0)},sz:{value:new T.Vector2(w,h)},D:{value:1.1},camL:{value:new T.Vector3(0,0,5)},on:{value:0}};
+function shopPic(g,k,w,h,x,y,z){ const RCo=SHOP_ROOM[SHOP_PIC[k]]||["#8a7a6a","#7a6a5a"], cl=c=>{ const q=new T.Color(c); return new T.Vector3(q.r,q.g,q.b); }, U={map:{value:null},rep:{value:new T.Vector2(1,1)},off:{value:new T.Vector2(0,0)},sz:{value:new T.Vector2(w,h)},D:{value:1.1},camL:{value:new T.Vector3(0,0,5)},on:{value:0},wc:{value:cl(RCo[0])},fc:{value:cl(RCo[1])}};
   const m=new T.ShaderMaterial({uniforms:U,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-4,
     vertexShader:`varying vec2 vP; void main(){ vP=position.xy; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
-    fragmentShader:`uniform sampler2D map; uniform vec2 rep,off,sz; uniform float D,on; uniform vec3 camL; varying vec2 vP;
+    fragmentShader:`uniform sampler2D map; uniform vec2 rep,off,sz; uniform float D,on; uniform vec3 camL,wc,fc; varying vec2 vP;
       vec3 tx(vec2 u){ return texture2D(map,clamp(u,.002,.998)*rep+off).rgb; }
       void main(){ vec3 P=vec3(vP,0.), d=normalize(P-camL); float t=(-D)/min(d.z,-.001); int f=0;
         if(d.y<0.){ float q=(-sz.y*.5-P.y)/d.y; if(q<t){ t=q; f=1; } } else { float q=(sz.y*.5-P.y)/max(d.y,.0001); if(q<t){ t=q; f=2; } }
         if(d.x<0.){ float q=(-sz.x*.5-P.x)/d.x; if(q<t){ t=q; f=3; } } else { float q=(sz.x*.5-P.x)/max(d.x,.0001); if(q<t){ t=q; f=4; } }
         vec3 H=P+d*t; vec2 u=vec2(H.x/sz.x+.5,H.y/sz.y+.5); float dp=clamp(-H.z/D,0.,1.); vec3 c;
         if(f==0) c=tx(u);
-        else if(f==1){ c=tx(vec2(u.x,.012))*.82+tx(vec2(u.x,.06+dp*.2))*.12; float pool=0.; for(int i=0;i<3;i++){ float lx=(float(i)-1.)*.32*sz.x; pool+=exp(-((H.x-lx)*(H.x-lx)*5.+(H.z+D*.55)*(H.z+D*.55)*6.)); } c*=.78+.35*pool; }
-        else if(f==2){ c=tx(vec2(u.x,.988))*.62; for(int i=0;i<3;i++){ float lx=(float(i)-1.)*.32*sz.x; float r=length(vec2(H.x-lx,H.z+D*.55)); c+=vec3(1.,.9,.7)*smoothstep(.09,.04,r)*1.2; } }
-        else c=tx(vec2(f==3?.008:.992,u.y))*(.62+.3*dp);
+        else if(f==1){ c=fc*.9+tx(vec2(u.x,.1))*.08*(1.-dp); float pool=0.; for(int i=0;i<3;i++){ float lx=(float(i)-1.)*.32*sz.x; pool+=exp(-((H.x-lx)*(H.x-lx)*5.+(H.z+D*.55)*(H.z+D*.55)*6.)); } c*=.78+.35*pool; }
+        else if(f==2){ c=wc*.72; for(int i=0;i<3;i++){ float lx=(float(i)-1.)*.32*sz.x; float r=length(vec2(H.x-lx,H.z+D*.55)); c+=vec3(1.,.9,.7)*smoothstep(.09,.04,r)*1.2; } }
+        else c=wc*(.7+.25*dp);
         c*=mix(1.08,.92,clamp(.5-H.y/sz.y,0.,1.));
         float s=fract((vP.x+vP.y*.9)/sz.x*1.3+.15), st=smoothstep(0.,.025,s)*smoothstep(.13,.07,s)*.16+smoothstep(.2,.215,s)*smoothstep(.25,.235,s)*.1;
         c=c*.93+vec3(.75,.85,.95)*(st+.04*(vP.y/sz.y+.5));
@@ -11910,6 +11911,9 @@ const TOWNB=(()=>{ const out=[]; let sd=101;
   row("hN","x",-105,Math.PI,-8,22.4,"house",[{a:15.5,w:6,kind:"house",name:"我的家",key:"tw:home",fl:2,col:"#f6d6cf",rcol:"#d9624a",roof:"gable"}]);
   row("hN2","x",-105,Math.PI,33.6,66,"house");
   row("hS","x",-111,0,-8,22.4,"house"); row("hS2","x",-111,0,33.6,66,"house");
+  /* (11/14) a generated building may never overlap a named one in the same street front: 一粥七天 had a second wall in the very same plane — that was its flicker */
+  for(let i=out.length-1;i>=0;i--){ const b=out[i]; if(b.key||b.deco) continue; if(out.some(q=>q!==b&&q.key&&q.f===b.f&&q.axis===b.axis&&Math.abs(q.c-b.c)<(q.w+b.w)/2-.05)) out.splice(i,1); }
+  TW.B=out;
   let hn=0; out.forEach(b=>{ if(b.kind==="house"&&!b.key&&!b.deco) b.key="tw:house:"+(++hn); });
   /* where each one stands in the world */ out.forEach(b=>{ if(b.axis==="x"){ b.x=b.c; b.z=b.f; } else { b.x=b.f; b.z=b.c; } });
   return out; })();
@@ -13039,6 +13043,7 @@ function ivBuild(k){ const C=ROOMC[k]||["#8a6a4a","#efe4d0",["#ccc"]], s=new T.S
   for(let r=0;r<3;r++){ box(5.6,.06,.4,"#8a6246",0,.6+r*.62,-2.15); for(let i=0;i<9;i++){ const c=C[2][(i+r)%C[2].length]; box(.28+((i*7+r)%3)*.08,.3+((i*3+r)%3)*.06,.26,c,-2.5+i*.62,.6+r*.62+.2,-2.12); } } /* shelves with goods */
   box(3.2,.5,.6,"#8a5a3a",0,.25,-.25); box(3.4,.06,.7,"#6b4a2e",0,.53,-.25); /* the counter (the people here are small) */
   /* the chair's picture of this shop as the back wall (11/14): it covers the plain shelves */ if(TOWNX&&TOWNX.SHOP_PIC&&TOWNX.SHOP_PIC[k]){ const H=2.6, m=new T.MeshBasicMaterial({color:"#ffffff"}); const pl=new T.Mesh(new T.PlaneGeometry(1,1),m); pl.position.set(0,1.05,-2.3); pl.visible=false; s.add(pl);
+    { const RC=TOWNX.SHOP_ROOM&&TOWNX.SHOP_ROOM[TOWNX.SHOP_PIC[k]]; if(RC){ s.background=new T.Color(RC[0]); s.children.forEach(o=>{ if(!o.isMesh) return; const p=o.position; if(Math.abs(Math.abs(p.x)-3.6)<.01||Math.abs(p.z+2.4)<.01||Math.abs(p.y-3.2)<.01) o.material.color.set(RC[0]); else if(Math.abs(p.y+.05)<.01) o.material.color.set(RC[1]); }); } } /* (the room round the picture in the picture's own wall and floor colours) */
     TOWNX.shopTex(k,t=>{ const a=t.image.width/t.image.height; pl.scale.set(H*a,H,1); m.map=t; m.needsUpdate=true; pl.visible=true; s.children.forEach(o=>{ if(o.isMesh&&o.position.z<-2.05&&o!==pl) o.visible=false; }); }); }
   const cam=new T.PerspectiveCamera(40,innerWidth/innerHeight,.1,40); cam.position.set(0,.98,2.3); cam.lookAt(0,.62,-1.2); return {s,cam}; }
 function ivOpen(k,open){ ivClose(true); const K=KEEP[k]; const R=ivBuild(k); IV.scene=R.s; IV.cam=R.cam; IV.k=k; IV.t=0; IV.avs=[]; const n=K.ppl.length; if(n>1){ IV.cam.position.z+=.55; IV.cam.position.y+=.06; IV.cam.lookAt(0,.62,-1.2); } /* (two people: step back so both fit on a phone) */
