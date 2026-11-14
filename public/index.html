@@ -11790,7 +11790,7 @@ function signPic(m,key,hv){ const has=key&&SIGN_IMG[key]; if(!m||!has||has.index
 /* the building */
 function kbld(C,o){ const r=krng(o.seed||7), pick=a=>a[(r()*a.length)|0], g=new T.Group(); g.position.set(o.x,0,o.z); g.rotation.y=o.ry||0; C.g.add(g);
   const w=o.w, d=o.d||7, fl=o.fl||1+(r()*3|0), FH=3.05, H=fl*FH, shop=o.kind==="shop", col=o.col||pick(KP.wall), brick=o.brick??(r()<.18&&!o.col), tk=brick?"ercd":(o.tile||pick(["ercd","mosaic","sq","vert","paint","ercd","sq"])), wm=tk==="paint"?tileMat("paint",col):tileMat(tk,brick?"#b8705a":pick(TILE_C[tk])), tm=km(o.trim||pick(KP.trim));
-  const arc=o.arcade??(shop&&fl>1&&r()<.6), A=arc?1.8:0, roofK=o.roof||(fl<=2&&(brick||r()<.2)?"tile":pick(["flat","tin","flat","tin","flat"])) /* (11/14: Taiwanese towns are flat roofs with tin sheds and water tanks; pitched roofs only on a few old brick houses) */, rcol=o.rcol||pick(KP.roof), rm=km(rcol,{roughness:.7});
+  const arc=o.arcade??(shop&&fl>1&&r()<.6), A=arc?1.8:0, roofK=o.roof||(fl<=2&&((brick&&r()<.45)||r()<.05)?"tile":pick(["flat","tin","flat","tin","flat"])) /* (11/14 afternoon: fewer pitched roofs still — about one low building in eight) */ /* (11/14: Taiwanese towns are flat roofs with tin sheds and water tanks; pitched roofs only on a few old brick houses) */, rcol=o.rcol||pick(KP.roof), rm=km(rcol,{roughness:.7});
   const winK=r()<.5?1:0, grille=r()<.38, acs=r()<.6, bal=r()<.55, round=r()<.4, vsg=shop&&!!o.name&&fl>1&&o.vsign!==false; /* (11/14: every named shop with an upper floor has an upright sign too, all the same size) */
   /* walls */ if(A){ KW(g,w,FH,d-A,wm,0,FH/2,-A-(d-A)/2); if(fl>1) KW(g,w,H-FH,d,wm,0,FH+(H-FH)/2,-d/2); KB(g,w,.2,A,tm,0,FH-.1,-A/2); const n=Math.max(2,Math.round(w/3.2)); for(let i=0;i<=n;i++) KB(g,.36,FH-.2,.36,tm,-w/2+.2+i*(w-.4)/n,(FH-.2)/2,-.2); KB(g,w,.03,A,km("#d8cfc0"),0,.015,-A/2); }
   else KW(g,w,H,d,wm,0,H/2,-d/2);
@@ -12909,7 +12909,8 @@ L.testPanel=()=>{ if(!me.sp) return; const b=(act,v,t,cls)=>`<button class="${cl
    <p class="note">現在：${hr==null?"真實時間":hr+" 點"}。各店營業時間：${Object.keys(HOURS).map(k=>`${(TP_SHOPS.find(q=>q[0]===k)||[0,k])[1]} ${hrs_(k)}`).join("、")}</p>
    <h4 style="margin:10px 0 4px">傳送／進店</h4><div>${b("tmGo","town","🏮 小鎮鎮口")}${b("tmGo","zen","🧘 禪房裡（測走出來會不會卡）")}${b("tmGo","temple","⛩️ 廟前")}</div><div>${TP_SHOPS.map(([k,n])=>b("tmShop",k,n)).join("")}</div>
    <h4 style="margin:10px 0 4px">直接玩（不用找店）</h4><div>${[["tw:bfast","🍔 疊漢堡"],["tw:ice","🍦 冰淇淋"],["tw:herb","🌿 中藥對對碰"],["tw:congee","🥣 記菜單"],["tw:drink","🧋 調飲料"],["tw:book","📚 推書櫃"],["tw:flower","💐 插花"]].map(([k,n])=>b("tmGame",k,n)).join("")}</div>
-   <h4 style="margin:10px 0 4px">這次改版（11/14）</h4><div>${b("tmRods",1,"🎣 拿到全部 12 支釣竿")}${b("tmRain",1,"🧧 撒紅包＋假人來搶")}</div>`); };
+   <h4 style="margin:10px 0 4px">這次改版（11/14）</h4><div>${b("tmRods",1,"🎣 拿到全部 12 支釣竿")}${b("tmRain",1,"🧧 撒紅包＋假人來搶")}</div><h4 style="margin:10px 0 4px">這次改版（11/14 下午）</h4><div>${b("tmIceDrink",1,"🧋 飲料：一定會加冰（看 3 秒提示和藍線）")}${b("tmGo","town","🏠 看屋頂（人字屋頂變少）")}</div>`); };
+HANDLERS.tmIceDrink=()=>{ closeSheet(); window.MZ_DRINK_ICE=1; try{ drinkGame(); }finally{ window.MZ_DRINK_ICE=0; } };
 const hrs_=k=>{ try{ return hrs(k); }catch(e){ return ""; } };
 HANDLERS.tmOn=v=>{ TM.on=v==="1"; toast(TM.on?"🧪 測試模式開啟":"測試模式關閉",1600); L.testPanel(); };
 HANDLERS.tmHour=v=>{ const h=+v; TM.hour=h<0?null:h; L.testPanel(); };
@@ -13095,6 +13096,7 @@ function drinkGame(){ /* 11/14 (the chair): a 3D see-through cup. The liquid slo
   /* the dispenser */ const steel=new T.MeshStandardMaterial({color:"#8a6a50",roughness:.5}); const head=new T.Mesh(new T.BoxGeometry(1.2,.35,.7),steel); head.position.y=HC+1.55; sc.add(head); const noz=new T.Mesh(new T.CylinderGeometry(.08,.1,.25,16),new T.MeshStandardMaterial({color:"#5a4030",roughness:.4})); noz.position.y=HC+1.25; sc.add(noz);
   const stream=new T.Mesh(new T.CylinderGeometry(.055,.06,1,12),new T.MeshStandardMaterial({color:"#a4512a",roughness:.3})); stream.visible=false; sc.add(stream);
   /* the target line, round the outside of the glass */ const line=new T.Mesh(new T.TorusGeometry(1,.012,6,NA),new T.MeshBasicMaterial({color:"#e8402e"})); line.rotation.x=Math.PI/2; sc.add(line);
+  const ghost=new T.Mesh(new T.TorusGeometry(1,.016,6,NA),new T.MeshBasicMaterial({color:"#3aa0e8",transparent:true,opacity:.8})); ghost.rotation.x=Math.PI/2; ghost.visible=false; sc.add(ghost); /* where the ice will push the level */
   const lab=document.createElement("div"); lab.style.cssText=`position:absolute;color:#c0392b;font:900 14px ${UI_FONT};pointer-events:none;white-space:nowrap;text-shadow:0 1px 0 #fff`; B.appendChild(lab);
   /* liquid: finished layers are plain tapered pieces; the top layer has a moving surface and a wall that follows it */
   const layersG=new T.Group(); sc.add(layersG);
@@ -13103,11 +13105,11 @@ function drinkGame(){ /* 11/14 (the chair): a 3D see-through cup. The liquid slo
   const tMat=new T.MeshStandardMaterial({color:"#a4512a",roughness:.35,side:T.DoubleSide}), sMat=new T.MeshStandardMaterial({color:"#b86a40",roughness:.18,side:T.DoubleSide});
   const wallM=new T.Mesh(topWall,tMat), surfM=new T.Mesh(surf,sMat); sc.add(wallM); sc.add(surfM);
   const iceM=new T.MeshStandardMaterial({color:"#e8f6ff",roughness:.05,transparent:true,opacity:.62}); const iceG=new T.BoxGeometry(.32,.3,.32);
-  const S={ci:0,li:0,lv:0,pour:false,score:0,t:0,wait:0,tail:0,settle:0,ax:0,az:0,vx:0,vz:0,rip:[],ice:[],iceAt:99,cupT:0,cupMax:10,from:0};
+  const S={ci:0,li:0,lv:0,pour:false,score:0,t:0,wait:0,tail:0,settle:0,ax:0,az:0,vx:0,vz:0,rip:[],ice:[],iceAt:99,cupT:0,cupMax:10,from:0,forceIce:!!window.MZ_DRINK_ICE};
   const btn=B.querySelector("#dkB"), msg=t=>{ B.querySelector("#dkM").textContent=t; };
   const layerMesh=(y0,y1,c)=>{ const m=new T.Mesh(new T.CylinderGeometry(rAt(y1)-.005,rAt(y0)-.005,Math.max(.001,y1-y0),NA,1,false),new T.MeshStandardMaterial({color:c,roughness:.35})); m.position.y=(y0+y1)/2; layersG.add(m); };
   const setCup=()=>{ while(layersG.children.length){ const m=layersG.children.pop(); m.geometry.dispose(); m.material.dispose(); } S.ice.forEach(q=>sc.remove(q.m)); S.ice=[]; S.lv=0; S.li=0; S.from=0; S.ax=S.az=S.vx=S.vz=0; S.rip=[]; S.settle=0; S.tail=0;
-    const L=cups[S.ci][1]; S.cupMax=5+L.length*3.2; S.cupT=S.cupMax; S.iceAt=Math.random()<.7?((Math.random()*L.length)|0):99; S.iceDone=false; B.querySelector("#dkT").textContent=`第 ${S.ci+1} 杯：${cups[S.ci][0]}（${L.map(q=>q[0]).join(" → ")}）`; setLayer(); };
+    const L=cups[S.ci][1]; S.cupMax=5+L.length*3.2; S.cupT=S.cupMax; S.iceAt=(S.forceIce||Math.random()<.7)?((Math.random()*L.length)|0):99; S.iceDone=false; S.iceWarn=null; ghost.visible=false; B.querySelector("#dkT").textContent=`第 ${S.ci+1} 杯：${cups[S.ci][0]}（${L.map(q=>q[0]).join(" → ")}）`; setLayer(); };
   const setLayer=()=>{ const st=cups[S.ci][1][S.li]; if(!st) return; tMat.color.set(st[2]); sMat.color.set(st[2]).offsetHSL(0,0,.06); stream.material.color.set(st[2]); const y=st[1]*HC; line.scale.set(rAt(y)+.05,rAt(y)+.05,1); line.position.y=y; S.from=S.lv; };
   const down=e=>{ e.preventDefault(); if(S.wait>0||S.settle>0||S.over) return; S.pour=true; try{ btn.setPointerCapture(e.pointerId); }catch(_){ } }, up=e=>{ e.preventDefault(); if(!S.pour) return; S.pour=false; S.tail=.22; S.settle=.9; msg("……"); };
   btn.addEventListener("pointerdown",down); btn.addEventListener("pointerup",up); btn.addEventListener("pointercancel",up);
@@ -13124,7 +13126,10 @@ function drinkGame(){ /* 11/14 (the chair): a 3D see-through cup. The liquid slo
     const rate=.17+.05*S.ci, flowing=S.pour||S.tail>0;
     if(cup&&flowing&&S.li<cup[1].length){ S.lv=Math.min(1.03,S.lv+dt*rate); if(S.tail>0) S.tail-=dt; kick(dt*2); if(Math.random()<dt*7) S.rip.push({x:(Math.random()-.5)*.08,z:(Math.random()-.5)*.08,t0:S.t,a:.05}); if(S.lv>=1.0){ S.pour=false; S.tail=0; S.settle=.4; msg("滿出來了！"); } }
     if(S.settle>0&&S.tail<=0){ S.settle-=dt; if(S.settle<=0&&S.li<cup[1].length) judge(); }
-    /* ice drops in while you pour the chosen layer */ if(cup&&!S.iceDone&&S.li===S.iceAt&&S.lv>S.from+.08){ S.iceDone=true; const n=2+((Math.random()*3)|0); for(let k=0;k<n;k++){ const m=new T.Mesh(iceG,iceM); const a=Math.random()*6.283, r=Math.random()*.35; m.position.set(Math.cos(a)*r,HC+1.0+k*.35,Math.sin(a)*r); m.rotation.set(Math.random(),Math.random(),Math.random()); sc.add(m); S.ice.push({m,vy:0,in:false,ph:Math.random()*6}); } try{ tone(1400,.05,.05,"square"); tone(1100,.05,.05,"square",.06); }catch(e){} msg("🧊 加冰塊了！"); }
+    /* ice: 3 s warning (with where the level will be after it), then it drops (主委 11/14) */
+    if(cup&&!S.iceDone&&S.iceWarn==null&&S.li===S.iceAt&&S.wait<=0&&S.lv>S.from+.03){ /* (once you have started pouring that layer) */ S.iceN=2+((Math.random()*3)|0); S.iceRise=S.iceN*.022; S.iceWarn=3; try{ tone(1200,.06,.05,"square"); }catch(e){} }
+    if(S.iceWarn!=null&&!S.iceDone){ S.iceWarn-=dt; const yy=Math.min(1.03,S.lv+S.iceRise)*HC; ghost.visible=true; ghost.position.y=yy; ghost.scale.set(rAt(yy)+.06,rAt(yy)+.06,1); ghost.material.opacity=.55+.35*Math.sin(S.t*8); msg(`🧊 ${Math.max(1,Math.ceil(S.iceWarn))} 秒後加 ${S.iceN} 顆冰塊！水位會升到藍線`); }
+    if(cup&&!S.iceDone&&S.iceWarn!=null&&S.iceWarn<=0){ S.iceDone=true; S.iceWarn=null; ghost.visible=false; const n=S.iceN; for(let k=0;k<n;k++){ const m=new T.Mesh(iceG,iceM); const a=Math.random()*6.283, r=Math.random()*.35; m.position.set(Math.cos(a)*r,HC+1.0+k*.35,Math.sin(a)*r); m.rotation.set(Math.random(),Math.random(),Math.random()); sc.add(m); S.ice.push({m,vy:0,in:false,ph:Math.random()*6}); } try{ tone(1400,.05,.05,"square"); tone(1100,.05,.05,"square",.06); }catch(e){} msg("🧊 加冰塊了！"); }
     const ly=S.lv*HC; S.ice.forEach(q=>{ const m=q.m, sy=ly+hAt(m.position.x,m.position.z,S.t); if(!q.in){ q.vy-=dt*9; m.position.y+=q.vy*dt; if(m.position.y<sy+.05){ q.in=true; S.lv=Math.min(1.03,S.lv+.022); kick(.5); S.rip.push({x:m.position.x,z:m.position.z,t0:S.t,a:.07}); try{ tone(500+Math.random()*200,.05,.04,"triangle"); }catch(e){} } }
       else { m.position.y+= (sy-.06+Math.sin(S.t*2.2+q.ph)*.025-m.position.y)*Math.min(1,dt*6); m.rotation.y+=dt*.3; } });
     /* the slosh: two damped springs (tilt in x and z) */ const w2=70, damp=1.5; S.vx+=(-w2*S.ax-damp*S.vx)*dt; S.vz+=(-w2*S.az-damp*S.vz)*dt; S.ax+=S.vx*dt; S.az+=S.vz*dt; S.ax=Math.max(-.12,Math.min(.12,S.ax)); S.az=Math.max(-.12,Math.min(.12,S.az)); S.rip=S.rip.filter(w=>S.t-w.t0<3).slice(-14);
