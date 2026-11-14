@@ -11,7 +11,7 @@
      z −117…−131 河堤公園: 花圃, 涼亭; the river beyond, a 釣魚 pier at the end of the main street, the station across the water
    ================= */
 TOWNX=(()=>{
-const TW={on:false}; window.MZ_GOTOWN=()=>{ meAv.pos.set(28,-62); meAv.target.set(28,-62); toast("🏮 已到天后小鎮鎮口",2000); }; /* (the test page's 「去小鎮」 button) */
+const TW={on:false}; setInterval(()=>{ try{ const x=meAv.pos.x, z=meAv.pos.y; document.body.classList.toggle("out-temple",!(Math.abs(x)<=26&&z>-47&&z<46)); }catch(e){} },500); /* (inside the temple or not: the worship buttons only show inside; it lives here because meAv is not reachable from a separate <script>) */ window.MZ_GOTOWN=()=>{ meAv.pos.set(28,-62); meAv.target.set(28,-62); toast("🏮 已到天后小鎮鎮口",2000); }; /* (the test page's 「去小鎮」 button) */
 const LINK=[28,-49.8], MOUTH=[28,-51.3];
 const ZR=[-8,182,-258,-50.5]; /* (south over the river to the mountain since 11/13) */ /* (out to the beach since 11/12) */
 /* where you can walk: streets, the square, the park, the pier — minus the solid things standing on them */

@@ -69,11 +69,11 @@ function congeeGame(){ const G=gOverlay("🥣 記菜單","linear-gradient(#fff4e
 L.luck=()=>{ const d=LF(); return d.lkD===today()?Math.min(50,d.lk|0):0; };
 HANDLERS.lfEatCongee=()=>{ const d=LF(); if(!(d.cg>0)) return; d.cg--; if(d.lkD!==today()){ d.lkD=today(); d.lk=0; } d.lk=Math.min(50,(d.lk|0)+10); save(); try{ [523,659,784].forEach((f,i)=>tone(f,.1,.05,"triangle",i*.08)); }catch(e){} toast(`🥣 熱呼呼的鹹粥！今天的幸運 ${d.lk}`,2600); try{ openBag(); }catch(e){} };
 
-/* ---------- 🌿 中藥行：分類藥材 — 陳伯 can't read the labels any more: each herb comes up on the tray, tap the drawer with its name.
+/* ---------- 🌿 中藥行：分類藥材 — 許伯 can't read the labels any more: each herb comes up on the tray, tap the drawer with its name.
    20 herbs, 45 s, at most 3 mistakes. Winning gives a 大還丹 (eat it: 精力上限 +1, up to 200); after 100 of them, money or a 藥材包. ---------- */
 const HERB=[["renshen","人參"],["gouqi","枸杞"],["hongzao","紅棗"],["huangqi","黃耆"],["danggui","當歸"],["gancao","甘草"],["chenpi","陳皮"],["juhua","菊花"],["rougui","肉桂"],["lianzi","蓮子"],["fuling","茯苓"],["guiyuan","桂圓"],["shengjiang","生薑"],["jinyinhua","金銀花"]];
 const PACKS=[["pk_duck","當歸鴨藥材包"],["pk_siwu","四物湯藥材包"],["pk_lu","滷味藥材包"],["pk_beef","牛肉麵滷包"]];
-GL["tw:herb"]=()=>{ const d=LF(); openSheet("lfHerb2","🌿 中藥行",`<p class="lead">陳伯：「年輕人，我眼睛看不太清楚，你能不能幫我把一樣的藥材配成對呢？」</p><p class="note">翻兩張一樣的就配成一對，60 秒內全部配完就成功。${(d.dht|0)<100?`成功會拿到一顆大還丹（已經吃了 ${d.dht|0} 顆）。`:"大還丹你已經吃滿了，陳伯改送別的。"}</p><div class="row"><button class="primary" data-act="lfHerbGo">幫忙分類</button><button class="secondary" data-act="lfRank" data-v="herb">今日排名</button></div>`); };
+GL["tw:herb"]=()=>{ const d=LF(); openSheet("lfHerb2","🌿 中藥行",`<p class="lead">許伯：「年輕人，我眼睛看不太清楚，你能不能幫我把一樣的藥材配成對呢？」</p><p class="note">翻兩張一樣的就配成一對，60 秒內全部配完就成功。${(d.dht|0)<100?`成功會拿到一顆大還丹（已經吃了 ${d.dht|0} 顆）。`:"大還丹你已經吃滿了，許伯改送別的。"}</p><div class="row"><button class="primary" data-act="lfHerbGo">幫忙分類</button><button class="secondary" data-act="lfRank" data-v="herb">今日排名</button></div>`); };
 HANDLERS.lfHerbGo=()=>{ closeSheet(); herbPairs(); };
 /* 中藥對對碰 (11/14, the chair: a pairs game, not naming): 16 cards face down, 8 kinds of herb; turn two, the same herb stays open.
    All pairs within 60 s wins (the fewer misses, the higher the score). */
@@ -86,8 +86,8 @@ function herbPairs(){ const G=gOverlay("🌿 中藥對對碰","linear-gradient(#
       else { S.miss++; S.lock=true; draw(); setTimeout(()=>{ a.open=b2.open=0; S.lock=false; draw(); },650); return; } } draw(); };
   let last=performance.now(); const tick=now=>{ if(!G.ov.isConnected||S.done) return; S.t-=Math.min(.1,(now-last)/1000); last=now; const el=B.querySelector("#hpT"); if(el) el.textContent="⏱ "+Math.max(0,Math.ceil(S.t)); if(S.t<=0) return end(false); requestAnimationFrame(tick); }; requestAnimationFrame(tick);
   const end=win=>{ if(S.done) return; S.done=1; setTimeout(()=>{ G.close(); const d=LF(), paid=gamePaid("herb",5), score=win?Math.max(10,100+Math.round(S.t)*2-S.miss*4):S.pairs*8; let txt="";
-    if(win&&paid){ if((d.dht|0)+(d.dhtI|0)<100){ d.dhtI=(d.dhtI|0)+1; txt="陳伯：「好孩子，這顆大還丹給你。」（在背包裡，吃了精力上限 +1）"; } else if(Math.random()<.5){ const c=150+((Math.random()*4)|0)*50; bag.coins+=c; txt=`陳伯塞給你 ${c} 平安幣。`; } else { const P=PACKS[(Math.random()*PACKS.length)|0]; d.pk=d.pk||{}; d.pk[P[0]]=(d.pk[P[0]]|0)+1; txt=`陳伯送你一包「${P[1]}」，可以帶回家煮。`; } }
-    else if(win) txt="今天幫夠多了，陳伯說明天再來（每天前 5 次有謝禮）。"; else txt="時間到了，還差一點點！"; save();
+    if(win&&paid){ if((d.dht|0)+(d.dhtI|0)<100){ d.dhtI=(d.dhtI|0)+1; txt="許伯：「好孩子，這顆大還丹給你。」（在背包裡，吃了精力上限 +1）"; } else if(Math.random()<.5){ const c=150+((Math.random()*4)|0)*50; bag.coins+=c; txt=`許伯塞給你 ${c} 平安幣。`; } else { const P=PACKS[(Math.random()*PACKS.length)|0]; d.pk=d.pk||{}; d.pk[P[0]]=(d.pk[P[0]]|0)+1; txt=`許伯送你一包「${P[1]}」，可以帶回家煮。`; } }
+    else if(win) txt="今天幫夠多了，許伯說明天再來（每天前 5 次有謝禮）。"; else txt="時間到了，還差一點點！"; save();
     rankPost("herb",score).then(j=>openSheet("lfHerb3","🌿 中藥對對碰",`<p class="lead">${win?"全部配對完成！":`配對了 ${S.pairs} / 8`}（失誤 ${S.miss}，${score} 分）。${txt}</p>${rankHtml("herb",j,1)}<div class="row"><button class="primary" data-act="lfHerbGo">再玩一次</button></div>`)); },win?700:200); }; draw(); }
 
 function herbSort(){ const G=gOverlay("🌿 分類藥材","linear-gradient(#f3e6cc,#d9bf94)"), B=G.B; const S={n:0,ok:0,bad:0,t:45,cur:null,sel:[]};
@@ -99,8 +99,8 @@ function herbSort(){ const G=gOverlay("🌿 分類藥材","linear-gradient(#f3e6
   B.onclick=e=>{ const b=e.target.closest("[data-h]"); if(!b||!S.cur) return; const good=b.dataset.h===S.cur[0]; good?S.ok++:S.bad++; try{ good?tone(880,.06,.05,"triangle"):tone(200,.2,.05,"sawtooth"); }catch(e){} b.style.background=good?"#4c9a6a":"#c0392b"; S.cur=null; setTimeout(nextHerb,good?160:500); };
   let last=performance.now(); const tick=now=>{ if(!G.ov.isConnected||S.done) return; S.t-=Math.min(.1,(now-last)/1000); last=now; const sp=B.querySelector("span"); if(sp) sp.textContent="⏱ "+Math.max(0,Math.ceil(S.t)); if(S.t<=0){ end(); return; } requestAnimationFrame(tick); }; requestAnimationFrame(tick);
   const end=()=>{ if(S.done) return; S.done=1; G.close(); const d=LF(), win=S.ok>=17&&S.bad<=3, paid=gamePaid("herb",5), score=S.ok*10+Math.max(0,Math.round(S.t))*2-S.bad*5; let txt="";
-    if(win&&paid){ if((d.dht|0)+(d.dhtI|0)<100){ d.dhtI=(d.dhtI|0)+1; txt="陳伯：「好孩子，這顆大還丹給你。」（在背包裡，吃了精力上限 +1）"; } else if(Math.random()<.5){ const c=150+((Math.random()*4)|0)*50; bag.coins+=c; txt=`陳伯塞給你 ${c} 平安幣。`; } else { const P=PACKS[(Math.random()*PACKS.length)|0]; d.pk=d.pk||{}; d.pk[P[0]]=(d.pk[P[0]]|0)+1; txt=`陳伯送你一包「${P[1]}」，可以帶回家煮。`; } }
-    else if(win) txt="今天幫夠多了，陳伯說明天再來（每天前 5 次有謝禮）。"; else txt=S.bad>3?"放錯太多了，陳伯皺著眉頭重新整理……":"時間到了，還差一點點！"; save();
+    if(win&&paid){ if((d.dht|0)+(d.dhtI|0)<100){ d.dhtI=(d.dhtI|0)+1; txt="許伯：「好孩子，這顆大還丹給你。」（在背包裡，吃了精力上限 +1）"; } else if(Math.random()<.5){ const c=150+((Math.random()*4)|0)*50; bag.coins+=c; txt=`許伯塞給你 ${c} 平安幣。`; } else { const P=PACKS[(Math.random()*PACKS.length)|0]; d.pk=d.pk||{}; d.pk[P[0]]=(d.pk[P[0]]|0)+1; txt=`許伯送你一包「${P[1]}」，可以帶回家煮。`; } }
+    else if(win) txt="今天幫夠多了，許伯說明天再來（每天前 5 次有謝禮）。"; else txt=S.bad>3?"放錯太多了，許伯皺著眉頭重新整理……":"時間到了，還差一點點！"; save();
     rankPost("herb",Math.max(0,score)).then(j=>openSheet("lfHerb3","🌿 中藥行",`<p class="lead">分對 ${S.ok} 樣、錯 ${S.bad} 次（${Math.max(0,score)} 分）。${txt}</p>${rankHtml("herb",j,1)}<div class="row"><button class="primary" data-act="lfHerbGo">再幫一次</button></div>`)); };
   nextHerb(); }
 HANDLERS.lfEatDht=()=>{ const d=LF(); if(!(d.dhtI>0)) return; if((d.dht|0)>=100){ toast("大還丹已經吃滿了",2000); return; } d.dhtI--; d.dht=(d.dht|0)+1; bag.en=Math.min(enMax(),bag.en+1); save(); try{ [523,784,1047,1568].forEach((f,i)=>tone(f,.14,.05,"triangle",i*.09)); }catch(e){} toast(`💊 大還丹！精力上限變成 ${enMax()}`,2800); try{ openBag(); }catch(e){} };
@@ -241,9 +241,9 @@ function iceGame(){ /* 11/14 (the chair, after softserve.nog.cc): the nozzle abo
 { const E0=L.bagEntries, A0=L.bagActs, I0=L.bic; const EM={g_dht:"💊",g_cg:"🥣",g_rcp:"📕",g_spd:"👟"}; PACKS.forEach(p=>EM["g_"+p[0]]="🧧");
   L.bic=(k,cls)=>{ const id=k.slice(3); if(EM[id]) return `<span class="bic ${cls||""}" style="display:flex;align-items:center;justify-content:center;font-size:34px;background:none">${EM[id]}</span>`; return I0(k,cls); };
   L.bagEntries=(out,tab)=>{ E0(out,tab); if(tab!=="all"&&tab!=="goods") return; const d=LF();
-    if(d.dhtI>0) out.push({id:"lf:g_dht",ic:"lf_g_dht",n:d.dhtI,name:"大還丹",desc:`中藥行陳伯給的。吃了精力上限永久 +1（已經吃了 ${d.dht|0} / 100 顆，上限 ${enMax()}）。`});
+    if(d.dhtI>0) out.push({id:"lf:g_dht",ic:"lf_g_dht",n:d.dhtI,name:"大還丹",desc:`中藥行許伯給的。吃了精力上限永久 +1（已經吃了 ${d.dht|0} / 100 顆，上限 ${enMax()}）。`});
     if(d.cg>0) out.push({id:"lf:g_cg",ic:"lf_g_cg",n:d.cg,name:"鹹粥",desc:`一粥七天的鹹粥。吃了今天會比較幸運（現在 ${L.luck()}，最多 50），釣魚比較容易遇到稀有的魚。`});
-    PACKS.forEach(p=>{ const n=d.pk&&d.pk[p[0]]; if(n>0) out.push({id:"lf:g_"+p[0],ic:"lf_g_"+p[0],n,name:p[1],desc:"中藥行陳伯送的。之後可以帶回家煮成料理，自己吃或送給鎮上的人。"}); });
+    PACKS.forEach(p=>{ const n=d.pk&&d.pk[p[0]]; if(n>0) out.push({id:"lf:g_"+p[0],ic:"lf_g_"+p[0],n,name:p[1],desc:"中藥行許伯送的。之後可以帶回家煮成料理，自己吃或送給鎮上的人。"}); });
     if((d.rcp||[]).length) out.push({id:"lf:g_rcp",ic:"lf_g_rcp",n:d.rcp.length,name:"食譜",desc:"書店老闆送的食譜："+d.rcp.join("、")+"。之後可以在家照著煮。"});
     if(d.spd>0) out.push({id:"lf:g_spd",ic:"lf_g_spd",name:"疾走之書",desc:`讀過以後走路永久變快（現在 +${d.spd}%，最多 15%）。`}); };
   L.bagActs=(k,e)=>k==="g_dht"?`<button class="chip" data-act="lfEatDht">吃一顆</button>`:k==="g_cg"?`<button class="chip" data-act="lfEatCongee">吃一碗</button>`:k.startsWith("g_")?"":A0(k,e); }

@@ -613,7 +613,7 @@ const KEEP={
      [[1,"豆漿是溫的還是冰的啦？"],[0,"單子上寫『溫』！妳寫的字只有妳自己看得懂！"]],[[0,"鐵板麵要黑胡椒還是蘑菇？"],[1,"兩個都要！他剛剛講過三次了啦！"]],[[1,"你又把奶茶做成全糖！"],[0,"單子上畫一個圈，誰知道是全糖還是無糖！"]],
      [[0,"蛋餅要加起司還是玉米？"],[1,"起司玉米！起司玉米！我喊到喉嚨都啞了！"]],[[1,"外帶的袋子又不夠了啦！"],[0,"昨天叫妳叫貨，妳說『好好好』！"]]],
    end:[[-1,"你！要不要來幫忙！？當然我們會給你報酬！"]],quick:[[-1,"來來來，幫忙疊漢堡！"]]},
- "tw:herb":{ppl:[{n:"陳伯",v:"oldm",look:[0,18,5,0,1,0,0,7,0,1,0,1,0,1],sh:{leg:.86,tor:.92,w:.96,d:.96,head:1,arm:.94},hunch:.18}],mode:"squint",
+ "tw:herb":{ppl:[{n:"許伯",v:"oldm",look:[0,18,5,0,1,0,0,7,0,1,0,1,0,1],sh:{leg:.86,tor:.92,w:.96,d:.96,head:1,arm:.94},hunch:.18}],mode:"squint",
    lines:[[0,"嗯……嗯？"],[0,"年輕人，我眼睛看不太清楚，你能不能幫我一起分類這些藥材呢？"]],quick:[[0,"喔，是你啊，又來幫忙啦？"]]},
  "tw:book":{ppl:[{n:"文雄老闆",v:"man",look:[0,26,0,13,6,2,0,0,0,1,0,1,1,1],sh:{leg:1.14,tor:1.06,w:.9,d:.9,head:.98,arm:1.08}}],mode:"stuck",
    lines:[[0,"欸欸，等一下……"],[0,"最近書進貨太多了，我的書架亂七八糟，我都出不去了……能不能幫我一起整理一下呢？"]],quick:[[0,"書架又塞住了，拜託你啦！"]]},
@@ -683,17 +683,17 @@ function ivBuild(k){ const C=ROOMC[k]||["#8a6a4a","#efe4d0",["#ccc"]], s=new T.S
   for(let r=0;r<3;r++){ box(5.6,.06,.4,"#8a6246",0,.6+r*.62,-2.15); for(let i=0;i<9;i++){ const c=C[2][(i+r)%C[2].length]; box(.28+((i*7+r)%3)*.08,.3+((i*3+r)%3)*.06,.26,c,-2.5+i*.62,.6+r*.62+.2,-2.12); } } /* shelves with goods */
   box(3.2,.5,.6,"#8a5a3a",0,.25,-.25); box(3.4,.06,.7,"#6b4a2e",0,.53,-.25); /* the counter (the people here are small) */
   const cam=new T.PerspectiveCamera(40,innerWidth/innerHeight,.1,40); cam.position.set(0,.98,2.3); cam.lookAt(0,.62,-1.2); return {s,cam}; }
-function ivOpen(k,open){ ivClose(true); const K=KEEP[k]; const R=ivBuild(k); IV.scene=R.s; IV.cam=R.cam; IV.k=k; IV.t=0; IV.avs=[]; const n=K.ppl.length;
-  K.ppl.forEach((P,i)=>{ const x=n>1?(i-(n-1)/2)*1.1:0, z=-1.05; const look=sanitizeLook(P.look.slice()); const av=new Avatar(look,{npc:true,x,z,r:0}); av.isMe=true; try{ av.setLook(look); }finally{ av.isMe=false; } av.moveSpeed=0; av.rotY=0; av.faceGoal=0; bodyShape(av,P.sh); try{ if(av.label) av.label.visible=false; if(av.nameTag) av.nameTag.visible=false; }catch(e){}
+function ivOpen(k,open){ ivClose(true); const K=KEEP[k]; const R=ivBuild(k); IV.scene=R.s; IV.cam=R.cam; IV.k=k; IV.t=0; IV.avs=[]; const n=K.ppl.length; if(n>1){ IV.cam.position.z+=.55; IV.cam.position.y+=.06; IV.cam.lookAt(0,.62,-1.2); } /* (two people: step back so both fit on a phone) */
+  K.ppl.forEach((P,i)=>{ const x=n>1?(i-(n-1)/2)*.62:0, z=-1.05; const look=sanitizeLook(P.look.slice()); const av=new Avatar(look,{npc:true,x,z,r:0}); av.isMe=true; try{ av.setLook(look); }finally{ av.isMe=false; } av.moveSpeed=0; av.rotY=0; av.faceGoal=0; bodyShape(av,P.sh); try{ if(av.label) av.label.visible=false; if(av.nameTag) av.nameTag.visible=false; }catch(e){}
     scene.remove(av.root); IV.scene.add(av.root); av.root.position.set(x,0,z); av._P=P;
     if(P.rod){ const r=new T.Mesh(new T.CylinderGeometry(.012,.02,1.3,6),new T.MeshStandardMaterial({color:"#6b4a2e",roughness:.6})); r.position.set(0,-.3,.35); r.rotation.x=1.1; av.arms[1].add(r); } IV.avs.push(av); });
   KS[k]={avs:IV.avs,sp:{x:meAv.pos.x,z:meAv.pos.y,ry:0},t:0,mode:K.mode,last:0,busy:true,inside:1};
-  window.MZ_VIEW={scene:IV.scene,cam:IV.cam}; document.body.classList.add("hideui");
+  window.MZ_VIEW={scene:IV.scene,cam:IV.cam}; document.body.classList.add("inshop");
   const ui=document.createElement("div"); ui.id="ivUI"; ui.innerHTML=`<div id="ivBox" style="position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 12px);z-index:30;background:rgba(255,252,246,.96);border:2px solid #c9a27a;border-radius:16px;padding:10px 14px;box-shadow:0 6px 18px rgba(80,40,10,.25);color:#3b2416;font:700 16px/1.6 ${UI_FONT};min-height:52px"><b id="ivName" style="color:#8e1c14;font-size:14px"></b><div id="ivText"></div></div><button class="secondary" id="ivX" style="position:fixed;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);z-index:30">🚪 離開</button>`;
   document.body.appendChild(ui); ui.querySelector("#ivX").onclick=()=>{ closeSheet(); ivClose(); };
   IV.open=open; IV.opened=false; IV.idle=0; return K; }
 function ivClose(quiet){ if(!IV.scene) return; IV.avs.forEach(av=>{ try{ IV.scene.remove(av.root); av.dispose&&av.dispose(); }catch(e){} }); IV.scene.traverse(o=>{ if(o.geometry) o.geometry.dispose(); if(o.material&&o.material.dispose) o.material.dispose(); }); if(KS[IV.k]) delete KS[IV.k];
-  IV.scene=null; IV.cam=null; IV.avs=[]; window.MZ_VIEW=null; document.body.classList.remove("hideui"); const u=document.getElementById("ivUI"); if(u) u.remove(); }
+  IV.scene=null; IV.cam=null; IV.avs=[]; window.MZ_VIEW=null; document.body.classList.remove("inshop"); const u=document.getElementById("ivUI"); if(u) u.remove(); }
 function ivLine(who,text){ const K=KEEP[IV.k]; if(!K) return; text=text.replace(/@NAME/g,me.name||"你"); const nm=who===-1?K.ppl.map(p=>p.n).join("、"):K.ppl[who].n; const N=document.getElementById("ivName"), X=document.getElementById("ivText"); if(N) N.textContent=nm; if(X) X.textContent="";
   let i=0; const iv=setInterval(()=>{ if(!X||!X.isConnected){ clearInterval(iv); return; } i++; X.textContent=text.slice(0,i); if(i>=text.length) clearInterval(iv); },38);
   (who===-1?IV.avs:[IV.avs[who]]).forEach((av,j)=>{ const V=KV[(av._P||{}).v]||KV.man, ex=/[！!]/.test(text), q=/[？?]$/.test(text); setTimeout(()=>{ try{ babble(Math.min(2.6,.4+text.length*.08/V.r),V.p*(ex?1.12:1)); if(q){ const f=420*V.p; setTimeout(()=>{ try{ tone(f,.12,.06,"triangle"); tone(f*1.3,.14,.06,"triangle",.1); }catch(e){} },Math.min(2400,text.length*70)); } }catch(e){} },j*60); }); }
@@ -703,11 +703,11 @@ L.keeper=(k,open)=>{ const K=KEEP[k]; if(!K) return false; if(IV.scene&&IV.k===k
   ivOpen(k,open); const go=()=>{ if(IV.opened) return; IV.opened=true; try{ (K.go||(()=>open&&open()))(); }catch(e){ console.warn(e); } };
   const S=KS[k]; const full=Date.now()-(K._last||0)>180e3; K._last=Date.now(); let lines=full?(K.fights?[...K.fights[(Math.random()*K.fights.length)|0],...K.end]:K.lines):K.quick; const openAt=full&&K.openAt!=null?K.openAt:lines.length;
   try{ const A=KA(k), t=A.a>=60?3:A.a>=30?2:A.a>=10?1:0; if(t&&GOSSIP[k]&&Math.random()<.45) lines=lines.concat([[0,GOSSIP[k][t-1][0].replace(/^[^：]+：「?/,"").replace(/」?（.*）$|」$/,"")]]); }catch(e){}
-  let i=0; const next=()=>{ if(!IV.scene||IV.k!==k) return; if(i===openAt) go(); if(i>=lines.length){ S.busy=false; S.mode=K.mode==="doze"?"idle":K.mode; go(); return; } const [w,text]=lines[i++];
-    if(w==="wake"){ S.mode="wake"; S.t=0; try{ tone(880,.08,.06,"square"); }catch(e){} setTimeout(next,700); return; } if(K.mode==="argue"&&w>=0) S.spk=w; ivLine(w,text); setTimeout(next,Math.min(3600,1000+text.length*95)); };
+  let i=0; const next=()=>{ if(!IV.scene||IV.k!==k) return; if(i===openAt) go(); if(i>=lines.length){ S.busy=false; S.mode=(K.mode==="doze"||S.inv)?"idle":K.mode; go(); return; } const [w,text]=lines[i++];
+    if(w==="wake"){ S.mode="wake"; S.t=0; try{ tone(880,.08,.06,"square"); }catch(e){} setTimeout(next,700); return; } if(K.mode==="argue"&&w>=0) S.spk=w; if(w===-1||/幫忙|要不要/.test(text)){ S.mode="idle"; S.inv=1; } /* (asking you: everyone turns to look at you) */ ivLine(w,text); setTimeout(next,Math.min(3600,1000+text.length*95)); };
   setTimeout(next,450); return true; };
 /* leave the shop when nothing is open any more */
-L.tick6=dt=>{ try{ keepTick(dt); if(IV.scene){ const busy=!!sheetKind||document.querySelector(".lf-ov"); if(IV.opened&&!busy){ IV.idle+=dt; if(IV.idle>.6) ivClose(); } else IV.idle=0; } }catch(e){ console.warn("shop view",e); } if(L.tick7) L.tick7(dt); };
+L.tick6=dt=>{ try{ keepTick(dt); if(IV.scene){ const busy=!!sheetKind||document.querySelector(".lf-ov"); { const x=document.getElementById("ivX"); if(x) x.style.display=busy?"none":""; } /* (the panel has its own 關閉; leaving it closes the shop too) */ if(IV.opened&&!busy){ IV.idle+=dt; if(IV.idle>.6) ivClose(); } else IV.idle=0; } }catch(e){ console.warn("shop view",e); } if(L.tick7) L.tick7(dt); };
 
 /* ---------- 元氣早餐店：疊漢堡 (11/14) — the 擠冰淇淋 rules: the next layer swings left and right above the stack, tap to drop it; land it
    over the layer below or it slides off and the game ends. A bun at the bottom, a bun on top (it goes on by itself when you stop, or when
@@ -872,11 +872,11 @@ function congeeGame(){ const G=gOverlay("🥣 記菜單","linear-gradient(#fff4e
 L.luck=()=>{ const d=LF(); return d.lkD===today()?Math.min(50,d.lk|0):0; };
 HANDLERS.lfEatCongee=()=>{ const d=LF(); if(!(d.cg>0)) return; d.cg--; if(d.lkD!==today()){ d.lkD=today(); d.lk=0; } d.lk=Math.min(50,(d.lk|0)+10); save(); try{ [523,659,784].forEach((f,i)=>tone(f,.1,.05,"triangle",i*.08)); }catch(e){} toast(`🥣 熱呼呼的鹹粥！今天的幸運 ${d.lk}`,2600); try{ openBag(); }catch(e){} };
 
-/* ---------- 🌿 中藥行：分類藥材 — 陳伯 can't read the labels any more: each herb comes up on the tray, tap the drawer with its name.
+/* ---------- 🌿 中藥行：分類藥材 — 許伯 can't read the labels any more: each herb comes up on the tray, tap the drawer with its name.
    20 herbs, 45 s, at most 3 mistakes. Winning gives a 大還丹 (eat it: 精力上限 +1, up to 200); after 100 of them, money or a 藥材包. ---------- */
 const HERB=[["renshen","人參"],["gouqi","枸杞"],["hongzao","紅棗"],["huangqi","黃耆"],["danggui","當歸"],["gancao","甘草"],["chenpi","陳皮"],["juhua","菊花"],["rougui","肉桂"],["lianzi","蓮子"],["fuling","茯苓"],["guiyuan","桂圓"],["shengjiang","生薑"],["jinyinhua","金銀花"]];
 const PACKS=[["pk_duck","當歸鴨藥材包"],["pk_siwu","四物湯藥材包"],["pk_lu","滷味藥材包"],["pk_beef","牛肉麵滷包"]];
-GL["tw:herb"]=()=>{ const d=LF(); openSheet("lfHerb2","🌿 中藥行",`<p class="lead">陳伯：「年輕人，我眼睛看不太清楚，你能不能幫我把一樣的藥材配成對呢？」</p><p class="note">翻兩張一樣的就配成一對，60 秒內全部配完就成功。${(d.dht|0)<100?`成功會拿到一顆大還丹（已經吃了 ${d.dht|0} 顆）。`:"大還丹你已經吃滿了，陳伯改送別的。"}</p><div class="row"><button class="primary" data-act="lfHerbGo">幫忙分類</button><button class="secondary" data-act="lfRank" data-v="herb">今日排名</button></div>`); };
+GL["tw:herb"]=()=>{ const d=LF(); openSheet("lfHerb2","🌿 中藥行",`<p class="lead">許伯：「年輕人，我眼睛看不太清楚，你能不能幫我把一樣的藥材配成對呢？」</p><p class="note">翻兩張一樣的就配成一對，60 秒內全部配完就成功。${(d.dht|0)<100?`成功會拿到一顆大還丹（已經吃了 ${d.dht|0} 顆）。`:"大還丹你已經吃滿了，許伯改送別的。"}</p><div class="row"><button class="primary" data-act="lfHerbGo">幫忙分類</button><button class="secondary" data-act="lfRank" data-v="herb">今日排名</button></div>`); };
 HANDLERS.lfHerbGo=()=>{ closeSheet(); herbPairs(); };
 /* 中藥對對碰 (11/14, the chair: a pairs game, not naming): 16 cards face down, 8 kinds of herb; turn two, the same herb stays open.
    All pairs within 60 s wins (the fewer misses, the higher the score). */
@@ -889,8 +889,8 @@ function herbPairs(){ const G=gOverlay("🌿 中藥對對碰","linear-gradient(#
       else { S.miss++; S.lock=true; draw(); setTimeout(()=>{ a.open=b2.open=0; S.lock=false; draw(); },650); return; } } draw(); };
   let last=performance.now(); const tick=now=>{ if(!G.ov.isConnected||S.done) return; S.t-=Math.min(.1,(now-last)/1000); last=now; const el=B.querySelector("#hpT"); if(el) el.textContent="⏱ "+Math.max(0,Math.ceil(S.t)); if(S.t<=0) return end(false); requestAnimationFrame(tick); }; requestAnimationFrame(tick);
   const end=win=>{ if(S.done) return; S.done=1; setTimeout(()=>{ G.close(); const d=LF(), paid=gamePaid("herb",5), score=win?Math.max(10,100+Math.round(S.t)*2-S.miss*4):S.pairs*8; let txt="";
-    if(win&&paid){ if((d.dht|0)+(d.dhtI|0)<100){ d.dhtI=(d.dhtI|0)+1; txt="陳伯：「好孩子，這顆大還丹給你。」（在背包裡，吃了精力上限 +1）"; } else if(Math.random()<.5){ const c=150+((Math.random()*4)|0)*50; bag.coins+=c; txt=`陳伯塞給你 ${c} 平安幣。`; } else { const P=PACKS[(Math.random()*PACKS.length)|0]; d.pk=d.pk||{}; d.pk[P[0]]=(d.pk[P[0]]|0)+1; txt=`陳伯送你一包「${P[1]}」，可以帶回家煮。`; } }
-    else if(win) txt="今天幫夠多了，陳伯說明天再來（每天前 5 次有謝禮）。"; else txt="時間到了，還差一點點！"; save();
+    if(win&&paid){ if((d.dht|0)+(d.dhtI|0)<100){ d.dhtI=(d.dhtI|0)+1; txt="許伯：「好孩子，這顆大還丹給你。」（在背包裡，吃了精力上限 +1）"; } else if(Math.random()<.5){ const c=150+((Math.random()*4)|0)*50; bag.coins+=c; txt=`許伯塞給你 ${c} 平安幣。`; } else { const P=PACKS[(Math.random()*PACKS.length)|0]; d.pk=d.pk||{}; d.pk[P[0]]=(d.pk[P[0]]|0)+1; txt=`許伯送你一包「${P[1]}」，可以帶回家煮。`; } }
+    else if(win) txt="今天幫夠多了，許伯說明天再來（每天前 5 次有謝禮）。"; else txt="時間到了，還差一點點！"; save();
     rankPost("herb",score).then(j=>openSheet("lfHerb3","🌿 中藥對對碰",`<p class="lead">${win?"全部配對完成！":`配對了 ${S.pairs} / 8`}（失誤 ${S.miss}，${score} 分）。${txt}</p>${rankHtml("herb",j,1)}<div class="row"><button class="primary" data-act="lfHerbGo">再玩一次</button></div>`)); },win?700:200); }; draw(); }
 
 function herbSort(){ const G=gOverlay("🌿 分類藥材","linear-gradient(#f3e6cc,#d9bf94)"), B=G.B; const S={n:0,ok:0,bad:0,t:45,cur:null,sel:[]};
@@ -902,8 +902,8 @@ function herbSort(){ const G=gOverlay("🌿 分類藥材","linear-gradient(#f3e6
   B.onclick=e=>{ const b=e.target.closest("[data-h]"); if(!b||!S.cur) return; const good=b.dataset.h===S.cur[0]; good?S.ok++:S.bad++; try{ good?tone(880,.06,.05,"triangle"):tone(200,.2,.05,"sawtooth"); }catch(e){} b.style.background=good?"#4c9a6a":"#c0392b"; S.cur=null; setTimeout(nextHerb,good?160:500); };
   let last=performance.now(); const tick=now=>{ if(!G.ov.isConnected||S.done) return; S.t-=Math.min(.1,(now-last)/1000); last=now; const sp=B.querySelector("span"); if(sp) sp.textContent="⏱ "+Math.max(0,Math.ceil(S.t)); if(S.t<=0){ end(); return; } requestAnimationFrame(tick); }; requestAnimationFrame(tick);
   const end=()=>{ if(S.done) return; S.done=1; G.close(); const d=LF(), win=S.ok>=17&&S.bad<=3, paid=gamePaid("herb",5), score=S.ok*10+Math.max(0,Math.round(S.t))*2-S.bad*5; let txt="";
-    if(win&&paid){ if((d.dht|0)+(d.dhtI|0)<100){ d.dhtI=(d.dhtI|0)+1; txt="陳伯：「好孩子，這顆大還丹給你。」（在背包裡，吃了精力上限 +1）"; } else if(Math.random()<.5){ const c=150+((Math.random()*4)|0)*50; bag.coins+=c; txt=`陳伯塞給你 ${c} 平安幣。`; } else { const P=PACKS[(Math.random()*PACKS.length)|0]; d.pk=d.pk||{}; d.pk[P[0]]=(d.pk[P[0]]|0)+1; txt=`陳伯送你一包「${P[1]}」，可以帶回家煮。`; } }
-    else if(win) txt="今天幫夠多了，陳伯說明天再來（每天前 5 次有謝禮）。"; else txt=S.bad>3?"放錯太多了，陳伯皺著眉頭重新整理……":"時間到了，還差一點點！"; save();
+    if(win&&paid){ if((d.dht|0)+(d.dhtI|0)<100){ d.dhtI=(d.dhtI|0)+1; txt="許伯：「好孩子，這顆大還丹給你。」（在背包裡，吃了精力上限 +1）"; } else if(Math.random()<.5){ const c=150+((Math.random()*4)|0)*50; bag.coins+=c; txt=`許伯塞給你 ${c} 平安幣。`; } else { const P=PACKS[(Math.random()*PACKS.length)|0]; d.pk=d.pk||{}; d.pk[P[0]]=(d.pk[P[0]]|0)+1; txt=`許伯送你一包「${P[1]}」，可以帶回家煮。`; } }
+    else if(win) txt="今天幫夠多了，許伯說明天再來（每天前 5 次有謝禮）。"; else txt=S.bad>3?"放錯太多了，許伯皺著眉頭重新整理……":"時間到了，還差一點點！"; save();
     rankPost("herb",Math.max(0,score)).then(j=>openSheet("lfHerb3","🌿 中藥行",`<p class="lead">分對 ${S.ok} 樣、錯 ${S.bad} 次（${Math.max(0,score)} 分）。${txt}</p>${rankHtml("herb",j,1)}<div class="row"><button class="primary" data-act="lfHerbGo">再幫一次</button></div>`)); };
   nextHerb(); }
 HANDLERS.lfEatDht=()=>{ const d=LF(); if(!(d.dhtI>0)) return; if((d.dht|0)>=100){ toast("大還丹已經吃滿了",2000); return; } d.dhtI--; d.dht=(d.dht|0)+1; bag.en=Math.min(enMax(),bag.en+1); save(); try{ [523,784,1047,1568].forEach((f,i)=>tone(f,.14,.05,"triangle",i*.09)); }catch(e){} toast(`💊 大還丹！精力上限變成 ${enMax()}`,2800); try{ openBag(); }catch(e){} };
@@ -1044,9 +1044,9 @@ function iceGame(){ /* 11/14 (the chair, after softserve.nog.cc): the nozzle abo
 { const E0=L.bagEntries, A0=L.bagActs, I0=L.bic; const EM={g_dht:"💊",g_cg:"🥣",g_rcp:"📕",g_spd:"👟"}; PACKS.forEach(p=>EM["g_"+p[0]]="🧧");
   L.bic=(k,cls)=>{ const id=k.slice(3); if(EM[id]) return `<span class="bic ${cls||""}" style="display:flex;align-items:center;justify-content:center;font-size:34px;background:none">${EM[id]}</span>`; return I0(k,cls); };
   L.bagEntries=(out,tab)=>{ E0(out,tab); if(tab!=="all"&&tab!=="goods") return; const d=LF();
-    if(d.dhtI>0) out.push({id:"lf:g_dht",ic:"lf_g_dht",n:d.dhtI,name:"大還丹",desc:`中藥行陳伯給的。吃了精力上限永久 +1（已經吃了 ${d.dht|0} / 100 顆，上限 ${enMax()}）。`});
+    if(d.dhtI>0) out.push({id:"lf:g_dht",ic:"lf_g_dht",n:d.dhtI,name:"大還丹",desc:`中藥行許伯給的。吃了精力上限永久 +1（已經吃了 ${d.dht|0} / 100 顆，上限 ${enMax()}）。`});
     if(d.cg>0) out.push({id:"lf:g_cg",ic:"lf_g_cg",n:d.cg,name:"鹹粥",desc:`一粥七天的鹹粥。吃了今天會比較幸運（現在 ${L.luck()}，最多 50），釣魚比較容易遇到稀有的魚。`});
-    PACKS.forEach(p=>{ const n=d.pk&&d.pk[p[0]]; if(n>0) out.push({id:"lf:g_"+p[0],ic:"lf_g_"+p[0],n,name:p[1],desc:"中藥行陳伯送的。之後可以帶回家煮成料理，自己吃或送給鎮上的人。"}); });
+    PACKS.forEach(p=>{ const n=d.pk&&d.pk[p[0]]; if(n>0) out.push({id:"lf:g_"+p[0],ic:"lf_g_"+p[0],n,name:p[1],desc:"中藥行許伯送的。之後可以帶回家煮成料理，自己吃或送給鎮上的人。"}); });
     if((d.rcp||[]).length) out.push({id:"lf:g_rcp",ic:"lf_g_rcp",n:d.rcp.length,name:"食譜",desc:"書店老闆送的食譜："+d.rcp.join("、")+"。之後可以在家照著煮。"});
     if(d.spd>0) out.push({id:"lf:g_spd",ic:"lf_g_spd",name:"疾走之書",desc:`讀過以後走路永久變快（現在 +${d.spd}%，最多 15%）。`}); };
   L.bagActs=(k,e)=>k==="g_dht"?`<button class="chip" data-act="lfEatDht">吃一顆</button>`:k==="g_cg"?`<button class="chip" data-act="lfEatCongee">吃一碗</button>`:k.startsWith("g_")?"":A0(k,e); }
@@ -1107,8 +1107,8 @@ const isOpen=k=>{ const h=HOURS[k]; if(!h) return true; const t=twHour(); return
 const hrs=k=>{ const h=HOURS[k], f=v=>String(v%24).padStart(2,"0")+":00"; return `${f(h[0])}–${f(h[1])}`; };
 const GOSSIP={
  "tw:bfast":[["阿龍：「其實……我們每天吵，是因為她記性比我好，我不想輸啦。」"],["秀琴：「偷偷跟你說，阿龍年輕時追我，每天送我一份蘿蔔糕。」"],["兩個人一起：「你可以幫我們找一張『結婚那天』的照片嗎？聽說照相館阿光的爺爺有拍……」（隱藏任務）"]],
- "tw:herb":[["陳伯：「冰淇淋奶奶年輕的時候，可是鎮上最漂亮的姑娘。」"],["陳伯：「我年輕時常常去她的攤子買冰……一買就是五十年。」"],["陳伯：「我想送她一包桂圓，可是……你能幫我拿過去嗎？」（隱藏任務）"]],
- "tw:ice":[["奶奶：「中藥行的陳伯每天下午都來買一支香草的，從來不換口味。」"],["奶奶：「他以為我不知道他眼睛不好……其實我都幫他擠大支一點。」"],["奶奶：「我想吃他的藥膳，可是開不了口……」"]],
+ "tw:herb":[["許伯：「冰淇淋奶奶年輕的時候，可是鎮上最漂亮的姑娘。」"],["許伯：「我年輕時常常去她的攤子買冰……一買就是五十年。」"],["許伯：「我想送她一包桂圓，可是……你能幫我拿過去嗎？」（隱藏任務）"]],
+ "tw:ice":[["奶奶：「中藥行的許伯每天下午都來買一支香草的，從來不換口味。」"],["奶奶：「他以為我不知道他眼睛不好……其實我都幫他擠大支一點。」"],["奶奶：「我想吃他的藥膳，可是開不了口……」"]],
  "tw:drink":[["小安：「阿哲每天偷喝一杯全糖珍奶，然後說他在試新口味。」"],["阿哲：「小安喜歡書店的文雄老闆，每次都多送他一顆布丁。」"],["小安：「可以幫我送一杯烏龍奶茶給文雄老闆嗎？不要說是我送的！」（隱藏任務）"]],
  "tw:book":[["文雄：「書店裡最貴的書，是一本沒有名字的相簿，我一直在等它的主人。」"],["文雄：「照相館的阿光小時候常來看圖鑑，看到睡著。」"],["文雄：「那本相簿……好像是阿光爺爺寄放在這裡的。」（照相館隱藏線索）"]],
  "tw:photo":[["阿光：「爺爺說，奶奶最喜歡天后宮廟埕的燈籠。」"],["阿光：「書店的文雄老闆好像知道一些爺爺的事，可是他每次都說『時候還沒到』。」"],["阿光：「如果相簿拍滿五十張……爺爺說，最後一頁會告訴我一件事。」（相簿最後的秘密）"]],
@@ -1116,7 +1116,7 @@ const GOSSIP={
  "tw:beauty":[["Kevin：「花店的雅琪老師，是我國中時的家教老師。」"],["Kevin：「我開美容院，是因為她說過『你剪頭髮很有天分』。」"],["Kevin：「幫我想想，要怎麼跟她說謝謝比較好？」（隱藏任務）"]],
  "tw:tackle":[["阿財伯：「女神泉那裡，傳說有人釣到過金色的魚。」"],["阿財伯：「老王跟我年輕時比釣魚，比了三十年還沒分出勝負。」"],["阿財伯：「流星夜的海邊，會有平常看不到的魚……噓，別說是我講的。」"]],
  "tw:furn":[["美雲：「我會打瞌睡，是因為半夜都在做木工，送給鎮上的小朋友。」"],["美雲：「一粥七天的阿秀，是我小學同學，每天半夜我都去她那裡吃粥。」"],["美雲：「你房間要不要一張特別的椅子？我做給你。」（隱藏任務）"]],
- "tw:congee":[["阿秀：「家具行的美雲每天半夜一點來，一碗鹹粥不加芹菜。」"],["阿秀：「早餐店的阿龍和秀琴，其實是我介紹認識的。」"],["阿秀：「我的鹹粥秘方，是用陳伯的陳皮熬的高湯。」"]]};
+ "tw:congee":[["阿秀：「家具行的美雲每天半夜一點來，一碗鹹粥不加芹菜。」"],["阿秀：「早餐店的阿龍和秀琴，其實是我介紹認識的。」"],["阿秀：「我的鹹粥秘方，是用許伯的陳皮熬的高湯。」"]]};
 const KA=k=>{ const d=LF(); d.ka=d.ka||{}; return d.ka[k]=d.ka[k]||{a:0,d:0}; };
 /* (11/14: the hours and the gossip are handled when you walk into the shop — see 走進店裡) */
 
