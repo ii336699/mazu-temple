@@ -610,11 +610,11 @@ let GS=null;
 const GTX={}; function GTEX(id,st){ const k=id+"-"+st; if(!GTX[k]){ const t=new T.TextureLoader().load(MZIMG("garden/"+k+".webp")); t.encoding=T.sRGBEncoding; GTX[k]=t; } return GTX[k]; }
 function gardenOpen(){ if(!SHOPX||!SHOPX.enter) return; const S=new T.Scene(); S.background=new T.Color("#9fd4f5").convertSRGBToLinear(); S.add(new T.HemisphereLight("#fff6e0","#4a6a3a",.5)); const sun=new T.DirectionalLight("#fff2d8",.55); sun.position.set(4,8,5); S.add(sun);
   const M=(c,o)=>{ const m=new T.MeshStandardMaterial(Object.assign({color:c,roughness:.9},o||{})); m.color.convertSRGBToLinear(); return m; }; const add=(geo,m,x,y,z)=>{ const o=new T.Mesh(geo,m); o.position.set(x,y,z); S.add(o); return o; };
-  const grass=add(new T.PlaneGeometry(30,30),M("#8fd06a"),0,0,0); grass.rotation.x=-Math.PI/2;
+  const grass=add(new T.PlaneGeometry(30,30),M("#ffffff"),0,0,0); grass.rotation.x=-Math.PI/2; { const gt=new T.TextureLoader().load(MZIMG("garden/ground.webp")); gt.encoding=T.sRGBEncoding; gt.wrapS=gt.wrapT=T.RepeatWrapping; gt.repeat.set(2.4,2.4); grass.material.map=gt; } /* (11/14 晚上: the chair's soil picture) */
   /* 11/14 晚上 (the chair): inside you see only the lawn and the beds — no greenhouse frame, no shed, no trees. The beds are the chair's soil
      picture, and the plants are the chair's growth pictures (public/garden/<crop>-<stage>.webp), standing up facing you. */
   const soilT=new T.TextureLoader().load(MZIMG("garden/soil.webp")); soilT.encoding=T.sRGBEncoding; soilT.anisotropy=4;
-  for(let i=0;i<70;i++){ const a=Math.random()*6.283, d=7.2+Math.random()*7; const t=add(new T.ConeGeometry(.06,.22+Math.random()*.15,4),M(["#6fbf4a","#7fcf5a","#5aa840"][i%3]),Math.cos(a)*d,.1,Math.sin(a)*d); t.rotation.z=(Math.random()-.5)*.4; } /* a few grass tufts */
+  for(let i=0;i<0;i++){ const a=Math.random()*6.283, d=7.2+Math.random()*7; const t=add(new T.ConeGeometry(.06,.22+Math.random()*.15,4),M(["#6fbf4a","#7fcf5a","#5aa840"][i%3]),Math.cos(a)*d,.1,Math.sin(a)*d); t.rotation.z=(Math.random()-.5)*.4; } /* a few grass tufts */
   const beds=[]; for(let i=0;i<12;i++){ const cx=-3.9+(i%4)*2.6, cz=-2.6+Math.floor(i/4)*2.6; const soil=add(new T.BoxGeometry(2.1,.22,2.1),M("#8a6038"),cx,.11,cz); const tm=M("#ffffff"); tm.map=soilT; const top=add(new T.BoxGeometry(1.9,.04,1.9),tm,cx,.24,cz); const g=new T.Group(); g.position.set(cx,.26,cz); S.add(g); beds.push({cx,cz,soil,top,g}); }
   const cam=new T.PerspectiveCamera(40,1,.1,100); const o={exposure:1.0}; const el=SHOPX.enter("garden",o); const D=GD2(); let sel=-1;
   el.insertAdjacentHTML("beforeend",`<div class="shx-top"><span class="shx-title">🌱 我的花圃</span><span class="shx-pill" id="gC"></span><button class="shx-x" id="gX">離開</button></div><div class="shx-panel" id="gP"></div>`);
@@ -631,7 +631,7 @@ function gardenOpen(){ if(!SHOPX||!SHOPX.enter) return; const S=new T.Scene(); S
     const hv=$g("#gH"); if(hv) hv.onclick=()=>{ const n=b.s==="straw"||b.s==="tomato"?3:1; D.crop[b.s]=(D.crop[b.s]|0)+n; D.beds[sel]=null; save(); try{ [659,784,988].forEach((f,k)=>tone(f,.1,.05,"triangle",k*.07)); statInc("gdHarvest"); }catch(e){} toast(`收成了 ${n} 個${SB[b.s][1]}！`,2000); paint(); draw(); }; };
   const drops=[]; const splash=i=>{ const B=beds[i]; for(let k=0;k<10;k++){ const m=new T.Mesh(new T.SphereGeometry(.05,6,4),new T.MeshBasicMaterial({color:"#7ec8f0"})); m.position.set(B.cx+(Math.random()-.5)*1.4,1.6+Math.random()*.5,B.cz+(Math.random()-.5)*1.4); S.add(m); drops.push({m,v:0}); } };
   const paint=()=>{ const now=Date.now(); beds.forEach((B,i)=>{ while(B.g.children.length){ const c=B.g.children[0]; B.g.remove(c); if(!c.isSprite) c.geometry.dispose(); c.material.dispose(); } const b=D.beds[i]; grow(b,now); B.top.material.color.set(b&&b.w?"#9a8a80":"#ffffff").convertSRGBToLinear(); if(!b) return; const st=stage(b), S2=SB[b.s], col=S2[6];
-      const sp=new T.Sprite(new T.SpriteMaterial({map:GTEX(b.s,st),transparent:true,alphaTest:.3})); const sz=[.95,1.25,1.55,1.75][st]; sp.scale.set(sz,sz,1); sp.center.set(.5,.08); sp.position.set(0,.02,.15); B.g.add(sp); }); };
+      const sp=new T.Sprite(new T.SpriteMaterial({map:GTEX(b.s,st),transparent:true,alphaTest:.3})); const sz=[.95,1.25,1.55,1.75][st]; sp.scale.set(sz,sz,1); sp.center.set(.5,.3); sp.position.set(0,.02,0); /* (centred on the bed) */ B.g.add(sp); }); };
   paint(); draw();
   const ray=new T.Raycaster(), v2=new T.Vector2(); const tl=el.querySelector(".shx-touch"); let yaw=0, drag=null;
   tl.addEventListener("pointerdown",e=>{ drag={x:e.clientX,y0:yaw,mv:0}; }); tl.addEventListener("pointermove",e=>{ if(!drag) return; drag.mv=Math.max(drag.mv,Math.abs(e.clientX-drag.x)); if(drag.mv>8) yaw=Math.max(-.7,Math.min(.7,drag.y0-(e.clientX-drag.x)*.006)); });
@@ -660,7 +660,7 @@ const KEEP={
    lines:[[0,"嗯……嗯？"],[0,"年輕人，我眼睛看不太清楚，你能不能幫我一起分類這些藥材呢？"]],quick:[[0,"喔，是你啊，又來幫忙啦？"]]},
  "tw:book":{ppl:[{n:"文雄老闆",v:"man",look:[0,26,0,13,6,2,0,0,0,1,0,1,1,1],sh:{leg:1.14,tor:1.06,w:.9,d:.9,head:.98,arm:1.08}}],mode:"stuck",
    lines:[[0,"欸欸，等一下……"],[0,"最近書進貨太多了，我的書架亂七八糟，我都出不去了……能不能幫我一起整理一下呢？"]],quick:[[0,"書架又塞住了，拜託你啦！"]]},
- "tw:ice":{ppl:[{n:"冰淇淋奶奶",v:"oldw",look:[0,22,5,11,7,1,0,1,0,2,1,0,0,1],sh:{leg:.8,tor:.88,w:1.06,d:1.04,head:1.02,arm:.92}}],mode:"wave",spot:{x:38,z:-99.3,ry:0},
+ "tw:ice":{ppl:[{n:"冰淇淋奶奶",v:"oldw",look:[0,22,5,11,7,1,0,1,0,2,1,0,0,1],sh:{leg:.8,tor:.88,w:1.06,d:1.04,head:1.02,arm:.92}}],mode:"wave",
    lines:[[0,"小朋友，你要不要來試試看超巨～～～～～～～～～～大冰淇淋呀？加量不加價唷！"]],quick:[[0,"又來啦？今天也要擠得高高的喔！"]]},
  "tw:congee":{ppl:[{n:"玲姊",v:"woman",look:[1,14,1,11,3,2,2,0,0,3,1,0,0,2],sh:{leg:.9,tor:.96,w:1.14,d:1.1,head:1,arm:.98}},{n:"君君",v:"girl",look:[0,5,0,4,5,3,0,1,0,2,1,0,0,1],sh:{leg:1.04,tor:.98,w:.9,d:.9,head:1.02,arm:1}}],mode:"panic",
    lines:[[0,"糟糕了糟糕了……"],[1,"玲姊，三桌又在喊了啦！"],[-1,"@NAME！你能不能來幫我們記菜單？照分數給你錢喔！"]],quick:[[-1,"@NAME！又滿桌了，快來幫我們記！"]]},
