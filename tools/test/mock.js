@@ -68,11 +68,11 @@
   function newPhone(){ if(!confirm("模擬換一支新手機？\n這台的角色、背包會清掉，重新整理後輸入取回碼就能找回。")) return;
     try{ var ks=[]; for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); if(k&&k.indexOf("mz.")===0) ks.push(k); } ks.forEach(function(k){ localStorage.removeItem(k); }); }catch(e){}
     put("uid",Math.random().toString(16).slice(2,14)); location.reload(); }
-  addEventListener("DOMContentLoaded",function(){ var t=document.createElement("div"); t.textContent="🧪 單機測試版";
-    t.style.cssText="position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 4px);transform:translateX(-50%);z-index:30;font:600 10px/1 system-ui,sans-serif;color:#ffe9a8;background:rgba(80,20,10,.75);border:1px solid rgba(230,184,100,.5);border-radius:999px;padding:3px 8px;letter-spacing:.05em;cursor:pointer"; t.title="按一下：模擬換手機"; t.textContent+="・📱換手機"; t.style.whiteSpace="nowrap"; t.onclick=newPhone;
+  addEventListener("DOMContentLoaded",function(){ var t=document.createElement("div"); t.id="mzBadge"; t.textContent="🧪 單機測試版";
+    t.style.cssText="position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 42px);transform:translateX(-50%);z-index:30;font:600 10px/1 system-ui,sans-serif;color:#ffe9a8;background:rgba(80,20,10,.75);border:1px solid rgba(230,184,100,.5);border-radius:999px;padding:3px 8px;letter-spacing:.05em;cursor:pointer"; t.title="按一下：模擬換手機"; t.textContent+="・📱換手機"; t.style.whiteSpace="nowrap"; t.onclick=newPhone;
     document.body.appendChild(t);
     /* 測試用：一鍵進天后小鎮 */
-    var b=document.createElement("button"); b.id="mzTown"; b.textContent="🏮 去小鎮"; b.style.cssText="position:fixed;left:8px;top:calc(env(safe-area-inset-top,0px) + 118px);z-index:40;font:700 13px/1 system-ui,sans-serif;color:#fff;background:#b0241a;border:1px solid #ffd27a;border-radius:999px;padding:8px 12px;box-shadow:0 2px 6px rgba(0,0,0,.35)";
+    var b=document.createElement("button"); b.id="mzTown"; b.textContent="🏮 去小鎮"; b.style.cssText="position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 62px);z-index:40;font:700 12px/1 system-ui,sans-serif;color:#fff;background:#b0241a;border:1px solid #ffd27a;border-radius:999px;padding:5px 10px;box-shadow:0 2px 6px rgba(0,0,0,.35)"; /* (top middle, under the test badge: clear of the guide card, the worship buttons and the joystick on phones and computers) */
     b.onclick=function(){ if(window.MZ_GOTOWN) window.MZ_GOTOWN(); };
     document.body.appendChild(b); });
 })();

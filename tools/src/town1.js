@@ -147,7 +147,7 @@ function kbld(C,o){ const r=krng(o.seed||7), pick=a=>a[(r()*a.length)|0], g=new 
   else KW(g,w,H,d,wm,0,H/2,-d/2);
   for(let f=1;f<fl;f++) KB(g,w+.1,.16,.12,tm,0,f*FH,.04); KB(g,.16,H,.16,tm,-w/2+.06,H/2,.06); KB(g,.16,H,.16,tm,w/2-.06,H/2,.06);
   /* ground floor */ const gz=-A;
-  if(shop){ const ac=o.awn||pick(KP.awn); KB(g,w-.9,2.05,.08,winM(1),-.35,1.25,gz+.03); KB(g,w-.7,.12,.14,tm,-.35,2.32,gz+.06); const dx=w/2-.9; KB(g,1.0,2.25,.1,km(pick(KP.door)),dx,1.12,gz+.05);
+  if(shop){ const ac=o.awn||pick(KP.awn); KB(g,w-1.55,2.05,.08,winM(1),-.675,1.25,gz+.03); /* (the window stops before the door: the two used to overlap 3 cm apart and flickered on phones) */ KB(g,w-.7,.12,.14,tm,-.35,2.32,gz+.06); const dx=w/2-.9; KB(g,1.0,2.25,.1,km(pick(KP.door)),dx,1.12,gz+.05);
     if(!A){ const n=Math.max(3,Math.round(w/.6)); for(let i=0;i<n;i++) kp(g,kbox(),km(i%2?"#ffffff":ac),-w/2+(i+.5)*w/n,2.62,gz+.6,w/n+.01,.06,1.25,0,.38); KB(g,w,.12,.06,km(ac),0,2.4,gz+1.18); }
     if(o.name){ (TW.signs||(TW.signs={}))[o.name]={key:o.key,h:[+Math.min(w-.5,5.4).toFixed(2),.72],v:vsg?[.62,2.5]:null,arcade:!!A,fl}; /* (sizes, for the chair's sign pictures) */ /* 橫招 on the front, where the ground floor meets the first floor (Taiwan style), clear of the awning and the windows */ signPic(ksign(g,o.name,Math.min(w-.5,5.4),.72,0,A?FH+.42:3.3,A?.14:.16,0,o.sbg||ac,"#ffffff"),o.key,"h"); if(vsg) signPic(ksign(g,o.name,.62,2.5,w/2-.15,FH+1.25+.45,.72,Math.PI/2,o.sbg||ac,"#ffffff",true),o.key,"v"); }
     for(let k=0;k<2;k++) if(r()<.7) pot(g,-w/2+.45+k*.6,gz+.45,1,r); }
@@ -172,7 +172,7 @@ function kbld(C,o){ const r=krng(o.seed||7), pick=a=>a[(r()*a.length)|0], g=new 
   else if(roofK==="hip"){ kp(g,khip(),rm,0,H,-d/2,w+.7,2.0+r()*.8,d+.7); }
   else { const th=roofK==="tile"?1.5:2.2+r()*.9, along=r()<.5; /* ridge along the street or across it */
     if(along) kp(g,kprism(),rm,0,H,-d/2,w+.7,th,d+.7); else kp(g,kprism(),rm,0,H,-d/2,d+.7,th,w+.7,Math.PI/2);
-    if(roofK==="tile"){ if(along) KB(g,w+.9,.2,.24,km("#7a3a2e"),0,H+th,-d/2); else KB(g,.24,.2,d+.9,km("#7a3a2e"),0,H+th,-d/2); }
+    if(roofK==="tile"){ if(along) KB(g,.24,.2,d+.9,km("#7a3a2e"),0,H+th,-d/2); else KB(g,w+.9,.2,.24,km("#7a3a2e"),0,H+th,-d/2); } /* (the ridge cap lies on the ridge: the prism's ridge runs along its z — it used to lie across the roof, the 「奇怪的木條」 11/14) */
     if(r()<.5) KB(g,.55,1.6,.55,km(brick?"#a85a46":"#b9a48a"),w*.25,H+th*.6,-d*.7); }
   if(o.cat&&r()<.6) kp(g,ksph(),km(pick(["#f2a65a","#3a3a3a","#ffffff","#b0a090"])),w/2-.4,.2,gz+.5,.16,.14,.24);
   return g; }
@@ -218,7 +218,9 @@ const TOWNB=(()=>{ const out=[]; let sd=101;
 /* the gaps between the buildings of each row (position along the row): poles, lantern posts and lamps go there */
 const BND={}; { const by={}; TOWNB.forEach(b=>{ if(!b.deco) (by[b.row]||(by[b.row]=[])).push(b); }); for(const id in by){ const L=by[id].sort((p,q)=>p.c-q.c), out=[]; if(!L.length) continue; out.push(L[0].c-L[0].w/2-.25); for(let i=0;i<L.length-1;i++) out.push((L[i].c+L[i].w/2+L[i+1].c-L[i+1].w/2)/2); out.push(L[L.length-1].c+L[L.length-1].w/2+.25); BND[id]=out; } }
 const BUSED=new Set(), GAPM=new Map(); function gapNear(ids,v,lo,hi){ const ck=ids.join()+"|"+v+"|"+lo+"|"+hi; if(GAPM.has(ck)) return GAPM.get(ck); const res=gapNear0(ids,v,lo,hi); GAPM.set(ck,res); return res; } /* (the same answer when a district is built again) */
-function gapNear0(ids,v,lo,hi){ let best=null, bd=1e9; for(const id of ids) for(const p of BND[id]||[]){ if((lo!=null&&p<lo)||(hi!=null&&p>hi)) continue; const k=id+":"+p.toFixed(2); if(BUSED.has(k)) continue; const d=Math.abs(p-v); if(d<bd){ bd=d; best=[p,k]; } } if(!best) return v; BUSED.add(best[1]); return best[0]; }
+/* is x in front of a building of these rows (not in a gap)? — a lantern post stood in the middle of 一粥七天 (11/14) */
+function inB(ids,x){ return TOWNB.some(b=>!b.deco&&ids.includes(b.row)&&x>b.c-b.w/2+.15&&x<b.c+b.w/2-.15); }
+function gapNear0(ids,v,lo,hi){ let best=null, bd=1e9; for(const id of ids) for(const p of BND[id]||[]){ if((lo!=null&&p<lo)||(hi!=null&&p>hi)) continue; if(inB(ids,p)) continue; const k=id+":"+p.toFixed(2); if(BUSED.has(k)) continue; const d=Math.abs(p-v); if(d<bd){ bd=d; best=[p,k]; } } if(!best) return v; BUSED.add(best[1]); return best[0]; }
 /* the door of a building: [where you stand, where you tap] */
 const bDoor=b=>{ const fx=Math.sin(b.ry), fz=Math.cos(b.ry); return {ax:b.x+fx*1.4,az:b.z+fz*1.4,hx:b.x-fx*.6,hz:b.z-fz*.6,face:Math.atan2(-fx,-fz)}; };
 function rowBuild(C,ids,xr){ TOWNB.forEach(b=>{ if(!ids.includes(b.row)||(xr&&(b.x<xr[0]||b.x>=xr[1]))) return;
@@ -228,7 +230,7 @@ function rowBuild(C,ids,xr){ TOWNB.forEach(b=>{ if(!ids.includes(b.row)||(xr&&(b
 function oldStreetLife(C,x0,x1){ const g=new T.Group(); C.g.add(g); const glow=KM.lan||(KM.lan=new T.MeshStandardMaterial({color:"#e8402e",emissive:"#ff6a3a",emissiveIntensity:.4,roughness:.5}));
   /* (11/14) poles on the north curb and lantern posts on both curbs, all in the gaps between buildings */
   let prev=null; for(let x=x0+2;x<x1;x+=11){ const px=gapNear(["oN","oN2"],x,x0,x1); if(prev!=null&&px-prev<4) continue; pole(g,px,-74.3); if(prev!=null) wire(g,[prev+.4,-74.3],[px+.4,-74.3],6.8,.5); prev=px; }
-  for(let x=x0+6;x<x1-2;x+=12){ const nx=gapNear(["oN","oN2"],x,x0,x1), sx=gapNear(["oS"],nx,x0,x1); if(Math.abs(nx-sx)>3.5) continue; kp(g,kcyl(),km("#6b4a2e"),nx,3,-74.2,.07,6,.07); kp(g,kcyl(),km("#6b4a2e"),sx,3,-79.8,.07,6,.07); lanternLine(g,[nx,-74.2],[sx,-79.8],5.6,6,glow); }
+  for(let x=x0+6;x<x1-2;x+=12){ const nx=gapNear(["oN","oN2"],x,x0,x1), sx=gapNear(["oS"],nx,x0,x1); if(Math.abs(nx-sx)>3.5||inB(["oS"],sx)||inB(["oN","oN2"],nx)) continue; kp(g,kcyl(),km("#6b4a2e"),nx,3,-74.2,.07,6,.07); kp(g,kcyl(),km("#6b4a2e"),sx,3,-79.8,.07,6,.07); lanternLine(g,[nx,-74.2],[sx,-79.8],5.6,6,glow); }
   const r=krng(x0|0); TOWNB.forEach(b=>{ if(b.axis!=="x"||b.x<x0||b.x>x1||!b.arcade||!(b.row[0]==="o")) return; if(r()<.8){ const s=new T.Group(); s.position.set(b.x,0,b.z); s.rotation.y=b.ry; C.g.add(s); for(let k=0;k<1+(r()*3|0);k++) scooter(s,-b.w/2+1.2+k*.75,-.9,Math.PI/2+(r()-.5)*.3,r); } }); }
 /* ---- the districts: each knows its middle and its size; build(C) puts its things into C.g ---- */
 const CH=[
@@ -544,7 +546,7 @@ TW.station=k=>{ if(k.indexOf("tw:")!==0) return false; try{ if(typeof LIFE!=="un
   if(k==="tw:board"){ try{ DQ.open(); }catch(e){} return true; }
   if(k==="tw:home"){ try{ ROOMX.open(); }catch(e){} return true; }
   if(k==="tw:bus"){ openSheet("townBus","🚌 公車站",`<p class="lead">搭公車回天后宮，一下子就到廟埕。</p><div class="row"><button class="primary" data-act="twBus" data-v="temple">回天后宮廟埕</button><button class="secondary" data-act="twBus" data-v="inn">到禪房門口</button></div><p class="note">之後車站蓋好，這裡也會有去別的地方的車。</p>`); return true; }
-  if(k==="tw:furn"){ openSheet("townFurn","🪑 家具行",`<p class="lead">家具行的家具，在你家的「家具」分頁裡就能買，買了直接擺。</p><div class="row"><button class="primary" data-act="roomOpen">回我的房間看家具</button></div>`); return true; }
+  if(k==="tw:furn"){ try{ ROOMX.furnShop(); }catch(e){ console.warn(e); } return true; }
   try{ if(typeof LIFE!=="undefined"&&LIFE&&LIFE.station(k)) return true; }catch(e){ console.warn("life",e); }
   if(k==="tw:flower"){ toast("🌷 花店準備中：之後在這裡買種子，到河堤的社區花圃種",3200); return true; }
   if(k==="tw:tackle"){ toast("🎣 釣具行準備中：之後在這裡買釣竿和魚餌",3200); return true; }

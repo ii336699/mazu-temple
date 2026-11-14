@@ -4,6 +4,8 @@
    FISHGLB[id] is the only thing that has to be filled in. ================= */
 LIFE=(()=>{
 const L={};
+/* 主委測試模式 (11/14): only for the chair; nothing is saved — a reload turns it off. on: shops ignore their hours and games their daily limits; hour: the shop clock */
+const TM={on:false,hour:null}; L.TM=TM;
 const LF=()=>{ if(!bag.lf||typeof bag.lf!=="object") bag.lf={}; const d=bag.lf; d.fish=d.fish||{}; d.inv=Array.isArray(d.inv)?d.inv:[]; d.rod=d.rod|0; if(d.rod&&!d.rods) d.rods=d.rod>=2?0b1000011:1; /* (the first version had two rods) */ d.rods=d.rods|0; if(!Array.isArray(d.bait)||d.bait.length!==20) d.bait=Array(20).fill(0); return d; };
 const save=()=>{ try{ saveBag(); markDirty(); }catch(e){} };
 const sm=(a,b,v)=>{ const t=Math.max(0,Math.min(1,(v-a)/(b-a))); return t*t*(3-2*t); };
@@ -434,7 +436,18 @@ function bodyShape(av,P){ if(!P) return; const L=P.leg||1, Tt=P.tor||1, W=P.w||1
   av.arms.forEach((a,i)=>{ a.position.x*=W; a.position.y*=Tt; a.children.slice().forEach(c=>{ if(av.hands.includes(c)||!big(c)){ c.position.y*=A; c.position.x*=TH; } else { c.scale.y*=A; c.scale.x*=TH; c.scale.z*=TH; c.position.y*=A; } }); });
   if(av.amulet){ av.amulet.position.y*=Tt; av.amulet.position.z*=D; }
   av.head.position.y*=Tt; av.head.scale.setScalar(Hd); }
-function npcMake(n){ const look=sanitizeLook(n.look.slice()); const av=new Avatar(look,{npc:true,x:n.home[0],z:n.home[1]}); av.isMe=true; try{ av.setLook(look); }finally{ av.isMe=false; } av.setName(n.n); av.moveSpeed=n.sp;
+/* townsfolk faces: no two-dot (nostril) or pig noses — they read as two dots on the small faces (主委 11/14) */
+function npcLook(l){ const o=sanitizeLook(l.slice()); if(o[13]===8||o[13]===5) o[13]=1; return o; }
+/* an older face (wrinkles, eye bags, smile lines, white eyebrows) drawn over the usual face, and pure white hair — 許伯 (主委 11/14) */
+function agedFace(av,look,o){ try{ o=o||{}; const hm=av.head&&av.head.children.find(q=>q.isMesh); if(hm&&o.old){ const base=faceTexture(look).image, W=base.width, H=base.height; const tex=cvs(W,H,x=>{ x.drawImage(base,0,0); x.scale(W/512,H/256); const cx=128, ey=140; x.lineCap="round";
+    x.strokeStyle="rgba(110,64,40,.5)"; x.lineWidth=2.2; for(let i=0;i<3;i++){ x.beginPath(); x.moveTo(cx-30+i*3,ey-44-i*9); x.quadraticCurveTo(cx,ey-50-i*9,cx+30-i*3,ey-44-i*9); x.stroke(); }
+    for(const s of [-1,1]){ for(let i=0;i<3;i++){ x.beginPath(); x.moveTo(cx+s*50,ey-6+i*6); x.lineTo(cx+s*60,ey-9+i*8); x.stroke(); }
+      x.beginPath(); x.moveTo(cx+s*30,ey+10); x.quadraticCurveTo(cx+s*24,ey+15,cx+s*16,ey+12); x.stroke();
+      x.beginPath(); x.moveTo(cx+s*15,ey+16); x.quadraticCurveTo(cx+s*24,ey+30,cx+s*20,ey+44); x.stroke(); }
+    x.strokeStyle="#f4f2ec"; x.lineWidth=7; for(const s of [-1,1]){ x.beginPath(); x.moveTo(cx+s*13,ey-22); x.quadraticCurveTo(cx+s*26,ey-30,cx+s*40,ey-20); x.stroke(); } });
+    hm.material=new T.MeshStandardMaterial({map:tex,roughness:.7}); }
+  if(o.white){ const hc=new T.Color(HAIRC[look[2]]); av.root.traverse(q=>{ if(q.isMesh&&q!==hm&&q.material&&q.material.color&&q.material.color.equals(hc)){ q.material=q.material.clone(); q.material.color.set("#fbfaf7"); q.material.emissive&&q.material.emissive.set("#3a3a38"); } }); } }catch(e){ console.warn("agedFace",e); } }
+function npcMake(n){ const look=npcLook(n.look); const av=new Avatar(look,{npc:true,x:n.home[0],z:n.home[1]}); av.isMe=true; try{ av.setLook(look); }finally{ av.isMe=false; } av.setName(n.n); av.moveSpeed=n.sp;
   const M=c=>new T.MeshStandardMaterial({color:c,roughness:.7});
   if(n.cane){ const c=new T.Mesh(new T.CylinderGeometry(.018,.018,.75,6),M("#6b4a2e")); c.position.set(0,-.55,.06); av.arms[1].add(c); }
   if(n.apron){ const a=new T.Mesh(new T.CylinderGeometry(.215,.25,.46,20,1,true,-1.05,2.1),new T.MeshStandardMaterial({color:"#f2e6c8",roughness:.8,side:T.DoubleSide})); a.position.set(0,.16,0); av.torso.add(a); } /* (an apron that wraps round the front, not a board) */
@@ -613,14 +626,14 @@ const KEEP={
      [[1,"豆漿是溫的還是冰的啦？"],[0,"單子上寫『溫』！妳寫的字只有妳自己看得懂！"]],[[0,"鐵板麵要黑胡椒還是蘑菇？"],[1,"兩個都要！他剛剛講過三次了啦！"]],[[1,"你又把奶茶做成全糖！"],[0,"單子上畫一個圈，誰知道是全糖還是無糖！"]],
      [[0,"蛋餅要加起司還是玉米？"],[1,"起司玉米！起司玉米！我喊到喉嚨都啞了！"]],[[1,"外帶的袋子又不夠了啦！"],[0,"昨天叫妳叫貨，妳說『好好好』！"]]],
    end:[[-1,"你！要不要來幫忙！？當然我們會給你報酬！"]],quick:[[-1,"來來來，幫忙疊漢堡！"]]},
- "tw:herb":{ppl:[{n:"許伯",v:"oldm",look:[0,18,5,0,1,0,0,7,0,1,0,1,0,1],sh:{leg:.86,tor:.92,w:.96,d:.96,head:1,arm:.94},hunch:.18}],mode:"squint",
+ "tw:herb":{ppl:[{n:"許伯",v:"oldm",old:1,white:1,look:[0,18,5,0,1,0,0,7,0,1,0,1,0,1],sh:{leg:.86,tor:.92,w:.96,d:.96,head:1,arm:.94},hunch:.18}],mode:"squint",
    lines:[[0,"嗯……嗯？"],[0,"年輕人，我眼睛看不太清楚，你能不能幫我一起分類這些藥材呢？"]],quick:[[0,"喔，是你啊，又來幫忙啦？"]]},
  "tw:book":{ppl:[{n:"文雄老闆",v:"man",look:[0,26,0,13,6,2,0,0,0,1,0,1,1,1],sh:{leg:1.14,tor:1.06,w:.9,d:.9,head:.98,arm:1.08}}],mode:"stuck",
    lines:[[0,"欸欸，等一下……"],[0,"最近書進貨太多了，我的書架亂七八糟，我都出不去了……能不能幫我一起整理一下呢？"]],quick:[[0,"書架又塞住了，拜託你啦！"]]},
  "tw:ice":{ppl:[{n:"冰淇淋奶奶",v:"oldw",look:[0,22,5,11,7,1,0,1,0,2,1,0,0,1],sh:{leg:.8,tor:.88,w:1.06,d:1.04,head:1.02,arm:.92}}],mode:"wave",spot:{x:38,z:-99.3,ry:0},
    lines:[[0,"小朋友，你要不要來試試看超巨～～～～～～～～～～大冰淇淋呀？加量不加價唷！"]],quick:[[0,"又來啦？今天也要擠得高高的喔！"]]},
- "tw:congee":{ppl:[{n:"阿秀姨",v:"woman",look:[1,14,1,11,3,2,2,0,0,3,1,0,0,2],sh:{leg:.9,tor:.96,w:1.14,d:1.1,head:1,arm:.98}}],mode:"panic",
-   lines:[[0,"糟糕了糟糕了……"],[0,"一忙就記不住大家的菜單怎麼辦……@NAME，你能不能來幫幫我？"]],quick:[[0,"@NAME！又滿桌了，快來幫我記！"]]},
+ "tw:congee":{ppl:[{n:"玲姊",v:"woman",look:[1,14,1,11,3,2,2,0,0,3,1,0,0,2],sh:{leg:.9,tor:.96,w:1.14,d:1.1,head:1,arm:.98}},{n:"君君",v:"girl",look:[0,5,0,4,5,3,0,1,0,2,1,0,0,1],sh:{leg:1.04,tor:.98,w:.9,d:.9,head:1.02,arm:1}}],mode:"panic",
+   lines:[[0,"糟糕了糟糕了……"],[1,"玲姊，三桌又在喊了啦！"],[-1,"@NAME！你能不能來幫我們記菜單？照分數給你錢喔！"]],quick:[[-1,"@NAME！又滿桌了，快來幫我們記！"]]},
  "tw:flower":{ppl:[{n:"雅琪老師",v:"woman",look:[0,23,0,14,7,3,15,15,1,4,1,3,0,2],sh:{leg:1.12,tor:1.04,w:.88,d:.88,head:.98,arm:1.06}}],mode:"grace",
    lines:[[0,"你是要來學插花的嗎？請進。"]],quick:[[0,"歡迎，今天的花很漂亮喔。"]]},
  "tw:drink":{ppl:[{n:"小安",v:"girl",look:[0,5,11,3,5,3,4,2,0,3,0,0,0,1],sh:{leg:1.02,tor:.98,w:.92,d:.92,head:1.04,arm:1}},{n:"阿哲",v:"boy",look:[1,25,0,3,5,3,4,1,0,2,0,6,0,1],sh:{leg:1.08,tor:1.02,w:1,d:.98,head:1,arm:1.02}}],mode:"cheer",
@@ -631,7 +644,7 @@ const KEEP={
 const KS={}; /* the keepers standing at their shops: key → {avs, spot, t, mode, until, last} */
 function keepSpot(k){ const K=KEEP[k]; if(K.spot) return K.spot; const b=TOWNX&&TOWNX.bOf?TOWNX.bOf(k):null; if(!b) return null; const fx=Math.sin(b.ry), fz=Math.cos(b.ry); return {x:b.x+fx*.35,z:b.z+fz*.35,ry:b.ry,fx,fz,shop:1}; }
 function keepMake(k){ const K=KEEP[k], sp=keepSpot(k); if(!sp) return null; const n=K.ppl.length, px=Math.cos(sp.ry), pz=-Math.sin(sp.ry), avs=[];
-  K.ppl.forEach((P,i)=>{ const off=n>1?(i-(n-1)/2)*1.1:0, x=sp.x+px*off, z=sp.z+pz*off; const look=sanitizeLook(P.look.slice()); const av=new Avatar(look,{npc:true,x,z,r:sp.ry}); av.isMe=true; try{ av.setLook(look); }finally{ av.isMe=false; } av.setName(P.n); av.moveSpeed=0; av.rotY=sp.ry; av.faceGoal=sp.ry; bodyShape(av,P.sh);
+  K.ppl.forEach((P,i)=>{ const off=n>1?(i-(n-1)/2)*1.1:0, x=sp.x+px*off, z=sp.z+pz*off; const look=npcLook(P.look); const av=new Avatar(look,{npc:true,x,z,r:sp.ry}); av.isMe=true; try{ av.setLook(look); }finally{ av.isMe=false; } av.setName(P.n); av.moveSpeed=0; av.rotY=sp.ry; av.faceGoal=sp.ry; bodyShape(av,P.sh);
     if(P.rod){ const r=new T.Mesh(new T.CylinderGeometry(.012,.02,1.3,6),new T.MeshStandardMaterial({color:"#6b4a2e",roughness:.6})); r.position.set(0,-.3,.35); r.rotation.x=1.1; av.arms[1].add(r); }
     av._P=P; avs.push(av); });
   /* the counter in front of them (shops only) */ let ctr=null; if(sp.shop){ ctr=new T.Mesh(new T.BoxGeometry(Math.max(1.3,n*1.2),.92,.42),new T.MeshStandardMaterial({color:"#8a5a3a",roughness:.7})); ctr.position.set(sp.x+sp.fx*.62,.46,sp.z+sp.fz*.62); ctr.rotation.y=sp.ry; scene.add(ctr); }
@@ -668,7 +681,27 @@ function keepTick(dt){ const p=meAv.pos; for(const k in KS){ const S=KS[k]; if(M
         default: H.rotation.x=Math.sin(t*.6)*.04; } });
     if(S.mode!=="argue") S.avs.forEach(av=>{ if(!av._out) av.root.rotation.y=S.sp.ry; }); } }
 /* spawn the keepers of shops near you (so the street looks lived in) */
-L.keepers=()=>KS; L.rodModel=rodModel;
+L.keepers=()=>KS;
+/* ---------- 🧪 主委測試模式: one page with everything to try in the latest version. Add a section here with every new version. ---------- */
+const TP_SHOPS=[["tw:bfast","元氣早餐店"],["tw:congee","一粥七天"],["tw:herb","中藥行"],["tw:tackle","釣具行"],["tw:furn","家具行"],["tw:book","書店"],["tw:drink","飲料店"],["tw:flower","花店"],["tw:photo","照相館"],["tw:beauty","美容院"],["tw:ice","擠冰淇淋"]];
+L.testPanel=()=>{ if(!me.sp) return; const b=(act,v,t,cls)=>`<button class="${cls||"secondary"}" style="flex:none;width:auto;min-height:0;padding:8px 12px;font-size:14px;margin:3px" data-act="${act}" data-v="${v}">${t}</button>`;
+  const hr=TM.hour, hrs=[-1,6,9,12,15,18,21,0,3];
+  openSheet("tmode","🧪 測試模式",`<p class="lead">只有主委看得到。重新整理就會關掉，不會存檔。</p>
+   <div class="row" style="margin:6px 0">${b("tmOn",TM.on?0:1,TM.on?"✅ 測試模式開著（點一下關）":"⬜ 開啟測試模式",TM.on?"primary":"secondary")}</div>
+   <p class="note">開著時：店家不管營業時間都能進、小遊戲沒有每日次數限制。關掉時主委也跟一般玩家一樣。</p>
+   <h4 style="margin:10px 0 4px">店家時鐘（決定開不開門）</h4><div>${hrs.map(h=>b("tmHour",h,h<0?"真實時間":h+" 點",(h<0&&hr==null)||h===hr?"primary":"secondary")).join("")}</div>
+   <p class="note">現在：${hr==null?"真實時間":hr+" 點"}。各店營業時間：${Object.keys(HOURS).map(k=>`${(TP_SHOPS.find(q=>q[0]===k)||[0,k])[1]} ${hrs_(k)}`).join("、")}</p>
+   <h4 style="margin:10px 0 4px">傳送／進店</h4><div>${b("tmGo","town","🏮 小鎮鎮口")}${b("tmGo","zen","🧘 禪房裡（測走出來會不會卡）")}${b("tmGo","temple","⛩️ 廟前")}</div><div>${TP_SHOPS.map(([k,n])=>b("tmShop",k,n)).join("")}</div>
+   <h4 style="margin:10px 0 4px">直接玩（不用找店）</h4><div>${[["tw:bfast","🍔 疊漢堡"],["tw:ice","🍦 冰淇淋"],["tw:herb","🌿 中藥對對碰"],["tw:congee","🥣 記菜單"],["tw:drink","🧋 調飲料"],["tw:book","📚 推書櫃"],["tw:flower","💐 插花"]].map(([k,n])=>b("tmGame",k,n)).join("")}</div>
+   <h4 style="margin:10px 0 4px">這次改版（11/14）</h4><div>${b("tmRods",1,"🎣 拿到全部 12 支釣竿")}${b("tmRain",1,"🧧 撒紅包＋假人來搶")}</div>`); };
+const hrs_=k=>{ try{ return hrs(k); }catch(e){ return ""; } };
+HANDLERS.tmOn=v=>{ TM.on=v==="1"; toast(TM.on?"🧪 測試模式開啟":"測試模式關閉",1600); L.testPanel(); };
+HANDLERS.tmHour=v=>{ const h=+v; TM.hour=h<0?null:h; L.testPanel(); };
+HANDLERS.tmGo=v=>{ closeSheet(); const P={town:[28,-62],zen:[-30,-28],temple:[0,30]}[v]; if(P){ meAv.pos.set(P[0],P[1]); meAv.target.set(P[0],P[1]); meAv.path=[]; } };
+HANDLERS.tmShop=v=>{ closeSheet(); const b=TOWNX&&TOWNX.bOf&&TOWNX.bOf(v); if(b){ const fx=b.x+Math.sin(b.ry)*2.2, fz=b.z+Math.cos(b.ry)*2.2; meAv.pos.set(fx,fz); meAv.target.set(fx,fz); meAv.path=[]; } setTimeout(()=>{ try{ openStation(v); }catch(e){ console.warn(e); } },b?900:50); };
+HANDLERS.tmGame=v=>{ closeSheet(); try{ GL[v](); }catch(e){ console.warn(e); toast("這個遊戲還打不開",1800); } };
+HANDLERS.tmRain=()=>{ closeSheet(); try{ hbStart({id:"test"+Date.now(),seed:(Math.random()*1e9)|0,n:24,x:meAv.pos.x,z:meAv.pos.y,at:Date.now()}); }catch(e){ console.warn(e); } };
+HANDLERS.tmRods=()=>{ const d=LF(); d.rods=4095; save(); toast("🎣 12 支釣竿都給你了，到釣具行或水邊換著試",2600); }; L.rodModel=rodModel;
 /* ---------- 走進店裡 (11/14, the chair: tapping the door changes the scene to inside the shop, then the window opens): a small room of its
    own — floor, walls, shelves in the shop's colours, a counter — with the shop's people behind the counter doing their thing; their
    lines come up in a box at the top, each with its babbling voice; then the shop's panel or game opens over it. Leaving (or closing
@@ -684,7 +717,7 @@ function ivBuild(k){ const C=ROOMC[k]||["#8a6a4a","#efe4d0",["#ccc"]], s=new T.S
   box(3.2,.5,.6,"#8a5a3a",0,.25,-.25); box(3.4,.06,.7,"#6b4a2e",0,.53,-.25); /* the counter (the people here are small) */
   const cam=new T.PerspectiveCamera(40,innerWidth/innerHeight,.1,40); cam.position.set(0,.98,2.3); cam.lookAt(0,.62,-1.2); return {s,cam}; }
 function ivOpen(k,open){ ivClose(true); const K=KEEP[k]; const R=ivBuild(k); IV.scene=R.s; IV.cam=R.cam; IV.k=k; IV.t=0; IV.avs=[]; const n=K.ppl.length; if(n>1){ IV.cam.position.z+=.55; IV.cam.position.y+=.06; IV.cam.lookAt(0,.62,-1.2); } /* (two people: step back so both fit on a phone) */
-  K.ppl.forEach((P,i)=>{ const x=n>1?(i-(n-1)/2)*.62:0, z=-1.05; const look=sanitizeLook(P.look.slice()); const av=new Avatar(look,{npc:true,x,z,r:0}); av.isMe=true; try{ av.setLook(look); }finally{ av.isMe=false; } av.moveSpeed=0; av.rotY=0; av.faceGoal=0; bodyShape(av,P.sh); try{ if(av.label) av.label.visible=false; if(av.nameTag) av.nameTag.visible=false; }catch(e){}
+  K.ppl.forEach((P,i)=>{ const x=n>1?(i-(n-1)/2)*.62:0, z=-1.05; const look=npcLook(P.look); const av=new Avatar(look,{npc:true,x,z,r:0}); av.isMe=true; try{ av.setLook(look); }finally{ av.isMe=false; } av.moveSpeed=0; av.rotY=0; av.faceGoal=0; bodyShape(av,P.sh); agedFace(av,look,P); try{ if(av.label) av.label.visible=false; if(av.nameTag) av.nameTag.visible=false; }catch(e){}
     scene.remove(av.root); IV.scene.add(av.root); av.root.position.set(x,0,z); av._P=P;
     if(P.rod){ const r=new T.Mesh(new T.CylinderGeometry(.012,.02,1.3,6),new T.MeshStandardMaterial({color:"#6b4a2e",roughness:.6})); r.position.set(0,-.3,.35); r.rotation.x=1.1; av.arms[1].add(r); } IV.avs.push(av); });
   KS[k]={avs:IV.avs,sp:{x:meAv.pos.x,z:meAv.pos.y,ry:0},t:0,mode:K.mode,last:0,busy:true,inside:1};
@@ -698,7 +731,7 @@ function ivLine(who,text){ const K=KEEP[IV.k]; if(!K) return; text=text.replace(
   let i=0; const iv=setInterval(()=>{ if(!X||!X.isConnected){ clearInterval(iv); return; } i++; X.textContent=text.slice(0,i); if(i>=text.length) clearInterval(iv); },38);
   (who===-1?IV.avs:[IV.avs[who]]).forEach((av,j)=>{ const V=KV[(av._P||{}).v]||KV.man, ex=/[！!]/.test(text), q=/[？?]$/.test(text); setTimeout(()=>{ try{ babble(Math.min(2.6,.4+text.length*.08/V.r),V.p*(ex?1.12:1)); if(q){ const f=420*V.p; setTimeout(()=>{ try{ tone(f,.12,.06,"triangle"); tone(f*1.3,.14,.06,"triangle",.1); }catch(e){} },Math.min(2400,text.length*70)); } }catch(e){} },j*60); }); }
 L.keeper=(k,open)=>{ const K=KEEP[k]; if(!K) return false; if(IV.scene&&IV.k===k){ open&&open(); return true; }
-  if(typeof isOpen==="function"&&!isOpen(k)&&!me.sp){ toast(`🕒 ${K.ppl.map(p=>p.n).join("和")}不在店裡（營業時間 ${hrs(k)}）`,3000); return true; }
+  if(typeof isOpen==="function"&&!isOpen(k)&&!TM.on){ toast(`🕒 ${K.ppl.map(p=>p.n).join("和")}不在店裡（營業時間 ${hrs(k)}）`,3000); return true; }
   try{ if(typeof KA==="function"){ const A=KA(k); if(A.d!==today()){ A.d=today(); A.a=Math.min(100,A.a+1); save(); } } }catch(e){}
   ivOpen(k,open); const go=()=>{ if(IV.opened) return; IV.opened=true; try{ (K.go||(()=>open&&open()))(); }catch(e){ console.warn(e); } };
   const S=KS[k]; const full=Date.now()-(K._last||0)>180e3; K._last=Date.now(); let lines=full?(K.fights?[...K.fights[(Math.random()*K.fights.length)|0],...K.end]:K.lines):K.quick; const openAt=full&&K.openAt!=null?K.openAt:lines.length;
@@ -810,9 +843,9 @@ const RK_UNIT={burger:"層",ice:"mm",drink:"分",congee:"分",herb:"分",book:"�
 function rankHtml(g,j,mine){ if(!j||!j.top) return `<p class="note">（排名暫時連不上）</p>`; return `<h4 style="margin:10px 0 4px">🏆 今日排名</h4>${j.top.length?`<div style="display:grid;grid-template-columns:2.2em 1fr auto;gap:3px 8px;font-size:14px">${j.top.slice(0,10).map((r,i)=>`<b>${["🥇","🥈","🥉"][i]||i+1}</b><span>${String(r[0]).replace(/[<>&]/g,"")}</span><span>${g==="ice"?(r[1]/10).toFixed(1)+" cm":r[1]+" "+RK_UNIT[g]}</span>`).join("")}</div>`:`<p class="note">今天還沒有人上榜，第一名就是你的！</p>`}${mine&&j.rank?`<p class="note">你今天最好 ${g==="ice"?(j.best/10).toFixed(1)+" cm":j.best+" "+RK_UNIT[g]}，目前第 ${j.rank} 名（共 ${j.n} 人）。</p>`:""}`; }
 HANDLERS.lfRank=async g=>{ const j=await rankGet(g); openSheet("lfRank","🏆 今日排名",rankHtml(g,j)); };
 const GAME_DAY=()=>{ const d=LF(); if(!d.gday||d.gday.d!==today()) d.gday={d:today()}; return d.gday; }; /* (not d.gd: that is the garden) */ /* per-day counters for every game */
-const gamePaid=(k,max)=>{ const G=GAME_DAY(); G[k]=(G[k]||0)+1; return me.sp||G[k]<=max; };
+const gamePaid=(k,max)=>{ const G=GAME_DAY(); G[k]=(G[k]||0)+1; return TM.on||G[k]<=max; }; /* (主委 only skips the daily limit in 測試模式) */
 function gOverlay(title,bg){ const ov=document.createElement("div"); ov.className="lf-ov"; ov.style.cssText=`position:fixed;inset:0;z-index:9000;background:${bg||"rgba(20,14,10,.86)"};touch-action:none;user-select:none;-webkit-user-select:none`;
-  ov.innerHTML=`<div style="position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 12px);text-align:center;color:${bg&&/#f|#e|#d/.test(bg)?"#7a3a1a":"#ffe2a0"};text-shadow:0 1px 0 rgba(255,255,255,.6);font:900 20px ${UI_FONT};pointer-events:none">${title}</div><button class="lf-x" id="gX">離開</button><div id="gB" style="position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 48px);bottom:0;display:flex;flex-direction:column;align-items:center"></div>`;
+  ov.innerHTML=`<div style="position:absolute;z-index:3;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 12px);text-align:center;color:${bg&&/#f|#e|#d/.test(bg)?"#7a3a1a":"#ffe2a0"};text-shadow:0 1px 0 rgba(255,255,255,.6);font:900 20px ${UI_FONT};pointer-events:none">${title}</div><button class="lf-x" id="gX">離開</button><div id="gB" style="position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 48px);bottom:0;display:flex;flex-direction:column;align-items:center"></div>`;
   document.body.appendChild(ov); window.MZ_NO3D=1; const close=()=>{ window.MZ_NO3D=0; ov.remove(); }; ov.querySelector("#gX").onclick=()=>{ ov._quit=1; close(); }; return {ov,B:ov.querySelector("#gB"),close}; }
 const GL=L.games||(L.games={});
 
@@ -823,34 +856,75 @@ const DRK=[["珍珠奶茶",[["珍珠",.16,"#3a2416"],["紅茶",.62,"#a4512a"],["
  ["烏龍奶茶",[["烏龍茶",.62,"#a86a2a"],["奶",.9,"#e9d6bc"]]],["芋頭鮮奶",[["芋泥",.26,"#b59ad0"],["鮮奶",.9,"#f4ece0"]]],["紅茶拿鐵",[["紅茶",.5,"#a4512a"],["鮮奶",.9,"#efe0cc"]]],["青蛙撞奶",[["粉圓",.2,"#2a2018"],["鮮奶",.9,"#f4ece0"]]],
  ["柳橙綠茶",[["柳橙汁",.42,"#f5a03a"],["綠茶",.88,"#c9c86a"]]],["葡萄柚綠",[["葡萄柚",.4,"#ef7a6a"],["綠茶",.88,"#c9c86a"]]],["鐵觀音拿鐵",[["鐵觀音",.55,"#7a4a22"],["鮮奶",.9,"#e9dcc6"]]],["仙草凍奶茶",[["仙草凍",.22,"#1e1a14"],["紅茶",.64,"#a4512a"],["奶",.9,"#e8d2b6"]]],
  ["布丁奶茶",[["布丁",.2,"#f2c84a"],["奶茶",.88,"#c99a6a"]]],["椰果奶茶",[["椰果",.18,"#f4f1e6"],["奶茶",.88,"#c99a6a"]]],["梅子綠茶",[["梅子汁",.24,"#b03a4a"],["綠茶",.88,"#c9c86a"]]],["甘蔗青茶",[["甘蔗汁",.4,"#d9cf7a"],["青茶",.88,"#b9c46a"]]],["檸檬愛玉",[["愛玉",.3,"#f2e8a0"],["檸檬汁",.5,"#f2e06a"],["冰水",.9,"#d8ecf4"]]]];
-GL["tw:drink"]=()=>{ openSheet("lfDrink","🧋 飲料店打工",`<p class="lead">小安：「按住出料，放開就停。每一層都要剛好倒到線上！」</p><p class="note">一班 3 杯，倒得越準薪水越多（每天前 5 班有薪水）。中途可能會加冰塊，水位會突然升高喔。</p><div class="row"><button class="primary" data-act="lfDrinkGo">上班！</button><button class="secondary" data-act="lfRank" data-v="drink">今日排名</button></div>`); };
+GL["tw:drink"]=()=>{ openSheet("lfDrink","🧋 飲料店打工",`<p class="lead">小安：「按住出料，放開就停。每一層都要剛好倒到線上！」</p><p class="note">一班 3 杯，每杯有時間限制。倒得越準薪水越多（每天前 5 班有薪水）。中途可能會加冰塊，水位會突然升高喔。</p><div class="row"><button class="primary" data-act="lfDrinkGo">上班！</button><button class="secondary" data-act="lfRank" data-v="drink">今日排名</button></div>`); };
 HANDLERS.lfDrinkGo=()=>{ closeSheet(); drinkGame(); };
-function drinkGame(){ const G=gOverlay("🧋 調飲料","linear-gradient(#ffe9d6,#ffd2b0)"), B=G.B; const cups=[0,1,2].map(()=>DRK[(Math.random()*DRK.length)|0]);
-  B.innerHTML=`<div id="dkT" style="color:#7a3a1a;font:900 18px ${UI_FONT};margin:6px">第 1 杯</div><canvas id="dkC" width="320" height="430" style="width:320px;height:430px"></canvas><button class="lf-btn" style="position:static;transform:none;margin-top:8px;width:150px;height:72px;border-radius:36px;font-size:20px" id="dkB">按住出料</button><div id="dkM" style="color:#7a3a1a;font:700 15px ${UI_FONT};margin-top:6px;min-height:22px"></div>`;
-  const cv=B.querySelector("#dkC"), x=cv.getContext("2d"); const S={ci:0,li:0,lv:0,pour:false,ice:0,iceAt:0,score:0,res:[],t:0,wait:0,drops:[]};
-  const setCup=()=>{ S.lv=0; S.li=0; S.ice=0; S.drops=[]; S.iceAt=Math.random()<.6?1+((Math.random()*(cups[S.ci][1].length-1))|0)+.5:99; S.layers=[]; B.querySelector("#dkT").textContent=`第 ${S.ci+1} 杯：${cups[S.ci][0]}`; }; setCup();
-  const btn=B.querySelector("#dkB"); const down=e=>{ e.preventDefault(); if(S.wait>0) return; S.pour=true; }, up=e=>{ e.preventDefault(); if(!S.pour) return; S.pour=false; judge(); };
-  btn.addEventListener("pointerdown",down); btn.addEventListener("pointerup",up); btn.addEventListener("pointerleave",up); btn.addEventListener("pointercancel",up);
-  const judge=()=>{ const st=cups[S.ci][1][S.li], err=Math.abs(S.lv-st[1]); const pts=err<.015?30:err<.04?20:err<.08?10:0; S.score+=pts; S.res.push(pts); B.querySelector("#dkM").textContent=pts>=30?"完美！":pts>=20?"很準！":pts>=10?"差一點":"差太多了…"; try{ tone(pts>=20?880:pts?660:220,.1,.05,pts?"triangle":"sawtooth"); }catch(e){}
-    S.li++; if(S.lv>=.99) S.li=99; if(S.li>=cups[S.ci][1].length){ S.wait=1.2; setTimeout(()=>{ S.ci++; if(S.ci>=3) return end(); setCup(); },1100); } };
-  const end=()=>{ G.close(); const paid=gamePaid("drink",5), pay=paid?Math.round(S.score*1.2):0; if(pay){ bag.coins+=pay; save(); try{ chaChing(); }catch(e){} } rankPost("drink",S.score).then(j=>openSheet("lfDrink2","🧋 下班了",`<p class="lead">三杯一共 ${S.score} 分。${paid?`薪水 ${pay} 平安幣。`:"今天的薪水已經領完了（每天前 5 班），謝謝幫忙～"}</p>${rankHtml("drink",j,1)}<div class="row"><button class="primary" data-act="lfDrinkGo">再上一班</button></div>`)); };
-  let last=performance.now(); const loop=now=>{ if(!G.ov.isConnected) return; const dt=Math.min(.05,(now-last)/1000); last=now; S.t+=dt; if(S.wait>0) S.wait-=dt;
-    const cup=cups[S.ci]; const L=S.layers;
-    if(cup&&S.pour&&S.li<cup[1].length){ const st=cup[1][S.li]; if(!L[S.li]) L[S.li]={c:st[2],from:S.lv,to:S.lv}; S.lv=Math.min(1.02,S.lv+dt*(.16+.05*S.ci)); L[S.li].to=S.lv; if(S.lv>=1.0){ S.pour=false; judge(); B.querySelector("#dkM").textContent="滿出來了！"; } }
-    if(cup&&!S.ice&&S.li+.5>=S.iceAt){ S.ice=1; S.lv=Math.min(1.02,S.lv+.07); const top=L.filter(Boolean).pop(); if(top) top.to=S.lv; S.drops=[0,1,2,3].map(k=>({y:-40-k*30,x:128+Math.random()*44})); try{ tone(1400,.05,.05,"square"); tone(1100,.05,.05,"square",.06); }catch(e){} B.querySelector("#dkM").textContent="🧊 加冰塊！水位變高了！"; }
-    x.clearRect(0,0,320,430); const cx=160, top=70, bot=400, w0=86, w1=66, Y=v=>bot-(bot-top)*v, W=v=>w1+(w0-w1)*v;
-    L.forEach((ly,k)=>{ if(!ly) return; const isTop=k===L.length-1; x.fillStyle=ly.c; x.beginPath(); x.moveTo(cx-W(ly.from),Y(ly.from)); x.lineTo(cx+W(ly.from),Y(ly.from)); x.lineTo(cx+W(ly.to),Y(ly.to)); for(let i=0;i<=20;i++){ const xx=cx+W(ly.to)-i/20*2*W(ly.to); x.lineTo(xx,Y(ly.to)+(isTop?Math.sin(S.t*6+i*.7)*(S.pour?2.5:1):0)); } x.closePath(); x.fill(); });
-    if(S.ice) S.drops.forEach(d=>{ d.y=Math.min(Y(S.lv)-10,d.y+dt*600); x.fillStyle="rgba(220,240,255,.85)"; x.strokeStyle="rgba(255,255,255,.95)"; x.lineWidth=2; x.fillRect(d.x,d.y,20,20); x.strokeRect(d.x,d.y,20,20); });
-    if(cup&&S.li<cup[1].length){ const st2=cup[1][S.li]; x.strokeStyle="#e8402e"; x.setLineDash([6,5]); x.lineWidth=2.5; x.beginPath(); x.moveTo(cx-W(st2[1])-8,Y(st2[1])); x.lineTo(cx+W(st2[1])+8,Y(st2[1])); x.stroke(); x.setLineDash([]); x.fillStyle="#7a3a1a"; x.font=`900 15px ${UI_FONT}`; x.textAlign="right"; x.fillText(st2[0],cx-W(st2[1])-10,Y(st2[1])+5);
-      if(S.pour){ x.fillStyle=st2[2]; x.fillRect(cx-5,34,10,Y(S.lv)-34); for(let i=0;i<4;i++){ x.beginPath(); x.arc(cx+Math.sin(S.t*20+i)*7,Y(S.lv)-2,3,0,7); x.fill(); } } }
-    x.strokeStyle="rgba(120,80,60,.9)"; x.lineWidth=3; x.beginPath(); x.moveTo(cx-w0-2,top-6); x.lineTo(cx-w1-2,bot+2); x.lineTo(cx+w1+2,bot+2); x.lineTo(cx+w0+2,top-6); x.stroke(); x.fillStyle="rgba(255,255,255,.2)"; x.fillRect(cx-w0+8,top,10,bot-top-10);
-    x.fillStyle="#9a6a4a"; x.fillRect(cx-30,0,60,26); x.fillStyle="#6a4a34"; x.fillRect(cx-8,26,16,10);
-    requestAnimationFrame(loop); }; requestAnimationFrame(loop); }
+function drinkGame(){ /* 11/14 (the chair): a 3D see-through cup. The liquid sloshes (two tilting modes + ripples from the stream), the stream keeps
+   landing for a moment after you let go, ice cubes drop in and push the level up and bob over the line, and each cup has a time limit —
+   you cannot read the level exactly the moment you let go; you judge by feel. Scored on the settled level. No physics library: a small
+   spring-and-wave model, cheap enough for phones. */
+  const G=gOverlay("🧋 調飲料","linear-gradient(#ffe2cc,#f2b48a)"), B=G.B; B.style.top="0"; const cups=[0,1,2].map(()=>DRK[(Math.random()*DRK.length)|0]);
+  B.innerHTML=`<canvas id="dkC" style="position:absolute;left:0;top:0;width:100%;height:76%"></canvas><div id="dkT" style="position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 46px);text-align:center;color:#7a3a1a;font:900 17px ${UI_FONT};pointer-events:none">第 1 杯</div>
+   <div id="dkBar" style="position:absolute;left:18%;right:18%;top:calc(env(safe-area-inset-top,0px) + 74px);height:8px;border-radius:4px;background:rgba(122,58,26,.18);pointer-events:none"><i id="dkBarI" style="display:block;height:100%;width:100%;border-radius:4px;background:#e8706a"></i></div>
+   <div style="position:absolute;left:0;right:0;bottom:0;height:24%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px"><div id="dkM" style="color:#7a3a1a;font:800 15px ${UI_FONT};min-height:22px"></div><button class="lf-btn" style="position:static;transform:none;width:170px;height:76px;border-radius:38px;font-size:20px;touch-action:none" id="dkB">按住出料</button></div>`;
+  const cv=B.querySelector("#dkC"); let R; try{ R=new T.WebGLRenderer({canvas:cv,alpha:true,antialias:true}); }catch(e){ G.close(); toast("這台裝置畫不出 3D 杯子",2000); return; }
+  const sc=new T.Scene(), cam=new T.PerspectiveCamera(34,1,.1,60); sc.add(new T.HemisphereLight("#fffaf2","#c9a888",1.0)); const dl=new T.DirectionalLight("#ffffff",.8); dl.position.set(3,6,5); sc.add(dl);
+  const fit=()=>{ const w=cv.clientWidth, h=cv.clientHeight; R.setPixelRatio(Math.min(2,devicePixelRatio||1)); R.setSize(w,h,false); cam.aspect=w/h; cam.fov=w/h<.75?40:32; cam.updateProjectionMatrix(); }; fit(); addEventListener("resize",fit);
+  cam.position.set(0,3.0,5.6); cam.lookAt(0,1.05,0);
+  const HC=2.2, RB=.6, RT=.82, rAt=y=>RB+(RT-RB)*Math.max(0,Math.min(1,y/HC)); const NA=48, NR=6;
+  /* the glass: inside and outside, see-through */ const gmat=new T.MeshStandardMaterial({color:"#eaf6ff",roughness:.08,metalness:0,transparent:true,opacity:.22,depthWrite:false,side:T.DoubleSide});
+  const glass=new T.Mesh(new T.CylinderGeometry(RT+.04,RB+.04,HC+.25,NA,1,true),gmat); glass.position.y=(HC+.25)/2-.02; glass.renderOrder=5; sc.add(glass);
+  const base=new T.Mesh(new T.CylinderGeometry(RB+.05,RB+.08,.12,NA),new T.MeshStandardMaterial({color:"#e8f2f8",roughness:.1,transparent:true,opacity:.45,depthWrite:false})); base.position.y=-.06; base.renderOrder=5; sc.add(base);
+  const lip=new T.Mesh(new T.TorusGeometry(RT+.04,.025,8,NA),new T.MeshStandardMaterial({color:"#ffffff",roughness:.1,transparent:true,opacity:.6})); lip.rotation.x=Math.PI/2; lip.position.y=HC+.23; sc.add(lip);
+  const shine=new T.Mesh(new T.PlaneGeometry(.08,HC*.9),new T.MeshBasicMaterial({color:"#ffffff",transparent:true,opacity:.35,depthWrite:false})); shine.position.set(-.5,HC*.5,.62); shine.rotation.y=-.5; shine.renderOrder=6; sc.add(shine);
+  /* the dispenser */ const steel=new T.MeshStandardMaterial({color:"#8a6a50",roughness:.5}); const head=new T.Mesh(new T.BoxGeometry(1.2,.35,.7),steel); head.position.y=HC+1.55; sc.add(head); const noz=new T.Mesh(new T.CylinderGeometry(.08,.1,.25,16),new T.MeshStandardMaterial({color:"#5a4030",roughness:.4})); noz.position.y=HC+1.25; sc.add(noz);
+  const stream=new T.Mesh(new T.CylinderGeometry(.055,.06,1,12),new T.MeshStandardMaterial({color:"#a4512a",roughness:.3})); stream.visible=false; sc.add(stream);
+  /* the target line, round the outside of the glass */ const line=new T.Mesh(new T.TorusGeometry(1,.012,6,NA),new T.MeshBasicMaterial({color:"#e8402e"})); line.rotation.x=Math.PI/2; sc.add(line);
+  const lab=document.createElement("div"); lab.style.cssText=`position:absolute;color:#c0392b;font:900 14px ${UI_FONT};pointer-events:none;white-space:nowrap;text-shadow:0 1px 0 #fff`; B.appendChild(lab);
+  /* liquid: finished layers are plain tapered pieces; the top layer has a moving surface and a wall that follows it */
+  const layersG=new T.Group(); sc.add(layersG);
+  const topWall=new T.BufferGeometry(); topWall.setAttribute("position",new T.BufferAttribute(new Float32Array((NA+1)*2*3),3)); { const ix=[]; for(let a=0;a<NA;a++){ const p=a*2; ix.push(p,p+2,p+1, p+1,p+2,p+3); } topWall.setIndex(ix); }
+  const surf=new T.BufferGeometry(); surf.setAttribute("position",new T.BufferAttribute(new Float32Array((1+NR*NA)*3),3)); { const ix=[]; for(let a=0;a<NA;a++){ const a1=(a+1)%NA; ix.push(0,1+a1,1+a); for(let r=0;r<NR-1;r++){ const p=1+r*NA+a, q=1+r*NA+a1, p2=p+NA, q2=q+NA; ix.push(p,q,p2, q,q2,p2); } } surf.setIndex(ix); }
+  const tMat=new T.MeshStandardMaterial({color:"#a4512a",roughness:.35,side:T.DoubleSide}), sMat=new T.MeshStandardMaterial({color:"#b86a40",roughness:.18,side:T.DoubleSide});
+  const wallM=new T.Mesh(topWall,tMat), surfM=new T.Mesh(surf,sMat); sc.add(wallM); sc.add(surfM);
+  const iceM=new T.MeshStandardMaterial({color:"#e8f6ff",roughness:.05,transparent:true,opacity:.62}); const iceG=new T.BoxGeometry(.32,.3,.32);
+  const S={ci:0,li:0,lv:0,pour:false,score:0,t:0,wait:0,tail:0,settle:0,ax:0,az:0,vx:0,vz:0,rip:[],ice:[],iceAt:99,cupT:0,cupMax:10,from:0};
+  const btn=B.querySelector("#dkB"), msg=t=>{ B.querySelector("#dkM").textContent=t; };
+  const layerMesh=(y0,y1,c)=>{ const m=new T.Mesh(new T.CylinderGeometry(rAt(y1)-.005,rAt(y0)-.005,Math.max(.001,y1-y0),NA,1,false),new T.MeshStandardMaterial({color:c,roughness:.35})); m.position.y=(y0+y1)/2; layersG.add(m); };
+  const setCup=()=>{ while(layersG.children.length){ const m=layersG.children.pop(); m.geometry.dispose(); m.material.dispose(); } S.ice.forEach(q=>sc.remove(q.m)); S.ice=[]; S.lv=0; S.li=0; S.from=0; S.ax=S.az=S.vx=S.vz=0; S.rip=[]; S.settle=0; S.tail=0;
+    const L=cups[S.ci][1]; S.cupMax=5+L.length*3.2; S.cupT=S.cupMax; S.iceAt=Math.random()<.7?((Math.random()*L.length)|0):99; S.iceDone=false; B.querySelector("#dkT").textContent=`第 ${S.ci+1} 杯：${cups[S.ci][0]}（${L.map(q=>q[0]).join(" → ")}）`; setLayer(); };
+  const setLayer=()=>{ const st=cups[S.ci][1][S.li]; if(!st) return; tMat.color.set(st[2]); sMat.color.set(st[2]).offsetHSL(0,0,.06); stream.material.color.set(st[2]); const y=st[1]*HC; line.scale.set(rAt(y)+.05,rAt(y)+.05,1); line.position.y=y; S.from=S.lv; };
+  const down=e=>{ e.preventDefault(); if(S.wait>0||S.settle>0||S.over) return; S.pour=true; try{ btn.setPointerCapture(e.pointerId); }catch(_){ } }, up=e=>{ e.preventDefault(); if(!S.pour) return; S.pour=false; S.tail=.22; S.settle=.9; msg("……"); };
+  btn.addEventListener("pointerdown",down); btn.addEventListener("pointerup",up); btn.addEventListener("pointercancel",up);
+  const judge=()=>{ const st=cups[S.ci][1][S.li], err=Math.abs(S.lv-st[1]); const pts=err<.015?30:err<.035?20:err<.07?10:0; S.score+=pts; msg(pts>=30?"完美！":pts>=20?"很準！":pts>=10?"差一點":(S.lv>st[1]?"太多了…":"太少了…")); try{ tone(pts>=20?880:pts?660:220,.1,.05,pts?"triangle":"sawtooth"); }catch(e){}
+    layerMesh(S.from*HC,S.lv*HC,cups[S.ci][1][S.li][2]); S.li++; if(S.lv>=.99) S.li=99; if(S.li>=cups[S.ci][1].length) nextCup(); else setLayer(); };
+  const nextCup=()=>{ S.wait=1.3; setTimeout(()=>{ S.ci++; if(S.ci>=3) return end(); setCup(); },1200); };
+  const end=()=>{ if(S.over) return; S.over=true; G.close(); const paid=gamePaid("drink",5), pay=paid?Math.round(S.score*1.2):0; if(pay){ bag.coins+=pay; save(); try{ chaChing(); }catch(e){} } rankPost("drink",S.score).then(j=>openSheet("lfDrink2","🧋 下班了",`<p class="lead">三杯一共 ${S.score} 分。${paid?`薪水 ${pay} 平安幣。`:"今天的薪水已經領完了（每天前 5 班），謝謝幫忙～"}</p>${rankHtml("drink",j,1)}<div class="row"><button class="primary" data-act="lfDrinkGo">再上一班</button></div>`)); };
+  const kick=(s)=>{ const a=Math.random()*6.283; S.vx+=Math.cos(a)*s; S.vz+=Math.sin(a)*s; };
+  const hAt=(x,z,t)=>{ let h=S.ax*x+S.az*z; for(const w of S.rip){ const d=Math.hypot(x-w.x,z-w.z), age=t-w.t0, fr=d-age*1.6; if(fr>0) continue; h+=w.a*Math.exp(-age*1.4)*Math.sin(fr*9)*Math.exp(fr*1.2); } return h; };
+  let last=performance.now(); const loop=now=>{ if(!G.ov.isConnected){ R.dispose(); try{ R.forceContextLoss(); }catch(e){} removeEventListener("resize",fit); lab.remove(); return; }
+    const dt=Math.min(.05,(now-last)/1000); last=now; S.t+=dt; if(S.wait>0) S.wait-=dt; const cup=cups[S.ci];
+    if(cup&&S.wait<=0&&!S.over){ S.cupT-=dt; const bi=B.querySelector("#dkBar>i"); if(bi){ bi.style.width=Math.max(0,S.cupT/S.cupMax*100)+"%"; bi.style.background=S.cupT<3?"#c0392b":"#e8706a"; }
+      if(S.cupT<=0&&S.li<cup[1].length){ S.pour=false; S.settle=0; msg("⏰ 時間到！客人等不及了"); try{ tone(240,.2,.05,"sawtooth"); }catch(e){} if(S.lv>S.from) layerMesh(S.from*HC,S.lv*HC,cup[1][S.li][2]); S.li=99; nextCup(); } }
+    const rate=.17+.05*S.ci, flowing=S.pour||S.tail>0;
+    if(cup&&flowing&&S.li<cup[1].length){ S.lv=Math.min(1.03,S.lv+dt*rate); if(S.tail>0) S.tail-=dt; kick(dt*2); if(Math.random()<dt*7) S.rip.push({x:(Math.random()-.5)*.08,z:(Math.random()-.5)*.08,t0:S.t,a:.05}); if(S.lv>=1.0){ S.pour=false; S.tail=0; S.settle=.4; msg("滿出來了！"); } }
+    if(S.settle>0&&S.tail<=0){ S.settle-=dt; if(S.settle<=0&&S.li<cup[1].length) judge(); }
+    /* ice drops in while you pour the chosen layer */ if(cup&&!S.iceDone&&S.li===S.iceAt&&S.lv>S.from+.08){ S.iceDone=true; const n=2+((Math.random()*3)|0); for(let k=0;k<n;k++){ const m=new T.Mesh(iceG,iceM); const a=Math.random()*6.283, r=Math.random()*.35; m.position.set(Math.cos(a)*r,HC+1.0+k*.35,Math.sin(a)*r); m.rotation.set(Math.random(),Math.random(),Math.random()); sc.add(m); S.ice.push({m,vy:0,in:false,ph:Math.random()*6}); } try{ tone(1400,.05,.05,"square"); tone(1100,.05,.05,"square",.06); }catch(e){} msg("🧊 加冰塊了！"); }
+    const ly=S.lv*HC; S.ice.forEach(q=>{ const m=q.m, sy=ly+hAt(m.position.x,m.position.z,S.t); if(!q.in){ q.vy-=dt*9; m.position.y+=q.vy*dt; if(m.position.y<sy+.05){ q.in=true; S.lv=Math.min(1.03,S.lv+.022); kick(.5); S.rip.push({x:m.position.x,z:m.position.z,t0:S.t,a:.07}); try{ tone(500+Math.random()*200,.05,.04,"triangle"); }catch(e){} } }
+      else { m.position.y+= (sy-.06+Math.sin(S.t*2.2+q.ph)*.025-m.position.y)*Math.min(1,dt*6); m.rotation.y+=dt*.3; } });
+    /* the slosh: two damped springs (tilt in x and z) */ const w2=70, damp=1.5; S.vx+=(-w2*S.ax-damp*S.vx)*dt; S.vz+=(-w2*S.az-damp*S.vz)*dt; S.ax+=S.vx*dt; S.az+=S.vz*dt; S.ax=Math.max(-.12,Math.min(.12,S.ax)); S.az=Math.max(-.12,Math.min(.12,S.az)); S.rip=S.rip.filter(w=>S.t-w.t0<3).slice(-14);
+    /* the moving top: surface and the wall under it */ const yb=S.from*HC, show=S.lv>S.from+.002&&S.li<(cup?cup[1].length:0); wallM.visible=surfM.visible=show;
+    if(show){ const P=surf.attributes.position.array, W=topWall.attributes.position.array; P[0]=0; P[1]=ly+hAt(0,0,S.t); P[2]=0;
+      for(let r=0;r<NR;r++) for(let a=0;a<NA;a++){ const ang=a/NA*6.283, rr=rAt(ly)*(r+1)/NR-.006, x=Math.cos(ang)*rr, z=Math.sin(ang)*rr, k=(1+r*NA+a)*3; P[k]=x; P[k+1]=ly+hAt(x,z,S.t); P[k+2]=z; }
+      for(let a=0;a<=NA;a++){ const ang=(a%NA)/NA*6.283, rT=rAt(ly)-.006, rB=rAt(yb)-.006, x=Math.cos(ang), z=Math.sin(ang), k=a*6; W[k]=x*rB; W[k+1]=yb; W[k+2]=z*rB; W[k+3]=x*rT; W[k+4]=ly+hAt(x*rT,z*rT,S.t); W[k+5]=z*rT; }
+      surf.attributes.position.needsUpdate=true; topWall.attributes.position.needsUpdate=true; surf.computeVertexNormals(); topWall.computeVertexNormals(); }
+    stream.visible=flowing&&S.li<(cup?cup[1].length:0); if(stream.visible){ const y0=HC+1.12, y1=ly; stream.scale.y=y0-y1; stream.position.y=(y0+y1)/2; }
+    /* the line's name, beside the glass */ if(cup&&S.li<cup[1].length){ const v=new T.Vector3(-(rAt(line.position.y)+.12),line.position.y,0).project(cam); lab.style.display=""; lab.textContent=cup[1][S.li][0]+" →"; lab.style.right=((1-(v.x*.5+.5))*cv.clientWidth+2)+"px"; lab.style.left="auto"; lab.style.top=((-v.y*.5+.5)*cv.clientHeight-9)+"px"; } else lab.style.display="none";
+    R.render(sc,cam); requestAnimationFrame(loop); }; setCup(); requestAnimationFrame(loop); }
 
 /* ---------- 🥣 一粥七天：記菜單 — a table is shown for 10 s, then set it again from memory; 3 tables, each harder ---------- */
 const CG_SIDES=["黃金蛋","鹹蜆仔","素雞","燙青菜","皮蛋豆腐","肝連","粉腸","三色蛋","鯊魚煙","蔥油雞","竹筍沙拉","鮮燙小卷","紹興醉蝦","蒜泥鮮蚵","炸豆腐","炸花枝丸","炸薯條","炸雞塊","炸黑輪","炸銀絲卷","府城蝦捲","炸紅燒肉","蚵仔酥","酥炸土魠魚","炸柳葉魚","魚蛋沙拉"];
 const CG_DRK=["阿嬤ㄟ酸梅湯","阿嬤ㄟ紅茶"], CG_SOUP=["虱目魚肚湯","魚丸湯","鮮蚵湯","鱸魚湯"];
-GL["tw:congee"]=()=>{ const d=LF(); openSheet("lfCongee","🥣 一粥七天",`<p class="lead">阿秀姨：「先看一眼桌上，10 秒後幫我把一模一樣的菜單點出來！三桌都對，送你三碗鹹粥！」</p><p class="note">要記：鹹粥有沒有加芹菜、有哪些小菜、有沒有飲料、有沒有湯。${(d.cg|0)?`<br>你背包裡有 ${d.cg} 碗鹹粥。`:""}</p><div class="row"><button class="primary" data-act="lfCgGo">開始</button><button class="secondary" data-act="lfRank" data-v="congee">今日排名</button></div>`); };
+GL["tw:congee"]=()=>{ const d=LF(); openSheet("lfCongee","🥣 一粥七天",`<p class="lead">玲姊：「先看一眼桌上，10 秒後幫我把一模一樣的菜單點出來！記得越準，給你越多錢。」君君：「三桌全對還送你三碗鹹粥！」</p><p class="note">要記：鹹粥有沒有加芹菜、有哪些小菜、有沒有飲料、有沒有湯。${(d.cg|0)?`<br>你背包裡有 ${d.cg} 碗鹹粥。`:""}</p><div class="row"><button class="primary" data-act="lfCgGo">開始</button><button class="secondary" data-act="lfRank" data-v="congee">今日排名</button></div>`); };
 HANDLERS.lfCgGo=()=>{ closeSheet(); congeeGame(); };
 function congeeGame(){ const G=gOverlay("🥣 記菜單","linear-gradient(#fff4e2,#f6dcb8)"), B=G.B; const S={k:0,score:0,ok:0};
   const mk=k=>{ const n=[3,5,7][k]; const sides=[...CG_SIDES].sort(()=>Math.random()-.5).slice(0,n); return {cel:Math.random()<.5,sides,drink:k>0&&Math.random()<.6?CG_DRK[(Math.random()*2)|0]:"",soup:k>0&&Math.random()<.55?CG_SOUP[(Math.random()*CG_SOUP.length)|0]:""}; };
@@ -864,8 +938,8 @@ function congeeGame(){ const G=gOverlay("🥣 記菜單","linear-gradient(#fff4e
     draw(); B.onclick=e=>{ const b=e.target.closest("[data-a]"); if(!b) return; const a=b.dataset.a, v=b.dataset.v; if(a==="cel") A.cel=v==="1"; else if(a==="side"){ A.sides.has(v)?A.sides.delete(v):A.sides.add(v); } else if(a==="drink") A.drink=v; else if(a==="soup") A.soup=v; else if(a==="ok"){ B.onclick=null; grade(A); return; } try{ tone(700,.03,.03,"triangle"); }catch(e){} draw(); }; };
   const grade=A=>{ const T=S.T; let good=0, all=0; all++; if(A.cel===T.cel) good++; T.sides.forEach(s=>{ all++; if(A.sides.has(s)) good++; }); A.sides.forEach(s=>{ if(!T.sides.includes(s)) good--; }); all++; if(A.drink===T.drink) good++; all++; if(A.soup===T.soup) good++; good=Math.max(0,good);
     const perfect=good===all; S.score+=Math.round(good/all*100*(1+S.k*.5)); if(perfect) S.ok++; try{ (perfect?[784,988,1175]:[440,330]).forEach((f,i)=>tone(f,.1,.05,"triangle",i*.08)); }catch(e){}
-    B.innerHTML=`<div style="margin-top:40px;color:#7a3a1a;font:900 22px ${UI_FONT}">${perfect?"全對！阿秀姨鬆了一口氣":`對了 ${good} / ${all}`}</div>`; S.k++; setTimeout(()=>{ if(!G.ov.isConnected) return; S.k<3?show():end(); },1300); };
-  const end=()=>{ G.close(); const d=LF(); const win=S.ok===3, paid=gamePaid("congee",5); let txt=""; if(win&&paid){ d.cg=(d.cg|0)+3; txt="三桌全對！阿秀姨送你三碗鹹粥（在背包，吃了會變幸運）。"; } else if(paid){ const c=S.ok*40; bag.coins+=c; txt=c?`對了 ${S.ok} 桌，阿秀姨塞給你 ${c} 平安幣。`:"沒關係，下次再來幫忙！"; } else txt="今天幫夠多了，謝謝你～（每天前 5 次有謝禮）"; save();
+    B.innerHTML=`<div style="margin-top:40px;color:#7a3a1a;font:900 22px ${UI_FONT}">${perfect?"全對！玲姊鬆了一口氣":`對了 ${good} / ${all}`}</div>`; S.k++; setTimeout(()=>{ if(!G.ov.isConnected) return; S.k<3?show():end(); },1300); };
+  const end=()=>{ G.close(); const d=LF(); const win=S.ok===3, paid=gamePaid("congee",5); let txt=""; if(paid){ const c=Math.round(S.score*.8); bag.coins+=c; txt=c?`玲姊照分數給你 ${c} 平安幣。`:"沒關係，下次再來幫忙！"; if(win){ d.cg=(d.cg|0)+3; txt+="三桌全對，君君再送你三碗鹹粥（在背包，吃了會變幸運）。"; } } else txt="今天幫夠多了，謝謝你～（每天前 5 次有謝禮）"; /* (pay by score, 主委 11/14: up to 450 分 → 360 幣) */ save();
     rankPost("congee",S.score).then(j=>openSheet("lfCongee2","🥣 一粥七天",`<p class="lead">${S.score} 分。${txt}</p>${rankHtml("congee",j,1)}<div class="row"><button class="primary" data-act="lfCgGo">再幫一次</button></div>`)); };
   show(); }
 /* 鹹粥: eat for 幸運 (today; up to 50) — fishing finds the rare ones more often, and the treasure hunt will too */
@@ -876,14 +950,18 @@ HANDLERS.lfEatCongee=()=>{ const d=LF(); if(!(d.cg>0)) return; d.cg--; if(d.lkD!
    20 herbs, 45 s, at most 3 mistakes. Winning gives a 大還丹 (eat it: 精力上限 +1, up to 200); after 100 of them, money or a 藥材包. ---------- */
 const HERB=[["renshen","人參"],["gouqi","枸杞"],["hongzao","紅棗"],["huangqi","黃耆"],["danggui","當歸"],["gancao","甘草"],["chenpi","陳皮"],["juhua","菊花"],["rougui","肉桂"],["lianzi","蓮子"],["fuling","茯苓"],["guiyuan","桂圓"],["shengjiang","生薑"],["jinyinhua","金銀花"]];
 const PACKS=[["pk_duck","當歸鴨藥材包"],["pk_siwu","四物湯藥材包"],["pk_lu","滷味藥材包"],["pk_beef","牛肉麵滷包"]];
-GL["tw:herb"]=()=>{ const d=LF(); openSheet("lfHerb2","🌿 中藥行",`<p class="lead">許伯：「年輕人，我眼睛看不太清楚，你能不能幫我把一樣的藥材配成對呢？」</p><p class="note">翻兩張一樣的就配成一對，60 秒內全部配完就成功。${(d.dht|0)<100?`成功會拿到一顆大還丹（已經吃了 ${d.dht|0} 顆）。`:"大還丹你已經吃滿了，許伯改送別的。"}</p><div class="row"><button class="primary" data-act="lfHerbGo">幫忙分類</button><button class="secondary" data-act="lfRank" data-v="herb">今日排名</button></div>`); };
+GL["tw:herb"]=()=>{ try{ herbLoad(HERB.map(h=>h[0])); }catch(e){} const d=LF(); openSheet("lfHerb2","🌿 中藥行",`<p class="lead">許伯：「年輕人，我眼睛看不太清楚，你能不能幫我把一樣的藥材配成對呢？」</p><p class="note">翻兩張一樣的就配成一對，60 秒內全部配完就成功。${(d.dht|0)<100?`成功會拿到一顆大還丹（已經吃了 ${d.dht|0} 顆）。`:"大還丹你已經吃滿了，許伯改送別的。"}</p><div class="row"><button class="primary" data-act="lfHerbGo">幫忙分類</button><button class="secondary" data-act="lfRank" data-v="herb">今日排名</button></div>`); };
+/* the herb pictures are loaded (and decoded) before the cards are dealt — a card used to turn over blank on a slow phone (11/14) */
+const HIMG={}; function herbLoad(ids){ return Promise.all(ids.map(id=>HIMG[id]||(HIMG[id]=new Promise(res=>{ const im=new Image(); im.onload=()=>{ (im.decode?im.decode():Promise.resolve()).catch(()=>{}).then(()=>res(im)); }; im.onerror=()=>{ delete HIMG[id]; res(null); }; im.src="herbs/"+id+".webp"; })))); }
 HANDLERS.lfHerbGo=()=>{ closeSheet(); herbPairs(); };
 /* 中藥對對碰 (11/14, the chair: a pairs game, not naming): 16 cards face down, 8 kinds of herb; turn two, the same herb stays open.
    All pairs within 60 s wins (the fewer misses, the higher the score). */
-function herbPairs(){ const G=gOverlay("🌿 中藥對對碰","linear-gradient(#f3e6cc,#d9bf94)"), B=G.B; const kinds=[...HERB].sort(()=>Math.random()-.5).slice(0,8); const cards=[...kinds,...kinds].sort(()=>Math.random()-.5).map(h=>({h,open:0,done:0}));
+function herbPairs(){ const G0=gOverlay("🌿 中藥對對碰","linear-gradient(#f3e6cc,#d9bf94)"); G0.B.innerHTML=`<div style="margin-top:40px;color:#5a3a1a;font:900 18px ${UI_FONT}">許伯在抓藥材…</div>`; const kinds=[...HERB].sort(()=>Math.random()-.5).slice(0,8);
+  herbLoad(kinds.map(h=>h[0])).then(()=>{ if(G0.ov.isConnected) herbPairs2(G0,kinds); }); }
+function herbPairs2(G,kinds){ const B=G.B; const cards=[...kinds,...kinds].sort(()=>Math.random()-.5).map(h=>({h,open:0,done:0}));
   const S={t:60,miss:0,pairs:0,pick:[],lock:false};
   const draw=()=>{ B.innerHTML=`<div style="display:flex;gap:16px;color:#5a3a1a;font:900 16px ${UI_FONT};margin:4px"><span id="hpT">⏱ ${Math.ceil(S.t)}</span><span>配對 ${S.pairs}/8</span><span>失誤 ${S.miss}</span></div>
-    <div style="display:grid;grid-template-columns:repeat(4,78px);gap:8px;margin-top:8px">${cards.map((c,i)=>`<button data-c="${i}" style="height:96px;border-radius:12px;border:3px solid ${c.done?"#4c9a6a":"#6b4a2e"};background:${c.open||c.done?"#fff8ea":"linear-gradient(#a8744a,#7a5234)"};padding:4px;display:flex;flex-direction:column;align-items:center;justify-content:center">${c.open||c.done?`<img src="herbs/${c.h[0]}.webp" style="max-width:64px;max-height:58px"><span style="font:900 13px ${UI_FONT};color:#5a3a1a">${c.h[1]}</span>`:`<span style="font:900 26px ${UI_FONT};color:#ffe2a0">藥</span>`}</button>`).join("")}</div>`; };
+    <div style="display:grid;grid-template-columns:repeat(4,78px);gap:8px;margin-top:8px">${cards.map((c,i)=>`<button data-c="${i}" style="height:96px;border-radius:12px;border:3px solid ${c.done?"#4c9a6a":"#6b4a2e"};background:${c.open||c.done?"#fff8ea":"linear-gradient(#a8744a,#7a5234)"};padding:4px;display:flex;flex-direction:column;align-items:center;justify-content:center">${c.open||c.done?`<img src="herbs/${c.h[0]}.webp" style="max-width:64px;max-height:58px"><span style="font:900 13px ${UI_FONT};color:#5a3a1a;opacity:1">${c.h[1]}</span>`:`<span style="font:900 26px ${UI_FONT};color:#ffe2a0">藥</span>`}</button>`).join("")}</div>`; };
   B.onclick=e=>{ const b=e.target.closest("[data-c]"); if(!b||S.lock) return; const c=cards[+b.dataset.c]; if(c.open||c.done) return; c.open=1; S.pick.push(c); try{ tone(620,.04,.04,"triangle"); }catch(_){}
     if(S.pick.length===2){ const [a,b2]=S.pick; S.pick=[]; if(a.h[0]===b2.h[0]){ a.done=b2.done=1; S.pairs++; try{ tone(880,.08,.05,"triangle"); tone(1175,.1,.05,"triangle",.08); }catch(_){} if(S.pairs===8){ draw(); return end(true); } }
       else { S.miss++; S.lock=true; draw(); setTimeout(()=>{ a.open=b2.open=0; S.lock=false; draw(); },650); return; } } draw(); };
@@ -996,42 +1074,44 @@ function iceGame(){ /* 11/14 (the chair, after softserve.nog.cc): the nozzle abo
    below, turn it (around the dial) and move it (in and out from the dial's centre) so the cream lands evenly. Where your finger is on
    the dial is where the cream lands on the cone. Cream heaps up and slides where it is too steep; what lands off the cone falls away;
    if the heap leans too far it topples. Ranked by height. */
-  const G=gOverlay("🍦 超巨大冰淇淋","#fbf6ec"), B=G.B; B.style.top="0";
-  B.innerHTML=`<canvas id="icC" style="position:absolute;left:0;top:0;width:100%;height:62%"></canvas><div id="icN" style="position:absolute;right:18px;top:calc(62% - 64px);color:#3f4f4a;font:900 34px ${UI_FONT};pointer-events:none">0.0 cm</div><div id="icH" style="position:absolute;left:14px;top:calc(62% - 40px);color:#7a6a5a;font:800 13px ${UI_FONT};pointer-events:none"></div>
+  const G=gOverlay("🍦 超巨大冰淇淋","linear-gradient(#4f7f99,#2a4a5e)"), B=G.B; B.style.top="0"; /* (a deep blue-grey behind, so the white cream shows — 主委 11/14) */
+  B.innerHTML=`<canvas id="icC" style="position:absolute;left:0;top:0;width:100%;height:62%"></canvas><div id="icN" style="position:absolute;right:18px;top:calc(62% - 64px);color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.4);font:900 34px ${UI_FONT};pointer-events:none">0.0 cm</div><div id="icH" style="position:absolute;left:14px;top:calc(62% - 40px);color:#ffe6a8;font:800 14px ${UI_FONT};pointer-events:none"></div>
    <div id="icD" style="position:absolute;left:0;right:0;bottom:0;height:38%;background:#e8ecdf;border-radius:28px 28px 0 0;touch-action:none"><svg viewBox="-150 -150 300 300" style="position:absolute;left:50%;top:50%;width:270px;height:270px;transform:translate(-50%,-50%);pointer-events:none"><circle r="120" fill="none" stroke="#9aa89a" stroke-width="3" stroke-dasharray="6 9"/><circle r="5" fill="#7a8a7a"/><circle id="icK" r="16" fill="rgba(122,140,122,.25)" stroke="#7a8a7a" stroke-width="3" cx="0" cy="0"/></svg></div><button class="secondary" id="icDone" style="position:absolute;right:12px;top:calc(env(safe-area-inset-top,0px) + 56px)">完成</button>`;
   const cv=B.querySelector("#icC"); let R; try{ R=new T.WebGLRenderer({canvas:cv,alpha:true,antialias:true}); }catch(e){ G.close(); toast("這台裝置畫不出 3D 冰淇淋",2000); return; }
   const sc=new T.Scene(), cam=new T.PerspectiveCamera(30,1,.05,60); sc.add(new T.HemisphereLight("#fffaf2","#d9c8b0",1.05)); const dl=new T.DirectionalLight("#ffffff",.85); dl.position.set(2,5,4); sc.add(dl);
   const fit=()=>{ const w=cv.clientWidth, h=cv.clientHeight; R.setPixelRatio(Math.min(2,devicePixelRatio||1)); R.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix(); }; fit(); addEventListener("resize",fit);
   /* nozzle */ const steel=new T.MeshStandardMaterial({color:"#62726c",roughness:.55,metalness:.2}); const pipe=new T.Mesh(new T.CylinderGeometry(.09,.09,1.6,24),steel); pipe.position.y=1.45; sc.add(pipe); const col=new T.Mesh(new T.CylinderGeometry(.19,.19,.12,28),steel); col.position.y=.66; sc.add(col); const tip=new T.Mesh(new T.CylinderGeometry(.15,.15,.2,28),steel); tip.position.y=.52; sc.add(tip);
   /* the cone (pointed waffle) */ const cone=new T.Group(); sc.add(cone); const waffle=cvs(128,128,(x,w,h)=>{ x.fillStyle="#c98e52"; x.fillRect(0,0,w,h); x.strokeStyle="#e2b47a"; x.lineWidth=3; for(let i=-w;i<w*2;i+=16){ x.beginPath(); x.moveTo(i,0); x.lineTo(i+h,h); x.stroke(); x.beginPath(); x.moveTo(i,h); x.lineTo(i+h,0); x.stroke(); } }); waffle.wrapS=waffle.wrapT=T.RepeatWrapping; waffle.repeat.set(3,2);
-  const cm=new T.Mesh(new T.ConeGeometry(.3,.78,36,1,true),new T.MeshStandardMaterial({map:waffle,roughness:.85,side:T.DoubleSide})); cm.rotation.x=Math.PI; cm.position.y=-.39; cone.add(cm); const rim=new T.Mesh(new T.TorusGeometry(.3,.022,10,36),new T.MeshStandardMaterial({color:"#d9a066",roughness:.8})); rim.rotation.x=Math.PI/2; cone.add(rim);
+  const cm=new T.Mesh(new T.ConeGeometry(.3,.78,36,1,true),new T.MeshStandardMaterial({map:waffle,roughness:.85,side:T.DoubleSide})); cm.rotation.x=Math.PI; cm.position.y=-.39; cone.add(cm);
+  /* a paper sleeve with a red mark on one side, so you can see the cone turn with your finger */ { const sl=cvs(256,64,(x,w,h)=>{ x.fillStyle="#fff6e6"; x.fillRect(0,0,w,h); x.fillStyle="#e8706a"; for(let i=0;i<w;i+=32) x.fillRect(i,0,12,h); x.fillStyle="#c0392b"; x.beginPath(); x.arc(40,32,22,0,7); x.fill(); x.fillStyle="#fff"; x.font="900 26px sans-serif"; x.textAlign="center"; x.textBaseline="middle"; x.fillText("冰",40,33); }); const sv=new T.Mesh(new T.CylinderGeometry(.218,.104,.3,36,1,true),new T.MeshStandardMaterial({map:sl,roughness:.8,side:T.DoubleSide})); sv.position.y=-.4; cone.add(sv); } const rim=new T.Mesh(new T.TorusGeometry(.3,.022,10,36),new T.MeshStandardMaterial({color:"#d9a066",roughness:.8})); rim.rotation.x=Math.PI/2; cone.add(rim);
   const inner=new T.Mesh(new T.CircleGeometry(.29,36),new T.MeshStandardMaterial({color:"#8a5a30",roughness:.9})); inner.rotation.x=-Math.PI/2; inner.position.y=-.03; cone.add(inner);
   const pile=new T.Group(); cone.add(pile);
   /* the heap: a height map over the cone mouth (local units; 1 unit = 20 cm) */
   const N=40, RG=.42, cell=2*RG/N, H=new Float32Array(N*N); const idx=(i,j)=>j*N+i; const toC=v=>Math.floor((v+RG)/cell);
   const hAt=(x,z)=>{ const i=toC(x), j=toC(z); return i<0||j<0||i>=N||j>=N?0:H[idx(i,j)]; };
   const cream=new T.MeshStandardMaterial({color:"#fff7ea",roughness:.42}), cream2=new T.MeshStandardMaterial({color:"#fbefdc",roughness:.42});
-  const stream=new T.Mesh(new T.CylinderGeometry(.032,.036,.2,12),cream); stream.position.y=.37; sc.add(stream); /* (the cream always coming down) */
+  const stream=new T.Mesh(new T.CylinderGeometry(.05,.052,1,14),cream); sc.add(stream); const drip=[0,1,2].map(()=>{ const m=new T.Mesh(new T.SphereGeometry(.055,12,10),cream); sc.add(m); return m; }); /* (the cream always coming down) */
   const S={rho:0,phi:0,touch:false,pts:[],segs:0,top:0,t:0,over:false,spill:0,lean:new T.Vector2(),vol:0,last:new T.Vector3()};
   const D=B.querySelector("#icD"), K=B.querySelector("#icK"); const dial=e=>{ const r=D.getBoundingClientRect(); const cx=r.left+r.width/2, cy=r.top+r.height/2, s=270/300; const dx=(e.clientX-cx)/s, dy=(e.clientY-cy)/s; const d=Math.hypot(dx,dy); S.rho=Math.min(1,d/120); S.phi=Math.atan2(dy,dx); K.setAttribute("cx",Math.cos(S.phi)*S.rho*120); K.setAttribute("cy",Math.sin(S.phi)*S.rho*120); };
   D.addEventListener("pointerdown",e=>{ e.preventDefault(); S.touch=true; try{ D.setPointerCapture(e.pointerId); }catch(_){ } dial(e); }); D.addEventListener("pointermove",e=>{ if(S.touch) dial(e); }); const up=()=>{ S.touch=false; }; D.addEventListener("pointerup",up); D.addEventListener("pointercancel",up);
   B.querySelector("#icDone").onclick=()=>finish("完成！");
   const RM=.27; /* farthest from the middle the dial can put the cream */
-  const deposit=(x,z,amt)=>{ /* a soft bump, then let too-steep cream slide down, and what is off the cone fall away */ const ci=toC(x), cj=toC(z), rr=3;
-    for(let j=cj-rr;j<=cj+rr;j++) for(let i=ci-rr;i<=ci+rr;i++){ if(i<0||j<0||i>=N||j>=N) continue; const px=-RG+(i+.5)*cell, pz=-RG+(j+.5)*cell, w=Math.exp(-((px-x)**2+(pz-z)**2)/(2*.035*.035)); H[idx(i,j)]+=amt*w*.9; }
+  const deposit=(x,z,amt)=>{ /* a soft bump, then let too-steep cream slide down, and what is off the cone fall away */ const ci=toC(x), cj=toC(z), rr=4;
+    for(let j=cj-rr;j<=cj+rr;j++) for(let i=ci-rr;i<=ci+rr;i++){ if(i<0||j<0||i>=N||j>=N) continue; const px=-RG+(i+.5)*cell, pz=-RG+(j+.5)*cell, w=Math.exp(-((px-x)**2+(pz-z)**2)/(2*.045*.045)); H[idx(i,j)]+=amt*w*.9; }
     for(let pass=0;pass<2;pass++) for(let j=1;j<N-1;j++) for(let i=1;i<N-1;i++){ const k=idx(i,j), h=H[k]; if(h<=0) continue; const nb=[k-1,k+1,k-N,k+N]; for(const n of nb){ const dh=h-H[n]; if(dh>cell*1.15){ const m=(dh-cell*1.15)*.25; H[k]-=m; H[n]+=m; } } }
     let vol=0, mx=0, mz=0, top=0; for(let j=0;j<N;j++) for(let i=0;i<N;i++){ const k=idx(i,j); let h=H[k]; if(h<=0) continue; const px=-RG+(i+.5)*cell, pz=-RG+(j+.5)*cell, r=Math.hypot(px,pz);
       if(r>.3){ /* off the rim: stays only if the heap next to it (towards the middle) holds it up */ const ii=Math.round(i-(px/r)*1.5), jj=Math.round(j-(pz/r)*1.5); const sup=H[idx(Math.max(0,Math.min(N-1,ii)),Math.max(0,Math.min(N-1,jj)))]; if(sup<h*.9||r>RG-cell*2){ S.spill+=h; H[k]=0; continue; } }
       vol+=h; mx+=px*h; mz+=pz*h; if(h>top) top=h; } S.vol=vol; S.top=top; if(vol>0){ S.lean.set(mx/vol,mz/vol); } };
-  const seg=()=>{ if(S.pts.length<4) return; const curve=new T.CatmullRomCurve3(S.pts.slice()); const m=new T.Mesh(new T.TubeGeometry(curve,S.pts.length*2,.034,8,false),S.segs%5===4?cream2:cream); pile.add(m); S.segs++; S.pts=S.pts.slice(-1); };
+  const seg=()=>{ if(S.pts.length<4) return; const curve=new T.CatmullRomCurve3(S.pts.slice()); const m=new T.Mesh(new T.TubeGeometry(curve,S.pts.length*2,.05,10,false),S.segs%5===4?cream2:cream); pile.add(m); S.segs++; S.pts=S.pts.slice(-1); };
   const finish=line=>{ if(S.over) return; S.over=true; S.line=line; S.endT=0; try{ (line.startsWith("完成")?[784,988,1175,1568]:[300,220]).forEach((f,i)=>tone(f,.14,.05,line.startsWith("完成")?"triangle":"sawtooth",i*.09)); }catch(e){} };
   cam.position.set(0,.55,3.4); cam.lookAt(0,.05,0);
   let last=performance.now(), acc=0; const loop=now=>{ if(!G.ov.isConnected){ R.dispose(); try{ R.forceContextLoss(); }catch(e){} removeEventListener("resize",fit); return; }
     const dt=Math.min(.05,(now-last)/1000); last=now; S.t+=dt;
-    if(!S.over){ const r=S.rho*RM, lx=Math.cos(-S.phi)*r, lz=Math.sin(-S.phi)*r; /* where the cream lands, in the cone's own frame */
-      cone.rotation.y=S.phi; cone.position.x=-r; /* (turned by the dial, and moved so the nozzle is over that spot) */
+    if(!S.over){ const th=-S.phi, r=S.rho*RM, lx=Math.cos(th)*r, lz=Math.sin(th)*r; /* where the cream lands, in the cone's own frame (it matches what you see now: it used to land mirrored) */
+      cone.rotation.y=th; cone.position.x=-r; /* (turned like your finger turns round the dial — clockwise is clockwise seen from above — and moved so the nozzle is over that spot) */
       const hy=hAt(lx,lz); cone.position.y=.3-hy-.03; /* lowered as the heap grows so the top stays under the nozzle */
-      const amt=dt*.026; deposit(lx,lz,amt); acc+=dt; const p=new T.Vector3(lx,hAt(lx,lz)+.02,lz); if(acc>.04&&p.distanceTo(S.last)>.012){ acc=0; S.pts.push(p); S.last.copy(p); if(S.pts.length>=10) seg(); }
+      const amt=dt*.36; deposit(lx,lz,amt); acc+=dt; const p=new T.Vector3(lx,hAt(lx,lz)-.025,lz); /* (about as much cream as the stream you see carries: it used to be 1/15 of that, so it hardly grew) */
+      { const topY=.42, botY=cone.position.y+hAt(lx,lz); stream.scale.y=Math.max(.01,topY-botY); stream.position.set(0,(topY+botY)/2,0); drip.forEach((m,k)=>{ const f=((S.t*2.2+k/3)%1); m.position.set(0,topY-(topY-botY)*f,0); }); } if(acc>.04&&p.distanceTo(S.last)>.012){ acc=0; S.pts.push(p); S.last.copy(p); if(S.pts.length>=10) seg(); }
       const cmH=S.top; const lean=S.lean.length()/(cmH*.9+.06); pile.rotation.z=S.lean.x*cmH*1.4; pile.rotation.x=-S.lean.y*cmH*1.4; if(cmH>.12&&lean>.62) finish("歪掉了，整坨倒下來了！");
       const cmv=cmH*20; B.querySelector("#icN").textContent=cmv.toFixed(1)+" cm"; B.querySelector("#icH").textContent=S.spill>.05?"有冰掉出杯子了！":lean>.45&&cmH>.1?"⚠️ 有點歪了":"";
       /* the falling stream */ }
@@ -1102,7 +1182,7 @@ async function chairSetSpot(close){ const key=ck(); if(!key){ toast("先在主�
    walking up and down their street; the chair can always go in. Every day you visit a shop its people like you a little more
    (+1, up to 100); at 10, 30 and 60 they start telling you things — gossip about the others, a secret, a request. ---------- */
 const HOURS={"tw:bfast":[6,13],"tw:congee":[18,26],"tw:drink":[10,22],"tw:ice":[11,21],"tw:herb":[9,20],"tw:book":[10,21],"tw:flower":[9,19],"tw:beauty":[10,20],"tw:photo":[10,19],"tw:tackle":[5,20],"tw:furn":[10,21]};
-const twHour=()=>{ const d=new Date(Date.now()+8*3600e3); return d.getUTCHours()+d.getUTCMinutes()/60; };
+const twHour=()=>{ if(typeof TM.hour==="number") return TM.hour; const d=new Date(Date.now()+8*3600e3); return d.getUTCHours()+d.getUTCMinutes()/60; }; /* (主委測試模式 can set the clock) */
 const isOpen=k=>{ const h=HOURS[k]; if(!h) return true; const t=twHour(); return h[1]>24?(t>=h[0]||t<h[1]-24):(t>=h[0]&&t<h[1]); };
 const hrs=k=>{ const h=HOURS[k], f=v=>String(v%24).padStart(2,"0")+":00"; return `${f(h[0])}–${f(h[1])}`; };
 const GOSSIP={
@@ -1115,8 +1195,8 @@ const GOSSIP={
  "tw:flower":[["雅琪：「美容院的 Kevin 每週都來買一枝白色桔梗，從來不說要送誰。」"],["雅琪：「我以前在台北教花，是為了照顧媽媽才回小鎮的。」"],["雅琪：「Kevin 說的『那個人』……好像就是我？」"]],
  "tw:beauty":[["Kevin：「花店的雅琪老師，是我國中時的家教老師。」"],["Kevin：「我開美容院，是因為她說過『你剪頭髮很有天分』。」"],["Kevin：「幫我想想，要怎麼跟她說謝謝比較好？」（隱藏任務）"]],
  "tw:tackle":[["阿財伯：「女神泉那裡，傳說有人釣到過金色的魚。」"],["阿財伯：「老王跟我年輕時比釣魚，比了三十年還沒分出勝負。」"],["阿財伯：「流星夜的海邊，會有平常看不到的魚……噓，別說是我講的。」"]],
- "tw:furn":[["美雲：「我會打瞌睡，是因為半夜都在做木工，送給鎮上的小朋友。」"],["美雲：「一粥七天的阿秀，是我小學同學，每天半夜我都去她那裡吃粥。」"],["美雲：「你房間要不要一張特別的椅子？我做給你。」（隱藏任務）"]],
- "tw:congee":[["阿秀：「家具行的美雲每天半夜一點來，一碗鹹粥不加芹菜。」"],["阿秀：「早餐店的阿龍和秀琴，其實是我介紹認識的。」"],["阿秀：「我的鹹粥秘方，是用許伯的陳皮熬的高湯。」"]]};
+ "tw:furn":[["美雲：「我會打瞌睡，是因為半夜都在做木工，送給鎮上的小朋友。」"],["美雲：「一粥七天的玲姊，是我小學同學，每天半夜我都去她那裡吃粥。」"],["美雲：「你房間要不要一張特別的椅子？我做給你。」（隱藏任務）"]],
+ "tw:congee":[["玲姊：「家具行的美雲每天半夜一點來，一碗鹹粥不加芹菜。」"],["阿秀：「早餐店的阿龍和秀琴，其實是我介紹認識的。」"],["阿秀：「我的鹹粥秘方，是用許伯的陳皮熬的高湯。」"]]};
 const KA=k=>{ const d=LF(); d.ka=d.ka||{}; return d.ka[k]=d.ka[k]||{a:0,d:0}; };
 /* (11/14: the hours and the gossip are handled when you walk into the shop — see 走進店裡) */
 
