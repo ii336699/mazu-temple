@@ -506,7 +506,7 @@ function barber(){ const rows=(lo,hi,lab)=>`<h4 style="margin:10px 0 4px">${lab}
 function beauty(){ const sec=(i,lo,cnt,P,k,lab,names)=>`<h4 style="margin:10px 0 4px">${lab}</h4>`+[...Array(cnt)].map((_,j)=>{ const n=lo+j, own=owned2(k,j), on=me.look[i]===n; return `<div class="lf-row"><div class="t"><b>${names[n].replace("💄 ","")}</b>　${own?"<small>已擁有</small>":P[j]+" 幣"}</div><button class="secondary" data-act="lfTry" data-v="${i}:${n}">試試看</button>${own?`<button class="primary" data-act="lfWear" data-v="${i}:${n}" ${on?"disabled":""}>${on?"現在的":"換上"}</button>`:`<button class="primary" data-act="lfBuy" data-v="${i}:${n}">買</button>`}</div>`; }).join("");
   salonOpen("f",`${sec(7,15,10,EP,"e","眼睛",EYES)}${sec(13,1,10,NP,"n","鼻子",NOSES)}${sec(9,4,10,MP,"m","嘴巴",MOUTHS)}<p class="note">買過的在「換裝」的臉部也能換。想拿掉鼻子：換裝裡選「無」。</p>`); }
 /* 美容院 (11/14: the barber and the beauty salon are one shop now): hair and face on two tabs */
-function salonOpen(tab,body){ openSheet("lfSalon","💇 美容院",`<p class="lead">設計師：「您好，請問有預約、有指定設計師嗎？」</p><div class="row" style="margin-bottom:6px"><button class="${tab==="h"?"primary":"secondary"}" data-act="lfSalon" data-v="h">✂️ 髮型</button><button class="${tab==="f"?"primary":"secondary"}" data-act="lfSalon" data-v="f">💄 五官</button></div>${body}`); }
+function salonOpen(tab,body){ salonView(); openSheet("lfSalon","💇 美容院",`<p class="lead">設計師：「您好，請問有預約、有指定設計師嗎？」</p><div class="row" style="margin-bottom:6px"><button class="${tab==="h"?"primary":"secondary"}" data-act="lfSalon" data-v="h">✂️ 髮型</button><button class="${tab==="f"?"primary":"secondary"}" data-act="lfSalon" data-v="f">💄 五官</button></div>${body}`); }
 HANDLERS.lfSalon=v=>v==="f"?beauty():barber();
 const slotOf=(i,n)=>i===1?["h",n-25,HP]:i===7?["e",n-15,EP]:i===13?["n",n-1,NP]:["m",n-4,MP];
 HANDLERS.lfTry=v=>{ const [i,n]=v.split(":").map(Number); tryOn(i,n); toast("試試看：關掉面板就會換回原本的樣子",2000); };
@@ -671,6 +671,9 @@ const KEEP={
  "tw:beauty":{ppl:[{n:"設計師 Kevin",v:"man",look:[0,27,9,1,0,5,0,10,0,3,0,0,2,1],sh:{leg:1.12,tor:1.04,w:.92,d:.9,head:.98,arm:1.04}}],mode:"pose",
    lines:[[0,"您好，請問有預約、有指定設計師嗎？"]],quick:[[0,"今天想換什麼風格呢？"]]},
 };
+/* 美容院 (11/14 晚上, the chair): once Kevin has spoken, leave the shop view and look at your own face, so you see each try-on */
+const salonView=()=>{ try{ if(IV.scene) ivClose(true); }catch(e){} try{ if(!customizing){ customizing=true; pvMode="face"; pvYaw=0; meAv.target.copy(meAv.pos); meAv.path=[]; if(meAv.seat>=0) meAv.seat=-1; setOthersVisible(false); document.body.classList.add("customizing"); } }catch(e){ console.warn(e); } };
+KEEP["tw:beauty"].go=()=>barber();
 const KS={}; /* the keepers standing at their shops: key → {avs, spot, t, mode, until, last} */
 function keepSpot(k){ const K=KEEP[k]; if(K.spot) return K.spot; const b=TOWNX&&TOWNX.bOf?TOWNX.bOf(k):null; if(!b) return null; const fx=Math.sin(b.ry), fz=Math.cos(b.ry); return {x:b.x+fx*.35,z:b.z+fz*.35,ry:b.ry,fx,fz,shop:1}; }
 function keepMake(k){ const K=KEEP[k], sp=keepSpot(k); if(!sp) return null; const n=K.ppl.length, px=Math.cos(sp.ry), pz=-Math.sin(sp.ry), avs=[];
