@@ -1,12 +1,12 @@
 # The chair's hair sheet (tripo glb, grey, no picture: 21 hairs, each its own connected piece — rows 1–2 男 (10), rows 3–4 女 (11))
-# → public/hair2.glb: nodes h00…h20, each fitted to the avatar's head (a sphere of radius .26 at the origin of the head group; the
+# → public/hair2-00.glb … hair2-20.glb (one node hNN each), each fitted to the avatar's head (a sphere of radius .26 at the origin of the head group; the
 # hollow inside each hair is found by fitting a sphere to its inward-facing wall), the inner wall dropped, thinned on a grid.
 # Positions are int16 (value/32767*SPAN), normals int8 — the game turns them back into floats when it loads (hair2Load).
-# usage: python3 mk.py SHEET.glb OUT.glb      (env GRID=cells across, default 34)
+# usage: python3 mk.py SHEET.glb OUT_PREFIX   → OUT_PREFIX-00.glb … -20.glb   (env GRID=cells across, default 60)
 import sys,os,json,struct,numpy as np
 from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import connected_components
-src,out=sys.argv[1:3]; GRID=int(os.environ.get('GRID','34')); HEAD=.26*1.045; SPAN=.8
+src,out=sys.argv[1:3]; GRID=int(os.environ.get('GRID','60')); HEAD=.26*1.045; SPAN=.8
 b=open(src,'rb').read(); n=struct.unpack('<I',b[12:16])[0]; j=json.loads(b[20:20+n]); B=b[20+n+8:]
 def acc(i):
     a=j["accessors"][i]; bv=j["bufferViews"][a["bufferView"]]; o=bv.get("byteOffset",0)+a.get("byteOffset",0)
@@ -50,9 +50,11 @@ for i,c in enumerate(big):
            {"bufferView":put(nrm.tobytes(),4),"componentType":5120,"normalized":True,"count":int(nc),"type":"VEC3"},
            {"bufferView":put(T2.astype(np.uint16).tobytes()),"componentType":5123,"count":int(len(T2)*3),"type":"SCALAR"}]
     meshes.append({"primitives":[{"attributes":{"POSITION":ai,"NORMAL":ai+1},"indices":ai+2}]}); nodes.append({"name":"h%02d"%i,"mesh":len(meshes)-1})
+    # one file per hair (public/hair2-NN.glb): the game fetches a hair only when somebody wears it
+    while len(bin)%4: bin+=b"\0"
+    gj={"asset":{"version":"2.0"},"extensionsUsed":["KHR_mesh_quantization"],"extensionsRequired":["KHR_mesh_quantization"],"scene":0,"scenes":[{"nodes":[0]}],"nodes":nodes,"meshes":meshes,"accessors":accs,"bufferViews":views,"buffers":[{"byteLength":len(bin)}]}
+    js=json.dumps(gj).encode(); js+=b" "*((4-len(js)%4)%4)
+    open(out+"-%02d.glb"%i,"wb").write(struct.pack("<III",0x46546C67,2,28+len(js)+len(bin))+struct.pack("<II",len(js),0x4E4F534A)+js+struct.pack("<II",len(bin),0x004E4942)+bin)
+    bin=b""; views=[]; accs=[]; meshes=[]; nodes=[]
     print(i,'verts',nc,'tris',len(T2),'r',round(r,4),'ext',np.round(Q.min(0),2),np.round(Q.max(0),2),flush=True)
-while len(bin)%4: bin+=b"\0"
-gj={"asset":{"version":"2.0"},"extensionsUsed":["KHR_mesh_quantization"],"extensionsRequired":["KHR_mesh_quantization"],"scene":0,"scenes":[{"nodes":list(range(len(nodes)))}],"nodes":nodes,"meshes":meshes,"accessors":accs,"bufferViews":views,"buffers":[{"byteLength":len(bin)}]}
-js=json.dumps(gj).encode(); js+=b" "*((4-len(js)%4)%4)
-open(out,"wb").write(struct.pack("<III",0x46546C67,2,28+len(js)+len(bin))+struct.pack("<II",len(js),0x4E4F534A)+js+struct.pack("<II",len(bin),0x004E4942)+bin)
-print('bytes',os.path.getsize(out))
+print('done')

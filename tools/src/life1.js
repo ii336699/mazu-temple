@@ -496,22 +496,23 @@ L.npcs=()=>NL; L.npcLine=(x0,z,old)=>NPCS.map((n,i)=>{ const keep=n.sh; if(old) 
 /* ---------- 理髮廳 and 美容院: pay once for a style, then wear it whenever you like (it also shows in 換裝 once bought) ---------- */
 /* 11/15 (the chair): 21 hair models (男 10, 女 11), 33 eyes, 52 mouths and 10 noses for sale. What you own is one number per kind,
    bit n = the n-th one for sale — read and written with plain arithmetic, because there are more than 32 of some. */
-const priceOf=(k,j)=>k==="h"?[1800,2000,1600,2200,1800,2400,2000,2600,2200,3000][j%10]:k==="e"?[900,800,1000,1200,900,1100,800,1000,900,800][j%10]+(j>=10?200:0):k==="m"?[800,900,700,800,1000,800,700,800,900,1200][j%10]:[600,700,700,800,900,1000,800,600,600,900][j%10];
+const priceOf=(k,j)=>k==="h"?[1800,2000,1600,2200,1800,2400,2000,2600,2200,3000][j%10]:k==="e"?[900,800,1000,1200,900,1100,800,1000,900,800][j%10]+(j>=10?300:0):k==="m"?[800,900,700,800,1000,800,700,800,900,1200][j%10]+(j>=10?300:0):k==="m"?[800,900,700,800,1000,800,700,800,900,1200][j%10]:[600,700,700,800,900,1000,800,600,600,900][j%10];
 const OWN=()=>{ const d=LF(); d.own=d.own||{h:0,e:0,m:0,n:0}; return d.own; };
 let PV=null; /* a style being tried on: [look before] */
 function tryOn(i,n){ if(!PV) PV=me.look.slice(); const l=PV.slice(); l[i]=n; try{ meAv.setLook(sanitizeLook(l,!!me.sp)); }catch(e){} }
 function endTry(){ if(!PV) return; try{ meAv.setLook(me.look); }catch(e){} PV=null; }
 function wearNow(i,n){ const l=me.look.slice(); l[i]=n; me.look=sanitizeLook(l,!!me.sp); PV=null; try{ localStorage.setItem("mz.me",JSON.stringify(me)); }catch(e){} try{ draftLook=me.look.slice(); }catch(e){} meAv.setLook(me.look); markDirty(); try{ profSave(true); }catch(e){} try{ [659,880,1175].forEach((f,k)=>tone(f,.12,.05,"triangle",k*.07)); }catch(e){} }
-const hasBit=(v,n)=>Math.floor((+v||0)/2**n)%2===1;
-const owned2=(k,n)=>me.sp||hasBit(OWN()[k],n);
-const SALON=[["h","✂️ 髮型"],["e","👁 眼睛"],["n","👃 鼻子"],["m","👄 嘴巴"]], SLOT={h:[1,25],e:[7,15],n:[13,1],m:[9,12]}; /* kind → [place in the look, first one for sale] */
+const ownKey=(k,n)=>k+(Math.floor(n/30)||""), hasBit=(v,n)=>Math.floor((+v||0)/2**n)%2===1; /* (30 to a number: h, h1, e, e1, e2 …) */
+const ownHas=(k,n)=>hasBit(OWN()[ownKey(k,n)],n%30), owned2=(k,n)=>me.sp||ownHas(k,n);
+const OWN_N=[["h",21],["e",58],["m",74],["n",10]]; /* how many of each are for sale (the save code keeps one bit each, in this order) */
+const SALON=[["h","✂️ 髮型"],["e","👁 眼睛"],["n","👃 鼻子"],["m","👄 嘴巴"]], SLOT={h:[1,25],e:[7,15],n:[13,1],m:[9,4]}; /* kind → [place in the look, first one for sale] */
 const kindOf=i=>i===1?"h":i===7?"e":i===13?"n":"m";
-function salonPic(k,n){ const sk=SKIN[me.look[0]]||SKIN[0]; if(k==="e"||k==="m"){ const E=k==="e", tw=E?96:72, th=48, rows=E?6:8, src=MZIMG("face/"+(E?"eyes":"mouths")+".webp"); return `<span style="flex:none;width:${tw}px;height:${th}px;border-radius:10px;background:${sk} url(${src}) ${-(n%8)*tw}px ${-Math.floor(n/8)*th}px / ${tw*8}px ${th*rows}px no-repeat"></span>`; } return ""; }
+function salonPic(k,n){ const sk=SKIN[me.look[0]]||SKIN[0]; if((k==="e"&&n>=EYE_PIC)||(k==="m"&&n>=MOUTH_PIC)){ const E=k==="e"; n-=E?EYE_PIC:MOUTH_PIC; const tw=E?96:72, th=48, rows=E?6:8, src=MZIMG("face/"+(E?"eyes":"mouths")+".webp"); return `<span style="flex:none;width:${tw}px;height:${th}px;border-radius:10px;background:${sk} url(${src}) ${-(n%8)*tw}px ${-Math.floor(n/8)*th}px / ${tw*8}px ${th*rows}px no-repeat"></span>`; } return ""; }
 function salonRows(k,lo,hi){ const [i]=SLOT[k], names=k==="h"?HAIRS:k==="e"?EYES:k==="n"?NOSES:MOUTHS; let h=""; for(let n=lo;n<hi;n++){ const j=n-SLOT[k][1], own=owned2(k,j), on=me.look[i]===n;
     h+=`<div class="lf-row">${salonPic(k,n)}<div class="t"><b>${names[n].replace(/^(✂️|💄) /,"")}</b><br>${own?"<small>已擁有</small>":priceOf(k,j)+" 幣"}</div><button class="secondary" data-act="lfTry" data-v="${i}:${n}">試試看</button>${own?`<button class="primary" data-act="lfWear" data-v="${i}:${n}" ${on?"disabled":""}>${on?"現在的":"換上"}</button>`:`<button class="primary" data-act="lfBuy" data-v="${i}:${n}">${k==="h"?"剪這個":"買"}</button>`}</div>`; } return h; }
 function salon(k){ k=SLOT[k]?k:"h"; let body="";
   if(k==="h") body=`<h4 style="margin:10px 0 4px">髮色（免費，隨時可以換）</h4><div style="display:flex;flex-wrap:wrap;gap:6px">${HAIRC.map((c,n)=>`<button data-act="lfHairC" data-v="${n}" aria-label="髮色 ${n+1}" style="width:30px;height:30px;border-radius:50%;border:${me.look[2]===n?"3px solid #ffd24a":"2px solid rgba(255,255,255,.35)"};background:${c};padding:0;flex:none"></button>`).join("")}</div><h4 style="margin:12px 0 4px">男生款</h4>${salonRows("h",25,35)}<h4 style="margin:12px 0 4px">女生款</h4>${salonRows("h",35,46)}`;
-  else if(k==="e") body=salonRows("e",15,EYES.length); else if(k==="n") body=salonRows("n",1,NOSES.length)+`<p class="note">想拿掉鼻子：換裝的「鼻子」裡選「無」。</p>`; else body=salonRows("m",12,MOUTHS.length);
+  else if(k==="e") body=salonRows("e",15,EYES.length); else if(k==="n") body=salonRows("n",1,NOSES.length)+`<p class="note">想拿掉鼻子：換裝的「鼻子」裡選「無」。</p>`; else body=salonRows("m",4,MOUTHS.length);
   salonOpen(k,body+`<p class="note">買過的在「換裝」裡也能換。</p>`); }
 function barber(){ salon("h"); } function beauty(){ salon("e"); }
 /* 美容院: one shop — 髮型 / 眼睛 / 鼻子 / 嘴巴 on four tabs */
@@ -521,7 +522,7 @@ HANDLERS.lfSalon=v=>salon(v);
 HANDLERS.lfHairC=v=>{ wearNow(2,+v); salon("h"); };
 HANDLERS.lfTry=v=>{ const [i,n]=v.split(":").map(Number); tryOn(i,n); toast("試試看：關掉面板就會換回原本的樣子",2000); };
 HANDLERS.lfWear=v=>{ const [i,n]=v.split(":").map(Number); wearNow(i,n); salon(kindOf(i)); };
-HANDLERS.lfBuy=v=>{ const [i,n]=v.split(":").map(Number), k=kindOf(i), j=n-SLOT[k][1], P=priceOf(k,j), o=OWN(); if(j<0||owned2(k,j)) return; if(bag.coins<P&&!me.sp){ try{ buzz(); }catch(e){} toast(`平安幣不夠（還差 ${P-bag.coins}）`,2400); return; } if(!me.sp) bag.coins-=P; if(!hasBit(o[k],j)) o[k]=(+o[k]||0)+2**j; save(); try{ chaChing(); statInc("lfBuy"+k); }catch(e){} wearNow(i,n); toast("換好了！好看喔",2200); salon(k); };
+HANDLERS.lfBuy=v=>{ const [i,n]=v.split(":").map(Number), k=kindOf(i), j=n-SLOT[k][1], P=priceOf(k,j), o=OWN(); if(j<0||owned2(k,j)) return; if(bag.coins<P&&!me.sp){ try{ buzz(); }catch(e){} toast(`平安幣不夠（還差 ${P-bag.coins}）`,2400); return; } if(!me.sp) bag.coins-=P; if(!ownHas(k,j)){ const kk=ownKey(k,j); o[kk]=(+o[kk]||0)+2**(j%30); } save(); try{ chaChing(); statInc("lfBuy"+k); }catch(e){} wearNow(i,n); toast("換好了！好看喔",2200); salon(k); };
 L.tick3=dt=>{ if(PV&&sheetKind!=="lfSalon") endTry(); if(L.tick4) L.tick4(dt); };
 L.more2=k=>{ if(k==="tw:barber"){ barber(); return true; } if(k==="tw:beauty"){ beauty(); return true; } return L.more3?L.more3(k):false; };
 
@@ -1399,14 +1400,14 @@ L.garden=gardenOpen;
 /* ---------- into the save code (the 取回碼 and the server's copy): rod, bought styles, the fish book, fish in the bag (how many of
    each kind; sizes come back as a typical size), the townsfolk's affinity, the garden (seeds, harvest, what grows in each bed), and
    meteor finds. Order matters: FISH, NPCS and SEEDS may only ever be added to at the end. ---------- */
-L.pack=put=>{ const d=LF(), o=d.own||{}, g=GD2(); put(7,3); /* (version 3: + rods, baits; 4: + 疊漢堡 best and the 1000 prize; 5: + camera, album, 大還丹, 走路; 6: + 鹹粥; 7: what you own at the 美容院 is longer — 21 hair, 33 eyes, 52 mouths, 10 noses) */ put(FISH.length,7); put(d.rod|0,2); [["h",2],["e",3],["m",4],["n",1]].forEach(([k,c])=>{ let v=+o[k]||0; for(let q=0;q<c;q++){ put(v%32768,15); v=Math.floor(v/32768); } });
+L.pack=put=>{ const d=LF(), o=d.own||{}, g=GD2(); put(7,3); /* (version 3: + rods, baits; 4: + 疊漢堡 best and the 1000 prize; 5: + camera, album, 大還丹, 走路; 6: + 鹹粥; 7: what you own at the 美容院 is longer — 21 hair, 33 eyes, 52 mouths, 10 noses) */ put(FISH.length,7); put(d.rod|0,2); OWN_N.forEach(([k,c])=>{ for(let q=0;q<c;q++) put(hasBit(o[ownKey(k,q)],q%30)?1:0,1); });
   FISH.forEach(f=>{ const e=d.fish[f.id]; put(e?Math.min(63,e[0]):0,6); if(e) put(Math.min(511,Math.round(e[1])),9); });
   const ic={}; d.inv.forEach(([id])=>ic[id]=(ic[id]||0)+1); FISH.forEach(f=>put(Math.min(40,ic[f.id]||0),6));
   NPCS.forEach(n=>{ const R=(d.npc||{})[n.id]||{}; put(Math.min(100,R.a|0),7); put((R.r|0)&7,3); });
   SEEDS.forEach(q=>put(Math.min(31,g.seed[q[0]]|0),5)); SEEDS.forEach(q=>put(Math.min(127,g.crop[q[0]]|0),7));
   g.beds.forEach(b=>{ const i=b?SEEDS.findIndex(q=>q[0]===b.s):-1; put(i+1,3); if(i>=0){ grow(b,Date.now()); put(Math.min(15,Math.round(b.p*5)),4); put(b.w?1:0,1); } });
   put(Math.min(63,d.stone|0),6); put(Math.min(255,d.dust|0),8); put(d.rods&4095,12); put(d.eqF|0,4); put(d.eqS|0,4); put(Math.min(15,d.godOK|0),4); d.bait.forEach(n=>put(Math.min(127,n|0),7)); put(d.bF|0,5); put(d.bS|0,5); const bb=d.bg||{}; put(Math.min(1023,bb.best|0),10); put(bb.h?1:0,1); const ph=d.ph||{}; put(ph.cam?1:0,1); for(let i=0;i<50;i++) put(ph.got&&ph.got[i]?1:0,1); put(Math.min(100,d.dht|0),7); put(Math.min(127,d.dhtI|0),7); put(Math.min(15,d.spd|0),4); put(Math.min(255,d.cg|0),8); };
-L.unpack=get=>{ const v=get(3); if(v<1||v>7) return null; const NF=v===1?33:Math.min(FISH.length,get(7)), FL=FISH.slice(0,NF); const own7=()=>{ const r={}; [["h",2],["e",3],["m",4],["n",1]].forEach(([k,c])=>{ let x=0; for(let q=0;q<c;q++) x+=get(15)*32768**q; r[k]=x; }); return r; }; const o={rod:get(2),own:v>=7?own7():{h:get(10),e:get(10),m:0*get(10),n:get(10)},fish:{},inv:[],npc:{},seed:{},crop:{},beds:[]};
+L.unpack=get=>{ const v=get(3); if(v<1||v>7) return null; const NF=v===1?33:Math.min(FISH.length,get(7)), FL=FISH.slice(0,NF); const own7=()=>{ const r={}; OWN_N.forEach(([k,c])=>{ for(let q=0;q<c;q++) if(get(1)){ const kk=ownKey(k,q); r[kk]=(r[kk]||0)+2**(q%30); } }); return r; }; const o={rod:get(2),own:v>=7?own7():{h:get(10),e:get(10),m:get(10),n:get(10)},fish:{},inv:[],npc:{},seed:{},crop:{},beds:[]};
   FL.forEach(f=>{ const n=get(6); if(n) o.fish[f.id]=[n,get(9),Date.now()]; }); FL.forEach(f=>{ const n=get(6); for(let k=0;k<n;k++) o.inv.push([f.id,Math.round((f.sz[0]+f.sz[1])/2)]); });
   NPCS.forEach(n=>{ o.npc[n.id]={a:get(7),r:get(3),d:0,g:0}; }); SEEDS.forEach(q=>o.seed[q[0]]=get(5)); SEEDS.forEach(q=>o.crop[q[0]]=get(7));
   for(let i=0;i<12;i++){ const k=get(3); if(k){ const p=get(4)/5, w=get(1); o.beds.push(SEEDS[k-1]?{s:SEEDS[k-1][0],p,w,t:Date.now()}:null); } else o.beds.push(null); }
