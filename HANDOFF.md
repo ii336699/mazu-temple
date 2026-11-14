@@ -984,3 +984,4 @@ audio-fix（測試版）另外完成、**尚未部署**：
   - 9eb0 的錦鯉當「泉之錦鯉」、金色龍魚當「金鱗仙魚」——待主委確認。龍王鯛還沒有模型。
   - life1.js：FMODEL 加 36 種；fishLoad 同時載 fish、fish2；wagMat 改成每個材質一份（以前全部共用第一隻的貼圖）；L.hold 等到那隻魚的模型到了再拿，換魚時拿掉上一隻。
   - 測試模式加「下一隻新魚模型」「圖鑑全部點亮」。
+  - 測試頁檔案上限 512 個（已用 479）→ 新魚圖示打包成一個 fish-pack.js（window.FISH_PACK，fishIcon 本來就會先看它），發布前在測試頁 index.html 的 </head> 前加 `<script src="fish-pack.js" async>`；fish2-model.js 用 make_model_js 的方式產生。正式站直接讀 public/fish/*.webp 和 fish2.glb，不用這兩個。
