@@ -3,8 +3,8 @@
 const GU=()=>load("mz.id","")||"";
 async function rankPost(g,s){ try{ const r=await fetch("/rank",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({g,s:Math.max(0,Math.round(s)),uid:GU(),name:me.name||"香客"})}); return await r.json(); }catch(e){ return null; } }
 async function rankGet(g){ try{ const r=await fetch("/rank?g="+g); return await r.json(); }catch(e){ return null; } }
-const RK_UNIT={burger:"層",ice:"圈",drink:"分",congee:"分",herb:"分",book:"分",flower:"分"};
-function rankHtml(g,j,mine){ if(!j||!j.top) return `<p class="note">（排名暫時連不上）</p>`; return `<h4 style="margin:10px 0 4px">🏆 今日排名</h4>${j.top.length?`<div style="display:grid;grid-template-columns:2.2em 1fr auto;gap:3px 8px;font-size:14px">${j.top.slice(0,10).map((r,i)=>`<b>${["🥇","🥈","🥉"][i]||i+1}</b><span>${String(r[0]).replace(/[<>&]/g,"")}</span><span>${r[1]} ${RK_UNIT[g]}</span>`).join("")}</div>`:`<p class="note">今天還沒有人上榜，第一名就是你的！</p>`}${mine&&j.rank?`<p class="note">你今天最好 ${j.best} ${RK_UNIT[g]}，目前第 ${j.rank} 名（共 ${j.n} 人）。</p>`:""}`; }
+const RK_UNIT={burger:"層",ice:"mm",drink:"分",congee:"分",herb:"分",book:"分",flower:"分"};
+function rankHtml(g,j,mine){ if(!j||!j.top) return `<p class="note">（排名暫時連不上）</p>`; return `<h4 style="margin:10px 0 4px">🏆 今日排名</h4>${j.top.length?`<div style="display:grid;grid-template-columns:2.2em 1fr auto;gap:3px 8px;font-size:14px">${j.top.slice(0,10).map((r,i)=>`<b>${["🥇","🥈","🥉"][i]||i+1}</b><span>${String(r[0]).replace(/[<>&]/g,"")}</span><span>${g==="ice"?(r[1]/10).toFixed(1)+" cm":r[1]+" "+RK_UNIT[g]}</span>`).join("")}</div>`:`<p class="note">今天還沒有人上榜，第一名就是你的！</p>`}${mine&&j.rank?`<p class="note">你今天最好 ${g==="ice"?(j.best/10).toFixed(1)+" cm":j.best+" "+RK_UNIT[g]}，目前第 ${j.rank} 名（共 ${j.n} 人）。</p>`:""}`; }
 HANDLERS.lfRank=async g=>{ const j=await rankGet(g); openSheet("lfRank","🏆 今日排名",rankHtml(g,j)); };
 const GAME_DAY=()=>{ const d=LF(); if(!d.gday||d.gday.d!==today()) d.gday={d:today()}; return d.gday; }; /* (not d.gd: that is the garden) */ /* per-day counters for every game */
 const gamePaid=(k,max)=>{ const G=GAME_DAY(); G[k]=(G[k]||0)+1; return me.sp||G[k]<=max; };
@@ -73,8 +73,23 @@ HANDLERS.lfEatCongee=()=>{ const d=LF(); if(!(d.cg>0)) return; d.cg--; if(d.lkD!
    20 herbs, 45 s, at most 3 mistakes. Winning gives a 大還丹 (eat it: 精力上限 +1, up to 200); after 100 of them, money or a 藥材包. ---------- */
 const HERB=[["renshen","人參"],["gouqi","枸杞"],["hongzao","紅棗"],["huangqi","黃耆"],["danggui","當歸"],["gancao","甘草"],["chenpi","陳皮"],["juhua","菊花"],["rougui","肉桂"],["lianzi","蓮子"],["fuling","茯苓"],["guiyuan","桂圓"],["shengjiang","生薑"],["jinyinhua","金銀花"]];
 const PACKS=[["pk_duck","當歸鴨藥材包"],["pk_siwu","四物湯藥材包"],["pk_lu","滷味藥材包"],["pk_beef","牛肉麵滷包"]];
-GL["tw:herb"]=()=>{ const d=LF(); openSheet("lfHerb2","🌿 中藥行",`<p class="lead">陳伯：「藥材一樣一樣拿給你，你照名字放進抽屜就好。」</p><p class="note">20 樣、45 秒，錯 3 次以內就算成功。${(d.dht|0)<100?`成功會拿到一顆大還丹（已經吃了 ${d.dht|0} 顆）。`:"大還丹你已經吃滿了，陳伯改送別的。"}</p><div class="row"><button class="primary" data-act="lfHerbGo">幫忙分類</button><button class="secondary" data-act="lfRank" data-v="herb">今日排名</button></div>`); };
-HANDLERS.lfHerbGo=()=>{ closeSheet(); herbSort(); };
+GL["tw:herb"]=()=>{ const d=LF(); openSheet("lfHerb2","🌿 中藥行",`<p class="lead">陳伯：「年輕人，我眼睛看不太清楚，你能不能幫我把一樣的藥材配成對呢？」</p><p class="note">翻兩張一樣的就配成一對，60 秒內全部配完就成功。${(d.dht|0)<100?`成功會拿到一顆大還丹（已經吃了 ${d.dht|0} 顆）。`:"大還丹你已經吃滿了，陳伯改送別的。"}</p><div class="row"><button class="primary" data-act="lfHerbGo">幫忙分類</button><button class="secondary" data-act="lfRank" data-v="herb">今日排名</button></div>`); };
+HANDLERS.lfHerbGo=()=>{ closeSheet(); herbPairs(); };
+/* 中藥對對碰 (11/14, the chair: a pairs game, not naming): 16 cards face down, 8 kinds of herb; turn two, the same herb stays open.
+   All pairs within 60 s wins (the fewer misses, the higher the score). */
+function herbPairs(){ const G=gOverlay("🌿 中藥對對碰","linear-gradient(#f3e6cc,#d9bf94)"), B=G.B; const kinds=[...HERB].sort(()=>Math.random()-.5).slice(0,8); const cards=[...kinds,...kinds].sort(()=>Math.random()-.5).map(h=>({h,open:0,done:0}));
+  const S={t:60,miss:0,pairs:0,pick:[],lock:false};
+  const draw=()=>{ B.innerHTML=`<div style="display:flex;gap:16px;color:#5a3a1a;font:900 16px ${UI_FONT};margin:4px"><span id="hpT">⏱ ${Math.ceil(S.t)}</span><span>配對 ${S.pairs}/8</span><span>失誤 ${S.miss}</span></div>
+    <div style="display:grid;grid-template-columns:repeat(4,78px);gap:8px;margin-top:8px">${cards.map((c,i)=>`<button data-c="${i}" style="height:96px;border-radius:12px;border:3px solid ${c.done?"#4c9a6a":"#6b4a2e"};background:${c.open||c.done?"#fff8ea":"linear-gradient(#a8744a,#7a5234)"};padding:4px;display:flex;flex-direction:column;align-items:center;justify-content:center">${c.open||c.done?`<img src="herbs/${c.h[0]}.webp" style="max-width:64px;max-height:58px"><span style="font:900 13px ${UI_FONT};color:#5a3a1a">${c.h[1]}</span>`:`<span style="font:900 26px ${UI_FONT};color:#ffe2a0">藥</span>`}</button>`).join("")}</div>`; };
+  B.onclick=e=>{ const b=e.target.closest("[data-c]"); if(!b||S.lock) return; const c=cards[+b.dataset.c]; if(c.open||c.done) return; c.open=1; S.pick.push(c); try{ tone(620,.04,.04,"triangle"); }catch(_){}
+    if(S.pick.length===2){ const [a,b2]=S.pick; S.pick=[]; if(a.h[0]===b2.h[0]){ a.done=b2.done=1; S.pairs++; try{ tone(880,.08,.05,"triangle"); tone(1175,.1,.05,"triangle",.08); }catch(_){} if(S.pairs===8){ draw(); return end(true); } }
+      else { S.miss++; S.lock=true; draw(); setTimeout(()=>{ a.open=b2.open=0; S.lock=false; draw(); },650); return; } } draw(); };
+  let last=performance.now(); const tick=now=>{ if(!G.ov.isConnected||S.done) return; S.t-=Math.min(.1,(now-last)/1000); last=now; const el=B.querySelector("#hpT"); if(el) el.textContent="⏱ "+Math.max(0,Math.ceil(S.t)); if(S.t<=0) return end(false); requestAnimationFrame(tick); }; requestAnimationFrame(tick);
+  const end=win=>{ if(S.done) return; S.done=1; setTimeout(()=>{ G.close(); const d=LF(), paid=gamePaid("herb",5), score=win?Math.max(10,100+Math.round(S.t)*2-S.miss*4):S.pairs*8; let txt="";
+    if(win&&paid){ if((d.dht|0)+(d.dhtI|0)<100){ d.dhtI=(d.dhtI|0)+1; txt="陳伯：「好孩子，這顆大還丹給你。」（在背包裡，吃了精力上限 +1）"; } else if(Math.random()<.5){ const c=150+((Math.random()*4)|0)*50; bag.coins+=c; txt=`陳伯塞給你 ${c} 平安幣。`; } else { const P=PACKS[(Math.random()*PACKS.length)|0]; d.pk=d.pk||{}; d.pk[P[0]]=(d.pk[P[0]]|0)+1; txt=`陳伯送你一包「${P[1]}」，可以帶回家煮。`; } }
+    else if(win) txt="今天幫夠多了，陳伯說明天再來（每天前 5 次有謝禮）。"; else txt="時間到了，還差一點點！"; save();
+    rankPost("herb",score).then(j=>openSheet("lfHerb3","🌿 中藥對對碰",`<p class="lead">${win?"全部配對完成！":`配對了 ${S.pairs} / 8`}（失誤 ${S.miss}，${score} 分）。${txt}</p>${rankHtml("herb",j,1)}<div class="row"><button class="primary" data-act="lfHerbGo">再玩一次</button></div>`)); },win?700:200); }; draw(); }
+
 function herbSort(){ const G=gOverlay("🌿 分類藥材","linear-gradient(#f3e6cc,#d9bf94)"), B=G.B; const S={n:0,ok:0,bad:0,t:45,cur:null,sel:[]};
   const pickRound=()=>{ S.sel=[...HERB].sort(()=>Math.random()-.5).slice(0,4); };
   const nextHerb=()=>{ if(S.n>=20||S.bad>3||S.t<=0) return end(); if(S.n%5===0) pickRound(); S.cur=S.sel[(Math.random()*4)|0]; S.n++; draw(); };
@@ -172,41 +187,55 @@ function flowerGame(){ const G=gOverlay("💐 插花","linear-gradient(#f6f1e8,#
    2 扭蛋幣, 6–10th 500 平安幣, everyone else who played 300. ---------- */
 GL["tw:ice"]=async()=>{ const j=await rankGet("ice"); let got=""; try{ const r=await fetch("/rankclaim",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({g:"ice",uid:GU(),name:me.name||"香客"})}); const c=await r.json();
     if(c&&c.rank){ if(c.rank<=5){ bag.gacha=Math.min(255,(bag.gacha||0)+2); got=`🎉 昨天你是第 ${c.rank} 名！奶奶送你 2 枚扭蛋幣。`; } else if(c.rank<=10){ bag.coins+=500; got=`昨天你是第 ${c.rank} 名，奶奶送你 500 平安幣。`; } else { bag.coins+=300; got=`謝謝你昨天來玩（第 ${c.rank} 名），奶奶送你 300 平安幣。`; } save(); } }catch(e){}
-  openSheet("lfIce3","🍦 超巨大冰淇淋",`${got?`<p class="lead">${got}</p>`:""}<p class="lead">奶奶：「手指按住就會出冰淇淋，左右滑動來轉餅乾杯。轉太慢會堆歪，轉太快會斷掉喔！」</p><p class="note">一次 30 平安幣。每天的排名第二天結算：前 5 名 2 枚扭蛋幣、6～10 名 500 平安幣、其他參加的人 300 平安幣。</p><div class="row"><button class="primary" data-act="lfIceGo">來擠！（30 幣）</button></div>${rankHtml("ice",j)}`); };
+  openSheet("lfIce3","🍦 超巨大冰淇淋",`${got?`<p class="lead">${got}</p>`:""}<p class="lead">奶奶：「冰淇淋會一直流下來喔！用下面的圓盤轉餅乾杯、移動杯子，讓冰平均地疊上去，越高越好！」</p><p class="note">一次 30 平安幣。每天的排名第二天結算：前 5 名 2 枚扭蛋幣、6～10 名 500 平安幣、其他參加的人 300 平安幣。</p><div class="row"><button class="primary" data-act="lfIceGo">來擠！（30 幣）</button></div>${rankHtml("ice",j)}`); };
 HANDLERS.lfIceGo=()=>{ closeSheet(); if(!pay()) return; iceGame(); };
-function iceGame(){ const G=gOverlay("🍦 超巨大冰淇淋","linear-gradient(#fde7ef,#fff6e6)"), B=G.B; B.style.top="0";
-  B.innerHTML=`<img src="burger/icemachine.webp" style="position:absolute;left:50%;top:calc(env(safe-area-inset-top,0px) + 44px);transform:translateX(-50%);width:min(340px,86vw);pointer-events:none"><canvas id="icC" style="position:absolute;inset:0;width:100%;height:100%"></canvas><div id="icN" style="position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 70px);text-align:center;color:#7a3a4a;font:900 30px ${UI_FONT};pointer-events:none;text-shadow:0 2px 0 #fff">0 圈</div><div id="icH" style="position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 40px);text-align:center;color:#7a3a4a;font:800 14px ${UI_FONT};pointer-events:none">按住出冰淇淋・左右滑動轉杯子</div><div style="position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);transform:translateX(-50%);width:200px;height:12px;border-radius:6px;background:rgba(0,0,0,.12);overflow:hidden;pointer-events:none"><i id="icQ" style="position:absolute;top:0;bottom:0;width:6px;left:50%;background:#4cd964;border-radius:3px"></i><i style="position:absolute;top:0;bottom:0;left:33%;width:34%;background:rgba(76,217,100,.25)"></i></div><button class="secondary" id="icDone" style="position:absolute;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 70px)">完成</button>`;
+function iceGame(){ /* 11/14 (the chair, after softserve.nog.cc): the nozzle above never stops; you hold a pointed waffle cone and, with the dial
+   below, turn it (around the dial) and move it (in and out from the dial's centre) so the cream lands evenly. Where your finger is on
+   the dial is where the cream lands on the cone. Cream heaps up and slides where it is too steep; what lands off the cone falls away;
+   if the heap leans too far it topples. Ranked by height. */
+  const G=gOverlay("🍦 超巨大冰淇淋","#fbf6ec"), B=G.B; B.style.top="0";
+  B.innerHTML=`<canvas id="icC" style="position:absolute;left:0;top:0;width:100%;height:62%"></canvas><div id="icN" style="position:absolute;right:18px;top:calc(62% - 64px);color:#3f4f4a;font:900 34px ${UI_FONT};pointer-events:none">0.0 cm</div><div id="icH" style="position:absolute;left:14px;top:calc(62% - 40px);color:#7a6a5a;font:800 13px ${UI_FONT};pointer-events:none"></div>
+   <div id="icD" style="position:absolute;left:0;right:0;bottom:0;height:38%;background:#e8ecdf;border-radius:28px 28px 0 0;touch-action:none"><svg viewBox="-150 -150 300 300" style="position:absolute;left:50%;top:50%;width:270px;height:270px;transform:translate(-50%,-50%);pointer-events:none"><circle r="120" fill="none" stroke="#9aa89a" stroke-width="3" stroke-dasharray="6 9"/><circle r="5" fill="#7a8a7a"/><circle id="icK" r="16" fill="rgba(122,140,122,.25)" stroke="#7a8a7a" stroke-width="3" cx="0" cy="0"/></svg></div><button class="secondary" id="icDone" style="position:absolute;right:12px;top:calc(env(safe-area-inset-top,0px) + 56px)">完成</button>`;
   const cv=B.querySelector("#icC"); let R; try{ R=new T.WebGLRenderer({canvas:cv,alpha:true,antialias:true}); }catch(e){ G.close(); toast("這台裝置畫不出 3D 冰淇淋",2000); return; }
-  const fit=()=>{ R.setPixelRatio(Math.min(2,devicePixelRatio||1)); R.setSize(innerWidth,innerHeight,false); cam.aspect=innerWidth/innerHeight; cam.updateProjectionMatrix(); };
-  const sc=new T.Scene(), cam=new T.PerspectiveCamera(32,1,.05,50); sc.add(new T.HemisphereLight("#fff6f0","#e8c8b0",1.1)); const dl=new T.DirectionalLight("#ffffff",.9); dl.position.set(2,4,3); sc.add(dl);
-  /* the nozzle sits where the machine picture's middle spout is; camera fixed, the cone is lowered as the tower grows */
-  const NZ=new T.Vector3(0,0,0); cam.position.set(0,-.4,6.5); cam.lookAt(0,-.9,0); fit(); addEventListener("resize",fit);
-  const place=()=>{ /* put the nozzle under the spout in the picture: spout at 53% of the picture height */ const img=B.querySelector("img"); const r=img.getBoundingClientRect(); const sy=r.top+r.height*.6; const ndc=new T.Vector3(0,-(sy/innerHeight)*2+1,.5).unproject(cam); const dir=ndc.sub(cam.position).normalize(); const t=-cam.position.z/dir.z; NZ.copy(cam.position).addScaledVector(dir,t); };
-  setTimeout(place,60);
-  const cone=new T.Group(); sc.add(cone); const waffle=cvs(128,128,(x,w,h)=>{ x.fillStyle="#d9a066"; x.fillRect(0,0,w,h); x.strokeStyle="#b07a40"; x.lineWidth=5; for(let i=-w;i<w*2;i+=22){ x.beginPath(); x.moveTo(i,0); x.lineTo(i+h,h); x.stroke(); x.beginPath(); x.moveTo(i,h); x.lineTo(i+h,0); x.stroke(); } });
-  const cm=new T.Mesh(new T.CylinderGeometry(.26,.2,.32,24,1,true),new T.MeshStandardMaterial({map:waffle,roughness:.8,side:T.DoubleSide})); cm.position.y=-.16; cone.add(cm); const rim=new T.Mesh(new T.TorusGeometry(.26,.025,8,24),new T.MeshStandardMaterial({color:"#c98a4a",roughness:.7})); rim.rotation.x=Math.PI/2; cone.add(rim);
-  const cream=new T.MeshStandardMaterial({color:"#fff6e8",roughness:.45}), creamPink=new T.MeshStandardMaterial({color:"#ffd6e2",roughness:.45});
-  const S={th:0,w:0,h:0,c:new T.Vector2(),pts:[],segs:[],hold:false,lx:null,q:1,thin:0,rings:0,over:false,t:0};
-  const rAt=()=>Math.max(.07,.21-S.rings*.012); /* the ring gets smaller as it climbs, then stays */
-  const down=e=>{ if(e.target.closest&&e.target.closest("button")) return; e.preventDefault(); S.hold=true; S.lx=e.clientX; }, move=e=>{ if(!S.hold||S.lx==null) return; const dx=e.clientX-S.lx; S.lx=e.clientX; S.w+=dx*.045; }, up=()=>{ S.hold=false; S.lx=null; };
-  cv.addEventListener("pointerdown",down); addEventListener("pointermove",move); addEventListener("pointerup",up); addEventListener("pointercancel",up);
+  const sc=new T.Scene(), cam=new T.PerspectiveCamera(30,1,.05,60); sc.add(new T.HemisphereLight("#fffaf2","#d9c8b0",1.05)); const dl=new T.DirectionalLight("#ffffff",.85); dl.position.set(2,5,4); sc.add(dl);
+  const fit=()=>{ const w=cv.clientWidth, h=cv.clientHeight; R.setPixelRatio(Math.min(2,devicePixelRatio||1)); R.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix(); }; fit(); addEventListener("resize",fit);
+  /* nozzle */ const steel=new T.MeshStandardMaterial({color:"#62726c",roughness:.55,metalness:.2}); const pipe=new T.Mesh(new T.CylinderGeometry(.09,.09,1.6,24),steel); pipe.position.y=1.45; sc.add(pipe); const col=new T.Mesh(new T.CylinderGeometry(.19,.19,.12,28),steel); col.position.y=.66; sc.add(col); const tip=new T.Mesh(new T.CylinderGeometry(.15,.15,.2,28),steel); tip.position.y=.52; sc.add(tip);
+  /* the cone (pointed waffle) */ const cone=new T.Group(); sc.add(cone); const waffle=cvs(128,128,(x,w,h)=>{ x.fillStyle="#c98e52"; x.fillRect(0,0,w,h); x.strokeStyle="#e2b47a"; x.lineWidth=3; for(let i=-w;i<w*2;i+=16){ x.beginPath(); x.moveTo(i,0); x.lineTo(i+h,h); x.stroke(); x.beginPath(); x.moveTo(i,h); x.lineTo(i+h,0); x.stroke(); } }); waffle.wrapS=waffle.wrapT=T.RepeatWrapping; waffle.repeat.set(3,2);
+  const cm=new T.Mesh(new T.ConeGeometry(.3,.78,36,1,true),new T.MeshStandardMaterial({map:waffle,roughness:.85,side:T.DoubleSide})); cm.rotation.x=Math.PI; cm.position.y=-.39; cone.add(cm); const rim=new T.Mesh(new T.TorusGeometry(.3,.022,10,36),new T.MeshStandardMaterial({color:"#d9a066",roughness:.8})); rim.rotation.x=Math.PI/2; cone.add(rim);
+  const inner=new T.Mesh(new T.CircleGeometry(.29,36),new T.MeshStandardMaterial({color:"#8a5a30",roughness:.9})); inner.rotation.x=-Math.PI/2; inner.position.y=-.03; cone.add(inner);
+  const pile=new T.Group(); cone.add(pile);
+  /* the heap: a height map over the cone mouth (local units; 1 unit = 20 cm) */
+  const N=40, RG=.42, cell=2*RG/N, H=new Float32Array(N*N); const idx=(i,j)=>j*N+i; const toC=v=>Math.floor((v+RG)/cell);
+  const hAt=(x,z)=>{ const i=toC(x), j=toC(z); return i<0||j<0||i>=N||j>=N?0:H[idx(i,j)]; };
+  const cream=new T.MeshStandardMaterial({color:"#fff7ea",roughness:.42}), cream2=new T.MeshStandardMaterial({color:"#fbefdc",roughness:.42});
+  const stream=new T.Mesh(new T.CylinderGeometry(.032,.036,.2,12),cream); stream.position.y=.37; sc.add(stream); /* (the cream always coming down) */
+  const S={rho:0,phi:0,touch:false,pts:[],segs:0,top:0,t:0,over:false,spill:0,lean:new T.Vector2(),vol:0,last:new T.Vector3()};
+  const D=B.querySelector("#icD"), K=B.querySelector("#icK"); const dial=e=>{ const r=D.getBoundingClientRect(); const cx=r.left+r.width/2, cy=r.top+r.height/2, s=270/300; const dx=(e.clientX-cx)/s, dy=(e.clientY-cy)/s; const d=Math.hypot(dx,dy); S.rho=Math.min(1,d/120); S.phi=Math.atan2(dy,dx); K.setAttribute("cx",Math.cos(S.phi)*S.rho*120); K.setAttribute("cy",Math.sin(S.phi)*S.rho*120); };
+  D.addEventListener("pointerdown",e=>{ e.preventDefault(); S.touch=true; try{ D.setPointerCapture(e.pointerId); }catch(_){ } dial(e); }); D.addEventListener("pointermove",e=>{ if(S.touch) dial(e); }); const up=()=>{ S.touch=false; }; D.addEventListener("pointerup",up); D.addEventListener("pointercancel",up);
   B.querySelector("#icDone").onclick=()=>finish("完成！");
-  const seg=()=>{ if(S.pts.length<4) return; const pts=S.pts.slice(-6); const curve=new T.CatmullRomCurve3(pts); const rad=.05*Math.max(.55,Math.min(1.5,1/S.q)); const g=new T.TubeGeometry(curve,10,rad,8,false); const m=new T.Mesh(g,S.rings%4===3?creamPink:cream); cone.add(m); S.segs.push(m); S.pts=S.pts.slice(-2); };
-  const finish=(line)=>{ if(S.over) return; S.over=true; S.line=line; S.endT=0; try{ (line.startsWith("完成")?[784,988,1175,1568]:[300,220]).forEach((f,i)=>tone(f,.14,.05,line.startsWith("完成")?"triangle":"sawtooth",i*.09)); }catch(e){} };
-  let last=performance.now(); const loop=now=>{ if(!G.ov.isConnected){ R.dispose(); try{ R.forceContextLoss(); }catch(e){} removeEventListener("resize",fit); removeEventListener("pointermove",move); removeEventListener("pointerup",up); removeEventListener("pointercancel",up); return; }
+  const RM=.27; /* farthest from the middle the dial can put the cream */
+  const deposit=(x,z,amt)=>{ /* a soft bump, then let too-steep cream slide down, and what is off the cone fall away */ const ci=toC(x), cj=toC(z), rr=3;
+    for(let j=cj-rr;j<=cj+rr;j++) for(let i=ci-rr;i<=ci+rr;i++){ if(i<0||j<0||i>=N||j>=N) continue; const px=-RG+(i+.5)*cell, pz=-RG+(j+.5)*cell, w=Math.exp(-((px-x)**2+(pz-z)**2)/(2*.035*.035)); H[idx(i,j)]+=amt*w*.9; }
+    for(let pass=0;pass<2;pass++) for(let j=1;j<N-1;j++) for(let i=1;i<N-1;i++){ const k=idx(i,j), h=H[k]; if(h<=0) continue; const nb=[k-1,k+1,k-N,k+N]; for(const n of nb){ const dh=h-H[n]; if(dh>cell*1.15){ const m=(dh-cell*1.15)*.25; H[k]-=m; H[n]+=m; } } }
+    let vol=0, mx=0, mz=0, top=0; for(let j=0;j<N;j++) for(let i=0;i<N;i++){ const k=idx(i,j); let h=H[k]; if(h<=0) continue; const px=-RG+(i+.5)*cell, pz=-RG+(j+.5)*cell, r=Math.hypot(px,pz);
+      if(r>.3){ /* off the rim: stays only if the heap next to it (towards the middle) holds it up */ const ii=Math.round(i-(px/r)*1.5), jj=Math.round(j-(pz/r)*1.5); const sup=H[idx(Math.max(0,Math.min(N-1,ii)),Math.max(0,Math.min(N-1,jj)))]; if(sup<h*.9||r>RG-cell*2){ S.spill+=h; H[k]=0; continue; } }
+      vol+=h; mx+=px*h; mz+=pz*h; if(h>top) top=h; } S.vol=vol; S.top=top; if(vol>0){ S.lean.set(mx/vol,mz/vol); } };
+  const seg=()=>{ if(S.pts.length<4) return; const curve=new T.CatmullRomCurve3(S.pts.slice()); const m=new T.Mesh(new T.TubeGeometry(curve,S.pts.length*2,.034,8,false),S.segs%5===4?cream2:cream); pile.add(m); S.segs++; S.pts=S.pts.slice(-1); };
+  const finish=line=>{ if(S.over) return; S.over=true; S.line=line; S.endT=0; try{ (line.startsWith("完成")?[784,988,1175,1568]:[300,220]).forEach((f,i)=>tone(f,.14,.05,line.startsWith("完成")?"triangle":"sawtooth",i*.09)); }catch(e){} };
+  cam.position.set(0,.55,3.4); cam.lookAt(0,.05,0);
+  let last=performance.now(), acc=0; const loop=now=>{ if(!G.ov.isConnected){ R.dispose(); try{ R.forceContextLoss(); }catch(e){} removeEventListener("resize",fit); return; }
     const dt=Math.min(.05,(now-last)/1000); last=now; S.t+=dt;
-    if(!S.over){ S.w*=Math.pow(.35,dt); const r=rAt(), v=.42; S.th+=S.w*dt; cone.rotation.y=S.th;
-      if(S.hold){ S.q=Math.abs(S.w)*r/v; const lean=S.q<.55?(.55-S.q):0; const ang=-S.th; if(lean>0) S.c.add(new T.Vector2(Math.cos(ang),Math.sin(ang)).multiplyScalar(lean*dt*.09));
-        if(S.q>2.3) S.thin+=dt; else S.thin=Math.max(0,S.thin-dt*2); if(S.thin>.35) finish("轉太快，斷掉了……");
-        S.h+=dt*v*.035*Math.min(1.5,1/Math.max(.4,S.q)); const lp=new T.Vector3(S.c.x+r*Math.cos(ang),.02+S.h,S.c.y+r*Math.sin(ang)); S.pts.push(lp); if(S.pts.length>=6) seg();
-        const nr=Math.floor(Math.abs(S.th)/(Math.PI*2)); if(nr>S.rings&&S.h>.02){ S.rings=nr; B.querySelector("#icN").textContent=S.rings+" 圈"; try{ tone(600+Math.min(40,S.rings)*12,.05,.04,"triangle"); }catch(e){} }
-        if(S.c.length()>r*.9+.06) finish("堆歪了，倒下來了！"); }
-      else S.q=0;
-      const qi=B.querySelector("#icQ"); if(qi){ const p=Math.max(0,Math.min(1,S.q/2.6)); qi.style.left=(p*100)+"%"; qi.style.background=S.q>=.55&&S.q<=2.3?"#4cd964":"#ff3b30"; }
-      cone.position.set(NZ.x,NZ.y-S.h-.06,NZ.z); /* (lowered as it grows) */ cone.rotation.z=S.c.x*1.2; cone.rotation.x=-S.c.y*1.2; }
-    else { S.endT+=dt; if(S.line.startsWith("完成")){ const z=Math.min(1,S.endT/1.2); cam.position.set(0,-.4-S.h*.5*z,6.5+S.h*2.6*z); cam.lookAt(0,-.9-S.h*.5*z,0); cone.rotation.y+=dt*.8; } else { cone.rotation.z+=dt*1.4*Math.sign(S.c.x||1); cone.position.y-=dt*.6; }
-      if(S.endT>2.2&&!S.sent){ S.sent=1; const n=S.rings; G.close(); rankPost("ice",n).then(j=>openSheet("lfIce4","🍦 超巨大冰淇淋",`<p class="lead">${S.line} ${n} 圈！</p>${rankHtml("ice",j,1)}<p class="note">排名明天結算，記得回來找奶奶領獎。</p><div class="row"><button class="primary" data-act="lfIceGo">再擠一支（30 幣）</button></div>`)); } }
+    if(!S.over){ const r=S.rho*RM, lx=Math.cos(-S.phi)*r, lz=Math.sin(-S.phi)*r; /* where the cream lands, in the cone's own frame */
+      cone.rotation.y=S.phi; cone.position.x=-r; /* (turned by the dial, and moved so the nozzle is over that spot) */
+      const hy=hAt(lx,lz); cone.position.y=.3-hy-.03; /* lowered as the heap grows so the top stays under the nozzle */
+      const amt=dt*.026; deposit(lx,lz,amt); acc+=dt; const p=new T.Vector3(lx,hAt(lx,lz)+.02,lz); if(acc>.04&&p.distanceTo(S.last)>.012){ acc=0; S.pts.push(p); S.last.copy(p); if(S.pts.length>=10) seg(); }
+      const cmH=S.top; const lean=S.lean.length()/(cmH*.9+.06); pile.rotation.z=S.lean.x*cmH*1.4; pile.rotation.x=-S.lean.y*cmH*1.4; if(cmH>.12&&lean>.62) finish("歪掉了，整坨倒下來了！");
+      const cmv=cmH*20; B.querySelector("#icN").textContent=cmv.toFixed(1)+" cm"; B.querySelector("#icH").textContent=S.spill>.05?"有冰掉出杯子了！":lean>.45&&cmH>.1?"⚠️ 有點歪了":"";
+      /* the falling stream */ }
+    else { S.endT+=dt; if(S.line.startsWith("完成")){ const z=Math.min(1,S.endT/1.2); cam.position.set(0,.55+S.top*.4*z,3.4+S.top*3*z); cam.lookAt(0,.05-S.top*.2*z,0); cone.rotation.y+=dt*.8; } else { cone.rotation.z+=dt*1.6; cone.position.y-=dt*.8; }
+      if(S.endT>2.2&&!S.sent){ S.sent=1; const mm=Math.round(S.top*200); G.close(); rankPost("ice",mm).then(j=>openSheet("lfIce4","🍦 超巨大冰淇淋",`<p class="lead">${S.line} 高 ${(mm/10).toFixed(1)} cm！</p>${rankHtml("ice",j,1)}<p class="note">排名明天結算，記得回來找奶奶領獎。</p><div class="row"><button class="primary" data-act="lfIceGo">再擠一支（30 幣）</button></div>`)); } }
     R.render(sc,cam); requestAnimationFrame(loop); }; requestAnimationFrame(loop); }
+
 /* the burger game ranks too */ L.rankBurger=n=>rankPost("burger",n);
 /* the shop prizes in the bag: 大還丹, 鹹粥, 藥材包, 食譜, 疾走之書 */
 { const E0=L.bagEntries, A0=L.bagActs, I0=L.bic; const EM={g_dht:"💊",g_cg:"🥣",g_rcp:"📕",g_spd:"👟"}; PACKS.forEach(p=>EM["g_"+p[0]]="🧧");
