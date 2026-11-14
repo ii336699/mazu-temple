@@ -615,6 +615,7 @@ function gardenOpen(){ if(!SHOPX||!SHOPX.enter) return; const S=new T.Scene(); S
    scene — the tackle man hums and fiddles with a rod, the furniture lady dozes and wakes with a start, the breakfast couple bicker — in
    bubbles with a babbling voice pitched for each person (old men low and slow, girls high and quick; a question rises, a shout is
    louder), then the shop's panel or game opens. The full scene plays when you haven't been in for a while; otherwise a quick hello. ---------- */
+const babble=(d,p)=>{ try{ if(window.MZ_BABBLE) window.MZ_BABBLE(d,p); }catch(e){} }; /* the shops module's talking sound (it is not reachable by name from here) */
 const KV={oldm:{p:.66,r:.9},man:{p:.82,r:1},woman:{p:1.18,r:1},oldw:{p:1.02,r:.9},girl:{p:1.38,r:1.15},boy:{p:1.12,r:1.1}};
 const KEEP={
  "tw:tackle":{ppl:[{n:"阿財伯",v:"oldm",look:[2,18,2,8,1,2,4,7,0,1,0,2,0,1],sh:{leg:.94,tor:1.02,w:1.12,d:1.1,head:1,arm:1},rod:1}],mode:"hum",openAt:0,

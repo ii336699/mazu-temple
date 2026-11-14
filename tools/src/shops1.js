@@ -72,6 +72,7 @@ function eat(k,fromBag){ const s=SN[k]; if(!s) return false; if(bag.en>=100){ to
   if(!SX.on){ meAv.say(k==="beer"?"嗝～ 精力 +"+s.e:k==="energy"?"精神來了！精力 +"+s.e:"好吃！精力 +"+s.e,"#ffe066",2.4); } return true; }
 HANDLERS.snEat=k=>{ if(eat(k,true)){ toast(`${SN[k].n}：精力 +${SN[k].e}（現在 ${en()}）`,2200); if(sheetKind==="bag") openBag(); } };
 /* ---------- little voice (the 收驚阿嬤 squeaky babble, without the face) ---------- */
+window.MZ_BABBLE=(d,p)=>babble(d,p); /* (the town shopkeepers live in another module: without this their talking made no sound — 11/14) */
 function babble(dur,pitch=1){ const a=soundOn?ensureAudio():null; const v=sVol(); if(!a||v<=0) return; let t=0; const F=[[800,1200],[400,2200],[300,2700],[500,900],[350,800]];
   while(t<dur){ const d=.07+Math.random()*.11, gap=.02+Math.random()*.06, at=a.currentTime+.04+t, f0=(380+Math.random()*320)*pitch, fm=F[(Math.random()*F.length)|0];
     const o=a.createOscillator(); o.type="sawtooth"; o.frequency.setValueAtTime(f0,at); o.frequency.linearRampToValueAtTime(f0*(Math.random()<.5?1.35:.8),at+d);

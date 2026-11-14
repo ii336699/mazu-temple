@@ -10292,6 +10292,7 @@ function eat(k,fromBag){ const s=SN[k]; if(!s) return false; if(bag.en>=enMax())
   if(!SX.on){ meAv.say(k==="beer"?"嗝～ 精力 +"+s.e:k==="energy"?"精神來了！精力 +"+s.e:"好吃！精力 +"+s.e,"#ffe066",2.4); } return true; }
 HANDLERS.snEat=k=>{ if(eat(k,true)){ toast(`${SN[k].n}：精力 +${SN[k].e}（現在 ${en()}）`,2200); if(sheetKind==="bag") openBag(); } };
 /* ---------- little voice (the 收驚阿嬤 squeaky babble, without the face) ---------- */
+window.MZ_BABBLE=(d,p)=>babble(d,p); /* (the town shopkeepers live in another module: without this their talking made no sound — 11/14) */
 function babble(dur,pitch=1){ const a=soundOn?ensureAudio():null; const v=sVol(); if(!a||v<=0) return; let t=0; const F=[[800,1200],[400,2200],[300,2700],[500,900],[350,800]];
   while(t<dur){ const d=.07+Math.random()*.11, gap=.02+Math.random()*.06, at=a.currentTime+.04+t, f0=(380+Math.random()*320)*pitch, fm=F[(Math.random()*F.length)|0];
     const o=a.createOscillator(); o.type="sawtooth"; o.frequency.setValueAtTime(f0,at); o.frequency.linearRampToValueAtTime(f0*(Math.random()<.5?1.35:.8),at+d);
@@ -11797,7 +11798,7 @@ function kbld(C,o){ const r=krng(o.seed||7), pick=a=>a[(r()*a.length)|0], g=new 
   for(let f=1;f<fl;f++) KB(g,w+.1,.16,.12,tm,0,f*FH,.04); KB(g,.16,H,.16,tm,-w/2+.06,H/2,.06); KB(g,.16,H,.16,tm,w/2-.06,H/2,.06);
   /* ground floor */ const gz=-A;
   if(shop){ const ac=o.awn||pick(KP.awn); KB(g,w-1.55,2.05,.08,winM(1),-.675,1.25,gz+.03); /* (the window stops before the door: the two used to overlap 3 cm apart and flickered on phones) */ KB(g,w-.7,.12,.14,tm,-.35,2.32,gz+.06); const dx=w/2-.9; KB(g,1.0,2.25,.1,km(pick(KP.door)),dx,1.12,gz+.05);
-    if(!A){ const n=Math.max(3,Math.round(w/.6)); for(let i=0;i<n;i++) kp(g,kbox(),km(i%2?"#ffffff":ac),-w/2+(i+.5)*w/n,2.62,gz+.6,w/n+.01,.06,1.25,0,.38); KB(g,w,.12,.06,km(ac),0,2.4,gz+1.18); }
+    if(!A){ const n=Math.max(3,Math.round(w/.6)); for(let i=0;i<n;i++) kp(g,kbox(),km(i%2?"#ffffff":ac),-w/2+(i+.5)*w/n,2.62+(i%2)*.012,gz+.6,w/n-.004,.06,1.25,0,.38); KB(g,w,.12,.06,km(ac),0,2.4,gz+1.26); /* (awning stripes no longer overlap side by side, the white ones sit a hair higher, and the front strip stands clear of their ends: they flickered on phones — 一粥七天, 11/14) */ }
     if(o.name){ (TW.signs||(TW.signs={}))[o.name]={key:o.key,h:[+Math.min(w-.5,5.4).toFixed(2),.72],v:vsg?[.62,2.5]:null,arcade:!!A,fl}; /* (sizes, for the chair's sign pictures) */ /* 橫招 on the front, where the ground floor meets the first floor (Taiwan style), clear of the awning and the windows */ signPic(ksign(g,o.name,Math.min(w-.5,5.4),.72,0,A?FH+.42:3.3,A?.14:.16,0,o.sbg||ac,"#ffffff"),o.key,"h"); if(vsg) signPic(ksign(g,o.name,.62,2.5,w/2-.15,FH+1.25+.45,.72,Math.PI/2,o.sbg||ac,"#ffffff",true),o.key,"v"); }
     for(let k=0;k<2;k++) if(r()<.7) pot(g,-w/2+.45+k*.6,gz+.45,1,r); }
   else { const dx=(r()<.5?-1:1)*(w/2-1.3); KB(g,1.25,2.35,.12,tm,dx,1.17,gz+.05); KB(g,1.0,2.15,.14,km(pick(KP.door)),dx,1.08,gz+.06); kp(g,ksph(),km("#d9aa3d",{roughness:.4,metalness:.3}),dx+.32,1.05,gz+.15,.05,.05,.05);
@@ -12831,6 +12832,7 @@ function gardenOpen(){ if(!SHOPX||!SHOPX.enter) return; const S=new T.Scene(); S
    scene — the tackle man hums and fiddles with a rod, the furniture lady dozes and wakes with a start, the breakfast couple bicker — in
    bubbles with a babbling voice pitched for each person (old men low and slow, girls high and quick; a question rises, a shout is
    louder), then the shop's panel or game opens. The full scene plays when you haven't been in for a while; otherwise a quick hello. ---------- */
+const babble=(d,p)=>{ try{ if(window.MZ_BABBLE) window.MZ_BABBLE(d,p); }catch(e){} }; /* the shops module's talking sound (it is not reachable by name from here) */
 const KV={oldm:{p:.66,r:.9},man:{p:.82,r:1},woman:{p:1.18,r:1},oldw:{p:1.02,r:.9},girl:{p:1.38,r:1.15},boy:{p:1.12,r:1.1}};
 const KEEP={
  "tw:tackle":{ppl:[{n:"阿財伯",v:"oldm",look:[2,18,2,8,1,2,4,7,0,1,0,2,0,1],sh:{leg:.94,tor:1.02,w:1.12,d:1.1,head:1,arm:1},rod:1}],mode:"hum",openAt:0,
