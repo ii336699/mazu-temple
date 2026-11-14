@@ -4,6 +4,7 @@
    FISHGLB[id] is the only thing that has to be filled in. ================= */
 LIFE=(()=>{
 const L={};
+const MZIMG=p=>(window.IMG_PACK&&window.IMG_PACK[p])||p; /* (test page: newer pictures come packed in img-pack.js — the test page may hold only 512 files) */
 /* 主委測試模式 (11/14): only for the chair; nothing is saved — a reload turns it off. on: shops ignore their hours and games their daily limits; hour: the shop clock */
 const TM={on:false,hour:null}; L.TM=TM;
 const LF=()=>{ if(!bag.lf||typeof bag.lf!=="object") bag.lf={}; const d=bag.lf; d.fish=d.fish||{}; d.inv=Array.isArray(d.inv)?d.inv:[]; d.rod=d.rod|0; if(d.rod&&!d.rods) d.rods=d.rod>=2?0b1000011:1; /* (the first version had two rods) */ d.rods=d.rods|0; if(!Array.isArray(d.bait)||d.bait.length!==20) d.bait=Array(20).fill(0); return d; };
@@ -606,20 +607,15 @@ HANDLERS.lfCropSell=()=>{ const g=GD2(); let tot=0, n=0; for(const k in g.crop){
 function flower(){ const g=GD2(); openSheet("lfFlower","🌷 花店",`<p class="lead">「種子在這裡買，到河濱公園的『我的花圃』種。記得澆水喔！」</p>${SEEDS.map(q=>`<div class="lf-row"><span style="font-size:30px;width:56px;text-align:center">${q[5]}</span><div class="t"><b>${q[1]}種子</b>　${q[2]} 幣<br><small>約 ${q[3]} 分鐘長大（要澆 3 次水），收成賣 ${q[4]} 幣${g.seed[q[0]]?`｜有 ${g.seed[q[0]]} 包`:""}</small></div><button class="primary" data-act="lfSeed" data-v="${q[0]}">買</button></div>`).join("")}${L.cropSell()}`); }
 HANDLERS.lfSeed=v=>{ const q=SB[v], g=GD2(); if(!me.sp){ if(bag.coins<q[2]){ try{ buzz(); }catch(e){} toast("平安幣不夠",2000); return; } bag.coins-=q[2]; } g.seed[v]=(g.seed[v]|0)+1; save(); try{ chaChing(); }catch(e){} flower(); };
 let GS=null;
+const GTX={}; function GTEX(id,st){ const k=id+"-"+st; if(!GTX[k]){ const t=new T.TextureLoader().load(MZIMG("garden/"+k+".webp")); t.encoding=T.sRGBEncoding; GTX[k]=t; } return GTX[k]; }
 function gardenOpen(){ if(!SHOPX||!SHOPX.enter) return; const S=new T.Scene(); S.background=new T.Color("#9fd4f5").convertSRGBToLinear(); S.add(new T.HemisphereLight("#fff6e0","#4a6a3a",.5)); const sun=new T.DirectionalLight("#fff2d8",.55); sun.position.set(4,8,5); S.add(sun);
   const M=(c,o)=>{ const m=new T.MeshStandardMaterial(Object.assign({color:c,roughness:.9},o||{})); m.color.convertSRGBToLinear(); return m; }; const add=(geo,m,x,y,z)=>{ const o=new T.Mesh(geo,m); o.position.set(x,y,z); S.add(o); return o; };
   const grass=add(new T.PlaneGeometry(30,30),M("#8fd06a"),0,0,0); grass.rotation.x=-Math.PI/2;
-  for(let i=0;i<40;i++){ const a=Math.random()*6.283, d=8+Math.random()*6; add(new T.SphereGeometry(.12,8,6),M(["#ff8fb0","#fff1a0","#ffffff","#c5a8f5"][i%4]),Math.cos(a)*d,.12,Math.sin(a)*d); }
-  for(const [x,z,w,d] of [[0,-6,12.4,.2],[0,6,12.4,.2],[-6.2,0,.2,12],[6.2,0,.2,12]]){ add(new T.BoxGeometry(w,.6,d),M("#d8b890"),x,.3,z); }
-  for(const [x,z] of [[-8,-8],[8,-9],[-9,7],[9,8]]){ add(new T.CylinderGeometry(.18,.24,1.6,8),M("#8a6a4a"),x,.8,z); add(new T.SphereGeometry(1.4,14,10),M("#5fae5f"),x,2.3,z); }
-  { const sh=new T.Group(); sh.position.set(-4.6,0,-8.2); S.add(sh); const b=new T.Mesh(new T.BoxGeometry(2.6,2,2),M("#f6e2c8")); b.position.y=1; sh.add(b); const r=new T.Mesh(new T.ConeGeometry(2.1,1.1,4),M("#d9624a")); r.rotation.y=Math.PI/4; r.position.y=2.55; sh.add(r); }
-  /* 11/14: you are inside your greenhouse — a white frame with glass round the beds, and glass ribs overhead */ { const fr=M("#f6f6f2"), gl=new T.MeshStandardMaterial({color:"#dff3f6",transparent:true,opacity:.13,roughness:.05,depthWrite:false,side:T.DoubleSide}); const X=6.8, Z=6.6, Hh=2.6, Rr=1.8;
-    const bx=(w,h,d,x,y,z,m)=>add(new T.BoxGeometry(w,h,d),m||fr,x,y,z);
-    for(let k=0;k<=6;k++){ const x=-X+k*2*X/6; bx(.1,Hh,.1,x,Hh/2,-Z); bx(.1,Hh,.1,x,Hh/2,Z); } for(let k=1;k<6;k++){ const z=-Z+k*2*Z/6; bx(.1,Hh,.1,-X,Hh/2,z); bx(.1,Hh,.1,X,Hh/2,z); }
-    for(const z of [-Z,Z]) bx(2*X,.1,.1,0,Hh,z); for(const x of [-X,X]) bx(.1,.1,2*Z,x,Hh,0);
-    const sl=Math.atan2(Rr,X), L=Math.hypot(Rr,X); for(let k=0;k<=6;k++){ const z=-Z+k*2*Z/6; for(const sd of [-1,1]){ const b=bx(L,.08,.08,sd*X/2,Hh+Rr/2,z); b.rotation.z=-sd*sl; } } bx(.12,.12,2*Z,0,Hh+Rr,0);
-    for(const [w,x,z,ry] of [[2*X,0,-Z,0],[2*X,0,Z,0],[2*Z,-X,0,Math.PI/2],[2*Z,X,0,Math.PI/2]]){ const p=add(new T.PlaneGeometry(w,Hh),gl,x,Hh/2,z); p.rotation.y=ry; p.renderOrder=3; } }
-  const beds=[]; for(let i=0;i<12;i++){ const cx=-3.9+(i%4)*2.6, cz=-2.6+Math.floor(i/4)*2.6; const soil=add(new T.BoxGeometry(2.1,.22,2.1),M("#7a5236"),cx,.11,cz); const top=add(new T.BoxGeometry(1.9,.04,1.9),M("#5a3a24"),cx,.24,cz); const g=new T.Group(); g.position.set(cx,.26,cz); S.add(g); beds.push({cx,cz,soil,top,g}); }
+  /* 11/14 晚上 (the chair): inside you see only the lawn and the beds — no greenhouse frame, no shed, no trees. The beds are the chair's soil
+     picture, and the plants are the chair's growth pictures (public/garden/<crop>-<stage>.webp), standing up facing you. */
+  const soilT=new T.TextureLoader().load(MZIMG("garden/soil.webp")); soilT.encoding=T.sRGBEncoding; soilT.anisotropy=4;
+  for(let i=0;i<70;i++){ const a=Math.random()*6.283, d=7.2+Math.random()*7; const t=add(new T.ConeGeometry(.06,.22+Math.random()*.15,4),M(["#6fbf4a","#7fcf5a","#5aa840"][i%3]),Math.cos(a)*d,.1,Math.sin(a)*d); t.rotation.z=(Math.random()-.5)*.4; } /* a few grass tufts */
+  const beds=[]; for(let i=0;i<12;i++){ const cx=-3.9+(i%4)*2.6, cz=-2.6+Math.floor(i/4)*2.6; const soil=add(new T.BoxGeometry(2.1,.22,2.1),M("#8a6038"),cx,.11,cz); const tm=M("#ffffff"); tm.map=soilT; const top=add(new T.BoxGeometry(1.9,.04,1.9),tm,cx,.24,cz); const g=new T.Group(); g.position.set(cx,.26,cz); S.add(g); beds.push({cx,cz,soil,top,g}); }
   const cam=new T.PerspectiveCamera(40,1,.1,100); const o={exposure:1.0}; const el=SHOPX.enter("garden",o); const D=GD2(); let sel=-1;
   el.insertAdjacentHTML("beforeend",`<div class="shx-top"><span class="shx-title">🌱 我的花圃</span><span class="shx-pill" id="gC"></span><button class="shx-x" id="gX">離開</button></div><div class="shx-panel" id="gP"></div>`);
   const $g=q=>el.querySelector(q);
@@ -634,10 +630,8 @@ function gardenOpen(){ if(!SHOPX||!SHOPX.enter) return; const S=new T.Scene(); S
     $g("#gWA").onclick=()=>{ let n=0; D.beds.forEach((q,i)=>{ if(q&&stage(q)<3&&!q.w){ q.w=1; q.t=Date.now(); n++; splash(i); } }); save(); if(n) try{ tone(880,.1,.04,"sine"); }catch(e){} draw(); };
     const hv=$g("#gH"); if(hv) hv.onclick=()=>{ const n=b.s==="straw"||b.s==="tomato"?3:1; D.crop[b.s]=(D.crop[b.s]|0)+n; D.beds[sel]=null; save(); try{ [659,784,988].forEach((f,k)=>tone(f,.1,.05,"triangle",k*.07)); statInc("gdHarvest"); }catch(e){} toast(`收成了 ${n} 個${SB[b.s][1]}！`,2000); paint(); draw(); }; };
   const drops=[]; const splash=i=>{ const B=beds[i]; for(let k=0;k<10;k++){ const m=new T.Mesh(new T.SphereGeometry(.05,6,4),new T.MeshBasicMaterial({color:"#7ec8f0"})); m.position.set(B.cx+(Math.random()-.5)*1.4,1.6+Math.random()*.5,B.cz+(Math.random()-.5)*1.4); S.add(m); drops.push({m,v:0}); } };
-  const paint=()=>{ const now=Date.now(); beds.forEach((B,i)=>{ while(B.g.children.length){ const c=B.g.children[0]; B.g.remove(c); c.geometry.dispose(); c.material.dispose(); } const b=D.beds[i]; grow(b,now); B.top.material.color.set(b&&b.w?"#3e2616":"#5a3a24").convertSRGBToLinear(); if(!b) return; const st=stage(b), S2=SB[b.s], col=S2[6];
-      const add2=(geo,c,x,y,z)=>{ const o=new T.Mesh(geo,M(c)); o.position.set(x,y,z); B.g.add(o); return o; };
-      for(const [dx,dz] of [[-.45,-.45],[.45,-.45],[-.45,.45],[.45,.45]]){ if(st===0) add2(new T.SphereGeometry(.07,6,4),"#8a6a4a",dx,.02,dz); else if(st===1){ add2(new T.ConeGeometry(.08,.3,6),"#6fbf5a",dx,.15,dz); } else { add2(new T.CylinderGeometry(.03,.03,st===3?.7:.5,6),"#4f9a4a",dx,st===3?.35:.25,dz); add2(new T.SphereGeometry(.16,8,6),"#6fbf5a",dx,st===3?.45:.4,dz).scale.set(1.3,.6,1.3);
-          if(st===3){ if(["sun","tulip","rose"].includes(b.s)) add2(new T.SphereGeometry(b.s==="sun"?.16:.12,10,8),col,dx,.78,dz); else if(b.s==="cabbage") add2(new T.SphereGeometry(.22,10,8),col,dx,.25,dz); else if(b.s==="pumpkin") add2(new T.SphereGeometry(.2,10,8),col,dx,.2,dz).scale.set(1.2,.8,1.2); else for(let k=0;k<3;k++) add2(new T.SphereGeometry(.07,8,6),col,dx+(k-1)*.1,.6-k*.05,dz+.05); } } } }); };
+  const paint=()=>{ const now=Date.now(); beds.forEach((B,i)=>{ while(B.g.children.length){ const c=B.g.children[0]; B.g.remove(c); if(!c.isSprite) c.geometry.dispose(); c.material.dispose(); } const b=D.beds[i]; grow(b,now); B.top.material.color.set(b&&b.w?"#9a8a80":"#ffffff").convertSRGBToLinear(); if(!b) return; const st=stage(b), S2=SB[b.s], col=S2[6];
+      const sp=new T.Sprite(new T.SpriteMaterial({map:GTEX(b.s,st),transparent:true,alphaTest:.3})); const sz=[.95,1.25,1.55,1.75][st]; sp.scale.set(sz,sz,1); sp.center.set(.5,.08); sp.position.set(0,.02,.15); B.g.add(sp); }); };
   paint(); draw();
   const ray=new T.Raycaster(), v2=new T.Vector2(); const tl=el.querySelector(".shx-touch"); let yaw=0, drag=null;
   tl.addEventListener("pointerdown",e=>{ drag={x:e.clientX,y0:yaw,mv:0}; }); tl.addEventListener("pointermove",e=>{ if(!drag) return; drag.mv=Math.max(drag.mv,Math.abs(e.clientX-drag.x)); if(drag.mv>8) yaw=Math.max(-.7,Math.min(.7,drag.y0-(e.clientX-drag.x)*.006)); });
@@ -670,8 +664,8 @@ const KEEP={
    lines:[[0,"小朋友，你要不要來試試看超巨～～～～～～～～～～大冰淇淋呀？加量不加價唷！"]],quick:[[0,"又來啦？今天也要擠得高高的喔！"]]},
  "tw:congee":{ppl:[{n:"玲姊",v:"woman",look:[1,14,1,11,3,2,2,0,0,3,1,0,0,2],sh:{leg:.9,tor:.96,w:1.14,d:1.1,head:1,arm:.98}},{n:"君君",v:"girl",look:[0,5,0,4,5,3,0,1,0,2,1,0,0,1],sh:{leg:1.04,tor:.98,w:.9,d:.9,head:1.02,arm:1}}],mode:"panic",
    lines:[[0,"糟糕了糟糕了……"],[1,"玲姊，三桌又在喊了啦！"],[-1,"@NAME！你能不能來幫我們記菜單？照分數給你錢喔！"]],quick:[[-1,"@NAME！又滿桌了，快來幫我們記！"]]},
- "tw:flower":{ppl:[{n:"雅琪老師",v:"woman",look:[0,23,0,14,7,3,15,15,1,4,1,3,0,2],sh:{leg:1.12,tor:1.04,w:.88,d:.88,head:.98,arm:1.06}}],mode:"grace",
-   lines:[[0,"你是要來學插花的嗎？請進。"]],quick:[[0,"歡迎，今天的花很漂亮喔。"]]},
+ "tw:flower":{ppl:[{n:"雅琪店長",v:"woman",look:[0,23,0,14,7,3,15,15,1,4,1,3,0,2],sh:{leg:1.12,tor:1.04,w:.88,d:.88,head:.98,arm:1.06}}],mode:"grace",
+   lines:[[0,"啊，工讀生來啦！今天訂單有點多喔。"]],quick:[[0,"來啦～今天也麻煩你囉！"]]},
  "tw:drink":{ppl:[{n:"小安",v:"girl",look:[0,5,11,3,5,3,4,2,0,3,0,0,0,1],sh:{leg:1.02,tor:.98,w:.92,d:.92,head:1.04,arm:1}},{n:"阿哲",v:"boy",look:[1,25,0,3,5,3,4,1,0,2,0,6,0,1],sh:{leg:1.08,tor:1.02,w:1,d:.98,head:1,arm:1.02}}],mode:"cheer",
    lines:[[-1,"歡迎光臨！珍奶第二杯半價喔！"],[-1,"要不要加入我們的工作行列啊？當然老闆會給薪水的！"]],quick:[[-1,"歡迎光臨～！"]]},
  "tw:beauty":{ppl:[{n:"設計師 Kevin",v:"man",look:[0,27,9,1,0,5,0,10,0,3,0,0,2,1],sh:{leg:1.12,tor:1.04,w:.92,d:.9,head:.98,arm:1.04}}],mode:"pose",
@@ -717,7 +711,7 @@ function keepTick(dt){ const p=meAv.pos; for(const k in KS){ const S=KS[k]; if(M
         default: H.rotation.x=Math.sin(t*.6)*.04; } });
     if(S.mode!=="argue") S.avs.forEach(av=>{ if(!av._out) av.root.rotation.y=S.sp.ry; }); } }
 /* spawn the keepers of shops near you (so the street looks lived in) */
-L.keepers=()=>KS; L.isOpen=k=>{ try{ return TM.on||isOpen(k); }catch(e){ return true; } }; L.starTube=(...a)=>starTube(...a);
+L.openNow=k=>{ try{ return isOpen(k); }catch(e){ return true; } }; L.keepers=()=>KS; L.isOpen=k=>{ try{ return TM.on||isOpen(k); }catch(e){ return true; } }; L.starTube=(...a)=>starTube(...a);
 /* ---------- 🧪 主委測試模式: one page with everything to try in the latest version. Add a section here with every new version. ---------- */
 const TP_SHOPS=[["tw:bfast","元氣早餐店"],["tw:congee","一粥七天"],["tw:herb","中藥行"],["tw:tackle","釣具行"],["tw:furn","家具行"],["tw:book","書店"],["tw:drink","飲料店"],["tw:flower","花店"],["tw:photo","照相館"],["tw:beauty","美容院"],["tw:ice","擠冰淇淋"]];
 L.testPanel=()=>{ if(!me.sp) return; const b=(act,v,t,cls)=>`<button class="${cls||"secondary"}" style="flex:none;width:auto;min-height:0;padding:8px 12px;font-size:14px;margin:3px" data-act="${act}" data-v="${v}">${t}</button>`;
@@ -729,18 +723,21 @@ L.testPanel=()=>{ if(!me.sp) return; const b=(act,v,t,cls)=>`<button class="${cl
    <p class="note">現在：${hr==null?"真實時間":hr+" 點"}。各店營業時間：${Object.keys(HOURS).map(k=>`${(TP_SHOPS.find(q=>q[0]===k)||[0,k])[1]} ${hrs_(k)}`).join("、")}</p>
    <h4 style="margin:10px 0 4px">傳送／進店</h4><div>${b("tmGo","town","🏮 小鎮鎮口")}${b("tmGo","zen","🧘 禪房裡（測走出來會不會卡）")}${b("tmGo","temple","⛩️ 廟前")}</div><div>${TP_SHOPS.map(([k,n])=>b("tmShop",k,n)).join("")}</div>
    <h4 style="margin:10px 0 4px">直接玩（不用找店）</h4><div>${[["tw:bfast","🍔 疊漢堡"],["tw:ice","🍦 冰淇淋"],["tw:herb","🌿 中藥對對碰"],["tw:congee","🥣 記菜單"],["tw:drink","🧋 調飲料"],["tw:book","📚 推書櫃"],["tw:flower","💐 插花"]].map(([k,n])=>b("tmGame",k,n)).join("")}</div>
-   <h4 style="margin:10px 0 4px">這次改版（11/14）</h4><div>${b("tmRods",1,"🎣 拿到全部 12 支釣竿")}${b("tmRain",1,"🧧 撒紅包＋假人來搶")}</div><h4 style="margin:10px 0 4px">這次改版（11/14 下午）</h4><div>${b("tmIceDrink",1,"🧋 飲料：一定會加冰（看 3 秒提示和藍線）")}${b("tmGo","town","🏠 看屋頂（人字屋頂變少）")}${b("tmGame","tw:ice","🍦 新冰淇淋（照錄影重做）")}${b("tmBait",1,"🪱 每種釣餌各 10 份＋全部釣竿")}${b("tmBait",0,"🪱 清空釣餌（測沒餌不能拋竿）")}</div><h4 style="margin:10px 0 4px">這次改版（11/14 晚上）</h4><div>${b("tmShop","tw:congee","🥣 一粥七天（新櫥窗、招牌）")}${b("tmShop","tw:tackle","🎣 釣具行（立體櫥窗、門）")}${b("tmGo","alley","🏚️ 收藏家小屋")}${b("tmGame","tw:herb","🌿 中藥對對碰（木桌＋碗）")}${b("tmMet",1,"🌠 流星（金色星星）")}</div><h4 style="margin:10px 0 4px">這次改版（11/14 晚上 2）</h4><div>${b("tmGo","beach","🏖️ 海邊（橋、躺椅、太陽、沒霧）")}${b("tmGo","garden","🌱 溫室花圃")}${b("tmGo","pier","🎣 車站旁的河（草皮不再跑出來）")}${b("tmNight",1,"🌙 變晚上（路燈）")}${b("tmNight",0,"☀️ 變白天")}</div><h4 style="margin:10px 0 4px">這次改版（11/14 晚上 3：魚模型）</h4><div>${b("tmFish",1,"🐟 下一隻新魚模型（每按一次換一隻）")}${b("tmDexAll",1,"📖 圖鑑全部點亮（看新圖示）")}</div>`); };
+   <h4 style="margin:10px 0 4px">這次改版（11/14）</h4><div>${b("tmRods",1,"🎣 拿到全部 12 支釣竿")}${b("tmRain",1,"🧧 撒紅包＋假人來搶")}</div><h4 style="margin:10px 0 4px">這次改版（11/14 下午）</h4><div>${b("tmIceDrink",1,"🧋 飲料：一定會加冰（看 3 秒提示和藍線）")}${b("tmGo","town","🏠 看屋頂（人字屋頂變少）")}${b("tmGame","tw:ice","🍦 新冰淇淋（照錄影重做）")}${b("tmBait",1,"🪱 每種釣餌各 10 份＋全部釣竿")}${b("tmBait",0,"🪱 清空釣餌（測沒餌不能拋竿）")}</div><h4 style="margin:10px 0 4px">這次改版（11/14 晚上）</h4><div>${b("tmShop","tw:congee","🥣 一粥七天（新櫥窗、招牌）")}${b("tmShop","tw:tackle","🎣 釣具行（立體櫥窗、門）")}${b("tmGo","alley","🏚️ 收藏家小屋")}${b("tmGame","tw:herb","🌿 中藥對對碰（木桌＋碗）")}${b("tmMet",1,"🌠 流星（金色星星）")}</div><h4 style="margin:10px 0 4px">這次改版（11/14 晚上 2）</h4><div>${b("tmGo","beach","🏖️ 海邊（橋、躺椅、太陽、沒霧）")}${b("tmGo","garden","🌱 溫室花圃")}${b("tmGo","pier","🎣 車站旁的河（草皮不再跑出來）")}${b("tmNight",1,"🌙 變晚上（路燈）")}${b("tmNight",0,"☀️ 變白天")}</div><h4 style="margin:10px 0 4px">這次改版（11/14 晚上 3：魚模型）</h4><div>${b("tmFish",1,"🐟 下一隻新魚模型（每按一次換一隻）")}${b("tmDexAll",1,"📖 圖鑑全部點亮（看新圖示）")}</div><h4 style="margin:10px 0 4px">這次改版（11/14 晚上 4）</h4><div>${b("tmBq",1,"💐 花束打工（隨機一張訂單）")}${b("tmGo","furn","🛋️ 得意屋家具（招牌＋櫥窗）")}${b("tmHour",3,"🌙 時鐘撥到 3 點（店都關：招牌不亮、櫥窗暗）")}${b("tmHour",-1,"🕒 時鐘恢復")}${b("tmGo","garden","🌱 三間溫室")}${b("tmGarden",1,"🌱 花圃：每塊田放不同作物和階段")}${b("tmTown",1,"🔎 小鎮讀取狀態（缺一塊時按這個截圖給我）")}</div>`); };
 HANDLERS.tmNight=v=>{ window.MZ_TOD=v==="1"?.7:.2; toast(v==="1"?"🌙 晚上":"☀️ 白天",1200); };
 const NEWFISH=["clownfish","mahi","shark","tuna","sunfish","marlin","oarfish","mackerel","seabream","terapon","sardine","milkfish","saury","mullet","puffer","flounder","loach","eel","bighead","masu","sturgeon","medaka","angel","springkoi","goldscale","crucian","ayu","kuhua","hairtail","squid","seahorse","grouper","pomfret","redbream","amberjack","octopus"]; let nfI=0;
 HANDLERS.tmFish=()=>{ closeSheet(); const id=NEWFISH[nfI++%NEWFISH.length]; try{ L.hold(id); toast("🐟 "+FBY[id].n+"（"+nfI+"/"+NEWFISH.length+"）",1800); }catch(e){ console.warn(e); } };
 HANDLERS.tmDexAll=()=>{ const d=LF(); FISH.forEach(f=>{ if(!d.fish[f.id]) d.fish[f.id]=[1,f.sz[1],Date.now()]; }); dex(); };
+HANDLERS.tmTown=()=>{ let t=""; try{ const X=TOWNX; t=`已載入：${(X.live?X.live():[]).join("、")}<br>錯誤：${(X.loadErr||[]).join("<br>")||"沒有"}<br>位置：${meAv.pos.x.toFixed(1)}, ${meAv.pos.y.toFixed(1)}`; }catch(e){ t="讀不到："+e.message; } openSheet("tmTown","🔎 小鎮讀取狀態",`<p class="note" style="word-break:break-all">${t}</p>`); };
+HANDLERS.tmBq=()=>{ closeSheet(); bqGame(); };
+HANDLERS.tmGarden=()=>{ closeSheet(); const D=GD2(), now=Date.now(); for(let i=0;i<12;i++){ const q=SEEDS[i%SEEDS.length]; D.beds[i]={s:q[0],p:[0,1,2,3][(i+Math.floor(i/7))%4],w:0,t:now}; } save(); gardenOpen(); };
 HANDLERS.tmMet=()=>{ closeSheet(); try{ L.meteorTest(); }catch(e){ console.warn(e); } };
 HANDLERS.tmBait=v=>{ const d=LF(); if(v==="1"){ d.rods=4095; BAITS.forEach((b,i)=>{ d.bait[i]=Math.max(d.bait[i]|0,10); }); toast("🪱 釣餌、釣竿都給你了。到水邊釣魚，左下角可以換竿換餌",3000); } else { d.bait=d.bait.map(()=>0); d.bF=0; d.bS=0; toast("釣餌清空了",1800); } save(); };
 HANDLERS.tmIceDrink=()=>{ closeSheet(); window.MZ_DRINK_ICE=1; try{ drinkGame(); }finally{ window.MZ_DRINK_ICE=0; } };
 const hrs_=k=>{ try{ return hrs(k); }catch(e){ return ""; } };
 HANDLERS.tmOn=v=>{ TM.on=v==="1"; toast(TM.on?"🧪 測試模式開啟":"測試模式關閉",1600); L.testPanel(); };
 HANDLERS.tmHour=v=>{ const h=+v; TM.hour=h<0?null:h; L.testPanel(); };
-HANDLERS.tmGo=v=>{ closeSheet(); const P={town:[28,-62],zen:[-30,-28],temple:[0,30],alley:[8.2,-86.5],beach:[148,-112],garden:[42,-120.5],pier:[28,-136.6],street:[60,-77]}[v]; if(P){ meAv.pos.set(P[0],P[1]); meAv.target.set(P[0],P[1]); meAv.path=[]; } };
+HANDLERS.tmGo=v=>{ closeSheet(); const P={furn:[34.5,-75.5],town:[28,-62],zen:[-30,-28],temple:[0,30],alley:[8.2,-86.5],beach:[148,-112],garden:[42,-120.5],pier:[28,-136.6],street:[60,-77]}[v]; if(P){ meAv.pos.set(P[0],P[1]); meAv.target.set(P[0],P[1]); meAv.path=[]; } };
 HANDLERS.tmShop=v=>{ closeSheet(); const b=TOWNX&&TOWNX.bOf&&TOWNX.bOf(v); if(b){ const fx=b.x+Math.sin(b.ry)*2.2, fz=b.z+Math.cos(b.ry)*2.2; meAv.pos.set(fx,fz); meAv.target.set(fx,fz); meAv.path=[]; } setTimeout(()=>{ try{ openStation(v); }catch(e){ console.warn(e); } },b?900:50); };
 HANDLERS.tmGame=v=>{ closeSheet(); try{ GL[v](); }catch(e){ console.warn(e); toast("這個遊戲還打不開",1800); } };
 HANDLERS.tmRain=()=>{ closeSheet(); try{ hbStart({id:"test"+Date.now(),seed:(Math.random()*1e9)|0,n:24,x:meAv.pos.x,z:meAv.pos.y,at:Date.now()}); }catch(e){ console.warn(e); } };
@@ -1012,12 +1009,12 @@ const HIMG={}; function herbLoad(ids){ return Promise.all(ids.map(id=>HIMG[id]||
 HANDLERS.lfHerbGo=()=>{ closeSheet(); herbPairs(); };
 /* 中藥對對碰 (11/14, the chair: a pairs game, not naming): 16 cards face down, 8 kinds of herb; turn two, the same herb stays open.
    All pairs within 60 s wins (the fewer misses, the higher the score). */
-function herbPairs(){ const G0=gOverlay("🌿 中藥對對碰","linear-gradient(#5a3a22,#3a2414)"); G0.B.innerHTML=`<div style="margin-top:40px;color:#ffe2a0;font:900 18px ${UI_FONT}">許伯在抓藥材…</div>`; const kinds=[...HERB].sort(()=>Math.random()-.5).slice(0,8);
+function herbPairs(){ const G0=gOverlay("🌿 中藥對對碰",`url(${MZIMG("herbs/table.webp")}) center/cover no-repeat,#3a2414`); /* (11/14: the chair's old wooden table) */ G0.B.innerHTML=`<div style="margin-top:40px;color:#ffe2a0;font:900 18px ${UI_FONT}">許伯在抓藥材…</div>`; const kinds=[...HERB].sort(()=>Math.random()-.5).slice(0,8);
   herbLoad(kinds.map(h=>h[0]).concat(["bowl"])).then(()=>{ if(G0.ov.isConnected) herbPairs2(G0,kinds); }); }
 function herbPairs2(G,kinds){ const B=G.B; const cards=[...kinds,...kinds].sort(()=>Math.random()-.5).map(h=>({h,open:0,done:0}));
   const S={t:60,miss:0,pairs:0,pick:[],lock:false};
   const draw=()=>{ B.innerHTML=`<div style="display:flex;gap:16px;color:#ffe2a0;font:900 16px ${UI_FONT};margin:4px"><span id="hpT">⏱ ${Math.ceil(S.t)}</span><span>配對 ${S.pairs}/8</span><span>失誤 ${S.miss}</span></div>
-    <div style="display:grid;grid-template-columns:repeat(4,80px);gap:8px;margin-top:10px;padding:12px;border-radius:18px;background:repeating-linear-gradient(90deg,rgba(60,30,10,.18) 0 2px,transparent 2px 23px),repeating-linear-gradient(0deg,rgba(255,220,170,.06) 0 1px,transparent 1px 7px),linear-gradient(#9a6a3e,#7a4e2a);box-shadow:inset 0 2px 0 rgba(255,220,170,.35),0 6px 16px rgba(40,20,5,.45)">${cards.map((c,i)=>`<button data-c="${i}" style="position:relative;height:84px;border:0;background:none;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center">${c.open||c.done?`<img src="herbs/${c.h[0]}.webp" style="max-width:66px;max-height:54px;filter:drop-shadow(0 3px 2px rgba(0,0,0,.35))${c.done?";opacity:.55":""}"><span style="font:900 12px ${UI_FONT};color:#fff6e0;text-shadow:0 1px 2px #3a1a08">${c.h[1]}</span>`:`<img src="herbs/bowl.webp" style="width:74px;height:74px;filter:drop-shadow(0 4px 3px rgba(0,0,0,.4))">`}</button>`).join("")}</div>`; }; /* (11/14: a wooden table; each herb hides under an upturned blue-and-white bowl) */
+    <div style="display:grid;grid-template-columns:repeat(4,80px);gap:8px;margin-top:10px;padding:12px;border-radius:18px;background:rgba(40,20,8,.12)">${cards.map((c,i)=>`<button data-c="${i}" style="position:relative;height:84px;border:0;background:none;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center">${c.open||c.done?`<img src="herbs/${c.h[0]}.webp" style="max-width:66px;max-height:54px;filter:drop-shadow(0 3px 2px rgba(0,0,0,.35))${c.done?";opacity:.55":""}"><span style="font:900 12px ${UI_FONT};color:#fff6e0;text-shadow:0 1px 2px #3a1a08">${c.h[1]}</span>`:`<img src="herbs/bowl.webp" style="width:74px;height:74px;filter:drop-shadow(0 4px 3px rgba(0,0,0,.4))">`}</button>`).join("")}</div>`; }; /* (11/14: a wooden table; each herb hides under an upturned blue-and-white bowl) */
   B.onclick=e=>{ const b=e.target.closest("[data-c]"); if(!b||S.lock) return; const c=cards[+b.dataset.c]; if(c.open||c.done) return; c.open=1; GSN.clack(); GSN.flip(); S.pick.push(c); try{ tone(620,.04,.04,"triangle"); }catch(_){}
     if(S.pick.length===2){ const [a,b2]=S.pick; S.pick=[]; if(a.h[0]===b2.h[0]){ a.done=b2.done=1; S.pairs++; try{ tone(880,.08,.05,"triangle"); tone(1175,.1,.05,"triangle",.08); }catch(_){} if(S.pairs===8){ draw(); return end(true); } }
       else { S.miss++; GSN.miss(); S.lock=true; draw(); setTimeout(()=>{ a.open=b2.open=0; S.lock=false; draw(); },650); return; } } draw(); };
@@ -1076,47 +1073,105 @@ function bookPrize(d){ const r=Math.random(); if(r<.3){ energy(20); return "老�
 function lfSpeed(){ try{ const d=LF(); if(me.sp&&typeof CHAIR_SPD!=="undefined"&&CHAIR_SPD>1) return; meAv.moveSpeed=(d.spd|0)?3.31*(1+(d.spd|0)/100):undefined; }catch(e){} }
 setTimeout(lfSpeed,3000);
 
-/* ---------- 💐 花店：插花 — 雅琪老師 hands you some flowers; drag each one into the vase (where you let go is where its head goes).
-   She scores it the way 花藝 classes do: three main stems at about 1 : ¾ : ½ of a height 1.5–2× the vase (天・地・人), not
-   symmetrical, an odd number of focal flowers, two or three colours, balanced over the vase, not crowded, everything used. ---------- */
-const FLW=[["玫瑰","#d6334a","focal"],["百合","#fbf6ee","focal"],["向日葵","#f6c22a","focal"],["桔梗","#8a5ac8","focal"],["康乃馨","#f08aa8","focal"],["滿天星","#ffffff","filler"],["尤加利葉","#7fa88a","leaf"],["雪柳","#e8f0e0","line"]];
-GL["tw:flower"]=()=>{ openSheet("lfFlw","💐 花店",`<p class="lead">雅琪老師：「你是要來學插花的嗎？請進。」</p><div class="row"><button class="primary" data-act="lfFlwGo">學插花</button><button class="secondary" data-act="lfFlwShop">買種子</button><button class="secondary" data-act="lfRank" data-v="flower">今日排名</button></div><p class="note">分數及格送 1 枚扭蛋幣（每天前 3 次）；老師特別喜歡的作品，她會想留下來。</p>`); };
+GL["tw:flower"]=()=>{ openSheet("lfFlw","💐 心語花店",`<p class="lead">雅琪店長：「工讀生來啦！今天的訂單麻煩你囉。客人要什麼花、什麼顏色、什麼感覺，照著包就對了。」</p><div class="row"><button class="primary" data-act="lfFlwGo">開始打工</button><button class="secondary" data-act="lfFlwShop">買種子</button><button class="secondary" data-act="lfRank" data-v="flower">今日排名</button></div><p class="note">每張單照星星發打工費：★★★ 500、★★ 300、★ 200 平安幣。</p>`); };
 HANDLERS.lfFlwShop=()=>{ try{ L.flowerShop?L.flowerShop():toast("種子在花店老闆娘那裡買",2000); }catch(e){} };
-HANDLERS.lfFlwGo=()=>{ closeSheet(); flowerGame(); };
-function flowerGame(){ const G=gOverlay("💐 插花","linear-gradient(#f6f1e8,#e6dccb)"), B=G.B; const kinds=[...FLW].sort(()=>Math.random()-.5).slice(0,3); if(!kinds.some(k=>k[2]==="focal")) kinds[0]=FLW[0];
-  const give=[]; kinds.forEach(k=>{ const n=k[2]==="focal"?3+((Math.random()*3)|0):2+((Math.random()*3)|0); for(let i=0;i<n;i++) give.push({f:k}); }); /* (one object per stem) */ const placed=[]; const W2=340, H2=470, VX=W2/2, VY=360, VW=70, VH=96;
-  B.innerHTML=`<div style="color:#5a3a22;font:800 14px ${UI_FONT};margin:4px;text-align:center">把花拖進花瓶。放開的位置就是花朵的位置。</div><canvas id="flC" width="${W2}" height="${H2}" style="touch-action:none"></canvas><div class="row" style="gap:10px"><button class="secondary" id="flU">↩ 拿掉一枝</button><button class="primary" id="flOk">請老師評分</button></div>`;
-  const cv=B.querySelector("#flC"), x=cv.getContext("2d"); let drag=null;
-  const tray=()=>{ const left=give.filter(k=>!k._used); return left; };
-  const drawFlower=(k,hx,hy,sx,sy,a)=>{ x.globalAlpha=a||1; x.strokeStyle=k[2]==="leaf"?"#5a8a62":"#4f7f4a"; x.lineWidth=3; x.beginPath(); x.moveTo(sx,sy); x.quadraticCurveTo((sx+hx)/2+(hx-sx)*.1,(sy+hy)/2,hx,hy); x.stroke();
-    if(k[2]==="leaf"){ x.fillStyle=k[1]; for(let i=0;i<5;i++){ const t=.3+i*.15, px=sx+(hx-sx)*t, py=sy+(hy-sy)*t; x.beginPath(); x.ellipse(px+8,py,9,6,.5,0,7); x.ellipse(px-8,py,9,6,-.5,0,7); x.fill(); } }
-    else if(k[2]==="filler"){ x.fillStyle=k[1]; for(let i=0;i<9;i++){ x.beginPath(); x.arc(hx+Math.cos(i*2.4)*12*Math.random(),hy+Math.sin(i*2.4)*10*Math.random(),3,0,7); x.fill(); } }
-    else if(k[2]==="line"){ x.fillStyle=k[1]; for(let i=0;i<8;i++){ const t=.4+i*.08; x.beginPath(); x.arc(sx+(hx-sx)*t+4,sy+(hy-sy)*t,2.5,0,7); x.fill(); } }
-    else { x.fillStyle=k[1]; x.strokeStyle="rgba(0,0,0,.18)"; x.lineWidth=1; for(let i=0;i<7;i++){ x.beginPath(); x.ellipse(hx+Math.cos(i*.9)*7,hy+Math.sin(i*.9)*6,9,7,i,0,7); x.fill(); x.stroke(); } x.fillStyle=k[0]==="向日葵"?"#6a3a1a":"rgba(255,230,160,.9)"; x.beginPath(); x.arc(hx,hy,k[0]==="向日葵"?7:3,0,7); x.fill(); } x.globalAlpha=1; };
-  const draw=()=>{ x.clearRect(0,0,W2,H2); x.fillStyle="#efe6d6"; x.fillRect(0,H2-80,W2,80);
-    placed.forEach(p=>drawFlower(p.k,p.x,p.y,VX+(p.x-VX)*.12,VY-VH+10));
-    x.fillStyle="#3f6a8a"; x.beginPath(); x.moveTo(VX-VW/2,VY-VH); x.lineTo(VX+VW/2,VY-VH); x.quadraticCurveTo(VX+VW*.75,VY-VH*.4,VX+VW*.45,VY); x.lineTo(VX-VW*.45,VY); x.quadraticCurveTo(VX-VW*.75,VY-VH*.4,VX-VW/2,VY-VH); x.fill(); x.fillStyle="rgba(255,255,255,.25)"; x.fillRect(VX-VW/2+8,VY-VH+8,6,VH-20);
-    const t=tray(); t.forEach((q,i)=>{ const k=q.f; const tx=26+i*(W2-40)/Math.max(1,t.length-1||1)*(t.length>1?1:0)+(t.length===1?W2/2-26:0), ty=H2-40; q._tx=tx; q._ty=ty; drawFlower(k,tx,ty-16,tx,ty+22,drag&&drag.q===q?.3:1); });
-    if(drag) drawFlower(drag.q.f,drag.x,drag.y,VX,VY-VH+10,.9); };
-  const pos=e=>{ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)*W2/r.width,(e.clientY-r.top)*H2/r.height]; };
-  cv.addEventListener("pointerdown",e=>{ const [mx,my]=pos(e); const t=tray(); let k=null, bd=26; t.forEach(q=>{ const d=Math.hypot(mx-q._tx,my-(q._ty-10)); if(d<bd){ bd=d; k=q; } }); if(!k) return; try{ cv.setPointerCapture(e.pointerId); }catch(_){ } drag={q:k,x:mx,y:my}; draw(); });
-  cv.addEventListener("pointermove",e=>{ if(!drag) return; [drag.x,drag.y]=pos(e); draw(); });
-  const up=()=>{ if(!drag) return; GSN.snip(); const ok=drag.y<VY-VH-6&&Math.abs(drag.x-VX)<W2/2-10; if(ok){ drag.q._used=1; placed.push({k:drag.q.f,q:drag.q,x:drag.x,y:drag.y}); try{ tone(660+placed.length*30,.05,.04,"triangle"); }catch(e){} } drag=null; draw(); };
-  cv.addEventListener("pointerup",up); cv.addEventListener("pointercancel",up);
-  B.querySelector("#flU").onclick=()=>{ const p=placed.pop(); if(p) p.q._used=0; draw(); }; B.querySelector("#flOk").onclick=()=>grade();
-  const grade=()=>{ if(!placed.length){ toast("先插幾枝花吧",1500); return; } const mouthY=VY-VH, ht=p=>mouthY-p.y, byH=[...placed].sort((a,b)=>ht(b)-ht(a)), notes=[]; let sc=0;
-    const h1=ht(byH[0]), h2=byH[1]?ht(byH[1]):0, h3=byH[2]?ht(byH[2]):0, rH=h1/VH; const s1=Math.max(0,20-Math.abs(rH-1.75)*30); sc+=s1; if(s1<10) notes.push(rH<1.75?"最高的那枝可以再高一點（花瓶的一倍半到兩倍）":"最高的那枝太高了");
-    const s2=byH[2]?Math.max(0,20-Math.abs(h2/h1-.75)*50-Math.abs(h3/h1-.5)*50):0; sc+=s2; if(s2<10) notes.push("主枝的高低可以拉開：天、地、人大約 1：¾：½");
-    const L=placed.filter(p=>p.x<VX-10).length, R=placed.filter(p=>p.x>VX+10).length, sym=Math.abs(L-R)===0&&L>0; const s3=sym?6:15; sc+=s3; if(sym) notes.push("左右太對稱了，花藝喜歡有一點不對稱的美");
-    const foc=placed.filter(p=>p.k[2]==="focal").length; const s4=foc%2===1?10:4; sc+=s4; if(foc%2===0) notes.push("主花用單數會更自然");
-    const cols=new Set(placed.map(p=>p.k[1])).size; const s5=cols>=2&&cols<=3?10:5; sc+=s5;
-    const cx=placed.reduce((a,p)=>a+p.x,0)/placed.length; const s6=Math.max(0,10-Math.abs(cx-VX)/6); sc+=s6; if(s6<5) notes.push("整體重心偏一邊了");
-    let close=0; for(let i=0;i<placed.length;i++) for(let j=i+1;j<placed.length;j++) if(Math.hypot(placed[i].x-placed[j].x,placed[i].y-placed[j].y)<22) close++; const s7=Math.max(0,10-close*3); sc+=s7; if(close>1) notes.push("有幾朵擠在一起，留一點空間會更好看");
-    const used=placed.length/give.length; sc+=Math.round(5*used); sc=Math.round(Math.min(100,sc));
-    G.close(); const G2=GAME_DAY(); const paid=me.sp||(G2.flw|0)<3; let txt=""; if(sc>=60&&paid){ G2.flw=(G2.flw|0)+1; if(sc>=90&&!G2.flwBig){ G2.flwBig=1; bag.gacha=Math.min(255,(bag.gacha||0)+5); txt="雅琪老師：「這盆花……太美了！！！我這裡有五枚扭蛋幣，你能把這盆花留給我嗎？我要好好學習。」（扭蛋幣 +5）"; } else { bag.gacha=Math.min(255,(bag.gacha||0)+1); txt="老師點點頭：「不錯喔。」（扭蛋幣 +1）"; } }
-    else if(sc>=60) txt="老師：「很好，今天就練到這裡吧。」（每天前 3 次有獎勵）"; else txt="老師：「再試試看，慢慢來。」"; save();
-    rankPost("flower",sc).then(j=>openSheet("lfFlw2","💐 老師評分",`<p class="lead">${sc} 分。${txt}</p>${notes.length?`<p class="note">${notes.slice(0,3).map(n=>"・"+n).join("<br>")}</p>`:""}${rankHtml("flower",j,1)}<div class="row"><button class="primary" data-act="lfFlwGo">再插一盆</button></div>`)); };
-  draw(); }
+HANDLERS.lfFlwGo=()=>{ closeSheet(); bqGame(); };
+/* ---------- 💐 心語花店・花束打工 (11/14 晚上, the chair's rules): you are the part-timer. A customer asks for a bouquet — which flowers, how
+   many, what colours, what feel for the paper — and you build it: drag stems from the shelf into the bouquet (back / middle / front row),
+   pick a paper (drawn behind the flowers and again in front of the stems) and a bow, then hand it over before time runs out. No prices,
+   no budget, no costs anywhere: the shop pays a fixed wage by stars — ★★★ 500, ★★ 300, ★ 200, under one star nothing.
+   Score (100): the asked-for flowers 35 · colours 25 · counts and "please don't" 20 · paper and bow fit the feel 10 · time 10.
+   Missing an asked-for flower caps the order at two stars. Pictures: public/flw/<id>.webp (cut from the chair's sheet, tools/flower/cut.py). ---------- */
+const BQF=[ /* id, name, kind, colour */
+ ["rose_r","紅玫瑰","rose","red"],["rose_p","粉玫瑰","rose","pink"],["rose_w","白玫瑰","rose","white"],["rose_y","黃玫瑰","rose","yellow"],
+ ["lily_w","白百合","lily","white"],["lily_p","粉百合","lily","pink"],["lily_s","香水百合","lily","pink"],["lily_o","橘百合","lily","orange"],
+ ["carn_r","紅康乃馨","carn","red"],["carn_p","粉康乃馨","carn","pink"],["carn_w","白康乃馨","carn","white"],
+ ["hyd_b","藍繡球","hyd","blue"],["hyd_p","粉繡球","hyd","pink"],["hyd_v","紫繡球","hyd","purple"],["sunf","向日葵","sunf","yellow"],
+ ["gerb_p","粉非洲菊","gerb","pink"],["gerb_y","黃非洲菊","gerb","yellow"],["gerb_o","橘非洲菊","gerb","orange"],
+ ["tul_r","紅鬱金香","tul","red"],["tul_p","粉鬱金香","tul","pink"],["tul_y","黃鬱金香","tul","yellow"],["tul_w","白鬱金香","tul","white"],["tul_v","紫鬱金香","tul","purple"],
+ ["orch_p","粉蝴蝶蘭","orch","pink"],["orch_w","白蝴蝶蘭","orch","white"],["orch_y","黃蝴蝶蘭","orch","yellow"],["calla_w","白海芋","calla","white"],["calla_y","黃海芋","calla","yellow"],
+ ["daisy","雛菊","daisy","white"],["chamo","洋甘菊","daisy","white"],["laven","薰衣草","laven","purple"],["gyp_w","白滿天星","gyp","white"],["gyp_p","粉滿天星","gyp","pink"],
+ ["euca","尤加利葉","leaf","green"],["leafv","斑葉","leaf","green"],["fern","蕨葉","leaf","green"],["monst","龜背芋","leaf","green"],["ivy","常春藤","leaf","green"]];
+const BQB={}; BQF.forEach(f=>BQB[f[0]]=f);
+const BQW=[["wrap_k","牛皮紙"],["wrap_p","粉紅紙"],["wrap_v","淡紫紙"],["wrap_b","淺藍紙"],["wrap_f","碎花紙"],["wrap_m","薄荷點點紙"]], BQR=[["bow_r","紅緞帶"],["bow_p","粉緞帶"],["bow_y","黃緞帶"],["bow_v","紫緞帶"],["bow_b","藍條紋緞帶"]];
+const BQK={rose:"玫瑰",lily:"百合",carn:"康乃馨",hyd:"繡球花",sunf:"向日葵",gerb:"非洲菊",tul:"鬱金香",orch:"蝴蝶蘭",calla:"海芋",daisy:"小雛菊",laven:"薰衣草",gyp:"滿天星",leaf:"葉材"};
+const BQC={red:"紅",pink:"粉紅",white:"白",yellow:"黃",orange:"橘",purple:"紫",blue:"藍"};
+/* the orders: what the customer says, and what it means. req: [kind, colour or "", how many, exact?]; col: the colours wanted (the green
+   leaves never count against you); no: "please don't"; tot: [fewest, most] stems; wrap/bow: what fits the feel */
+const BQO=[
+ {who:"👩 陳小姐",say:"我想送媽媽一束粉紅色的花，裡面要有兩朵康乃馨，包裝也想要溫柔一點。",req:[["carn","",2,1]],col:["pink","white"],tot:[4,10],wrap:["wrap_p","wrap_v","wrap_f"],bow:["bow_p","bow_v"]},
+ {who:"🧑 阿傑",say:"幫我做一束適合告白的花束，要有紅玫瑰，搭配白色花朵。",req:[["rose","red",3,0]],col:["red","white"],tot:[5,12],wrap:["wrap_p","wrap_f","wrap_k"],bow:["bow_r","bow_p"]},
+ {who:"👵 林阿嬤",say:"我要帶去廟裡拜拜，請幫我準備一束有百合的花束，看起來莊重一點。",req:[["lily","",2,0]],col:["white","yellow"],no:{col:["red","pink","purple","blue","orange"]},tot:[4,10],wrap:["wrap_k","wrap_m"],bow:["bow_y","bow_b"],noTxt:"不要太花俏的顏色"},
+ {who:"🧒 小宇",say:"我朋友畢業了！我想送一束很有活力的花，要三朵向日葵，黃色系的。",req:[["sunf","",3,1]],col:["yellow","orange","white"],tot:[4,10],wrap:["wrap_k","wrap_b"],bow:["bow_y","bow_b"]},
+ {who:"👨 王先生",say:"同事住院了，想帶一束明亮的花去看他。要有非洲菊，但是不要百合，香味太重了。",req:[["gerb","",2,0]],col:["yellow","orange","white","pink"],no:{kind:["lily"]},tot:[4,10],wrap:["wrap_m","wrap_b","wrap_k"],bow:["bow_y","bow_b"],noTxt:"不要百合"},
+ {who:"👧 小雨",say:"今天是我閨蜜生日～我要一束繽紛的鬱金香，三朵以上，顏色越多越好！",req:[["tul","",3,0]],col:["*"],tot:[4,12],wrap:["wrap_f","wrap_p","wrap_v"],bow:["bow_p","bow_y","bow_v"]},
+ {who:"👩 美玲",say:"我跟男朋友吵架了……想送一束藍色的花道歉，要一朵藍色繡球花，配白色的小花。",req:[["hyd","blue",1,1]],col:["blue","white"],tot:[3,9],wrap:["wrap_b","wrap_m"],bow:["bow_b"]},
+ {who:"🧔 老王",say:"朋友新店開張，送一束喜氣的蘭花，要兩枝蝴蝶蘭，黃色或白色，包裝穩重一點。",req:[["orch","",2,1]],col:["yellow","white"],tot:[3,9],wrap:["wrap_k"],bow:["bow_y","bow_r"]},
+ {who:"👴 許伯",say:"結婚紀念日，想送老伴一束紅玫瑰，剛好九朵就好，不要別的花，可以加點葉子。",req:[["rose","red",9,1]],col:["red"],no:{other:1},tot:[9,14],wrap:["wrap_k","wrap_p","wrap_f"],bow:["bow_r"],noTxt:"除了紅玫瑰和葉子，不要別的花"},
+ {who:"👩 秀琴",say:"想放在家裡的一小束紫色的花，有薰衣草就好，簡單清爽，不要超過六枝。",req:[["laven","",1,0]],col:["purple","white"],tot:[2,6],wrap:["wrap_v","wrap_k","wrap_m"],bow:["bow_v"],noTxt:"不要超過六枝"},
+ {who:"🧑 阿翔",say:"要去求婚！拜託做一束超浪漫的，粉玫瑰五朵，再配滿天星。",req:[["rose","pink",5,1],["gyp","",1,0]],col:["pink","white"],tot:[7,14],wrap:["wrap_p","wrap_f"],bow:["bow_p","bow_r"]},
+ {who:"👩‍🏫 吳老師",say:"教師節學生要送的花，想要白海芋兩枝，看起來高雅一點。",req:[["calla","white",2,1]],col:["white","green","yellow"],tot:[3,9],wrap:["wrap_m","wrap_k","wrap_b"],bow:["bow_b","bow_y"]}];
+const BQIMG={}; const bqImg=id=>BQIMG[id]||(BQIMG[id]=(()=>{ const im=new Image(); im.src=MZIMG("flw/"+id+".webp"); return im; })());
+const BQT=100; /* seconds per order */
+function bqGame(){ BQF.forEach(f=>bqImg(f[0])); BQW.forEach(w=>bqImg(w[0])); BQR.forEach(r=>bqImg(r[0]));
+  const BS=on=>`flex:none;border:1px solid ${on?"#c0506a":"#e2cbb4"};border-radius:12px;background:${on?"#d0607a":"#fffaf3"};color:${on?"#fff":"#6a4a32"};font:800 12.5px ${UI_FONT};`; const O=BQO[(Math.random()*BQO.length)|0], G=gOverlay("💐 心語花店・花束打工","linear-gradient(#fbf3ea,#f0e2d2)"), B=G.B; const W2=340, H2=400, CX=W2/2;
+  const st={pl:[],row:1,wrap:null,bow:null,t:BQT,done:0}; let drag=null;
+  B.innerHTML=`<div style="width:min(94vw,420px);display:flex;gap:8px;align-items:flex-start;margin:2px 0 4px"><div style="flex:1;background:#fff;border-radius:14px;padding:8px 10px;box-shadow:0 2px 8px rgba(120,80,40,.15);color:#5a3a22;font:700 13.5px/1.45 ${UI_FONT}"><b>${O.who}</b>：「${O.say}」</div><div id="bqT" style="min-width:58px;text-align:center;background:#7a3a1a;color:#fff;border-radius:12px;padding:6px 4px;font:900 16px ${UI_FONT}">${BQT}</div></div>
+   <canvas id="bqC" width="${W2}" height="${H2}" style="touch-action:none;width:min(80vw,340px,46vh*.85);background:radial-gradient(#fffaf2,#f3e6d4);border-radius:18px"></canvas>
+   <div style="display:flex;gap:6px;margin:4px 0" id="bqRow">${["後排","中排","前排"].map((t,i)=>`<button data-r="${i}" style="${BS(i===1)}padding:6px 14px">${t}</button>`).join("")}<button id="bqU" style="${BS(0)}padding:6px 12px">↩ 拿掉</button></div>
+   <div id="bqS" style="width:min(96vw,440px);display:flex;gap:6px;overflow-x:auto;padding:4px 2px;touch-action:pan-x">${BQF.map(f=>`<div data-f="${f[0]}" style="flex:none;width:58px;text-align:center;font:800 10.5px ${UI_FONT};color:#6a4a32;background:#fffaf3;border-radius:10px;padding:2px 0"><img src="${MZIMG("flw/"+f[0]+".webp")}" draggable="false" style="height:54px;max-width:58px;object-fit:contain;pointer-events:none"><br><span style="color:#5a3a22!important;opacity:1;text-shadow:none;pointer-events:none">${f[1]}</span></div>`).join("")}</div>
+   <div style="width:min(96vw,440px);display:flex;gap:5px;overflow-x:auto;padding:2px" id="bqW">${BQW.map(w=>`<button data-w="${w[0]}" style="${BS(0)}padding:3px 7px"><img src="${MZIMG("flw/"+w[0]+".webp")}" style="height:30px;vertical-align:middle">${w[1]}</button>`).join("")}</div>
+   <div style="width:min(96vw,440px);display:flex;gap:5px;overflow-x:auto;padding:2px" id="bqR">${BQR.map(w=>`<button data-b="${w[0]}" style="${BS(0)}padding:3px 7px"><img src="${MZIMG("flw/"+w[0]+".webp")}" style="height:26px;vertical-align:middle">${w[1]}</button>`).join("")}</div>
+   <button class="primary" id="bqOk" style="margin:6px 0 calc(env(safe-area-inset-bottom,0px) + 8px);padding:9px 26px">💐 完成，交給客人</button>`;
+  const cv=B.querySelector("#bqC"), x=cv.getContext("2d"); const RS=[.82,1,1.12];
+  const wrapBox=()=>({w:236,h:236,x:CX-118,y:H2-250});
+  const fH=f=>f[2]==="leaf"||f[2]==="gyp"?150:f[2]==="hyd"||f[2]==="sunf"?118:130;
+  const drawF=(p,a)=>{ const f=BQB[p.id], im=bqImg(p.id); if(!im.complete||!im.naturalWidth) return; const h=fH(f)*RS[p.r], w=h*im.naturalWidth/im.naturalHeight; x.globalAlpha=a||1; x.save(); x.translate(p.x,p.y); x.rotate((p.x-CX)/700); x.drawImage(im,-w/2,-h*.18,w,h); x.restore(); x.globalAlpha=1; };
+  const draw=()=>{ x.clearRect(0,0,W2,H2); const wb=wrapBox();
+    if(st.wrap){ const im=bqImg(st.wrap); if(im.naturalWidth) x.drawImage(im,wb.x,wb.y,wb.w,wb.h); } /* paper, back layer */
+    [0,1,2].forEach(r=>st.pl.filter(p=>p.r===r&&p!==drag?.p).forEach(p=>drawF(p)));
+    if(st.wrap){ const im=bqImg(st.wrap); if(im.naturalWidth){ const c=.46; x.drawImage(im,0,im.naturalHeight*c,im.naturalWidth,im.naturalHeight*(1-c),wb.x,wb.y+wb.h*c,wb.w,wb.h*(1-c)); } } /* paper, front layer over the stems */
+    else { x.fillStyle="rgba(90,60,40,.25)"; x.beginPath(); x.ellipse(CX,H2-30,46,12,0,0,7); x.fill(); x.fillStyle="#7a5a3a"; x.font=`700 12px ${UI_FONT}`; x.textAlign="center"; x.fillText("（還沒選包裝紙）",CX,H2-8); }
+    if(st.bow){ const im=bqImg(st.bow); if(im.naturalWidth){ const w=92, h=w*im.naturalHeight/im.naturalWidth; x.drawImage(im,CX-w/2,wb.y+wb.h*.66-h/2,w,h); } }
+    if(drag&&drag.p) drawF(drag.p,.85); else if(drag) drawF({id:drag.id,x:drag.x,y:drag.y,r:st.row},.75);
+    x.fillStyle="#7a5a3a"; x.font=`800 12px ${UI_FONT}`; x.textAlign="left"; x.fillText(`${st.pl.length} 枝`,8,16); };
+  const pos=e=>{ const r=cv.getBoundingClientRect(); return [(e.clientX-r.left)*W2/r.width,(e.clientY-r.top)*H2/r.height,e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom]; };
+  const inZone=(px,py)=>px>40&&px<W2-40&&py>30&&py<H2-150;
+  /* from the shelf: press a flower and pull it up (a sideways swipe still scrolls the shelf), or just tap it to drop it in the middle */
+  const sh=B.querySelector("#bqS"); let pd=null;
+  sh.addEventListener("pointerdown",e=>{ const it=e.target.closest("[data-f]"); if(!it) return; pd={id:it.dataset.f,x0:e.clientX,y0:e.clientY,pid:e.pointerId}; });
+  const mv=e=>{ if(pd&&!drag){ const dx=e.clientX-pd.x0, dy=e.clientY-pd.y0; if(dy<-12&&Math.abs(dy)>Math.abs(dx)){ drag={id:pd.id,x:0,y:0}; GSN.slide(); } else if(Math.abs(dx)>14) pd=null; }
+    if(drag){ const [px,py]=pos(e); if(drag.p){ drag.p.x=px; drag.p.y=py; } else { drag.x=px; drag.y=py; } draw(); } };
+  const upF=e=>{ if(drag){ const [px,py,inside]=pos(e); if(drag.p){ if(!inside||!inZone(px,py)){ st.pl.splice(st.pl.indexOf(drag.p),1); GSN.miss(); } else GSN.snip(); } else if(inside&&inZone(px,py)){ st.pl.push({id:drag.id,x:px,y:py,r:st.row}); GSN.snip(); } drag=null; draw(); }
+    else if(pd&&Math.hypot(e.clientX-pd.x0,e.clientY-pd.y0)<10){ st.pl.push({id:pd.id,x:CX+(Math.random()-.5)*90,y:110+Math.random()*70,r:st.row}); GSN.snip(); draw(); } pd=null; };
+  window.addEventListener("pointermove",mv); window.addEventListener("pointerup",upF); window.addEventListener("pointercancel",upF);
+  /* move a flower that is already in: press it (the front-most under your finger); pull it out of the bouquet to take it away */
+  cv.addEventListener("pointerdown",e=>{ const [px,py]=pos(e); for(const r of [2,1,0]){ const hit=[...st.pl].reverse().find(p=>p.r===r&&Math.abs(p.x-px)<26&&py>p.y-28&&py<p.y+60); if(hit){ drag={p:hit}; draw(); return; } } });
+  B.querySelectorAll("#bqRow [data-r]").forEach(b=>b.onclick=()=>{ st.row=+b.dataset.r; B.querySelectorAll("#bqRow [data-r]").forEach(q=>q.style.cssText=BS(q===b)+"padding:6px 14px"); GSN.clack(); });
+  B.querySelector("#bqU").onclick=()=>{ st.pl.pop(); GSN.slide(); draw(); };
+  B.querySelectorAll("[data-w]").forEach(b=>b.onclick=()=>{ st.wrap=b.dataset.w; B.querySelectorAll("[data-w]").forEach(q=>q.style.cssText=BS(q===b)+"padding:3px 7px"); GSN.flip(); draw(); });
+  B.querySelectorAll("[data-b]").forEach(b=>b.onclick=()=>{ st.bow=b.dataset.b; B.querySelectorAll("[data-b]").forEach(q=>q.style.cssText=BS(q===b)+"padding:3px 7px"); GSN.flip(); draw(); });
+  const fin=()=>{ if(st.done) return; st.done=1; clearInterval(tm); window.removeEventListener("pointermove",mv); window.removeEventListener("pointerup",upF); window.removeEventListener("pointercancel",upF); };
+  const tm=setInterval(()=>{ if(G.ov._quit||!G.ov.isConnected){ fin(); return; } st.t--; const el=B.querySelector("#bqT"); if(el){ el.textContent=Math.max(0,st.t); el.style.background=st.t<=15?"#c0392b":"#7a3a1a"; } if(st.t<=15&&st.t>0) GSN.tick(); if(st.t<=0) hand(true); },1000);
+  B.querySelector("#bqOk").onclick=()=>{ if(!st.pl.length){ toast("先放幾枝花進去吧",1500); return; } hand(false); };
+  const hand=late=>{ fin(); draw(); const pic=cv.toDataURL("image/png"); const R=bqScore(O,st,late); G.close(); bqResult(O,R,pic); };
+  setTimeout(draw,300); setTimeout(draw,1200); draw(); GSN.start(); }
+function bqScore(O,st,late){ const P=st.pl.map(p=>BQB[p.id]), notes=[]; let miss=false;
+  /* 1. the asked-for flowers (35) */ let s1=0; O.req.forEach(([k,c,n])=>{ const have=P.filter(f=>f[2]===k&&(!c||f[3]===c)).length; if(!have){ miss=true; notes.push(`少了客人指定的${c?BQC[c]:""}${BQK[k]}`); } else if(have<n) notes.push(`${c?BQC[c]:""}${BQK[k]}要 ${n} 枝，只放了 ${have} 枝`); s1+=35/O.req.length*Math.min(1,have/n); });
+  /* 2. colours (25): the share of flowers (not leaves) in the colours asked for; "*" = as many colours as you can */ const fl=P.filter(f=>f[3]!=="green"); let s2=0;
+  if(O.col[0]==="*"){ const n=new Set(fl.map(f=>f[3])).size; s2=25*Math.min(1,n/3); if(n<3) notes.push("客人想要更多種顏色"); }
+  else if(fl.length){ const ok=fl.filter(f=>O.col.includes(f[3])).length/fl.length; s2=25*ok; if(ok<.8) notes.push(`有些花的顏色不是客人要的（${O.col.filter(c=>BQC[c]).map(c=>BQC[c]).join("、")}色）`); }
+  /* 3. counts and "please don't" (20) */ let s3=0; const exact=O.req.every(([k,c,n,ex])=>{ const have=P.filter(f=>f[2]===k&&(!c||f[3]===c)).length; return ex?have===n:have>=n; }); if(exact) s3+=8; else if(!miss) notes.push("指定的數量不太對");
+  const tot=P.length; if(tot>=O.tot[0]&&tot<=O.tot[1]) s3+=6; else notes.push(tot<O.tot[0]?"花束有點太少了":"花束放太多枝了");
+  let bad=0; if(O.no){ if(O.no.kind) bad+=P.filter(f=>O.no.kind.includes(f[2])).length; if(O.no.col) bad+=P.filter(f=>O.no.col.includes(f[3])).length; if(O.no.other) bad+=P.filter(f=>f[3]!=="green"&&!O.req.some(([k,c])=>f[2]===k&&(!c||f[3]===c))).length; } if(!bad) s3+=6; else notes.push(`客人說了：${O.noTxt||"有不要的花"}`);
+  /* 4. paper and bow (10) */ let s4=0; if(st.wrap&&O.wrap.includes(st.wrap)) s4+=6; else notes.push(st.wrap?"包裝紙跟客人想要的感覺不太搭":"忘了包裝紙"); if(st.bow&&O.bow.includes(st.bow)) s4+=4; else notes.push(st.bow?"緞帶顏色可以再搭一點":"忘了緞帶");
+  /* 5. time (10) */ const s5=late?0:Math.round(Math.min(10,2+16*st.t/BQT)); if(late) notes.push("時間到了，客人等太久");
+  let sc=Math.round(s1+s2+s3+s4+s5); if(miss) sc=Math.min(sc,89); /* (missing what they asked for: two stars at most) */
+  const star=sc>=90?3:sc>=70?2:sc>=50?1:0; return {sc,star,notes,parts:[s1,s2,s3,s4,s5].map(Math.round)}; }
+function bqResult(O,R,pic){ const pay=[0,200,300,500][R.star]; if(pay){ bag.coins+=pay; save(); try{ profSave(true); chaChing(); }catch(e){} } (R.star?GSN.win:GSN.lose)();
+  const said=R.star===3?"哇！跟我想的一模一樣，謝謝你！":R.star===2?"很漂亮，謝謝！":R.star===1?"嗯……還可以，謝謝。":"這……好像不是我要的耶。";
+  rankPost("flower",R.sc).then(j=>openSheet("lfFlw2","💐 交給客人",`<div style="text-align:center"><img src="${pic}" style="width:62%;max-width:240px;border-radius:14px;background:#fff6ea"></div><p class="lead" style="text-align:center;font-size:22px;margin:4px 0">${"★".repeat(R.star)}${"☆".repeat(3-R.star)}　${R.sc} 分</p><p class="lead">${O.who}：「${said}」</p><p class="note">指定花材 ${R.parts[0]}/35・顏色 ${R.parts[1]}/25・數量與要求 ${R.parts[2]}/20・包裝 ${R.parts[3]}/10・時間 ${R.parts[4]}/10${R.notes.length?"<br>"+R.notes.slice(0,4).map(n=>"・"+n).join("<br>"):""}</p><p class="lead">${pay?`雅琪店長：「辛苦了！這是這張單的打工費。」（平安幣 +${pay}）`:"雅琪店長：「沒關係，下一張單再加油！」"}</p>${rankHtml("flower",j,1)}<div class="row"><button class="primary" data-act="lfFlwGo">接下一張單</button></div>`)); }
+L.bqScore=bqScore; L.bqGame=()=>bqGame();
 
 /* ---------- 🍦 超巨大冰淇淋 (3D): hold your finger down to let the soft serve flow, and twist the cookie cone left/right by dragging. Turn it
    at the right speed for the flow: too slow and the cream piles up on one side (the tower leans and falls), too fast and the ribbon
@@ -1269,7 +1324,7 @@ const KA=k=>{ const d=LF(); d.ka=d.ka||{}; return d.ka[k]=d.ka[k]||{a:0,d:0}; };
 /* (11/14: the hours and the gossip are handled when you walk into the shop — see 走進店裡) */
 
 L.flowerShop=()=>flower();
-const SOON={};
+const SOON={"tw:gh2":["🌱 溫室二號","溫室二號"],"tw:gh3":["🌱 溫室三號","溫室三號"]};
 L.more4=k=>{ if(SOON[k]&&!(L.games&&L.games[k])){ openSheet("lfSoon",SOON[k][0],`<p class="lead">${SOON[k][1]}正在準備中，很快就好！</p>`); return true; } if(L.games&&L.games[k]){ L.games[k](); return true; } if(k==="tw:bfast"){ bfastOpen(); return true; } if(k==="tw:garden"){ gardenOpen(); return true; } if(k==="tw:flower"){ flower(); return true; } return false; };
 L.garden=gardenOpen;
 
