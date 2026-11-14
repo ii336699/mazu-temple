@@ -72,9 +72,14 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-o
 .toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 136px);transform:translateX(-50%);padding:9px 18px;border-radius:999px;font-size:14px;z-index:9; /* (above the sheets, so a message about the sheet is never hidden behind it) */
   white-space:nowrap;max-width:calc(100% - 32px);overflow:hidden;text-overflow:ellipsis;transition:opacity .35s;pointer-events:none}
 .toast[data-hide]{opacity:0}
+/* 11/14 (the chair): no turn-left/right buttons; a slimmer 精力 bar; 參拜指引, 一鍵參拜 and 拜筊籤香 only inside the temple */
+.rot{display:none!important}
+#enPill{padding:4px 8px 4px 6px!important;gap:4px!important;font-size:13px!important;border-radius:11px!important}#enPill .bar{width:38px!important;height:7px!important}#enPill .ic{font-size:14px!important}#enPill small{font-size:10px!important}
+body.out-temple #autoBtn,body.out-temple #guideBtn,body.out-temple .actions,body.out-temple #actOpen{display:none!important}
+.act-fold{flex:0 0 auto}
 .act-fold{align-self:center;width:30px;height:30px;border-radius:50%;border:1px solid var(--gold-soft);background:rgba(30,12,8,.6);color:#ffe2a0;font-size:15px;line-height:1;padding:0;margin-left:-4px}
 .act-open{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 14px);z-index:5;padding:7px 14px;border-radius:999px;font-weight:900;font-size:14px;color:#ffe2a0}
-body.acts-folded .actions{display:none}
+body.acts-folded .actions{display:none!important}
 .actions{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:12px;
   padding:0 max(12px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 14px) max(12px,env(safe-area-inset-left,0px));z-index:5;pointer-events:none}
 .act{pointer-events:auto;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;padding:0;font-size:12px;color:var(--ink);text-shadow:0 1px 3px #000}
@@ -10849,5 +10854,8 @@ window.__mz={FT,sideMuralMat,CATS,fuAnims,passFu,walkTo,tapMark,camLimit,HZ,rend
 { const set=f=>{ document.body.classList.toggle("acts-folded",f); const o=document.getElementById("actOpen"); if(o) o.hidden=!f; try{ localStorage.setItem("mz.actFold",f?"1":""); }catch(e){} };
   let f=false; try{ f=localStorage.getItem("mz.actFold")==="1"; }catch(e){} set(f);
   document.getElementById("actFold").addEventListener("click",e=>{ e.stopPropagation(); set(true); }); document.getElementById("actOpen").addEventListener("click",e=>{ e.stopPropagation(); set(false); }); }
+</script>
+<script>/* inside the temple or not (for the worship buttons) */
+setInterval(()=>{ try{ const x=meAv.pos.x, z=meAv.pos.y; document.body.classList.toggle("out-temple",!(Math.abs(x)<=26&&z>-47&&z<46)); }catch(e){} },500);
 </script>
 </body></html>
