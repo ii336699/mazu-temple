@@ -312,6 +312,9 @@ input,textarea{-webkit-user-select:text;user-select:text}
 .np-head p{margin:8px 0 0;font-size:15px;line-height:1.65;text-align:justify;white-space:pre-line}
 .sp-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0 0 10px;padding:10px;border-radius:12px;background:rgba(255,255,255,.06)}.sp-row input{min-width:0;width:100%;box-sizing:border-box;padding:9px 10px;border-radius:9px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.25);color:inherit;font:inherit;font-size:15px}.sp-row input.sp-m{grid-column:1/-1}
 .hf-sl label{display:grid;grid-template-columns:5.2em 1fr 3.2em;align-items:center;gap:8px;margin:2px 0;font-size:14px}.hf-sl input{width:100%;min-width:0}.hf-sl b{font-variant-numeric:tabular-nums;text-align:right;font-weight:600;opacity:.85}
+.ff-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:6px;max-height:190px;overflow-y:auto;flex-shrink:0;margin-top:8px;padding:2px;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+.ff-it{border:1px solid rgba(255,255,255,.18);border-radius:10px;background:rgba(255,255,255,.06);color:inherit;font:inherit;font-size:12px;padding:5px 3px;line-height:1.25;cursor:pointer}
+.ff-it[aria-pressed="true"]{border-color:#ffd76a;background:rgba(217,170,61,.25);font-weight:700}
 .gc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px;margin:10px 0}.gc-cell{display:grid;place-items:center;aspect-ratio:1;border-radius:10px;background:rgba(255,255,255,.08)}.gc-cell .bic{width:44px;height:44px}.gc-no .bic{filter:brightness(0) drop-shadow(0 0 1px rgba(255,255,255,.25))}
 .gc-show{position:fixed;inset:0;z-index:60;display:grid;place-items:center;overflow:hidden;background:radial-gradient(circle at 50% 45%,rgba(60,20,50,.92),rgba(5,2,10,.97));animation:gcIn .35s ease}
 @keyframes gcIn{from{opacity:0}to{opacity:1}}
@@ -3142,10 +3145,14 @@ function rainbowHair(mesh){const geo=gx('rainbow-v5:'+mesh.geometry.uuid,()=>{co
 /* 造型定位 (11/15, the chair): like 頭飾定位 — where each new hair sits (size, up/down, front/back, left/right, tilt) and how the eyes,
    nose and mouth are drawn (size, spacing, up/down, the eyes' slant). Saved with the hat fits (same place, ids hr25…hr45, f_eyes,
    f_nose, f_mouth; only the letters the server keeps: w x y z rx rz xs). */
-const FIT2={f_eyes:{},f_nose:{},f_mouth:{}}; for(let i=25;i<46;i++) FIT2["hr"+i]={};
-const FIT2_KEYS={hr:[["w","大小",.6,1.5,.005,1],["y","上下",-.2,.2,.002,0],["z","前後",-.2,.2,.002,0],["x","左右",-.1,.1,.002,0],["rx","前後傾",-.6,.6,.005,0]],
+/* (11/15 later: every eye, nose and mouth style has its own fit too — e<n>, n<n>, m<n> — on top of the shared f_eyes / f_nose / f_mouth;
+   the hairs also get a thickness for each direction: ex 左右, ey 上下, ez 前後) */
+const FIT2={f_eyes:{},f_nose:{},f_mouth:{}}; for(let i=25;i<46;i++) FIT2["hr"+i]={}; for(let i=0;i<EYES.length;i++) FIT2["e"+i]={}; for(let i=0;i<MOUTHS.length;i++) FIT2["m"+i]={}; for(let i=1;i<NOSES.length;i++) FIT2["n"+i]={};
+const MOUTH_NOSE=new Set([65,66,67,71]); /* (mouth pictures that carry their own nose: 豬鼻, 狗狗嘴, 貓鬍鬚, 小丑鼻嘴 — the 3D nose is left off with these) */
+const FIT2_KEYS={hr:[["w","大小",.6,1.5,.005,1],["ex","左右厚度",.6,1.6,.005,1],["ey","上下厚度",.6,1.6,.005,1],["ez","前後厚度",.6,1.6,.005,1],["y","上下",-.2,.2,.002,0],["z","前後",-.2,.2,.002,0],["x","左右",-.1,.1,.002,0],["rx","前後傾",-.6,.6,.005,0]],
   f_eyes:[["w","大小",.5,1.8,.01,1],["xs","間距",.5,1.8,.01,1],["y","上下",-.4,.4,.005,0],["rz","傾斜角度",-.6,.6,.01,0]], f_nose:[["w","大小",.4,2.5,.01,1],["y","上下",-.12,.12,.002,0],["z","前後",-.05,.05,.001,0]], f_mouth:[["w","大小",.5,2,.01,1],["y","上下",-.4,.4,.005,0]]};
-const fit2Keys=id=>FIT2_KEYS[id]||FIT2_KEYS.hr, fit2V=(id,k)=>{ const F=FIT2[id]||{}; if(F[k]!=null) return F[k]; const d=fit2Keys(id).find(q=>q[0]===k); return d?d[5]:0; };
+const fit2Keys=id=>FIT2_KEYS[id]||(/^e\d/.test(id)?FIT2_KEYS.f_eyes:/^m\d/.test(id)?FIT2_KEYS.f_mouth:/^n\d/.test(id)?FIT2_KEYS.f_nose:FIT2_KEYS.hr), fit2V=(id,k)=>{ const F=FIT2[id]||{}; if(F[k]!=null) return F[k]; const d=fit2Keys(id).find(q=>q[0]===k); return d?d[5]:0; };
+function fit2C(base,id,k){ const b=fit2V(base,k), o=fit2V(id,k); return (k==="w"||k==="xs")?b*o:b+o; }
 function fit2Out(fit){ for(const id of Object.keys(FIT2)){ const o={}; for(const [k,,,,,d] of fit2Keys(id)){ const v=FIT2[id][k]; if(v!=null&&v!==d) o[k]=Math.round(v*1000)/1000; } if(Object.keys(o).length) fit[id]=o; } return fit; }
 function fit2Refresh(){ try{ faceCache.forEach(t=>{ try{ redraw(t); }catch(e){} }); }catch(e){} try{ meAv.setLook(meAv.look||me.look); }catch(e){} }
 let CUR_AV=null; const HAIR2={}, HAIR2_ST={}, HAIR2_WAIT=new Set(); /* (one small file per hair — hair2-NN.glb — fetched the first time somebody wears it) */
@@ -3154,9 +3161,9 @@ function hair2Load(n){ if(HAIR2_ST[n]) return; HAIR2_ST[n]=1; try{ loadRaw0("hai
       for(let i=0;i<c;i++){ pa[i*3]=P.getX(i)*K; pa[i*3+1]=P.getY(i)*K; pa[i*3+2]=P.getZ(i)*K; const a=N.getX(i), b=N.getY(i), d=N.getZ(i), L=Math.hypot(a,b,d)||1; na[i*3]=a/L; na[i*3+1]=b/L; na[i*3+2]=d/L; }
       const ge=new T.BufferGeometry(); ge.setAttribute("position",new T.BufferAttribute(pa,3)); ge.setAttribute("normal",new T.BufferAttribute(na,3)); ge.setIndex(g.index); HAIR2[n]=ge; });
     HAIR2_ST[n]=2; const w=[...HAIR2_WAIT]; w.forEach(av=>{ try{ if(av&&av.look&&av.look[1]-HAIR2_AT===n){ HAIR2_WAIT.delete(av); if(av.root&&av.root.parent) av.setLook(av.look); } }catch(e){} }); },()=>{}); }catch(e){ HAIR2_ST[n]=0; } }
-function buildHair2(g,v,col){ const ge=HAIR2[v-HAIR2_AT]; if(!ge){ if(CUR_AV) HAIR2_WAIT.add(CUR_AV); hair2Load(v-HAIR2_AT); return; } const m=new T.Mesh(ge,mat(col,{roughness:.78,side:T.DoubleSide})); const id="hr"+v; m.scale.setScalar(fit2V(id,"w")); m.position.set(fit2V(id,"x"),fit2V(id,"y"),fit2V(id,"z")); m.rotation.x=fit2V(id,"rx"); g.add(m); }
+function buildHair2(g,v,col){ const ge=HAIR2[v-HAIR2_AT]; if(!ge){ if(CUR_AV) HAIR2_WAIT.add(CUR_AV); hair2Load(v-HAIR2_AT); return; } const m=new T.Mesh(ge,mat(col,{roughness:.78,side:T.DoubleSide})); const id="hr"+v; const w=fit2V(id,"w"); m.scale.set(w*fit2V(id,"ex"),w*fit2V(id,"ey"),w*fit2V(id,"ez")); m.position.set(fit2V(id,"x"),fit2V(id,"y"),fit2V(id,"z")); m.rotation.x=fit2V(id,"rx"); g.add(m); }
 /* 3D noses (the chair, 11/15: a drawn nose looked like a second nose): small shapes on the front of the head, between the eyes and the mouth */
-function buildNose(h,v,skin){ const g=new T.Group(); g.name="nose-"+v; g.position.set(0,-.085+fit2V("f_nose","y"),.252+fit2V("f_nose","z")); g.scale.setScalar(fit2V("f_nose","w")); h.add(g); const dk=new T.Color(skin).multiplyScalar(.86).getStyle(), ink="#3a2418", S=gx("soft-unit",()=>new T.SphereGeometry(1,18,12));
+function buildNose(h,v,skin){ const g=new T.Group(); g.name="nose-"+v; const nid="n"+v; g.position.set(0,-.085+fit2C("f_nose",nid,"y"),.252+fit2C("f_nose",nid,"z")); g.scale.setScalar(fit2C("f_nose",nid,"w")); h.add(g); const dk=new T.Color(skin).multiplyScalar(.86).getStyle(), ink="#3a2418", S=gx("soft-unit",()=>new T.SphereGeometry(1,18,12));
   const b=(c,x,y,z,sx,sy,sz,o)=>mk(g,S,mat(c,Object.assign({roughness:.6},o||{})),x,y,z,0,0,0,sx,sy,sz);
   if(v===1) b(dk,0,0,.004,.022,.019,.02);
   if(v===2) b("#f0a0a8",0,0,.004,.028,.02,.02);
@@ -3455,15 +3462,15 @@ function premNose(x,v,cx,ny,ink){ x.save(); x.fillStyle=ink; x.strokeStyle=ink; 
    192×96 each, a pair of eyes centred; mouths.webp 8 across, 144×96). Until a sheet has arrived a plain pair of dots / a small line is
    drawn; when it arrives every face already made is drawn again. The nose is no longer drawn here (see buildNose). */
 const FACE_AT={}; ["eyes","mouths"].forEach(n=>{ const im=new Image(); im.onload=()=>{ FACE_AT[n]=im; faceCache.forEach(t=>{ try{ redraw(t); }catch(e){} }); try{ if(sheetKind==="look") renderLook(); }catch(e){} }; im.src=(window.IMG_PACK&&window.IMG_PACK["face/"+n+".webp"])||("face/"+n+".webp"); });
-function faceEyes(x,v,cx,ey){ const im=FACE_AT.eyes; if(im){ const k=fit2V("f_eyes","w"), W=110*k, H=55*k, sp=fit2V("f_eyes","xs"), rz=fit2V("f_eyes","rz"), yy=ey-fit2V("f_eyes","y")*100; if(sp===1&&!rz){ x.drawImage(im,(v%8)*192,Math.floor(v/8)*96,192,96,cx-W/2,yy-H/2,W,H); return; } for(const sd of [-1,1]){ x.save(); x.translate(cx+sd*W/4*sp,yy); x.rotate(sd*rz); x.drawImage(im,(v%8)*192+(sd>0?96:0),Math.floor(v/8)*96,96,96,-W/4,-H/2,W/2,H); x.restore(); } /* (each eye is half the tile: moved apart and slanted on its own) */ return; } x.fillStyle="#2a1a14"; for(const s of [-1,1]){ x.beginPath(); x.arc(cx+s*26,ey,5,0,7); x.fill(); } }
-function faceMouth(x,v,cx,my){ const im=FACE_AT.mouths; if(im){ const k=fit2V("f_mouth","w"), W=54*k, H=36*k, yy=my-fit2V("f_mouth","y")*100; x.drawImage(im,(v%8)*144,Math.floor(v/8)*96,144,96,cx-W/2,yy-H/2-1,W,H); return; } x.strokeStyle="#2a1a14"; x.lineWidth=3; x.beginPath(); x.arc(cx,my-6,8,Math.PI*.2,Math.PI*.8); x.stroke(); }
+function faceEyes(x,v,cx,ey){ const im=FACE_AT.eyes; if(im){ const id="e"+(v+EYE_PIC), k=fit2C("f_eyes",id,"w"), W=110*k, H=55*k, sp=fit2C("f_eyes",id,"xs"), rz=fit2C("f_eyes",id,"rz"), yy=ey-fit2C("f_eyes",id,"y")*100; if(sp===1&&!rz){ x.drawImage(im,(v%8)*192,Math.floor(v/8)*96,192,96,cx-W/2,yy-H/2,W,H); return; } for(const sd of [-1,1]){ x.save(); x.translate(cx+sd*W/4*sp,yy); x.rotate(sd*rz); x.drawImage(im,(v%8)*192+(sd>0?96:0),Math.floor(v/8)*96,96,96,-W/4,-H/2,W/2,H); x.restore(); } /* (each eye is half the tile: moved apart and slanted on its own) */ return; } x.fillStyle="#2a1a14"; for(const s of [-1,1]){ x.beginPath(); x.arc(cx+s*26,ey,5,0,7); x.fill(); } }
+function faceMouth(x,v,cx,my){ const im=FACE_AT.mouths; if(im){ const id="m"+(v+MOUTH_PIC), k=fit2C("f_mouth",id,"w"), W=54*k, H=36*k, yy=my-fit2C("f_mouth",id,"y")*100; x.drawImage(im,(v%8)*144,Math.floor(v/8)*96,144,96,cx-W/2,yy-H/2-1,W,H); return; } x.strokeStyle="#2a1a14"; x.lineWidth=3; x.beginPath(); x.arc(cx,my-6,8,Math.PI*.2,Math.PI*.8); x.stroke(); }
 function faceTexture(l){ const key=[l[0],l[7],l[8],l[9],l[10],l[11]].join(","); if(faceCache.has(key)) return faceCache.get(key);
   const t=cvs(512,256,(x,w,h)=>{ x.fillStyle=SKIN[l[0]]; x.fillRect(0,0,w,h); const cx=128, ey=140, ink="#2a1a14"; x.lineCap="round"; x.lineJoin="round";
     if(l[10]){ x.fillStyle="rgba(240,110,120,.45)"; for(const s of [-1,1]){ x.beginPath(); x.ellipse(cx+s*42,ey+18,17,9,0,0,7); x.fill(); } }
     x.fillStyle=ink; x.strokeStyle=ink;
     if(l[7]>=EYE_PIC) faceEyes(x,l[7]-EYE_PIC,cx,ey);
     for(const s of [-1,1]){ const ex=cx+s*26;
-      if(l[7]<EYE_PIC){
+      if(l[7]<EYE_PIC){ { const id="e"+l[7], k=fit2V(id,"w"); x.save(); x.translate(cx+s*26*fit2V(id,"xs"),ey-fit2V(id,"y")*100); x.rotate(s*fit2V(id,"rz")); x.scale(k,k); x.translate(-ex,-ey); } /* (each drawn eye style can be fitted too) */
       if(l[7]===0){ x.beginPath(); x.ellipse(ex,ey,9,12,0,0,7); x.fill(); x.fillStyle="#815642"; x.beginPath(); x.ellipse(ex,ey+3,6,7,0,0,7); x.fill(); x.fillStyle=ink; x.beginPath(); x.ellipse(ex,ey-1,4.5,8,0,0,7); x.fill(); x.fillStyle="#fff"; x.beginPath(); x.arc(ex+2.5,ey-3.5,2.6,0,7); x.fill(); x.fillStyle=ink; }
       if(l[7]===1){ x.lineWidth=4; x.beginPath(); x.arc(ex,ey+4,8,Math.PI*1.15,Math.PI*1.85); x.stroke(); }
       if(l[7]===2){ x.beginPath(); x.ellipse(ex,ey,11,14,0,0,7); x.fill(); x.fillStyle="#fff"; x.beginPath(); x.arc(ex+3,ey-5,3.6,0,7); x.fill(); x.beginPath(); x.arc(ex-3,ey+5,1.8,0,7); x.fill(); x.fillStyle=ink; }
@@ -3480,19 +3487,19 @@ function faceTexture(l){ const key=[l[0],l[7],l[8],l[9],l[10],l[11]].join(","); 
       if(l[7]===13){ x.beginPath(); x.ellipse(ex,ey+2,8,7,0,0,Math.PI); x.fill(); x.lineWidth=3.5; x.beginPath(); x.moveTo(ex-10,ey+1); x.lineTo(ex+10,ey+1); x.stroke(); }
       if(l[7]===14){ x.lineWidth=2.6; x.beginPath(); x.arc(ex,ey,11,0,7); x.stroke(); x.beginPath(); x.arc(ex,ey,3.2,0,7); x.fill(); }
       if(l[7]>=15) premEye(x,l[7],ex,ey,s,ink);
-      }
+      x.restore(); }
       x.save(); if(l[7]>=EYE_PIC) x.translate(0,-9); /* (brows sit a little higher over the picture eyes, which are bigger) */
       if(l[8]===1){ x.lineWidth=2.5; x.beginPath(); x.moveTo(ex-9,ey-17); x.quadraticCurveTo(ex,ey-21,ex+9,ey-17); x.stroke(); }
       if(l[8]===2){ x.lineWidth=6; x.beginPath(); x.moveTo(ex-9,ey-18); x.lineTo(ex+9,ey-19); x.stroke(); }
       if(l[8]===3){ x.lineWidth=4; x.beginPath(); x.moveTo(ex-s*9,ey-22); x.lineTo(ex+s*8,ey-16); x.stroke(); }
     x.restore(); }
     const my=ey+26; x.lineWidth=3.2;
-    if(l[9]>=MOUTH_PIC) faceMouth(x,l[9]-MOUTH_PIC,cx,my); else {
+    if(l[9]>=MOUTH_PIC) faceMouth(x,l[9]-MOUTH_PIC,cx,my); else { { const id="m"+l[9], k=fit2V(id,"w"); x.save(); x.translate(cx,my-fit2V(id,"y")*100); x.scale(k,k); x.translate(-cx,-my); }
     if(l[9]===0){ x.beginPath(); x.arc(cx,my-6,8,Math.PI*.2,Math.PI*.8); x.stroke(); }
     if(l[9]===1){ x.beginPath(); x.ellipse(cx,my,3.4,2.6,0,0,7); x.fill(); }
     if(l[9]===2){ x.fillStyle="#7a1e1a"; x.beginPath(); x.arc(cx,my-4,9,0,Math.PI); x.closePath(); x.fill(); x.fillStyle="#e86a6a"; x.beginPath(); x.ellipse(cx,my+2,5,2.5,0,0,7); x.fill(); x.fillStyle=ink; }
     if(l[9]===3){ x.beginPath(); x.arc(cx-5,my-2,5,0,Math.PI); x.stroke(); x.beginPath(); x.arc(cx+5,my-2,5,0,Math.PI); x.stroke(); }
-    if(l[9]>=4) premMouth(x,l[9],cx,my,ink); }
+    if(l[9]>=4) premMouth(x,l[9],cx,my,ink); x.restore(); }
     x.fillStyle=ink; x.strokeStyle=ink; x.lineWidth=3.2;
     if(l[11]===1){ x.lineWidth=2.6; x.strokeStyle="#3a2a20"; for(const s of [-1,1]){ x.beginPath(); x.arc(cx+s*26,ey,15,0,7); x.stroke(); } x.beginPath(); x.moveTo(cx-11,ey-2); x.quadraticCurveTo(cx,ey-7,cx+11,ey-2); x.stroke(); }
     if(l[11]===2){ x.fillStyle="#2a1a14"; for(const s of [-1,1]){ x.beginPath(); x.ellipse(cx+s*9,my-11,10,3.4,s*.25,0,7); x.fill(); } }
@@ -3642,7 +3649,7 @@ class Avatar{
     // head
     this.head=new T.Group(); this.head.position.y=.66; this.torso.add(this.head); this.head.rotation.y=this.headYaw||0;
     const hm=new T.Mesh(G.head,new T.MeshStandardMaterial({map:faceTexture(l),roughness:.6})); this.head.add(hm);
-    CUR_AV=this; buildHair(this.head,l[1],HAIRC[l[2]],acc,l[6]); CUR_AV=null; if(l[13]) buildNose(this.head,l[13],SKIN[l[0]]);
+    CUR_AV=this; buildHair(this.head,l[1],HAIRC[l[2]],acc,l[6]); CUR_AV=null; if(l[13]&&!MOUTH_NOSE.has(l[9])) buildNose(this.head,l[13],SKIN[l[0]]);
     buildHat(this.head,l[6],out,acc);
     if(l[12]) buildGear(this.torso,l[12],out,acc,this);
     this.amulet=new T.Group(); this.amulet.position.set(0,.27,.2); this.amulet.rotation.x=-.2; this.torso.add(this.amulet);
@@ -10193,20 +10200,32 @@ HANDLERS.hatFitOpen=v=>{ const ids=hfIds(); const id=v&&HAT_FIT[v]?v:(HFIT.id&&H
   sheetBody.querySelectorAll(".hf-sl input").forEach(inp=>{ inp.oninput=()=>{ const k=inp.dataset.k; HAT_FIT[id][k]=+inp.value; inp.nextElementSibling.textContent=(+inp.value).toFixed(2); HFIT.dirty[id]=1;
     if(!HFIT.raf) HFIT.raf=requestAnimationFrame(()=>{ HFIT.raf=0; meAv.setAcc(myEq()); }); }; }); };
 /* 主委工具 → 造型定位 (髮型、眼睛、鼻子、嘴巴) */
-HANDLERS.faceFitOpen=v=>{ const id=FIT2[v]?v:(FIT2[HFIT.f2]?HFIT.f2:"f_eyes"); HFIT.f2=id;
+/* (11/15 later) four kinds across the top — 眼睛, 鼻子, 嘴巴, 髮型 — and under the chosen kind every style of it; pick one, it is put on
+   your own character, and the sliders fit that one style. The shared f_eyes / f_nose / f_mouth fits still apply underneath (kept, not shown). */
+const FF_CAT={e:["👁 眼睛",()=>EYES.map((_,i)=>i)],n:["👃 鼻子",()=>NOSES.map((_,i)=>i).slice(1)],m:["👄 嘴巴",()=>MOUTHS.map((_,i)=>i)],h:["💇 髮型",()=>Array.from({length:21},(_,i)=>25+i)]};
+const ffId=(c,n)=>(c==="h"?"hr":c)+n, ffCat=id=>id.startsWith("hr")?"h":id[0];
+function ffThumb(c,n){ const E=c==="e"; if((E&&n>=EYE_PIC)||(c==="m"&&n>=MOUTH_PIC)){ const im=FACE_AT[E?"eyes":"mouths"], src=im?im.src:(E?"face/eyes.webp":"face/mouths.webp"), t=n-(E?EYE_PIC:MOUTH_PIC), tw=E?64:48, th=32, rows=E?6:8;
+    return `<span style="display:block;width:${tw}px;height:${th}px;margin:0 auto 2px;border-radius:6px;background:${SKIN[me.look[0]]||SKIN[0]} url(${src}) ${-(t%8)*tw}px ${-Math.floor(t/8)*th}px / ${tw*8}px ${th*rows}px no-repeat"></span>`; } return ""; }
+HANDLERS.faceFitOpen=v=>{ if(v&&FF_CAT[v]){ HFIT.cat=v; v=HFIT["last_"+v]||null; }
+  let id=v&&FIT2[v]&&!v.startsWith("f_")?v:null; if(!id){ const c=HFIT.cat||"e"; const L=FF_CAT[c][1](); const cur=c==="e"?me.look[7]:c==="m"?me.look[9]:c==="n"?(me.look[13]||1):(me.look[1]>=25?me.look[1]:25); id=ffId(c,L.includes(cur)?cur:L[0]); }
+  const cat=ffCat(id); HFIT.cat=cat; HFIT.f2=id; HFIT["last_"+cat]=id; const n=+id.slice(cat==="h"?2:1);
   if(!customizing){ customizing=true; pvMode="face"; pvYaw=0; meAv.target.copy(meAv.pos); if(meAv.seat>=0) meAv.seat=-1; setOthersVisible(false); document.body.classList.add("customizing"); }
-  const lk=me.look.slice(); if(id.startsWith("hr")) lk[1]=+id.slice(2); if(id==="f_nose"&&!lk[13]) lk[13]=1; HFIT.lk=lk; try{ meAv.setLook(sanitizeLook(lk,!!me.sp)); }catch(e){}
-  const chip=(k,t)=>`<button class="chip" data-act="faceFitOpen" data-v="${k}" aria-pressed="${k===id}">${t}${HFIT.dirty[k]?" •":""}</button>`;
-  openSheet("facefit","造型定位",`${backBtn}<p class="lead">選眼睛、鼻子、嘴巴或一款髮型，拉下面的拉桿調整。調好按「儲存給大家」，所有人看到的都會一樣。</p>
-    <div class="chips" style="flex-shrink:0">${chip("f_eyes","👁 眼睛")}${chip("f_nose","👃 鼻子")}${chip("f_mouth","👄 嘴巴")}</div>
-    <div class="chips" style="max-height:112px;overflow:auto;flex-shrink:0;margin-top:6px">${Object.keys(FIT2).filter(k=>k.startsWith("hr")).map(k=>chip(k,esc(HAIRS[+k.slice(2)].replace("✂️ ","")))).join("")}</div>
-    <div class="chips" style="margin:8px 0">${[["0","正面"],["1.57","左側"],["3.14","背面"],["-1.57","右側"]].map(([y,t])=>`<button class="chip" data-act="hatFitView" data-v="${y}">${t}</button>`).join("")}<button class="chip" data-act="hatFitView" data-v="turn">轉一圈</button><button class="chip" data-act="faceFitZoom">遠／近</button></div>
+  const lk=me.look.slice(); if(cat==="h") lk[1]=n; if(cat==="e") lk[7]=n; if(cat==="m") lk[9]=n; if(cat==="n"){ lk[13]=n; if(MOUTH_NOSE.has(lk[9])) lk[9]=0; } HFIT.lk=lk; try{ meAv.setLook(sanitizeLook(lk,!!me.sp)); }catch(e){}
+  const names=cat==="e"?EYES:cat==="m"?MOUTHS:cat==="n"?NOSES:HAIRS, nm=k=>esc(String(names[k]||"").replace(/^(✂️|💄) /,""));
+  const items=FF_CAT[cat][1]().map(k=>{ const i2=ffId(cat,k), on=i2===id; return `<button class="ff-it" data-act="faceFitOpen" data-v="${i2}" aria-pressed="${on}">${ffThumb(cat,k)}<span>${nm(k)}${HFIT.dirty[i2]?" •":""}</span></button>`; }).join("");
+  openSheet("facefit","造型定位",`${backBtn}<p class="lead">先選上面的種類，再從下面挑一款，拉桿只調這一款。調好按「儲存給大家」。</p>
+    <div class="chips" style="flex-shrink:0">${Object.keys(FF_CAT).map(c=>`<button class="chip" data-act="faceFitOpen" data-v="${c}" aria-pressed="${c===cat}">${FF_CAT[c][0]}</button>`).join("")}</div>
+    <div class="ff-list" id="ffList">${items}</div>
+    <p class="note" style="margin:6px 0 2px">正在調：<b>${nm(n)}</b>${cat==="n"&&MOUTH_NOSE.has(me.look[9])?"（你現在的嘴巴自帶鼻子，戴著時不會顯示立體鼻子；這裡先換成一般嘴巴給你看）":""}</p>
+    <div class="chips" style="margin:6px 0">${[["0","正面"],["1.57","左側"],["3.14","背面"],["-1.57","右側"]].map(([y,t])=>`<button class="chip" data-act="hatFitView" data-v="${y}">${t}</button>`).join("")}<button class="chip" data-act="hatFitView" data-v="turn">轉一圈</button><button class="chip" data-act="faceFitZoom">遠／近</button></div>
     <div class="hf-sl">${fit2Keys(id).map(([k,t,lo,hi,st])=>{ const val=fit2V(id,k); return `<label><span>${t}</span><input type="range" data-k="${k}" min="${lo}" max="${hi}" step="${st}" value="${val}"><b>${(+val).toFixed(2)}</b></label>`; }).join("")}</div>
-    <div class="goods"><button class="good" data-act="hatFitSave"><span class="name">💾 儲存給大家</span><span class="meta">把調過的存起來（有 • 的是還沒存的）</span></button>
-    <button class="good" data-act="faceFitReset"><span class="name">↺ 這一項重設</span><span class="meta">回到原本的樣子</span></button></div>
-    <p class="note">眼睛、鼻子、嘴巴的設定是所有款式共用的；髮型是每一款各自調。想看別款眼睛或嘴巴的效果：先到「換造型」換好再回來。</p>`);
+    <div class="goods"><button class="good" data-act="hatFitSave"><span class="name">💾 儲存給大家</span><span class="meta">${USE_CF?"直接存到伺服器，大家重新整理就看得到（有 • 的是還沒存的）":"測試頁只存在這支手機（有 • 的是還沒存的）"}</span></button>
+    <button class="good" data-act="faceFitReset"><span class="name">↺ 這一款重設</span><span class="meta">回到原本的樣子</span></button>
+    <button class="good" data-act="hatFitCopy"><span class="name">📋 複製設定碼</span><span class="meta">只有測試頁需要：把調好的全部變成一段文字，貼給我寫進遊戲</span></button></div>
+    <textarea id="hfCode" readonly hidden style="width:100%;box-sizing:border-box;min-height:90px;margin-top:8px;font:12px/1.4 monospace;border-radius:10px;padding:8px;background:rgba(0,0,0,.3);color:inherit;border:1px solid rgba(255,255,255,.2)"></textarea>`);
+  { const L=$("#ffList"), on=L&&L.querySelector('[aria-pressed="true"]'); if(on) L.scrollTop=Math.max(0,on.offsetTop-L.offsetTop-40); }
   sheetBody.querySelectorAll(".hf-sl input").forEach(inp=>{ inp.oninput=()=>{ FIT2[id][inp.dataset.k]=+inp.value; inp.nextElementSibling.textContent=(+inp.value).toFixed(2); HFIT.dirty[id]=1;
-    if(!HFIT.raf) HFIT.raf=requestAnimationFrame(()=>{ HFIT.raf=0; try{ if(id.startsWith("f_")&&id!=="f_nose") faceCache.forEach(t=>{ try{ redraw(t); }catch(e){} }); else meAv.setLook(sanitizeLook(HFIT.lk,!!me.sp)); }catch(e){} }); }; }); };
+    if(!HFIT.raf) HFIT.raf=requestAnimationFrame(()=>{ HFIT.raf=0; try{ if(cat==="e"||cat==="m") faceCache.forEach(t=>{ try{ redraw(t); }catch(e){} }); else meAv.setLook(sanitizeLook(HFIT.lk,!!me.sp)); }catch(e){} }); }; }); };
 HANDLERS.faceFitReset=()=>{ const id=HFIT.f2; if(!id) return; FIT2[id]={}; HFIT.dirty[id]=1; try{ faceCache.forEach(t=>{ try{ redraw(t); }catch(e){} }); }catch(e){} HANDLERS.faceFitOpen(id); };
 HANDLERS.faceFitZoom=()=>{ pvMode=pvMode==="face"?"full":"face"; };
 HANDLERS.hatFitView=v=>{ if(v==="turn"){ pvSpin=Math.PI*2; return; } pvYaw=+v; };
