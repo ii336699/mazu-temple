@@ -12846,7 +12846,7 @@ HANDLERS.lfRodEq=v=>{ const d=LF(), i=+v, r=RODS[i]; if(!r||!hasRod(i)) return; 
 HANDLERS.lfBait=v=>{ const d=LF(), i=+v, b=BAITS[i]; if(!b) return; if(d.bait[i]>=90){ toast("這種餌帶太多了",1800); return; } const pr=dPrice("tw:tackle",b.p); if(!me.sp){ if(bag.coins<pr){ try{ buzz(); }catch(e){} toast(`平安幣不夠（還差 ${pr-bag.coins}）`,2400); return; } bag.coins-=pr; } d.bait[i]+=10; if(b.k==="f"){ if(!d.bF) d.bF=i+1; } else if(!d.bS) d.bS=i+1; save(); try{ chaChing(); }catch(e){} tackle(); };
 HANDLERS.lfForge=()=>{ const d=LF(); if(hasRod(11)) return; if((d.stone|0)>=1) d.stone--; else if((d.dust|0)>=8) d.dust-=8; else return; d.rods|=1<<11; d.eqS=12; save(); try{ profSave(true); [784,988,1175,1568,2093].forEach((f,k)=>tone(f,.2,.06,"triangle",k*.1)); }catch(e){} toast("✨ 老闆把流星的石頭打成了「星辰釣竿」！",3600); tkTab="rs"; tackle(); };
 HANDLERS.lfSell=v=>{ const [k,id]=v.split(":"); sell(id); if(k==="t") tackle(); else grocer(); };
-function grocer(){ openSheet("lfGrocer","🧺 雜貨店",`<p class="lead">阿姨：「魚啊、種的菜跟花，我都收。」</p><h4 style="margin:10px 0 4px">收購魚</h4>${sellSheet("g")}${L.cropSell?L.cropSell():""}`); }
+function grocer(){ openSheet("lfGrocer","🧺 雜貨店",`<p class="lead">威利：「嘿！要網子、調味料，還是要賣魚賣菜？我威利什麼都收！」</p>${netShop()}${L.seasonShop?L.seasonShop():""}<h4 style="margin:10px 0 4px">收購魚</h4>${sellSheet("g")}${L.cropSell?L.cropSell():""}`); }
 /* ---------- the bag ---------- */
 L.bagEntries=(out,tab)=>{ if(tab!=="all"&&tab!=="goods") return; const d=LF(), cnt={}; out.push({id:"lf:dex",ic:"lf_dex",name:"圖鑑",desc:`釣過的魚都記在這裡（${FISH.filter(f=>d.fish[f.id]).length}/${FISH.length}）。之後會加上蟲、花、貝殼。`}); L.cropList().forEach(c=>out.push({id:"lf:c_"+c.id,ic:"lf_c_"+c.id,n:c.k,name:c.n,desc:"在自己的花圃種出來的。可以賣給花店、雜貨店，或送給鎮上的人。"})); d.inv.forEach(([id])=>cnt[id]=(cnt[id]||0)+1); Object.keys(cnt).forEach(id=>{ const f=FBY[id]; out.push({id:"lf:"+id,ic:"lf_"+id,n:cnt[id],name:f.n,desc:`${f.w.includes("o")?"海水魚":"淡水魚"}・${RN[f.r]}。${f.d}可以到釣具行或雜貨店賣。`}); }); };
 L.bagActs=(k,e)=>k.startsWith("c_")?"":`<button class="chip" data-act="lfDex">看圖鑑</button>`;
@@ -12938,7 +12938,7 @@ function tipFor(n){ const r=FISH.filter(f=>f.r>=2); const f=r[(Math.random()*r.l
   if(n.tip==="games") return "小吃廣場有擠冰淇淋跟中藥對對碰，玩得好會有平安幣喔。"; return fishTip; }
 const GIFTS={10:[300,0,"n"],30:[0,1,"n"],60:[1000,2,"n"]}, GF={10:1,30:2,60:4}; /* (which return gifts were given: one bit each) */
 function npcSheet(n,line){ const R=NR(n.id), t=tier(R.a); openSheet("lfNpc","💬 "+n.n,`<p class="note" style="margin:0 0 6px">${hearts(R.a)}　好感 ${R.a}</p><p class="lead">「${line}」</p>
-   <div class="row"><button class="primary" data-act="lfNpcTalk" data-v="${n.id}">聊聊天</button><button class="secondary" data-act="lfNpcGift" data-v="${n.id}">送禮物</button>${t>=2?`<button class="secondary" data-act="lfNpcTip" data-v="${n.id}">打聽消息</button>`:""}${n.id==="doc"?`<button class="secondary" data-act="lfDust">✨ 用星砂換星空家具</button>`:""}</div>
+   <div class="row"><button class="primary" data-act="lfNpcTalk" data-v="${n.id}">聊聊天</button><button class="secondary" data-act="lfNpcGift" data-v="${n.id}">送禮物</button>${t>=2?`<button class="secondary" data-act="lfNpcTip" data-v="${n.id}">打聽消息</button>`:""}${n.id==="doc"?`<button class="secondary" data-act="lfDust">✨ 用星砂換星空家具</button><button class="secondary" data-act="lfBugCol">🔬 賣昆蟲</button>`:""}</div>
    <p class="note">每天聊天、送禮物，好感會增加。${t<2?"再熟一點，會跟你說一些小道消息。":""}</p>`); }
 function talk(n){ const R=NR(n.id), day=today(); let gain=0; if(R.d!==day){ R.d=day; R.a=Math.min(100,R.a+1); gain=1; } const t=tier(R.a), pool=n.L[t].concat(t?n.L[t-1]:[]); let line=pool[(Math.random()*pool.length)|0];
   for(const k of [10,30,60]) if(R.a>=k&&!(R.r&GF[k])){ R.r|=GF[k]; const G=GIFTS[k]; bag.coins+=G[0]; if(G[1]) bag.gacha=Math.min(255,(bag.gacha||0)+G[1]); let fu=""; if(G[2]&&typeof ROOMX!=="undefined"&&ROOMX) try{ fu=ROOMX.grant(G[2]); }catch(e){}
@@ -14028,6 +14028,109 @@ L.restore=o=>{ if(!o) return; const d=LF(), g=GD2(); d.rod=Math.max(d.rod|0,o.ro
   d.stone=Math.max(d.stone|0,o.stone); d.dust=Math.max(d.dust|0,o.dust); if(o.bgBest!=null){ d.bg=d.bg||{best:0,h:0}; d.bg.best=Math.max(d.bg.best|0,o.bgBest); d.bg.h=d.bg.h||o.bgH; } if(o.phCam!=null){ d.ph=d.ph||{cam:0,got:{}}; d.ph.cam=d.ph.cam||o.phCam; d.ph.got=Object.assign(d.ph.got||{},o.phGot); d.dht=Math.max(d.dht|0,o.dht); d.dhtI=Math.max(d.dhtI|0,o.dhtI); d.spd=Math.max(d.spd|0,o.spd); } if(o.cg!=null) d.cg=Math.max(d.cg|0,o.cg); save(); };
 L.tick2=dt=>{ goddessTick(dt); mmTick(dt); try{ npcTick(dt); }catch(e){ console.warn("npcs",e); } if(L.tick3) L.tick3(dt); };
 setTimeout(()=>{ try{ chipInit(); }catch(e){} },1800);
+/* ================= 🦋 昆蟲＋捕蟲網 (11/16 主委). Bugs show up round the parks, the valley, the forest, 天后山 and the beach — some by day,
+   some at night. Walk up to one and the 「🦋 抓蟲」 button comes up; you swing the net. Each net has a number of uses (one a catch).
+   Catch chance by net and rarity (NET_RATE); a miss and the bug darts off a few metres to land again, try once more; a 稀有 or 傳說 one
+   that gets away twice is gone. Nets at 雜貨店 (威利): 普通網 for 平安幣, 高級網 and 黃金網 for rare bugs. Bugs go in the bag (送禮
+   "bug:<id>"), and 博士 buys them for his collection. Pictures: drawn here from an emoji, tinted per kind, until the chair's art comes. ===== */
+const BUGS=[ /* id, name, emoji, hue shift, rarity 1–4, where, when ("d" day, "n" night, "" any), flies?, price, line */
+ ["whitefly","紋白蝶","🦋",160,1,"park valley","d",1,60,"白白的小蝴蝶，花圃最常見。"],
+ ["ladybug","七星瓢蟲","🐞",0,1,"park forest","d",0,70,"背上有七個黑點，會吃蚜蟲。"],
+ ["bee","小蜜蜂","🐝",0,1,"park valley","d",1,80,"忙著採花蜜，別惹牠。"],
+ ["cricket","蟋蟀","🦗",0,1,"park valley","n",0,80,"晚上唧唧叫的就是牠。"],
+ ["dragonfly","紅蜻蜓","🪰",320,1,"valley park","d",1,90,"停在水邊的草尖上。"],
+ ["cicada","蟬","🪲",40,1,"forest park","d",0,100,"夏天的聲音。"],
+ ["swallowtail","鳳蝶","🦋",30,2,"valley mount","d",1,260,"翅膀大大的，飛得很優雅。"],
+ ["firefly","螢火蟲","🪲",80,2,"valley forest","n",1,300,"屁股會發光，只在乾淨的地方出現。"],
+ ["beetle","獨角仙","🪲",300,2,"forest","n",0,380,"頭上有一根大角，力氣很大。"],
+ ["stag","鍬形蟲","🪲",250,2,"forest mount","n",0,400,"大顎像剪刀，男生的最愛。"],
+ ["stick","竹節蟲","🦗",80,2,"forest mount","",0,320,"假裝自己是一根樹枝。"],
+ ["hermit","寄居蟹","🦀",20,2,"beach","",0,280,"背著別人的殼搬家。"],
+ ["moth","皇蛾","🦋",290,3,"mount forest","n",1,1000,"世界上最大的蛾之一。"],
+ ["purple","大紫蛺蝶","🦋",240,3,"valley mount","d",1,900,"翅膀會閃紫色的光。"],
+ ["longarm","長臂金龜","🪲",200,3,"forest","n",0,1200,"前腳超長，非常稀有的保育類（抓了要好好照顧）。"],
+ ["pearl","珠光鳳蝶","🦋",60,3,"mount","d",1,1300,"後翅在陽光下會閃出珍珠般的光澤。"],
+ ["seaslug","海洋寶石蟹","🦀",180,3,"beach","n",0,1100,"殼像寶石一樣亮晶晶。"],
+ ["rainbow","彩虹吉丁蟲","🪲",120,4,"mount","d",0,3200,"整隻閃著彩虹色，傳說中的蟲。"],
+ ["golden","黃金鍬形蟲","🪲",50,4,"forest mount","n",0,3500,"金光閃閃，只在深夜的森林出沒。"],
+ ["starbug","星光蝶","🦋",200,4,"mount valley","n",1,3800,"流星夜才會出現的發光蝴蝶。"]];
+const BUG_BY={}; BUGS.forEach(b=>{ BUG_BY[b[0]]=b; });
+const BUG_RN=["","常見","少見","稀有","傳說"], BUG_RW={1:10,2:3,3:.6,4:.15};
+const BUG_AREA={park:[[-6,21,-130,-118],[35,64,-130,-118]],valley:[[90,132,-116,-56]],forest:[[18,114,-172,-147]],mount:[[26,106,-248,-180]],beach:[[137,150,-118,-62]]};
+const NETS=[null,{n:"普通捕蟲網",u:20,c:"#c9a26a",ring:"#9a7a4a"},{n:"高級捕蟲網",u:30,c:"#5a8fc8",ring:"#3a5a8a"},{n:"黃金捕蟲網",u:40,c:"#e8c24a",ring:"#c89a2a"}];
+const NET_RATE=[null,[.85,.55,.25,.08],[.95,.78,.5,.25],[1,.92,.75,.5]];
+const NETD=()=>{ const d=LF(); d.net=d.net||{t:0,u:0}; return d.net; }; const BUGDEX=()=>{ const d=LF(); d.bug=d.bug||{}; return d.bug; };
+const bugTex={}; function bugPic(id){ if(bugTex[id]) return bugTex[id]; const b=BUG_BY[id]; const c=document.createElement("canvas"); c.width=c.height=128; const x=c.getContext("2d");
+  if(b[4]>=3){ const g=x.createRadialGradient(64,64,10,64,64,62); g.addColorStop(0,b[4]>=4?"rgba(255,230,120,.9)":"rgba(190,230,255,.75)"); g.addColorStop(1,"rgba(255,255,255,0)"); x.fillStyle=g; x.fillRect(0,0,128,128); }
+  x.filter=b[3]?`hue-rotate(${b[3]}deg) saturate(1.3)`:"none"; x.font="88px serif"; x.textAlign="center"; x.textBaseline="middle"; x.fillText(b[2],64,70); return bugTex[id]=c.toDataURL(); }
+BUGS.forEach(b=>{ GINFO["bug:"+b[0]]={n:b[1],get ic(){ return bugPic(b[0]); },cat:"bug",tags:b[4]>=3?["rare"]:[],d:b[9]}; });
+const BG2={list:[],t:0,net:null,swing:null,chip:null}; const _br=new T.Raycaster(), _bd=new T.Vector3(0,-1,0), _bo=new T.Vector3();
+function bugGround(x,z){ _bo.set(x,80,z); _br.set(_bo,_bd); _br.far=200; const hits=_br.intersectObjects(pickables.filter(o=>o.userData&&o.userData.floor&&o.visible!==false),false); return hits.length?hits[0].point.y:0; }
+function bugSpawn(){ const p=meAv.pos, night=L.slot()===0, areas=[]; for(const k in BUG_AREA) for(const r of BUG_AREA[k]){ const cx=Math.max(r[0],Math.min(r[1],p.x)), cz=Math.max(r[2],Math.min(r[3],p.y)); if(Math.hypot(cx-p.x,cz-p.y)<30) areas.push([k,r]); } if(!areas.length) return;
+  const [k,r]=areas[(Math.random()*areas.length)|0]; let x,z,ok=false; for(let t=0;t<20&&!ok;t++){ const a=Math.random()*6.283, d=6+Math.random()*16; x=Math.max(r[0],Math.min(r[1],p.x+Math.sin(a)*d)); z=Math.max(r[2],Math.min(r[3],p.y+Math.cos(a)*d)); ok=TOWNX.walk(x,z)&&Math.hypot(x-p.x,z-p.y)>4; } if(!ok) return;
+  const pool=BUGS.filter(b=>b[5].split(" ").includes(k)&&(!b[6]||(b[6]==="n")===night)&&(b[0]!=="starbug"||L.starNight)); if(!pool.length) return; let tot=0; pool.forEach(b=>tot+=BUG_RW[b[4]]); let q=Math.random()*tot, b=pool[0]; for(const c of pool){ q-=BUG_RW[c[4]]; if(q<=0){ b=c; break; } }
+  const tex=new T.TextureLoader().load(bugPic(b[0])); const sp=new T.Sprite(new T.SpriteMaterial({map:tex,transparent:true,depthWrite:false})); const s0=b[4]>=3?.62:.5; sp.scale.set(s0,s0,1); const gy=bugGround(x,z), h=b[7]?.9+Math.random()*.6:.22;
+  sp.position.set(x,gy+h,z); sp.userData.noMerge=1; scene.add(sp); BG2.list.push({b,sp,x,z,gy,h,ph:Math.random()*6,age:0,esc:0,tx:null,s0}); }
+function bugRemove(o,puff){ if(puff) bugPuff(o.sp.position,"#ffffff",10); scene.remove(o.sp); o.sp.material.map&&o.sp.material.map.dispose(); o.sp.material.dispose(); BG2.list.splice(BG2.list.indexOf(o),1); }
+const BUGP=[]; function bugPuff(pos,col,n,sp){ for(let i=0;i<n;i++){ const m=new T.Sprite(new T.SpriteMaterial({map:FXTX(),color:new T.Color(col),transparent:true,depthWrite:false,blending:T.AdditiveBlending})); m.position.copy(pos); const s=.12+Math.random()*.14; m.scale.set(s,s,1); scene.add(m); const a=Math.random()*6.283, e=Math.random()*1.2-.2, v=(sp||1.6)*(.5+Math.random()); BUGP.push({m,vx:Math.cos(a)*v,vy:e*v+1.2,vz:Math.sin(a)*v,t:0,l:.6+Math.random()*.5}); } }
+let _fx=null; const FXTX=()=>_fx||(_fx=new T.CanvasTexture(cvs0(64,64,(x)=>{ const g=x.createRadialGradient(32,32,2,32,32,30); g.addColorStop(0,"rgba(255,255,255,1)"); g.addColorStop(.4,"rgba(255,255,255,.6)"); g.addColorStop(1,"rgba(255,255,255,0)"); x.fillStyle=g; x.fillRect(0,0,64,64); x.fillStyle="#fff"; x.fillRect(30,4,4,56); x.fillRect(4,30,56,4); })));
+function cvs0(w,h,f){ const c=document.createElement("canvas"); c.width=w; c.height=h; f(c.getContext("2d"),w,h); return c; }
+/* the net in the hand */ function netMesh(t){ const N=NETS[t], g=new T.Group(); const M=(c,o)=>new T.MeshStandardMaterial(Object.assign({color:c,roughness:.6},o||{}));
+  const st=new T.Mesh(new T.CylinderGeometry(.018,.022,1.1,8),M(N.c)); st.position.y=.55; g.add(st); const ring=new T.Mesh(new T.TorusGeometry(.2,.018,8,24),M(N.ring,t===3?{metalness:.7,roughness:.25}:{})); ring.position.y=1.28; g.add(ring);
+  const bag=new T.Mesh(new T.ConeGeometry(.2,.42,18,1,true),M("#ffffff",{transparent:true,opacity:.55,side:T.DoubleSide})); bag.rotation.x=Math.PI/2; bag.position.set(0,1.28,-.21); g.add(bag); return g; }
+function bugChip(){ if(BG2.chip) return BG2.chip; const c=document.createElement("button"); c.id="bugChip"; c.style.cssText=`position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 128px);z-index:9;border:0;border-radius:999px;padding:11px 20px;font:900 16px ${UI_FONT};color:#fff;background:linear-gradient(#7ac25a,#4a9a3a);box-shadow:0 4px 14px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.4)`; c.hidden=true; c.textContent="🦋 抓蟲"; c.onclick=()=>bugSwing(); document.body.appendChild(c); return BG2.chip=c; }
+let bugNear=null;
+function bugSwing(){ const o=bugNear; if(!o||BG2.swing) return; const N=NETD(); if(!N.t||N.u<=0){ toast(N.t?"捕蟲網破了……到雜貨店找威利":"要先有捕蟲網：小鎮主街的雜貨店（威利）有賣",2800); return; }
+  meAv.path=[]; meAv.target.copy(meAv.pos); meAv.faceGoal=Math.atan2(o.sp.position.x-meAv.pos.x,o.sp.position.z-meAv.pos.y);
+  const net=netMesh(N.t); const hand=meAv.hands&&meAv.hands[0]; (hand||meAv.root).add(net); net.position.set(0,-.05,0); net.rotation.set(-2.2,0,0);
+  BG2.swing={o,net,t:0,done:0}; try{ tone(320,.16,.05,"sawtooth"); tone(520,.12,.04,"triangle",.08); }catch(e){} }
+function bugTry(o){ const N=NETD(), b=o.b, ok=Math.random()<NET_RATE[N.t][b[4]-1]; if(ok){ N.u--; const dx=BUGDEX(), e=dx[b[0]]||(dx[b[0]]=[0,Date.now()]); const first=!e[0]; e[0]++; giAdd("bug:"+b[0],1); save(); try{ profSave(true); statInc("bugCatch"); }catch(_){}
+    bugPuff(o.sp.position,b[4]>=3?"#ffe27a":"#bff0a0",b[4]>=3?26:14,b[4]>=3?2.4:1.6); o.catching=1; o.sp.scale.multiplyScalar(1.4);
+    try{ (b[4]>=3?[784,988,1175,1568,2093]:[784,988,1175]).forEach((f,k)=>tone(f,.13,.05,"triangle",k*.07)); navigator.vibrate&&navigator.vibrate(b[4]>=3?[40,40,80]:40); }catch(_){}
+    setTimeout(()=>bugCard(b,first,N),520); if(N.u<=0) setTimeout(()=>toast(`${NETS[N.t].n}用壞了！`,2400),2600); }
+  else { o.esc++; try{ tone(260,.18,.05,"triangle"); tone(200,.2,.04,"triangle",.1); }catch(_){} bugPuff(o.sp.position,"#ffffff",8,1.2);
+    if(b[4]>=3&&o.esc>=2){ bugSay(o,"…咻！（飛不見了）"); setTimeout(()=>{ if(BG2.list.includes(o)) bugRemove(o,true); },350); }
+    else { bugSay(o,b[4]>=3?"啊！飛走了……牠很警覺，只剩一次機會！":"啊！飛走了！"); const a=Math.random()*6.283, d=3+Math.random()*4; let tx=o.x+Math.sin(a)*d, tz=o.z+Math.cos(a)*d; if(!TOWNX.walk(tx,tz)){ tx=o.x-Math.sin(a)*d; tz=o.z-Math.cos(a)*d; } o.tx=[tx,tz,bugGround(tx,tz)]; o.zip=0; } } }
+function bugSay(o,t){ toast(t,1800); }
+function bugCard(b,first,N){ const c=document.createElement("div"); c.className="bug-card"; c.innerHTML=`<div class="bc-in r${b[4]}"><div class="bc-burst"></div><img src="${bugPic(b[0])}" alt=""><b>${b[1]}</b><span class="bc-r">${"★".repeat(b[4])}${"☆".repeat(4-b[4])}　${BUG_RN[b[4]]}</span>${first?`<span class="bc-new">新發現！</span>`:""}<small>${b[9]}</small><small class="bc-u">${NETS[N.t].n}還能用 ${Math.max(0,N.u)} 次</small></div>`;
+  document.body.appendChild(c); c.onclick=()=>c.remove(); setTimeout(()=>{ c.classList.add("out"); setTimeout(()=>c.remove(),400); },2600); }
+(function(){ const st=document.createElement("style"); st.textContent=`.bug-card{position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;pointer-events:auto;background:rgba(10,20,10,.25);animation:bcF .25s}
+.bug-card .bc-in{position:relative;width:min(78vw,300px);padding:18px 16px 14px;border-radius:24px;background:linear-gradient(#fffdf2,#f1f8e4);box-shadow:0 14px 40px rgba(0,0,0,.4);text-align:center;font-family:${UI_FONT};color:#2e4a22;display:flex;flex-direction:column;align-items:center;gap:4px;animation:bcP .5s cubic-bezier(.3,1.7,.5,1);overflow:hidden}
+.bug-card .bc-in.r3{background:linear-gradient(#fffbea,#fff0c0)} .bug-card .bc-in.r4{background:linear-gradient(#fff6d0,#ffd86a);box-shadow:0 0 0 4px #fff3b0,0 14px 50px rgba(255,190,40,.6)}
+.bug-card img{width:120px;height:120px;animation:bcW 1.2s ease-in-out infinite;position:relative} .bug-card b{font-size:24px;font-weight:900} .bug-card .bc-r{color:#c08a1a;font-weight:900;font-size:14px}
+.bug-card .bc-new{background:#e8402e;color:#fff;border-radius:10px;padding:1px 10px;font-weight:900;font-size:13px;animation:bcP .6s .2s both cubic-bezier(.3,1.8,.5,1)} .bug-card small{font-size:12.5px;color:#5a6a4a} .bug-card .bc-u{color:#8a9a7a}
+.bug-card .bc-burst{position:absolute;left:50%;top:78px;width:360px;height:360px;margin:-180px;background:repeating-conic-gradient(rgba(255,220,120,.35) 0 10deg,transparent 10deg 20deg);animation:bcS 6s linear infinite;border-radius:50%}
+.bug-card.out{animation:bcO .4s forwards} @keyframes bcF{from{opacity:0}} @keyframes bcP{0%{transform:scale(.3)}100%{transform:scale(1)}} @keyframes bcW{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-6px) rotate(4deg)}} @keyframes bcS{to{transform:rotate(360deg)}} @keyframes bcO{to{opacity:0;transform:scale(.9)}}`; document.head.appendChild(st); })();
+L.tick7=dt=>{ try{ bugTick(dt); }catch(e){ console.warn("bugs",e); } if(L.tick8) L.tick8(dt); };
+function bugTick(dt){ const inTown=TOWNX&&TOWNX.on, p=meAv.pos; const c=bugChip();
+  for(let i=BUGP.length-1;i>=0;i--){ const q=BUGP[i]; q.t+=dt; q.m.position.x+=q.vx*dt; q.m.position.y+=q.vy*dt; q.m.position.z+=q.vz*dt; q.vy-=3*dt; q.m.material.opacity=Math.max(0,1-q.t/q.l); if(q.t>q.l){ scene.remove(q.m); q.m.material.dispose(); BUGP.splice(i,1); } }
+  if(!inTown){ while(BG2.list.length) bugRemove(BG2.list[0]); c.hidden=true; return; }
+  BG2.t-=dt; if(BG2.t<=0){ BG2.t=2.5; if(BG2.list.length<5) bugSpawn(); }
+  const S=BG2.swing; if(S){ S.t+=dt; const k=Math.min(1,S.t/.42); S.net.rotation.x=-2.2+k*3.3; meAv.root.position.y=Math.sin(Math.min(1,S.t/.5)*Math.PI)*.18; if(k>=.6&&!S.done){ S.done=1; if(BG2.list.includes(S.o)) bugTry(S.o); } if(S.t>.85){ S.net.parent&&S.net.parent.remove(S.net); S.net.traverse(q=>{ if(q.isMesh){ q.geometry.dispose(); q.material.dispose(); } }); BG2.swing=null; meAv.root.position.y=0; } }
+  let best=null, bd=2.4; for(let i=BG2.list.length-1;i>=0;i--){ const o=BG2.list[i]; o.age+=dt; o.ph+=dt; const P=o.sp.position;
+    if(o.catching){ const hp=meAv.root.position; P.lerp(new T.Vector3(hp.x,1.4,hp.z),Math.min(1,dt*8)); o.sp.scale.multiplyScalar(Math.max(.5,1-dt*4)); if(o.sp.scale.x<.08){ bugRemove(o); } continue; }
+    if(o.tx){ o.zip+=dt*2.2; const k=Math.min(1,o.zip); P.x=o.x+(o.tx[0]-o.x)*k; P.z=o.z+(o.tx[1]-o.z)*k; P.y=o.gy+(o.tx[2]-o.gy)*k+o.h+Math.sin(k*Math.PI)*1.6; if(k>=1){ o.x=o.tx[0]; o.z=o.tx[1]; o.gy=o.tx[2]; o.tx=null; } }
+    else { P.x=o.x+(o.b[7]?Math.sin(o.ph*1.3)*.5:0); P.z=o.z+(o.b[7]?Math.cos(o.ph*.9)*.4:0); P.y=o.gy+o.h+(o.b[7]?Math.sin(o.ph*3)*.15:Math.abs(Math.sin(o.ph*6))*.05); }
+    if(o.b[7]){ const f=.75+.25*Math.abs(Math.sin(o.ph*14)); o.sp.scale.set(o.s0*f,o.s0,1); }
+    const d=Math.hypot(p.x-P.x,p.y-P.z); if(d>45||o.age>120){ bugRemove(o); continue; } if(d<bd&&!o.tx){ bd=d; best=o; } }
+  bugNear=best; c.hidden=!(best&&!busy()&&!F&&!BG2.swing); if(best&&!c.hidden){ const N=NETD(); c.textContent=`🦋 抓${best.b[4]>=3?"（"+BUG_RN[best.b[4]]+"！）":""}${N.t?"":"（沒有網子）"}`; }
+  try{ if(chip&&!chip.hidden&&!c.hidden) chip.style.bottom="calc(env(safe-area-inset-bottom,0px) + 182px)"; else if(chip) chip.style.bottom=""; }catch(e){} }
+/* 雜貨店・威利: nets, and (later) seasonings */
+function netShop(){ const N=NETD(), d=LF(), g=GI(); const have=r=>Object.keys(g).filter(k=>k.startsWith("bug:")&&BUG_BY[k.slice(4)]&&BUG_BY[k.slice(4)][4]===r).reduce((a,k)=>a+g[k],0);
+  return `<h4 style="margin:10px 0 4px">捕蟲網</h4><p class="note" style="margin:0 0 6px">${N.t?`你的${NETS[N.t].n}還能用 ${N.u} 次。`:"你還沒有捕蟲網。"}</p>
+  <div class="lf-row"><span style="font-size:30px;width:56px;text-align:center">🥅</span><div class="t"><b>普通捕蟲網</b>　${dPrice("tw:grocer",300)} 幣<br><small>可以抓 20 次。常見的蟲很好抓，稀有的就要靠運氣。</small></div><button class="primary" data-act="bugNet" data-v="1">買</button></div>
+  <div class="lf-row"><span style="font-size:30px;width:56px;text-align:center">🔵</span><div class="t"><b>高級捕蟲網</b>　用 2 隻稀有昆蟲換<br><small>可以抓 30 次，稀有的蟲好抓很多。（你有稀有 ${have(3)} 隻）</small></div><button class="primary" data-act="bugNet" data-v="2" ${have(3)>=2?"":"disabled"}>換</button></div>
+  <div class="lf-row"><span style="font-size:30px;width:56px;text-align:center">🌟</span><div class="t"><b>黃金捕蟲網</b>　用 1 隻傳說＋2 隻稀有換<br><small>可以抓 40 次，傳說的蟲也有一半機會。（你有傳說 ${have(4)} 隻）</small></div><button class="primary" data-act="bugNet" data-v="3" ${have(4)>=1&&have(3)>=2?"":"disabled"}>換</button></div>`; }
+HANDLERS.bugNet=v=>{ const t=+v, N=NETD(), g=GI(); const take=(r,n)=>{ for(const k of Object.keys(g)){ if(n<=0) break; if(k.startsWith("bug:")&&BUG_BY[k.slice(4)]&&BUG_BY[k.slice(4)][4]===r){ const m=Math.min(n,g[k]); giAdd(k,-m); n-=m; } } };
+  if(t===1){ const pr=dPrice("tw:grocer",300); if(!me.sp){ if(bag.coins<pr){ try{ buzz(); }catch(e){} toast("平安幣不夠",2000); return; } bag.coins-=pr; } if(N.t>1&&N.u>0){ toast("你手上的網子比較好，用完再來買吧",2400); if(!me.sp) bag.coins+=pr; return; } N.t=1; N.u=(N.t===1?N.u:0)+20; }
+  else if(t===2){ take(3,2); N.t=2; N.u=30; } else if(t===3){ take(4,1); take(3,2); N.t=3; N.u=40; }
+  save(); try{ profSave(true); chaChing(); }catch(e){} toast(`威利：「拿去吧！${NETS[t].n}，好好用喔！」`,2600); grocer(); };
+/* 博士 buys bugs */
+function bugSellSheet(){ const g=GI(), ks=Object.keys(g).filter(k=>k.startsWith("bug:")&&g[k]>0); const dx=BUGDEX();
+  return `<p class="note">昆蟲圖鑑 ${Object.keys(dx).length}/${BUGS.length}</p>${ks.map(k=>{ const b=BUG_BY[k.slice(4)]; return `<div class="lf-row"><img src="${bugPic(b[0])}" style="width:48px;height:48px"><div class="t"><b>${b[1]}</b> ×${g[k]}　${b[8]} 幣／隻<br><small>${BUG_RN[b[4]]}・${b[9]}</small></div><button class="primary" data-act="bugSell" data-v="${b[0]}">賣一隻</button></div>`; }).join("")||`<p class="note">你身上沒有昆蟲。到公園、山谷、森林找找看！</p>`}`; }
+HANDLERS.bugSell=v=>{ const b=BUG_BY[v]; if(!b||!(GI()["bug:"+v]>0)) return; giAdd("bug:"+v,-1); bag.coins+=b[8]; save(); try{ profSave(true); chaChing(); }catch(e){} toast(`博士收下了${b[1]}（+${b[8]} 平安幣）`,2200); HANDLERS.lfBugCol(); };
+HANDLERS.lfBugCol=()=>openSheet("lfBugCol","🔬 博士的昆蟲收藏",`<p class="lead">博士：「每一隻昆蟲都是大自然的作品！賣給我，我會好好保存。」</p>${bugSellSheet()}`);
+L.bugs=()=>BG2; L.bugSpawn=bugSpawn;
 L.dbg=()=>({F,near,LF:LF(),pool,FGLB,HELD}); L.press=()=>press(); L.start=()=>startFish(); L.hold=id=>{ fishLoad(); let tries=0; const go=()=>{ if((!FGLB||!FGLB[id])&&tries++<200){ setTimeout(go,300); return; } if(HELD&&HELD.g&&HELD.g.parent) HELD.g.parent.remove(HELD.g); const f=FBY[id], g=fishMesh(f); g.scale.setScalar(.8); scene.add(g); HELD={g,t:.6,from:meAv.root.position.clone().add(new T.Vector3(Math.sin(meAv.rotY)*3,0,Math.cos(meAv.rotY)*3)),len:.8}; L.heldFreeze=1; }; go(); };
 return L; })();
 /*LIFE>>*/
