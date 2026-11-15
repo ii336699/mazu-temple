@@ -321,7 +321,7 @@ export class Lobby extends DurableObject {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
       let b = {}; try { b = await req.json(); } catch {} const out = {}, F = b && b.fit && typeof b.fit === "object" ? b.fit : {};
       for (const [id, v] of Object.entries(F).slice(0, 400)) { if (!/^[a-z0-9_]{1,24}$/.test(id) || !v || typeof v !== "object") continue; const o = {};
-        for (const k of ["w", "x", "y", "z", "rx", "ry", "rz", "zs", "xs", "ex", "ey", "ez"]) { const n = Number(v[k]); if (Number.isFinite(n) && Math.abs(n) <= 10) o[k] = Math.round(n * 1000) / 1000; } out[id] = o; }
+        for (const k of ["w", "x", "y", "z", "rx", "ry", "rz", "zs", "xs", "ex", "ey", "ez", "hc"]) { const n = Number(v[k]); if (Number.isFinite(n) && Math.abs(n) <= 10) o[k] = Math.round(n * 1000) / 1000; } out[id] = o; }
       await this.ctx.storage.put("hatfit", { fit: out, at: Date.now() }); return json({ ok: true });
     }
     // 榮譽功德榜: its own list, kept apart from the paper. Once the chair has opened the editor the early sponsors (built into the page) are
