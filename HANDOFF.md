@@ -1116,3 +1116,16 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - 進店（L.keeper）每天 +1 好感（kpVisit）。好感打折 shopDisc/dPrice：10 −5%、30 −10%、60 −15%、100 −20%；套用在釣具行竿和餌、花店種子、家具行（fPrice）。
 - 美雲姐（k_furn_0）好感 30：房間「家具」分頁可以直接「📞 跟美雲姐訂一件」（只限買得到的家具）。
 - 家具來源（FD 第 7 欄）：b 91 件（40%）；其他 q 功課寶箱 40、c 夾娃娃 32、n 鎮民好感 14（GIFTS 10/30/60 改給 n）、w 第一次釣到稀有魚 14、d 挖寶 13（第 60 項做）、g 簽到 9、f 節日紅包 8、m 星空 6（流星 30% 機率、或找博士用 8 顆星砂換：lfDust）。SRCN/SRCS 加上說明。
+
+## 第 37 批（11/16 凌晨，主委睡前清單）昆蟲、挖裂縫、女神泉任務、天后新村、廚房、背包分類、NPC 委託、UI
+- 昆蟲（aeef98d）：BUGS 20 種（id,名,emoji,色,稀有 1–4,區域,時段,會飛,價,台詞），BUG_AREA 區域框，NETS 三種網（威利賣 300 / 2 稀有 / 1 傳說+2 稀有；20/30/40 次），NET_RATE 命中率；稀有 r≥3 第一次揮空會飛走、第二次就消失。抓到進 GI "bug:<id>"，卡片 .bug-card 動畫。博士「🔬 賣昆蟲・化石」收購。L.tick7=bugTick。
+- 挖裂縫：L.tick8=digTick。小鎮可走的地方每 1.5–2.5 分鐘冒一條發光裂縫（最多 3 條，鎮口以北不冒）。鏟子 SHOVEL()=LF().sh {u}：威利 400 幣 15 次（shovelShop / HANDLERS.digBuy）。挖一次 3 精力、一天最多 DIG_DAY=15 次（LF().dgD/dgN）。DIGS 30 種（垃圾 7、老東西 8、化石 6、送禮小物 5、特別 4：平安幣 50–300、扭蛋幣、家具 ROOMX.grant("d")、頭飾 gachaLeft() 隨機一頂，沒有就給 2 枚扭蛋幣），平均一次約 127 幣。進 GI "dig:<id>"；化石・老東西博士收、垃圾威利回收（digSellRows / HANDLERS.digSell）。動作：鏟子掛在手上戳三下＋身體彈跳＋土塊粒子＋震動，東西轉著彈出來，再出卡片。圖先用 emoji。
+- 女神泉任務：LF().gq {s,d}。goddess() 在 s<4 而且沒有金竿（rods&32）時開 godQuest()：第 1 天一條魚、第 2 天一隻蟲或花草（tag flowers）、第 3 天流星石或 3 星砂、第 4 天交出和竿（rods bit 16）→ 女神升起、得到「女神竿」（RODS[5] 改名，原「女神的金釣竿」）。一天一步（sp 不限）。之前「誠實三次送金竿」拿掉了。泉水沒開時 g 水域不能釣（godOpen）。
+- 星空竿（RODS[11] 改名，原星辰釣竿）：要阿財伯（k_tackle_0）好感 100＋流星石 3 顆（lfForge）。釣具行的「？？？」那一列依好感講三段提示。
+- 天后新村（TOWN）：VIL / LOT_SZ / LOTS（40 間，4 條巷子 z −160/−185/−210/−235，大道 x −26…−20，入口接住宅巷西端，紅色牌樓在 z −140）。LOTS 進 TOWNB（row "vil<巷><n|s>"，key "tw:lot:<i>"），站點、門、名稱「天后新村 N 號」自動有。ZR 西界改 −100（尋路格子變大），WALK 加了巷子；TW.walk 在 x<−17 只認 WALK；inVil 讓 ground/camOK 不走南山的高度。CH 加 vilA1/vilA2/vil0–3；villageLane 畫草地、路、燈、樹、每戶門口的牌子（TW.lotSign，LIFE.lotTxt 決定字：售＋價格／我的房子／我的家，TW.lotRefresh 換字）。
+- 房子（LIFE）：LF().hm {own:[], cur}（-1＝住宅巷的小家）。L.lot(i) 買／進去／搬家；價格 dPrice("tw:furn")（美雲好感打折）。小 S 6×5、中 M 7.5×6、大 L 9×7：ROOMX.size(w,d)（ROOM 的 RW/RD 改 let，換尺寸就重建，家具 clampIt 拉回房內）。住宅巷的 tw:home 進去固定 6×5。金色「我的家」標記 HMK 浮在現住的房子上，在鎮上越遠畫越大（L.tick9）。
+- 廚房：房間右上「🍳 廚房」（ROOMX.cookBtn → kitchen()）。COOK 10 道（書店的 RECIPES 名稱），食材 ING 16 種在威利（L.seasonShop，調味料一瓶 5 次，LF().ing），藥材包 d.pk、番茄 crop、鹹粥要一條魚。煮一次 5 精力，翻炒指針小遊戲三下：普通／好吃／絕品（絕品多一份）。成品 GI "ck:<i>"，吃了走 SHOPX.enAdd（算進每天恢復上限 100），也能送人。房間裡開 sheet：body.sheet-top 讓 sheet 疊在房間上（離開房間拿掉）。
+- 背包：分頁改成 綜合／道具／頭飾／飾品／任務物品（BAG_CAT 依 id 分；bagEntries0 是原本的產生器）。LIFE 背包加：GI 物品（lf:gi_<id，冒號換 ~>）、食材、網子、鏟子、流星石、星砂；料理可直接「吃掉」。
+- NPC 委託：NQ（10 位鎮民＋阿財伯＋花店，各 3 個，好感 15/40/70 開），NQ_REW 500+1 扭蛋 / 1200+家具 n / 3000+家具+3 扭蛋，好感 +8。nqItems(tag) 用 giftTags 找身上符合的魚、作物、GI。npcSheet 下方顯示（L.nqBox）。LF().nq。
+- UI：說話／釣魚／抓蟲／挖裂縫的按鈕收進同一欄 #actStack（不再疊在一起）；禪院的判斷（音樂鈕、禪院鏡頭、zen 音樂）原本只看 x<−23.5，在新村會誤觸，改成還要 z>−50。拿掉玩家看到的「之後會…」預告句和 NPC 畫面底下的說明。
+- 企劃文件：「雲端天后宮・11/16 夜間更新與企劃」https://claude.ai/artifact/QSMWSu9kfuUfH1Ke4mWVPH（經濟數字、委託表、美術清單、特殊任務提案、待確認）。

@@ -2982,7 +2982,7 @@ function shadowTick(dt){ let p=(Date.now()/1000%TOD_LEN)/TOD_LEN; if(typeof wind
       SAKURA.spots.forEach(([x,z,r],i)=>{ const h=r*1.6+2; M.compose(P.set(x+ux*h*SHD.len*.35,0,z+uz*h*SHD.len*.35),Qt,S.set(r*2.1,1,r*2.1+h*SHD.len*.55)); SAKURA.sh.setMatrixAt(i,M); }); SAKURA.sh.instanceMatrix.needsUpdate=true; } SAKURA.sh.visible=false; } else if(SHD.t<=0) SHD.t=3; }
 /* the round build-mode trees that ended up out where the garden is (they looked odd there): hidden before the static merge, so they are not baked in */
 function zenHideTrees(){ for(const o of scene.children){ if(!(o.userData&&o.userData.buildId&&/^g-X-/.test(o.userData.buildId))) continue; let hit=false; o.updateMatrixWorld(true); o.traverse(m=>{ if(hit||!(m.isMesh||m.isPoints)) return; m.getWorldPosition(_zv); if((_zv.x<-26&&_zv.z<9)||Math.abs(_zv.x)>26.5||_zv.z<-51.5||_zv.z>HZ+YX+25) hit=true; /* (and every one outside the balustrade: the cherry trees stand there now) */ }); if(hit){ let built=false; o.traverse(m=>{ const c=m.isMesh&&m.material&&m.material.color; if(c&&c.r>.45&&c.g<.3&&c.b<.25) built=true; }); if(!built) o.visible=false; } } } /* (only trees: anything with temple red on it — the 石獅 arch — stays) */
-function zenTick(dt){ { const b=$("#zenMusicBtn"), want=!!(meAv&&meAv.pos.x<-23.5); if(b&&b.hidden===want) b.hidden=!want; } const c=camera.position, near=(c.x<-14&&c.z<-8&&c.z>-54)||c.x<-24, me=meAv&&meAv.pos;
+function zenTick(dt){ { const b=$("#zenMusicBtn"), want=!!(meAv&&meAv.pos.x<-23.5&&meAv.pos.y>-50); if(b&&b.hidden===want) b.hidden=!want; } const c=camera.position, near=(c.x<-14&&c.z<-8&&c.z>-54)||c.x<-24, me=meAv&&meAv.pos;
   if(!ZEN.g.visible) ZEN.g.visible=true; /* always drawn: from the courtyard it used to look like an empty field until you got close */
   ZEN.t=(ZEN.t||0)+dt; if((ZEN.hideT=(ZEN.hideT||0)-dt)<0){ ZEN.hideT=3;  }
   if(!near) return;
@@ -3893,14 +3893,14 @@ let pointers=new Map(), dragStart=null, pinchD=0, moved=false, camWideX=0, camTi
 canvas.addEventListener("pointerdown",e=>{ canvas.setPointerCapture(e.pointerId); pointers.set(e.pointerId,{x:e.clientX,y:e.clientY}); if(pointers.size===1){ dragStart={x:e.clientX,y:e.clientY,t:performance.now(),yaw:camYaw,pitch:camPitch,pv:pvYaw}; moved=false; rotAnim=null; } else if(pointers.size===2){ const [a,b]=[...pointers.values()]; pinchD=Math.hypot(a.x-b.x,a.y-b.y); moved=true; } });
 canvas.addEventListener("pointermove",e=>{ if(!pointers.has(e.pointerId)) return; pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(pointers.size===2&&fwZoomable()){ const [a,b]=[...pointers.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); FW_ZOOM=Math.max(1,Math.min(2.8,FW_ZOOM*d/Math.max(1,pinchD))); pinchD=d; return; } /* watching fireworks: two fingers zoom the lens in and out */
-  if(pointers.size===2&&meAv&&meAv.pos.x<-23.5){ const [a,b]=[...pointers.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); ZEN.fovX=Math.max(0,Math.min(34,(ZEN.fovX||0)+(pinchD-d)*.12)); pinchD=d; return; } /* 禪院: two fingers widen / narrow the lens */
+  if(pointers.size===2&&meAv&&meAv.pos.x<-23.5&&meAv.pos.y>-50){ const [a,b]=[...pointers.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); ZEN.fovX=Math.max(0,Math.min(34,(ZEN.fovX||0)+(pinchD-d)*.12)); pinchD=d; return; } /* 禪院: two fingers widen / narrow the lens */
   if(pointers.size===2){ const [a,b]=[...pointers.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); camDist=Math.max(2.4,Math.min(13,camDist*pinchD/d)); pinchD=d; return; }
   if(dragStart){ const dx=e.clientX-dragStart.x, dy=e.clientY-dragStart.y; if(Math.hypot(dx,dy)>7) moved=true; if(moved){ if(customizing){ pvYaw=dragStart.pv-dx*.012; } else { camYaw=dragStart.yaw-dx*.006; camPitch=Math.max(-.9,Math.min(1.15,dragStart.pitch+dy*.004)); /* below .06: the camera stays put and tilts up to look at the sky */ } } } });
 function endPointer(e){ const wasTap=pointers.size===1&&dragStart&&!moved&&performance.now()-dragStart.t<500; pointers.delete(e.pointerId); if(wasTap){ TAPM.mouse=e.pointerType==="mouse"; TAPM.x=e.clientX; TAPM.y=e.clientY; onTap(e.clientX,e.clientY); TAPM.mouse=false; } if(pointers.size===0) dragStart=null; }
 /* with a mouse, one click on the ground does not walk you there (stray clicks kept sending people running): double-click the ground to walk; things (gods, stalls, seats) still answer one click */
 const TAPM={mouse:false,x:0,y:0,last:0,lx:0,ly:0,hinted:false};
 canvas.addEventListener("pointerup",endPointer); canvas.addEventListener("pointercancel",e=>{pointers.delete(e.pointerId); dragStart=null;});
-canvas.addEventListener("wheel",e=>{ e.preventDefault(); if(fwZoomable()){ FW_ZOOM=Math.max(1,Math.min(2.8,FW_ZOOM*(1-e.deltaY*.0015))); return; } if(customizing){ pvMode=e.deltaY<0?"face":"full"; syncPvSeg(); return; } if(meAv&&meAv.pos.x<-23.5){ ZEN.fovX=Math.max(0,Math.min(34,(ZEN.fovX||0)+e.deltaY*.03)); return; } camDist=Math.max(2.4,Math.min(13,camDist*(1+e.deltaY*.001))); },{passive:false});
+canvas.addEventListener("wheel",e=>{ e.preventDefault(); if(fwZoomable()){ FW_ZOOM=Math.max(1,Math.min(2.8,FW_ZOOM*(1-e.deltaY*.0015))); return; } if(customizing){ pvMode=e.deltaY<0?"face":"full"; syncPvSeg(); return; } if(meAv&&meAv.pos.x<-23.5&&meAv.pos.y>-50){ ZEN.fovX=Math.max(0,Math.min(34,(ZEN.fovX||0)+e.deltaY*.03)); return; } camDist=Math.max(2.4,Math.min(13,camDist*(1+e.deltaY*.001))); },{passive:false});
 
 let pendingStation=null; let nearKey=null;
 const STATION_LABEL={gacha:"招財貓扭蛋機",xuantian:"玄天上帝",guangong:"關聖帝君",fountain:"觀音噴泉",cats:"跳舞小貓",lot:"求籤",altar:"媽祖供桌",shop:"服務處",burn:"金爐",donate:"香油錢",lamp:"光明燈",lampR:"光明燈",bell:"敲鐘",drum:"擊鼓",tiangong:"天公爐",caishen:"財神爺",yuelao:"月老",huye:"虎爺",jieqian:"解籤處",wish:"許願樹"};
@@ -4524,11 +4524,11 @@ HANDLERS.zenMode=v=>{ const [m,cat]=String(v).split("|"); ZM.mode=m; ZM.cat=cat;
 function setTrack(name){ if(name===curTrack) return; curTrack=name; const a=trk(name); if(audioUnlocked&&soundOn&&!document.hidden) trkPlay(a); }
 /* phones only let a player start inside a tap, so a song that is about to be needed (walking toward the 後殿 or the cats, fireworks on)
    is started silently on the next tap and parked */
-function trkPrime(){ const soon=[]; if(meAv&&meAv.pos.y<RY0+14) soon.push("rear"); if(!CATS.off&&Math.hypot(meAv.pos.x-CATS.c.x,meAv.pos.y-CATS.c.z)<12) soon.push("cat"); if(FW.on||FW.pendingAt) soon.push("fw"); if(meAv&&meAv.pos.x<-16&&meAv.pos.y<RY0+4) soon.push("zen"); if(meAv&&meAv.pos.x>30&&Math.abs(meAv.pos.y+1.2)<6) soon.push("claw"); /* near the claw shop */ if(meAv&&(Math.abs(meAv.pos.x)>22||meAv.pos.y<-47)) soon.push("out"); /* near the balustrade */
+function trkPrime(){ const soon=[]; if(meAv&&meAv.pos.y<RY0+14) soon.push("rear"); if(!CATS.off&&Math.hypot(meAv.pos.x-CATS.c.x,meAv.pos.y-CATS.c.z)<12) soon.push("cat"); if(FW.on||FW.pendingAt) soon.push("fw"); if(meAv&&meAv.pos.x<-16&&meAv.pos.y<RY0+4&&meAv.pos.y>-50) soon.push("zen"); if(meAv&&meAv.pos.x>30&&Math.abs(meAv.pos.y+1.2)<6) soon.push("claw"); /* near the claw shop */ if(meAv&&(Math.abs(meAv.pos.x)>22||meAv.pos.y<-47)) soon.push("out"); /* near the balustrade */
   for(const n of soon){ const a=trk(n); if(a._primed) continue; a._primed=1; if(n!==curTrack){ const p=a.play(); if(p&&p.then) p.then(()=>{ if(n!==curTrack&&MIX[n]<.01) a.pause(); }).catch(()=>{ a._primed=0; }); } } }
 function playMusic(){ if(!soundOn||document.hidden) return; audioUnlocked=true; setTrack(FW.on?"fw":catMode?"cat":rearZone?"rear":"main"); trkPlay(trk(curTrack)); try{ trkPrime(); }catch(e){} }
 function musicTick(dt){ const z=meAv.pos.y, isOut=Math.abs(meAv.pos.x)>25.6||z<-50.6||z>HZ+YX+24, inRear=(z<RY0||meAv.pos.x<-23.5)&&!isOut; /* (outside the balustrade is never the 後殿, however far back) */ if(inRear!==rearZone){ rearDwell+=dt; if(rearDwell>2.5){ rearZone=inRear; rearDwell=0; } } else rearDwell=0; /* stay 2.5 s in an area before its song takes over */
-  const want=(FW.on&&!(FWED.on&&!FWED.play))?"fw":(SHOPX&&SHOPX.mode==="claw"&&SHOPX.on)?"claw":(SHOPX&&SHOPX.on&&SHOPX.mode==="room")?"room":catMode?"cat":(meAv.pos.x<-23.5)?"zen":isOut?"out":rearZone?"rear":"main"; /* out: anywhere outside the stone balustrade (the 禪房 side, the shop street, the town) except the zen garden; room: in 我的房間 */ if(want!==curTrack) setTrack(want);
+  const want=(FW.on&&!(FWED.on&&!FWED.play))?"fw":(SHOPX&&SHOPX.mode==="claw"&&SHOPX.on)?"claw":(SHOPX&&SHOPX.on&&SHOPX.mode==="room")?"room":catMode?"cat":(meAv.pos.x<-23.5&&meAv.pos.y>-50)?"zen":isOut?"out":rearZone?"rear":"main"; /* out: anywhere outside the stone balustrade (the 禪房 side, the shop street, the town) except the zen garden; room: in 我的房間 */ if(want!==curTrack) setTrack(want);
   const mv=mVol(), near=Math.max((OP&&OP.on)?OP.prox:0,(typeof BUSK!=="undefined"?BUSK.prox*.9*bVol():0)), live=soundOn&&audioUnlocked&&!document.hidden&&!gameAsleep; duckF+=((duckT>0?.42:1)-duckF)*Math.min(1,dt*(duckT>0?2.5:1));
   for(const n in TRK){ const a=TRK[n], on=n===curTrack; MIX[n]+=((on?1:0)-MIX[n])*Math.min(1,dt*(on?.9:1.4)); /* about a 2-second cross-fade */
     const lv=MIX[n]*TRK_TOP[n]*mv*duckF*(1-near)*(bgmHush?0:1); trkLevel(n,lv<.004?0:lv);
@@ -8969,7 +8969,7 @@ function tick(){ if(gameAsleep) return; const _ft0=performance.now(); { const no
     if(jiaoCam.until&&jiaoCam.simT>jiaoCam.until){ jiaoCam.on=false; sheet.classList.remove("peek"); camFocus.set(meAv.pos.x,1,meAv.pos.y); }
   } else {
     camera.clearViewOffset();
-    { /* during a show the normal view goes wide-angle, so even the biggest shells fit on a phone screen */ const zx=meAv.pos.x<-23.5?(ZEN.fovX||0):0; camWideX+=((zx+camTight)-camWideX)*Math.min(1,dt*2); const want=(FW.on||FW.pendingAt)?Math.max(30,Math.min(96,fwFov())/FW_ZOOM):55+camWideX; if(Math.abs(camera.fov-want)>.3){ camera.fov+=(want-camera.fov)*Math.min(1,dt*2.5); camera.updateProjectionMatrix(); } }
+    { /* during a show the normal view goes wide-angle, so even the biggest shells fit on a phone screen */ const zx=meAv.pos.x<-23.5&&meAv.pos.y>-50?(ZEN.fovX||0):0; camWideX+=((zx+camTight)-camWideX)*Math.min(1,dt*2); const want=(FW.on||FW.pendingAt)?Math.max(30,Math.min(96,fwFov())/FW_ZOOM):55+camWideX; if(Math.abs(camera.fov-want)>.3){ camera.fov+=(want-camera.fov)*Math.min(1,dt*2.5); camera.updateProjectionMatrix(); } }
     { /* seated or lying: aim at the body (not 1 m above the seat), and once settled swing round behind the character */ const ST=meAv.seat>=0?SEATS[meAv.seat]:null, lie=ST&&(ST.kind==="bed"||ST.kind==="futon");
       if(ST&&!customizing){ fy=lie?.35:.75; if(meAv.kneel>.9&&CAMSEAT.done!==meAv.seat){ CAMSEAT.done=meAv.seat; CAMSEAT.pitch0=camPitch; rotAnim={to:camYaw+wrapA(meAv.rotY+Math.PI-camYaw)}; if(lie&&camPitch<.75) camPitch=.75; if(ST.win) camPitch=.18; } } else { if(CAMSEAT.done>=0){ CAMSEAT.upT=1.6; if(CAMSEAT.pitch0!=null){ camPitch=CAMSEAT.pitch0; CAMSEAT.pitch0=null; } } CAMSEAT.done=-1; } CAMSEAT.upT=Math.max(0,(CAMSEAT.upT||0)-dt); } /* (standing up: the old view comes back, and for a moment the camera does not climb) */
     tmpV.set(meAv.pos.x,fy+((meAv.flyCur||0)>.02?meAv.flyCur:meAv.root.position.y),meAv.pos.y);
@@ -10423,8 +10423,8 @@ const recLeft=()=>{ enDay(); return Math.max(0,EN_REC_MAX-(bag.enRec||0)); };
 const en=()=>Math.round(bag.en);
 /* 精力上限: 100, plus one for every 大還丹 eaten (中藥行), up to 200 (11/14) */ function enMax(){ return 100+Math.min(100,(bag.lf&&bag.lf.dht)|0); } SX.enMax=enMax; /* (LIFE needs it: 鹹粥, 大還丹) */
 SX.wallet=()=>{ let e=$("#enCap"); const cap=document.querySelector("#bagBtn .cap"); if(!e&&cap){ e=document.createElement("span"); e.id="enCap"; cap.appendChild(e); } if(e) e.textContent=`⚡${en()}`; };
-SX.bagTop=()=>`<div class="inv-top"><span class="inv-coin">⚡<b>${en()}</b>精力</span><span class="inv-note">每天 100；打工一班要 ${EN_SHIFT}。今天還能恢復 ${Math.round(recLeft())}（每天最多 ${EN_REC_MAX}）：泡溫泉每分鐘 +2、靜坐每分鐘 +1，吃東西最快</span></div>`;
-SX.enAdd=v=>enAdd(v); function enAdd(v){ const b=en(); let g=v; if(v>0){ g=Math.min(v,enMax()-bag.en,recLeft()); bag.enRec=(bag.enRec||0)+Math.max(0,g); } bag.en=Math.max(0,Math.min(enMax(),bag.en+g)); if(Math.round(bag.en)!==b){ SX.wallet(); } return g; }
+SX.bagTop=()=>`<div class="inv-top"><span class="inv-coin" style="white-space:nowrap">⚡<b>${en()}</b>精力</span><span class="inv-note">今天還能恢復 ${Math.round(recLeft())}：泡溫泉、靜坐、吃東西</span></div>`;
+SX.enAdd=v=>enAdd(v); SX.recLeft=()=>recLeft(); function enAdd(v){ const b=en(); let g=v; if(v>0){ g=Math.min(v,enMax()-bag.en,recLeft()); bag.enRec=(bag.enRec||0)+Math.max(0,g); } bag.en=Math.max(0,Math.min(enMax(),bag.en+g)); if(Math.round(bag.en)!==b){ SX.wallet(); } return g; }
 let enAcc=0, enSave=0, enWhy="", enNote=0;
 /* 恢復速度 (精力 per second): 套房的床 fastest, then 通鋪, 溫泉, 禪堂靜坐 */
 /* 恢復: the dearer, the faster. 套房 (100 幣) 66 in a minute (all of a day's rest in one stay); 通鋪 (50 幣) 33 in a minute;
@@ -10623,7 +10623,7 @@ function worldTick(dt){ if(WORLD.neon){ const t=WORLD.t||0; WORLD.neon.opacity=(
 /* ---------- shop screens: a layer over the game with its own little 3D scene ---------- */
 function shxCSS(){ if(document.getElementById("shxCss")) return; const st=document.createElement("style"); st.id="shxCss"; st.textContent=`
 body.shopmode #c{position:fixed;z-index:71!important}body.shopmode .toast{z-index:90!important}
-body.sheet-top .sheet{z-index:80} body.sheet-top .toast{z-index:81}
+body.sheet-top .sheet{z-index:80} body.sheet-top .toast{z-index:81} body.sheet-top:has(.sheet.open) .shx-panel{visibility:hidden}
 .shx{position:fixed;inset:0;z-index:72;touch-action:none;user-select:none;-webkit-user-select:none;font-family:${UI_FONT};color:#fff;overflow:hidden}
 .shx-touch{position:absolute;inset:0}
 .shx-top{position:absolute;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top,0px) + 8px) 10px 8px;display:flex;align-items:center;gap:8px;background:linear-gradient(rgba(15,10,20,.75),rgba(15,10,20,0));pointer-events:none}
@@ -11011,12 +11011,12 @@ const MMAP=(()=>{
     ["shop","商店","#4fb3ff",["cvs","cloth","innDesk","catMom","tw:tackle","tw:grocer","tw:flower","tw:barber","tw:beauty","tw:furn","tw:cafe"]],
     ["town","小鎮","#7fd08a",["tw:bfast","tw:home","tw:garden","tw:goddess","tw:camp","tw:ice","tw:herb","tw:bus","tw:board","tw:lounge"]]];
   const LBL={innDesk:"禪房櫃台"}; const MM_TOWN=true; /* the town, brook and beach on the map (11/12 night: the chair opened the town in the test version to keep building it; the shops-only live version has no town) */ const SKIP=new Set(["lampR"]);
-  const catOf=k=>{ for(const c of CAT) if(c[3].includes(k)) return c; return ["etc","其他","#7fd08a",[]]; };
+  const catOf=k=>{ if(/^tw:lot:/.test(k)) return CAT[4]; for(const c of CAT) if(c[3].includes(k)) return c; return ["etc","其他","#7fd08a",[]]; };
   const label=k=>LBL[k]||(typeof STATION_LABEL!=="undefined"&&STATION_LABEL[k])||"";
-  const pois=()=>Object.keys(stations).filter(k=>!SKIP.has(k)&&label(k)&&!/^tw:(house|soon):/.test(k)).map(k=>({k,n:label(k),x:stations[k].approach.x,z:stations[k].approach.y,c:catOf(k)}));
+  const pois=()=>Object.keys(stations).filter(k=>!SKIP.has(k)&&label(k)&&!/^tw:(house|soon):/.test(k)&&(!/^tw:lot:/.test(k)||(typeof LIFE!=="undefined"&&LIFE&&LIFE.isHome&&LIFE.isHome(k)))).map(k=>({k,n:label(k),x:stations[k].approach.x,z:stations[k].approach.y,c:catOf(k)}));
   /* the ground: every walkable spot, sampled once in small steps after the game has loaded */
   let B=[-76,66,-50.5,46.5], ST=.5, W=1, H=1; const base=document.createElement("canvas"); let ready=false, row=0, img=null;
-  const sizeUp=()=>{ try{ if(MM_TOWN&&typeof TOWNX!=="undefined"&&TOWNX){ const r=TOWNX.ZR||[-8,182,-137.5,-50.5]; B=[Math.min(B[0],r[0]),Math.max(B[1],r[1]),Math.min(B[2],r[2]),Math.max(B[3],r[3])]; } }catch(e){} /* (the town, when this version has it) */
+  const sizeUp=()=>{ try{ if(MM_TOWN&&typeof TOWNX!=="undefined"&&TOWNX){ const r=TOWNX.zrect||TOWNX.ZR||[-8,182,-137.5,-50.5]; B=[Math.min(B[0],r[0]),Math.max(B[1],r[1]),Math.min(B[2],r[2]),Math.max(B[3],r[3])]; } }catch(e){} /* (the town, when this version has it) */
     ST=Math.max(.5,Math.sqrt((B[1]-B[0])*(B[3]-B[2])/90000)); W=Math.ceil((B[1]-B[0])/ST); H=Math.ceil((B[3]-B[2])/ST); base.width=W; base.height=H; };
   const sample=()=>{ if(!img){ sizeUp(); img=new ImageData(W,H); } const t0=performance.now(); const d=img.data;
     while(row<H&&performance.now()-t0<12){ const z=B[2]+(row+.5)*ST; for(let i=0;i<W;i++){ let ok=false; try{ ok=(MM_TOWN||z>-50.5)&&walkable(B[0]+(i+.5)*ST,z); }catch(e){} if(ok){ const p=(row*W+i)*4; d[p]=236; d[p+1]=223; d[p+2]=196; d[p+3]=255; } } row++; }
@@ -11044,7 +11044,7 @@ const MMAP=(()=>{
   if(hall) hall.prepend(rowEl);
   const cv=rowEl.querySelector("#mmCv"), cx=cv.getContext("2d"); const DPR=Math.min(2,devicePixelRatio||1); cv.width=cv.height=Math.round(92*DPR);
   const enUpd=()=>{ try{ const v=Math.max(0,Math.min(enMax(),Math.round(bag.en))), pc=v/enMax()*100; const el=document.querySelector("#enNum"); if(!el) return; if(el.textContent!==String(v)) el.textContent=v; const i=document.querySelector("#enPill .bar i"); i.style.width=pc+"%"; i.style.background=pc>50?"#4cd964":pc>20?"#ffcc00":"#ff3b30"; }catch(e){} };
-  rowEl.querySelector("#enPill").onclick=()=>{ try{ toast(`精力 ${Math.round(bag.en)} / 100・打工一班要 33・泡溫泉每分鐘 +2、靜坐 +1，吃東西最快`,3200); }catch(e){} };
+  rowEl.querySelector("#enPill").onclick=()=>{ try{ toast(`精力 ${Math.round(bag.en)} / ${enMax()}・今天還能恢復 ${Math.round(SHOPX&&SHOPX.recLeft?SHOPX.recLeft():0)}（泡溫泉、靜坐、吃東西）`,3200); }catch(e){} };
   const arrow=(g,x,y,a,s,c)=>{ g.save(); g.translate(x,y); g.rotate(a); g.fillStyle=c; g.strokeStyle="#000"; g.lineWidth=1.5*DPR; g.beginPath(); g.moveTo(0,-s); g.lineTo(s*.7,s*.75); g.lineTo(0,s*.35); g.lineTo(-s*.7,s*.75); g.closePath(); g.fill(); g.stroke(); g.restore(); };
   const drawMini=()=>{ const w=cv.width, h=cv.height, k=2.2*DPR*ST; /* px per sample */ cx.fillStyle="#2a1a12"; cx.fillRect(0,0,w,h); if(!ready){ return; }
     const mx=meAv.pos.x, mz=meAv.pos.y; cx.imageSmoothingEnabled=true; cx.drawImage(base,w/2-px(mx)*k,h/2-pz(mz)*k,W*k,H*k);
@@ -14268,7 +14268,8 @@ function homeMark(){ const p=homeSpot(); if(!p) return; if(!HMK){ const cv=cvs0(
     HMK=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(cv),transparent:true,depthWrite:false,fog:false})); HMK.scale.set(3.2,3.2,1); HMK.userData.noMerge=1; scene.add(HMK); }
   HMK.position.set(p.x,p.y,p.z); HMK.userData.y0=p.y; }
 L.tick9=dt=>{ try{ if(!TOWNX||!TOWNX.on){ if(HMK) HMK.visible=false; return; } if(!HMK) homeMark(); HMK.visible=true; HMK.userData.t=(HMK.userData.t||0)+dt; HMK.position.y=HMK.userData.y0+Math.sin(HMK.userData.t*2)*.25; const d=Math.hypot(meAv.pos.x-HMK.position.x,meAv.pos.y-HMK.position.z), k=Math.max(1,Math.min(3,d/18)); HMK.scale.set(3.2*k,3.2*k,1); }catch(e){} if(L.tick10) L.tick10(dt); };
-function lotRefreshAll(){ LOTS_().forEach(Lt=>{ try{ TOWNX.lotRefresh(Lt.i); }catch(e){} }); homeMark(); }
+function lotRefreshAll(){ LOTS_().forEach(Lt=>{ try{ TOWNX.lotRefresh(Lt.i); STATION_LABEL["tw:lot:"+Lt.i]=HMD().cur===Lt.i?"🏠 我的家":`天后新村 ${Lt.i+1} 號`; }catch(e){} }); homeMark(); }
+L.isHome=k=>k==="tw:lot:"+HMD().cur; setTimeout(()=>{ try{ lotRefreshAll(); }catch(e){} },2500);
 L.lot=i=>{ const Lt=LOTS_()[i]; if(!Lt) return; const h=HMD(), S=TOWNX.LOT_SZ[Lt.k], own=h.own.includes(i), pr=dPrice("tw:furn",Lt.p), rm=S.room;
   if(own){ if(h.cur!==i){ openSheet("lfLot","🏠 天后新村 "+(i+1)+" 號",`<p class="lead">這是你的房子（${S.n}，房間 ${rm[0]}×${rm[1]} 公尺）。</p><div class="row"><button class="primary" data-act="lfLotIn" data-v="${i}">進去</button><button class="secondary" data-act="lfLotMove" data-v="${i}">搬來這裡住</button></div>`); return; } HANDLERS.lfLotIn(String(i)); return; }
   openSheet("lfLot","🏡 天后新村 "+(i+1)+" 號",`<p class="lead">門口的牌子：<b>售</b>。</p><div class="lf-row"><span style="font-size:40px;width:60px;text-align:center">${Lt.k==="S"?"🏠":Lt.k==="M"?"🏡":"🏘️"}</span><div class="t"><b>${S.n}</b>　${pr.toLocaleString("en-US")} 平安幣${pr<Lt.p?`<s style="opacity:.5;margin-left:4px">${Lt.p.toLocaleString("en-US")}</s>`:""}<br><small>${S.fl} 層樓，房間 ${rm[0]}×${rm[1]} 公尺（住宅巷的小家是 6×5）。房間越大，能擺的家具越多。每間都有廚房。</small></div></div>
@@ -14307,7 +14308,11 @@ HANDLERS.lfStir=()=>{ if(!CK||CK.hits.length>=3) return; const ok=CK.pos>=.38&&C
 HANDLERS.lfKit=()=>kitchen();
 HANDLERS.lfCkEat=v=>{ const i=+String(v).slice(3), c=COOK[i]; if(!c||!(GI()[v]>0)) return; let g=0; try{ g=SHOPX.enAdd?SHOPX.enAdd(c[2]):(energy(c[2]),c[2]); }catch(e){} giAdd(v,-1); save(); toast(g>0?`吃了${c[0]}，精力 +${Math.round(g)}`:`吃了${c[0]}，好飽！（今天的精力恢復已經到上限了）`,2400); kitchen(); };
 function ckTick(dt){ if(!CK) return; CK.pos+=CK.dir*dt*(.9+CK.hits.length*.35); if(CK.pos>1){ CK.pos=1; CK.dir=-1; } if(CK.pos<0){ CK.pos=0; CK.dir=1; } const p=document.getElementById("ckP"); if(p) p.style.left=(CK.pos*100)+"%"; }
-L.tick10=dt=>{ try{ ckTick(dt); }catch(e){} };
+/* 動作按鈕 (11/16 UI 整理): 說話、釣魚、抓蟲、挖裂縫 used to sit at fixed heights and could land on top of each other; now they
+   stack in one column above the joystick line, the nearest thing first, never overlapping (phone or computer) */
+let ACTS=null; function actStack(){ if(!ACTS){ ACTS=document.createElement("div"); ACTS.id="actStack"; document.body.appendChild(ACTS); const st=document.createElement("style"); st.textContent=`#actStack{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 118px);z-index:9;display:flex;flex-direction:column-reverse;align-items:center;gap:8px;pointer-events:none}#actStack>*{position:static!important;transform:none!important;left:auto!important;bottom:auto!important;pointer-events:auto;white-space:nowrap}#actStack>[hidden]{display:none!important}`; document.head.appendChild(st); }
+  for(const id of ["lfChip","bugChip","digChip","lfTalk"]){ const c=document.getElementById(id); if(c&&c.parentNode!==ACTS) ACTS.appendChild(c); } }
+let actT=0; L.tick10=dt=>{ try{ ckTick(dt); }catch(e){} if((actT-=dt)<0){ actT=1; try{ actStack(); }catch(e){} } };
 try{ ROOMX.cookBtn=()=>kitchen(); }catch(e){}
 /* 📜 好感委託 (11/16 主委): every townsperson has three little requests, opened as you get to know them (好感 15 / 40 / 70).
    They ask for things the town already has — a fish, an insect, something from your garden, something dug up, a dish you cooked.
@@ -14332,7 +14337,7 @@ function nqItems(tag){ const d=LF(), out=[]; d.inv.forEach(([id])=>{ if(giftTags
 const nqName=t=>{ if(FBY[t]) return FBY[t].n; if(SB[t]) return SB[t][1]; if(t.includes(":")) return giInfo(t).n; return {bug:"昆蟲",fish:"魚",fossil:"化石",dish:"料理",flowers:"花",rare:"稀有的魚",sweet:"甜的東西",veg:"蔬菜",old:"老東西"}[t]||t; };
 function nqCur(nid){ const Q=NQ[nid]; if(!Q) return null; const i=NQD()[nid]|0; if(i>=Q.length) return {done:1}; const q=Q[i]; return {i,q,open:NR(nid).a>=q[0]}; }
 L.nqBox=nid=>{ const c=nqCur(nid); if(!c||c.done) return ""; if(!c.open) return `<p class="note" style="margin:6px 0 0">📜 再熟一點（好感 ${c.q[0]}），${NB[nid].n}會有事想拜託你。</p>`; const have=nqItems(c.q[1]).length, need=c.q[2];
-  return `<div style="margin:10px 0 2px;padding:10px 12px;border-radius:14px;background:#fff7e6;border:2px dashed #e2a23a"><b style="color:#8e1c14">📜 委託 ${c.i+1}／3</b><p style="margin:4px 0 6px">「${c.q[3]}」</p><small>要：${nqName(c.q[1])} ×${need}　（你有 ${Math.min(have,need)}／${need}）</small><div class="row" style="margin-top:6px"><button class="primary" data-act="lfNq" data-v="${nid}" ${have>=need?"":"disabled"}>交給${NB[nid].n}</button></div></div>`; };
+  return `<div style="margin:10px 0 2px;padding:10px 12px;border-radius:14px;background:#fff7e6;border:2px dashed #e2a23a;color:#3b2416"><b style="color:#8e1c14">📜 委託 ${c.i+1}／3</b><p style="margin:4px 0 6px">「${c.q[3]}」</p><small>要：${nqName(c.q[1])} ×${need}　（你有 ${Math.min(have,need)}／${need}）</small><div class="row" style="margin-top:6px"><button class="primary" data-act="lfNq" data-v="${nid}" ${have>=need?"":"disabled"}>交給${NB[nid].n}</button></div></div>`; };
 HANDLERS.lfNq=nid=>{ const c=nqCur(nid); if(!c||c.done||!c.open) return; const it=nqItems(c.q[1]); if(it.length<c.q[2]) return; const d=LF();
   for(let k=0;k<c.q[2];k++){ const [t,id]=it[k]; if(t==="f"){ const i=d.inv.findIndex(e=>e[0]===id); if(i>=0) d.inv.splice(i,1); } else if(t==="c") L.cropTake(id); else giAdd(id,-1); }
   const R=NR(nid); R.a=Math.min(100,R.a+8); NQD()[nid]=c.i+1; const rw=NQ_REW[c.i], got=[]; bag.coins+=rw.c; got.push(`${rw.c} 平安幣`); if(rw.g){ bag.gacha=Math.min(255,(bag.gacha||0)+rw.g); got.push(`扭蛋幣 ${rw.g} 枚`); } if(rw.f){ let fu=""; try{ fu=ROOMX.grant("n"); }catch(e){} if(fu) got.push(`家具「${fu}」`); }
