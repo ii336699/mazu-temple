@@ -2562,7 +2562,6 @@ function makeSakura(seed){ let st=(seed>>>0)||1; const rnd=()=>{ st=(st+0x6D2B79
   const N=Math.min(1400,tips.length*14), bl=new T.InstancedMesh(new T.PlaneGeometry(.95,.95),bloomMat,N), m4=new T.Matrix4(), q=new T.Quaternion(), e=new T.Euler(), sc=new T.Vector3();
   for(let k=0;k<N;k++){ const t=tips[k%tips.length]; e.set(R(0,6.3),R(0,6.3),R(0,6.3)); q.setFromEuler(e); const z=R(.7,1.25); m4.compose(new T.Vector3(t.x+R(-.75,.75),t.y+R(-.45,.55),t.z+R(-.75,.75)),q,sc.set(z,z,z)); bl.setMatrixAt(k,m4); }
   g.add(bl);
-  WT.bloom={bl,g,tips:tips.map(t=>t.clone())}; /* (11/17: its blossom is redrawn the way the cherries outside the temple are, once those are made — see SAKURA) */
   // a few petals lying on the stone ring and the ground
   const fallen=new T.InstancedMesh(new T.CircleGeometry(.05,5),new T.MeshStandardMaterial({color:new T.Color("#ffc3d6"),roughness:.9,side:T.DoubleSide}),160);
   for(let k=0;k<160;k++){ const a=R(0,6.3), r=R(.5,4.2); e.set(-Math.PI/2,0,R(0,6.3)); q.setFromEuler(e); m4.compose(new T.Vector3(Math.cos(a)*r,r<2.3?.46:.02,Math.sin(a)*r),q,sc.set(1,1,1)); fallen.setMatrixAt(k,m4); } g.add(fallen);
@@ -2837,8 +2836,9 @@ const SAKURA={};
   const near=[], far=[]; const NN=Q.lite?60:130, NF=Q.lite?110:230;
   for(let i=0;i<9000&&(near.length<NN||far.length<NF);i++){ let x=rr(-130,130), z=rr(-130,52); /* (11/16: the road and the beach are in front now) */ if(R()<.35&&(near.length||far.length)){ const L0=R()<.5&&near.length?near:far.length?far:near, p=L0[(R()*L0.length)|0]; x=p[0]+rr(-7,7); z=p[1]+rr(-7,7); } /* clumps, like trees seeding near each other */ const d=dist(x,z); if(d<3||d>70) continue; const r=d<15?(R()<.25?rr(1.3,2.2):rr(2.2,4.4)):rr(2,5.4), isNear=d<15;
     if(isNear&&near.length>=NN||!isNear&&far.length>=NF) continue; if(!free(x,z,r*.5+1)) continue; const L=isNear?near:far; if(near.some(s=>Math.hypot(s[0]-x,s[1]-z)<(s[2]+r)*.6)||far.some(s=>Math.hypot(s[0]-x,s[1]-z)<(s[2]+r)*.62)) continue; L.push([x,z,r]); }
-  const blossomTex=cvs(128,128,(x,w,h)=>{ x.clearRect(0,0,w,h); for(let i=0;i<190;i++){ const a=Math.random()*6.28, r=Math.sqrt(Math.random())*52, px=64+Math.cos(a)*r, py=64+Math.sin(a)*r*.85, s=1.8+Math.random()*1.8; x.fillStyle=`rgba(255,255,255,${.8+Math.random()*.2})`;
-      for(let k=0;k<5;k++){ const b=k/5*6.283; x.beginPath(); x.arc(px+Math.cos(b)*s*.6,py+Math.sin(b)*s*.6,s*.55,0,7); x.fill(); } } });
+  /* (11/17 主委「外面的櫻花樹的花變成祈願樹這種」: the same little five-petal flowers as the 許願樹 — pink, with a deep pink heart) */
+  const blossomTex=cvs(128,128,(x,w,h)=>{ x.clearRect(0,0,w,h); for(let k=0;k<26;k++){ const cx=16+Math.random()*96, cy=16+Math.random()*96, r=5+Math.random()*7; const pk=["#ffd3e2","#ffb8d0","#ffc6da","#fbe7ef","#ff9fc0"][k%5];
+      for(let q=0;q<5;q++){ const a=q/5*Math.PI*2; x.fillStyle=pk; x.beginPath(); x.ellipse(cx+Math.cos(a)*r*.55,cy+Math.sin(a)*r*.55,r*.55,r*.4,a,0,7); x.fill(); } x.fillStyle="#d4567c"; x.beginPath(); x.arc(cx,cy,r*.22,0,7); x.fill(); } });
   blossomTex.encoding=T.LinearEncoding;
   const PINK=["#f4a6c0","#f8c0d2","#ec8cb0","#fbdce6","#e47aa2","#fff0f4","#f0b0c8"];
   const M4=new T.Matrix4(), Q4=new T.Quaternion(), E3=new T.Euler(), S3=new T.Vector3(), V3=new T.Vector3(), C3=new T.Color();
@@ -2849,20 +2849,16 @@ const SAKURA={};
   /* (11/16 晚上 主委: the trunks are the chair's low-poly trunk model now — LPT — and the blossom cards cluster at its branch ends) */
   /* (11/17 主委「櫻花樹樹幹不要太粗 要保持一定比例 要大就整顆都要加大 包含上面花都要加多」: the trunk is scaled evenly — a bigger tree is
      bigger all over, with more blossom — and every tree has its own height, lean and crown) */
+  const WHITE3=new T.Color(1,1,1);
   const tree=(x,z,r,detail)=>{ const k=Math.max(.6,r/2.5)*rr(.85,1.18), ry=rr(0,6.28);
     E3.set(rr(-.06,.06),ry,rr(-.06,.06)); Q4.setFromEuler(E3); M4.compose(V3.set(x,0,z),Q4,S3.set(k,k,k)); trunks.push(M4.clone()); const U=new T.Vector3();
-    const n=Math.round((detail?50+44*k*k:14+11*k*k)*(Q.lite?.55:1)), base=PINK[(R()*PINK.length)|0], big=(detail?.62:1.15)*(Q.lite?1.25:1); /* (11/17 主委「櫻花樹的花太大了 請做小一點」: smaller cards, more of them) */
-    for(const q of LPT.crown(R,n)){ const s=k*big*rr(.8,1.25); const pc=R()<.6?base:PINK[(R()*PINK.length)|0];
+    const n=Math.round((detail?40+34*k*k:12+9*k*k)*(Q.lite?.55:1)), base=PINK[(R()*PINK.length)|0], big=(detail?.95:1.5)*(Q.lite?1.2:1); /* (11/17 主委「櫻花樹的花太大了 請做小一點」: smaller cards, more of them) */
+    for(const q of LPT.crown(R,n)){ const s=Math.min(detail?1.25:2.4,k*big)*rr(.8,1.2); /* (cards about the 許願樹's size, so the flowers are the same size) */ const pc=R()<.6?base:PINK[(R()*PINK.length)|0];
       U.set(q[0],q[1],q[2]).applyMatrix4(M4);
-      cards.push([U.x,U.y,U.z,rr(-.5,.5),rr(0,3.14),rr(-.4,.4),s,s,s,C3.set(pc).convertSRGBToLinear().offsetHSL(0,rr(-.05,.05),(q[3]-.55)*.14+rr(-.06,.05)).getHex()]); } };
+      cards.push([U.x,U.y,U.z,rr(-.5,.5),rr(0,3.14),rr(-.4,.4),s,s,s,C3.set(pc).lerp(WHITE3,.35).multiplyScalar(.86+.14*q[3]+rr(-.04,.04)).getHex()]); } }; /* (a light pink tint over the drawn flowers, like the 許願樹's) */
   near.forEach(([x,z,r])=>tree(x,z,r,true)); far.forEach(([x,z,r])=>tree(x,z,r,false)); SAKURA.spots=near.concat(far);
   const inst=(geo,m,list)=>{ const im=new T.InstancedMesh(geo,m,list.length); list.forEach((e,i)=>{ E3.set(e[3],e[4],e[5]); Q4.setFromEuler(E3); M4.compose(V3.set(e[0],e[1],e[2]),Q4,S3.set(e[6],e[7],e[8])); im.setMatrixAt(i,M4); im.setColorAt(i,C3.set(e[9])); });
     im.instanceMatrix.needsUpdate=true; im.instanceColor.needsUpdate=true; im.frustumCulled=false; im.userData.noMerge=1; im.userData.noBuild=1; scene.add(im); return im; };
-  /* 許願樹 (11/17 主委「廟前祈願樹的花可以套用外面的櫻花樹嗎」): the same blossom as the cherries outside — small white petal clusters on crossed
-     cards, each card tinted one of the pinks, swaying and glowing at night with them — clustered round the old tree's branch ends */
-  if(WT.bloom){ const B=WT.bloom, wc=[], base=PINK[1]; for(let k=0;k<Math.min(2600,B.tips.length*26);k++){ const t=B.tips[k%B.tips.length], s=rr(.5,.85), pc=R()<.55?base:PINK[(R()*PINK.length)|0];
-      wc.push([t.x+rr(-.8,.8),t.y+rr(-.5,.6),t.z+rr(-.8,.8),rr(-.5,.5),rr(0,3.14),rr(-.4,.4),s,s,s,C3.set(pc).convertSRGBToLinear().offsetHSL(0,rr(-.05,.05),rr(-.07,.06)).getHex()]); }
-    B.g.remove(B.bl); B.bl.geometry.dispose(); const im=inst(cross,lm,wc); scene.remove(im); im.userData.noMerge=1; B.g.add(im); WT.bloom.bl=im; }
   SAKURA.leaves=inst(cross,lm,cards); { const im=new T.InstancedMesh(LPT.geo,new T.MeshStandardMaterial({vertexColors:true,roughness:.92}),trunks.length); trunks.forEach((m,i)=>im.setMatrixAt(i,m)); im.instanceMatrix.needsUpdate=true; im.frustumCulled=false; im.userData.noMerge=1; im.userData.noBuild=1; scene.add(im); SAKURA.trunks=im; }
   SAKURA.count=[near.length,far.length,cards.length];
   /* their shadows on the lawn (one instanced mesh, moved with the sun every few seconds) */
