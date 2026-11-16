@@ -24,12 +24,12 @@ export default {
 
 // 角色存檔 and 主委送禮. A long-lived cookie (set by this server, so Safari keeps it) names each player's saved character;
 // the lobby keeps the save, a short 取回碼 for moving to another app or phone, and any gifts waiting to be opened.
-const PROFILE_PATHS = ["/me", "/me/claim", "/gift", "/gifts"];
+const PROFILE_PATHS = ["/me", "/me/claim", "/gift", "/gifts", "/houses", "/house"];
 async function profile(req, env, url) {
   const m = (req.headers.get("cookie") || "").match(/(?:^|;\s*)mzu=([a-f0-9]{24,40})/); let uid = m ? m[1] : "";
   if (!uid) uid = crypto.randomUUID().replace(/-/g, "");
   const lobby = env.LOBBY.get(env.LOBBY.idFromName("lobby"));
-  const r = await lobby.fetch(new Request("https://lobby" + url.pathname, { method: req.method, headers: { "content-type": "application/json", "x-uid": uid, "x-key": req.headers.get("x-key") || "", "x-ip": req.headers.get("cf-connecting-ip") || "" }, body: req.method === "POST" ? await req.text() : undefined }));
+  const r = await lobby.fetch(new Request("https://lobby" + url.pathname + url.search, { method: req.method, headers: { "content-type": "application/json", "x-uid": uid, "x-key": req.headers.get("x-key") || "", "x-ip": req.headers.get("cf-connecting-ip") || "" }, body: req.method === "POST" ? await req.text() : undefined }));
   let body = await r.text(); try { const j = JSON.parse(body); if (j && j.switchTo) { uid = j.switchTo; delete j.switchTo; body = JSON.stringify(j); } } catch {}
   return new Response(body, { status: r.status, headers: { "content-type": "application/json", "cache-control": "no-store", "set-cookie": `mzu=${uid}; Max-Age=34560000; Path=/; HttpOnly; Secure; SameSite=Lax` } });
 }
@@ -629,6 +629,21 @@ export class Lobby extends DurableObject {
     }
     if (url.pathname === "/layout") return json((await this.ctx.storage.get("layout")) || { layout: null, at: 0 });
     // ---- 角色存檔 / 取回碼 / 主委送禮 (reached through profile() above, which adds x-uid from the player's cookie) ----
+    if (url.pathname === "/houses" || url.pathname === "/house") { // 天后新村 (11/16): 40 houses, one owner each, one house per player; the owner decides whether others may come in
+      const uid = String(req.headers.get("x-uid") || "").replace(/[^a-f0-9]/g, "").slice(0, 40); if (!uid) return json({ ok: false });
+      const HS = (await this.ctx.storage.get("HS")) || {}; const mine = () => { for (const l in HS) if (HS[l].u === uid) return +l; return -1; };
+      if (url.pathname === "/houses") return json({ ok: true, list: Object.keys(HS).map(l => ({ l: +l, n: HS[l].n, pub: !!HS[l].pub, mine: HS[l].u === uid })) });
+      if (req.method === "GET") { const l = url.searchParams.get("l") | 0, H = HS[l]; if (!H) return json({ ok: false, empty: true }); if (!H.pub && H.u !== uid) return json({ ok: false, closed: true, n: H.n }); return json({ ok: true, n: H.n, pub: !!H.pub, room: (await this.ctx.storage.get("HR:" + l)) || "" }); }
+      this.lastHouse = this.lastHouse || new Map(); const now = Date.now(); if (now - (this.lastHouse.get(uid) || 0) < 1500) return json({ ok: false, slow: true }); this.lastHouse.set(uid, now);
+      let b = {}; try { b = await req.json(); } catch {} const op = String(b.op || ""), have = mine();
+      if (op === "buy") { const l = Math.floor(Number(b.l)); if (!(l >= 0 && l < 40)) return json({ ok: false }); if (HS[l] && HS[l].u !== uid) return json({ ok: false, taken: true, n: HS[l].n }); if (have >= 0 && have !== l) return json({ ok: false, have });
+        HS[l] = { u: uid, n: clean(b.n, 10) || "香客", pub: !!b.pub, at: now }; await this.ctx.storage.put("HS", HS); return json({ ok: true }); }
+      if (have < 0) return json({ ok: false, none: true });
+      if (op === "sell") { delete HS[have]; await this.ctx.storage.put("HS", HS); await this.ctx.storage.delete("HR:" + have); return json({ ok: true, l: have }); }
+      if (op === "set") { if (typeof b.pub === "boolean") HS[have].pub = b.pub; if (b.n) HS[have].n = clean(b.n, 10) || HS[have].n; await this.ctx.storage.put("HS", HS); return json({ ok: true }); }
+      if (op === "room") { const r = String(b.room || ""); if (r.length > 24000) return json({ ok: false, big: true }); await this.ctx.storage.put("HR:" + have, r); return json({ ok: true }); }
+      return json({ ok: false });
+    }
     if (url.pathname === "/me" || url.pathname === "/me/claim" || url.pathname === "/gift" || url.pathname === "/gifts") {
       const uid = String(req.headers.get("x-uid") || "").replace(/[^a-f0-9]/g, "").slice(0, 40); if (!uid) return json({ ok: false });
       if (url.pathname === "/me" && req.method === "GET") { const P = await this.ctx.storage.get("P:" + uid); return json({ ok: true, p: P ? { code: P.code, snap: P.snap } : null }); }
