@@ -1200,3 +1200,25 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - 瀑布整區刪掉（valleyH 不再有岩壁、不畫瀑布、不放岩石），溪改從山谷裡一個不規則小池塘（BHEAD，springPool）流出來，池塘不能走進去。
 - 沙灘視角很窄：camOK 的廟埕規則只到 z 50，沙灘上鏡頭找不到能站的位置就貼到人身上。z > 45.2 改用新規則（高於地面 0.35、避開紅磚牆與正門）。
 - 「點我：…」(nearChip) 也放進動作按鈕那一欄，和「跟…說話」等按鈕上下排，不再疊在一起。
+
+## 第 48 批（11/16 21:20）帳篷/滑翔傘/樹的模型、釣魚大改、瀑布搬到天后山腳、河流到底、NPC 到處走與拜拜、音樂分區
+- 模型：public/tent.glb（主委 chibi_tent）、glider.glb（chibi_paraglider_seat）、cedar.glb、palm.glb（主委 ac_cedar_spring / ac_palm，用 gltf-transform 減面＋貼圖縮到 256：針葉 1.5k 面、椰子 3.3k 面）。
+  - 山頂兩頂帳篷換成模型（第二頂染藍），門朝營火。loadShared 共用；district unload 會略過 userData.shared 的網格（不釋放共用幾何）。
+  - 滑翔傘：模型掛在人物位置（GLIDE_S 1.15、座墊高 .24），meAv.custPose=glidePose（腿前伸、雙手上舉握煞車）。到山頂就預先下載 glider。
+  - 樹：pine() 不再自己畫錐體，改記到 C.cedar；palmAt() 記到 C.palm；load() 之後 treesFlush(C) 每種樹每個材質一個 InstancedMesh，每棵高度、胖瘦、轉向不同（椰子有傾斜）。針葉材質加自發光 .34，背光面不再全黑。
+  - 椰子樹：front 區沙灘 34 棵（FRONT.palms，避開咖啡/躺椅/正門階梯），樹幹加進 FBLOCK 不能穿過。
+- 精力：主委 enPay 一律不扣（設計如此）；主委工具新增「⚡ 精力不扣／照扣」（window.MZ_ENTEST，存 localStorage mzEnTest）。
+- 釣魚（LIFE）：
+  - 按住 🎣 釣魚蓄力（chargeStart/chargeTick/chargeEnd，1.4 秒滿），放開拋竿；距離 = 最近水邊 + 0.3 + 力道×7.5 m，沿同一條線找同一種水。
+  - 等待：魚影旁 4–9 秒，空水 11–24 秒（對的餌 ×0.75）。
+  - 魚點：水面切 6 m 格（spotKey），每格 2–4 條（spotCap 雜湊），釣到或嚇跑（咬了沒拉到、斷線、掙脫）扣一條，6 分鐘回一條；格子空了會等 14–18 秒後說「這裡好像沒有魚了」。存在 LF().spots。
+  - 魚影 FSH：小鎮/廟前水裡最多 7 個魚形影子（fishShapeGeo）慢慢游、遇岸轉彎，只出現在還有魚的格子；拋竿落點 2.8 m 內有魚影 → 那條游過來咬（fshTake）。浮標下的魚影也改成魚形。
+  - 釣上來特效 catchFx：水花粒子、三圈水波、魚身邊星光（顏色看稀有度）、白光閃一下、「釣到了！／大豐收！」＋魚名星等、彩帶落下、震動。
+  - 測試用 LIFE.dbg2（startFish、F、FSH、LF、spotLeft、chargeStart/End、fx）。
+- 音樂分區 musicTick：禪堂歌只在 zenIn()（禪院本身），後殿歌只在 z<RY0 且在牆內；牆外、廟前沙灘（z>FRONT.wallZ）、小鎮（TOWNX.on）都是小鎮歌。禪堂音樂按鈕也只在禪院內出現。
+- 望遠鏡：圖放在鏡頭圓圈裡（高 145%），上下左右都能拖。
+- 原本瀑布山谷（x 86.5–134.5、z −120…−52）變成走不進去的密林：brook 區重建（330 棵樹、苔石、草），NT.walkOpen 在那一塊一律 false。
+- 瀑布＋小溪搬到天后山東邊山腳（主委「移到有滑翔翼的山下，重建那邊地形」）：WF=(138.2,−190)，eastH 加 wfKnoll 岩肩（6.5 m、東面陡壁）、BHEAD 池塘、BROOK 往東流進大河；waterfallAt() 瀑布＋水花圈；MOUTHB 木板橋；岩壁不能爬（坡度）；east2 區負責畫。
+- 河流到底：riverH 不再在 x −17 / 73 收尾，往西流出地圖（x −150），往東接上大河（eRC）。天后新村大道在 x −26.3…−19.7 跨河是橋（石欄杆），村門移到 z −145.2。新區 riverW、riverE。
+- 鏡面水：mirrorMat()/mirrorPlane()（沒有花紋，只有天空反射＋深水色，越斜看越亮）；鎮河、東邊大河都換成鏡面；泉水去掉環紋和花邊。
+- NPC（鎮民）：每 8–28 秒決定一次：在家附近走、走到 26 m 內別處（planPath 找路），10% 去廟裡拜拜（4 分鐘最多一次）。走到廟口（tvGate，算出來是 (28,−52)）就消失，n.tv 記著；你在廟裡時（tvTick）他會從廟口走進來、跪在空的拜墊上拜三下再走回去。你在廟裡時每 22–42 秒也可能有一位鎮民來拜。
