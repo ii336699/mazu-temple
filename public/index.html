@@ -504,6 +504,8 @@ body.hideui .joy,body.customizing .joy,body.hideui .camreset,body.customizing .c
 #sheet.lt .lf-card .nm{color:#8e1c14}#sheet.lt .lf-card .st{color:#a06c14}#sheet.lt .lf-row{border-bottom-color:rgba(176,122,30,.25)}
 #sheet.lt .lf-dex button{background:radial-gradient(circle at 50% 30%,#fff,#f6ead6 75%);border-color:rgba(176,122,30,.4);color:var(--ink);box-shadow:inset 0 1px 0 #fff}
 /*THEME>>*/
+.pos-panel{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 96px);z-index:60;background:rgba(30,18,14,.88);color:#fff3dc;border:1px solid #d9aa3d;border-radius:12px;padding:8px 10px;font-size:13px;line-height:1.5;width:min(92vw,440px);box-shadow:0 4px 16px rgba(0,0,0,.35)}
+.pos-panel b{color:#ffd98a}.pos-panel .pf-btn{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.pos-panel button{flex:1 1 auto;min-height:34px;border-radius:8px;border:1px solid #a07a3a;background:#4a2e22;color:#fff3dc;font:inherit}.pos-panel .pf-main{background:#b3261e;border-color:#e8402e}
 </style>
 
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
@@ -1128,8 +1130,8 @@ const skyMat=new T.ShaderMaterial({side:T.BackSide,depthWrite:false,fog:false,un
       c=mix(c,cc,cov*.92);
       c+=vec3(1.0,.7,.4)*cov*(1.0-cov)*glow*1.4;
     }
-    float disc=smoothstep(.99955,.99978,s);
-    c=mix(c,vec3(1.0,.92,.72)*1.6,disc);
+    float disc=smoothstep(.99984,.99993,s); /* (11/17 主委「太陽太大顆了」: smaller and brighter, with a soft glow round it) */
+    c=mix(c,vec3(1.0,.93,.76)*2.4,disc); c+=vec3(1.0,.85,.6)*pow(s,900.)*.6;
     float az=atan(d.z,d.x); vec2 ring=vec2(cos(az),sin(az));
     float m1=.03+.032*fbm(ring*2.4+3.1)+.008*sin(az*9.0);
     float m2=.012+.03*fbm(ring*4.3+7.7);
@@ -1140,7 +1142,7 @@ const skyMat=new T.ShaderMaterial({side:T.BackSide,depthWrite:false,fog:false,un
     if(h>0.0&&day>.01){ vec2 uv2=d.xz/(h+.18); float q=fbm(uv2*vec2(.7,1.1)+vec2(time*.006,0.0)); float q2=fbm(uv2*2.2-vec2(time*.009,0.0)+3.0);
       float cv=smoothstep(.5,.78,q*.8+q2*.3)*smoothstep(.02,.12,h)*(1.0-smoothstep(.55,.85,h)); vec3 cw=mix(vec3(.72,.76,.84),vec3(1.0,.99,.97),smoothstep(.35,.8,q2+pow(s,2.0)*.3)); dc=mix(dc,cw,cv*.9); }
     if(h<m1) dc=mix(vec3(.42,.52,.5),dc,.25); if(h<m2) dc=vec3(.24,.33,.28); if(h<0.0) dc=vec3(.18,.22,.18);
-    dc=mix(dc,vec3(1.,.98,.9)*1.4,smoothstep(.9994,.9998,s)*step(0.,h)); c=mix(c,dc,day);
+    dc=mix(dc,vec3(1.,.98,.92)*2.4,smoothstep(.99984,.99993,s)*step(0.,h)); dc+=vec3(1.,.96,.85)*pow(s,700.)*.55*step(0.,h); c=mix(c,dc,day);
     c=mix(c,c*vec3(.16,.17,.32)+vec3(.006,.008,.03),night);
     vec3 sd=floor(normalize(vD)*260.); float st=fract(sin(dot(sd,vec3(12.9898,78.233,37.719)))*43758.5453); c+=vec3(.9,.92,1.)*step(.9975,st)*night*(1.-cloudy)*step(m1,h)*(.6+.4*sin(time*2.+st*40.));
     { float g=dot(c,vec3(.3,.5,.2)); vec3 oc=vec3(g)*vec3(.86,.9,.97)*(.78+.22*day); if(h>0.0){ vec2 uv3=d.xz/(h+.2); float q3=fbm(uv3*1.4+vec2(time*.02,0.0)); oc*=.82+.3*q3; } c=mix(c,oc,cloudy*.92); } /* overcast: grey, heavy cloud */
@@ -1820,7 +1822,7 @@ setTimeout(()=>loadShared("statue",m=>{ const o=fitModel(m.clone(),42), SZ=-48-1
 /* 月亮: a full moon low in the sky over the rear of the temple, fading in as night falls (two sprites, no light) */
 const MOON_S=(()=>{ const tex=cvs(256,256,(x,w,h)=>{ const g=x.createRadialGradient(118,112,10,128,128,120); g.addColorStop(0,"#fffbe8"); g.addColorStop(.75,"#f3e7c2"); g.addColorStop(1,"#d9c99a"); x.fillStyle=g; x.beginPath(); x.arc(128,128,120,0,7); x.fill();
     x.fillStyle="rgba(170,155,120,.28)"; for(const [cx,cy,r] of [[90,95,26],[160,80,16],[150,160,30],[95,170,14],[180,130,10],[120,130,9]]){ x.beginPath(); x.arc(cx,cy,r,0,7); x.fill(); } });
-  const sp=new T.Sprite(new T.SpriteMaterial({map:tex,transparent:true,depthWrite:false,fog:false})), gl=new T.Sprite(new T.SpriteMaterial({map:fwTexLate(),color:new T.Color("#fff3cf"),transparent:true,depthWrite:false,fog:false,blending:T.AdditiveBlending}));
+  const sp=new T.Sprite(new T.SpriteMaterial({map:tex,color:new T.Color(1.45,1.42,1.32),transparent:true,depthWrite:false,fog:false,toneMapped:false})), /* (11/17 主委「月亮太陽都亮一點」) */ gl=new T.Sprite(new T.SpriteMaterial({map:fwTexLate(),color:new T.Color("#fff3cf"),transparent:true,depthWrite:false,fog:false,blending:T.AdditiveBlending}));
   const p=new T.Vector3(-.42,.5,-.76).normalize().multiplyScalar(135); sp.position.copy(p); gl.position.copy(p); sp.scale.set(11,11,1); gl.scale.set(46,46,1); scene.add(gl,sp); return {sp,gl}; })();
 function fwTexLate(){ return cvs(64,64,(x,w,h)=>{ const g=x.createRadialGradient(32,32,0,32,32,32); g.addColorStop(0,"rgba(255,255,255,.55)"); g.addColorStop(.35,"rgba(255,255,255,.18)"); g.addColorStop(1,"rgba(255,255,255,0)"); x.fillStyle=g; x.fillRect(0,0,w,h); }); }
 // 虎爺 in the niche under the altar table
@@ -2560,6 +2562,7 @@ function makeSakura(seed){ let st=(seed>>>0)||1; const rnd=()=>{ st=(st+0x6D2B79
   const N=Math.min(1400,tips.length*14), bl=new T.InstancedMesh(new T.PlaneGeometry(.95,.95),bloomMat,N), m4=new T.Matrix4(), q=new T.Quaternion(), e=new T.Euler(), sc=new T.Vector3();
   for(let k=0;k<N;k++){ const t=tips[k%tips.length]; e.set(R(0,6.3),R(0,6.3),R(0,6.3)); q.setFromEuler(e); const z=R(.7,1.25); m4.compose(new T.Vector3(t.x+R(-.75,.75),t.y+R(-.45,.55),t.z+R(-.75,.75)),q,sc.set(z,z,z)); bl.setMatrixAt(k,m4); }
   g.add(bl);
+  WT.bloom={bl,g,tips:tips.map(t=>t.clone())}; /* (11/17: its blossom is redrawn the way the cherries outside the temple are, once those are made — see SAKURA) */
   // a few petals lying on the stone ring and the ground
   const fallen=new T.InstancedMesh(new T.CircleGeometry(.05,5),new T.MeshStandardMaterial({color:new T.Color("#ffc3d6"),roughness:.9,side:T.DoubleSide}),160);
   for(let k=0;k<160;k++){ const a=R(0,6.3), r=R(.5,4.2); e.set(-Math.PI/2,0,R(0,6.3)); q.setFromEuler(e); m4.compose(new T.Vector3(Math.cos(a)*r,r<2.3?.46:.02,Math.sin(a)*r),q,sc.set(1,1,1)); fallen.setMatrixAt(k,m4); } g.add(fallen);
@@ -2769,26 +2772,38 @@ const LPT=(()=>{ const raw=Uint8Array.from(atob("AAB+/z8M1QrgAFQGgQTdHaUFAAB+/z8
   /* where the leaves grow: the seven branch ends, and three forks lower down (model units; 3.66 tall) */
   const TIPS=[[1.14,3.49,.92],[.41,3.33,1.14],[1.51,3.66,.54],[-1.56,3.41,.86],[-1.54,3.32,-.13],[.2,3.42,-1.35],[.88,3.4,-.85],[-.03,2.85,.2],[.56,2.92,.48],[-.83,2.81,.44],[.08,2.88,-.67]];
   const cross=(()=>{ const a=new T.PlaneGeometry(1,1), b=new T.PlaneGeometry(1,1); b.rotateY(Math.PI/2); const g=new T.BufferGeometry(); g.setAttribute("position",new T.Float32BufferAttribute([...a.attributes.position.array,...b.attributes.position.array],3)); g.setAttribute("normal",new T.Float32BufferAttribute([...a.attributes.normal.array,...b.attributes.normal.array],3)); g.setAttribute("uv",new T.Float32BufferAttribute([...a.attributes.uv.array,...b.attributes.uv.array],2)); g.setIndex([...a.index.array,...Array.from(b.index.array).map(v=>v+4)]); return g; })();
-  const leafTex=cvs(128,128,(x,w,h)=>{ x.clearRect(0,0,w,h); for(let i=0;i<70;i++){ const a=Math.random()*6.28, r=Math.sqrt(Math.random())*50, px=64+Math.cos(a)*r, py=64+Math.sin(a)*r*.85, L=7+Math.random()*6, ang=Math.random()*6.28; x.fillStyle=`rgba(${215+Math.random()*40|0},${225+Math.random()*30|0},${205+Math.random()*40|0},1)`; x.save(); x.translate(px,py); x.rotate(ang); x.beginPath(); x.ellipse(0,0,L*.5,L*.24,0,0,7); x.fill(); x.restore(); } });
+  const leafTex=cvs(128,128,(x,w,h)=>{ x.clearRect(0,0,w,h); for(let i=0;i<140;i++){ const a=Math.random()*6.28, r=Math.sqrt(Math.random())*52, px=64+Math.cos(a)*r, py=64+Math.sin(a)*r*.85, L=7+Math.random()*6, ang=Math.random()*6.28; x.fillStyle=`rgba(${215+Math.random()*40|0},${225+Math.random()*30|0},${205+Math.random()*40|0},1)`; x.save(); x.translate(px,py); x.rotate(ang); x.beginPath(); x.ellipse(0,0,L*.5,L*.24,0,0,7); x.fill(); x.restore(); } });
   leafTex.encoding=T.LinearEncoding;
   const glow={value:.16}, mkLeaf=(map,key)=>{ const m=new T.MeshStandardMaterial({map,alphaTest:.45,side:T.DoubleSide,roughness:.9,color:"#ffffff"}); m.onBeforeCompile=sh=>{ swayPatch(sh,1,.04); sh.uniforms.sGlow=glow; sh.fragmentShader="uniform float sGlow;\n"+sh.fragmentShader.replace("#include <emissivemap_fragment>","#include <emissivemap_fragment>\n totalEmissiveRadiance+=diffuseColor.rgb*sGlow;"); }; m.customProgramCacheKey=()=>key; return m; };
   const trunkMat=new T.MeshStandardMaterial({vertexColors:true,roughness:.92,color:"#ffffff"});
-  const PAL={leaf:["#5f9e48","#6fae52","#4f8f3f","#7cba5a","#86c060","#58984a"],maple:["#d8662e","#e8862e","#c94a2a","#f0a040","#b8402a"],pink:["#f4a6c0","#f8c0d2","#ec8cb0","#fbdce6","#e47aa2"]};
+  const PAL={leaf:["#568f42","#64a04b","#48843a","#70aa52","#79b058","#508a44"],deep:["#3f7434","#4a8038","#36682e","#557f3a","#43773a"],maple:["#d8662e","#e8862e","#c94a2a","#f0a040","#b8402a"],pink:["#f4a6c0","#f8c0d2","#ec8cb0","#fbdce6","#e47aa2"]};
   const M4=new T.Matrix4(), Q4=new T.Quaternion(), E3=new T.Euler(), S3=new T.Vector3(), V3=new T.Vector3(), C3=new T.Color(), U=new T.Vector3();
-  /* list: [x, y, z, size (1 ≈ 3.7 m tall), spread (×), turn, kind ("leaf" | "maple" | "pink"), cards per branch end (optional)] → {trunks, leaves} */
+  /* a full, irregular crown (主委 11/17「樹葉太少…至少讓他像棵樹吧 形狀也隨機」): a few leaf clumps of random size over the branch ends,
+     one on top, and the cards spread through each clump (more near its skin). Model units: the trunk is 3.66 tall, its branch ends ~1.5 out.
+     → points [x,y,z, shade] in model space, n of them. */
+  function crown(R,n){ const top=3.25+R()*.5, ox=(R()-.5)*.5, oz=(R()-.5)*.5, B=[[ox,top+.35+R()*.5,oz,1+R()*.5]];
+    const nb=4+((R()*4)|0); for(let b=0;b<nb;b++){ const t=TIPS[(R()*7)|0], out=1+R()*.35; B.push([t[0]*out+(R()-.5)*.5,t[1]-.05+(R()-.3)*.7,t[2]*out+(R()-.5)*.5,.7+R()*.6]); }
+    if(R()<.55){ const a=R()*6.28, d=.8+R()*.8; B.push([Math.cos(a)*d,2.7+R()*.5,Math.sin(a)*d,.6+R()*.4]); } /* sometimes a lower clump on one side */
+    let W=0; for(const b of B){ b[4]=b[3]**2.4; W+=b[4]; } const pts=[];
+    for(const b of B){ const m=Math.max(2,Math.round(n*b[4]/W)); for(let c=0;c<m;c++){ let x,y,z; do{ x=R()*2-1; y=R()*2-1; z=R()*2-1; }while(x*x+y*y+z*z>1);
+        const l=Math.hypot(x,y,z)||1, f=(.45+.55*Math.sqrt(l))/l; pts.push([b[0]+x*b[3]*f,b[1]+y*b[3]*f*.75,b[2]+z*b[3]*f,(y*.5+.5)*.6+l*.4]); } }
+    return pts; }
+  /* list: [x, y, z, size (1 ≈ 3.7 m tall), spread (×), turn, kind ("leaf" | "maple" | "pink"), cards (optional)] → {trunks, leaves}
+     every tree gets its own height (±30 %), a little lean and its own crown; the trunk is always scaled evenly so it never turns stubby */
   function build(list,o){ o=o||{}; let seed=o.seed||7; const R=()=>{ seed=(seed*16807)%2147483647; return seed/2147483647; };
-    const tr=new T.InstancedMesh(geo,trunkMat,list.length), cards=[];
-    list.forEach((t,i)=>{ const [x,y,z,k,sp,ry,kind,per]=t; E3.set(0,ry,0); Q4.setFromEuler(E3); M4.compose(V3.set(x,y,z),Q4,S3.set(k*sp,k,k*sp)); tr.setMatrixAt(i,M4);
-      const pal=PAL[kind]||PAL.leaf, base=pal[(R()*pal.length)|0], m=per||4;
-      TIPS.forEach((p,j)=>{ const cnt=j<7?m:Math.max(1,m>>1); for(let c=0;c<cnt;c++){ U.set(p[0]+(R()-.5)*1.1,p[1]+(R()-.35)*.8,p[2]+(R()-.5)*1.1).applyMatrix4(M4); const s=k*(o.card||1.15)*(.8+R()*.45);
-        cards.push([U.x,U.y,U.z,(R()-.5)*1,R()*3.14,(R()-.5)*.8,s,C3.set(R()<.65?base:pal[(R()*pal.length)|0]).convertSRGBToLinear().offsetHSL(0,(R()-.5)*.08,(R()-.5)*.1+(p[1]<3?-.05:0)).getHex(),kind]); } }); });
+    const tr=new T.InstancedMesh(geo,trunkMat,list.length), cards=[], lite=typeof Q!=="undefined"&&Q.lite;
+    list.forEach((t,i)=>{ const [x,y,z,k0,sp0,ry,kind,per]=t, k=k0*(.72+R()*.6), sp=Math.max(.9,Math.min(1.1,sp0||1));
+      E3.set((R()-.5)*.1,ry,(R()-.5)*.1); Q4.setFromEuler(E3); M4.compose(V3.set(x,y,z),Q4,S3.set(k*sp,k,k*sp)); tr.setMatrixAt(i,M4);
+      const pal=PAL[kind]||PAL.leaf, base=pal[(R()*pal.length)|0], n=Math.round((per>6?per:(o.cards||52)*Math.max(1,k/1.2))*(lite?.55:1)) /* (a bigger tree gets more cards, so a big crown is as thick as a small one) */, big=(o.card||1.05)*(lite?1.25:1);
+      for(const q of crown(R,n)){ U.set(q[0],q[1],q[2]).applyMatrix4(M4); const s=k*big*(.75+R()*.5);
+        cards.push([U.x,U.y,U.z,(R()-.5)*1,R()*3.14,(R()-.5)*.8,s,C3.set(R()<.65?base:pal[(R()*pal.length)|0]).convertSRGBToLinear().offsetHSL(0,(R()-.5)*.08,(R()-.5)*.08+(q[3]-.55)*.16).getHex(),kind]); } });
     tr.instanceMatrix.needsUpdate=true; tr.frustumCulled=false; tr.castShadow=!!o.shadow;
     const byMat={}; for(const c of cards){ const key=c[8]==="pink"?"pink":"leaf"; (byMat[key]||(byMat[key]=[])).push(c); }
     const leaves=Object.entries(byMat).map(([key,L])=>{ const im=new T.InstancedMesh(cross,key==="pink"?(LPT.pinkMat||(LPT.pinkMat=mkLeaf(o.blossom||leafTex,"lptPink"))):(LPT.leafMat||(LPT.leafMat=mkLeaf(leafTex,"lptLeaf"))),L.length);
       L.forEach((e,i)=>{ E3.set(e[3],e[4],e[5]); Q4.setFromEuler(E3); M4.compose(V3.set(e[0],e[1],e[2]),Q4,S3.set(e[6],e[6],e[6])); im.setMatrixAt(i,M4); im.setColorAt(i,C3.set(e[7])); }); im.instanceMatrix.needsUpdate=true; if(im.instanceColor) im.instanceColor.needsUpdate=true; im.frustumCulled=false; return im; });
     for(const o2 of [tr,...leaves]){ o2.userData.noMerge=1; o2.userData.noBuild=1; o2.userData.shared=1; o2.raycast=()=>{}; }
     return {trunks:tr,leaves}; }
-  return {geo,TIPS,build,leafTex,glow,H:3.66}; })();
+  return {geo,TIPS,build,crown,leafTex,glow,H:3.66}; })();
 const SAKURA={};
 { const grassTex=cvs(256,256,(x,w,h)=>{ x.fillStyle="#4e6e2c"; x.fillRect(0,0,w,h); for(let i=0;i<4200;i++){ x.fillStyle=`hsla(${78+Math.random()*30},${35+Math.random()*25}%,${22+Math.random()*24}%,.55)`; x.fillRect(Math.random()*w,Math.random()*h,1+Math.random()*2,2+Math.random()*4); }
     for(let i=0;i<140;i++){ x.fillStyle=Math.random()<.7?"rgba(255,190,210,.8)":"rgba(255,245,248,.8)"; x.beginPath(); x.ellipse(Math.random()*w,Math.random()*h,2.2,1.4,Math.random()*3,0,7); x.fill(); } });
@@ -2804,7 +2819,7 @@ const SAKURA={};
     /* (a flat shape with holes cut where the lower ground is: the river, the valley, the beach, the forest and the mountain — 11/16) */
     const ZT=-50; /* (11/16: only north of the temple — the temple has its own ground, and this lawn showed through its courtyard tiles far off) */ const OX0=B.x0-90, OZ0=B.z0-110; /* (11/16 主委「遊戲邊界不要做圍牆」: no wall, so the lawn runs on past the edge of the map into the haze) */ const EX=135.2; /* (east of here the river valley has its own ground, 11/16) */ const sh=new T.Shape(); sh.moveTo(OX0,-ZT); sh.lineTo(EX,-ZT); sh.lineTo(EX,-OZ0); sh.lineTo(OX0,-OZ0); sh.closePath();
     { /* the valley and the beach are one hole (two touching holes left a strip of lawn between them that showed through the brook's mouth) */ const e=.7, P=[[86.5+e,-120+e],[134.4,-120+e],[134.4,ZT-.4],[86.5+e,ZT-.4]]; const h=new T.Path(); P.slice().reverse().forEach(([x,z],i)=>h[i?"lineTo":"moveTo"](x,-z)); h.closePath(); sh.holes.push(h); }
-    for(let [x0,x1,z0,z1] of [[-150,134.45,-143.6,-131.4],[14,118,-176,-143.6],[21,111,-257,-176]]){ z1=Math.min(z1,ZT-.1); { const e=.7; x0+=e; x1-=e; z0+=e; if(z1<ZT-1) z1-=e; } /* (the holes are a little smaller than the ground that fills them, so its edge always lies on the lawn — no dark crack) */ const h=new T.Path(); h.moveTo(x0,-z1); h.lineTo(x0,-z0); h.lineTo(x1,-z0); h.lineTo(x1,-z1); h.closePath(); sh.holes.push(h); }
+    for(let [x0,x1,z0,z1] of [[-150,134.45,-143.6,-131.4],[14,118,-176,-143.6],[21,111,-257,-176],[-104,-12,-258,-143.6]]){ /* (+ 女神谷, 11/17) */ z1=Math.min(z1,ZT-.1); { const e=.7; x0+=e; x1-=e; z0+=e; if(z1<ZT-1) z1-=e; } /* (the holes are a little smaller than the ground that fills them, so its edge always lies on the lawn — no dark crack) */ const h=new T.Path(); h.moveTo(x0,-z1); h.lineTo(x0,-z0); h.lineTo(x1,-z0); h.lineTo(x1,-z1); h.closePath(); sh.holes.push(h); }
     const g=mesh(new T.ShapeGeometry(sh),m); g.rotation.x=-Math.PI/2; g.position.set(0,-.06,0); g.userData.noMerge=1; g.receiveShadow=true; window.BASEG=g; window.BASESAND=[]; /* (11/16: you can walk on it now, so it stays just under the roads) */
     const sand=new T.MeshStandardMaterial({color:"#e3cf9e",roughness:.95}); for(const [z0,z1] of []){ /* (no sand strips: the sea is in front of the temple now, 11/16) */ const q=mesh(new T.PlaneGeometry(200-142,z1-z0),sand); q.rotation.x=-Math.PI/2; q.position.set((142+200)/2,-.045,(z0+z1)/2); q.userData.noMerge=1; window.BASESAND.push(q); /* (runs on under the sea: no black gap past the wall) */ }
     /* the wall: whitewashed, a red-tiled cap, a pillar every 6 m (one wall mesh per side, so it costs next to nothing) */
@@ -2817,12 +2832,12 @@ const SAKURA={};
   const BX=25.6, BZ0=-50.5, BZ1=HZ+YX+24; /* the balustrade */
   const free=(x,z,m)=>{ const ax=Math.abs(x); if(ax<BX+m&&z>BZ0-m&&z<BZ1+m) return false; /* inside the grounds */
     if(x<-23&&x>-78-m&&z>-52-m&&z<-4+m) return false; /* 靜思禪院 */ if(x>23&&x<66+m&&z>-52-m&&z<-4+m) return false; /* 禪房 */ if(x>23&&x<47+m&&z>-52-m&&z<13+m) return false; /* (the shops are 8.4 m deep) */ /* the road and the shops along it */ if(ax<22&&z>BZ1-2&&z<64) return false; /* the approach to the gate */
-    if(z>60&&ax<75) return false; /* the lake */ if(ax<16&&z<BZ0&&z>-84) return false; /* the big statue */ if(z<-50&&z>-154&&x>-14&&x<94&&(x>16||z<-86)) return false; /* 天后小鎮 */ return true; };
+    if(z>60&&ax<75) return false; /* the lake */ if(ax<16&&z<BZ0&&z>-84) return false; /* the big statue */ if(z<-50&&z>-154&&x>-14&&x<94&&(x>16||z<-86)) return false; /* 天后小鎮 */ if(x<-12&&z<-46&&z>-120) return false; /* 天后新村 and its avenue (behind the temple since 11/17) */ return true; };
   const dist=(x,z)=>{ const ax=Math.abs(x); const dx=Math.max(0,ax-BX), dz=Math.max(0,BZ0-z,z-BZ1); return Math.hypot(dx,dz); };
   const near=[], far=[]; const NN=Q.lite?60:130, NF=Q.lite?110:230;
   for(let i=0;i<9000&&(near.length<NN||far.length<NF);i++){ let x=rr(-130,130), z=rr(-130,52); /* (11/16: the road and the beach are in front now) */ if(R()<.35&&(near.length||far.length)){ const L0=R()<.5&&near.length?near:far.length?far:near, p=L0[(R()*L0.length)|0]; x=p[0]+rr(-7,7); z=p[1]+rr(-7,7); } /* clumps, like trees seeding near each other */ const d=dist(x,z); if(d<3||d>70) continue; const r=d<15?(R()<.25?rr(1.3,2.2):rr(2.2,4.4)):rr(2,5.4), isNear=d<15;
     if(isNear&&near.length>=NN||!isNear&&far.length>=NF) continue; if(!free(x,z,r*.5+1)) continue; const L=isNear?near:far; if(near.some(s=>Math.hypot(s[0]-x,s[1]-z)<(s[2]+r)*.6)||far.some(s=>Math.hypot(s[0]-x,s[1]-z)<(s[2]+r)*.62)) continue; L.push([x,z,r]); }
-  const blossomTex=cvs(128,128,(x,w,h)=>{ x.clearRect(0,0,w,h); for(let i=0;i<120;i++){ const a=Math.random()*6.28, r=Math.sqrt(Math.random())*50, px=64+Math.cos(a)*r, py=64+Math.sin(a)*r*.85, s=2.5+Math.random()*3.2; x.fillStyle=`rgba(255,255,255,${.8+Math.random()*.2})`;
+  const blossomTex=cvs(128,128,(x,w,h)=>{ x.clearRect(0,0,w,h); for(let i=0;i<190;i++){ const a=Math.random()*6.28, r=Math.sqrt(Math.random())*52, px=64+Math.cos(a)*r, py=64+Math.sin(a)*r*.85, s=1.8+Math.random()*1.8; x.fillStyle=`rgba(255,255,255,${.8+Math.random()*.2})`;
       for(let k=0;k<5;k++){ const b=k/5*6.283; x.beginPath(); x.arc(px+Math.cos(b)*s*.6,py+Math.sin(b)*s*.6,s*.55,0,7); x.fill(); } } });
   blossomTex.encoding=T.LinearEncoding;
   const PINK=["#f4a6c0","#f8c0d2","#ec8cb0","#fbdce6","#e47aa2","#fff0f4","#f0b0c8"];
@@ -2832,15 +2847,22 @@ const SAKURA={};
   const lm=new T.MeshStandardMaterial({map:blossomTex,alphaTest:.45,side:T.DoubleSide,roughness:.9,color:"#ffffff"}); lm.onBeforeCompile=sh=>{ swayPatch(sh,1,.04); sh.uniforms.sGlow=SAKURA.glowU; sh.fragmentShader="uniform float sGlow;\n"+sh.fragmentShader.replace("#include <emissivemap_fragment>","#include <emissivemap_fragment>\n totalEmissiveRadiance+=diffuseColor.rgb*sGlow;"); }; lm.customProgramCacheKey=()=>"sakura";
   const cards=[], trunks=[];
   /* (11/16 晚上 主委: the trunks are the chair's low-poly trunk model now — LPT — and the blossom cards cluster at its branch ends) */
-  const tree=(x,z,r,detail)=>{ const th=rr(1,3.6)*(.55+r/7), vs=rr(.5,1.1), cy=th+r*.55*vs, k=Math.max(.7,cy/3.2), sp=Math.max(.75,Math.min(2.4,r/(1.45*k))), ry=rr(0,6.28);
-    E3.set(0,ry,0); Q4.setFromEuler(E3); M4.compose(V3.set(x,0,z),Q4,S3.set(k*sp,k,k*sp)); trunks.push(M4.clone()); const U=new T.Vector3();
-    const n=detail?Math.round(36+r*10):Math.round(9+r*1.5), base=PINK[(R()*PINK.length)|0];
-    for(let q=0;q<n;q++){ const p=LPT.TIPS[(R()*(detail?11:7))|0], s=detail?rr(1,1.45)*(.85+r*.08):rr(2.6,3.4)*(r/3.6); const pc=R()<.6?base:PINK[(R()*PINK.length)|0];
-      U.set(p[0]+rr(-.65,.65),p[1]+rr(-.5,.35),p[2]+rr(-.65,.65)).applyMatrix4(M4);
-      cards.push([U.x,U.y,U.z,rr(-.5,.5),rr(0,3.14),rr(-.4,.4),s,s,s,C3.set(pc).convertSRGBToLinear().offsetHSL(0,rr(-.05,.05),(p[1]<3?-.08:0)+rr(-.07,.06)).getHex()]); } };
+  /* (11/17 主委「櫻花樹樹幹不要太粗 要保持一定比例 要大就整顆都要加大 包含上面花都要加多」: the trunk is scaled evenly — a bigger tree is
+     bigger all over, with more blossom — and every tree has its own height, lean and crown) */
+  const tree=(x,z,r,detail)=>{ const k=Math.max(.6,r/2.5)*rr(.85,1.18), ry=rr(0,6.28);
+    E3.set(rr(-.06,.06),ry,rr(-.06,.06)); Q4.setFromEuler(E3); M4.compose(V3.set(x,0,z),Q4,S3.set(k,k,k)); trunks.push(M4.clone()); const U=new T.Vector3();
+    const n=Math.round((detail?50+44*k*k:14+11*k*k)*(Q.lite?.55:1)), base=PINK[(R()*PINK.length)|0], big=(detail?.62:1.15)*(Q.lite?1.25:1); /* (11/17 主委「櫻花樹的花太大了 請做小一點」: smaller cards, more of them) */
+    for(const q of LPT.crown(R,n)){ const s=k*big*rr(.8,1.25); const pc=R()<.6?base:PINK[(R()*PINK.length)|0];
+      U.set(q[0],q[1],q[2]).applyMatrix4(M4);
+      cards.push([U.x,U.y,U.z,rr(-.5,.5),rr(0,3.14),rr(-.4,.4),s,s,s,C3.set(pc).convertSRGBToLinear().offsetHSL(0,rr(-.05,.05),(q[3]-.55)*.14+rr(-.06,.05)).getHex()]); } };
   near.forEach(([x,z,r])=>tree(x,z,r,true)); far.forEach(([x,z,r])=>tree(x,z,r,false)); SAKURA.spots=near.concat(far);
   const inst=(geo,m,list)=>{ const im=new T.InstancedMesh(geo,m,list.length); list.forEach((e,i)=>{ E3.set(e[3],e[4],e[5]); Q4.setFromEuler(E3); M4.compose(V3.set(e[0],e[1],e[2]),Q4,S3.set(e[6],e[7],e[8])); im.setMatrixAt(i,M4); im.setColorAt(i,C3.set(e[9])); });
     im.instanceMatrix.needsUpdate=true; im.instanceColor.needsUpdate=true; im.frustumCulled=false; im.userData.noMerge=1; im.userData.noBuild=1; scene.add(im); return im; };
+  /* 許願樹 (11/17 主委「廟前祈願樹的花可以套用外面的櫻花樹嗎」): the same blossom as the cherries outside — small white petal clusters on crossed
+     cards, each card tinted one of the pinks, swaying and glowing at night with them — clustered round the old tree's branch ends */
+  if(WT.bloom){ const B=WT.bloom, wc=[], base=PINK[1]; for(let k=0;k<Math.min(2600,B.tips.length*26);k++){ const t=B.tips[k%B.tips.length], s=rr(.5,.85), pc=R()<.55?base:PINK[(R()*PINK.length)|0];
+      wc.push([t.x+rr(-.8,.8),t.y+rr(-.5,.6),t.z+rr(-.8,.8),rr(-.5,.5),rr(0,3.14),rr(-.4,.4),s,s,s,C3.set(pc).convertSRGBToLinear().offsetHSL(0,rr(-.05,.05),rr(-.07,.06)).getHex()]); }
+    B.g.remove(B.bl); B.bl.geometry.dispose(); const im=inst(cross,lm,wc); scene.remove(im); im.userData.noMerge=1; B.g.add(im); WT.bloom.bl=im; }
   SAKURA.leaves=inst(cross,lm,cards); { const im=new T.InstancedMesh(LPT.geo,new T.MeshStandardMaterial({vertexColors:true,roughness:.92}),trunks.length); trunks.forEach((m,i)=>im.setMatrixAt(i,m)); im.instanceMatrix.needsUpdate=true; im.frustumCulled=false; im.userData.noMerge=1; im.userData.noBuild=1; scene.add(im); SAKURA.trunks=im; }
   SAKURA.count=[near.length,far.length,cards.length];
   /* their shadows on the lawn (one instanced mesh, moved with the sun every few seconds) */
@@ -3032,6 +3054,7 @@ function shadowTick(dt){ let p=(Date.now()/1000%TOD_LEN)/TOD_LEN; if(typeof wind
   const each=av=>{ const sh=av&&av.shadow; if(!sh) return; const r=av.root.rotation.y, c=Math.cos(r), s=Math.sin(r), lx=ux*c-uz*s, lz=ux*s+uz*c; sh.rotation.y=Math.atan2(lx,lz); sh.scale.set(1,1,stretch); sh.position.x=lx*off; sh.position.z=lz*off; };
   const wet=typeof WX!=="undefined"&&WX.r>.45; const all=[meAv,...npcs]; if(typeof remotes!=="undefined") remotes.forEach(a=>all.push(a));
   for(const av of all){ each(av); umbTick(av,wet); }
+  for(const av of AV_ALL){ const pa=av.root&&av.root.parent; if(!pa){ if(av!==meAv) AV_ALL.delete(av); continue; } if(pa!==scene||av===meAv||npcs.includes(av)) continue; umbTick(av,wet); } /* town people, shopkeepers outdoors, the roaming visitors */
   if(SHD.op>.01){ if(!SHD.b||SHD.t<=0) shdPlace(ux,uz); } if(SHD.b){ SHD.mat.opacity=.42*SHD.op; SHD.matR.opacity=.5*SHD.op; for(const c of SHD.b) c.m.visible=SHD.op>.01; } if(SHD.obj){ SHD.obj.visible=SHD.op>.01; SHD.objMat.opacity=.5*SHD.op; }
   if(typeof SAKURA!=="undefined"&&SAKURA.sh){ SAKURA.shMat.opacity=.55*SHD.op; SHD.t-=dt; if(SHD.t<=0&&SHD.op>.01){ SHD.t=3; const M=new T.Matrix4(), Qt=new T.Quaternion().setFromAxisAngle(_zv.set(0,1,0),Math.atan2(ux,uz)), S=new T.Vector3(), P=new T.Vector3();
       SAKURA.spots.forEach(([x,z,r],i)=>{ const h=r*1.6+2; M.compose(P.set(x+ux*h*SHD.len*.35,0,z+uz*h*SHD.len*.35),Qt,S.set(r*2.1,1,r*2.1+h*SHD.len*.55)); SAKURA.sh.setMatrixAt(i,M); }); SAKURA.sh.instanceMatrix.needsUpdate=true; } SAKURA.sh.visible=false; } else if(SHD.t<=0) SHD.t=3; }
@@ -3712,8 +3735,9 @@ function mergeGroup(g,keepList,head){ g.updateWorldMatrix(true,true); _mi.copy(g
     const G2=new T.BufferGeometry(); G2.setAttribute("position",new T.BufferAttribute(P,3)); G2.setAttribute("normal",new T.BufferAttribute(N,3)); if(U) G2.setAttribute("uv",new T.BufferAttribute(U,2)); G2.setIndex(new T.BufferAttribute(I,1)); if(list.some(o=>!o.geometry.attributes.normal)) G2.computeVertexNormals();
     const m=new T.Mesh(G2,mat); m.renderOrder=list[0].renderOrder; m.castShadow=list[0].castShadow; m.receiveShadow=list[0].receiveShadow; m.name="merged"; if(head) m.userData.hatHide=list.top?1:0; /* (the answer to "does a hat hide this?", decided piece by piece before joining) */ list.forEach(o=>o.parent.remove(o)); g.add(m); keepList.push(G2); }); }
 function avMerge(av){ if(window.NO_AVMERGE) return; const gs=[]; av.parts.traverse(o=>{ if(o.isGroup&&/^(hair|hat|outfit)-/.test(o.name)) gs.push(o); }); gs.forEach(g=>{ let inner=false; for(let q=g.parent;q;q=q.parent) if(gs.includes(q)) inner=true; if(!inner) mergeGroup(g,av._mg,/^hair-/.test(g.name)?av.head:null); }); }
+const AV_ALL=new Set(); /* (11/17 主委「NPC下雨也會撐傘」) */
 class Avatar{
-  constructor(look,o={}){ this.root=new T.Group(); this.root.userData.noMerge=1; this.root.userData.isAvatar=1; scene.add(this.root); this.isMe=!!o.isMe; this.npc=!!o.npc; this.sp=!!o.sp;
+  constructor(look,o={}){ this.root=new T.Group(); this.root.userData.noMerge=1; this.root.userData.isAvatar=1; scene.add(this.root); AV_ALL.add(this); /* (every avatar, so the rain finds the town's people too) */ this.isMe=!!o.isMe; this.npc=!!o.npc; this.sp=!!o.sp;
     this.pos=new T.Vector2(o.x||0,o.z||0); this.target=this.pos.clone(); this.root.position.set(this.pos.x,0,this.pos.y); this.rotY=o.r||Math.PI; this.root.rotation.y=this.rotY;
     this.state="stand"; this.act=-1; this.actT=0; this.seat=-1; this.bowT=-1; this.t=Math.random()*10; this.kneel=0; this.hold=0; this.burnT=-1; this.headYaw=0; this.headGoal=0; this.smokeT=Math.random();
     const sh=new T.Mesh(shadowGeo,shadowMat); sh.position.y=.015; this.root.add(sh); this.shadow=sh;
@@ -3970,7 +3994,7 @@ function showTap(x,z){ tapMark.position.set(x,.03,z); tapMark.visible=true; tapT
 document.addEventListener("selectstart",e=>{ if(!(e.target&&e.target.closest&&e.target.closest("input,textarea"))) e.preventDefault(); });
 document.addEventListener("contextmenu",e=>{ if(e.target===canvas) e.preventDefault(); });
 function addHit(key,x,y,z,r,h){ const m=new T.Mesh(new T.CylinderGeometry(r,r,h,12),new T.MeshBasicMaterial()); m.visible=false; m.position.set(x,y+h/2,z); m.userData.act=key; m.userData.noMerge=1; scene.add(m); pickables.push(m); return m; }
-function onTap(cx,cy){ ensureAudio(); if(customizing) return; if(sheetKind){ closeSheet(); return; } const r=canvas.getBoundingClientRect(); ndc.set((cx-r.left)/r.width*2-1,-(cy-r.top)/r.height*2+1); raycaster.setFromCamera(ndc,camera);
+function onTap(cx,cy){ ensureAudio(); if(POSF.on){ POSF.tap(cx,cy); return; } if(customizing) return; if(sheetKind){ closeSheet(); return; } const r=canvas.getBoundingClientRect(); ndc.set((cx-r.left)/r.width*2-1,-(cy-r.top)/r.height*2+1); raycaster.setFromCamera(ndc,camera);
   if(hbTap(raycaster)) return;
   if(giftTap(raycaster)) return;
   if(buildTap(raycaster)) return;
@@ -4073,7 +4097,11 @@ function updateStandBtn(){ $("#standBtn").hidden=meAv.seat<0||customizing; }
 
 /* ================= NPC demo worshippers ================= */
 let showNpc=true; /* the kneeling demo worshippers are always there now (the old switch is gone) */ const npcs=[];
-function randomLook(allowChair=false){ const l=sanitizeLook(LOOK_RANGE.map((n,i)=>(i===11||i===12)?(Math.random()<.6?0:Math.floor(Math.random()*n)):Math.floor(Math.random()*n)),allowChair); if(l[3]>=18&&Math.random()<.65) l[3]=Math.floor(Math.random()*16); return l; } /* (服飾店 outfits show up now and then on others) */
+function randomLook(allowChair=false){ const l=sanitizeLook(LOOK_RANGE.map((n,i)=>(i===11||i===12)?(Math.random()<.6?0:Math.floor(Math.random()*n)):Math.floor(Math.random()*n)),allowChair); if(l[3]>=18&&Math.random()<.65) l[3]=Math.floor(Math.random()*16);
+  /* (11/17 主委「舊版的臉跟頭飾 不要跟新版的頭髮混在一起 之後的假人都不會有舊版的預設頭飾了」): no worshipper gets one of the old hats; one with a new
+     hairdo gets the new picture eyes and mouth, one with an old hairdo the old drawn face */
+  l[6]=0; if(l[1]>=HAIR2_AT){ l[7]=EYE_PIC+Math.floor(Math.random()*(EYES.length-EYE_PIC)); l[9]=MOUTH_PIC+Math.floor(Math.random()*(MOUTHS.length-MOUTH_PIC)); } else { if(l[7]>=15) l[7]=Math.floor(Math.random()*15); if(l[9]>=MOUTH_PIC) l[9]=Math.floor(Math.random()*4); }
+  return l; } /* (服飾店 outfits show up now and then on others) */
 function freeSeat(){ const taken=new Set([meAv.seat,...npcs.map(n=>n.seat)]); remotes.forEach(r=>taken.add(r.seat)); let free=[]; for(let i=0;i<SEATS.length;i++) if(!taken.has(i)&&!SEATS[i].inn) free.push(i); { const main=free.filter(i=>!SEATS[i].zen); if(main.length&&Math.random()<.85) free=main; } return free.length?free[Math.floor(Math.random()*free.length)]:-1; }
 /* ================= 熱鬧的廟: the online count and the demo worshippers ================= */
 // Both live only on each player's phone: nothing here is sent to the server, so they cost no server traffic.
@@ -4782,7 +4810,7 @@ function openChair(){ if(!me.sp) return;
   <div class="ct-group"><span class="group-label">線上人數</span><div class="crowd-row"><span class="crowd-now"><span>全廟 <b>${shownTotal()}</b> 人</span><small>這殿 ${hallShown(HALLS.current(),Date.now())} 人・${CROWD.real?"真實人數":CROWD.at&&CROWD.target!=null?`目標 ${CROWD.target}`:"自動"}</small></span><input id="crowdIn" type="text" inputmode="numeric" maxlength="3" placeholder="目標"><button class="chip" data-act="crowdSet">設定</button><button class="chip" data-act="crowdAuto">自動</button><button class="chip" data-act="crowdReal" aria-pressed="${!!CROWD.real}">真實人數</button></div>
     <p class="real-count" id="realCount">真實在線：讀取中…</p><p class="note">目標是全廟人數，會依序分到各殿（前一殿快滿才開下一殿）。約 1 分鐘慢慢變到目標，之後在上下 10 人內浮動。「自動」：真實玩家超過 60 人時只顯示真實玩家；60 人以下會再加上約 20 位假人（上下浮動）。「真實人數」不加假人，有多少玩家就顯示多少。</p></div>
   <div class="ct-group"><span class="group-label">主委自己</span><div class="ct-grid">${ctTile("chairHide",chairHidden?"👁":"🫥",chairHidden?"解除隱形":"隱形",chairHidden?"隱形中":"")}${ctTile("chairBuild","🏗️","建築模式","移動屋頂與裝飾")}${ctTile("chairSpeed","🏃","移動速度",CHAIR_SPD+"×")}${ctTile("chairFly","🕊️",myFly?"降落":"飛行",myFly?"飛行中":"")}${ctTile("chairTod","🌗","白天黑夜",["自動","白天","黃昏","夜晚"][TODSET.i])}${ctTile("chairEn","⚡",window.MZ_ENTEST?"精力照扣":"精力不扣",window.MZ_ENTEST?"測試中":"主委免扣")}${ctTile("chairCs","💰",myCs?"變回主委":"變身財神爺",myCs?"發金光中":"")}${ctTile("giftList","🎁","送禮","平安幣・道具")}</div></div>
-  <div class="ct-group"><span class="group-label">測試工具</span><div class="ct-grid">${ctTile("tmOpen","🧪","測試模式","每次改版的新東西")}${ctTile("catTest","🐈","貓咪測試","直接養貓・各種狀況")}${ctTile("crashOpen","💥","閃退紀錄","哪裡、哪種手機")}${ctTile("chairReset","🔄","重置今日","測試用")}${ctTile("camCode","📷","記錄視角","給 Claude")}</div></div>`);
+  <div class="ct-group"><span class="group-label">測試工具</span><div class="ct-grid">${ctTile("tmOpen","🧪","測試模式","每次改版的新東西")}${ctTile("catTest","🐈","貓咪測試","直接養貓・各種狀況")}${ctTile("crashOpen","💥","閃退紀錄","哪裡、哪種手機")}${ctTile("chairReset","🔄","重置今日","測試用")}${ctTile("posOpen","📍","座標定位","點東西看座標・要移到哪")}${ctTile("camCode","📷","記錄視角","給 Claude")}</div></div>`);
   const k=$("#readKey"); const keep=()=>{ save("mz.rk",k.value.trim()); }; k.addEventListener("input",keep); k.addEventListener("change",keep); realStats(); }
 // real players only (no demo worshippers, no added numbers), straight from the server's hall counts
 async function realStats(){ const el=$("#realCount"); if(!el) return; let c=null; if(USE_CF){ const j=await probeCF(); if(j) c=j.counts; } else if(room) c=(HALLS.counts||[]).slice();
@@ -4913,6 +4941,39 @@ function readCode(str){ try{ str=String(str||"").trim().replace(/\s+/g,""); if(!
 const NOFOG={on:false,near:0,far:0};
 HANDLERS.noFog=()=>{ NOFOG.on=!NOFOG.on; if(NOFOG.on){ NOFOG.near=scene.fog.near; NOFOG.far=scene.fog.far; scene.fog.near=1e4; scene.fog.far=2e4; } else { scene.fog.near=NOFOG.near; scene.fog.far=NOFOG.far; } toast(NOFOG.on?"已除霧（只有你的畫面）":"霧氣已恢復",2200); openChair(); };
 /* 記錄視角: the exact camera (where it stands and what it looks at) as a short code the chair can paste to Claude, e.g. to set a fireworks viewpoint */
+/* 📍 座標定位 (11/17 主委「給我定位的功能 我要移動東西 可以直接給你座標」): while it is on, a tap does not walk — it marks the spot and says
+   where it is and what stands nearest. Mark 「要移的東西」 then 「移到這裡」, and 「複製給 Claude」 gives one line to paste, e.g.
+   「把 花店（22.8, -98.6）移到（40.2, -121.0）」. Nothing in the game moves by itself; Claude moves it in the code. */
+const POSF={on:false,a:null,b:null,last:null,pin:null,el:null,iv:0};
+POSF.near=(x,z)=>{ let best=null, bd=9; const see=(name,px,pz,r)=>{ const d=Math.hypot(px-x,pz-z)-(r||0); if(d<bd){ bd=d; best={name,x:px,z:pz}; } };
+  try{ (TOWNX&&TOWNX.B||[]).forEach(b=>{ if(b.deco) return; see(b.name||(b.lot!=null?`天后新村 ${b.lot+1} 號`:b.kind==="house"?"住家":"店面")+`〔${b.row}〕`,b.x,b.z,Math.min(3,(b.w||5)/2)); }); }catch(e){}
+  try{ for(const k in stations){ const a=stations[k].approach; see((STATION_LABEL[k]||(typeof STN!=="undefined"&&STN[k])||k),a.x,a.y,0); } }catch(e){}
+  try{ (TOWNX&&TOWNX.TREES||[]).forEach(t=>{ if(t.C&&t.C.g&&t.C.g.parent) see("樹",t.x,t.z,0); }); }catch(e){}
+  try{ (typeof MSPOT!=="undefined"?MSPOT:[]).forEach(m=>see("流星點・"+m[2],m[0],m[1],0)); }catch(e){}
+  return best; };
+POSF.f=v=>(+v).toFixed(1);
+POSF.draw=()=>{ const e=POSF.el; if(!e) return; const f=POSF.f, L=POSF.last, A=POSF.a, B=POSF.b;
+  e.querySelector(".pf-me").textContent=`你在（${f(meAv.pos.x)}, ${f(meAv.pos.y)}）`;
+  e.querySelector(".pf-tap").textContent=L?`點到（${f(L.x)}, ${f(L.z)}）高 ${f(L.y)}${L.near?`・最近：${L.near.name}（${f(L.near.x)}, ${f(L.near.z)}）`:""}`:"點畫面上的地面或東西";
+  e.querySelector(".pf-ab").textContent=(A?`要移：${A.near?A.near.name:"這個位置"}（${f(A.near?A.near.x:A.x)}, ${f(A.near?A.near.z:A.z)}）`:"還沒選要移的東西")+"　"+(B?`→ 移到（${f(B.x)}, ${f(B.z)}）`:""); };
+POSF.text=()=>{ const f=POSF.f, A=POSF.a, B=POSF.b, L=POSF.last; if(A&&B){ const n=A.near; return `把 ${n?n.name:"這個位置"}（${f(n?n.x:A.x)}, ${f(n?n.z:A.z)}）移到（${f(B.x)}, ${f(B.z)}）`; }
+  if(L) return `座標（${f(L.x)}, ${f(L.z)}）高 ${f(L.y)}${L.near?`，最近的是 ${L.near.name}（${f(L.near.x)}, ${f(L.near.z)}）`:""}`; return `我在（${f(meAv.pos.x)}, ${f(meAv.pos.y)}）`; };
+POSF.tap=(cx,cy)=>{ const r=canvas.getBoundingClientRect(); ndc.set((cx-r.left)/r.width*2-1,-(cy-r.top)/r.height*2+1); raycaster.setFromCamera(ndc,camera);
+  const hits=raycaster.intersectObjects(scene.children,true).filter(h=>{ const o=h.object; if(!o.visible||o.isSprite||o.isPoints||o.isLine) return false; if(o===POSF.pin) return false; const m=o.material; if(m&&(m.transparent&&m.opacity<.05)) return false; let p=o; while(p){ if(p===meAv.root||p===sky) return false; p=p.parent; } return true; });
+  if(!hits.length){ toast("沒有點到東西",1500); return; } const h=hits[0].point; POSF.last={x:h.x,y:h.y,z:h.z,near:POSF.near(h.x,h.z)};
+  if(!POSF.pin){ POSF.pin=new T.Mesh(new T.ConeGeometry(.25,.9,10),new T.MeshBasicMaterial({color:"#e8402e",depthTest:false})); POSF.pin.rotation.x=Math.PI; POSF.pin.renderOrder=999; POSF.pin.raycast=()=>{}; scene.add(POSF.pin); }
+  POSF.pin.position.set(h.x,h.y+.45,h.z); POSF.draw(); };
+POSF.open=()=>{ if(POSF.on) return; POSF.on=true; const e=document.createElement("div"); e.className="pos-panel"; e.innerHTML=`<b>📍 座標定位</b><div class="pf-me"></div><div class="pf-tap"></div><div class="pf-ab"></div>
+  <div class="pf-btn"><button data-p="a">這是要移的東西</button><button data-p="b">移到這裡</button><button data-p="c" class="pf-main">複製給 Claude</button><button data-p="x">關閉</button></div>`;
+  e.addEventListener("pointerdown",ev=>ev.stopPropagation()); document.body.appendChild(e); POSF.el=e;
+  e.onclick=async ev=>{ const k=ev.target&&ev.target.dataset&&ev.target.dataset.p; if(!k) return;
+    if(k==="a"){ if(!POSF.last){ toast("先點一下畫面上的東西",1800); return; } POSF.a=POSF.last; POSF.b=null; toast("選好了，再點要移去的位置，按「移到這裡」",2600); }
+    if(k==="b"){ if(!POSF.last){ toast("先點一下要移去的位置",1800); return; } POSF.b=POSF.last; }
+    if(k==="c"){ const c=POSF.text(); let ok=false; try{ await navigator.clipboard.writeText(c); ok=true; }catch(e2){} if(!ok) prompt("複製這段給 Claude：",c); else toast("已複製："+c,3200); }
+    if(k==="x") POSF.close(); POSF.draw(); };
+  POSF.iv=setInterval(POSF.draw,300); POSF.draw(); toast("定位開著：點畫面不會走路，會顯示座標",2600); };
+POSF.close=()=>{ POSF.on=false; clearInterval(POSF.iv); if(POSF.el) POSF.el.remove(); POSF.el=null; if(POSF.pin){ scene.remove(POSF.pin); POSF.pin.geometry.dispose(); POSF.pin.material.dispose(); POSF.pin=null; } POSF.a=POSF.b=POSF.last=null; };
+HANDLERS.posOpen=()=>{ if(!me.sp) return; closeSheet(); POSF.open(); };
 HANDLERS.camCode=async()=>{ closeSheet(); await new Promise(r=>setTimeout(r,350)); const p=camera.position, d=new T.Vector3(); camera.getWorldDirection(d); const t=p.clone().addScaledVector(d,40), f=v=>+v.toFixed(2);
   const c="MZVIEW:"+JSON.stringify({p:[f(p.x),f(p.y),f(p.z)],t:[f(t.x),f(t.y),f(t.z)],fov:f(camera.fov),me:[f(meAv.pos.x),f(meAv.flyCur||0),f(meAv.pos.y)]});
   let ok=false; try{ await navigator.clipboard.writeText(c); ok=true; }catch(e){} if(!ok) prompt("複製這段給 Claude：",c); else toast("視角已複製，貼給 Claude 就可以",3000); };
@@ -6063,7 +6124,7 @@ function dayNight(dt){ const want=(FW.on||LAKE.on)?{night:.6,day:0}:todPhase(); 
   if(hemiLight){ hemiLight.intensity=.32+.5*_dn.day-.14*_dn.night+.7*(_dn.ind||0); hemiLight.color.setRGB(.48+.4*_dn.day-.2*_dn.night,.33+.5*_dn.day-.1*_dn.night,.27+.6*_dn.day+.1*_dn.night); }
   scene.fog.color.copy(fogDusk).lerp(_c1.setRGB(.55,.66,.75),_dn.day).lerp(_c1.setRGB(.03,.03,.07),_dn.night);
   sky.position.copy(camera.position); /* the sky dome travels with the camera, so flying far out never reaches its edge */ { const far=(myFly||LAKE.on||(TOWNX&&TOWNX.high)||(typeof meAv!=="undefined"&&meAv&&meAv.pos.y>58))?520:200; /* (and on top of 天后山, gliding down, on the beach: far enough to see it all) */ if(camera.far!==far){ camera.far=far; camera.updateProjectionMatrix(); } }
-  CUR_T.value+=dt; MOON_S.sp.material.opacity=Math.min(1,_dn.night*1.3); MOON_S.gl.material.opacity=_dn.night*.8; MOON_S.sp.visible=MOON_S.gl.visible=_dn.night>.02;
+  CUR_T.value+=dt; MOON_S.sp.material.opacity=Math.min(1,_dn.night*1.3); MOON_S.gl.material.opacity=Math.min(1,_dn.night*1.1); MOON_S.sp.visible=MOON_S.gl.visible=_dn.night>.02;
   lanternMat.emissiveIntensity=.55+.3*_dn.night-.25*_dn.day; try{ POOL_M.opacity=.12+.2*_dn.night-.04*_dn.day; }catch(e){} ROOF_FLOOD.value=.3+.55*_dn.night; HALL_GLOW.forEach(g=>{ g.material.opacity=g.userData.op*(.45+.55*_dn.night); }); }
 const _c1=new T.Color();
 // announcements and shows are replayed to anyone who (re)connects; each browser plays each one only once
@@ -10122,7 +10183,9 @@ function catEnt(kind,ref){ if(!CAT.src) return null; const rig=catRigMake(CAT.sr
 function catDrop(e){ scene.remove(e.g); try{ e.rig.mesh.material.dispose(); }catch(_){} if(e.z){ scene.remove(e.z); } if(e.sick){ scene.remove(e.sick); } scene.remove(e.hit); const i=pickables.indexOf(e.hit); if(i>=0) pickables.splice(i,1); CAT.ents.splice(CAT.ents.indexOf(e),1); }
 const CAT_NAP=[[7.6,32.6],[12.4,24.8],[-7.6,29.4],[-5.2,17.6],[5.4,17.8],[13.4,36.4],[-12.6,35.6]];
 const catRain=()=>typeof WX!=="undefined"&&WX.r>.45;
-function catPlace(near){ const rain=catRain(); for(let k=0;k<30;k++){ let x,z; if(near){ x=near[0]+rand(-2.5,2.5); z=near[1]+rand(-2.5,2.5); } else if(rain){ const h=hallSpot(); x=h[0]; z=h[1]; } else { x=rand(-14,14); z=rand(HZ+2.5,HZ+YX+13); } if(walkable(x,z)&&(!rain||zoneOf(x,z)!=="C")) return [x,z]; } return rain?hallSpot():[CAT.mom.x-1,CAT.mom.z+1]; }
+/* (11/17 主委「為什麼這三隻貓會在廟裡」: the strays never go into the halls any more — not in the rain, not after a friend who walks in;
+   they stay out in the courtyard. Only a cat you have adopted follows you indoors) */
+function catPlace(near,yard){ for(let k=0;k<30;k++){ let x,z; if(near){ x=near[0]+rand(-2.5,2.5); z=near[1]+rand(-2.5,2.5); } else { x=rand(-14,14); z=rand(HZ+2.5,HZ+YX+13); } if(walkable(x,z)&&(!yard||zoneOf(x,z)==="C")) return [x,z]; } return [CAT.mom.x-1,CAT.mom.z+1]; }
 function catSync(){ if(!CAT.ready) return; const C=catData(); const want=new Set(C.s.map(s=>s.id));
   for(const e of CAT.ents.slice()){ if(e.kind==="stray"&&!want.has(e.ref.id)) catDrop(e); }
   C.s.forEach(s=>{ const e=CAT.ents.find(x=>x.kind==="stray"&&x.ref.id===s.id); if(e) e.ref=s; else catEnt("stray",s); });
@@ -10183,11 +10246,11 @@ function catTick(dt){ CAT.t+=dt; try{ rcatTick(dt); }catch(err){} if(CAT.resc){ 
         if(o){ const dx=g.position.x-o.x, dz=g.position.z-o.y, L=Math.hypot(dx,dz)||1; let to=null; for(let k=0;k<10&&!to;k++){ const a=Math.atan2(dx,dz)+rand(-.8,.8), r=rand(4.5,7), x=g.position.x+Math.sin(a)*r, z=g.position.z+Math.cos(a)*r; if(walkable(x,z)) to=[x,z]; }
           if(to){ e.tx=to[0]; e.tz=to[1]; e.path=planPath(g.position.x,g.position.z,to[0],to[1],0,0); e.st="walk"; e.tt=40; e.run=2.5; } } }
       if(e.run>0) e.run-=dt;
-      if(rain&&out&&e.st!=="walk") e.tt=-1;
+      if(rain&&!out&&e.kind==="stray"&&e.st!=="walk") e.tt=-1; /* (a stray that is indoors walks back out) */
       if(e.st==="walk"){ spd=e.run>0?3:rain&&out?2.2:.75; if(catMoveP(e,spd,dt)){ e.st=Math.random()<.4?"sleep":"sit"; if(e.st==="sleep") e.sl=Math.random()<.5?"loaf":"side"; e.tt=e.st==="sleep"?rand(25,70):rand(5,14); } }
       else if(e.tt<0){ let to; const near=e.kind==="pet"&&!rain?[CAT.bed.x,CAT.bed.z]:null;
-        if(rain) to=catPlace(out?null:[g.position.x,g.position.z]);
-        else if(e.kind==="stray"&&e.ref.a>=40&&Math.hypot(me2.x-g.position.x,me2.y-g.position.z)<10&&Math.random()<.5) to=catPlace([me2.x,me2.y]); else if(!near&&Math.random()<.3){ const n=CAT_NAP[(Math.random()*CAT_NAP.length)|0]; to=[n[0]+rand(-.5,.5),n[1]+rand(-.5,.5)]; if(!walkable(to[0],to[1])) to=catPlace(); } else to=catPlace(near);
+        if(rain) to=catPlace(out?null:[g.position.x,g.position.z],e.kind==="stray");
+        else if(e.kind==="stray"&&e.ref.a>=40&&Math.hypot(me2.x-g.position.x,me2.y-g.position.z)<10&&Math.random()<.5) to=catPlace([me2.x,me2.y],true); else if(!near&&Math.random()<.3){ const n=CAT_NAP[(Math.random()*CAT_NAP.length)|0]; to=[n[0]+rand(-.5,.5),n[1]+rand(-.5,.5)]; if(!walkable(to[0],to[1])) to=catPlace(); } else to=catPlace(near);
         e.tx=to[0]; e.tz=to[1]; e.path=planPath(g.position.x,g.position.z,to[0],to[1],0,0); e.st="walk"; e.tt=40; } }
     if(!e.trick&&!e.dig){ anim=e.st==="walk"?(spd>1.5?"run":"walk"):e.st==="sleep"?e.sl:e.st==="sit"?"sit":"idle"; if(sick&&e.st!=="walk") anim="loaf";
       catRigPose(e.rig,anim,e.ph,Math.min(1,dt*(e.st==="sleep"?3:8)));
@@ -10570,7 +10633,7 @@ function vendTex(){ return cvs(256,512,(x,w,h)=>{ x.fillStyle="#d8252e"; x.fillR
 function imgInto(m,url){ new T.TextureLoader().load(url,t=>{ WORLD.warm=2; t.encoding=T.sRGBEncoding; t.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy()); const old=m.map; m.map=t; if(m.emissiveMap) m.emissiveMap=t; m.needsUpdate=true; if(old&&old.dispose) old.dispose(); }); }
 /* ground textures for the street: asphalt, the sidewalk's paving bricks, a glass pane's reflection */
 function asphaltTex(){ return cvs(256,256,(x,w,h)=>{ x.fillStyle="#46474a"; x.fillRect(0,0,w,h); for(let i=0;i<5000;i++){ const l=50+Math.random()*60|0; x.fillStyle=`rgba(${l},${l},${l+3},.5)`; x.fillRect(Math.random()*w,Math.random()*h,1.5,1.5); } for(let i=0;i<6;i++){ x.fillStyle="rgba(20,20,22,.06)"; x.beginPath(); x.ellipse(Math.random()*w,Math.random()*h,30+Math.random()*40,10+Math.random()*20,Math.random()*3,0,7); x.fill(); } }); }
-function paverTex(){ return cvs(256,256,(x,w,h)=>{ x.fillStyle="#8d8a86"; x.fillRect(0,0,w,h); const s=32; for(let j=0;j<h/s;j++) for(let i=-1;i<w/(s*2)+1;i++){ const X=i*s*2+(j%2)*s, Y=j*s; const red=((i*7+j*3)%5)===0; const l=red?0:150+Math.random()*30|0; x.fillStyle=red?`rgb(${150+Math.random()*20|0},${92+Math.random()*12|0},${80+Math.random()*10|0})`:`rgb(${l},${l-4},${l-10})`; x.fillRect(X+2,Y+2,s*2-4,s-4); } }); }
+function paverTex(){ return cvs(256,256,(x,w,h)=>{ x.fillStyle="#9c968d"; x.fillRect(0,0,w,h); const s=64; for(let j=0;j<4;j++) for(let i=0;i<4;i++){ const l=176+Math.random()*14|0; x.fillStyle=`rgb(${l},${l-5},${l-12})`; x.fillRect(i*s+2,j*s+2,s-4,s-4); for(let k=0;k<26;k++){ const q=l-10+Math.random()*16|0; x.fillStyle=`rgba(${q},${q-5},${q-12},.6)`; x.fillRect(i*s+3+Math.random()*(s-8),j*s+3+Math.random()*(s-8),2,2); } } }); } /* (11/17 主委「人行道不要鋪成這樣 看了很不舒服」: plain square slabs instead of the red and grey bricks) */
 /* the shop floors, in the colours of the floors in the owner's pictures: big glossy tiles, or warm wood planks */
 function shopFloorTex(kind){ const C={cvs:[227,210,196],claw:[236,181,189],cloth:[246,176,125]}[kind]; return cvs(256,256,(x,w,h)=>{ const [r,g,b]=C;
   if(kind==="cloth"){ for(let j=0;j<8;j++){ const off=(j%2)*90; for(let i=-1;i<3;i++){ const k=.93+Math.random()*.12; x.fillStyle=`rgb(${r*k|0},${g*k|0},${b*k|0})`; x.fillRect(i*180+off,j*32,178,30); } x.fillStyle=`rgba(${r*.6|0},${g*.55|0},${b*.5|0},.6)`; x.fillRect(0,j*32+30,w,2); }
@@ -10607,10 +10670,10 @@ function buildWorld(){ if(WORLD.ready) return; const G=new T.Group(); G.name="sh
     flat(W,L,cx,cz,.012,new T.MeshStandardMaterial(po({map:at,roughness:.95})),true);
     const white=new T.MeshStandardMaterial(po({color:"#f2f2ee",roughness:.7,polygonOffsetFactor:-4,polygonOffsetUnits:-4})), yel=new T.MeshStandardMaterial(po({color:"#f2c230",roughness:.7,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));
     const G0=INN.G, zc0=G0-2.2, zc1=G0+2.2; /* the crossing (and its stop lines) leaves a gap in the centre lines */
-    for(const [a,b] of [[ROAD.z0,zc0-.6],[zc1+.6,ROAD.z1]]){ for(const dx of [-.09,.09]) flat(.1,b-a,cx+dx,(a+b)/2,.016,yel); for(const ex of [ROAD.x0+.25,ROAD.x1-.25]) flat(.15,b-a,ex,(a+b)/2,.016,white); }
-    for(let x=ROAD.x0+.45;x<ROAD.x1-.3;x+=.9) flat(.45,3.2,x+.22,G0,.016,white); /* zebra */
-    flat(W/2-.15,.3,cx-W/4,zc1+.35,.016,white); flat(W/2-.15,.3,cx+W/4,zc0-.35,.016,white); /* stop lines, one each way */
-    const dia=new T.MeshStandardMaterial(po({color:"#f2f2ee",roughness:.7,polygonOffsetFactor:-4,polygonOffsetUnits:-4})); for(const [x,z] of [[cx-W/4,zc1+9],[cx+W/4,zc0-9]]){ const d=new T.Mesh(new T.PlaneGeometry(.9,2.2),new T.MeshStandardMaterial(po({roughness:.7,transparent:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4,map:cvs(64,160,(x,w,h)=>{ x.strokeStyle="#f2f2ee"; x.lineWidth=7; x.beginPath(); x.moveTo(w/2,6); x.lineTo(w-6,h/2); x.lineTo(w/2,h-6); x.lineTo(6,h/2); x.closePath(); x.stroke(); })}))); d.rotation.x=-Math.PI/2; d.position.set(x,.017,z); G.add(d); } /* the diamond that warns of a crossing ahead */
+    for(const [a,b] of [[ROAD.z0,zc0-.6],[zc1+.6,ROAD.z1]]){ for(const dx of [-.09,.09]) flat(.1,b-a,cx+dx,(a+b)/2,.04,yel); for(const ex of [ROAD.x0+.25,ROAD.x1-.25]) flat(.15,b-a,ex,(a+b)/2,.04,white); }
+    for(let x=ROAD.x0+.45;x<ROAD.x1-.3;x+=.9) flat(.45,3.2,x+.22,G0,.04,white); /* zebra */
+    flat(W/2-.15,.3,cx-W/4,zc1+.35,.04,white); flat(W/2-.15,.3,cx+W/4,zc0-.35,.04,white); /* stop lines, one each way */
+    const dia=new T.MeshStandardMaterial(po({color:"#f2f2ee",roughness:.7,polygonOffsetFactor:-4,polygonOffsetUnits:-4})); for(const [x,z] of [[cx-W/4,zc1+9],[cx+W/4,zc0-9]]){ const d=new T.Mesh(new T.PlaneGeometry(.9,2.2),new T.MeshStandardMaterial(po({roughness:.7,transparent:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4,map:cvs(64,160,(x,w,h)=>{ x.strokeStyle="#f2f2ee"; x.lineWidth=7; x.beginPath(); x.moveTo(w/2,6); x.lineTo(w-6,h/2); x.lineTo(w/2,h-6); x.lineTo(6,h/2); x.closePath(); x.stroke(); })}))); d.rotation.x=-Math.PI/2; d.position.set(x,.041,z); G.add(d); } /* the diamond that warns of a crossing ahead */
     /* sidewalks: paving bricks, a granite kerb along the road */
     const pt=paverTex(); pt.wrapS=pt.wrapT=T.RepeatWrapping; const pv=(x0,x1)=>{ const t=pt.clone(); t.needsUpdate=true; t.repeat.set((x1-x0)/2,L/2); flat(x1-x0,L,(x0+x1)/2,cz,.03,new T.MeshStandardMaterial(po({map:t,roughness:.9})),true); };
     pv(WALK_IN.x0+.22,WALK_IN.x1); pv(WALK_OUT.x0,WALK_OUT.x1-.22); { /* between the temple wall and the balustrade: the temple's own paving, on the same world grid as every temple floor (see floorUV), so no seam */
@@ -11393,7 +11456,9 @@ const RSZ=[.75,1,1.3];
    x not offered (kept out until the chair decides). top: height of the surface small things may stand on (0 = none).
    ONLY ADD TO THE END of this list: what players own is stored by position in it. */
 const FM={}; const fm=(c,o)=>{ const k=c+(o?JSON.stringify(o):""); if(!FM[k]){ FM[k]=new T.MeshStandardMaterial({roughness:.8,...(o||{})}); FM[k].color.set(c).convertSRGBToLinear(); } return FM[k]; };
-const FD="bed01|泡麵床|1.48|1.88|2.1|3900|f||0;bed02|馬桶床|1.23|1.61|2.1|4200|f||0;bed03|棺材床|1.35|1.49|2.1|2500|f||0;bed04|蝦壽司床|1.26|1.58|2.1|2900|f||0;bed05|香蕉床|1.51|1.43|2.1|3200|f||0;bed06|柴犬床|1.19|1.38|2.1|3600|f||0;bed07|元寶床|1.16|0.96|2.1|4000|f||0;bed08|街機床|1.37|1.73|2.1|4400|f||0;bed09|原木單人床|1.12|0.99|2.0|2600|n||0;bed10|花漾白床|1.15|1.26|2.0|3000|b||0;bed11|藤編床|1.05|1.16|2.0|3400|b||0;bed12|黑鐵木床|1.15|0.99|2.0|3800|w||0;bed13|中式紅木床|1.21|1.42|2.0|4100|b||0;bed14|青苔石床|1.08|1.11|2.0|4500|b||0;bed15|星月床|1.29|1.43|2.0|2800|m||0;bed16|貓咪床|1.14|1.3|2.0|3100|d||0;chair01|原木椅|0.63|0.9|0.81|1200|b||0;chair02|圓木椅|0.71|0.9|0.87|1400|b||0;chair03|白漆雕花椅|0.62|0.9|0.66|600|n||0;chair04|溫莎椅|0.62|0.9|0.66|800|b||0;chair05|鑄鐵咖啡椅|0.54|0.9|0.65|900|b||0;chair06|藤編扶手椅|0.82|0.9|0.77|1100|w||0;chair07|綠格紋軟墊椅|0.63|0.9|0.75|1300|b||0;chair08|小花椅|0.6|0.9|0.61|1400|g||0;chair09|松木椅|0.64|0.9|0.74|700|b||0;chair10|藍格坐墊白椅|0.67|0.9|0.76|800|b||0;chair11|樹枝椅|0.68|0.9|0.74|1000|d||0;chair12|黑鐵藤編椅|0.6|0.9|0.64|1200|b||0;chair13|白墊藤椅|0.78|0.9|0.96|1300|b||0;chair14|粉紅皮椅|0.64|0.9|0.76|1500|n||0;chair15|宮廷椅|0.61|0.9|0.69|700|b||0;chair16|和風座椅|0.6|0.55|0.58|900|b||0;chair17|直背木椅|0.6|0.9|0.74|1000|w||0;chair18|深色溫莎椅|0.61|0.9|0.71|1200|b||0;chair19|奶油雕花椅|0.64|0.9|0.69|1400|b||0;chair20|紅格坐墊木椅|0.72|0.9|0.8|600|d||0;chair21|課桌椅|0.62|0.9|0.7|800|b||0;chair22|白色殼椅|0.68|0.9|0.72|900|b||0;chair23|墨綠絨布椅|0.6|0.9|0.72|1100|n||0;chair24|美式餐廳椅|0.62|0.9|0.77|1300|g||0;table01|原木方桌|1.03|0.77|1.1|1600|b||0.77;table02|粉紅桌巾圓桌|1.1|0.76|1.1|1800|b||0.76;table03|樹樁桌|1.1|0.73|1.04|800|b||0.73;table04|玫瑰雕花桌|1.1|0.73|1.06|1000|w||0.73;table05|白色矮桌|1.1|0.5|0.74|1200|b||0.5;table06|愛心花邊桌|1.1|0.88|1.09|1500|b||0.88;table07|蘑菇桌|1.09|0.94|1.1|1700|g||0.94;table08|厚實工作桌|1.1|0.66|0.88|1900|d||0.66;table09|竹編桌|1.1|0.68|1.04|900|b||0.68;table10|雲朵桌|1.09|0.72|1.1|1100|b||0.72;table11|貝殼珊瑚桌|1.1|0.84|1.09|1300|n||0.84;table12|工業風木桌|1.1|0.74|1.07|1600|b||0.74;table13|檸檬桌|1.1|0.83|1.08|1800|g||0.83;table14|大理石宮廷桌|1.1|0.75|1.06|2000|b||0.75;table15|石雕圓桌|1.1|0.74|1.1|1000|w||0.74;table16|美式餐廳桌|1.1|0.8|1.02|1200|b||0.8;table17|黑大理石金腳桌|1.1|0.58|0.89|1400|b||0.58;table18|粉紅玻璃圓桌|1.06|0.59|1.1|1600|b||0.59;table19|白色豆豆桌|1.1|0.5|0.93|1800|d||0.5;table20|中式方桌|1.03|0.59|1.1|800|b||0.59;table21|愛心公主桌|1.1|0.74|0.93|1000|b||0.74;table22|鐵架推車桌|1.1|0.69|0.77|1200|n||0.69;table23|六角金架桌|1.1|0.49|0.84|1500|b||0.49;table24|炫彩果凍桌|1.1|0.64|1.07|1700|g||0.64;cabinet01|綠藤白衣櫃|1.3|1.9|1.02|4200|b||0;cabinet02|和風格子櫃|1.3|1.9|1.23|4700|w||0;cabinet03|星夜窗簾櫃|1.26|1.9|0.88|2500|m||0;cabinet04|森林精靈櫃|1.48|1.9|1.14|3000|b|x|0;cabinet05|古典雕花衣櫃|1.31|1.9|0.87|3400|b||0;cabinet06|鐵皮置物櫃|1.28|1.9|1.05|3900|b||0;cabinet07|中式紅漆櫃|1.5|1.9|1.2|4400|d||0;cabinet08|草莓蛋糕櫃|1.3|1.9|1.08|4800|b||0;cabinet09|城堡木門櫃|1.34|1.9|1.08|2700|b||0;cabinet10|白色鏡面衣櫃|1.28|1.9|0.79|3100|n||0;cabinet11|海洋貝殼櫃|1.4|1.9|0.92|3600|b||0;cabinet12|竹屋櫃|1.44|1.9|1.46|4100|b||0;cabinet13|工業風展示櫃|1.27|1.9|0.96|4500|b||0;cabinet14|紫色棺材櫃|1.33|1.9|1.14|5000|w||0;cabinet15|廟會攤車櫃|1.58|1.9|1.34|2800|b||0;cabinet16|彩虹雲朵櫃|1.3|1.9|0.94|3300|b||0;cabinet17|原木衣櫃|1.21|1.9|1.08|3800|d||0;cabinet18|奶油花卉衣櫃|1.24|1.9|0.85|4200|b||0;cabinet19|中式紅木櫃|1.29|1.9|1.07|4700|b||0;cabinet20|橘貓衣櫃|1.26|1.9|0.98|2500|n||0;cabinet21|櫻花矮櫃|0.72|1.0|0.52|3000|b||1.0;cabinet22|灰色鐵櫃|1.22|1.9|1.03|3400|b||0;cabinet23|星月衣櫃|1.3|1.9|0.83|3900|m||0;cabinet24|百葉矮櫃|0.85|1.0|0.68|4400|w||1.0;appl01|貓掌咖啡機|0.27|0.42|0.42|3000|c|s|0;appl02|貓咪電子鍋|0.28|0.3|0.3|3600|c|s|0;appl03|氣炸鍋|0.33|0.36|0.48|800|c|s|0;appl04|飲水機|0.51|1.05|0.55|1400|c||0;appl05|復古電暖器|0.45|0.5|0.3|2000|c|s|0;appl06|香氛水氧機|0.21|0.32|0.22|2600|c|s|0;appl07|貓咪掃地機器人|0.19|0.12|0.2|3200|c||0;appl08|掌上遊戲機|0.34|0.24|0.17|3800|c|s|0;appl09|映像管電視|0.5|0.62|0.47|1000|b|s|0;appl10|液晶電視櫃|1.11|1.05|0.62|1600|b||0;appl11|大型街機|0.9|1.7|1.46|2200|b||0;appl12|冰箱|1.08|1.7|1.16|2800|d||0;appl13|洗衣機|0.69|0.9|0.59|3400|b||0.9;appl14|冷氣機|0.7|0.32|0.28|4000|b|w|0;appl15|電風扇|0.59|1.0|0.5|1200|n||0;appl16|微波爐|0.47|0.34|0.45|1800|b|s|0;misc01|報紙床|1.77|1.3|1.9|500|c||0;misc02|紙箱桌|1.0|0.87|0.97|500|c||0.87;misc03|垃圾袋沙發|1.07|1.17|1.1|500|c||0;misc04|塑膠籃置物架|1.33|1.5|1.34|500|c||0;misc05|水桶椅|0.57|0.8|0.64|500|c||0;misc06|輪胎桌|0.84|0.77|0.85|500|c||0.77;misc07|塑膠袋燈|0.33|0.45|0.32|500|c|s|0;misc08|舊布門簾|1.68|1.7|0.67|500|c||0;plant01|繡球花|0.58|0.7|0.56|1000|b|s|0;plant02|紅玫瑰|0.61|0.7|0.52|1100|w|s|0;plant03|百合|0.53|0.7|0.48|600|b|s|0;plant04|向日葵|0.55|0.7|0.48|700|b|s|0;plant05|櫻花盆景|0.54|0.7|0.37|800|d|s|0;plant06|紫藤花架|0.79|0.9|0.66|900|b|s|0;plant07|牡丹|0.64|0.7|0.52|1000|b|s|0;plant08|荷花缽|0.54|0.7|0.54|1200|n|s|0;plant09|楓葉盆景|0.6|0.7|0.49|600|q|s|0;plant10|仙人掌|0.47|0.7|0.5|800|q|s|0;plant11|蝴蝶蘭|0.48|0.7|0.34|900|q|s|0;plant12|開運竹|0.51|0.7|0.34|1000|q|s|0;plant13|紫藤盆景|0.82|0.9|0.56|1100|q|s|0;plant14|多肉玻璃屋|0.59|0.7|0.6|1200|q|s|0;plant15|苔球蕨|0.64|0.7|0.54|700|q|s|0;plant16|燈籠果|0.56|0.7|0.43|800|q|s|0;deco01|水母水晶球|0.31|0.34|0.28|700|c|s|0;deco02|藍水晶|0.24|0.34|0.25|800|c|s|0;deco03|寶箱|0.33|0.3|0.34|400|c|s|0;deco04|麥克風獎座|0.26|0.34|0.26|500|c|s|0;deco05|場記板獎座|0.34|0.26|0.27|600|c|s|0;deco06|遊戲手把獎座|0.34|0.33|0.3|700|c|s|0;deco07|泡麵擺飾|0.34|0.33|0.28|800|c|s|0;deco08|摩天輪|0.28|0.34|0.28|900|c|s|0;deco09|小盆栽|0.3|0.34|0.28|400|b|s|0;deco10|書本書擋|0.33|0.27|0.34|500|b|s|0;deco11|布罩檯燈|0.29|0.34|0.28|600|b|s|0;deco12|手提唱片機|0.34|0.33|0.32|700|w|s|0;deco13|茶壺組|0.31|0.22|0.34|800|b|s|0;deco14|蘑菇玻璃罩|0.27|0.34|0.28|900|b|s|0;deco15|香氛蠟燭|0.3|0.32|0.34|500|d|s|0;deco16|小花瓶|0.28|0.34|0.23|600|b|s|0;deco17|玫瑰蠟燭|0.34|0.33|0.33|600|q|s|0;deco18|骷髏書擋|0.34|0.27|0.31|700|q|s|0;deco19|暗色提燈|0.22|0.34|0.23|800|q|s|0;deco20|黑盆黃金葛|0.32|0.31|0.34|400|q|s|0;deco21|紫水晶|0.3|0.34|0.32|500|q|s|0;deco22|紫沙漏|0.26|0.34|0.26|600|q|s|0;deco23|星象儀|0.23|0.34|0.21|700|q|s|0;deco24|小香爐|0.34|0.27|0.34|800|q|s|0;deco25|金環雕塑|0.29|0.34|0.29|900|b|s|0;deco26|擴香瓶|0.31|0.34|0.3|400|n|s|0;deco27|黑金地球儀|0.25|0.34|0.22|500|b|s|0;deco28|相框與盆栽|0.34|0.32|0.32|600|b|s|0;deco29|威士忌酒組|0.34|0.28|0.31|700|w|s|0;deco30|相機與書|0.34|0.25|0.31|800|b|s|0;deco31|翻頁鐘|0.34|0.27|0.21|900|b|s|0;deco32|飛機模型|0.34|0.29|0.29|500|b|s|0;deco33|留聲機|0.27|0.34|0.23|600|c|s|0;deco34|雪屋水晶球|0.28|0.34|0.27|600|c|s|0;deco35|達摩不倒翁|0.34|0.31|0.32|700|c|s|0;deco36|鳥籠|0.26|0.34|0.25|800|c|s|0;deco37|禮物盒|0.31|0.34|0.33|400|c|s|0;deco38|青瓷香爐|0.19|0.27|0.34|500|c|s|0;deco39|生態瓶|0.28|0.34|0.29|600|c|s|0;deco40|月兔燈|0.31|0.34|0.27|700|c|s|0;deco41|櫻花小盆景|0.29|0.34|0.23|800|q|s|0;deco42|招財貓|0.34|0.32|0.32|900|q|s|0;deco43|古董地球儀|0.23|0.34|0.21|400|q|s|0;deco44|木沙漏|0.22|0.34|0.22|500|q|s|0;deco45|金魚缸|0.27|0.34|0.25|600|q|s|0;deco46|信件盒|0.34|0.27|0.17|700|q|s|0;deco47|和紙燈籠|0.2|0.34|0.2|800|q|s|0;deco48|書上睡貓|0.33|0.34|0.32|900|q|s|0;curtain01|碎花蕾絲窗簾|1.7|1.91|0.53|1800|d|w|0;curtain02|星月深藍窗簾|1.7|1.92|0.6|1900|m|w|0;curtain03|中式紅金窗簾|1.7|1.92|0.58|1200|b|w|0;curtain04|龜背葉窗簾|1.7|1.9|0.52|1400|b|w|0;curtain05|紫藤窗簾|1.7|1.91|0.6|1500|n|w|0;curtain06|北歐馴鹿窗簾|1.7|1.94|0.55|1600|b|w|0;curtain07|黑金絲絨窗簾|1.7|1.91|0.53|1800|b|w|0;curtain08|粉格雲朵窗簾|1.7|1.87|0.59|2000|w|w|0;curtain09|紅絲絨窗簾|1.7|2.01|0.52|1200|q|w|0;curtain10|玫瑰蕾絲窗簾|1.7|1.98|0.49|1400|q|w|0;curtain11|夜空窗簾|1.7|1.95|0.45|1600|q|w|0;curtain12|竹葉米色窗簾|1.7|1.87|0.43|1700|q|w|0;curtain13|貓掌粉格窗簾|1.7|1.93|0.57|1800|q|w|0;curtain14|紫櫻和風窗簾|1.7|1.93|0.5|2000|q|w|0;curtain15|扶桑花窗簾|1.7|1.93|0.43|1300|q|w|0;curtain16|深灰素面窗簾|1.7|1.98|0.46|1400|q|w|0;curtain17|米白蝴蝶結窗簾|1.7|1.75|0.43|1600|b|w|0;curtain18|皇冠紅絨窗簾|1.7|1.98|0.52|1800|b|w|0;curtain19|粉格荷葉邊窗簾|1.7|1.79|0.48|1900|d|w|0;curtain20|小花綠結窗簾|1.7|1.75|0.43|1200|b|w|0;curtain21|淺灰素面窗簾|1.7|1.82|0.43|1400|b|w|0;curtain22|編織流蘇窗簾|1.7|1.89|0.53|1500|n|w|0;curtain23|紫色星月窗簾|1.7|1.86|0.46|1600|m|w|0;curtain24|海洋貝殼窗簾|1.7|1.88|0.51|1800|b|w|0;wall01|彩繪玻璃蝴蝶|0.64|0.7|0.12|1500|q|w|0;wall02|閃電霓虹燈|0.52|0.7|0.35|1700|q|w|0;wall03|太陽臉掛飾|0.7|0.68|0.22|800|q|w|0;wall04|咕咕鐘|0.41|0.7|0.23|1000|q|w|0;wall05|編織掛毯|0.51|0.8|0.08|1200|q|w|0;wall06|嘉年華面具|0.52|0.7|0.33|1400|q|w|0;wall07|編織圓盤|0.66|0.7|0.09|1600|q|w|0;wall08|水晶壁燈|0.46|0.7|0.21|1700|q|w|0;wall09|古董掛鐘|0.47|0.7|0.14|900|b|w|0;wall10|青花瓷盤|0.67|0.7|0.35|1000|b|w|0;wall11|農家斗笠籃|0.55|0.7|0.26|1200|w|w|0;wall12|獅頭門環|0.7|0.7|0.53|1400|b|w|0;wall13|金框鏡子|0.49|0.7|0.08|1600|b|w|0;wall14|鑰匙掛架|0.68|0.7|0.17|1800|d|w|0;wall15|鹿頭骨掛飾|0.63|0.7|0.16|900|b|w|0;wall16|壁掛小書架|0.72|0.8|0.35|1100|b|w|0;wall17|衣帽掛架|0.61|0.7|0.23|1300|n|w|0;wall18|紙燈籠壁燈|0.39|0.7|0.42|1500|b|w|0;wall19|編織吊盆|0.46|0.7|0.38|1700|b|w|0;wall20|咖啡店招牌|0.59|0.7|0.39|800|w|w|0;wall21|紅色信箱|0.51|0.7|0.4|1000|b|w|0;wall22|民族風掛毯|0.55|0.8|0.11|1200|b|w|0;wall23|鯉魚木雕|0.6|0.7|0.07|1400|b|w|0;wall24|星球風鈴|0.39|0.7|0.57|1600|m|w|0;pic01|冒險電影海報|0.56|0.8|0.09|1500|g|wx|0;pic02|星夜|0.68|0.8|0.1|1500|g|w|0;pic03|神奈川沖浪裏|0.6|0.8|0.1|1500|g|w|0;pic04|黑白電影海報|0.56|0.8|0.1|1500|g|wx|0;pic05|太空電影海報|0.59|0.8|0.37|1500|g|wx|0;pic06|普普風肖像|0.62|0.8|0.1|1500|g|wx|0;pic07|古地圖|0.75|0.8|0.11|1500|g|w|0;pic08|台北風景畫|0.59|0.8|0.1|1500|g|w|0";
+const FD="bed01|泡麵床|1.48|1.88|2.1|3900|f||0;bed02|馬桶床|1.23|1.61|2.1|4200|f||0;bed03|棺材床|1.35|1.49|2.1|2500|f||0;bed04|蝦壽司床|1.26|1.58|2.1|2900|f||0;bed05|香蕉床|1.51|1.43|2.1|3200|f||0;bed06|柴犬床|1.19|1.38|2.1|3600|f||0;bed07|元寶床|1.16|0.96|2.1|4000|f||0;bed08|街機床|1.37|1.73|2.1|4400|f||0;bed09|原木單人床|1.12|0.99|2.0|2600|n||0;bed10|花漾白床|1.15|1.26|2.0|3000|b||0;bed11|藤編床|1.05|1.16|2.0|3400|b||0;bed12|黑鐵木床|1.15|0.99|2.0|3800|w||0;bed13|中式紅木床|1.21|1.42|2.0|4100|b||0;bed14|青苔石床|1.08|1.11|2.0|4500|b||0;bed15|星月床|1.29|1.43|2.0|2800|m||0;bed16|貓咪床|1.14|1.3|2.0|3100|d||0;chair01|原木椅|0.63|0.9|0.81|1200|b||0;chair02|圓木椅|0.71|0.9|0.87|1400|b||0;chair03|白漆雕花椅|0.62|0.9|0.66|600|n||0;chair04|溫莎椅|0.62|0.9|0.66|800|b||0;chair05|鑄鐵咖啡椅|0.54|0.9|0.65|900|b||0;chair06|藤編扶手椅|0.82|0.9|0.77|1100|w||0;chair07|綠格紋軟墊椅|0.63|0.9|0.75|1300|b||0;chair08|小花椅|0.6|0.9|0.61|1400|g||0;chair09|松木椅|0.64|0.9|0.74|700|b||0;chair10|藍格坐墊白椅|0.67|0.9|0.76|800|b||0;chair11|樹枝椅|0.68|0.9|0.74|1000|d||0;chair12|黑鐵藤編椅|0.6|0.9|0.64|1200|b||0;chair13|白墊藤椅|0.78|0.9|0.96|1300|b||0;chair14|粉紅皮椅|0.64|0.9|0.76|1500|n||0;chair15|宮廷椅|0.61|0.9|0.69|700|b||0;chair16|和風座椅|0.6|0.55|0.58|900|b||0;chair17|直背木椅|0.6|0.9|0.74|1000|w||0;chair18|深色溫莎椅|0.61|0.9|0.71|1200|b||0;chair19|奶油雕花椅|0.64|0.9|0.69|1400|b||0;chair20|紅格坐墊木椅|0.72|0.9|0.8|600|d||0;chair21|課桌椅|0.62|0.9|0.7|800|b||0;chair22|白色殼椅|0.68|0.9|0.72|900|b||0;chair23|墨綠絨布椅|0.6|0.9|0.72|1100|n||0;chair24|美式餐廳椅|0.62|0.9|0.77|1300|g||0;table01|原木方桌|1.03|0.77|1.1|1600|b||0.77;table02|粉紅桌巾圓桌|1.1|0.76|1.1|1800|b||0.76;table03|樹樁桌|1.1|0.73|1.04|800|b||0.73;table04|玫瑰雕花桌|1.1|0.73|1.06|1000|w||0.73;table05|白色矮桌|1.1|0.5|0.74|1200|b||0.5;table06|愛心花邊桌|1.1|0.88|1.09|1500|b||0.88;table07|蘑菇桌|1.09|0.94|1.1|1700|g||0.94;table08|厚實工作桌|1.1|0.66|0.88|1900|d||0.66;table09|竹編桌|1.1|0.68|1.04|900|b||0.68;table10|雲朵桌|1.09|0.72|1.1|1100|b||0.72;table11|貝殼珊瑚桌|1.1|0.84|1.09|1300|n||0.84;table12|工業風木桌|1.1|0.74|1.07|1600|b||0.74;table13|檸檬桌|1.1|0.83|1.08|1800|g||0.83;table14|大理石宮廷桌|1.1|0.75|1.06|2000|b||0.75;table15|石雕圓桌|1.1|0.74|1.1|1000|w||0.74;table16|美式餐廳桌|1.1|0.8|1.02|1200|b||0.8;table17|黑大理石金腳桌|1.1|0.58|0.89|1400|b||0.58;table18|粉紅玻璃圓桌|1.06|0.59|1.1|1600|b||0.59;table19|白色豆豆桌|1.1|0.5|0.93|1800|d||0.5;table20|中式方桌|1.03|0.59|1.1|800|b||0.59;table21|愛心公主桌|1.1|0.74|0.93|1000|b||0.74;table22|鐵架推車桌|1.1|0.69|0.77|1200|n||0.69;table23|六角金架桌|1.1|0.49|0.84|1500|b||0.49;table24|炫彩果凍桌|1.1|0.64|1.07|1700|g||0.64;cabinet01|綠藤白衣櫃|1.3|1.9|1.02|4200|b||0;cabinet02|和風格子櫃|1.3|1.9|1.23|4700|w||0;cabinet03|星夜窗簾櫃|1.26|1.9|0.88|2500|m||0;cabinet04|森林精靈櫃|1.48|1.9|1.14|3000|b|x|0;cabinet05|古典雕花衣櫃|1.31|1.9|0.87|3400|b||0;cabinet06|鐵皮置物櫃|1.28|1.9|1.05|3900|b||0;cabinet07|中式紅漆櫃|1.5|1.9|1.2|4400|d||0;cabinet08|草莓蛋糕櫃|1.3|1.9|1.08|4800|b||0;cabinet09|城堡木門櫃|1.34|1.9|1.08|2700|b||0;cabinet10|白色鏡面衣櫃|1.28|1.9|0.79|3100|n||0;cabinet11|海洋貝殼櫃|1.4|1.9|0.92|3600|b||0;cabinet12|竹屋櫃|1.44|1.9|1.46|4100|b||0;cabinet13|工業風展示櫃|1.27|1.9|0.96|4500|b||0;cabinet14|紫色棺材櫃|1.33|1.9|1.14|5000|w||0;cabinet15|廟會攤車櫃|1.58|1.9|1.34|2800|b||0;cabinet16|彩虹雲朵櫃|1.3|1.9|0.94|3300|b||0;cabinet17|原木衣櫃|1.21|1.9|1.08|3800|d||0;cabinet18|奶油花卉衣櫃|1.24|1.9|0.85|4200|b||0;cabinet19|中式紅木櫃|1.29|1.9|1.07|4700|b||0;cabinet20|橘貓衣櫃|1.26|1.9|0.98|2500|n||0;cabinet21|櫻花矮櫃|0.72|1.0|0.52|3000|b||1.0;cabinet22|灰色鐵櫃|1.22|1.9|1.03|3400|b||0;cabinet23|星月衣櫃|1.3|1.9|0.83|3900|m||0;cabinet24|百葉矮櫃|0.85|1.0|0.68|4400|w||1.0;appl01|貓掌咖啡機|0.27|0.42|0.42|3000|c|s|0;appl02|貓咪電子鍋|0.28|0.3|0.3|3600|c|s|0;appl03|氣炸鍋|0.33|0.36|0.48|800|c|s|0;appl04|飲水機|0.51|1.05|0.55|1400|c||0;appl05|復古電暖器|0.45|0.5|0.3|2000|c|s|0;appl06|香氛水氧機|0.21|0.32|0.22|2600|c|s|0;appl07|貓咪掃地機器人|0.19|0.12|0.2|3200|c||0;appl08|掌上遊戲機|0.34|0.24|0.17|3800|c|s|0;appl09|映像管電視|0.5|0.62|0.47|1000|b|s|0;appl10|液晶電視櫃|1.11|1.05|0.62|1600|b||0;appl11|大型街機|0.9|1.7|1.46|2200|b||0;appl12|冰箱|1.08|1.7|1.16|2800|d||0;appl13|洗衣機|0.69|0.9|0.59|3400|b||0.9;appl14|冷氣機|0.7|0.32|0.28|4000|b|w|0;appl15|電風扇|0.59|1.0|0.5|1200|n||0;appl16|微波爐|0.47|0.34|0.45|1800|b|s|0;misc01|報紙床|1.77|1.3|1.9|500|c|x|0;misc02|紙箱桌|1.0|0.87|0.97|500|c|x|0.87;misc03|垃圾袋沙發|1.07|1.17|1.1|500|c||0;misc04|塑膠籃置物架|1.33|1.5|1.34|500|c|x|0;misc05|水桶椅|0.57|0.8|0.64|500|c||0;misc06|輪胎桌|0.84|0.77|0.85|500|c||0.77;misc07|塑膠袋燈|0.33|0.45|0.32|500|c|s|0;misc08|舊布門簾|1.68|1.7|0.67|500|c||0;plant01|繡球花|0.58|0.7|0.56|1000|b|s|0;plant02|紅玫瑰|0.61|0.7|0.52|1100|w|s|0;plant03|百合|0.53|0.7|0.48|600|b|s|0;plant04|向日葵|0.55|0.7|0.48|700|b|s|0;plant05|櫻花盆景|0.54|0.7|0.37|800|d|s|0;plant06|紫藤花架|0.79|0.9|0.66|900|b|s|0;plant07|牡丹|0.64|0.7|0.52|1000|b|s|0;plant08|荷花缽|0.54|0.7|0.54|1200|n|s|0;plant09|楓葉盆景|0.6|0.7|0.49|600|q|s|0;plant10|仙人掌|0.47|0.7|0.5|800|q|s|0;plant11|蝴蝶蘭|0.48|0.7|0.34|900|q|s|0;plant12|開運竹|0.51|0.7|0.34|1000|q|s|0;plant13|紫藤盆景|0.82|0.9|0.56|1100|q|s|0;plant14|多肉玻璃屋|0.59|0.7|0.6|1200|q|s|0;plant15|苔球蕨|0.64|0.7|0.54|700|q|s|0;plant16|燈籠果|0.56|0.7|0.43|800|q|s|0;deco01|水母水晶球|0.31|0.34|0.28|700|c|s|0;deco02|藍水晶|0.24|0.34|0.25|800|c|s|0;deco03|寶箱|0.33|0.3|0.34|400|c|s|0;deco04|麥克風獎座|0.26|0.34|0.26|500|c|s|0;deco05|場記板獎座|0.34|0.26|0.27|600|c|s|0;deco06|遊戲手把獎座|0.34|0.33|0.3|700|c|s|0;deco07|泡麵擺飾|0.34|0.33|0.28|800|c|s|0;deco08|摩天輪|0.28|0.34|0.28|900|c|s|0;deco09|小盆栽|0.3|0.34|0.28|400|b|s|0;deco10|書本書擋|0.33|0.27|0.34|500|b|s|0;deco11|布罩檯燈|0.29|0.34|0.28|600|b|s|0;deco12|手提唱片機|0.34|0.33|0.32|700|w|s|0;deco13|茶壺組|0.31|0.22|0.34|800|b|s|0;deco14|蘑菇玻璃罩|0.27|0.34|0.28|900|b|s|0;deco15|香氛蠟燭|0.3|0.32|0.34|500|d|s|0;deco16|小花瓶|0.28|0.34|0.23|600|b|s|0;deco17|玫瑰蠟燭|0.34|0.33|0.33|600|q|s|0;deco18|骷髏書擋|0.34|0.27|0.31|700|q|s|0;deco19|暗色提燈|0.22|0.34|0.23|800|q|s|0;deco20|黑盆黃金葛|0.32|0.31|0.34|400|q|s|0;deco21|紫水晶|0.3|0.34|0.32|500|q|s|0;deco22|紫沙漏|0.26|0.34|0.26|600|q|s|0;deco23|星象儀|0.23|0.34|0.21|700|q|s|0;deco24|小香爐|0.34|0.27|0.34|800|q|s|0;deco25|金環雕塑|0.29|0.34|0.29|900|b|s|0;deco26|擴香瓶|0.31|0.34|0.3|400|n|s|0;deco27|黑金地球儀|0.25|0.34|0.22|500|b|s|0;deco28|相框與盆栽|0.34|0.32|0.32|600|b|s|0;deco29|威士忌酒組|0.34|0.28|0.31|700|w|s|0;deco30|相機與書|0.34|0.25|0.31|800|b|s|0;deco31|翻頁鐘|0.34|0.27|0.21|900|b|s|0;deco32|飛機模型|0.34|0.29|0.29|500|b|s|0;deco33|留聲機|0.27|0.34|0.23|600|c|s|0;deco34|雪屋水晶球|0.28|0.34|0.27|600|c|s|0;deco35|達摩不倒翁|0.34|0.31|0.32|700|c|s|0;deco36|鳥籠|0.26|0.34|0.25|800|c|s|0;deco37|禮物盒|0.31|0.34|0.33|400|c|s|0;deco38|青瓷香爐|0.19|0.27|0.34|500|c|s|0;deco39|生態瓶|0.28|0.34|0.29|600|c|s|0;deco40|月兔燈|0.31|0.34|0.27|700|c|s|0;deco41|櫻花小盆景|0.29|0.34|0.23|800|q|s|0;deco42|招財貓|0.34|0.32|0.32|900|q|s|0;deco43|古董地球儀|0.23|0.34|0.21|400|q|s|0;deco44|木沙漏|0.22|0.34|0.22|500|q|s|0;deco45|金魚缸|0.27|0.34|0.25|600|q|s|0;deco46|信件盒|0.34|0.27|0.17|700|q|s|0;deco47|和紙燈籠|0.2|0.34|0.2|800|q|s|0;deco48|書上睡貓|0.33|0.34|0.32|900|q|s|0;curtain01|碎花蕾絲窗簾|1.7|1.91|0.53|1800|d|w|0;curtain02|星月深藍窗簾|1.7|1.92|0.6|1900|m|w|0;curtain03|中式紅金窗簾|1.7|1.92|0.58|1200|b|w|0;curtain04|龜背葉窗簾|1.7|1.9|0.52|1400|b|w|0;curtain05|紫藤窗簾|1.7|1.91|0.6|1500|n|w|0;curtain06|北歐馴鹿窗簾|1.7|1.94|0.55|1600|b|w|0;curtain07|黑金絲絨窗簾|1.7|1.91|0.53|1800|b|w|0;curtain08|粉格雲朵窗簾|1.7|1.87|0.59|2000|w|w|0;curtain09|紅絲絨窗簾|1.7|2.01|0.52|1200|q|w|0;curtain10|玫瑰蕾絲窗簾|1.7|1.98|0.49|1400|q|w|0;curtain11|夜空窗簾|1.7|1.95|0.45|1600|q|w|0;curtain12|竹葉米色窗簾|1.7|1.87|0.43|1700|q|w|0;curtain13|貓掌粉格窗簾|1.7|1.93|0.57|1800|q|w|0;curtain14|紫櫻和風窗簾|1.7|1.93|0.5|2000|q|w|0;curtain15|扶桑花窗簾|1.7|1.93|0.43|1300|q|w|0;curtain16|深灰素面窗簾|1.7|1.98|0.46|1400|q|w|0;curtain17|米白蝴蝶結窗簾|1.7|1.75|0.43|1600|b|w|0;curtain18|皇冠紅絨窗簾|1.7|1.98|0.52|1800|b|w|0;curtain19|粉格荷葉邊窗簾|1.7|1.79|0.48|1900|d|w|0;curtain20|小花綠結窗簾|1.7|1.75|0.43|1200|b|w|0;curtain21|淺灰素面窗簾|1.7|1.82|0.43|1400|b|w|0;curtain22|編織流蘇窗簾|1.7|1.89|0.53|1500|n|w|0;curtain23|紫色星月窗簾|1.7|1.86|0.46|1600|m|w|0;curtain24|海洋貝殼窗簾|1.7|1.88|0.51|1800|b|w|0;wall01|彩繪玻璃蝴蝶|0.64|0.7|0.12|1500|q|w|0;wall02|閃電霓虹燈|0.52|0.7|0.35|1700|q|w|0;wall03|太陽臉掛飾|0.7|0.68|0.22|800|q|w|0;wall04|咕咕鐘|0.41|0.7|0.23|1000|q|w|0;wall05|編織掛毯|0.51|0.8|0.08|1200|q|w|0;wall06|嘉年華面具|0.52|0.7|0.33|1400|q|w|0;wall07|編織圓盤|0.66|0.7|0.09|1600|q|w|0;wall08|水晶壁燈|0.46|0.7|0.21|1700|q|w|0;wall09|古董掛鐘|0.47|0.7|0.14|900|b|w|0;wall10|青花瓷盤|0.67|0.7|0.35|1000|b|w|0;wall11|農家斗笠籃|0.55|0.7|0.26|1200|w|w|0;wall12|獅頭門環|0.7|0.7|0.53|1400|b|w|0;wall13|金框鏡子|0.49|0.7|0.08|1600|b|w|0;wall14|鑰匙掛架|0.68|0.7|0.17|1800|d|w|0;wall15|鹿頭骨掛飾|0.63|0.7|0.16|900|b|w|0;wall16|壁掛小書架|0.72|0.8|0.35|1100|b|w|0;wall17|衣帽掛架|0.61|0.7|0.23|1300|n|w|0;wall18|紙燈籠壁燈|0.39|0.7|0.42|1500|b|w|0;wall19|編織吊盆|0.46|0.7|0.38|1700|b|w|0;wall20|咖啡店招牌|0.59|0.7|0.39|800|w|w|0;wall21|紅色信箱|0.51|0.7|0.4|1000|b|w|0;wall22|民族風掛毯|0.55|0.8|0.11|1200|b|w|0;wall23|鯉魚木雕|0.6|0.7|0.07|1400|b|w|0;wall24|星球風鈴|0.39|0.7|0.57|1600|m|w|0;pic01|冒險電影海報|0.56|0.8|0.09|1500|g|wx|0;pic02|星夜|0.68|0.8|0.1|1500|g|w|0;pic03|神奈川沖浪裏|0.6|0.8|0.1|1500|g|w|0;pic04|黑白電影海報|0.56|0.8|0.1|1500|g|wx|0;pic05|太空電影海報|0.59|0.8|0.37|1500|g|wx|0;pic06|普普風肖像|0.62|0.8|0.1|1500|g|wx|0;pic07|古地圖|0.75|0.8|0.11|1500|g|w|0;pic08|台北風景畫|0.59|0.8|0.1|1500|g|w|0";
+/* (11/17 主委「克難系列家具刪除塑膠籃置物架 紙箱桌 報紙床」: those three carry the hide mark "x" — gone from every shop, prize and list; their
+   numbers stay, so nobody's saved room shifts) */
 const FURN=FD.split(";").map(r=>{ const a=r.split("|"); return {id:a[0],c:a[0].replace(/\d+$/,""),n:a[1],w:+a[2],h:+a[3],d:+a[4],p:+a[5],src:a[6],wall:a[7].includes("w"),small:a[7].includes("s"),hide:a[7].includes("x"),top:+a[8],k:parseInt(a[0].replace(/^\D+/,""),10)-1}; });
 const fPrice=F=>{ try{ return LIFE.dPrice("tw:furn",F.p); }catch(e){ return F.p; } }; /* (美雲姐 gives friends a discount, 11/16) */
 const FCAT=[["bed","床"],["chair","椅子"],["table","桌子"],["cabinet","櫃子"],["appl","家電"],["misc","克難"],["plant","盆栽"],["deco","擺飾"],["curtain","窗簾"],["wall","壁掛"],["pic","掛畫"]];
@@ -11533,7 +11598,7 @@ function daylight(force){ const D=R, h=new Date(Date.now()+288e5).getUTCHours(),
   x.fillStyle=["#5a3a22","#3a2416","#0a0a14"][mode]; x.fillRect(W*.06,H*.4,10,H*.6); x.fillStyle=["#3d8a4c","#7a5a2e","#0f2030"][mode]; for(const [cx,cy,rr] of [[W*.08,H*.38,40],[W*.0,H*.5,34],[W*.17,H*.5,30]]){ x.beginPath(); x.arc(cx,cy,rr,0,6.283); x.fill(); }
   D.skyTex.needsUpdate=true; try{ roomViewTint(D.view,mode); }catch(err){}
   const col=["#ffe9c0","#ffb070","#9fb6ff"][mode], op=[.2,.17,.06][mode]; D.patch.material.color.set(col); D.patch.material.opacity=op; D.shafts.forEach((m,i)=>{ m.material.color.set(col); m.material.opacity=[.05,.045,.015][mode]*(i?.75:1); });
-  D.sun.color.set(["#ffe2b0","#ff9a55","#8ea4ff"][mode]); D.sun.intensity=[.42,.36,.1][mode]; D.hemi.intensity=[.7,.6,.38][mode]; D.hemi.color.set(["#fff1dc","#ffdcb8","#d9cfff"][mode]);
+  D.sun.color.set(["#ffe2b0","#ff9a55","#c9d4ff"][mode]); D.sun.intensity=[.42,.36,.07][mode]; D.hemi.intensity=[.7,.6,.56][mode]; D.hemi.color.set(["#fff1dc","#ffdcb8","#fff0e0"][mode]); /* (11/17 主委「回家裡的時候變藍的」: at night the room is lit by its own warm lights — only a faint moonbeam through the window is blue, so people and clothes keep their colours) */
   D.base={sun:D.sun.intensity,hemi:D.hemi.intensity}; D.mode=mode; wallLamp(); }
 /* the wall lamp: on unless you switched it off; warmest at night */
 function wallLamp(){ const D=R, mode=D.mode|0, on=ST().wl===0?0:1; D.lamp.intensity=[.35,.75,1.15][mode]*on; D.lampGlow.visible=!!on; D.lampGlow.material.opacity=[.25,.5,.7][mode]; D.lampPool.visible=!!on; D.lampPool.material.opacity=[.08,.14,.22][mode]; D.lampShade.material.emissiveIntensity=[.5,.9,1.2][mode]*on+.04; }
@@ -11681,6 +11746,10 @@ function quilt(B,av){ const g=B.g, M=B.M, hw=B.hw, z0=B.zr-.17, z1=B.zf, NU=26, 
   const ms=[]; av.root.updateMatrixWorld(true); av.root.traverse(o=>{ if(o.isMesh&&o.visible) ms.push(o); });
   const fr=(x,y,z)=>{ const v=new T.Vector3(B.hs>0?-x:x,y,B.hs>0?-z:z); return g.localToWorld(v); };
   const H=[]; for(let j=0;j<=NV;j++){ const z=z0+(z1-z0)*j/NV, row=[]; for(let i=0;i<=NU;i++){ const x=-hw+2*hw*i/NU; RAY.set(fr(x,M+1.2,z),_dn); RAY.far=3; const h=RAY.intersectObjects(ms,false)[0]; const y=h?g.worldToLocal(h.point.clone()).y:-1; row.push(Math.max(M+.03,y+.04)); } H.push(row); }
+  /* (11/17 主委「人物在家裡床上蓋棉被 為什麼胸口會凸出一根」: something thin standing up off the body — a stick of incense in the hand, a flag,
+     a necklace charm — used to tent the quilt into a spike. A sample much higher than the cells round it is brought down to them, and
+     nothing lifts the quilt more than a body's thickness off the mattress) */
+  { const cap=M+.42, H0=H.map(r=>r.slice()); for(let j=0;j<=NV;j++) for(let i=0;i<=NU;i++){ const nb=[]; for(let dj=-2;dj<=2;dj++) for(let di=-2;di<=2;di++){ if(!dj&&!di) continue; const q=H0[j+dj]&&H0[j+dj][i+di]; if(q!=null) nb.push(q); } nb.sort((a,b)=>a-b); const med=nb[nb.length>>1]; let v=H0[j][i]; if(v>med+.1) v=med+.03; H[j][i]=Math.min(v,cap); } }
   /* widen every bump by one cell, so the cloth between two sample points cannot dip into a toe or a hand */
   { const H2=H.map((r,j)=>r.map((v,i)=>{ let m=v; for(let dj=-1;dj<=1;dj++) for(let di=-1;di<=1;di++){ const q=H[j+dj]&&H[j+dj][i+di]; if(q!=null&&q>m) m=q; } return m; })); H.splice(0,H.length,...H2); }
   /* smooth (the cloth spans the hollows), but never sink into the body */
@@ -11874,7 +11943,9 @@ RM.open=vis=>{ if(!SHOPX||!SHOPX.enter){ toast("房間還沒準備好，請稍�
       if(x1>x0+2&&y1>y0+2){ C2.aspect=(x1-x0)/(y1-y0); C2.fov=48; C2.position.set(0,1.5,1); C2.rotation.set(-.03,yaw*.45,0,"YXZ"); C2.updateProjectionMatrix();
         const vp=V.vp||(V.vp=new T.Vector4()); renderer.getViewport(vp); const ac=renderer.autoClear; renderer.autoClear=false; renderer.setViewport(x0,y0,x1-x0,y1-y0);
         try{ renderer.render(V.O,C2); } finally{ renderer.autoClear=ac; renderer.setViewport(vp.x,vp.y,vp.z,vp.w); } } } };
-  o.dispose=()=>{ RM.pos=null; try{ peerClear(D); }catch(e){} const wasVisit=!!RM.visit; if(!wasVisit){ try{ RM.onLeave&&RM.onLeave(); }catch(e){} } try{ sendPresence(true); }catch(e){} try{ commit(); }catch(e){} try{ quiltFree(ACT.q); }catch(e){} fxClear(); D.glows.forEach(sp=>sp.visible=false); D.pl.forEach(l=>{ l.intensity=0; }); PIX.clear(); if(D.base){ D.hemi.intensity=D.base.hemi; D.sun.intensity=D.base.sun; } while(D.fg.children.length) D.fg.remove(D.fg.children[0]); D.sel.visible=false; modelsFree(); D.S.remove(av.root); try{ av.dispose(); }catch(e){} saveBag(); markDirty(); try{ profSave(true); }catch(e){} V=null; RM.visit=null; RM.lot=-1; }; };
+  o.dispose=()=>{ RM.pos=null;
+    /* (11/17 主委「房間離開後請從門口出來」: leaving a room you step out of that house's front door, facing the street) */
+    try{ const lot=RM.lot, B=(typeof TOWNX!=="undefined"&&TOWNX&&TOWNX.B)||[], b=lot>=0?B.find(q=>q.lot===lot):B.find(q=>q.key==="tw:home"); if(b&&meAv){ const fx=Math.sin(b.ry), fz=Math.cos(b.ry), x=b.x+fx*1.6, z=b.z+fz*1.6; if(meAv.seat>=0) try{ standUp(); }catch(_){} meAv.pos.set(x,z); meAv.target.set(x,z); meAv.path=[]; meAv.rotY=Math.atan2(fx,fz); } }catch(e){} try{ peerClear(D); }catch(e){} const wasVisit=!!RM.visit; if(!wasVisit){ try{ RM.onLeave&&RM.onLeave(); }catch(e){} } try{ sendPresence(true); }catch(e){} try{ commit(); }catch(e){} try{ quiltFree(ACT.q); }catch(e){} fxClear(); D.glows.forEach(sp=>sp.visible=false); D.pl.forEach(l=>{ l.intensity=0; }); PIX.clear(); if(D.base){ D.hemi.intensity=D.base.hemi; D.sun.intensity=D.base.sun; } while(D.fg.children.length) D.fg.remove(D.fg.children[0]); D.sel.visible=false; modelsFree(); D.S.remove(av.root); try{ av.dispose(); }catch(e){} saveBag(); markDirty(); try{ profSave(true); }catch(e){} V=null; RM.visit=null; RM.lot=-1; }; };
 HANDLERS.roomOpen=()=>{ closeSheet(); RM.open(); };
 /* 天后新村 (11/16): the owner's room as others see it, and the people in the same house */
 RM.snap=()=>{ const r=bag.room||{}; const o={}; for(const k in r) if(k!=="inv"&&k!=="prev") o[k]=r[k]; return JSON.stringify(o); };
@@ -11940,7 +12011,7 @@ const TW={on:false}; setInterval(()=>{ try{ const x=meAv.pos.x, z=meAv.pos.y; do
 const LINK=[28,-49.8], MOUTH=[28,-51.3];
 const ZR=[-100,182,-258,-50.5]; /* (west to 天后新村 since 11/16) */ /* (south over the river to the mountain since 11/13) */ /* (out to the beach since 11/12) */
 /* where you can walk: streets, the square, the park, the pier — minus the solid things standing on them */
-const WALK=[[-26,-20,-247,-105],[-26,-8,-111,-105],[-97,-20,-163,-157],[-97,-20,-188,-182],[-97,-20,-213,-207],[-97,-20,-238,-232],[22.8,33.2,-131,-50.3],[33.2,88,-81,-73],[33.2,60,-100,-90],[-8,66,-111,-105],[-8,66,-131,-117],[26.2,29.8,-137.5,-130.5],[4,22.8,-90,-84],[57.4,66.6,-73,-66.2],[59.9,63.1,-143.8,-131]]; /* (+ the west alley and the fountain square, 11/13) */
+const WALK=[[-26,-20,-131,-54],[-26,-8,-111,-105],[-97,-20,-67,-61],[-97,-20,-87,-81],[-97,-20,-107,-101],[22.8,33.2,-131,-50.3],[33.2,88,-81,-73],[33.2,60,-100,-90],[-8,66,-111,-105],[-8,66,-131,-117],[26.2,29.8,-144.6,-130.5],[4,22.8,-90,-84],[57.4,66.6,-73,-66.2],[59.9,63.1,-143.8,-131]]; /* (+ the west alley and the fountain square, 11/13) */
 /* (the old street runs east only: west of the main street stands the great 媽祖 statue, 42 m tall, at x 0, z −65) */
 const SHOPS_N=[["家具行","#c96a3a",34.5,"tw:furn"],["花店","#5f9a6a",43.5,"tw:flower"],["釣具行","#3f7fa8",52.5,"tw:tackle"],["早餐店","#e2a23a",61.5,"tw:bfast"],["飲料店","#d9628a",70.5,"tw:soon:飲料店"],["書店","#7a6aa8",79.5,"tw:soon:書店"]];
 const SHOPS_S=[["理髮廳","#4a8fb0",34.5],["五金行","#8a6a4a",43.5],["中藥行","#7a4a3a",52.5],["雜貨店","#b0863a",61.5],["照相館","#6a7a8a",70.5],["鐘錶行","#5a6a5a",79.5]];
@@ -11955,17 +12026,19 @@ TW.in=(x,z)=>z<-50.5;
 let BFOOT=null; const bfoot=()=>{ if(BFOOT) return BFOOT; try{ BFOOT=TOWNB.map(b=>{ const d=b.d||6, m=.25; if(b.axis==="x"){ const zb=b.f-Math.cos(b.ry)*d; return [b.c-b.w/2+m,b.c+b.w/2-m,Math.min(b.f,zb)+m,Math.max(b.f,zb)-m]; } const xb=b.f-Math.sin(b.ry)*d; return [Math.min(b.f,xb)+m,Math.max(b.f,xb)-m,b.c-b.w/2+m,b.c+b.w/2-m]; }); }catch(e){ return []; } return BFOOT; };
 TW.walk=(x,z)=>{ for(const b of BLOCK) if(inR(b,x,z)) return false; for(const w of WALK) if(inR(w,x,z)) return true;
   const B=WORLD_BOX; if(x<B.x0+1||z<B.z0+1) return false;
-  if(x<=134.5&&z>=-143.6&&z<=-131.4&&riverH(x,z)<-.1&&!(x>RV.bx0&&x<RV.bx1)) return false; /* the river (its banks you can walk on; the village avenue crosses it on a bridge) */
+  if(x<=134.5&&z>=-143.6&&z<=-131.4&&riverH(x,z)<-.1&&!(x>RV.bx0&&x<RV.bx1)&&!(x>26.3&&x<29.7)) return false; /* (and the plank bridge at the end of the main street, 11/17) */ /* the river (its banks you can walk on; the village avenue crosses it on a bridge) */
   for(const r of bfoot()) if(inR(r,x,z)) return false;
   if((x>=86&&z>-131&&z<-43.5)||(z<-143.6&&x>=FOREST[0]&&x<=FOREST[1])){ /* too steep to climb (11/16 主委「山坡設定一個陡度就爬不了，不然人家會直接從中間走上去」): the mountain is climbed by its path, the cliff not at all */
     const g=TW.ground, a=g(x+.5,z), b=g(x-.5,z), c=g(x,z+.5), d=g(x,z-.5); if(a!=null&&b!=null&&c!=null&&d!=null&&Math.hypot(a-b,c-d)>TW.maxSlope) return false; }
   if(x>=86&&z>-131&&z<-52) return NT.walkOpen(x,z);
   if(z<-143.6&&x>=FOREST[0]&&x<=FOREST[1]) return SW.walkOpen(x,z);
+  if(z<-143.6&&x<GVB[1]){ const S=NT.springs[2]; if(springD(S,x,z)<S[2]+.35) return false; if(Math.hypot(x-GVTREE[0],z-GVTREE[1])<2.4) return false; for(const t of GVT) if(Math.hypot(x-t[0],z-t[1])<.5*t[2]) return false;
+    const g=TW.ground, a=g(x+.5,z), b=g(x-.5,z), c=g(x,z+.5), d=g(x,z-.5); if(a!=null&&b!=null&&c!=null&&d!=null&&Math.hypot(a-b,c-d)>TW.maxSlope) return false; return true; } /* 女神谷: the valley floor and the gentle slopes, not the steep hillsides */
   if(x>111.5&&z<-176){ if(inRect(MOUTHB,x,z)) return true; if(springD(BHEAD,x,z)<BHEAD[2]+.35) return false; const b=brookD(x,z); if(b[0]<brookW(b[1],b[2])+.4) return false; if(x<WM.x+WM.rx+1){ if(wfMount(x,z)>1) return false; const a=eastH(x+.5,z), c=eastH(x-.5,z), d=eastH(x,z+.5), e=eastH(x,z-.5); if(Math.hypot(a-c,d-e)>TW.maxSlope) return false; } } /* the falls: the pool, the brook, the mountain (not climbable at all) */
   if(x>134.5&&eastH(x,z)<-.12) return false; /* the east river */
   if(x>B.x1-.6) return false;
   return true; };
-const inVil=(x,z)=>x<-17&&z<-104&&z>-252; TW.inVil=inVil; TW.maxSlope=.62; /* (rise per metre you may still walk up: about 32°) */
+const inVil=(x,z)=>x<-17&&z<-50.5&&z>-116; /* (the village moved behind the temple, 11/17) */ TW.inVil=inVil; TW.maxSlope=.62; /* (rise per metre you may still walk up: about 32°) */
 TW.ground=(x,z)=>z>FRONT.walk1?FRONT.h(x,z):((x>134.5&&z<-40)||(x>111.5&&z<-176))?(inRect(MOUTHB,x,z)?Math.max(eastH(x,z),.12+.22*Math.sin(Math.PI*Math.max(0,Math.min(1,(z-MOUTHB[2])/(MOUTHB[3]-MOUTHB[2]))))):eastH(x,z)+.012):inVil(x,z)?null:(x<=134.5&&z>=-143.6&&z<=-131.4&&!(x>RV.bx0-.3&&x<RV.bx1+.3))?(x>=26&&x<=30&&z>=-137.8?.06:x>=59.6&&x<=63.4?.25+.55*Math.sin(Math.PI*Math.max(0,Math.min(1,(-131.2-z)/12.8))):riverH(x,z)):z<-143.6?southH(x,z):(x>=86.5&&x<=134.5&&z>-120&&z<-43.5&&TW.valleyH)?TW.valleyH(x,z):null; /* (the valley right up to its north end, and the beach dunes: you walk over them, not into them — 11/16) */ /* (11/16: the valley's hills too, now that you can walk on them) */
 /* the camera may not go inside a building, into the mountain or the valley hills (it was slipping into roofs) */
 let CAMBOX=null; const camBoxes=()=>CAMBOX||(CAMBOX=TOWNB.filter(b=>!b.deco).map(b=>{ const d=b.d||7, H=(b.fl||2)*3.05+3; let x0,x1,z0,z1; if(b.axis==="x"){ x0=b.c-b.w/2; x1=b.c+b.w/2; if(Math.abs(b.ry)<.1){ z0=b.f-d; z1=b.f; } else { z0=b.f; z1=b.f+d; } } else { z0=b.c-b.w/2; z1=b.c+b.w/2; if(b.ry>0){ x0=b.f-d; x1=b.f; } else { x0=b.f; x1=b.f+d; } } return [x0-.35,x1+.35,z0-.35,z1+.35,H]; }));
@@ -12006,7 +12079,7 @@ const GMAT={}; const gmat=(kind,o)=>GMAT[kind]||(GMAT[kind]=new T.MeshStandardMa
 /* ---- building blocks ---- */
 /* (the temple road's asphalt and paving bricks, the same drawing: those two live inside the 商店街 code, out of reach here) */
 function twAsphaltTex(){ return cvs(256,256,(x,w,h)=>{ x.fillStyle="#46474a"; x.fillRect(0,0,w,h); for(let i=0;i<5000;i++){ const l=50+Math.random()*60|0; x.fillStyle=`rgba(${l},${l},${l+3},.5)`; x.fillRect(Math.random()*w,Math.random()*h,1.5,1.5); } for(let i=0;i<6;i++){ x.fillStyle="rgba(20,20,22,.06)"; x.beginPath(); x.ellipse(Math.random()*w,Math.random()*h,30+Math.random()*40,10+Math.random()*20,Math.random()*3,0,7); x.fill(); } }); }
-function twPaverTex(){ return cvs(256,256,(x,w,h)=>{ x.fillStyle="#8d8a86"; x.fillRect(0,0,w,h); const s=32; for(let j=0;j<h/s;j++) for(let i=-1;i<w/(s*2)+1;i++){ const X=i*s*2+(j%2)*s, Y=j*s; const red=((i*7+j*3)%5)===0; const l=red?0:150+Math.random()*30|0; x.fillStyle=red?`rgb(${150+Math.random()*20|0},${92+Math.random()*12|0},${80+Math.random()*10|0})`:`rgb(${l},${l-4},${l-10})`; x.fillRect(X+2,Y+2,s*2-4,s-4); } }); }
+function twPaverTex(){ return cvs(256,256,(x,w,h)=>{ x.fillStyle="#9c968d"; x.fillRect(0,0,w,h); const s=64; for(let j=0;j<4;j++) for(let i=0;i<4;i++){ const l=176+Math.random()*14|0; x.fillStyle=`rgb(${l},${l-5},${l-12})`; x.fillRect(i*s+2,j*s+2,s-4,s-4); for(let k=0;k<26;k++){ const q=l-10+Math.random()*16|0; x.fillStyle=`rgba(${q},${q-5},${q-12},.6)`; x.fillRect(i*s+3+Math.random()*(s-8),j*s+3+Math.random()*(s-8),2,2); } } }); } /* (11/17 主委「人行道不要鋪成這樣 看了很不舒服」: plain square slabs instead of the red and grey bricks) */
 function ground(C,kind,x0,x1,z0,z1,y,pick,tile){ const w=x1-x0, d=z1-z0, g=new T.PlaneGeometry(w,d), uv=g.attributes.uv, k=tile||3; for(let i=0;i<uv.count;i++) uv.setXY(i,(uv.getX(i)*w+x0)/k,(uv.getY(i)*d-z1)/k);
   const m=new T.Mesh(g,gmat(kind)); m.rotation.x=-Math.PI/2; m.position.set((x0+x1)/2,y,(z0+z1)/2); if(pick){ m.userData.floor=1; m.userData.keep=1; pickables.push(m); C.picks.push(m); } else m.userData.gnd=1; C.g.add(m); return m; }
 function sign(C,text,w,h,x,y,z,ry,bg,fg){ const t=cvs(256,Math.round(256*h/w),(c,W,H)=>{ c.fillStyle=bg||"#fbf6ea"; c.fillRect(0,0,W,H); c.strokeStyle="rgba(0,0,0,.35)"; c.lineWidth=6; c.strokeRect(3,3,W-6,H-6); c.fillStyle=fg||"#2a1a12"; c.textAlign="center"; c.textBaseline="middle"; let fs=H*.62; c.font=`900 ${fs}px ${DISPLAY_FONT}`; const tw=c.measureText(text).width; if(tw>W*.86){ fs*=W*.86/tw; c.font=`900 ${fs}px ${DISPLAY_FONT}`; } c.fillText(text,W/2,H/2+2); });
@@ -12028,15 +12101,18 @@ function lamp(C,x,z){ lampMats(); cyl(.05,.07,3.4,mat("#3a3a3e",{roughness:.6}),
   const h=new T.Sprite(KM.lampHalo); h.scale.set(1.6,1.6,1); h.position.set(x,3.5,z); h.userData.keep=1; h.userData.own=1; C.g.add(h);
   const p=new T.Mesh(GEO.pool||(GEO.pool=new T.PlaneGeometry(7,7).rotateX(-Math.PI/2)),KM.lampPool); p.position.set(x,.05,z); p.userData.keep=1; p.userData.own=1; p.raycast=()=>{}; p.renderOrder=1; C.g.add(p); }
 function bench(C,x,z,ry){ const g=new T.Group(); g.position.set(x,0,z); g.rotation.y=ry||0; C.g.add(g); box(1.5,.07,.42,mat("#8a6246",{roughness:.8}),0,.45,0,g); box(1.5,.4,.06,mat("#8a6246",{roughness:.8}),0,.75,-.2,g); for(const s of [-.6,.6]) box(.07,.45,.4,mat("#3a3a3e"),s,.22,0,g); }
-const ROAD_A0=26.2, ROAD_A1=32; /* the main street's asphalt lines up with the old road past the temple (moved outside the balustrade 11/12) */
+const ROAD_A0=25.1, ROAD_A1=30.9; /* (11/17 主委「讓路的兩邊人行道寬度左右對稱」: 2.3 m of sidewalk each side of 22.8–33.2; it bends onto the temple road's 26.2–32 by the gate) */ /* the main street's asphalt lines up with the old road past the temple (moved outside the balustrade 11/12) */
 /* the streets that run along x, so a street along z knows where side streets come in (11/14: its sidewalk used to run straight across the
    mouth of each side street, and its yellow centre dashes carried on through the crossing) */
-const XSTREETS=[[33.2,88,-81,-73],[-8,22.8,-111,-105],[33.2,66,-111,-105],[-20,-8,-111,-105],[-97,-26,-163,-157],[-97,-26,-188,-182],[-97,-26,-213,-207],[-97,-26,-238,-232]];
+const XSTREETS=[[33.2,88,-81,-73],[-8,22.8,-111,-105],[33.2,66,-111,-105],[-20,-8,-111,-105],[-97,-26,-67,-61],[-97,-26,-87,-81],[-97,-26,-107,-101]];
 /* road paint and kerbs like the road outside the temple (11/16 主委「小鎮的路跟禪堂外的路同步，做成一樣的馬路＋人行道」): the lines are flat
    paint pulled in front of the asphalt (they used to be thin boxes the asphalt's own pull-forward hid), and a granite kerb runs along
    the edge of every sidewalk, broken where a side street comes in */
+/* (11/17 主委「馬路很常有這種角度不同 線會消失出現的問題 請完全修復」: the paint stood 4 mm over the asphalt and only 4 mm under the
+   sidewalks; where paving or another street's asphalt overlapped, the pull-forward of the two won by turns as the view tilted. The paint
+   now floats 4 cm up — higher than every paving — so nothing flat can ever cover it, at any angle) */
 const RPAINT={}; const rpaint=c=>RPAINT[c]||(RPAINT[c]=new T.MeshStandardMaterial({color:c,roughness:.7,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));
-function rline(C,w,d,x,z,c){ const m=new T.Mesh(GEO.rl||(GEO.rl=new T.PlaneGeometry(1,1).rotateX(-Math.PI/2)),rpaint(c)); m.scale.set(w,1,d); m.position.set(x,.016,z); m.userData.gnd=1; m.userData.shared=1; m.raycast=()=>{}; C.g.add(m); return m; }
+function rline(C,w,d,x,z,c){ const m=new T.Mesh(GEO.rl||(GEO.rl=new T.PlaneGeometry(1,1).rotateX(-Math.PI/2)),rpaint(c)); m.scale.set(w,1,d); m.position.set(x,.04,z); m.userData.gnd=1; m.userData.shared=1; m.raycast=()=>{}; C.g.add(m); return m; }
 function kerb(C,w,d,x,z){ const m=box(w,.05,d,KM.kerb||(KM.kerb=mat("#b9b6ae",{roughness:.8})),x,.025,z,C.g); m.userData.gnd=1; return m; }
 function street(C,x0,x1,z0,z1,along,a0,a1,o){ /* asphalt with a paved walk on each side; along "z" or "x" (a0..a1: where the asphalt runs, if not centred).
      o: {end0, end1: a sidewalk across that end (the street stops there); open0/open1: ["w"|"e"|"n"|"s"]: that side's sidewalk is not cut by side streets} */
@@ -12051,12 +12127,21 @@ function street(C,x0,x1,z0,z1,along,a0,a1,o){ /* asphalt with a paved walk on ea
       for(const [q0,q1] of runsOf(za,zb,cuts)){ ground(C,"pave",sx0,sx1,q0,q1,.02,true,2); kerb(C,.22,q1-q0,kx,(q0+q1)/2); } };
     side(x0,a0,x0,a0-.11); side(a1,x1,x1,a1+.11);
     const cross=XSTREETS.filter(r=>(Math.abs(r[0]-x1)<.15||Math.abs(r[1]-x0)<.15)&&r[3]>za&&r[2]<zb).map(r=>[r[2]-.3,r[3]+.3]);
-    const cx=(a0+a1)/2; for(const [q0,q1] of runsOf(za,zb,cross)){ if(q1-q0<.5) continue; for(const dx of [-.09,.09]) rline(C,.1,q1-q0,cx+dx,(q0+q1)/2,Y); for(const ex of [a0+.25,a1-.25]) rline(C,.15,q1-q0,ex,(q0+q1)/2,W); } }
+    const cx=(a0+a1)/2; for(const [q0,q1] of runsOf(za,zb,cross)){ if(q1-q0<.5) continue; if(a1-a0>=4.5) for(const dx of [-.09,.09]) rline(C,.1,q1-q0,cx+dx,(q0+q1)/2,Y); for(const ex of [a0+.25,a1-.25]) rline(C,.15,q1-q0,ex,(q0+q1)/2,W); } }
   else { const xa=x0+(o.end0?1.4:0), xb=x1-(o.end1?1.4:0); ground(C,"asphalt",xa,xb,z0+1.4,z1-1.4,.012,true);
     if(o.end0){ ground(C,"pave",x0,xa,z0,z1,.02,true,2); kerb(C,.22,z1-z0-2.8,xa-.11,(z0+z1)/2); }
     if(o.end1){ ground(C,"pave",xb,x1,z0,z1,.02,true,2); kerb(C,.22,z1-z0-2.8,xb+.11,(z0+z1)/2); }
     for(const [sz0,sz1,kz] of [[z0,z0+1.4,z0+1.4-.11],[z1-1.4,z1,z1-1.4+.11]]){ ground(C,"pave",xa,xb,sz0,sz1,.02,true,2); kerb(C,xb-xa,.22,(xa+xb)/2,kz); }
-    const cz=(z0+z1)/2, L=xb-xa, mx=(xa+xb)/2; for(const dz of [-.09,.09]) rline(C,L,.1,mx,cz+dz,Y); for(const ez of [z0+1.4+.25,z1-1.4-.25]) rline(C,L,.15,mx,ez,W); } }
+    const cz=(z0+z1)/2, L=xb-xa, mx=(xa+xb)/2; if(!o.lane&&z1-z0-2.8>=4.5) for(const dz of [-.09,.09]) rline(C,L,.1,mx,cz+dz,Y); /* (11/17 主委「小條的路就不用雙黃線了 留白線就好」) */ for(const ez of [z0+1.4+.25,z1-1.4-.25]) rline(C,L,.15,mx,ez,W); } }
+/* a short street piece whose asphalt slides sideways from a0s–a1s (at z0) to a0e–a1e (at z1): sidewalks, kerbs and lines follow it */
+function gquad(C,kind,P,y,tile,pick){ const k=tile||3, g=new T.BufferGeometry(), pos=[], uv=[]; for(const [x,z] of P){ pos.push(x,y,z); uv.push(x/k,-z/k); }
+  g.setAttribute("position",new T.Float32BufferAttribute(pos,3)); g.setAttribute("uv",new T.Float32BufferAttribute(uv,2)); g.setAttribute("normal",new T.Float32BufferAttribute([0,1,0,0,1,0,0,1,0,0,1,0],3)); g.setIndex([0,2,1,0,3,2]);
+  const m=new T.Mesh(g,gmat(kind)); if(pick){ m.userData.floor=1; m.userData.keep=1; pickables.push(m); C.picks.push(m); } else m.userData.gnd=1; C.g.add(m); return m; }
+function skewZ(C,x0,x1,z0,z1,a0s,a1s,a0e,a1e){ const L=z1-z0, ang=Math.atan2(a0e-a0s,L), len=Math.hypot(a0e-a0s,L), sl=(a,b,f)=>a+(b-a)*f;
+  gquad(C,"asphalt",[[a0s,z0],[a1s,z0],[a1e,z1],[a0e,z1]],.012,3,true); gquad(C,"pave",[[x0,z0],[a0s,z0],[a0e,z1],[x0,z1]],.02,2,true); gquad(C,"pave",[[a1s,z0],[x1,z0],[x1,z1],[a1e,z1]],.02,2,true);
+  const put=(m,x)=>{ m.rotation.y=ang; m.position.x=x; return m; }, zm=(z0+z1)/2;
+  put(kerb(C,.22,len,0,zm),sl(a0s,a0e,.5)-.11); put(kerb(C,.22,len,0,zm),sl(a1s,a1e,.5)+.11);
+  const cm=(sl(a0s,a0e,.5)+sl(a1s,a1e,.5))/2; for(const dx of [-.09,.09]) put(rline(C,.1,len,0,zm,"#f2c230"),cm+dx); put(rline(C,.15,len,0,zm,"#f2f2ee"),sl(a0s,a0e,.5)+.25); put(rline(C,.15,len,0,zm,"#f2f2ee"),sl(a1s,a1e,.5)-.25); }
 const krng=seed=>()=>{ seed|=0; seed=seed+0x6D2B79F5|0; let t=Math.imul(seed^seed>>>15,1|seed); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; };
 /* ================= 房子組件 (11/13, the chair: "buildings not all the same, heights can differ, mix a few parts; the street needs a soul").
    Every building is put together from parts chosen by a seed — walls in soft pastels or brick, a 騎樓 arcade or not, balconies,
@@ -12210,11 +12295,19 @@ function shrine(g,x,z,ry){ const s=new T.Group(); s.position.set(x,0,z); s.rotat
    different widths and heights with gaps, alleys and the odd yard between them; a few are fixed (the shops you can go into) ---- */
 /* 天后新村 (11/16 主委): 40 houses for sale north-west of the town — four lanes off one avenue, small / medium / large houses at
    different prices. Buy one and it becomes 「我的家」 (a gold marker floats over it); the room inside is as big as the house. */
-const VIL={x0:-98,x1:-20,z0:-249,z1:-146, av:[-26,-20], lanes:[-160,-185,-210,-235]};
+/* (11/17 主委「把天后新村的住宅 移到廟後面的空間 不要拉到這麼遠」: the village stands right behind the temple now, west of the great statue —
+   three lanes off the avenue, which runs from the temple's back down to the river. The same 40 houses, each with its own number, size,
+   price and colours as before; only where they stand changed) */
+const VIL={x0:-98,x1:-26,z0:-114,z1:-54, av:[-26,-20], lanes:[-64,-84,-104]};
 const LOT_SZ={S:{n:"小屋",w:7,d:6,fl:1,room:[6,5],p:14000},M:{n:"兩層樓",w:9,d:7,fl:2,room:[7.5,6],p:30000}}; /* (11/16 主委: half the price, no big houses, more small ones — 30 小屋 + 10 兩層樓) */
 const LOTS=(()=>{ const out=[], pats=[["S","M","S","S","S"],["S","S","M","S","S"],["M","S","S","S","M"],["S","S","S","M","S"]], r=krng(4242); let n=0;
-  VIL.lanes.forEach((zc,li)=>[[zc-3,0],[zc+3,Math.PI]].forEach(([f,ry],si)=>{ let a=-95; pats[(li*2+si)%4].forEach((k,j)=>{ const S=LOT_SZ[k]; const near=1+(3-li)*.04+(j>=3?.03:0); /* (nearer the town and the avenue: a little dearer) */
-    out.push({i:n,k,x:a+S.w/2,f,ry,w:S.w,d:S.d,fl:S.fl,p:Math.round(S.p*near*(.94+r()*.12)/500)*500,col:HCOL[(r()*HCOL.length)|0],rcol:["#c0503a","#3f6a8a","#5f8a5a","#8a5a3a","#d9824a","#6a5a8a"][(r()*6)|0],roof:k==="S"?"tile":r()<.5?"gable":"hip"}); n++; a+=S.w+3.6; }); }));
+  /* each house's number, size, price and colours come out exactly as they always did (same order, same dice) */
+  for(let li=0;li<4;li++) for(let si=0;si<2;si++) pats[(li*2+si)%4].forEach((k,j)=>{ const S=LOT_SZ[k]; const near=1+(3-li)*.04+(j>=3?.03:0);
+    out.push({i:n,k,w:S.w,d:S.d,fl:S.fl,p:Math.round(S.p*near*(.94+r()*.12)/500)*500,col:HCOL[(r()*HCOL.length)|0],rcol:["#c0503a","#3f6a8a","#5f8a5a","#8a5a3a","#d9824a","#6a5a8a"][(r()*6)|0],roof:k==="S"?"tile":r()<.5?"gable":"hip"}); n++; });
+  /* where they stand: six rows of seven (three lanes, both sides), no row with more than two 兩層樓 */
+  const sides=[]; VIL.lanes.forEach(zc=>{ sides.push({f:zc-3,ry:0,L:[]}); sides.push({f:zc+3,ry:Math.PI,L:[]}); });
+  out.forEach(L=>{ const sd=sides.find(q=>q.L.length<7&&(L.k!=="M"||q.L.filter(o=>o.k==="M").length<2)); sd.L.push(L); });
+  sides.forEach(sd=>{ let a=-96; sd.L.forEach(L=>{ L.x=a+L.w/2; L.f=sd.f; L.ry=sd.ry; a+=L.w+2.3; }); });
   return out; })();
 const TOWNB=(()=>{ const out=[]; let sd=101;
   /* axis "x": the row runs along x, fronts on the line z=f; axis "z": along z, fronts on x=f. ry: which way the fronts face. */
@@ -12257,6 +12350,10 @@ function gapNear0(ids,v,lo,hi){ let best=null, bd=1e9; for(const id of ids) for(
 /* the door of a building: [where you stand, where you tap] */
 const bDoor=b=>{ const fx=Math.sin(b.ry), fz=Math.cos(b.ry); return {ax:b.x+fx*1.4,az:b.z+fz*1.4,hx:b.x-fx*.6,hz:b.z-fz*.6,face:Math.atan2(-fx,-fz)}; };
 function rowBuild(C,ids,xr){ TOWNB.forEach(b=>{ if(!ids.includes(b.row)||(xr&&(b.x<xr[0]||b.x>=xr[1]))) return;
+    { /* (11/17 主委「建築物下面就都鋪人行道就好 不用草皮」: paving from the front line back past the building, and a little either side, so the
+         lawn never shows round a building) */ const fx=Math.round(Math.sin(b.ry)), fz=Math.round(Math.cos(b.ry)), w=(b.w||5)/2+(b.deco?.6:1.4), d=(b.d||7.6)+1.4;
+      if(b.axis==="x"){ const za=b.f, zb=b.f-fz*d; ground(C,"pave",b.c-w,b.c+w,Math.min(za,zb),Math.max(za,zb),.01,false,2); }
+      else { const xa=b.f, xb=b.f-fx*d; ground(C,"pave",Math.min(xa,xb),Math.max(xa,xb),b.c-w,b.c+w,.01,false,2); } }
     if(b.deco==="pots"){ const r=krng(b.c*13|0), g=new T.Group(); g.position.set(b.x,0,b.z); g.rotation.y=b.ry; C.g.add(g); for(let k=0;k<3;k++) pot(g,(k-1)*.55,-.6-r()*.6,1.1,r); if(r()<.5) vend(g,0,-1.3,0); return; }
     kbld(C,Object.assign({},b,{x:b.x,z:b.z,ry:b.ry,cat:1})); }); }
 /* the street's soul: poles and wires along the old street, red lanterns across it, scooters in the arcades, a vending machine or two */
@@ -12271,15 +12368,15 @@ TW.lotSign={}; TW.lotTxt=i=>{ try{ return typeof LIFE!=="undefined"&&LIFE&&LIFE.
 function lotBoard(i,cv){ const t=TW.lotTxt(i)||{t:"售",s:LOTS[i].p.toLocaleString("en-US")+" 幣",c:"#b3261e"}; const x=cv.getContext("2d"), W=cv.width, H=cv.height; x.clearRect(0,0,W,H); x.fillStyle="#fbf6ea"; x.fillRect(0,0,W,H); x.fillStyle=t.c; x.fillRect(0,0,W,H*.5); x.strokeStyle="rgba(0,0,0,.3)"; x.lineWidth=8; x.strokeRect(4,4,W-8,H-8);
   x.textAlign="center"; x.textBaseline="middle"; x.fillStyle="#fff"; x.font=`900 ${H*.32}px "Noto Sans TC","PingFang TC",sans-serif`; x.fillText(t.t,W/2,H*.27); x.fillStyle="#2a1a12"; x.font=`800 ${H*.2}px "Noto Sans TC","PingFang TC",sans-serif`; x.fillText(t.s,W/2,H*.74); }
 TW.lotRefresh=i=>{ const m=TW.lotSign[i]; if(!m||!m.parent) return; lotBoard(i,m.material.map.image); m.material.map.needsUpdate=true; };
-function villageLane(C,li,zc){ ground(C,"grass",-98,-26,zc-12.5,zc+12.5,.006); street(C,-97,-26,zc-3,zc+3,"x",undefined,undefined,{end0:1}); rowBuild(C,["vil"+li+"n","vil"+li+"s"]);
+function villageLane(C,li,zc){ street(C,-97,-26,zc-3,zc+3,"x",undefined,undefined,{end0:1}); rowBuild(C,["vil"+li+"n","vil"+li+"s"]);
   for(const x of [-88,-70,-52,-36]){ lamp(C,x,zc-2.6); } const r=krng(li*7+3);
   LOTS.forEach(L=>{ if(L.ry?L.f-3!==zc:L.f+3!==zc) return; const side=L.ry?1:-1, bx=L.x-L.w/2+.7, bz=L.f+side*-.45;
     const post=new T.Mesh(new T.CylinderGeometry(.05,.05,1.3,6),mat("#6b4a2e")); post.position.set(bx,.65,bz); C.g.add(post);
     const cv=document.createElement("canvas"); cv.width=256; cv.height=160; lotBoard(L.i,cv); const tx=new T.CanvasTexture(cv); tx.encoding=T.sRGBEncoding; const bd=new T.Mesh(new T.PlaneGeometry(1.2,.75),new T.MeshBasicMaterial({map:tx,side:T.DoubleSide,toneMapped:false})); bd.position.set(bx,1.5,bz); bd.rotation.y=L.ry?Math.PI:0; bd.userData.keep=1; bd.userData.own=1; C.g.add(bd); TW.lotSign[L.i]=bd; });
-  for(const sd of [-1,1]){ const L2=LOTS.filter(L=>(L.ry?1:-1)===sd&&(L.ry?L.f-3:L.f+3)===zc); const e=Math.max(...L2.map(L=>L.x+L.w/2)); for(let x=e+2.2;x<-28;x+=3.4) tree(C,x,zc+sd*(5+r()*2.5),.95+r()*.35); for(let k=0;k<3;k++) tree(C,-97+r()*1.5,zc+sd*(4+k*2.6),1); } }
+  for(const sd of [-1,1]){ const L2=LOTS.filter(L=>(L.ry?1:-1)===sd&&(L.ry?L.f-3:L.f+3)===zc); const e=Math.max(...L2.map(L=>L.x+L.w/2)); for(let x=e+2.2;x<-28;x+=3.4) tree(C,x,zc+sd*(5+r()*2.5),.95+r()*.35); } }
 /* ---- the districts: each knows its middle and its size; build(C) puts its things into C.g ---- */
 const CH=[
- {id:"gate",c:[28,-62],r:16,build:C=>{ street(C,22.8,33.2,-73,-52,"z",ROAD_A0,ROAD_A1); ground(C,"grass",17,22.8,-89,-52,.006); ground(C,"grass",33.2,48,-65,-52,.006); /* west of the street stays open: the great statue stands there */ 
+ {id:"gate",c:[28,-62],r:16,build:C=>{ street(C,22.8,33.2,-73,-56,"z",ROAD_A0,ROAD_A1); skewZ(C,22.8,33.2,-56,-52,ROAD_A0,ROAD_A1,26.2,32); ground(C,"grass",17,22.8,-89,-52,.006); ground(C,"grass",33.2,48,-65,-52,.006); /* west of the street stays open: the great statue stands there */ 
    /* 牌樓 */ const red=mat("#b3261e",{roughness:.6}), gold=mat("#d9aa3d",{roughness:.4,metalness:.3}); for(const x of [23.6,32.4]){ cyl(.32,.36,6,red,x,3,-58,C.g,10); box(.9,.5,.9,mat("#8a8a86"),x,.25,-58,C.g); } box(10.6,.5,.7,red,28,5.6,-58,C.g); box(11.6,.35,1.3,mat("#3f6a52",{roughness:.6}),28,6.55,-58,C.g); box(9,.3,1.0,mat("#3f6a52",{roughness:.6}),28,7.1,-58,C.g); box(4.6,.14,.1,gold,28,5.2,-57.6,C.g);
    sign(C,"天后小鎮",4.2,1.0,28,6.0,-57.62,0,"#8e1c14","#ffe2a0"); sign(C,"天后小鎮",4.2,1.0,28,6.0,-58.38,Math.PI,"#8e1c14","#ffe2a0");
    /* (the 公告欄 and every signpost are gone, 主委 11/14) */ 
@@ -12290,32 +12387,30 @@ const CH=[
    /* the fountain square opening off the old street */ ground(C,"plaza",57.4,66.6,-73,-66.2,.016,true,3); const g=new T.Group(); g.position.set(62,0,-69.5); C.g.add(g); const st=km("#e2dccf",{roughness:.6});
    kp(g,kcyl(),st,0,.28,0,1.75,.56,1.75); kp(g,kcyl(),km("#7ec8d8",{roughness:.15}),0,.5,0,1.55,.1,1.55).userData.keep=1; kp(g,kcyl(),st,0,.95,0,.22,1.3,.22); kp(g,kcyl(),st,0,1.6,0,.75,.14,.75); kp(g,ksph(),km("#bfe8f0",{roughness:.1,transparent:true,opacity:.75}),0,1.75,0,.55,.35,.55).userData.keep=1;
    for(const [x,z,ry] of [[58.6,-67.4,Math.PI/2],[65.4,-67.4,-Math.PI/2]]) bench(C,x,z,ry); for(const [x,z] of [[58.2,-71.8],[65.8,-71.8]]) tree(C,x,z,1.1); { const r=krng(5); for(let k=0;k<5;k++) pot(g,-3.8+k*1.9,3.0,1.1,r); } shrine(C.g,57.9,-66.7,Math.PI/2+.2); }},
- {id:"mid",c:[22,-91],r:16,build:C=>{ street(C,22.8,33.2,-105,-73,"z",ROAD_A0,ROAD_A1); ground(C,"grass",8,22.8,-104,-73.6,.006); rowBuild(C,["mW","mW2"]); for(const z of [-86,-98]){ lamp(C,23.4,gapNear(["mW","mW2"],z)); lamp(C,33,z); }
+ {id:"mid",c:[22,-91],r:16,build:C=>{ street(C,22.8,33.2,-105,-73,"z",ROAD_A0,ROAD_A1); ground(C,"pave",8,22.8,-104,-73.6,.008,false,2); rowBuild(C,["mW","mW2"]); for(const z of [-86,-98]){ lamp(C,23.4,gapNear(["mW","mW2"],z)); lamp(C,33,z); }
    /* 西側巷弄 */ ground(C,"pave",4,22.8,-90,-84,.02,true,2); rowBuild(C,["aN","aS"]); { const g=new T.Group(); C.g.add(g); for(const x0 of [6,11.5,17]){ const xn=gapNear(["aN"],x0,4,22.8), xs=gapNear(["aS"],x0,4,22.8); /* (11/14: the posts stand in the gaps between the houses, not in front of 美容院 and 收藏家小屋) */ kp(g,kcyl(),km("#6b4a2e"),xn,2.6,-84.3,.06,5.2,.06); kp(g,kcyl(),km("#6b4a2e"),xs,2.6,-89.7,.06,5.2,.06); lanternLine(g,[xn,-84.3],[xs,-89.7],4.9,5,KM.lan||(KM.lan=new T.MeshStandardMaterial({color:"#e8402e",emissive:"#ff6a3a",emissiveIntensity:.4,roughness:.5}))); }
      shrine(g,3.3,-87,Math.PI/2); vend(g,4.6,-84.6,Math.PI); tree(C,3.6,-84.2,1); tree(C,3.6,-89.8,1.05);  } }},
  {id:"plaza",c:[47,-95],r:16,build:C=>{ ground(C,"plaza",33.2,60,-100,-90,.016,true,4); 
    STALLS.forEach((x,i)=>{ /* (11/16 主委: all four stalls back, every sign 「籌備中」 until each has its game) */ const col=["#d9628a","#e2a23a","#5f9a6a","#4a8fb0"][i]; box(3,1.0,2.2,mat("#e9e3d6",{roughness:.8}),x,.5,-98.5,C.g); box(3.4,.12,2.8,mat(col,{roughness:.7}),x,2.5,-98.3,C.g); for(const [dx,dz] of [[-1.5,-1.2],[1.5,-1.2],[-1.5,1.0],[1.5,1.0]]) cyl(.04,.04,2.5,mat("#3a3a3e"),x+dx,1.25,-98.5+dz,C.g,6); sign(C,"籌備中",1.8,.5,x,2.1,-97.25,0,col,"#ffffff"); if(0){ const cn=new T.Group(); cn.position.set(x+.8,1.0,-98.2); C.g.add(cn); kp(cn,new T.ConeGeometry(.12,.32,10),km("#e2a65a"),0,.16,0,1,-1,1); for(let k=0;k<3;k++) kp(cn,ksph(),km("#fff6e8"),0,.36+k*.1,0,.13-k*.03,.07,.13-k*.03); } });
    for(const [x,z] of [[39,-93],[45,-94],[51,-93],[57,-94]]){ cyl(.5,.5,.06,mat("#f3ece0",{roughness:.6}),x,.74,z,C.g,12); cyl(.05,.05,.74,mat("#3a3a3e"),x,.37,z,C.g,6); for(const a of [0,2.1,4.2]) cyl(.18,.18,.45,mat("#c96a3a",{roughness:.8}),x+Math.cos(a)*.85,.22,z+Math.sin(a)*.85,C.g,8); } for(const x of [36,48,59]) lamp(C,x,-90.6); }},
- {id:"laneW",c:[8,-108],r:22,build:C=>{ street(C,-8,22.8,-111,-105,"x"); rowBuild(C,["hN","hS"]); for(const x of [-2,12]) lamp(C,gapNear(["hN"],x),-105.6); ground(C,"grass",-12,-8,-117,-99,.006); { const g=new T.Group(); C.g.add(g); pole(g,0,-110.6); pole(g,14,-110.6); wire(g,[.4,-110.6],[14.4,-110.6],6.8,.5); scooter(g,20.6,-105.6,0,krng(3)); } }},
+ {id:"laneW",c:[8,-108],r:22,build:C=>{ street(C,-8,22.8,-111,-105,"x"); rowBuild(C,["hN","hS"]); for(const x of [-2,12]) lamp(C,gapNear(["hN"],x),-105.6); ground(C,"pave",-12,-8,-117,-99,.008,false,2); { const g=new T.Group(); C.g.add(g); pole(g,0,-110.6); pole(g,14,-110.6); wire(g,[.4,-110.6],[14.4,-110.6],6.8,.5); scooter(g,20.6,-105.6,0,krng(3)); } }},
  /* 天后新村: the avenue in two halves and one district per lane */
- {id:"vilA1",c:[-23,-140],r:38,build:C=>{ street(C,-26,-20,-176,-105,"z",undefined,undefined,{end1:1}); /* (11/16: the avenue stops at the corner — a sidewalk across its end, and the west side runs on unbroken; the side street opens only to the east) */ street(C,-20,-8,-111,-105,"x"); ground(C,"grass",-34,-26,-150,-143.6,.006); ground(C,"grass",-34,-26,-131.4,-111,.006); ground(C,"grass",-20,-12,-150,-143.6,.006); ground(C,"grass",-20,-12,-131.4,-111,.006);
+ {id:"vilA1",c:[-23,-92],r:42,build:C=>{ street(C,-26,-20,-131,-54,"z",undefined,undefined,{end1:1}); /* (11/17: from the back of the temple down to the river; the bridge carries on into 女神谷) */ street(C,-20,-8,-111,-105,"x");
+   ground(C,"pave",-34,-26,-131.4,-114,.008,false,2); ground(C,"pave",-20,-12,-131.4,-111,.008,false,2);
    /* the avenue bridge over the river: stone parapets */ { const st2=mat("#cfc6b6",{roughness:.8}); for(const x of [-26.15,-19.85]){ box(.3,.85,12.6,st2,x,.42,-137.5,C.g); box(.42,.12,12.8,mat("#b3261e",{roughness:.7}),x,.9,-137.5,C.g); } }
-   /* the village gate: two stone posts and a sign */ const st=mat("#cfc6b6",{roughness:.8}); for(const x of [-26.6,-19.4]){ box(.7,3.2,.7,st,x,1.6,-145.2,C.g); box(.9,.3,.9,mat("#b3261e"),x,3.35,-145.2,C.g); } box(8,.5,.5,mat("#b3261e",{roughness:.6}),-23,3.9,-145.2,C.g); sign(C,"天后新村",3.4,.8,-23,3.9,-144.9,0,"#8e1c14","#ffe2a0"); sign(C,"天后新村",3.4,.8,-23,3.9,-145.5,Math.PI,"#8e1c14","#ffe2a0");
-   for(const z of [-115,-128,-152,-166]){ lamp(C,-26.4,z); } for(const [x,z] of [[-30,-118],[-31,-129.6],[-30,-147],[-16,-124],[-16,-146]]) tree(C,x,z,1.2); }},
- {id:"vilA2",c:[-23,-212],r:40,build:C=>{ street(C,-26,-20,-247,-176,"z",undefined,undefined,{end0:1}); ground(C,"grass",-20,-14,-249,-146,.006); for(const z of [-178,-196,-222,-244]) lamp(C,-19.6,z); for(const z of [-172,-198,-224]) tree(C,-16,z,1.15); }},
-
- {id:"vil0",c:[-58,-160],r:40,build:C=>{ villageLane(C,0,-160); }},
- {id:"vil1",c:[-58,-185],r:40,build:C=>{ villageLane(C,1,-185); }},
- {id:"vil2",c:[-58,-210],r:40,build:C=>{ villageLane(C,2,-210); }},
- {id:"vil3",c:[-58,-235],r:40,build:C=>{ villageLane(C,3,-235); }},
- {id:"laneE",c:[50,-108],r:22,build:C=>{ street(C,33.2,66,-111,-105,"x",undefined,undefined,{end1:1}); rowBuild(C,["hN2","hS2"]); for(const x of [40,54]) lamp(C,gapNear(["hN2"],x),-105.6); ground(C,"grass",62,70,-117,-99,.006); { const g=new T.Group(); C.g.add(g); pole(g,36,-110.6); pole(g,50,-110.6); pole(g,64,-110.6); wire(g,[36.4,-110.6],[50.4,-110.6],6.8,.5); wire(g,[50.4,-110.6],[64.4,-110.6],6.8,.5); vend(g,65.4,-105.6,Math.PI); } }},
- {id:"pier",c:[28,-124],r:18,build:C=>{ street(C,22.8,33.2,-117,-105,"z",ROAD_A0,ROAD_A1); ground(C,"plaza",22.8,33.2,-131,-117,.016,true,4); const wood=mat("#8a6246",{roughness:.85}); /* 木板碼頭 (11/16 主委「那座橋請做成木板橋，不要是色塊」): planks with gaps, two beams under them, a rail on both sides */
-   { const pw=[mat("#9a7050",{roughness:.85}),mat("#8a6246",{roughness:.85}),mat("#a87c58",{roughness:.85})], dk=mat("#5a3e2a",{roughness:.9}); for(let k=0;k<14;k++){ const z=-130.6-k*.5; box(3.5,.07,.44,pw[k%3],28+((k*37)%7-3)*.01,.02,z,C.g); }
-     for(const x of [26.6,29.4]) box(.16,.14,7.2,dk,x,-.08,-134,C.g); for(const x of [26.1,29.9]){ box(.07,.07,7.2,wood,x,.85,-134,C.g); for(let k=0;k<5;k++) box(.08,.85,.08,wood,x,.43,-130.7-k*1.7,C.g); } }
-   { const d=new T.Mesh(new T.PlaneGeometry(3.6,7),new T.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false})); d.rotation.x=-Math.PI/2; d.position.set(28,.06,-134); d.userData.floor=1; d.userData.keep=1; pickables.push(d); C.picks.push(d); C.g.add(d); } for(const [x,z] of [[26.2,-131],[29.8,-131],[26.2,-137.4],[29.8,-137.4]]) cyl(.1,.1,1.4,wood,x,.3,z,C.g,6);
+   /* the village gate, at the top of the avenue behind the temple */ const st=mat("#cfc6b6",{roughness:.8}); for(const x of [-26.6,-19.4]){ box(.7,3.2,.7,st,x,1.6,-56.4,C.g); box(.9,.3,.9,mat("#b3261e"),x,3.35,-56.4,C.g); } box(8,.5,.5,mat("#b3261e",{roughness:.6}),-23,3.9,-56.4,C.g); sign(C,"天后新村",3.4,.8,-23,3.9,-56.1,0,"#8e1c14","#ffe2a0"); sign(C,"天后新村",3.4,.8,-23,3.9,-56.7,Math.PI,"#8e1c14","#ffe2a0");
+   for(const z of [-62,-76,-96,-118,-128]){ lamp(C,-26.4,z); } for(const [x,z] of [[-31,-129.6],[-16,-124]]) tree(C,x,z,1.2); }},
+ {id:"vil0",c:[-60,-64],r:38,build:C=>{ villageLane(C,0,-64); }},
+ {id:"vil1",c:[-60,-84],r:38,build:C=>{ villageLane(C,1,-84); }},
+ {id:"vil2",c:[-60,-104],r:38,build:C=>{ villageLane(C,2,-104); }},
+ {id:"laneE",c:[50,-108],r:22,build:C=>{ street(C,33.2,66,-111,-105,"x",undefined,undefined,{end1:1}); rowBuild(C,["hN2","hS2"]); for(const x of [40,54]) lamp(C,gapNear(["hN2"],x),-105.6); ground(C,"pave",62,70,-117,-99,.008,false,2); { const g=new T.Group(); C.g.add(g); pole(g,36,-110.6); pole(g,50,-110.6); pole(g,64,-110.6); wire(g,[36.4,-110.6],[50.4,-110.6],6.8,.5); wire(g,[50.4,-110.6],[64.4,-110.6],6.8,.5); vend(g,65.4,-105.6,Math.PI); } }},
+ {id:"pier",c:[28,-124],r:18,build:C=>{ street(C,22.8,33.2,-131,-105,"z",ROAD_A0,ROAD_A1); /* (11/17 主委「橋頭的磁磚也改成柏油路就好」: the street runs on to the bridge, no tiled square) */ const wood=mat("#8a6246",{roughness:.85}); /* 木板碼頭 (11/16 主委「那座橋請做成木板橋，不要是色塊」): planks with gaps, two beams under them, a rail on both sides */
+   { const pw=[mat("#9a7050",{roughness:.85}),mat("#8a6246",{roughness:.85}),mat("#a87c58",{roughness:.85})], dk=mat("#5a3e2a",{roughness:.9}); /* (11/17 主委「釣魚碼頭地名移除 那邊做成一條過去對岸的橋」: the plank walk runs right across the river now) */ for(let k=0;k<28;k++){ const z=-130.6-k*.5; box(3.5,.07,.44,pw[k%3],28+((k*37)%7-3)*.01,.02,z,C.g); }
+     for(const x of [26.6,29.4]) box(.16,.14,14,dk,x,-.08,-137.5,C.g); for(const x of [26.1,29.9]){ box(.07,.07,14,wood,x,.85,-137.5,C.g); for(let k=0;k<9;k++) box(.08,.85,.08,wood,x,.43,-130.7-k*1.7,C.g); } }
+   { const d=new T.Mesh(new T.PlaneGeometry(3.6,14),new T.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false})); d.rotation.x=-Math.PI/2; d.position.set(28,.06,-137.5); d.userData.floor=1; d.userData.keep=1; pickables.push(d); C.picks.push(d); C.g.add(d); } for(const [x,z] of [[26.2,-131],[29.8,-131],[26.2,-137.5],[29.8,-137.5],[26.2,-144],[29.8,-144]]) cyl(.1,.1,1.4,wood,x,.3,z,C.g,6);
    
    /* the river, and the station across it (not reachable yet) */ { nmat(); mirrorPlane(C,-17,73,-142.6,-132.4,-.12); } try{ terrain(C,-17,73,-143.6,-131.4,riverH,riverC,0); lawnHole(); }catch(e){ console.warn("river",e); } /* (the banks: grass sloping down into the water along a winding line, so the river reads as a river, not a long box — 11/16) */
-   ground(C,"grass",-14,72,-150,-143.5,.006); box(14,4.2,6,mat("#d9c7b0",{roughness:.9}),28,2.1,-148,C.g); box(15,.4,7,mat("#8a4a3a",{roughness:.8}),28,4.4,-148,C.g);  for(const z of [-112,-124]){ lamp(C,23,z); lamp(C,33,z); } }},
+   ground(C,"pave",-14,72,-150,-143.5,.008,false,2); /* (11/17: the building across the river is gone) */  for(const z of [-112,-124]){ lamp(C,23,z); lamp(C,33,z); } }},
  {id:"parkW",c:[8,-124],r:24,build:C=>{ ground(C,"grass",-8,22.8,-131,-117,.014,true,4); ground(C,"pave",-8,22.8,-120.2,-118.8,.02,true,2); /* 涼亭 */ const red=mat("#b3261e",{roughness:.6}); for(const [x,z] of [[10.5,-125.5],[13.5,-125.5],[10.5,-122.5],[13.5,-122.5]]) cyl(.14,.14,2.8,red,x,1.4,z,C.g,8); { const r=new T.Mesh(new T.ConeGeometry(3.1,1.5,4),mat("#3f6a52",{roughness:.7})); r.position.set(12,3.55,-124); r.rotation.y=Math.PI/4; C.g.add(r); } box(3.6,.12,3.6,mat("#c9b9a2",{roughness:.8}),12,.06,-124,C.g); bench(C,12,-125.1,0);
    for(const [x,z] of [[-4,-123],[2,-128],[6,-122],[18,-128],[20,-122],[-6,-129]]) tree(C,x,z,1.25); bench(C,0,-121,0); bench(C,17,-121,0); for(const x of [-4,8,20]) lamp(C,x,-118.4); ground(C,"grass",-14,22.8,-131.6,-131,.006); }},
  {id:"parkE",c:[50,-124],r:24,build:C=>{ ground(C,"grass",33.2,66,-131,-117,.014,true,4); ground(C,"pave",33.2,66,-120.2,-118.8,.02,true,2); 
@@ -12353,10 +12448,13 @@ const rng=seed=>()=>{ seed|=0; seed=seed+0x6D2B79F5|0; let t=Math.imul(seed^seed
    a rock shoulder runs out from the mountain, the falls drop off its east face into a pool, and the brook winds on east into the river */
 /* (11/16 晚上 主委「瀑布做在那邊是誰看得到？在天后山旁邊再加上一座山，不能爬的，有很高的瀑布」): a second mountain east of 天后山, 60 m, too
    steep to climb, its north face a sheer cliff with a tall waterfall that you see from the town; the pool at its foot, the brook runs on east */
-const WM={x:124,z:-218,rx:12.5,rz:21,H:60}, WFACE=-200.4; /* the mountain (an oval, flat on top) and the line of its north cliff */
-const wfMount=(x,z)=>{ const d=Math.hypot((x-WM.x)/WM.rx,(z-WM.z)/WM.rz); if(d>=1) return 0; return WM.H*sstep(1,.62,d)*(1+.07*nz(x*.12,z*.12))*sstep(WFACE+1.2,WFACE-.4,z); };
-const WF={x:124,z:-197.4}, BHEAD=[WF.x,WF.z,2.6,"s",-.12]; /* the pool under the falls */
-const BROOK=(()=>{ const c=new T.CatmullRomCurve3([[124,-197.4],[126.6,-195.2],[130,-193.8],[134,-193.2],[138,-192.4],[140.6,-192.5],[143.2,-191.9],[146,-193.6],[149.5,-194.6],[153,-195],[158,-195]].map(p=>new T.Vector3(p[0],0,p[1])),false,"centripetal");
+/* the falls' mountain (11/17 主委「瀑布那座山太奇怪了 哪有山像那樣突然一根那麼高」): a broad, rounded mountain — gentle at its foot, steep
+   higher up, a round green top — and the falls drop into a V-shaped gorge cut into its north side, deep enough for a tall fall */
+const WM={x:130,z:-234,rx:18,rz:29,H:56}, GX=127, WFACE=-228; /* GX: the gorge's middle line; WFACE: the cliff at its head */
+const wfMount=(x,z)=>{ let d=Math.hypot((x-WM.x)/WM.rx,(z-WM.z)/WM.rz)*(1+.07*nz(x*.09+3,z*.09)); if(d>=1) return 0; const f=1-d; let b=WM.H*Math.pow(f*f*(3-2*f),1.25)*(1+.06*nz(x*.15,z*.15));
+  if(z>WFACE-1.5){ const hw=3+Math.max(0,z-WFACE)*.38; b*=1-sstep(hw+3.5,hw,Math.abs(x-GX))*sstep(WFACE-1.2,WFACE+.3,z); } return b; };
+const WF={x:GX,z:-225.4}, BHEAD=[WF.x,WF.z,2.6,"s",-.12]; /* the pool under the falls, at the head of the gorge */
+const BROOK=(()=>{ const c=new T.CatmullRomCurve3([[127,-225.4],[127.4,-220],[126.7,-213.5],[125.6,-206.5],[124.8,-200.5],[125.3,-197.2],[126.6,-195.2],[130,-193.8],[134,-193.2],[138,-192.4],[140.6,-192.5],[143.2,-191.9],[146,-193.6],[149.5,-194.6],[153,-195],[158,-195]].map(p=>new T.Vector3(p[0],0,p[1])),false,"centripetal");
   return c.getSpacedPoints(70).map(v=>[v.x,v.z]); })();
 const BN=BROOK.length-1; const brookD=(x,z)=>(x<119||z>-170||z<-215)?[99,0,0]:lineD(BROOK,x,z);
 const brookW=(i,t)=>{ const k=(i+t)/BN; return .75+.55*k+.15*Math.sin(k*11); }; /* half width: wider downstream */
@@ -12404,6 +12502,19 @@ function softTree(C,r,x,z,s,kind){ (C.lpt||(C.lpt=[])).push([x,0,z,s*.88,.85+r()
 function hydrangea(C,r,x,z){ put(C,gsph(),NM.bush,x,.35,z,.55,.4,.55); const m=NM.hyd[r()*4|0]; for(let k=0;k<5;k++){ const a=r()*6.28, d=.25+r()*.25; put(C,gsph(),m,x+Math.cos(a)*d,.5+r()*.25,z+Math.sin(a)*d,.2+r()*.08); } }
 function reeds(C,r,x,z){ for(let k=0;k<6;k++){ const a=r()*6.28, d=r()*.35, h=.8+r()*.7; put(C,gcone(),NM.reed,x+Math.cos(a)*d,h/2,z+Math.sin(a)*d,.04,h,.04,0,(r()-.5)*.25,(r()-.5)*.25); } }
 function flowers(C,r,cx,cz,rad,n){ for(let k=0;k<n;k++){ const a=r()*6.28, d=Math.sqrt(r())*rad, x=cx+Math.cos(a)*d, z=cz+Math.sin(a)*d; put(C,gsph(),NM.flower[r()*5|0],x,.12,z,.07+r()*.04); } }
+/* sunlight falling through the leaves (11/17): soft slanted beams from the underside of the crowns (about 7 m up) down to the floor —
+   only by day, one shared additive material, a few dozen planes in the whole wood */
+function forestShafts(C,r,B){ B=B||[FOREST[0]+3,FOREST[1]-3,-173,-146]; const mat=KM.shaft||(KM.shaft=new T.ShaderMaterial({uniforms:NT.U,transparent:true,depthWrite:false,blending:T.AdditiveBlending,side:T.DoubleSide,
+    vertexShader:`varying vec2 vU; varying vec3 vW; void main(){ vU=uv; vec4 w=modelMatrix*vec4(position,1.); vW=w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }`,
+    fragmentShader:`uniform float uT; uniform float uNight; varying vec2 vU; varying vec3 vW; void main(){ float a=smoothstep(0.,.3,vU.x)*smoothstep(1.,.7,vU.x)*smoothstep(0.,.35,vU.y)*smoothstep(1.,.75,vU.y); a*=(.12+.04*sin(uT*.6+vW.x*.3+vW.z*.2))*(1.-uNight); gl_FragColor=vec4(vec3(1.,.95,.78)*a,a); }`}));
+  const geo=GEO.shaft||(GEO.shaft=new T.PlaneGeometry(1,7.2)); let n=0;
+  for(let k=0;k<160&&n<34;k++){ const x=B[0]+r()*(B[1]-B[0]), z=B[2]+r()*(B[3]-B[2]); if(NT.springs.some(S=>Math.hypot(x-S[0],z-S[1])<S[2]+1)) continue; if(Math.hypot(x-MT.cx,z-MT.cz)<MT.R) continue; if(B.gv&&gvOpen(x,z)>4) continue;
+    const m=new T.Mesh(geo,mat); m.scale.x=1+r()*1.6; m.position.set(x,3.3,z); m.rotation.set(0,r()*6.283,.38); m.userData.keep=1; m.userData.own=1; m.userData.shared=1; m.raycast=()=>{}; C.g.add(m); n++; } }
+/* 石柱燈 along a path, every so many metres, side to side: a stone post with a lamp box that lights a pool on the path at night (11/17) */
+function pathLamps(C,P,step,off){ lampMats(); let acc=step*.5, side=1; for(let i=0;i<P.length-1;i++){ const [x0,z0]=P[i], [x1,z1]=P[i+1], L=Math.hypot(x1-x0,z1-z0); if(!L) continue; const ux=(x1-x0)/L, uz=(z1-z0)/L;
+    while(acc<L){ const x=x0+ux*acc-uz*off*side, z=z0+uz*acc+ux*off*side; if(!NT.springs.some(S=>springD(S,x,z)<S[2]+.6)){ lantern(C,x,z); const h=new T.Sprite(KM.lampHalo); h.scale.set(1.3,1.3,1); h.position.set(x,.95,z); h.userData.keep=1; h.userData.own=1; C.g.add(h);
+        const pl=new T.Mesh(GEO.pool||(GEO.pool=new T.PlaneGeometry(7,7).rotateX(-Math.PI/2)),KM.lampPool); pl.scale.set(.75,1,.75); pl.position.set(x+uz*off*side*.6,.06,z-ux*off*side*.6); pl.userData.keep=1; pl.userData.own=1; pl.userData.shared=1; pl.raycast=()=>{}; pl.renderOrder=1; C.g.add(pl); }
+      side=-side; acc+=step; } acc-=L; } }
 function lantern(C,x,z){ put(C,GEO.b||(GEO.b=new T.BoxGeometry(1,1,1)),NM.stone,x,.3,z,.36,.6,.36); put(C,GEO.b,NM.stone,x,.68,z,.18,.2,.18); const L=put(C,GEO.b,NM.lamp,x,.92,z,.3,.28,.3); L.userData.keep=1; put(C,gcone(),NM.stone,x,1.2,z,.36,.3,.36,Math.PI/4); }
 function nbench(C,x,z,ry){ const g=new T.Group(); g.position.set(x,0,z); g.rotation.y=ry||0; C.g.add(g); const B=GEO.b||(GEO.b=new T.BoxGeometry(1,1,1)); const p=(m,sx,sy,sz,px,py,pz)=>{ const o=new T.Mesh(B,m); o.scale.set(sx,sy,sz); o.position.set(px,py,pz); g.add(o); };
   p(NM.wood,1.6,.08,.45,0,.45,0); p(NM.wood,1.6,.32,.06,0,.75,-.2); for(const s of [-.65,.65]){ p(NM.woodD,.08,.45,.4,s,.22,0); } }
@@ -12432,8 +12543,17 @@ function beachC(x,z,h,c){ const s=shoreX(z), n=.5+.5*nz(x*1.3,z*1.3), e=sstep(14
 /* ---- water ---- */
 const FOGV="#include <fog_pars_vertex>\n", FOGF="#include <fog_pars_fragment>\n";
 /* 鏡面的水 (11/16 主委「泉水、河流不要有花紋，做鏡射就好」): no ripple picture — still water that mirrors the sky, more the flatter you look */
-function mirrorMat(){ return wmat(`varying vec3 vW; void main(){ vec4 w=modelMatrix*vec4(position,1.); vW=w.xyz; vec4 mvPosition=viewMatrix*w; gl_Position=projectionMatrix*mvPosition;\n#include <fog_vertex>\n}`,
-  `uniform float uT; uniform float uNight; varying vec3 vW; void main(){ vec3 V=normalize(cameraPosition-vW); float up=clamp(V.y,0.,1.), fr=pow(1.-up,2.4); vec3 sky=mix(mix(vec3(.88,.94,.98),vec3(.48,.7,.94),clamp(up*1.7,0.,1.)),vec3(.07,.1,.19),uNight); vec3 deep=mix(vec3(.17,.46,.58),vec3(.04,.09,.15),uNight); gl_FragColor=vec4(mix(deep,sky,.32+.63*fr),.92);\n#include <fog_fragment>\n}`); }
+/* 會動的水面 (11/17 主委「有沒有更好表達水面 又不吃太多效能的方式 現在這反光鏡射有跟沒有一樣」): no second camera — a few moving waves worked
+   out right in the pixel give the surface a tilt; that tilt picks the sky colour it reflects (more of it the flatter you look), and where it
+   lines up with the sun (the moon at night) a bright glint sparkles. Costs a handful of sines a pixel. */
+const WSURF=`float wh(vec2 p){ return sin(p.x*1.7+uT*1.3)*.5+sin(p.y*2.3-uT*1.1+p.x*.6)*.4+sin((p.x+p.y)*3.9+uT*2.1)*.2+sin((p.x*.7-p.y)*6.3-uT*2.7)*.12+sin((p.y*.8+p.x)*9.7+uT*3.4)*.06; }
+vec3 wN(vec2 p){ float e=.07, h=wh(p); return normalize(vec3(-(wh(p+vec2(e,0.))-h)/e*.075,1.,-(wh(p+vec2(0.,e))-h)/e*.075)); }
+vec3 wShade(vec3 W,vec3 deep,vec2 flow){ vec3 N=wN(W.xz*.85+flow*uT); vec3 V=normalize(cameraPosition-W); float fr=.05+.95*pow(1.-clamp(dot(N,V),0.,1.),4.);
+  vec3 R=reflect(-V,N); float up=clamp(R.y,0.,1.); vec3 sky=mix(vec3(.9,.94,.97),vec3(.38,.62,.92),pow(up,.55)); sky=mix(sky,vec3(.05,.08,.16),uNight);
+  float sun=pow(max(dot(R,normalize(vec3(-.45,.62,.64))),0.),160.)*(1.-uNight)*2.4, moon=pow(max(dot(R,normalize(vec3(.3,.55,-.78))),0.),260.)*uNight*1.4;
+  vec3 c=mix(deep,sky,clamp(fr*1.3+.08,0.,.92)); c*=.9+.2*wh(W.xz*.35-flow*uT*.6)*.5; return c+vec3(1.,.95,.82)*sun+vec3(.75,.82,1.)*moon; }`;
+function mirrorMat(flow){ const f=flow||[.35,0]; return wmat(`varying vec3 vW; void main(){ vec4 w=modelMatrix*vec4(position,1.); vW=w.xyz; vec4 mvPosition=viewMatrix*w; gl_Position=projectionMatrix*mvPosition;\n#include <fog_vertex>\n}`,
+  `uniform float uT; uniform float uNight; varying vec3 vW; ${WSURF} void main(){ vec3 deep=mix(vec3(.1,.34,.44),vec3(.03,.07,.12),uNight); gl_FragColor=vec4(wShade(vW,deep,vec2(${f[0].toFixed(2)},${f[1].toFixed(2)})),.93);\n#include <fog_fragment>\n}`); }
 function mirrorPlane(C,x0,x1,z0,z1,y){ const w=new T.Mesh(new T.PlaneGeometry(x1-x0,z1-z0),mirrorMat()); w.rotation.x=-Math.PI/2; w.position.set((x0+x1)/2,y,(z0+z1)/2); w.userData.keep=1; w.userData.own=1; w.raycast=()=>{}; C.g.add(w); return w; }
 function wmat(vs,fs,o){ return new T.ShaderMaterial(Object.assign({uniforms:Object.assign(T.UniformsUtils.merge([T.UniformsLib.fog]),NT.U),vertexShader:FOGV+vs,fragmentShader:FOGF+fs,transparent:true,depthWrite:false,fog:true},o||{})); }
 function brookMesh(C){ const n=BROOK.length, P=new Float32Array(n*2*3), UV=new Float32Array(n*2*2), I=[]; let along=0;
@@ -12619,12 +12739,12 @@ function frontGround(C){ const F=FRONT, X0=-140, X1=140, Z0=53.8, Z1=176, P=[], 
 const eRC=z=>163+4*Math.sin(z*.045)+2*Math.sin(z*.11+1)+Math.max(0,z+75)*1.3+Math.max(0,-232-z)*1.3, eHW=z=>4+1.1*Math.sin(z*.07+2)+.4*Math.sin(z*.19);
 function eastH(x,z){ const rc=eRC(z), hw=eHW(z), d=Math.abs(x-rc)/hw; const wb=.25*nz(x*.2,z*.2)*sstep(134.5,140,x), hill=sstep(rc+hw+1.5,rc+hw+16,x)*(3+1.5*nz(x*.05,z*.05));
   let h=(x<rc?wb:hill)*sstep(.95,1.4,d)-.95*sstep(1.15,.6,d); { const rv=(z<RV.z1&&z>RV.z0)?riverH(x,z):0; if(rv<0) h=Math.min(h,rv); } if(z<-176&&x<WM.x+WM.rx+1){ h+=wfMount(x,z); const dp=springD(BHEAD,x,z); h=Math.min(h,-.5*sstep(BHEAD[2]+1.1,BHEAD[2]-.6,dp)+h*sstep(BHEAD[2]-.6,BHEAD[2]+1.1,dp)); } const b=brookD(x,z), bw=brookW(b[1],b[2]), k=sstep(bw-.3,bw+1.3,b[0]); return Math.min(h,-.55*(1-k)+h*k); }
-function eastC(x,z,h,c){ const n=.5+.5*nz(x*1.4,z*1.4); c.copy(LAWN).multiplyScalar(.95+.1*n); c.lerp(VC.moss,sstep(.05,-.1,h)*.6); c.lerp(VC.wet,sstep(-.12,-.35,h)*.8); if(z<-176&&x<WM.x+WM.rx+1){ const m=wfMount(x,z), k=sstep(.6,3,m)*(1-sstep(WM.H*.9,WM.H*.97,m)*.65); c.lerp(VC.rockf||(VC.rockf=CL("#8d8172")),k*(.72+.28*nz(x*.9,z*.45))); c.lerp(VC.cliff,k*.25*sstep(.2,.8,nz(x*.3,z*.3))); } /* (rock wherever the mountain rises; a little green left on its flat top) */ if(x>eRC(z)) c.lerp(VC.moss,sstep(.5,2.5,h)*.35); }
+function eastC(x,z,h,c){ const n=.5+.5*nz(x*1.4,z*1.4); c.copy(LAWN).multiplyScalar(.95+.1*n); c.lerp(VC.moss,sstep(.05,-.1,h)*.6); c.lerp(VC.wet,sstep(-.12,-.35,h)*.8); if(z<-176&&x<WM.x+WM.rx+1){ const m=wfMount(x,z), sl=Math.hypot(wfMount(x+.7,z)-wfMount(x-.7,z),wfMount(x,z+.7)-wfMount(x,z-.7))/1.4, k=sstep(.6,3,m)*sstep(.75,1.5,sl); c.lerp(VC.moss,sstep(2,WM.H*.6,m)*.45); /* (green slopes, bare rock where it is steep — the gorge walls, the shoulders) */ c.lerp(VC.rockf||(VC.rockf=CL("#8d8172")),k*(.72+.28*nz(x*.9,z*.45))); c.lerp(VC.cliff,k*.25*sstep(.2,.8,nz(x*.3,z*.3))); } /* (rock wherever the mountain rises; a little green left on its flat top) */ if(x>eRC(z)) c.lerp(VC.moss,sstep(.5,2.5,h)*.35); }
 TW.eastH=(x,z)=>eastH(x,z);
 /* the new mountain and its falls seen from afar: a light copy (the mountain only, no ground, no trees) that stands while the east districts
    are not loaded — so the falls show from the town, the river and 天后山 — and steps aside when the real one comes in */
 function farMtTick(){ if(!TW.on){ if(TW.farMt&&TW.farMt.isObject3D) TW.farMt.visible=false; return; }
-  if(!TW.farMt){ TW.farMt=1; try{ nmat(); const C={g:new T.Group(),picks:[],baked:[]}; const m=terrain(C,111,137.5,-240,-198,(x,z)=>wfMount(x,z)>.02?eastH(x,z):-4,eastC,.02); { const i=pickables.indexOf(m); if(i>=0) pickables.splice(i,1); } m.userData.floor=0; waterfallAt(C,WF.x,WF.z,1); C.g.traverse(o=>{ o.raycast=()=>{}; }); C.g.userData.noMerge=1; scene.add(C.g); TW.farMt=C.g; }catch(e){ console.warn("far mountain",e); } }
+  if(!TW.farMt){ TW.farMt=1; try{ nmat(); const C={g:new T.Group(),picks:[],baked:[]}; const m=terrain(C,111,150,-262,-203,(x,z)=>wfMount(x,z)>.02?eastH(x,z):-4,eastC,.02); { const i=pickables.indexOf(m); if(i>=0) pickables.splice(i,1); } m.userData.floor=0; waterfallAt(C,WF.x,WF.z,1); C.g.traverse(o=>{ o.raycast=()=>{}; }); C.g.userData.noMerge=1; scene.add(C.g); TW.farMt=C.g; }catch(e){ console.warn("far mountain",e); } }
   if(TW.farMt.isObject3D) TW.farMt.visible=!LIVE.east2; }
 function waterfallAt(C,x,z,far){ const G=new T.Group(); G.position.set(x,0,z); G.userData.noMerge=1; C.g.add(G); const top=eastH(x,WFACE-1.1)-.4, dz=WFACE+.9-z; /* (top: where the cliff's edge is; the water leans out a little from the face as it falls) */
   const m=new T.Mesh(new T.PlaneGeometry(3.4,top+.6,1,24),wmat(`varying vec2 vUv; void main(){ vUv=uv; vec4 mvPosition=modelViewMatrix*vec4(position,1.); gl_Position=projectionMatrix*mvPosition;\n#include <fog_vertex>\n}`,
@@ -12699,21 +12819,27 @@ const mtProf=r=>MT.H*(1-sstep(MT.top-.4,MT.R,r));
 const SPIRAL=(()=>{ const P=[]; for(let i=0;i<=320;i++){ const t=i/320, a=t*2.35*Math.PI*2, r=40-(40-MT.top-.3)*t; P.push([MT.cx+Math.sin(a)*r,MT.cz+Math.cos(a)*r,r]); } return P; })();
 const SPI2=SPIRAL.map(p=>[p[0],p[1]]);
 const FOREST=[14,118,-176,-143.6]; /* x0,x1,z0,z1: the level forest floor north of the mountain */
-NT.springs=[[34,-157,3.3,"s",-.22],[100,-158.5,3.6,"s",-.22],[22.6,-171,4.4,"g",-.22]]; /* (11/16 晚上 主委「女神泉移到更深的叢林裡」: the goddess's spring moved from the mountain's east foot to the far south-west corner of the wood, at the end of its own long path) */ /* x, z, radius, kind, water level */
+NT.springs=[[34,-157,3.3,"s",-.22],[100,-158.5,3.6,"s",-.22],[-66,-221,7,"g",-.22]]; /* (11/17 主委「女神泉不夠深 要在更偏僻更深的山谷叢林裡…池子要大一點」: the goddess's spring lies at the bottom of 女神谷 now — over the avenue bridge, through a narrow wooded gorge to a hidden basin; twice as wide) */ /* (11/16 晚上 主委「女神泉移到更深的叢林裡」: the goddess's spring moved from the mountain's east foot to the far south-west corner of the wood, at the end of its own long path) */ /* x, z, radius, kind, water level */
 /* (11/16 主委「泉水不要都做一個圓圈，請做成不規則」) each spring's edge swells and dips round its centre — a pond, not a circle.
    springK gives how far the edge is, in that direction, as a share of its radius; everything that knows the spring's shape uses it. */
 const springK=(S,x,z)=>{ const a=Math.atan2(z-S[1],x-S[0]); return 1+.17*Math.sin(3*a+S[0])+.09*Math.sin(5*a+S[1]*.3)+.05*Math.sin(7*a+1.3); };
 const springD=(S,x,z)=>Math.hypot(x-S[0],z-S[1])/springK(S,x,z); /* (distance in "round" units: < S[2] is water) */
 /* a path through the forest from the footbridge: to the springs, round the mountain's foot, to the start of the climb */
 const FPATH=[[61.5,-144],[61.5,-150],[55,-155],[44,-157.5],[38.4,-157.6],[44,-160],[56,-163],[66,-168.4],[78,-165],[92,-161.2],[96.2,-160]];
-const GPATH=[[38.4,-157.6],[35.8,-161.4],[31.4,-163],[27.6,-162.6],[24.6,-164],[22.8,-165.2]]; /* the narrow way on to the goddess's spring */
-const pathD=(x,z)=>Math.min(lineD(FPATH,x,z)[0],lineD(GPATH,x,z)[0]);
+/* 女神谷 (11/17): from the avenue bridge a path winds south-west between steep wooded hills, the valley widening into a round basin with the
+   spring, a giant 神木 beside it; hills 10–17 m high all round, so it feels deep and hidden. GPATH is that path. */
+const GPATH=[[-23,-144.2],[-24.4,-152],[-29.6,-161.5],[-38.6,-171.5],[-47.6,-182.5],[-54.6,-193.5],[-60,-203.5],[-64.6,-211.4]];
+const GVB=[-104,-12,-258,-143.6], GVTREE=[-55.6,-226.6]; /* the valley's ground; the 神木 */
+function gvOpen(x,z){ const d=lineD(GPATH,x,z)[0], w=3.6+8*sstep(-176,-206,z), S=NT.springs[2], db=Math.hypot(x-S[0],z-S[1])-15; return Math.min(d-w,db); }
+function gvH(x,z){ if(x>GVB[1]||z>GVB[3]) return 0; const o=gvOpen(x,z); if(o<=0) return 0; const H=11+6*nz(x*.045+7,z*.045)+3*sstep(-200,-250,z);
+  return H*sstep(0,13,o)*(1+.12*nz(x*.2,z*.2))*sstep(GVB[1],GVB[1]-8,x)*sstep(GVB[3],GVB[3]-6,z); }
+const pathD=(x,z)=>lineD(FPATH,x,z)[0];
 const TREES=(()=>{ const r=krng(77), out=[]; for(let k=0;k<150;k++){ const x=FOREST[0]+2+r()*(FOREST[1]-FOREST[0]-4), z=FOREST[2]+r()*(FOREST[3]-FOREST[2]-3); const d=Math.hypot(x-MT.cx,z-MT.cz);
     if(Math.abs(x-61.5)<5&&z>-158) continue; if(NT.springs.some(S=>springD(S,x,z)<S[2]+2.5)) continue; if(lineD(SPI2,x,z)[0]<3.5||d<MT.R-1.5) continue; if(Math.abs(x-28)<9&&z>-152) continue; if(pathD(x,z)<2.6) continue; out.push([x,z,.9+r()*.7,r()<.5?1:0]); }
   /* (11/16 主委「女神泉水旁邊種滿樹木，它是在林中小徑裡面」) a thick wood all round the goddess's spring; only the path comes in */
-  { const G=NT.springs[2]; for(let k=0;k<260&&out.length<230;k++){ const a=r()*6.283, dd=G[2]*1.35+2.4+r()*11, x=G[0]+Math.cos(a)*dd, z=G[1]+Math.sin(a)*dd; if(pathD(x,z)<2.4) continue; if(Math.hypot(x-MT.cx,z-MT.cz)<MT.R-1.5||lineD(SPI2,x,z)[0]<3.5) continue; if(out.some(t=>Math.hypot(t[0]-x,t[1]-z)<1.9)) continue; out.push([x,z,.95+r()*.75,r()<.35?1:0]); } }
+  /* (the wood round the goddess's spring grows in 女神谷 now, 11/17) */
   return out; })();
-function southH(x,z){ if(z>-143.6) return 0; const r=Math.hypot(x-MT.cx,z-MT.cz); let h=r<MT.R+2?mtProf(r)+(sstep(MT.R,MT.R-12,r)*sstep(MT.top+2,MT.top+8,r))*1.1*nz(x*.6,z*.6):0;
+function southH(x,z){ if(z>-143.6) return 0; const r=Math.hypot(x-MT.cx,z-MT.cz); let h=x<GVB[1]?gvH(x,z):r<MT.R+2?mtProf(r)+(sstep(MT.R,MT.R-12,r)*sstep(MT.top+2,MT.top+8,r))*1.1*nz(x*.6,z*.6):0;
   if(r<MT.R+3){ const L=lineD(SPI2,x,z); if(L[0]<4){ const i=L[1], t=L[2], rr=SPIRAL[i][2]+(SPIRAL[Math.min(SPIRAL.length-1,i+1)][2]-SPIRAL[i][2])*t, th=mtProf(rr), k=sstep(1.5,3.6,L[0]); h=th*(1-k)+h*k; } }
   for(const S of NT.springs){ const d=springD(S,x,z); if(d<S[2]+1.2) h=Math.min(h,-.55*sstep(S[2]+1.2,S[2]-.6,d)); }
   return h; }
@@ -12735,15 +12861,17 @@ function southC(x,z,h,c){ const n=.5+.5*nz(x*1.3,z*1.3); c.copy(LAWN).multiplySc
    turn and a slight lean. The models are a lightened copy (cedar 1.5k triangles, palm 3.3k). */
 const TREEM={};
 function treeModel(name,cb){ if(TREEM[name]){ cb(TREEM[name]); return; } loadShared(name,m=>{ if(!TREEM[name]){ m.updateMatrixWorld(true); const bb=new T.Box3().setFromObject(m), c=bb.getCenter(new T.Vector3()), parts=[]; m.traverse(o=>{ if(!o.isMesh) return; const g=o.geometry.clone(); g.applyMatrix4(o.matrixWorld); g.translate(-c.x,-bb.min.y,-c.z); const mt=o.material; mt.side=/Frond|Needle|Grass/i.test(mt.name||"")?T.DoubleSide:mt.side; if(mt.map) mt.alphaTest=mt.transparent?.5:0; mt.transparent=false; mt.depthWrite=true; mt.roughness=Math.max(.8,mt.roughness||0); mt.metalness=0; /* (the undersides of the boughs came out black in the shade: a little of the tree's own colour always shows) */ if(mt.map){ mt.emissive=new T.Color("#ffffff"); mt.emissiveMap=mt.map; mt.emissiveIntensity=.34; } else { mt.emissive=mt.color.clone(); mt.emissiveIntensity=.3; } parts.push({g,m:mt}); }); TREEM[name]={parts,h:bb.max.y-bb.min.y}; } cb(TREEM[name]); }); }
-function pine(C,x,y,z,s,r){ (C.cedar||(C.cedar=[])).push([x,y,z,3.5*s*(.72+r()*.7),.72+r()*.62,r()*6.283]); } /* [x,y,z, height, girth, turn] */
-function palmAt(C,x,y,z,h,fat,ry){ (C.palm||(C.palm=[])).push([x,y,z,h,fat,ry]); }
-function treesFlush(C){ if(C.lpt&&C.lpt.length){ const B=LPT.build(C.lpt,{seed:C.lpt.length*31+7}); for(const o of [B.trunks,...B.leaves]){ o.userData.keep=1; C.g.add(o); } C.lpt=null; } for(const name of ["cedar","palm"]){ const L=C[name]; if(!L||!L.length) continue; treeModel(name,M=>{ if(!C.g.parent) return; const q=new T.Quaternion(), e=new T.Euler(), p=new T.Vector3(), sc=new T.Vector3(), mx=new T.Matrix4();
+/* (11/17 主委「刪除椰子樹跟杉木」: where a cedar stood there is one of the chair's trunk trees now, deep green; the palms are gone) */
+function pine(C,x,y,z,s,r){ (C.lpt||(C.lpt=[])).push([x,y,z,s*(.8+r()*.55),1,r()*6.283,"deep"]); }
+function palmAt(){}
+function treesFlush(C){ if(C.lpt) C.lpt=C.lpt.filter(t=>![[0,0],[.8,0],[-.8,0],[0,.8],[0,-.8]].some(([dx,dz])=>{ try{ return !!waterAt(t[0]+dx,t[2]+dz); }catch(e){ return false; } })); /* (11/17 主委「為什麼有樹長在水裡」: no tree stands in or right at the edge of water) */
+  if(C.lpt&&C.lpt.length){ const B=LPT.build(C.lpt,{seed:C.lpt.length*31+7}); for(const o of [B.trunks,...B.leaves]){ o.userData.keep=1; C.g.add(o); } C.lpt=null; } for(const name of ["cedar","palm"]){ const L=C[name]; if(!L||!L.length) continue; treeModel(name,M=>{ if(!C.g.parent) return; const q=new T.Quaternion(), e=new T.Euler(), p=new T.Vector3(), sc=new T.Vector3(), mx=new T.Matrix4();
     for(const P of M.parts){ const im=new T.InstancedMesh(P.g,P.m,L.length); L.forEach((t,i)=>{ const k=t[3]/M.h, lean=name==="palm"?.12:.04; e.set(Math.sin(i*12.9)*lean,t[5],Math.cos(i*7.3)*lean); q.setFromEuler(e); mx.compose(p.set(t[0],t[1],t[2]),q,sc.set(k*t[4],k,k*t[4])); im.setMatrixAt(i,mx); }); im.instanceMatrix.needsUpdate=true; im.frustumCulled=false; im.userData.keep=1; im.userData.shared=1; im.userData.noMerge=1; im.raycast=()=>{}; C.g.add(im); } try{ markDirty(); }catch(_){} }); } }
 function mushroom(C,x,z,r){ const y=0; put(C,GEO.cy||(GEO.cy=new T.CylinderGeometry(1,1,1,16)),NM.white,x,y+.07,z,.035,.14,.035); put(C,gsph(),r()<.5?NM.red:NM.maple,x,y+.15,z,.1,.06,.1); }
 function springPool(C,S,r){ const [x,z,R,k,y]=S; const g=new T.CircleGeometry(R+.2,72); g.rotateX(-Math.PI/2); { const P=g.attributes.position, rn=new Float32Array(P.count); for(let i=0;i<P.count;i++){ const px=P.getX(i), pz=P.getZ(i), d=Math.hypot(px,pz); rn[i]=d/(R+.2); if(d>1e-4){ const kk=springK(S,x+px,z+pz); P.setX(i,px*kk); P.setZ(i,pz*kk); } } g.setAttribute("aR",new T.BufferAttribute(rn,1)); }
   /* (and a soft mirror: looking across it you see the sky and a dark rim of the trees round it, looking straight down you see into it) */
   const m=new T.Mesh(g,wmat(`attribute float aR; varying vec3 vL; varying float vR; varying vec3 vW; void main(){ vL=position; vR=aR; vW=(modelMatrix*vec4(position,1.)).xyz; vec4 mvPosition=modelViewMatrix*vec4(position,1.); gl_Position=projectionMatrix*mvPosition;\n#include <fog_vertex>\n}`,
-   `uniform float uT; uniform float uNight; varying vec3 vL; varying float vR; varying vec3 vW; void main(){ float r=vR; vec3 c=mix(vec3(.55,.92,.95),vec3(.25,.62,.82),r); vec3 V=normalize(cameraPosition-vW); float fr=pow(1.-clamp(V.y,0.,1.),2.2); vec3 sky=mix(vec3(.62,.8,.95),vec3(.1,.14,.22),uNight); float rim=smoothstep(.6,1.,r)*.7; vec3 refl=mix(sky,vec3(.16,.3,.2),rim*.75); c=mix(c,refl,.3+.6*fr); ${k==="g"?"c=mix(c,vec3(.75,.95,1.),.35+.15*sin(uT*1.3));":""} c*=mix(1.,${k==="g"?".7":".42"},uNight); gl_FragColor=vec4(c,.88);\n#include <fog_fragment>\n}`));
+   `uniform float uT; uniform float uNight; varying vec3 vL; varying float vR; varying vec3 vW; ${WSURF} void main(){ float r=vR; vec3 c=mix(vec3(.55,.92,.95),vec3(.25,.62,.82),r); vec3 V=normalize(cameraPosition-vW); float fr=pow(1.-clamp(V.y,0.,1.),2.2); vec3 sky=mix(vec3(.62,.8,.95),vec3(.1,.14,.22),uNight); float rim=smoothstep(.6,1.,r)*.7; vec3 refl=mix(sky,vec3(.16,.3,.2),rim*.75); c=mix(c,refl,.3+.6*fr); c=mix(c,wShade(vW,c*.55,vec2(.05,.03)),.7); ${k==="g"?"c=mix(c,vec3(.75,.95,1.),.35+.15*sin(uT*1.3));":""} c*=mix(1.,${k==="g"?".7":".42"},uNight); gl_FragColor=vec4(c,.88);\n#include <fog_fragment>\n}`));
   m.position.set(x,y,z); m.renderOrder=2; m.userData.keep=1; m.userData.own=1; m.raycast=()=>{}; C.g.add(m);
   for(let k2=0;k2<7;k2++){ const a=k2/7*6.283+r()*.5, px=x+Math.cos(a)*(R+.4), pz=z+Math.sin(a)*(R+.4), kk=springK(S,px,pz); mossRock(C,r,x+Math.cos(a)*(R*kk+.45),-.2,z+Math.sin(a)*(R*kk+.45),.75+r()*.45,r()<.6); } for(let k2=0;k2<6;k2++){ const a=r()*6.283; reeds(C,r,x+Math.cos(a)*(R+.9),z+Math.sin(a)*(R+.9)); }
   for(let k2=0;k2<5;k2++){ const a=r()*6.283, d=r()*R*.7; const pad=put(C,GEO.pad||(GEO.pad=new T.CircleGeometry(1,12).rotateX(-Math.PI/2)),NM.pad,x+Math.cos(a)*d,y+.02,z+Math.sin(a)*d,.3); pad.userData.keep=1; }
@@ -12754,10 +12882,12 @@ SW.build=C=>{ nmat(); lawnHole2(); const r=krng(5);
   /* the footbridge over the river */ for(let k=0;k<=16;k++){ const z=-131.2-k*.8, y=.2+.55*Math.sin(Math.PI*k/16); put(C,GEO.b||(GEO.b=new T.BoxGeometry(1,1,1)),NM.wood,61.5,y,z,3.4,.1,.78); }
    for(const x of [59.9,63.1]){ for(let k=0;k<=8;k++){ const z=-131.2-k*1.6, y=.2+.55*Math.sin(Math.PI*k/8); put(C,GEO.b,NM.woodD,x,y+.45,z,.08,.85,.08); } for(let k=0;k<8;k++){ const z=-132-k*1.6, y=.2+.55*Math.sin(Math.PI*(k+.5)/8); put(C,GEO.b,NM.wood,x,y+.85,z,.08,.08,1.62,0,Math.sin(Math.PI*(k+.5)/8-Math.PI/2)*.0); } }
   
-  TREES.forEach(([x,z,s,k])=>{ if(k) pine(C,x,0,z,s*1.3,r); else softTree(C,r,x,z,s*1.25,r()<.15?"maple":""); });
+  /* (11/17 主委「我希望森林是上面都是樹葉 下面有陽光灑落的感覺」): tall trees whose crowns close over the paths, a shade darker */
+  TREES.forEach(([x,z,s,k])=>{ (C.lpt||(C.lpt=[])).push([x,0,z,s*(k?1.95:1.75)*(.85+r()*.4),1,r()*6.283,r()<.12?"maple":"deep"]); });
+  forestShafts(C,r); pathLamps(C,FPATH,8.5,1.9);
   for(let k=0;k<60;k++){ const x=FOREST[0]+r()*(FOREST[1]-FOREST[0]), z=-174+r()*29; if(!SW.walk(x,z)) continue; if(pathD(x,z)<1.6) continue; if(r()<.5) mushroom(C,x,z,r); else if(r()<.5) put(C,gsph(),NM.bush,x,.25,z,.5,.32,.5); else flowers(C,r,x,z,.8,5); }
-  for(let k=0;k<14;k++){ const x=FOREST[0]+r()*(FOREST[1]-FOREST[0]), z=-174+r()*28; if(pathD(x,z)<2) continue; put(C,GEO.cy||(GEO.cy=new T.CylinderGeometry(1,1,1,16)),NM.woodD,x,.22,z,.22,1.8,.22,r()*6,0,Math.PI/2); }
-  NT.springs.forEach(S=>springPool(C,S,r)); for(const [x,z] of [[55,-155],[88,-161.5],[70,-167.5]]) lantern(C,x,z);
+  /* (11/17 主委「路邊的木頭就不要做了」: no more cylinder logs) */
+  NT.springs.slice(0,2).forEach(S=>springPool(C,S,r)); for(const [x,z] of [[55,-155],[88,-161.5],[70,-167.5]]) lantern(C,x,z);
   
   { const r2=rng(223); for(let k=0;k<380;k++){ const x=FOREST[0]+r2()*(FOREST[1]-FOREST[0]), z=-175+r2()*31; if(pathD(x,z)<1.3) continue; if(NT.springs.some(S=>Math.hypot(x-S[0],z-S[1])<S[2]+.4)) continue; const h=southH(x,z), q=r2(); if(q<.8) tuft(C,r2,x,h,z,.5+r2()*.5); else if(q<.94) starFlower(C,r2,x,h,z,.7+r2()*.4); else mossRock(C,r2,x,h-.15,z,.5+r2()*1,r2()<.7); } } /* (11/14 low-poly dressing) */
   meadow(C,FOREST[0],FOREST[1],-176,-143.6,1900,460,southH,(x,z)=>pathD(x,z)>1.4&&!NT.springs.some(S=>Math.hypot(x-S[0],z-S[1])<S[2]+.6)&&!TREES.some(t=>Math.hypot(x-t[0],z-t[1])<.5*t[2]),12);
@@ -12787,18 +12917,31 @@ SW.buildMt=C=>{ nmat(); const r=krng(9);
   /* 跳傘台 (11/16): a wooden deck on the town side of the top, a windsock on a pole */ { const g=new T.Group(); g.position.set(cx,y,cz+6.6); C.g.add(g); KB(g,2.6,.12,1.8,km("#b08a68"),0,.06,0); for(const sx of [-1.2,1.2]) KB(g,.06,.9,.06,km("#8f6b4f"),sx,.5,.85); KB(g,2.46,.05,.05,km("#8f6b4f"),0,.92,.85); KB(g,.06,2.6,.06,km("#8a8a8a"),1.5,1.3,-.6); { const ws=new T.Mesh(new T.ConeGeometry(.16,.7,10,1,true),km("#ff7a3a",{side:T.DoubleSide})); ws.rotation.z=Math.PI/2; ws.position.set(1.85,2.5,-.6); g.add(ws); } }
   fireflies(C,40,cx,cz,9,41); C.g.children.slice(-1)[0].position.y=y; };
 function lawnHole2(){ try{ lawnHole(); const m=outsideGround.material; if(m.userData.hole2) return; m.userData.hole2=1; const prev=m.onBeforeCompile; m.onBeforeCompile=sh=>{ prev&&prev(sh); sh.fragmentShader=sh.fragmentShader.replace("if(vHW.x>86.5&&vHW.z<-50.&&vHW.z>-140.) discard;","if(vHW.x>86.5&&vHW.z<-50.&&vHW.z>-140.) discard; if(vHW.z<-143.&&vHW.x>13.&&vHW.x<119.) discard;"); }; m.customProgramCacheKey=()=>"lawnhole2"; m.needsUpdate=true; }catch(e){} }
+/* 女神谷 */
+const GVT=(()=>{ const r=krng(515), out=[]; const S=NT.springs[2];
+  for(let k=0;k<2600&&out.length<190;k++){ const x=GVB[0]+2+r()*(GVB[1]-GVB[0]-4), z=GVB[2]+2+r()*(GVB[3]-GVB[2]-4), o=gvOpen(x,z); if(o<1.2||o>16) continue; if(lineD(GPATH,x,z)[0]<3) continue; if(springD(S,x,z)<S[2]+2.5) continue; if(Math.hypot(x-GVTREE[0],z-GVTREE[1])<6) continue; if(out.some(t=>Math.hypot(t[0]-x,t[1]-z)<2.6)) continue; out.push([x,z,1.5+r()*1.2]); }
+  for(let k=0;k<400&&out.length<240;k++){ const a=r()*6.283, d=S[2]+3+r()*7, x=S[0]+Math.cos(a)*d, z=S[1]+Math.sin(a)*d; if(lineD(GPATH,x,z)[0]<3||Math.hypot(x-GVTREE[0],z-GVTREE[1])<6.5) continue; if(out.some(t=>Math.hypot(t[0]-x,t[1]-z)<2.4)) continue; out.push([x,z,1.4+r()*1]); }
+  return out; })();
+function gvC(x,z,h,c){ southC(x,z,h,c); c.lerp(SC.dark,.35); const sl=Math.hypot(gvH(x+.7,z)-gvH(x-.7,z),gvH(x,z+.7)-gvH(x,z-.7))/1.4; c.lerp(SC.rock,sstep(.9,1.6,sl)*.5); c.lerp(SC.path,sstep(1.3,.8,lineD(GPATH,x,z)[0])*.85); }
+NCH.push({id:"gvalley",c:[-58,-200],r:62,build:C=>{ nmat(); const r=krng(616); terrain(C,GVB[0],GVB[1],GVB[2],GVB[3],southH,gvC,.012);
+  GVT.forEach(([x,z,s])=>{ (C.lpt||(C.lpt=[])).push([x,southH(x,z)-.1,z,s,1,r()*6.283,"deep"]); });
+  /* 神木 (11/17 主委「旁邊有一棵巨大的神木」): one huge old tree, a red sash round its trunk */ (C.lpt||(C.lpt=[])).push([GVTREE[0],-.1,GVTREE[1],5.4,1,.7,"deep",420]);
+  { const sash=new T.Mesh(new T.TorusGeometry(1.25,.16,8,28),new T.MeshStandardMaterial({color:"#c0261c",roughness:.6})); sash.rotation.x=Math.PI/2; sash.position.set(GVTREE[0],2.3,GVTREE[1]); C.g.add(sash); }
+  springPool(C,NT.springs[2],r); pathLamps(C,GPATH,7,1.7); { const B=[GVB[0]+4,GVB[1]-4,GVB[2]+4,GVB[3]-3]; B.gv=1; forestShafts(C,r,B); }
+  for(let k=0;k<420;k++){ const x=GVB[0]+r()*(GVB[1]-GVB[0]), z=GVB[2]+r()*(GVB[3]-GVB[2]); if(lineD(GPATH,x,z)[0]<1.4) continue; const S=NT.springs[2]; if(springD(S,x,z)<S[2]+.6) continue; const h=southH(x,z), q=r(); if(q<.75) tuft(C,r,x,h,z,.5+r()*.6); else if(q<.9) mossRock(C,r,x,h-.15,z,.5+r()*1.1,r()<.7); else starFlower(C,r,x,h,z,.7+r()*.4); }
+  fireflies(C,50,-60,-205,22,47); }});
 NCH.push({id:"forest",c:[66,-160],r:50,build:C=>SW.build(C)},{id:"mount",c:[66,-212],r:44,build:C=>SW.buildMt(C)});
 NCH.push({id:"east",c:[165,-90],r:55,build:C=>{ nmat(); const r=rng(31); eastBuild(C,-140,-40);
   }},{id:"east2",c:[165,-200],r:66,build:C=>{ nmat(); eastBuild(C,-262,-140); const r=rng(57);
    /* the falls at the foot of 天后山 */ terrain(C,111.5,134.5,-262,-176,eastH,eastC,.012); brookMesh(C); springPool(C,BHEAD,r); waterfallAt(C,WF.x,WF.z);
-   for(let k=0;k<30;k++){ const a=r()*6.283, d=2.9+r()*1.3, x=WF.x+Math.cos(a)*d, z=WF.z+Math.sin(a)*d; if(x>WF.x+1&&z>WF.z-.5&&z<WF.z+3.5) continue; if(z<WFACE+.6) continue; const h=eastH(x,z); if(h>.8) continue; rock(C,r,x,h-.15,z,.45+r()*.7); } /* boulders round the pool, open towards the brook */
-   for(let k=0;k<22;k++){ const x=WM.x+(r()-.5)*24, z=WFACE+.7+r()*.6, h=eastH(x,z); if(h>.6||Math.abs(x-WF.x)<2.8) continue; mossRock(C,r,x,h-.25,z,.8+r()*1.1,true); } /* mossy rocks along the foot of the cliff */
-   { const n=WM.H; for(let k=0;k<40;k++){ const a=r()*6.283, d=Math.sqrt(r())*.55, x=WM.x+Math.cos(a)*d*WM.rx, z=WM.z+Math.sin(a)*d*WM.rz; if(z>WFACE-2) continue; pine(C,x,eastH(x,z)-.15,z,1.1+r()*.8,r); } } /* pines on the flat top, against the sky */
+   for(let k=0;k<30;k++){ const a=r()*6.283, d=2.9+r()*1.3, x=WF.x+Math.cos(a)*d, z=WF.z+Math.sin(a)*d; if(Math.abs(x-WF.x)<1.8&&z>WF.z) continue; if(z<WFACE+.6) continue; const h=eastH(x,z); if(h>.8) continue; rock(C,r,x,h-.15,z,.45+r()*.7); } /* boulders round the pool, open towards the brook */
+   for(let k=0;k<22;k++){ const x=GX+(r()-.5)*12, z=WFACE+.7+r()*9, h=eastH(x,z); if(h>.6||Math.abs(x-WF.x)<2.8) continue; mossRock(C,r,x,h-.25,z,.8+r()*1.1,true); } /* mossy rocks along the foot of the cliff */
+   { const n=WM.H; for(let k=0;k<40;k++){ const a=r()*6.283, d=Math.sqrt(r())*.8, x=WM.x+Math.cos(a)*d*WM.rx, z=WM.z+Math.sin(a)*d*WM.rz; if(z>WFACE-2&&Math.abs(x-GX)<9) continue; pine(C,x,eastH(x,z)-.15,z,1.1+r()*.8,r); } } /* pines on the flat top, against the sky */
    for(let i=6;i<BN-6;i+=4){ const p=BROOK[i], q=BROOK[i+1], dx=q[0]-p[0], dz=q[1]-p[1], L=Math.hypot(dx,dz)||1, hw=brookW(i,0); for(const sd of [-1,1]){ if(inRect([MOUTHB[0]-1,MOUTHB[1]+1,MOUTHB[2],MOUTHB[3]],p[0],p[1])) continue; const d2=hw+.7+r()*.6; if(r()<.6) reeds(C,r,p[0]-dz/L*d2*sd,p[1]+dx/L*d2*sd); else rock(C,r,p[0]-dz/L*d2*sd,-.05,p[1]+dx/L*d2*sd,.3+r()*.4); } }
    /* a plank walk over the brook */ for(let k=0;k<=11;k++){ const z=MOUTHB[2]+.15+k*.58, y=.12+.22*Math.sin(Math.PI*k/11); put(C,GEO.b||(GEO.b=new T.BoxGeometry(1,1,1)),NM.wood,144.5,y,z,2.4,.07,.5); }
    for(const x of [143.35,145.65]){ for(let k=0;k<=5;k++){ const z=MOUTHB[2]+.3+k*1.24, y=.12+.22*Math.sin(Math.PI*k/5); put(C,GEO.b,NM.woodD,x,y+.32,z,.07,.65,.07); } for(let k=0;k<5;k++){ const z=MOUTHB[2]+.92+k*1.24, y=.12+.22*Math.sin(Math.PI*(k+.5)/5); put(C,GEO.b,NM.wood,x,y+.62,z,.06,.06,1.24); } }
-   /* trees round the foot of the mountain (none in front of the falls) */ for(let k=0;k<80;k++){ const x=112+r()*24, z=-246+r()*68; if(Math.hypot(x-WF.x,z-WF.z)<6.5||(Math.abs(x-WF.x)<5&&z>WFACE)) continue; if(wfMount(x,z)>.25||brookD(x,z)[0]<2.5) continue; const h=eastH(x,z); if(h>.8||h<-.05) continue; pine(C,x,h-.12,z,1+r()*.7,r); }
-   nbench(C,WF.x+5.4,WF.z+5.6,Math.PI*.8); lantern(C,WF.x+4.2,WF.z+1.4); lantern(C,147,-190.4); fireflies(C,40,WF.x+4,WF.z+3,9,5); }});
+   /* trees round the foot of the mountain (none in front of the falls) */ for(let k=0;k<90;k++){ const x=112+r()*38, z=-258+r()*80; if(Math.hypot(x-WF.x,z-WF.z)<6.5||(Math.abs(x-WF.x)<5&&z>WFACE)) continue; if(wfMount(x,z)>.25||brookD(x,z)[0]<2.5) continue; const h=eastH(x,z); if(h>.8||h<-.05) continue; pine(C,x,h-.12,z,1+r()*.7,r); }
+   nbench(C,WF.x-3.4,WF.z+8,Math.PI*.9); lantern(C,WF.x-3.2,WF.z+2.6); lantern(C,147,-190.4); fireflies(C,40,WF.x+4,WF.z+3,9,5); }});
 
 /* 望海沙灘: a Mediterranean beach café (11/16) and a row of loungers */
 [[146,-113.2,2.2],[141.8,-108.6,.7],[141.8,-116.4,.7],[150.6,-108.4,.7]].forEach(b=>FBLOCK.push([-b[1]-90,b[0]-60,b[2]])); /* (the café, now on the front beach) */
@@ -12897,8 +13040,8 @@ TW.tick=dt=>{ farMtTick(); const nowS=performance.now(); if(nowS>(TW.slT||0)&&TW
   const LR=TW.high?[300,360]:[TW.lr||LR0[0],LR0[1]]; for(let rep=TW.high?3:1;rep>0;rep--){ let near=null, nd=LR[0]; for(const d of CH){ const dist=Math.hypot(px-d.c[0],pz-d.c[1])-d.r; if(!LIVE[d.id]){ if(dist<nd){ nd=dist; near=d; } } else if(dist>LR[1]) unload(d.id); } if(near){ load(near); TW.chk=near.id; } else break; } /* (on the top of 天后山 and while gliding down: every district of the village, three at a time — 主委 11/16「在山頂要能看到村莊全景，確保全部建築都有出現」) */ /* (the nearest district first, 11/16) */
   if(TW.on&&!greeted&&pz<-56){ greeted=true; try{ toast("🏮 歡迎來到天后小鎮",2600); statInc("townIn"); }catch(e){} } if(!TW.on&&pz>-40) greeted=false; };
 /* ---- things you can walk up to ---- */
-const ST=[["tw:bus",33.0,-64,Math.PI/2,34.2,-64,1.5,2.4],["tw:fish",28,-136.4,Math.PI,28,-137.6,1.8,1.2],
-    ["tw:goddess",22.8,-165.4,0,22.6,-171,4.4,2],["tw:camp",66,-209.6,Math.PI,66,-212,1.2,1.6+34],["tw:tent",64.4,-212.9,Math.atan2(-3.2,-2.4),62.8,-214.4,1.4,2.2+34],["tw:tent2",67.6,-212.7,Math.atan2(3.3,-1.8),69.3,-213.8,1.4,2.2+34],["tw:scope",61.4,-209.4,0,61.4,-208.6,.6,2+34],["tw:chute",66,-205.6,0,66,-204.8,1.2,2.4+34],["tw:cafe",23.2,83.4,0,23.2,85.2,2,2.6],["tw:lounge",31.6,91.4,0,31.6,92.6,1.2,1],["tw:garden",38.5,-121.6,Math.PI,38.5,-123,2.6,3],["tw:gh2",49.5,-121.6,Math.PI,49.5,-123,2.6,3],["tw:gh3",60.5,-121.6,Math.PI,60.5,-123,2.6,3]]
+const ST=[["tw:bus",33.0,-64,Math.PI/2,34.2,-64,1.5,2.4],
+    ["tw:goddess",-65.2,-212.4,0,-66,-221,7,2],["tw:camp",66,-209.6,Math.PI,66,-212,1.2,1.6+34],["tw:tent",64.4,-212.9,Math.atan2(-3.2,-2.4),62.8,-214.4,1.4,2.2+34],["tw:tent2",67.6,-212.7,Math.atan2(3.3,-1.8),69.3,-213.8,1.4,2.2+34],["tw:scope",61.4,-209.4,0,61.4,-208.6,.6,2+34],["tw:chute",66,-205.6,0,66,-204.8,1.2,2.4+34],["tw:cafe",23.2,83.4,0,23.2,85.2,2,2.6],["tw:lounge",31.6,91.4,0,31.6,92.6,1.2,1],["tw:garden",38.5,-121.6,Math.PI,38.5,-123,2.6,3],["tw:gh2",49.5,-121.6,Math.PI,49.5,-123,2.6,3],["tw:gh3",60.5,-121.6,Math.PI,60.5,-123,2.6,3]]
   .concat(TOWNB.filter(b=>b.key).map(b=>{ const d=bDoor(b); return [b.key,d.ax,d.az,d.face,d.hx,d.hz,Math.min(2.6,b.w/2),3.2]; }));
 const STN={"tw:bfast":"元氣早餐店・疊漢堡","tw:goddess":"泉水","tw:camp":"營火","tw:tent":"帳篷","tw:tent2":"帳篷","tw:scope":"望遠鏡","tw:chute":"滑翔傘起飛台","tw:cafe":"海邊咖啡","tw:lounge":"躺椅","tw:board":"公告欄","tw:bus":"公車站","tw:fish":"釣魚碼頭","tw:ice":"美琪冰店","tw:herb":"中藥行","tw:garden":"我的花圃","tw:gh2":"溫室二號","tw:gh3":"溫室三號"}; TOWNB.forEach(b=>{ if(b.key) STN[b.key]=b.lot!=null?`天后新村 ${b.lot+1} 號`:b.name||"鄰居的家"; });
 setTimeout(()=>{ try{ ST.forEach(s=>{ station(s[0],[s[1],s[2]],s[3]); addHit(s[0],s[4],0,s[5],s[6],s[7]); try{ if(STN[s[0]]) STATION_LABEL[s[0]]=STN[s[0]]; }catch(e){} }); }catch(e){ console.warn("town stations",e); } },1500);
@@ -13702,7 +13845,7 @@ L.tick4=dt=>{ iceTick(dt); herbTick(dt); if(L.tick5) L.tick5(dt); };
 /* ---------- 流星: on about one game night in three, a meteor falls somewhere in or around the town — the same night, the same
    moment and the same place for everyone (worked out from the game day). A beam of light shows where it came down; whoever gets
    there first (the server keeps track) gets a special prize, everyone after still gets a little stardust. ---------- */
-const MSPOT=[[61.5,-150,"南岸森林"],[66,-206.6,"天后山頂"],[40,84,"廟前沙灘"],[12,-125,"河濱公園"],[64.5,-71.5,"噴水池廣場"],[121,-190,"瀑布潭邊"],[31.4,-163,"女神泉小徑"],[-18,96,"燈塔附近"],[8,-87,"西側巷弄"],[55,-128,"河堤邊"],[-58,-160,"天后新村"],[-60,-210,"新村南巷"]]; /* (11/16 晚上: the new map — the beach in front of the temple, the falls, the goddess's path, the village) */
+const MSPOT=[[61.5,-150,"南岸森林"],[66,-206.6,"天后山頂"],[40,84,"廟前沙灘"],[12,-125,"河濱公園"],[64.5,-71.5,"噴水池廣場"],[123.6,-220,"瀑布潭邊"],[-38.6,-171.5,"女神谷小徑"],[-18,96,"燈塔附近"],[8,-87,"西側巷弄"],[55,-128,"河堤邊"],[-60,-74,"天后新村"],[-58,-200,"女神谷"]]; /* (11/16 晚上: the new map — the beach in front of the temple, the falls, the goddess's path, the village) */
 const hsh=n=>{ n=(n^61)^(n>>>16); n=Math.imul(n,9); n^=n>>>4; n=Math.imul(n,0x27d4eb2d); n^=n>>>15; return n>>>0; };
 function meteorOf(D){ const h=hsh(D*7919+13); if(h%3&&!(L.forceD===D)) return null; const p=.58+((h>>>3)%100)/100*.2, at=(D+p)*TOD_LEN*1000; const sp=MSPOT[(h>>>11)%MSPOT.length]; return {id:D,at,end:(D+.86)*TOD_LEN*1000,x:sp[0],z:sp[1],nm:sp[2]}; }
 const curD=()=>Math.floor(Date.now()/1000/TOD_LEN);
@@ -13906,6 +14049,7 @@ const TP_SHOPS=[["tw:bfast","元氣早餐店"],["tw:congee","一粥七天"],["tw
 L.testPanel=()=>{ if(!me.sp) return; const b=(act,v,t,cls)=>`<button class="${cls||"secondary"}" style="flex:none;width:auto;min-height:0;padding:8px 12px;font-size:14px;margin:3px" data-act="${act}" data-v="${v}">${t}</button>`;
   const hr=TM.hour, hrs=[-1,6,9,12,15,18,21,0,3];
   openSheet("tmode","🧪 測試模式",`<p class="lead">只有主委看得到。重新整理就會關掉，不會存檔。</p>
+   <h4 style="margin:10px 0 4px">第 51 批（11/17）</h4><div>${b("tmDish",1,"🫧 洗碗泡泡大戰（3D）","primary")}${b("posOpen",1,"📍 座標定位","primary")}</div><div>${b("tmGo","vil","🏘️ 天后新村（廟後）")}${b("tmGo","gv","🌿 女神谷入口")}${b("tmGo","gvs","💧 女神泉・神木")}${b("tmGo","wf","🏔️ 瀑布峽谷")}${b("tmGo","bridge","🌉 主街尾的木橋")}${b("tmGo","forest","🌲 森林小路")}${b("tmGo","gate","🚥 主街（對稱人行道）")}</div><div>${b("tmRainNow",1,"🌧️ 下雨（看撐傘）")}${b("tmNight",1,"🌙 晚上（看月亮、石柱燈、家裡燈光）")}${b("tmDay",1,"☀️ 白天（看太陽）")}</div>
    <h4 style="margin:10px 0 4px">🔎 找問題（11/15 晚上）</h4><div>${b("tmProbe",1,"🔎 點東西看它是什麼（看到黑點：按這個，再點黑點）","primary")}${b("tmTown",1,"🔎 小鎮讀取狀態（建築不見時按這個）","primary")}</div>
    <div class="row" style="margin:6px 0">${b("tmOn",TM.on?0:1,TM.on?"✅ 測試模式開著（點一下關）":"⬜ 開啟測試模式",TM.on?"primary":"secondary")}</div>
    <p class="note">開著時：店家不管營業時間都能進、小遊戲沒有每日次數限制。關掉時主委也跟一般玩家一樣。</p>
@@ -13942,7 +14086,9 @@ HANDLERS.tmIceDrink=()=>{ closeSheet(); window.MZ_DRINK_ICE=1; try{ drinkGame();
 const hrs_=k=>{ try{ return hrs(k); }catch(e){ return ""; } };
 HANDLERS.tmOn=v=>{ TM.on=v==="1"; toast(TM.on?"🧪 測試模式開啟":"測試模式關閉",1600); L.testPanel(); };
 HANDLERS.tmHour=v=>{ const h=+v; TM.hour=h<0?null:h; L.testPanel(); };
-HANDLERS.tmGo=v=>{ closeSheet(); const P={furn:[34.5,-75.5],town:[28,-62],zen:[-30,-28],temple:[0,30],alley:[8.2,-86.5],beach:[148,-112],garden:[42,-120.5],pier:[28,-136.6],street:[60,-77]}[v]; if(P){ meAv.pos.set(P[0],P[1]); meAv.target.set(P[0],P[1]); meAv.path=[]; } };
+HANDLERS.tmDish=()=>{ closeSheet(); dwGame(); };
+HANDLERS.tmRainNow=()=>{ closeSheet(); window.MZ_WX="rain"; toast("下雨了（重新整理恢復）",2000); }; HANDLERS.tmNight=()=>{ closeSheet(); window.MZ_TOD=.7; toast("晚上（重新整理恢復）",2000); }; HANDLERS.tmDay=()=>{ closeSheet(); window.MZ_TOD=.3; toast("白天（重新整理恢復）",2000); };
+HANDLERS.tmGo=v=>{ closeSheet(); const P={vil:[-23,-80],gv:[-23,-148],gvs:[-63,-210],wf:[124,-212],bridge:[28,-128],forest:[50,-156],gate:[28,-70],furn:[34.5,-75.5],town:[28,-62],zen:[-30,-28],temple:[0,30],alley:[8.2,-86.5],beach:[148,-112],garden:[42,-120.5],pier:[28,-136.6],street:[60,-77]}[v]; if(P){ meAv.pos.set(P[0],P[1]); meAv.target.set(P[0],P[1]); meAv.path=[]; } };
 HANDLERS.tmShop=v=>{ closeSheet(); const b=TOWNX&&TOWNX.bOf&&TOWNX.bOf(v); if(b){ const fx=b.x+Math.sin(b.ry)*2.2, fz=b.z+Math.cos(b.ry)*2.2; meAv.pos.set(fx,fz); meAv.target.set(fx,fz); meAv.path=[]; } setTimeout(()=>{ try{ openStation(v); }catch(e){ console.warn(e); } },b?900:50); };
 HANDLERS.tmGame=v=>{ closeSheet(); try{ GL[v](); }catch(e){ console.warn(e); toast("這個遊戲還打不開",1800); } };
 HANDLERS.tmRain=()=>{ closeSheet(); try{ hbStart({id:"test"+Date.now(),seed:(Math.random()*1e9)|0,n:24,x:meAv.pos.x,z:meAv.pos.y,at:Date.now()}); }catch(e){ console.warn(e); } };
@@ -14202,8 +14348,161 @@ const czOwe=(done,paid)=>done<10?(paid?0:done>=5?300:done>=1?200:0):0; /* (leavi
 const CZ_CAP=2000; /* 平安幣 a day from 一粥七天 at most (the chair, 11/15); 鹹粥 is still given */
 function czLeft(){ const d=LF(), td=today(); if(d.czD!==td){ d.czD=td; d.czE=0; } return Math.max(0,CZ_CAP-(d.czE|0)); }
 function czPay(S,coins,cg){ const d=LF(), c=Math.min(coins,czLeft()); d.czE=(d.czE|0)+c; bag.coins+=c; if(cg) d.cg=(d.cg|0)+cg; S.coins+=c; S.cg+=cg; if(c<coins) S.capped=1; save(); try{ profSave(true); }catch(e){} return c; }
-GL["tw:congee"]=()=>{ openSheet("lfCongee","🥣 一粥七天",`<p class="lead">玲姊：「我們能給你一點工資讓你打包鹹粥帶走！」</p><p class="note">一次一張單：照單把菜放上托盤，按 🛎 送餐，再選對桌號（1～10 號桌）。沒有時間限制，想做多久都可以。</p><p class="note">💰 做滿 10 張：馬上給 500 平安幣＋鹹粥 1 碗<br>之後每張 +20，每滿 10 張先發一次（不用停下來）<br>沒做滿 10 張就離開：5～9 張 300、1～4 張 200<br>今天還能賺 ${czLeft()} 平安幣</p><div class="row"><button class="primary" data-act="lfCgGo">開始出餐</button><button class="secondary" data-act="lfRank" data-v="congee">今日排名</button></div>`); };
+GL["tw:congee"]=()=>{ openSheet("lfCongee","🥣 一粥七天",`<p class="lead">玲姊：「我們能給你一點工資讓你打包鹹粥帶走！」</p><p class="note">一次一張單：照單把菜放上托盤，按 🛎 送餐，再選對桌號（1～10 號桌）。沒有時間限制，想做多久都可以。</p><p class="note">💰 做滿 10 張：馬上給 500 平安幣＋鹹粥 1 碗<br>之後每張 +20，每滿 10 張先發一次（不用停下來）<br>沒做滿 10 張就離開：5～9 張 300、1～4 張 200<br>今天還能賺 ${czLeft()} 平安幣</p><div class="row"><button class="primary" data-act="lfCgGo">開始出餐</button><button class="secondary" data-act="lfRank" data-v="congee">今日排名</button></div><h4 style="margin:12px 0 4px">🫧 洗碗泡泡大戰</h4><p class="note">60 秒內能洗幾個碗？刷碗裡 → 翻面刷碗底 → 轉碗讓水沖掉泡泡。<br>★ 5 個：鹹粥 1 碗・★★ 10 個：2 碗・★★★ 15 個：3 碗（一碗回 100 精力）</p><div class="row"><button class="primary" data-act="lfDishGo">開始洗碗</button></div>`); };
 HANDLERS.lfCgGo=()=>{ closeSheet(); if(!enPay(EN_SHOP)) return; czGame(); };
+/* ================= 一粥七天・洗碗泡泡大戰 (11/17, the chair's spec): a real 3D bowl in a steel sink.
+   1 刷碗內 → 翻面 → 2 刷碗底 → 3 沖水 (turn the bowl under the tap) → the next dirty bowl, for 60 seconds.
+   How it works, cheaply:
+   - one bowl, a lathe of ~40 × 22 points (made in code: no file to fetch), with its own UVs: the inside is unrolled as a round disc on the
+     left half of the texture square, the outside (and rim and foot) as a disc on the right half — so a brush on the inside can never
+     touch the outside's stains;
+   - two small render targets hold what has been scrubbed (1024 × 512: 512 × 512 a side) and where the foam still is (512 × 256): brush and
+     water are drawn into them as soft round stamps on the GPU — no picture is uploaded while you play;
+   - the stains are one picture made once, shifted and turned per bowl; foam and the water jet are drawn by the bowl's own shader / a
+     scrolling strip; a handful of reused sprites pop as bubbles;
+   - how clean a side is comes from a 48 × 48 grid per side kept on the CPU (only the cells that had a stain count), so the bar and the
+     「翻面」 button answer at once, and clicking without scrubbing does nothing;
+   - the screen's resolution drops a step if the frame rate sags, and everything is freed when you leave. ================= */
+const DW_TIME=60, DW_STARS=[5,10,15], DW_CLEAN=.84, DW_RINSE=.86;
+function dwGame(){ if(!SHOPX||!SHOPX.enter) return;
+  const S=new T.Scene(); S.background=new T.Color("#2c2420");
+  S.add(new T.HemisphereLight("#fff6ea","#5a4a3e",.85)); const key=new T.DirectionalLight("#fff4e4",.75); key.position.set(1.5,4,2.4); S.add(key);
+  const disp=[]; const keep=x=>{ disp.push(x); return x; };
+  const cv=(w,h,f)=>{ const c=document.createElement("canvas"); c.width=w; c.height=h; f(c.getContext("2d"),w,h); const t=keep(new T.CanvasTexture(c)); t.encoding=T.sRGBEncoding; t.userData={c}; return t; };
+  /* ---- the sink: brushed steel basin, a drain, a tap ---- */
+  const steelT=cv(256,256,(x,w,h)=>{ const g=x.createLinearGradient(0,0,w,0); g.addColorStop(0,"#b8bcc0"); g.addColorStop(.5,"#dfe3e6"); g.addColorStop(1,"#aeb2b6"); x.fillStyle=g; x.fillRect(0,0,w,h); for(let i=0;i<900;i++){ x.fillStyle=`rgba(${Math.random()<.5?255:90},${Math.random()<.5?255:90},${Math.random()<.5?255:95},.06)`; x.fillRect(Math.random()*w,Math.random()*h,1+Math.random()*30,1); } });
+  steelT.wrapS=steelT.wrapT=T.RepeatWrapping; const steel=keep(new T.MeshStandardMaterial({map:steelT,metalness:.55,roughness:.32,color:"#ffffff"}));
+  const box=(w,h,d,m,x,y,z)=>{ const g=keep(new T.BoxGeometry(w,h,d)), o=new T.Mesh(g,m); o.position.set(x,y,z); S.add(o); return o; };
+  const SW=2.6, SD=1.9, SH=.55; box(SW,.05,SD,steel,0,-.3,0); box(.05,SH,SD,steel,-SW/2,-.3+SH/2,0); box(.05,SH,SD,steel,SW/2,-.3+SH/2,0); box(SW,SH,.05,steel,0,-.3+SH/2,-SD/2); box(SW,SH*.6,.05,steel,0,-.3+SH*.3,SD/2);
+  const counter=keep(new T.MeshStandardMaterial({color:"#cdb89a",roughness:.85})); box(5,.08,1.2,counter,0,-.3+SH,-SD/2-.6); box(1.4,.08,SD+1.2,counter,-SW/2-.7,-.3+SH,0); box(1.4,.08,SD+1.2,counter,SW/2+.7,-.3+SH,0);
+  { const d=new T.Mesh(keep(new T.CylinderGeometry(.13,.13,.012,24)),keep(new T.MeshStandardMaterial({color:"#55595e",metalness:.7,roughness:.35}))); d.position.set(.5,-.27,.25); S.add(d); }
+  const TAP={x:.16,y:1.42,z:-.05}; { const tm=keep(new T.MeshStandardMaterial({color:"#d6dadf",metalness:.8,roughness:.22})); const p=new T.Mesh(keep(new T.CylinderGeometry(.05,.06,1.25,16)),tm); p.position.set(TAP.x,.62,-SD/2+.12); S.add(p);
+    const arm=new T.Mesh(keep(new T.CylinderGeometry(.04,.04,.86,14)),tm); arm.rotation.x=Math.PI/2; arm.position.set(TAP.x,1.24,-SD/2+.12+.43); S.add(arm); const nz=new T.Mesh(keep(new T.CylinderGeometry(.05,.035,.16,14)),tm); nz.position.set(TAP.x,TAP.y-.28+.2,TAP.z); S.add(nz); }
+  /* ---- the bowl: one lathe; profile from the outside's foot centre, up the outside, over the rim, down the inside ---- */
+  const prof=[[0,0],[.17,0],[.19,.015],[.2,.07],[.24,.08],[.34,.13],[.43,.22],[.5,.33],[.545,.44],[.56,.48],[.555,.505],[.535,.51],[.52,.49],[.5,.4],[.44,.3],[.36,.22],[.26,.15],[.15,.11],[0,.095]];
+  const RIM=10; /* points up to here belong to the outside (and the rim's top); after it, the inside */
+  const P=prof.map(p=>new T.Vector2(p[0],p[1])), SEG=44; const bg=keep(new T.LatheGeometry(P,SEG));
+  { const len=[0]; for(let j=1;j<P.length;j++) len.push(len[j-1]+P[j].distanceTo(P[j-1])); const Lo=len[RIM], L=len[P.length-1];
+    const uv=bg.attributes.uv, n=P.length; for(let i=0;i<=SEG;i++){ const ph=i/SEG*Math.PI*2; for(let j=0;j<n;j++){ const k=i*n+j, out=j<=RIM, rr=out?len[j]/Lo:(L-len[j])/(L-Lo); const cx=out?.75:.25; uv.setXY(k,cx+.235*rr*Math.sin(ph),.5+.47*rr*Math.cos(ph)); } } uv.needsUpdate=true;
+    bg.userData.Lo=Lo; bg.userData.Li=L-Lo; }
+  bg.computeVertexNormals();
+  /* porcelain: white with blue bands near the rim and a little blue flower in the middle of the inside (painted in the bowl's own UV square) */
+  const porT=cv(512,256,(x,w,h)=>{ x.fillStyle="#fbf8f2"; x.fillRect(0,0,w,h); for(const cx of [.25,.75]){ const X=cx*w, Y=h/2; x.strokeStyle="#2f5fa8"; x.lineWidth=5; x.beginPath(); x.ellipse(X,Y,.235*w*.9,.47*h*.9,0,0,7); x.stroke(); x.lineWidth=2; x.beginPath(); x.ellipse(X,Y,.235*w*.83,.47*h*.83,0,0,7); x.stroke(); }
+    x.fillStyle="#3a6ab4"; for(let k=0;k<6;k++){ const a=k/6*6.283; x.beginPath(); x.ellipse(.25*w+Math.cos(a)*9,h/2+Math.sin(a)*9,6,3.4,a,0,7); x.fill(); } x.fillStyle="#e8b53a"; x.beginPath(); x.arc(.25*w,h/2,4,0,7); x.fill(); });
+  /* the stains: congee, soy sauce, a bit of green onion — one picture, used shifted and turned for every bowl */
+  const DIRT=cv(256,256,(x,w,h)=>{ x.clearRect(0,0,w,h); const blob=(c,n,r0,r1)=>{ for(let i=0;i<n;i++){ const X=Math.random()*w, Y=Math.random()*h, r=r0+Math.random()*(r1-r0); for(const [ox,oy] of [[0,0],[w,0],[-w,0],[0,h],[0,-h]]){ x.fillStyle=c; x.beginPath(); x.ellipse(X+ox,Y+oy,r,r*(.5+Math.random()*.5),Math.random()*3,0,7); x.fill(); } } };
+    blob("rgba(196,150,82,.9)",26,10,26); blob("rgba(120,72,34,.85)",14,6,16); blob("rgba(232,214,160,.95)",40,3,7); blob("rgba(92,140,58,.9)",12,2,5); });
+  DIRT.wrapS=DIRT.wrapT=T.RepeatWrapping; const dirtPx=DIRT.userData.c.getContext("2d").getImageData(0,0,256,256).data;
+  const RTO={minFilter:T.LinearFilter,magFilter:T.LinearFilter,depthBuffer:false,stencilBuffer:false};
+  const cleanRT=keep(new T.WebGLRenderTarget(1024,512,RTO)), foamRT=keep(new T.WebGLRenderTarget(512,256,RTO));
+  const U={uClean:{value:cleanRT.texture},uFoam:{value:foamRT.texture},uDirt:{value:DIRT},uOff:{value:new T.Vector3(0,0,0)},uT:{value:0}};
+  const bowlM=keep(new T.MeshStandardMaterial({map:porT,roughness:.28,metalness:0,color:"#ffffff",side:T.DoubleSide}));
+  bowlM.onBeforeCompile=sh=>{ Object.assign(sh.uniforms,U);
+    sh.fragmentShader="uniform sampler2D uClean; uniform sampler2D uFoam; uniform sampler2D uDirt; uniform vec3 uOff; uniform float uT;\nfloat dwH(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }\n"+sh.fragmentShader.replace("#include <map_fragment>",`#include <map_fragment>
+     { vec2 q=vUv; float side=step(.5,q.x); vec2 d=vec2((q.x-.25-.5*side)/.235,(q.y-.5)/.47); float c=cos(uOff.z), s=sin(uOff.z); vec2 dd=vec2(c*d.x-s*d.y,s*d.x+c*d.y)*1.35+uOff.xy+side*vec2(.37,.61);
+       vec4 dt=texture2D(uDirt,dd); float cl=texture2D(uClean,q).r; float st=dt.a*(1.-smoothstep(.25,.75,cl)); diffuseColor.rgb=mix(diffuseColor.rgb,dt.rgb,st);
+       float fm=clamp(texture2D(uFoam,q).r,0.,1.); vec2 g=q*vec2(34.,17.)+vec2(0.,uT*.08); vec2 id=floor(g), f=fract(g)-.5; float r=.18+.24*dwH(id); float b=smoothstep(r,r-.08,length(f+vec2(dwH(id+3.)-.5,dwH(id+7.)-.5)*.3));
+       float l=length(f+vec2(dwH(id+3.)-.5,dwH(id+7.)-.5)*.3), ring=smoothstep(r-.16,r-.05,l)*smoothstep(r+.05,r-.02,l), hi=smoothstep(r*.35,0.,length(f+vec2(r*.35,-r*.35)));
+       diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.86,.92,.98),fm*.75); diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.42,.6,.86),fm*ring*.9); diffuseColor.rgb+=vec3(.25)*fm*b*hi; } /* (foam: a white lather with bubble outlines, bluish rims and a shine, so it shows on white porcelain) */`); };
+  bowlM.customProgramCacheKey=()=>"dwBowl";
+  const bowl=new T.Mesh(bg,bowlM); const pivot=new T.Group(); pivot.position.set(0,-.03,.12); pivot.add(bowl); bowl.position.y=-.24; S.add(pivot); /* (the pivot sits mid-bowl, so it flips in place) */
+  /* stamps into the targets: a soft round brush, drawn as instanced quads in an orthographic UV space */
+  const stampT=cv(64,64,(x,w,h)=>{ const g=x.createRadialGradient(32,32,0,32,32,32); g.addColorStop(0,"rgba(255,255,255,1)"); g.addColorStop(.6,"rgba(255,255,255,.9)"); g.addColorStop(1,"rgba(255,255,255,0)"); x.fillStyle=g; x.fillRect(0,0,w,h); });
+  stampT.encoding=T.LinearEncoding; const qg=keep(new T.PlaneGeometry(1,1)); const oc=new T.OrthographicCamera(0,1,1,0,-1,1);
+  const mkStamp=blend=>{ const m=keep(new T.MeshBasicMaterial({map:stampT,transparent:true,depthTest:false,depthWrite:false,blending:T.CustomBlending,blendEquation:blend,blendSrc:T.SrcAlphaFactor,blendDst:T.OneFactor})); const im=new T.InstancedMesh(qg,m,64); im.count=0; im.frustumCulled=false; const sc=new T.Scene(); sc.add(im); return {im,sc,n:0}; };
+  const stC=mkStamp(T.AddEquation), stF=mkStamp(T.AddEquation), stR=mkStamp(T.ReverseSubtractEquation); const M4=new T.Matrix4();
+  const push=(st,u,v,ru,rv)=>{ if(st.n>=64) return; M4.makeScale(ru*2,rv*2,1).setPosition(u,v,0); st.im.setMatrixAt(st.n++,M4); };
+  const flush=(st,rt)=>{ if(!st.n) return; st.im.count=st.n; st.im.instanceMatrix.needsUpdate=true; const ac=renderer.autoClear, prev=renderer.getRenderTarget(); renderer.autoClear=false; renderer.setRenderTarget(rt); renderer.render(st.sc,oc); renderer.setRenderTarget(prev); renderer.autoClear=ac; st.n=0; };
+  const clearRT=rt=>{ const prev=renderer.getRenderTarget(), cc=renderer.getClearColor(new T.Color()), ca=renderer.getClearAlpha(); renderer.setRenderTarget(rt); renderer.setClearColor(0x000000,1); renderer.clear(true,false,false); renderer.setRenderTarget(prev); renderer.setClearColor(cc,ca); };
+  /* the CPU's tally: 48 × 48 cells a side; a cell counts if the stain picture has something there for this bowl */
+  const GN=48; const G={dirt:[new Uint8Array(GN*GN),new Uint8Array(GN*GN)],clean:[new Uint8Array(GN*GN),new Uint8Array(GN*GN)],foam:[new Uint8Array(GN*GN),new Uint8Array(GN*GN)],nd:[0,0],nc:[0,0],nf:[0,0],in:[new Uint8Array(GN*GN),new Uint8Array(GN*GN)],ni:[0,0]};
+  const cellXY=k=>[(k%GN+.5)/GN*2-1,(Math.floor(k/GN)+.5)/GN*2-1];
+  const newBowl=()=>{ const o=U.uOff.value; o.set(Math.random(),Math.random(),Math.random()*6.283);
+    for(let s=0;s<2;s++){ G.nd[s]=G.nc[s]=G.nf[s]=G.ni[s]=0; for(let k=0;k<GN*GN;k++){ const [dx,dy]=cellXY(k), inn=dx*dx+dy*dy<.94; G.in[s][k]=inn?1:0; if(inn) G.ni[s]++; G.clean[s][k]=0; G.foam[s][k]=0;
+        const c=Math.cos(o.z), sn=Math.sin(o.z); let u=(c*dx-sn*dy)*1.35+o.x+s*.37, v=(sn*dx+c*dy)*1.35+o.y+s*.61; u-=Math.floor(u); v-=Math.floor(v); const a=dirtPx[(((1-v)*255|0)*256+(u*255|0))*4+3]; const d=inn&&a>60?1:0; G.dirt[s][k]=d; if(d) G.nd[s]++; } }
+    clearRT(cleanRT); clearRT(foamRT); };
+  const stamp=(side,uvx,uvy,rUV,mode)=>{ /* mode: "scrub" (clean + foam) or "rinse" (foam off) */
+    const cx=side?.75:.25, dx=(uvx-cx)/.235, dy=(uvy-.5)/.47, rr=rUV/.235;
+    if(mode==="scrub"){ push(stC,uvx,uvy,rUV,rUV*2); push(stF,uvx,uvy,rUV*1.05,rUV*2.1); } else push(stR,uvx,uvy,rUV,rUV*2); /* (a round patch on the bowl is twice as tall as wide in UV: each side's disc spans .47 across and .94 up) */
+    const i0=Math.max(0,Math.floor((dx-rr+1)/2*GN)), i1=Math.min(GN-1,Math.ceil((dx+rr+1)/2*GN)), j0=Math.max(0,Math.floor((dy-rr+1)/2*GN)), j1=Math.min(GN-1,Math.ceil((dy+rr+1)/2*GN));
+    for(let j=j0;j<=j1;j++) for(let i=i0;i<=i1;i++){ const k=j*GN+i; if(!G.in[side][k]) continue; const [px,py]=cellXY(k); if((px-dx)**2+(py-dy)**2>rr*rr) continue;
+      if(mode==="scrub"){ if(!G.clean[side][k]){ G.clean[side][k]=1; if(G.dirt[side][k]) G.nc[side]++; } if(!G.foam[side][k]){ G.foam[side][k]=1; G.nf[side]++; } }
+      else if(G.foam[side][k]){ G.foam[side][k]=0; G.nf[side]--; } } };
+  const cleanOf=s=>G.nd[s]?G.nc[s]/G.nd[s]:1, foamOf=s=>G.nf[s]/Math.max(1,G.ni[s]);
+  /* bubbles that pop where you scrub (a few reused sprites) */
+  const bubT=cv(64,64,(x,w,h)=>{ const g=x.createRadialGradient(26,26,2,32,32,30); g.addColorStop(0,"rgba(255,255,255,.95)"); g.addColorStop(.55,"rgba(220,240,255,.25)"); g.addColorStop(.85,"rgba(255,255,255,.75)"); g.addColorStop(1,"rgba(255,255,255,0)"); x.fillStyle=g; x.beginPath(); x.arc(32,32,30,0,7); x.fill(); });
+  const bubM=keep(new T.SpriteMaterial({map:bubT,transparent:true,depthWrite:false})); const BUB=[]; for(let i=0;i<14;i++){ const s=new T.Sprite(bubM); s.visible=false; S.add(s); BUB.push({s,t:0,v:new T.Vector3()}); }
+  let bi=0; const bubble=p=>{ const b=BUB[bi++%BUB.length]; b.s.visible=true; b.s.position.copy(p); b.t=.5+Math.random()*.4; b.v.set((Math.random()-.5)*.3,.35+Math.random()*.4,(Math.random()-.5)*.3); const k=.04+Math.random()*.06; b.s.scale.set(k,k,1); };
+  /* the water jet: a narrow scrolling strip from the tap, and a splash where it lands */
+  const jetM=keep(new T.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{uT:U.uT},vertexShader:`varying vec2 vU; void main(){ vU=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
+    fragmentShader:`uniform float uT; varying vec2 vU; void main(){ float s=.55+.45*sin(vU.y*40.+uT*28.)*sin(vU.x*9.+vU.y*13.); float e=smoothstep(0.,.35,vU.x)*smoothstep(1.,.65,vU.x); gl_FragColor=vec4(mix(vec3(.72,.86,.98),vec3(1.),s*.5),e*(.55+.25*s)); }`}));
+  const jet=new T.Mesh(keep(new T.CylinderGeometry(.035,.045,1,10,1,true)),jetM); jet.visible=false; S.add(jet);
+  const splash=new T.Sprite(bubM); splash.visible=false; S.add(splash);
+  /* camera: fixed, from above and in front, so the inside of the bowl is in full view */
+  const cam=new T.PerspectiveCamera(42,1,.05,30), ray=new T.Raycaster(), nd=new T.Vector2(), down=new T.Vector3(0,-1,0);
+  const o={exposure:1.05}; const el=SHOPX.enter("dish",o);
+  el.insertAdjacentHTML("beforeend",`<style>.dw-hud{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 52px);display:flex;gap:6px;justify-content:center;align-items:center;pointer-events:none;font:900 15px ${UI_FONT};color:#fff4de;flex-wrap:wrap;padding:0 64px}
+    .dw-pill{background:rgba(40,24,14,.72);border:1px solid rgba(255,214,150,.45);border-radius:12px;padding:4px 10px;white-space:nowrap}.dw-step{position:absolute;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 88px);background:rgba(40,24,14,.72);color:#ffe9b8;border-radius:12px;padding:5px 12px;font:800 14px ${UI_FONT};pointer-events:none;white-space:nowrap}
+    .dw-bar{position:absolute;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 120px);width:min(70vw,320px);height:14px;border-radius:8px;background:rgba(40,24,14,.6);border:1px solid rgba(255,214,150,.45);overflow:hidden;pointer-events:none}.dw-bar i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#7fd0ff,#c8f0ff);transition:width .15s}
+    .dw-btn{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 26px);border:none;border-radius:16px;padding:12px 26px;font:900 18px ${UI_FONT};background:#e8742e;color:#fff;box-shadow:0 4px 0 #a8461a}
+    .dw-msg{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);background:rgba(46,139,87,.95);color:#fff;font:900 24px ${UI_FONT};padding:10px 20px;border-radius:14px;pointer-events:none;white-space:nowrap}
+    .dw-end{position:absolute;inset:0;background:rgba(24,14,8,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#fff4de;font:800 16px ${UI_FONT};text-align:center;padding:20px}.dw-end b{font-size:40px;color:#ffd24a}</style>
+    <div class="shx-top"><span class="shx-title">🫧 洗碗泡泡大戰</span><button class="shx-x" id="dwX">離開</button></div>
+    <div class="dw-hud"><span class="dw-pill" id="dwT">⏱ 60</span><span class="dw-pill" id="dwN">🥣 0 個</span><span class="dw-pill" id="dwS">☆☆☆</span></div><div class="dw-step" id="dwStep"></div><div class="dw-bar"><i id="dwBar"></i></div><button class="dw-btn" id="dwFlip" hidden>🔄 翻面</button>`);
+  const $d=q=>el.querySelector(q), tl=el.querySelector(".shx-touch");
+  const ST={ph:"in",t:DW_TIME,n:0,flip:0,flipT:0,yaw:0,pitch:0,over:false,go:false,cd:2.2,last:null,msgT:0,fpsT:0,fpsN:0,pr0:renderer.getPixelRatio(),pr:renderer.getPixelRatio()};
+  const msg=(t,c)=>{ let m=$d(".dw-msg"); if(m) m.remove(); m=document.createElement("div"); m.className="dw-msg"; if(c) m.style.background=c; m.textContent=t; el.appendChild(m); ST.msgT=1.1; };
+  const stars=n=>DW_STARS.filter(s=>n>=s).length;
+  const hud=()=>{ $d("#dwT").textContent="⏱ "+Math.max(0,Math.ceil(ST.t)); $d("#dwN").textContent=`🥣 ${ST.n} 個`; const k=stars(ST.n); $d("#dwS").textContent="★".repeat(k)+"☆".repeat(3-k);
+    const p=ST.ph==="in"?cleanOf(0):ST.ph==="out"?cleanOf(1):1-Math.max(foamOf(0),foamOf(1))/Math.max(.001,ST.f0||1); $d("#dwBar").style.width=Math.round(Math.max(0,Math.min(1,p))*100)+"%";
+    $d("#dwStep").textContent=!ST.go?"準備……":ST.ph==="in"?"① 用手指刷碗裡面的髒污":ST.ph==="flip"?"翻面中……":ST.ph==="out"?"② 刷碗底和外面":"③ 上下拖曳把碗翻轉傾斜，讓水柱沖掉碗裡碗外的泡泡";
+    $d("#dwFlip").hidden=!(ST.ph==="in"&&cleanOf(0)>=DW_CLEAN); };
+  newBowl(); hud(); window.__DW={ST,cleanOf,foamOf}; /* (for the tests) */
+  /* where on the bowl a screen point lands: [side (0 inside, 1 outside), uv, world point] — only the side you are working on counts */
+  const hit=(cx,cy)=>{ const r=renderer.domElement.getBoundingClientRect(); nd.set((cx-r.left)/r.width*2-1,-(cy-r.top)/r.height*2+1); ray.setFromCamera(nd,cam); const h=ray.intersectObject(bowl,false)[0]; if(!h||!h.uv) return null; return {side:h.uv.x>=.5?1:0,uv:h.uv,p:h.point}; };
+  const rUV=(m,side)=>m/(side?bg.userData.Lo:bg.userData.Li)*.235;
+  const scrubAt=(cx,cy)=>{ const H=hit(cx,cy); if(!H) return; const want=ST.ph==="in"?0:1; if(H.side!==want) return; stamp(H.side,H.uv.x,H.uv.y,rUV(.15,H.side),"scrub"); if(Math.random()<.35) bubble(H.p); try{ if(Math.random()<.25) noiseBurst(.05,.025,1800+Math.random()*900); }catch(e){} };
+  let drag=null; tl.style.touchAction="none";
+  tl.addEventListener("pointerdown",e=>{ if(ST.over) return; try{ tl.setPointerCapture(e.pointerId); }catch(_){} drag={x:e.clientX,y:e.clientY,id:e.pointerId}; ST.last=null; });
+  tl.addEventListener("pointermove",e=>{ if(!drag||drag.id!==e.pointerId||ST.over||!ST.go) return; const dx=e.clientX-drag.x, dy=e.clientY-drag.y; drag.x=e.clientX; drag.y=e.clientY;
+    if(ST.ph==="rinse"){ ST.yaw+=dx*.012; ST.pitch=Math.max(-.35,Math.min(Math.PI+.2,ST.pitch+dy*.009)); return; }
+    if(ST.ph!=="in"&&ST.ph!=="out") return; /* scrubbing: stamps along the stroke (only moving counts — a tap cleans nothing) */
+    const L=ST.last, n=L?Math.min(6,Math.ceil(Math.hypot(e.clientX-L[0],e.clientY-L[1])/14)):1; for(let i=1;i<=n;i++){ const t=i/n; scrubAt(L?L[0]+(e.clientX-L[0])*t:e.clientX,L?L[1]+(e.clientY-L[1])*t:e.clientY); } ST.last=[e.clientX,e.clientY]; });
+  const up=e=>{ if(drag&&drag.id===e.pointerId) drag=null; ST.last=null; }; tl.addEventListener("pointerup",up); tl.addEventListener("pointercancel",up);
+  $d("#dwFlip").onclick=()=>{ if(ST.ph!=="in") return; ST.ph="flip"; ST.flipT=0; try{ tone(520,.08,.05,"triangle"); tone(780,.1,.05,"triangle",.08); }catch(e){} hud(); };
+  $d("#dwX").onclick=()=>{ if(!ST.over&&ST.go&&ST.t>0&&!confirm("還沒洗完，現在離開就沒有獎勵喔。確定離開？")) return; SHOPX.leave(); };
+  const finish=()=>{ ST.over=true; jet.visible=splash.visible=false; const k=stars(ST.n), cg=k; if(cg){ const d=LF(); d.cg=(d.cg|0)+cg; save(); try{ profSave(true); }catch(e){} }
+    el.insertAdjacentHTML("beforeend",`<div class="dw-end"><div>時間到！洗好了</div><b>${ST.n} 個碗</b><div style="font-size:30px;color:#ffd24a">${"★".repeat(k)}${"☆".repeat(3-k)}</div><div>${cg?`玲姊包了 <b style="font-size:22px">${cg}</b> 碗鹹粥給你（在背包，一碗回 100 精力）`:"再快一點：洗 5 個碗就有一碗鹹粥"}</div><div style="font-size:13px;opacity:.8">★ 5 個・★★ 10 個・★★★ 15 個</div><button class="dw-btn" style="position:static;transform:none" id="dwOk">好</button></div>`);
+    $d("#dwOk").onclick=()=>SHOPX.leave(); try{ tone(660,.12,.06,"triangle"); tone(880,.16,.06,"triangle",.12); }catch(e){} };
+  const done1=()=>{ ST.n++; msg(ST.n%5===0?`洗好 ${ST.n} 個！`:"洗乾淨了！"); try{ tone(988,.08,.05,"sine"); tone(1318,.12,.05,"sine",.07); }catch(e){} ST.ph="next"; ST.nextT=.5; };
+  const P3=new T.Vector3(), Q=new T.Quaternion(), E=new T.Euler();
+  o.render=dt=>{ dt=Math.min(.05,dt||.016); U.uT.value+=dt; const asp=innerWidth/innerHeight; cam.aspect=asp; cam.fov=asp<.8?54:42; const dist=asp<.8?3.0:2.6; cam.position.set(0,dist*.92,dist*.62); cam.lookAt(0,-.12,.1); cam.updateProjectionMatrix();
+    if(!ST.go){ ST.cd-=dt; if(ST.cd<=0){ ST.go=true; msg("開始！"); } }
+    else if(!ST.over){ ST.t-=dt; if(ST.t<=0){ ST.t=0; finish(); } }
+    /* the bowl's pose */
+    if(ST.ph==="flip"){ ST.flipT+=dt/.6; const k=Math.min(1,ST.flipT), e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2; pivot.rotation.set(Math.PI*e,ST.spin||0,0); pivot.position.y=-.03+.03*k+Math.sin(Math.PI*k)*.35; if(k>=1){ ST.ph="out"; hud(); } }
+    else if(ST.ph==="in"){ ST.spin=(ST.spin||0)+dt*.45; pivot.rotation.set(0,ST.spin,0); pivot.position.y=-.03; } /* (the bowl turns slowly in your hand, so every part comes round to you) */
+    else if(ST.ph==="out"){ ST.spin=(ST.spin||0)+dt*.45; pivot.rotation.set(Math.PI,ST.spin,0); pivot.position.y=0; if(cleanOf(1)>=DW_CLEAN){ ST.ph="rinse"; ST.yaw=0; ST.pitch=.25; ST.f0=Math.max(foamOf(0),foamOf(1),.05); hud(); try{ noiseBurst(.25,.04,500); }catch(e){} } }
+    else if(ST.ph==="rinse"){ ST.yaw+=dt*.9; E.set(ST.pitch,ST.yaw,0,"YXZ"); pivot.quaternion.setFromEuler(E); pivot.position.y=-.02; }
+    else if(ST.ph==="next"){ ST.nextT-=dt; pivot.position.x+=dt*5; if(ST.nextT<=0){ newBowl(); pivot.position.set(-2.2,-.03,.12); pivot.rotation.set(0,0,0); ST.ph="slide"; } }
+    else if(ST.ph==="slide"){ pivot.position.x=Math.min(0,pivot.position.x+dt*7); if(pivot.position.x>=0){ ST.ph="in"; ST.spin=0; hud(); } }
+    pivot.updateMatrixWorld(true);
+    /* the water: only while rinsing; it finds the bowl straight below the tap and washes the foam off there */
+    const rin=ST.ph==="rinse"&&!ST.over; jet.visible=rin; splash.visible=false;
+    if(rin){ ray.set(P3.set(TAP.x,TAP.y-.1,TAP.z),down); const h=ray.intersectObject(bowl,false)[0]; const yb=h?h.point.y:-.27, top=TAP.y-.1, len=Math.max(.05,top-yb); jet.scale.set(1,len,1); jet.position.set(TAP.x,top-len/2,TAP.z);
+      if(h&&h.uv){ const sd=h.uv.x>=.5?1:0; stamp(sd,h.uv.x,h.uv.y,rUV(.27,sd),"rinse"); splash.visible=true; splash.position.copy(h.point); const k=.22+.05*Math.sin(U.uT.value*30); splash.scale.set(k,k,1); if(Math.random()<.3) bubble(h.point); }
+      if(Math.max(foamOf(0),foamOf(1))<=(1-DW_RINSE)*ST.f0) done1(); }
+    flush(stC,cleanRT); flush(stF,foamRT); flush(stR,foamRT);
+    for(const b of BUB){ if(!b.s.visible) continue; b.t-=dt; b.s.position.addScaledVector(b.v,dt); if(b.t<=0) b.s.visible=false; }
+    if(ST.msgT>0){ ST.msgT-=dt; if(ST.msgT<=0){ const m=$d(".dw-msg"); if(m) m.remove(); } }
+    if((ST.hudT=(ST.hudT||0)-dt)<=0){ ST.hudT=.12; hud(); }
+    /* adaptive resolution: a step down when frames run slow, never below 1 */
+    ST.fpsT+=dt; ST.fpsN++; if(ST.fpsT>2){ const fps=ST.fpsN/ST.fpsT; if(fps<38&&ST.pr>1){ ST.pr=Math.max(1,ST.pr-.25); renderer.setPixelRatio(ST.pr); } ST.fpsT=0; ST.fpsN=0; }
+    renderer.render(S,cam); };
+  o.dispose=()=>{ try{ renderer.setPixelRatio(ST.pr0); }catch(e){} S.remove(pivot); disp.forEach(x=>{ try{ x.dispose(); }catch(e){} }); [stC,stF,stR].forEach(s=>{ try{ s.im.dispose&&s.im.dispose(); }catch(e){} }); try{ jetM.dispose(); }catch(e){} };
+  return o; }
+HANDLERS.lfDishGo=()=>{ closeSheet(); if(!enPay(EN_SHOP)) return; dwGame(); };
+
 function czGame(){ const G=gOverlay("","linear-gradient(#3a2416,#24160d)"), B=G.B; const S={done:0,miss:0,combo:0,best:0,tb:1+((Math.random()*10)|0),ord:czOrder(0),tray:{},wait:0,cat:0,over:0,paid:0,coins:0,cg:0,t0:performance.now(),first:1}; CZD.forEach(d=>{ const im=new Image(); im.src=czPic(d[0]); });
   B.style.top="calc(env(safe-area-inset-top,0px) + 6px)";
   B.innerHTML=`<style>.cz{width:100%;height:100%;display:flex;flex-direction:column;color:#4a2e1a;font-family:${UI_FONT};position:relative}.cz-top{display:flex;align-items:center;gap:6px;padding:0 64px 4px 8px;color:#fbe7c6;flex-wrap:wrap}.cz-top img{height:32px}.cz-pill{background:rgba(255,240,215,.14);border:1px solid rgba(255,220,170,.35);border-radius:12px;padding:3px 9px;font:900 14px ${UI_FONT};white-space:nowrap}
