@@ -14322,7 +14322,7 @@ const DIGS=[ /* id, name, picture, kind (junk/old/fossil/gem/gift/treasure/tackl
  ["$gacha", "扭蛋幣", "🎟️", "special", 0, 3, [], ""],
  ["$furn", "家具", "🪑", "special", 0, 2, [], ""],
  ["$hat", "頭飾", "🎩", "special", 0, 1, [], ""]];
-const DIG_BY={}; DIGS.forEach(q=>{ DIG_BY[q[0]]=q; if(q[3]!=="special") GINFO["dig:"+q[0]]={n:q[1],ic:q[2],cat:q[3],tags:q[6],d:q[7]}; });
+const DIG_BY={}; DIGS.forEach(q=>{ if(/\.webp$/.test(q[2])) q[2]=MZIMG(q[2]); /* (the test page keeps these pictures in IMG_PACK) */ DIG_BY[q[0]]=q; if(q[3]!=="special") GINFO["dig:"+q[0]]={n:q[1],ic:q[2],cat:q[3],tags:q[6],d:q[7]}; });
 const DIG_DAY=15; /* (a day: 15 digs at most — about 1,500–2,000 平安幣 worth) */
 const SHOVEL=()=>{ const d=LF(); d.sh=d.sh||{u:0}; return d.sh; };
 const DG={list:[],t:20,act:null,chip:null}; let digNear=null;
@@ -14348,10 +14348,10 @@ function digReward(o){ const S=SHOVEL(); S.u--; { const dd=LF(); dd.dgN=(dd.dgN|
   else { giAdd("dig:"+q[0],1); }
   save(); try{ profSave(true); statInc("digN"); }catch(e){}
   const good=["fossil","gem","treasure","tackle"].includes(q[3])||q[0]==="$furn"||q[0]==="$hat"; try{ (good?[659,784,988,1319,1568]:q[3]==="junk"?[523,440]:[659,784,988]).forEach((f,k)=>tone(f,.12,.05,"triangle",k*.07)); }catch(e){}
-  /* the thing pops out of the hole, spins up and lands in your hands */ const isImg=/\.webp$/.test(ic); const tx=new T.Sprite(new T.SpriteMaterial({map:isImg?new T.TextureLoader().load(ic):new T.CanvasTexture(cvs0(128,128,(x)=>{ x.font="92px serif"; x.textAlign="center"; x.textBaseline="middle"; x.fillText(ic,64,70); })),transparent:true,depthWrite:false})); tx.position.set(o.x,o.gy+.2,o.z); tx.scale.set(.1,.1,1); scene.add(tx); DG.pop={s:tx,t:0,o};
+  /* the thing pops out of the hole, spins up and lands in your hands */ const isImg=/\.webp$|^data:/.test(ic); const tx=new T.Sprite(new T.SpriteMaterial({map:isImg?new T.TextureLoader().load(ic):new T.CanvasTexture(cvs0(128,128,(x)=>{ x.font="92px serif"; x.textAlign="center"; x.textBaseline="middle"; x.fillText(ic,64,70); })),transparent:true,depthWrite:false})); tx.position.set(o.x,o.gy+.2,o.z); tx.scale.set(.1,.1,1); scene.add(tx); DG.pop={s:tx,t:0,o};
   bugPuff(new T.Vector3(o.x,o.gy+.3,o.z),good?"#ffe27a":"#e8d8b0",good?28:16,good?2.6:1.8);
   setTimeout(()=>digCard(ic,name,line,q,good,S),900); }
-function digCard(ic,name,line,q,good,S){ const c=document.createElement("div"); c.className="bug-card"; c.innerHTML=`<div class="bc-in ${good?"r4":q[3]==="junk"?"":"r3"}">${good?`<div class="bc-burst"></div>`:""}${/\.webp$/.test(ic)?`<img src="${ic}" alt="" style="width:132px;height:132px;object-fit:contain;position:relative;animation:bcW 1.2s ease-in-out infinite">`:`<span style="font-size:96px;line-height:1.1;position:relative;animation:bcW 1.2s ease-in-out infinite">${ic}</span>`}<b>${name}</b>${q[3]==="junk"?`<span class="bc-r" style="color:#8a7a6a">……是垃圾</span>`:({fossil:"化石！",gem:"寶石！",treasure:"寶物！",tackle:"古老的釣具！"})[q[3]]?`<span class="bc-r">${({fossil:"化石！",gem:"寶石！",treasure:"寶物！",tackle:"古老的釣具！"})[q[3]]}</span>`:""}<small>${line}</small><small class="bc-u">鏟子還能用 ${Math.max(0,S.u)} 次</small></div>`;
+function digCard(ic,name,line,q,good,S){ const c=document.createElement("div"); c.className="bug-card"; c.innerHTML=`<div class="bc-in ${good?"r4":q[3]==="junk"?"":"r3"}">${good?`<div class="bc-burst"></div>`:""}${/\.webp$|^data:/.test(ic)?`<img src="${ic}" alt="" style="width:132px;height:132px;object-fit:contain;position:relative;animation:bcW 1.2s ease-in-out infinite">`:`<span style="font-size:96px;line-height:1.1;position:relative;animation:bcW 1.2s ease-in-out infinite">${ic}</span>`}<b>${name}</b>${q[3]==="junk"?`<span class="bc-r" style="color:#8a7a6a">……是垃圾</span>`:({fossil:"化石！",gem:"寶石！",treasure:"寶物！",tackle:"古老的釣具！"})[q[3]]?`<span class="bc-r">${({fossil:"化石！",gem:"寶石！",treasure:"寶物！",tackle:"古老的釣具！"})[q[3]]}</span>`:""}<small>${line}</small><small class="bc-u">鏟子還能用 ${Math.max(0,S.u)} 次</small></div>`;
   document.body.appendChild(c); c.onclick=()=>c.remove(); setTimeout(()=>{ c.classList.add("out"); setTimeout(()=>c.remove(),400); },2800); }
 L.tick8=dt=>{ try{ digTick(dt); }catch(e){ console.warn("dig",e); } if(L.tick9) L.tick9(dt); };
 function digTick(dt){ const inTown=TOWNX&&TOWNX.on, p=meAv.pos, c=digChip();

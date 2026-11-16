@@ -17,7 +17,7 @@ here = os.path.dirname(os.path.abspath(__file__)); root = os.path.normpath(os.pa
 pub = os.path.join(root, "public"); W = os.environ.get("MZ_WORK", os.path.expanduser("~/mz-work")); T = os.path.join(W, "test")
 shutil.rmtree(T, ignore_errors=True); os.makedirs(T); os.makedirs(os.path.join(W, "hook"), exist_ok=True)
 subprocess.run([sys.executable, os.path.join(here, "build_test.py")], check=True, env=dict(os.environ, MZ_WORK=W))
-PACK_DIRS = ["flw", "garden", "congee", "face", "catcoat", "doors"]  # (paperph/ads stay plain files: the newspaper shows them with <img src>, which the route can't catch)
+PACK_DIRS = ["flw", "garden", "congee", "face", "catcoat", "doors", "dig"]  # (paperph/ads stay plain files: the newspaper shows them with <img src>, which the route can't catch)
 PACK_FILES = ["herbs/table.webp", "signs/congee-h.webp"]
 def b64(p, mime): return f"data:{mime};base64," + base64.b64encode(open(p, "rb").read()).decode()
 mime = lambda p: {"webp": "image/webp", "png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg"}.get(p.rsplit(".", 1)[-1].lower())
