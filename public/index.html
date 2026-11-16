@@ -4970,7 +4970,7 @@ const HAT_IC=["hat_crown","hat_guanmao","hat_douli","hat_peach","hat_catbell","h
 const bic=(k,cls="")=>{ if(SHOPX&&String(k).startsWith("sn_")) return SHOPX.bic(k,cls); if(LIFE&&String(k).startsWith("lf_")) return LIFE.bic(k,cls); if(k==="treat"||k==="can") return `<span class="bic ${cls}" style="background:url(catitem-${k}.webp) center/contain no-repeat"></span>`; { let h3=-1; try{ h3=HAT3.findIndex(h=>h[0]===k); }catch(e){} if(h3>=0) return `<span class="bic ${cls}" style="background-image:url(hat3-icons.webp);background-size:${HAT3.length*100}% 100%;background-position:${h3/(HAT3.length-1)*100}% 0"></span>`; } { let h2=-1; try{ h2=HAT2.findIndex(h=>h[0]===k); }catch(e){} if(h2>=0) return `<span class="bic ${cls}" style="background-image:url(hat2-icons.webp);background-size:${HAT2.length*100}% 100%;background-position:${h2/(HAT2.length-1)*100}% 0"></span>`; } const hj=HAT_IC.indexOf(k); if(hj>=0) return `<span class="bic ${cls}" style="background-image:url(hat-icons.webp);background-size:${HAT_IC.length*100}% 100%;background-position:${hj/(HAT_IC.length-1)*100}% 0"></span>`; const j=ACC_IC2.indexOf(k); if(j>=0) return `<span class="bic ${cls}" style="background-image:url(acc-icons.webp);background-size:${ACC_IC2.length*100}% 100%;background-position:${j/(ACC_IC2.length-1)*100}% 0"></span>`; const i=BAG_IC[k]??12; return `<span class="bic ${cls}" style="background-position:${(i%7)/6*100}% ${Math.floor(i/7)*100}%"></span>`; };
 let bagTab="all", bagSel=null;
 /* 背包分類 (11/16 主委): 綜合 (everything) / 道具 / 頭飾 / 飾品 / 任務物品 — every entry is sorted by what it is */
-const BAG_CAT=e=>{ const [t,k]=e.id.split(":"); if(t==="a") return ACC[k]&&ACC[k].cat==="頭飾"?"hat":"acc"; if(t==="p") return "quest"; if(k==="hongbao") return "quest"; if(t==="lf"&&/^(dex|g_rcp|g_spd|q_)/.test(k)) return "quest"; return "tool"; };
+const BAG_CAT=e=>{ const [t,k]=e.id.split(":"); if(t==="a") return ACC[k]&&ACC[k].cat==="頭飾"?"hat":"acc"; if(t==="p") return "quest"; if(k==="hongbao") return "quest"; if(t==="lf"&&/^(dex|g_rcp|g_spd|q_|gi_dig~(hook|jfish|lure|jring|fstamp|fscroll|secret)$)/.test(k)) return "quest"; return "tool"; };
 function bagEntries(){ const T=bagTab; bagTab="all"; let out; try{ out=bagEntries0(T==="tool"); } finally{ bagTab=T; } return T==="all"?out:out.filter(e=>BAG_CAT(e)===T); }
 function bagEntries0(zeroGoods){ const a=accState(), out=[];
   if(bagTab==="all"||bagTab==="goods") GOODS.forEach(g=>{ const n=bag.items[g.k]||0; if(n||zeroGoods) out.push({id:"g:"+g.k,ic:g.k,n,name:g.name,desc:g.meta}); });
@@ -12898,7 +12898,7 @@ function tackle(){ const d=LF(); const tabs=[["rf","溪釣竿"],["rs","海釣竿
       if(r.hid&&!own){ if(i===5) return `<div class="lf-row"><div class="t"><b>？？？</b><br><small>${GQ().s>0?"阿財伯：「你也去過女神泉了？傳說女神會把誠心人的釣竿洗成一支會發光的竿子。」":"阿財伯：「森林最裡面的女神泉，傳說藏著一支會發光的釣竿……」"}</small></div></div>`; const A=L.npcA("k_tackle_0"), st=d.stone|0, can=A>=100&&st>=3; return `<div class="lf-row"><div class="t"><b>？？？</b><br><small>${A<40?"阿財伯：「流星夜的時候抬頭看看天空吧。掉下來的石頭……可是好東西。」":A<100?`阿財伯：「我年輕時見過一支用流星石打的竿子，夜裡像一道流星。等我們再熟一點，我再跟你說。」<br>（阿財伯的好感 ${A}／100）`:can?"阿財伯：「三顆流星石都帶來了？好！老頭子今天就幫你打一支星空竿！」":`阿財伯：「你是我最好的釣友了。帶 3 顆流星石來，我幫你打一支星空竿。」<br>（流星石 ${st}／3）`}</small></div>${can?`<button class="primary" data-act="lfForge">打造</button>`:""}</div>`; }
       return `<div class="lf-row"><img class="rodic" src="rods/r${i}.webp" alt=""><div class="t"><b>${r.n}</b>${r.hid?"":`　${dPrice("tw:tackle",r.p)} 幣${shopDisc("tw:tackle")?`<s style="opacity:.5;margin-left:4px">${r.p}</s>`:""}`}<br><small>${r.d}<br>操控 ${stars(r.ctl,0,.15)}　力量 ${stars(r.pow,1,1.75)}　魚運 ${stars(r.luck,1,2.6)}<br><span style="color:#2e7d4f">${rodFxTxt(r)}</span></small></div>${own?`<button class="${using?"secondary":"primary"}" data-act="lfRodEq" data-v="${i}" ${using?"disabled":""}>${using?"使用中":"換這支"}</button>`:`<button class="primary" data-act="lfRod" data-v="${i}">買</button>`}</div>`; }).join(""); }
   else if(tkTab==="bf"||tkTab==="bs"){ const k=tkTab==="bf"?"f":"s"; body=`<p class="note" style="margin:6px 0">一包 10 份，魚咬一次用掉一份。沒有餌不能拋竿。每種餌會把它寫的那幾種魚的機率變成 6 倍，而且咬得比較快（沒釣過的魚顯示「？？？」）。釣魚時按左下角可以換釣竿和釣餌，下面會看到這裡現在可能釣到什麼。</p>`+BAITS.map((b,i)=>b.k!==k?"":`<div class="lf-row"><img class="rodic" src="baits/b${i}.webp" alt="" style="border-radius:12px"><div class="t"><b>${b.n}</b>　${dPrice("tw:tackle",b.p)} 幣／10 份${d.bait[i]?`｜有 ${d.bait[i]} 份`:""}<br><small>${b.d}<br><span style="color:#2e7d4f">引來（機率 ×${BAIT_X}、上鉤更快）：${b.t.map(id=>d.fish[id]&&d.fish[id][0]?FBY[id].n:"？？？").join("、")}</span></small></div><button class="primary" data-act="lfBait" data-v="${i}">買</button></div>`).join(""); }
-  else body=`<h4 style="margin:10px 0 4px">收購魚</h4>${sellSheet("t")}${(()=>{ const r=digSellRows(["tackle"],"t"); return r?`<h4 style="margin:10px 0 4px">古老的釣具</h4><p class="note" style="margin:0 0 6px">阿財伯：「這些老東西我收。不過……聽說女神泉的女神也在找它們。」</p>`+r:""; })()}`;
+  else body=`<h4 style="margin:10px 0 4px">收購魚</h4>${sellSheet("t")}`;
   openSheet("lfTackle","🎣 釣具行",`<p class="lead">老闆：「河、溪、泉水用溪釣竿，海邊用海釣竿。什麼魚吃什麼餌，學問可大了。」</p><div style="display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px">${tabs.map(t=>`<button class="${tkTab===t[0]?"primary":"secondary"}" style="flex:none;width:auto;min-height:0;padding:8px 12px;font-size:14px" data-act="lfTk" data-v="${t[0]}">${t[1]}</button>`).join("")}</div>${body}<div class="row" style="margin-top:10px"><button class="secondary" data-act="lfDex">📖 魚圖鑑</button></div>`); }
 HANDLERS.lfTk=v=>{ tkTab=v; tackle(); };
 HANDLERS.lfRod=v=>{ const d=LF(), i=+v, r=RODS[i]; if(!r||r.hid||hasRod(i)) return; const pr=dPrice("tw:tackle",r.p); if(!me.sp){ if(bag.coins<pr){ try{ buzz(); }catch(e){} toast(`平安幣不夠（還差 ${pr-bag.coins}）`,2400); return; } bag.coins-=pr; } d.rods|=1<<i; if(r.k==="f") d.eqF=i+1; else d.eqS=i+1; save(); try{ profSave(true); chaChing(); }catch(e){} toast(`買了${r.n}！走到${r.k==="f"?"河邊、溪邊或泉池":"海邊"}就會出現「🎣 釣魚」`,3200); tackle(); };
@@ -14137,7 +14137,28 @@ const BUGS=[ /* id, name, emoji, hue shift, rarity 1–4, where, when ("d" day, 
  ["seaslug","海洋寶石蟹","🦀",180,3,"beach","n",0,1100,"殼像寶石一樣亮晶晶。"],
  ["rainbow","彩虹吉丁蟲","🪲",120,4,"mount","d",0,3200,"整隻閃著彩虹色，傳說中的蟲。"],
  ["golden","黃金鍬形蟲","🪲",50,4,"forest mount","n",0,3500,"金光閃閃，只在深夜的森林出沒。"],
- ["starbug","星光蝶","🦋",200,4,"mount valley","n",1,3800,"流星夜才會出現的發光蝴蝶。"]];
+ ["starbug","星光蝶","🦋",200,4,"mount valley","n",1,3800,"流星夜才會出現的發光蝴蝶。"],
+ /* 11/16 主委: 20 more */
+ ["ant","螞蟻","🐜",0,1,"park forest","",0,40,"排成一列在搬東西。"],
+ ["snail","蝸牛","🐌",0,1,"park valley","",0,50,"下過雨就出來散步。"],
+ ["grasshopper","蚱蜢","🦗",60,1,"valley park","d",0,60,"一跳好遠。"],
+ ["yellowfly","黃蝶","🦋",220,1,"park valley","d",1,70,"小小的黃色蝴蝶。"],
+ ["strider","水黽","🦟",0,1,"valley","d",0,90,"在水面上滑來滑去。"],
+ ["damsel","豆娘","🪰",180,1,"valley","d",1,90,"細細的身體，像小一號的蜻蜓。"],
+ ["caterpillar","毛毛蟲","🐛",0,1,"park forest","d",0,50,"長大以後會變成蝴蝶。"],
+ ["mantis","螳螂","🦗",100,2,"forest park","d",0,220,"舉著兩把大鐮刀。"],
+ ["bluefly","青斑蝶","🦋",180,2,"mount valley","d",1,240,"會成群飛越大海的蝴蝶。"],
+ ["longhorn","天牛","🪲",0,2,"forest","n",0,300,"觸角比身體還長。"],
+ ["katydid","螽斯","🦗",120,2,"forest","n",0,260,"晚上在草叢裡唱歌。"],
+ ["bumble","熊蜂","🐝",20,2,"mount","d",1,280,"胖胖的、毛茸茸的蜜蜂。"],
+ ["fiddler","招潮蟹","🦀",30,2,"beach","",0,300,"一隻大螯揮來揮去。"],
+ ["leafwing","枯葉蝶","🦋",30,3,"forest mount","d",1,1000,"翅膀合起來就像一片枯葉。"],
+ ["orchid","蘭花螳螂","🦗",300,3,"mount","d",0,1400,"長得像一朵粉紅色的蘭花。"],
+ ["jewel","金龜子","🪲",90,3,"forest","d",0,900,"背上綠得發亮。"],
+ ["lantern","長吻白蠟蟬","🦗",340,3,"forest","n",0,1100,"頭上長著一根長長的紅鼻子。"],
+ ["goldcicada","金蟬","🪲",50,4,"forest","d",0,3000,"傳說蛻殼的時候會發出金光。"],
+ ["mazufly","天后鳳蝶","🦋",40,4,"valley mount","d",1,3600,"只在天后宮附近出現的傳說蝴蝶。"],
+ ["moonmoth","月光蛾","🦋",150,4,"mount","n",1,3400,"翅膀像月光一樣淡綠透明。"]];
 const BUG_BY={}; BUGS.forEach(b=>{ BUG_BY[b[0]]=b; });
 const BUG_RN=["","常見","少見","稀有","傳說"], BUG_RW={1:10,2:3,3:.6,4:.15};
 const BUG_AREA={park:[[-6,21,-130,-118],[35,64,-130,-118]],valley:[[90,132,-116,-56]],forest:[[18,114,-172,-147]],mount:[[26,106,-248,-180]],beach:[[137,150,-118,-62]]};
@@ -14295,8 +14316,8 @@ const DIGS=[ /* id, name, picture, kind (junk/old/fossil/gem/gift/treasure/tackl
  ["compass", "舊羅盤", "dig/compass.webp", "old", 500, 0.6, [], "指針還在動！"],
  ["mosaic", "馬賽克碎片", "dig/mosaic.webp", "old", 450, 0.67, [], "上面有一隻小鳥。"],
  ["secret", "釣魚秘法", "dig/secret.webp", "tackle", 0, 4, [], "一本很舊的線裝書，封面寫著「釣魚秘法」。女神泉也許用得到。"],
- ["hook", "古銅魚鉤", "dig/hook.webp", "tackle", 250, 2.5, [], "長滿銅綠的大魚鉤。"],
- ["jfish", "玉魚墜", "dig/jfish.webp", "tackle", 250, 2.5, [], "綠玉雕的小魚，綁著紅繩。"],
+ ["hook", "古銅魚鉤", "dig/hook.webp", "tackle", 0, 2.5, [], "長滿銅綠的大魚鉤。"],
+ ["jfish", "玉魚墜", "dig/jfish.webp", "tackle", 0, 2.5, [], "綠玉雕的小魚，綁著紅繩。"],
  ["lamp2", "古油燈", "dig/lamp2.webp", "old", 400, 0.75, [], "居然還點得著。"],
  ["tablet", "刻紋石牌", "dig/tablet.webp", "old", 350, 0.86, [], "石頭上刻著迴紋。"],
  ["flute2", "羽飾骨笛", "dig/flute2.webp", "old", 650, 0.46, [], "掛著兩根羽毛。"],
@@ -14309,15 +14330,15 @@ const DIGS=[ /* id, name, picture, kind (junk/old/fossil/gem/gift/treasure/tackl
  ["shorse", "海馬化石", "dig/shorse.webp", "fossil", 850, 0.35, [], "捲著尾巴的小海馬。"],
  ["claw", "蟹螯化石", "dig/claw.webp", "fossil", 500, 0.6, [], "一隻大鉗子。"],
  ["vert", "脊椎骨化石", "dig/vert.webp", "fossil", 450, 0.67, [], "像一顆星星。"],
- ["lure", "古木魚餌", "dig/lure.webp", "tackle", 250, 2.5, [], "木頭刻的假魚，還掛著鉤子。"],
- ["jring", "魚紋玉扳指", "dig/jring.webp", "tackle", 250, 2.5, [], "古時候釣魚人戴的玉扳指。"],
- ["fstamp", "魚紋銅印", "dig/fstamp.webp", "tackle", 250, 2.5, [], "印章上刻著一條魚。"],
+ ["lure", "古木魚餌", "dig/lure.webp", "tackle", 0, 2.5, [], "木頭刻的假魚，還掛著鉤子。"],
+ ["jring", "魚紋玉扳指", "dig/jring.webp", "tackle", 0, 2.5, [], "古時候釣魚人戴的玉扳指。"],
+ ["fstamp", "魚紋銅印", "dig/fstamp.webp", "tackle", 0, 2.5, [], "印章上刻著一條魚。"],
  ["obsid", "黑曜石", "dig/obsid.webp", "gem", 400, 0.75, [], "黑得發亮的火山石。"],
  ["turtle", "石龜", "dig/turtle.webp", "old", 700, 0.43, [], "長了一點青苔的石頭烏龜。"],
  ["nest", "恐龍巢化石", "dig/nest.webp", "fossil", 1600, 0.3, [], "三顆蛋整整齊齊排在巢裡。"],
  ["comb", "鯨骨梳", "dig/comb.webp", "old", 550, 0.55, [], "梳子上刻著一隻鯨魚。"],
  ["obspear", "黑曜石矛頭", "dig/obspear.webp", "old", 350, 0.86, [], "鋒利得可以切紙。"],
- ["fscroll", "魚圖古卷", "dig/fscroll.webp", "tackle", 250, 2.5, [], "畫著一條魚和一個羅盤。"],
+ ["fscroll", "魚圖古卷", "dig/fscroll.webp", "tackle", 0, 2.5, [], "畫著一條魚和一個羅盤。"],
  ["$coins", "一袋平安幣", "💰", "special", 0, 6, [], ""],
  ["$gacha", "扭蛋幣", "🎟️", "special", 0, 3, [], ""],
  ["$furn", "家具", "🪑", "special", 0, 2, [], ""],
@@ -14428,12 +14449,12 @@ const INGD=()=>{ const d=LF(); d.ing=d.ing||{}; return d.ing; };
 const COOK=[["當歸鴨麵線","🍜",45,["pk:pk_duck","ing:duck","ing:misua"]],["四物雞湯","🍲",40,["pk:pk_siwu","ing:chicken"]],["滷肉飯","🍚",40,["pk:pk_lu","ing:pork","ing:rice","ing:soy"]],["牛肉麵","🍜",50,["pk:pk_beef","ing:beef","ing:noodle"]],
  ["香菇雞湯","🍲",35,["ing:chicken","ing:mush","ing:salt"]],["麻油雞","🍗",40,["ing:chicken","ing:sesoil","ing:wine"]],["番茄炒蛋","🍳",30,["crop:tomato","ing:egg","ing:salt","ing:sugar"]],["三杯雞","🍗",40,["ing:chicken","ing:sesoil","ing:soy","ing:wine"]],
  ["蔥油餅","🫓",25,["ing:flour","ing:scal","ing:salt"]],["鹹粥","🥣",30,["ing:rice","fish","ing:salt"]]];
-COOK.forEach((c,i)=>{ GINFO["ck:"+i]={n:c[0],ic:c[1],cat:"dish",tags:["food"],d:`自己在家煮的${c[0]}。吃了精力 +${c[2]}，也可以送給鎮上的人。`}; });
+COOK.forEach((c,i)=>{ c[1]=MZIMG("cook/ck"+i+".webp"); GINFO["ck:"+i]={n:c[0],ic:c[1],cat:"dish",tags:["food"],d:`自己在家煮的${c[0]}。吃了精力 +${c[2]}，也可以送給鎮上的人。`}; });
 const needName=n=>{ const [k,id]=n.split(":"); if(k==="ing") return IB[id][1]; if(k==="pk") return (PACKS.find(p=>p[0]===id)||[0,"藥材包"])[1]; if(k==="crop") return SB[id]?SB[id][1]:id; return "一條魚"; };
 const needHave=n=>{ const [k,id]=n.split(":"), d=LF(); if(k==="ing") return (INGD()[id]|0)>0; if(k==="pk") return ((d.pk||{})[id]|0)>0; if(k==="crop") return (GD2().crop[id]|0)>0; return d.inv.length>0; };
 const needTake=n=>{ const [k,id]=n.split(":"), d=LF(); if(k==="ing"){ INGD()[id]--; } else if(k==="pk"){ d.pk[id]--; } else if(k==="crop"){ GD2().crop[id]--; } else { let i=0; d.inv.forEach((q,k2)=>{ if(FBY[q[0]].r<FBY[d.inv[i][0]].r) i=k2; }); d.inv.splice(i,1); } };
 function kitchen(){ const d=LF(), known=d.rcp||[];
-  const rows=COOK.map((c,i)=>{ const kn=known.includes(c[0])||me.sp, can=kn&&c[3].every(needHave); return `<div class="lf-row" style="${kn?"":"opacity:.5"}"><span style="font-size:32px;width:52px;text-align:center">${kn?c[1]:"📕"}</span><div class="t"><b>${kn?c[0]:"？？？"}</b>${kn?`　精力 +${c[2]}`:""}<br><small>${kn?c[3].map(n=>`<span style="color:${needHave(n)?"#2e7d4f":"#b3261e"}">${needName(n)}</span>`).join("、"):"還沒有這本食譜。老街的書店整理書架，老闆會送食譜。"}</small></div>${kn?`<button class="primary" data-act="lfCook" data-v="${i}" ${can||me.sp?"":"disabled"}>煮</button>`:""}</div>`; }).join("");
+  const rows=COOK.map((c,i)=>{ const kn=known.includes(c[0])||me.sp, can=kn&&c[3].every(needHave); return `<div class="lf-row" style="${kn?"":"opacity:.5"}">${kn?`<img src="${c[1]}" alt="" style="width:52px;height:52px;object-fit:contain">`:`<span style="font-size:32px;width:52px;text-align:center">📕</span>`}<div class="t"><b>${kn?c[0]:"？？？"}</b>${kn?`　精力 +${c[2]}`:""}<br><small>${kn?c[3].map(n=>`<span style="color:${needHave(n)?"#2e7d4f":"#b3261e"}">${needName(n)}</span>`).join("、"):"還沒有這本食譜。老街的書店整理書架，老闆會送食譜。"}</small></div>${kn?`<button class="primary" data-act="lfCook" data-v="${i}" ${can||me.sp?"":"disabled"}>煮</button>`:""}</div>`; }).join("");
   const have=Object.keys(GI()).filter(k=>k.startsWith("ck:")&&GI()[k]>0).map(k=>`<div class="lf-row"><span style="font-size:30px;width:52px;text-align:center">${giInfo(k).ic}</span><div class="t"><b>${giInfo(k).n}</b> ×${GI()[k]}</div><button class="secondary" data-act="lfCkEat" data-v="${k}">吃掉</button></div>`).join("");
   openSheet("lfKitchen","🍳 廚房",`<p class="lead">食譜在書店拿，雞鴨魚肉和調味料到雜貨店（威利）買，藥材包是中藥行許伯送的，番茄要自己種。</p>${rows}${have?`<h4 style="margin:12px 0 4px">煮好的菜</h4>${have}<p class="note">煮好的菜也可以送給鎮上的人（點他們，選「送禮物」）。</p>`:""}`); }
 let CK=null;
@@ -14444,7 +14465,7 @@ HANDLERS.lfCook=v=>{ const i=+v, c=COOK[i]; if(!c) return; if(!me.sp&&!c[3].ever
 HANDLERS.lfStir=()=>{ if(!CK||CK.hits.length>=3) return; const ok=CK.pos>=.38&&CK.pos<=.62; CK.hits.push(ok?(Math.abs(CK.pos-.5)<.06?2:1):0); try{ ok?tone(880,.06,.05,"triangle"):tone(200,.12,.05,"square"); navigator.vibrate&&navigator.vibrate(20); }catch(e){}
   const pan=document.getElementById("ckPan"); if(pan){ pan.animate([{transform:"translateY(0) rotate(0)"},{transform:"translateY(-26px) rotate(-14deg)"},{transform:"translateY(0) rotate(0)"}],{duration:380}); pan.textContent=["🍳","🔥🍳","🍳💨","✨🍳✨"][CK.hits.length]; }
   if(CK.hits.length>=3){ const sc=CK.hits.reduce((a,b)=>a+b,0), c=COOK[CK.i], q=sc>=5?2:sc>=3?1:0, nm=["普通","好吃","絕品"][q]; giAdd("ck:"+CK.i,1+(q===2?1:0)); save(); try{ profSave(true); statInc("cook"); (q?[659,784,988,1319]:[523,659]).forEach((f,k)=>tone(f,.14,.05,"triangle",k*.09)); }catch(e){} const i=CK.i; CK=null;
-    setTimeout(()=>openSheet("lfCooking","🍳 "+c[0],`<div style="text-align:center;font-size:84px;line-height:1.3">${c[1]}</div><p class="lead" style="text-align:center"><b>${nm}的${c[0]}</b>${q===2?"！香到整條巷子都聞得到，多煮了一份。":"煮好了！"}</p><div class="row"><button class="primary" data-act="lfCkEat" data-v="ck:${i}">現在吃（精力 +${c[2]}）</button><button class="secondary" data-act="lfKit">留著（可以送人）</button></div>`),450); } };
+    setTimeout(()=>openSheet("lfCooking","🍳 "+c[0],`<div style="text-align:center"><img src="${c[1]}" alt="" style="width:140px;height:140px;object-fit:contain"></div><p class="lead" style="text-align:center"><b>${nm}的${c[0]}</b>${q===2?"！香到整條巷子都聞得到，多煮了一份。":"煮好了！"}</p><div class="row"><button class="primary" data-act="lfCkEat" data-v="ck:${i}">現在吃（精力 +${c[2]}）</button><button class="secondary" data-act="lfKit">留著（可以送人）</button></div>`),450); } };
 HANDLERS.lfKit=()=>kitchen();
 HANDLERS.lfCkEat=v=>{ const i=+String(v).slice(3), c=COOK[i]; if(!c||!(GI()[v]>0)) return; let g=0; try{ g=SHOPX.enAdd?SHOPX.enAdd(c[2]):(energy(c[2]),c[2]); }catch(e){} giAdd(v,-1); save(); toast(g>0?`吃了${c[0]}，精力 +${Math.round(g)}`:`吃了${c[0]}，好飽！（今天的精力恢復已經到上限了）`,2400); kitchen(); };
 function ckTick(dt){ if(!CK) return; CK.pos+=CK.dir*dt*(.9+CK.hits.length*.35); if(CK.pos>1){ CK.pos=1; CK.dir=-1; } if(CK.pos<0){ CK.pos=0; CK.dir=1; } const p=document.getElementById("ckP"); if(p) p.style.left=(CK.pos*100)+"%"; }
@@ -14488,9 +14509,9 @@ HANDLERS.lfNq=nid=>{ const c=nqCur(nid); if(!c||c.done||!c.open) return; const i
    falling-star stones — show in the bag too; 送禮 items can be given from there (walk up to someone and choose 送禮物) ---------- */
 { const E0=L.bagEntries, A0=L.bagActs, I0=L.bic; const em=(s,cls)=>`<span class="bic ${cls||""}" style="display:flex;align-items:center;justify-content:center;font-size:34px;background:none">${s}</span>`;
   const enc=id=>id.replace(/:/g,"~"), dec=s=>s.replace(/~/g,":");
-  L.bic=(k,cls)=>{ const id=k.slice(3); if(id.startsWith("gi_")){ const g=giInfo(dec(id.slice(3))); return /\.(webp|png|jpg)$|^data:/.test(g.ic)?`<span class="bic ${cls||""}" style="background:url(${g.ic}) center/contain no-repeat"></span>`:em(g.ic,cls); } if(id.startsWith("in_")){ const q=IB[id.slice(3)]; return em(q?q[3]:"🧺",cls); } const M={t_net:"🥅",t_sh:"⛏️",q_stone:"☄️",q_dust:"✨"}; if(M[id]) return em(M[id],cls); return I0(k,cls); };
+  L.bic=(k,cls)=>{ const id=k.slice(3); if(id.startsWith("gi_")){ const g=giInfo(dec(id.slice(3))); return /\.(webp|png|jpg)$|^data:/.test(g.ic)?`<span class="bic ${cls||""}" style="background:url(${g.ic}) center/contain no-repeat"></span>`:em(g.ic,cls); } const P={q_stone:"stone",q_dust:"dust",g_dht:"dht",g_rcp:"rcp",g_spd:"spd",g_pk_duck:"pk_duck",g_pk_siwu:"pk_siwu",g_pk_lu:"pk_lu",g_pk_beef:"pk_beef"}; if(id.startsWith("in_")) P[id]=id; if(P[id]) return `<span class="bic ${cls||""}" style="background:url(${MZIMG("cook/"+P[id]+".webp")}) center/contain no-repeat"></span>`; const M={t_net:"🥅",t_sh:"⛏️"}; if(M[id]) return em(M[id],cls); return I0(k,cls); };
   L.bagEntries=(out,tab)=>{ E0(out,tab); if(tab!=="all"&&tab!=="goods") return; const d=LF(), g=GI();
-    Object.keys(g).filter(k=>g[k]>0).forEach(k=>{ const q=giInfo(k); out.push({id:"lf:gi_"+enc(k),ic:"lf_gi_"+enc(k),n:g[k],name:q.n,desc:(q.d||"")+(k.startsWith("bug:")?"　可以賣給博士，或送給鎮上的人。":k.startsWith("dig:")?(k==="dig:secret"?"":DIG_BY[k.slice(4)]&&DIG_BY[k.slice(4)][3]==="tackle"?"　古老的釣具：女神泉的女神在找，釣具行的阿財伯也收。":"　化石、古物、寶石賣給博士，垃圾給威利回收；也可以送人。"):k.startsWith("ck:")||k.startsWith("cz:")?"":"")}); });
+    Object.keys(g).filter(k=>g[k]>0).forEach(k=>{ const q=giInfo(k); out.push({id:"lf:gi_"+enc(k),ic:"lf_gi_"+enc(k),n:g[k],name:q.n,desc:(q.d||"")+(k.startsWith("bug:")?"　可以賣給博士，或送給鎮上的人。":k.startsWith("dig:")?(DIG_BY[k.slice(4)]&&DIG_BY[k.slice(4)][3]==="tackle"?"　任務道具：女神泉的女神在找（六種古老釣具裡湊三種，再加上《釣魚秘法》）。不能賣。":"　化石、古物、寶石賣給博士，垃圾給威利回收；也可以送人。"):k.startsWith("ck:")||k.startsWith("cz:")?"":"")}); });
     Object.keys(INGD()).filter(k=>INGD()[k]>0&&IB[k]).forEach(k=>out.push({id:"lf:in_"+k,ic:"lf_in_"+k,n:INGD()[k],name:IB[k][1],desc:`雜貨店買的${SEASON.has(k)?"調味料":"食材"}，在家裡的廚房煮菜用。`}));
     const N=NETD(); if(N.u>0) out.push({id:"lf:t_net",ic:"lf_t_net",n:N.u,name:NETS[N.t]?NETS[N.t].n:"捕蟲網",desc:`抓蟲用。還能用 ${N.u} 次。走近飛來飛去的蟲，按「🦋 抓蟲」。`});
     if(SHOVEL().u>0) out.push({id:"lf:t_sh",ic:"lf_t_sh",n:SHOVEL().u,name:"鏟子",desc:`地上發光的裂縫可以挖開，還能用 ${SHOVEL().u} 次。`});
@@ -14499,7 +14520,7 @@ HANDLERS.lfNq=nid=>{ const c=nqCur(nid); if(!c||c.done||!c.open) return; const i
   L.bagActs=(k,e)=>{ if(k.startsWith("gi_ck~")) return `<button class="chip" data-act="lfCkEat" data-v="${dec(k.slice(3))}">吃掉</button>`; if(k.startsWith("gi_")||k.startsWith("in_")||k.startsWith("t_")||k.startsWith("q_")) return ""; return A0(k,e); }; }
 
 /* 威利's ingredients */
-L.seasonShop=()=>`<h4 style="margin:10px 0 4px">食材・調味料</h4><p class="note" style="margin:0 0 6px">在家裡的廚房煮菜用。調味料一瓶可以用 5 次。</p><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px">${ING.map(q=>`<button class="secondary" style="min-height:0;padding:6px 4px;font-size:13px;line-height:1.3" data-act="lfIng" data-v="${q[0]}">${q[3]} ${q[1]}<br><small>${dPrice("tw:grocer",q[2])} 幣${INGD()[q[0]]?`・有 ${INGD()[q[0]]}`:""}</small></button>`).join("")}</div>`;
+L.seasonShop=()=>`<h4 style="margin:10px 0 4px">食材・調味料</h4><p class="note" style="margin:0 0 6px">在家裡的廚房煮菜用。調味料一瓶可以用 5 次。</p><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px">${ING.map(q=>`<button class="secondary" style="min-height:0;padding:6px 4px;font-size:13px;line-height:1.3" data-act="lfIng" data-v="${q[0]}"><img src="${MZIMG("cook/in_"+q[0]+".webp")}" alt="" style="width:40px;height:40px;object-fit:contain;display:block;margin:0 auto">${q[1]}<br><small>${dPrice("tw:grocer",q[2])} 幣${INGD()[q[0]]?`・有 ${INGD()[q[0]]}`:""}</small></button>`).join("")}</div>`;
 HANDLERS.lfIng=v=>{ const q=IB[v]; if(!q) return; const pr=dPrice("tw:grocer",q[2]); if((INGD()[v]|0)>=40){ toast("帶太多了，先煮掉一些吧",1800); return; } if(!me.sp){ if(bag.coins<pr){ try{ buzz(); }catch(e){} toast("平安幣不夠",2000); return; } bag.coins-=pr; } INGD()[v]=(INGD()[v]|0)+(SEASON.has(v)?5:1); save(); try{ chaChing(); }catch(e){} toast(`買了${q[1]}${SEASON.has(v)?"（可以用 5 次）":""}`,1600); grocer(); };
 
 
