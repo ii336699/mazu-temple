@@ -2752,7 +2752,7 @@ const SAKURA={};
     /* (a flat shape with holes cut where the lower ground is: the river, the valley, the beach, the forest and the mountain — 11/16) */
     const sh=new T.Shape(); sh.moveTo(B.x0,-B.z1); sh.lineTo(B.x1,-B.z1); sh.lineTo(B.x1,-B.z0); sh.lineTo(B.x0,-B.z0); sh.closePath();
     for(const [x0,x1,z0,z1] of [[-17,73,-143.6,-131.4],[86.5,134.5,-120,-50],[134.5,B.x1-.1,-140,-40],[14,118,-176,-143.6],[21,111,-257,-176]]){ const h=new T.Path(); h.moveTo(x0,-z1); h.lineTo(x0,-z0); h.lineTo(x1,-z0); h.lineTo(x1,-z1); h.closePath(); sh.holes.push(h); }
-    const g=mesh(new T.ShapeGeometry(sh),m); g.rotation.x=-Math.PI/2; g.position.set(0,-.2,0); g.userData.noMerge=1; g.receiveShadow=true; /* (-.2, not -.06: well under every road, so a phone's coarser depth can never let it show through) */
+    const g=mesh(new T.ShapeGeometry(sh),m); g.rotation.x=-Math.PI/2; g.position.set(0,-.06,0); g.userData.noMerge=1; g.receiveShadow=true; /* (11/16: you can walk on it now, so it stays just under the roads) */
     const sand=new T.MeshStandardMaterial({color:"#e3cf9e",roughness:.95}); for(const [z0,z1] of [[B.z0,-140],[-40,B.z1]]){ const q=mesh(new T.PlaneGeometry(B.x1-142,z1-z0),sand); q.rotation.x=-Math.PI/2; q.position.set((142+B.x1)/2,-.045,(z0+z1)/2); q.userData.noMerge=1; }
     /* the wall: whitewashed, a red-tiled cap, a pillar every 6 m (one wall mesh per side, so it costs next to nothing) */
     const wm=mat("#efe6d6",{roughness:.85}), cm=mat("#a3392a",{roughness:.7}), H=2.2, T2=.45;
@@ -9203,7 +9203,7 @@ function innSuiteAtL(x,z){ if(!(z>INN.Z0&&z<INN.Z1)) return -1; const j=Math.min
 const innEave=(x,z)=>(x>INN.RX0-.3&&x<INN.CX1&&z>INN.LZ0-.4&&z<INN.Z1+.3)||(x>=INN.CX1&&x<INN.KX1+.2&&z>INN.LZ0-.4&&z<INN.Z0); /* under the walkway / balcony roof (and, downstairs, under the walkway itself) */
 const innCorr=(x,z)=>x>INN.SX1&&x<INN.KX1&&z>INN.Z0-.4&&z<INN.Z1; /* the inside corridor upstairs */
 /* level under a walker: keeps to the floor it is on, and only climbs the ramp from its foot (so you can walk under the ramp) */
-function groundAt(av,x,z){ if(TOWNX&&z<-143.6&&TOWNX.ground){ av.gy=0; return TOWNX.ground(x,z); } /* 南岸: the forest and 天后山 */ let g=av.gy||0; if(av.gyInit==null&&av.wantGy!=null){ g=av.wantGy; av.gyInit=1; }
+function groundAt(av,x,z){ if(TOWNX&&TOWNX.ground&&(z<-143.6||(x>=86&&z>-131&&z<-52))){ av.gy=0; const g=TOWNX.ground(x,z); if(g!=null) return g; } /* 南岸: the forest and 天后山 */ let g=av.gy||0; if(av.gyInit==null&&av.wantGy!=null){ g=av.wantGy; av.gyInit=1; }
   if(x>23.3){ x-=INN.DX; if(innOnRampStrip(x,z)){ const h=innRampH(z); if(Math.abs(h-g)<.8) g=h; else if(g>2.3&&z<INN.RZT+.3) g=INN.F2; }
       else if(g>2.3&&innUp(x,z)) g=INN.F2; else if(g>2.3&&!innUp(x,z)) g=0; else g=0;
       av.gy=g; if(g<1&&innPoolL(x,z)) return -.45; return g; }
@@ -11849,9 +11849,20 @@ const STALLS=[38,44,50,56], BEDS=[38,42,46,50,54,58];
 const BLOCK=[[34.4,42.6,-129.2,-123.4],[45.4,53.6,-129.2,-123.4],[56.4,64.6,-129.2,-123.4],[23.1,24.1,-58.5,-57.5],[31.9,32.9,-58.5,-57.5],[60.2,63.8,-71.3,-67.7],[38.2,39,-123.4,-122.6],[45,45.8,-123.4,-122.6]].concat(STALLS.slice(1).map(x=>[x-1.5,x+1.5,-99.6,-97.4]),[[10.2,10.8,-125.8,-125.2],[13.2,13.8,-125.8,-125.2],[10.2,10.8,-122.8,-122.2],[13.2,13.8,-122.8,-122.2]]);
 const inR=(r,x,z)=>x>=r[0]&&x<=r[1]&&z>=r[2]&&z<=r[3];
 TW.in=(x,z)=>z<-50.5;
-TW.walk=(x,z)=>{ for(const b of BLOCK) if(inR(b,x,z)) return false; for(const w of WALK) if(inR(w,x,z)) return true; if(x<-17) return false; if(z<-143.6) return SW.walk(x,z); return x>86&&NT.walk(x,z); };
+/* 走路全面開放 (11/16 主委: 「很多地方有隱形的邊界，全部都開放，只有最外圍不能走」). Anywhere inside the boundary wall is ground you
+   can walk on now — lawns, the beach, the forest floor, round the mountain — except: inside a house or shop, the stall boxes, the
+   river (the bridges and the pier still cross it), the brook and the springs, the sea past the waterline, rocks and tree trunks. */
+let BFOOT=null; const bfoot=()=>{ if(BFOOT) return BFOOT; try{ BFOOT=TOWNB.map(b=>{ const d=b.d||6, m=.25; if(b.axis==="x"){ const zb=b.f-Math.cos(b.ry)*d; return [b.c-b.w/2+m,b.c+b.w/2-m,Math.min(b.f,zb)+m,Math.max(b.f,zb)-m]; } const xb=b.f-Math.sin(b.ry)*d; return [Math.min(b.f,xb)+m,Math.max(b.f,xb)-m,b.c-b.w/2+m,b.c+b.w/2-m]; }); }catch(e){ return []; } return BFOOT; };
+TW.walk=(x,z)=>{ for(const b of BLOCK) if(inR(b,x,z)) return false; for(const w of WALK) if(inR(w,x,z)) return true;
+  const B=WORLD_BOX; if(x<B.x0+1||z<B.z0+1) return false;
+  if(x>=-17&&x<=73&&z>=-143.6&&z<=-131.4) return false; /* the river */
+  for(const r of bfoot()) if(inR(r,x,z)) return false;
+  if(x>=86&&z>-131&&z<-52) return NT.walkOpen(x,z);
+  if(z<-143.6&&x>=FOREST[0]&&x<=FOREST[1]) return SW.walkOpen(x,z);
+  if(x>B.x1-.6&&!(z>-140&&z<-40)) return false;
+  return true; };
 const inVil=(x,z)=>x<-17&&z<-104&&z>-252; TW.inVil=inVil;
-TW.ground=(x,z)=>inVil(x,z)?null:z<-143.6?southH(x,z):null;
+TW.ground=(x,z)=>inVil(x,z)?null:z<-143.6?southH(x,z):(x>=86&&z>-131&&z<-52&&TW.valleyH)?TW.valleyH(x,z):null; /* (11/16: the valley's hills too, now that you can walk on them) */
 /* the camera may not go inside a building, into the mountain or the valley hills (it was slipping into roofs) */
 let CAMBOX=null; const camBoxes=()=>CAMBOX||(CAMBOX=TOWNB.filter(b=>!b.deco).map(b=>{ const d=b.d||7, H=(b.fl||2)*3.05+3; let x0,x1,z0,z1; if(b.axis==="x"){ x0=b.c-b.w/2; x1=b.c+b.w/2; if(Math.abs(b.ry)<.1){ z0=b.f-d; z1=b.f; } else { z0=b.f; z1=b.f+d; } } else { z0=b.c-b.w/2; z1=b.c+b.w/2; if(b.ry>0){ x0=b.f-d; x1=b.f; } else { x0=b.f; x1=b.f+d; } } return [x0-.35,x1+.35,z0-.35,z1+.35,H]; }));
 TW.camOK=(x,y,z)=>{ if(y<.35) return false; for(const B of camBoxes()) if(x>B[0]&&x<B[1]&&z>B[2]&&z<B[3]&&y<B[4]) return false;
@@ -11902,7 +11913,7 @@ function bld(C,x0,w,zf,dep,dir,col,kind,name,roof){ const H=6.2, cx=x0+w/2, cz=z
   const rc=mat(roof||"#8a4a3a",{roughness:.8}); box(w+.3,.3,dep+.5,rc,cx,H+.15,cz,C.g); if(kind==="house") box(w+.3,.5,dep*.5,rc,cx,H+.55,cz,C.g); else box(w+.1,.5,.2,mat("#d8d2c6",{roughness:.8}),cx,H+.55,zf+dir*.1,C.g);
   if(kind==="shop"){ box(w-.2,.12,1.1,mat(col,{roughness:.7}),cx,3.15,zf+dir*.55,C.g); if(name) sign(C,name,Math.min(w-1.2,5),.85,cx,3.75,zf+dir*.08,dir>0?0:Math.PI); }
   else if(name) sign(C,name,1.5,.42,cx+(dir>0?1:-1)*(w*.5-2.3),2.72,zf+dir*.05,dir>0?0:Math.PI,"#fbf6ea"); }
-function tree(C,x,z,s){ s=s||1; cyl(.12*s,.16*s,1.6*s,mat("#6b4a2e",{roughness:.9}),x,.8*s,z,C.g,6); for(const [dx,dy,dz,r] of [[0,2.3,0,1.05],[.5,1.9,.3,.75],[-.5,2.0,-.2,.8]]){ const m=new T.Mesh(new T.IcosahedronGeometry(r*s,0),mat("#3f8a4a",{roughness:.95})); m.position.set(x+dx*s,dy*s,z+dz*s); C.g.add(m); } }
+function tree(C,x,z,s){ s=s||1; (TW.TREES||(TW.TREES=[])).push({C,x,z,s}); if(TW.TREES.length>1500) TW.TREES=TW.TREES.filter(t=>t.C.g.parent); cyl(.12*s,.16*s,1.6*s,mat("#6b4a2e",{roughness:.9}),x,.8*s,z,C.g,6); for(const [dx,dy,dz,r] of [[0,2.3,0,1.05],[.5,1.9,.3,.75],[-.5,2.0,-.2,.8]]){ const m=new T.Mesh(new T.IcosahedronGeometry(r*s,0),mat("#3f8a4a",{roughness:.95})); m.position.set(x+dx*s,dy*s,z+dz*s); C.g.add(m); } }
 /* street lamps (11/14: lit at night like the lanterns — the bulb glows, a soft halo round it and a warm pool of light on the ground) */
 function lampMats(){ if(KM.lampB) return; KM.lampB=new T.MeshStandardMaterial({color:"#fff0c8",emissive:"#ffd98a",emissiveIntensity:.5,roughness:.6});
   const c=document.createElement("canvas"); c.width=c.height=128; const x=c.getContext("2d"), gr=x.createRadialGradient(64,64,0,64,64,64); gr.addColorStop(0,"rgba(255,220,150,1)"); gr.addColorStop(.35,"rgba(255,200,120,.55)"); gr.addColorStop(1,"rgba(255,190,110,0)"); x.fillStyle=gr; x.fillRect(0,0,128,128); const t=new T.CanvasTexture(c);
@@ -12236,6 +12247,7 @@ NT.walk=(x,z)=>{ if(x<86||x>182||z>-52||z<-131) return false;
   if(lineD(TRAIL,x,z)[0]<1.25||lineD(TRAIL2,x,z)[0]<1.25) return true;
   for(const m of MEADOW) if(Math.hypot(x-m[0],z-m[1])<m[2]) return true;
   return false; };
+NT.walkOpen=(x,z)=>{ if(inRect(BRIDGE,x,z)||inRect(MOUTHB,x,z)) return true; const b=lineD(BROOK,x,z); if(b[0]<brookW(b[1],b[2])+.45) return false; for(const r of NT.block) if(Math.hypot(x-r[0],z-r[1])<r[2]) return false; if(z<-40&&z>-140&&x>shoreX(z)-1.7) return false; return true; }; /* (11/16: everything but the water and the rocks) */
 /* ---- shared bits: one set of uniforms (time, night) for all the water and the fireflies; paints made once ---- */
 NT.U={uT:{value:0},uNight:{value:0}};
 let NM=null; function nmat(){ if(NM) return NM; const S=(c,o)=>new T.MeshStandardMaterial(Object.assign({color:c,roughness:.92,metalness:0},o||{}));
@@ -12270,6 +12282,7 @@ function nbench(C,x,z,ry){ const g=new T.Group(); g.position.set(x,0,z); g.rotat
 /* ---- the ground: a gentle valley (flat where you walk, hills round it, a cliff behind the waterfall), painted by vertex colours ---- */
 const nz=(x,z)=>Math.sin(x*.21+z*.13)*Math.cos(z*.17-x*.07)+.5*Math.sin(x*.47-z*.39);
 const walkGap=(x,z)=>{ let d=Math.min(lineD(TRAIL,x,z)[0]-1.25,lineD(TRAIL2,x,z)[0]-1.25); for(const m of MEADOW) d=Math.min(d,Math.hypot(x-m[0],z-m[1])-m[2]); return Math.max(0,d); };
+TW.valleyH=(x,z)=>valleyH(x,z);
 function valleyH(x,z){ const w=walkGap(x,z); let h=sstep(1.2,9,w)*(1.7+1.2*nz(x,z))*sstep(-120,-114,z)*sstep(-44,-50,z); h+=sstep(-59,-52.5,z)*sstep(-43.5,-50,z)*sstep(14,4,Math.abs(x-110))*6.5; /* the cliff the waterfall drops from; (11/16) the hills and the cliff slope down to the plain at the valley's ends, no cut-off half hill */
   h*=sstep(134.5,127,x)*sstep(86.5,90,x); const b=lineD(BROOK,x,z), hw=brookW(b[1],b[2]), k=sstep(hw-.3,hw+1.3,b[0]); return -.55*(1-k)+h*k; }
 function terrain(C,x0,x1,z0,z1,hf,cf,y0){ const nx=Math.round(x1-x0), nzc=Math.round(z1-z0), g=new T.PlaneGeometry(x1-x0,z1-z0,nx,nzc); g.rotateX(-Math.PI/2); g.translate((x0+x1)/2,0,(z0+z1)/2);
@@ -12415,6 +12428,7 @@ SW.walk=(x,z)=>{ if(x<FOREST[0]||x>FOREST[1]||z>-143.6||z<-256) return false; fo
   if(r<MT.R-1.2) return lineD(SPI2,x,z)[0]<1.35;
   if(z<FOREST[2]&&r>MT.R+.5) return false;
   for(const t of TREES) if(Math.hypot(x-t[0],z-t[1])<.55*t[2]) return false; return true; };
+SW.walkOpen=(x,z)=>{ for(const S of NT.springs) if(Math.hypot(x-S[0],z-S[1])<S[2]+.35) return false; if(CAMPB.some(b=>Math.hypot(x-b[0],z-b[1])<b[2])) return false; for(const t of TREES) if(Math.hypot(x-t[0],z-t[1])<.45*t[2]) return false; return true; }; /* (11/16: the whole forest floor and the mountain, not only the paths) */
 const CAMPB=[[MT.cx,MT.cz,.9],[MT.cx-3.2,MT.cz-2.4,1.3],[MT.cx+3.3,MT.cz-1.8,1.3],[MT.cx+2.4,MT.cz+3.1,.9]]; /* fire, two tents, the table */
 const VS=s=>new T.Color(s).convertSRGBToLinear();
 const SC={g1:VS("#7cc46a"),g2:VS("#5aa45c"),dark:VS("#3f8a5a"),rock:VS("#9a9a8e"),path:VS("#d8c49a"),moss:VS("#6aa880"),top:VS("#a8d07a")};
@@ -12875,7 +12889,7 @@ function fishTick(dt){ { const h=!!F; if(h&&!window.MZ_HOLD){ try{ meAv.path=[];
 let dexTab="r";
 /* 昆蟲圖鑑 (11/16 主委): the third page of the 圖鑑 — every insect, a black shadow until you catch it */
 const BUG_WHERE={park:"河濱公園",valley:"溪谷",forest:"森林",mount:"山上",beach:"海邊"};
-const bugIc=(b,no,w)=>`<span style="display:inline-block;width:${w}px;height:${w}px;line-height:${w}px;font-size:${w*.78}px;text-align:center;filter:${no?"brightness(0) opacity(.45)":`hue-rotate(${b[3]}deg) saturate(1.3)`}">${b[2]}</span>`;
+const bugIc=(b,no,w)=>`<img src="${bugPic(b[0])}" alt="" style="width:${w}px;height:${w}px;object-fit:contain;${no?"filter:brightness(0) opacity(.4)":""}">`;
 function bugDex(){ const dx=BUGDEX(), got=BUGS.filter(b=>dx[b[0]]&&dx[b[0]][0]).length;
   openSheet("lfDex","📖 圖鑑・昆蟲",`<p class="lead">抓到 ${got} / ${BUGS.length} 種。沒抓過的只看得到黑影。</p><div class="row">${[["r","淡水"],["o","海水"],["b","昆蟲"]].map(t=>`<button class="${dexTab===t[0]?"primary":"secondary"}" data-act="lfDexTab" data-v="${t[0]}">${t[1]}</button>`).join("")}</div>
    <div class="lf-dex">${BUGS.map(b=>{ const e=dx[b[0]]&&dx[b[0]][0]; return `<button data-act="lfBugOne" data-v="${b[0]}" class="${e?"":"no"}">${bugIc(b,!e,64)}<b>${e?b[1]:"？？？"}</b><small>${e?`${e} 隻`:"★".repeat(b[4])}</small></button>`; }).join("")}</div>`); }
@@ -14170,18 +14184,74 @@ const BUG_AREA={park:[[-6,21,-130,-118],[35,64,-130,-118]],valley:[[90,132,-116,
 const NETS=[null,{n:"普通捕蟲網",u:20,c:"#c9a26a",ring:"#9a7a4a"},{n:"高級捕蟲網",u:30,c:"#5a8fc8",ring:"#3a5a8a"},{n:"黃金捕蟲網",u:40,c:"#e8c24a",ring:"#c89a2a"}];
 const NET_RATE=[null,[.85,.55,.25,.08],[.95,.78,.5,.25],[1,.92,.75,.5]];
 const NETD=()=>{ const d=LF(); d.net=d.net||{t:0,u:0}; return d.net; }; const BUGDEX=()=>{ const d=LF(); d.bug=d.bug||{}; return d.bug; };
-const bugTex={}; function bugPic(id){ if(bugTex[id]) return bugTex[id]; const b=BUG_BY[id]; const c=document.createElement("canvas"); c.width=c.height=128; const x=c.getContext("2d");
+const bugTex={}; function bugPic(id){ return MZIMG("bugs/"+id+".webp"); } function bugPicOld(id){ if(bugTex[id]) return bugTex[id]; const b=BUG_BY[id]; const c=document.createElement("canvas"); c.width=c.height=128; const x=c.getContext("2d");
   if(b[4]>=3){ const g=x.createRadialGradient(64,64,10,64,64,62); g.addColorStop(0,b[4]>=4?"rgba(255,230,120,.9)":"rgba(190,230,255,.75)"); g.addColorStop(1,"rgba(255,255,255,0)"); x.fillStyle=g; x.fillRect(0,0,128,128); }
   x.filter=b[3]?`hue-rotate(${b[3]}deg) saturate(1.3)`:"none"; x.font="88px serif"; x.textAlign="center"; x.textBaseline="middle"; x.fillText(b[2],64,70); return bugTex[id]=c.toDataURL(); }
 BUGS.forEach(b=>{ GINFO["bug:"+b[0]]={n:b[1],get ic(){ return bugPic(b[0]); },cat:"bug",tags:b[4]>=3?["rare"]:[],d:b[9]}; });
 const BG2={list:[],t:0,net:null,swing:null,chip:null}; const _br=new T.Raycaster(), _bd=new T.Vector3(0,-1,0), _bo=new T.Vector3();
 function bugGround(x,z){ _bo.set(x,80,z); _br.set(_bo,_bd); _br.far=200; const hits=_br.intersectObjects(pickables.filter(o=>o.userData&&o.userData.floor&&o.visible!==false),false); return hits.length?hits[0].point.y:0; }
-function bugSpawn(){ const p=meAv.pos, night=L.slot()===0, areas=[]; for(const k in BUG_AREA) for(const r of BUG_AREA[k]){ const cx=Math.max(r[0],Math.min(r[1],p.x)), cz=Math.max(r[2],Math.min(r[3],p.y)); if(Math.hypot(cx-p.x,cz-p.y)<30) areas.push([k,r]); } if(!areas.length) return;
+/* 昆蟲動起來 (11/16 主委: 「讓牠們動起來，要有質感、不突兀；爬得快的讓牠們爬在石頭、牆壁、樹幹上」). Each insect is the chair's
+   picture on a small lit card (so it darkens at night like everything else) and moves the way that kind moves:
+   fly   — butterflies and moths: a fluttering path; the wings fold and open (the card folds toward the body line), now and then a glide
+   hover — bees, dragonflies, fireflies: hang in the air with a fine buzz, dart to a new spot; fireflies glow at night
+   wall  — beetles, ants, crickets…: flat on a house wall or round a tree trunk, scurrying in bursts with a little gait, turning, pausing
+   perch — 白蠟蟬、金蟬: sit on a trunk or wall, side on, breathing; creep a little
+   walk  — snail, caterpillar, crabs, mantis, katydid: side on, on the ground; the snail glides, the caterpillar inches, crabs scuttle, katydids hop
+   flat  — grasshopper, sea crab, water strider: flat on the ground, hopping / scuttling / gliding
+   The card turns to face where it is going. A missed swing sends it off (fliers away in an arc, climbers scurry fast). */
+const BUGK={}; [["fly","whitefly yellowfly swallowtail bluefly purple pearl leafwing moth mazufly starbug moonmoth"],["hover","bee bumble dragonfly damsel firefly"],["wall","ant beetle stag golden ladybug longhorn jewel longarm rainbow stick cicada cricket orchid"],["perch","lantern goldcicada"],["walk","snail caterpillar hermit fiddler katydid mantis"],["flat","grasshopper seaslug strider"]].forEach(([k,l])=>l.split(" ").forEach(id=>BUGK[id]=k));
+const BUG_R=new Set("swallowtail mazufly starbug moonmoth lantern goldcicada snail".split(" ")); /* (pictures whose head points right; the rest point left, top-view ones point up) */
+const BUG_SZ={fly:.72,hover:.52,wall:.36,perch:.44,walk:.44,flat:.42,dragonfly:.72,damsel:.66,ant:.24,ladybug:.27,stick:.6,longhorn:.45,stag:.45,golden:.48,longarm:.5,orchid:.45,cricket:.32,snail:.4,caterpillar:.36,mantis:.6,katydid:.52,strider:.4,bee:.44}; /* (a little bigger than life, so you can see them from a few steps away) */
+const BUG_SP={ant:.55,cricket:.4,ladybug:.22,beetle:.14,stag:.14,golden:.16,longhorn:.18,jewel:.2,longarm:.12,rainbow:.18,stick:.07,cicada:.05,orchid:.04};
+const bugTexB={}; const bugTexOf=id=>bugTexB[id]||(bugTexB[id]=(()=>{ const t=new T.TextureLoader().load(MZIMG("bugs/"+id+".webp")); t.encoding=T.sRGBEncoding; t.anisotropy=4; return t; })());
+let _bsh=null; const bugShadowTex=()=>_bsh||(_bsh=new T.CanvasTexture(cvs0(64,64,(x)=>{ const g=x.createRadialGradient(32,32,2,32,32,30); g.addColorStop(0,"rgba(0,0,0,.55)"); g.addColorStop(1,"rgba(0,0,0,0)"); x.fillStyle=g; x.fillRect(0,0,64,64); })));
+function bugMesh(b,kind,s){ const glow=b[0]==="firefly"||b[0]==="starbug"||b[0]==="moonmoth"; const m=new T.MeshStandardMaterial({map:bugTexOf(b[0]),transparent:true,alphaTest:.3,side:T.DoubleSide,roughness:.75,metalness:0,emissive:new T.Color("#ffffff"),emissiveMap:bugTexOf(b[0]),emissiveIntensity:glow?.45:.18}); /* (lit like the rest of the town, with a little of its own colour so it never goes flat grey) */
+  const g=new T.PlaneGeometry(s,s); if(kind==="fly") g.translate(0,s*.28,0); else if(kind==="walk"||kind==="perch") g.translate(0,s*.5,0); const me=new T.Mesh(g,m); me.userData.noMerge=1; me.renderOrder=2; return me; }
+/* surfaces to climb near (x,z): tree trunks of the loaded districts, and house fronts */
+function bugSurface(x,z){ const out=[]; try{ (TOWNX.TREES||[]).forEach(t=>{ if(t.C&&t.C.g.parent&&Math.hypot(t.x-x,t.z-z)<14) out.push({type:"trunk",x:t.x,z:t.z,r:.14*t.s+.03,y0:.25,y1:1.35*t.s}); }); }catch(e){}
+  try{ (TOWNX.B||[]).forEach(b=>{ if(b.x==null||b.kind!=="house"||Math.hypot(b.x-x,b.z-z)>16) return; /* (house walls only: shop fronts are all windows and signs) */ const n=[Math.sin(b.ry),0,Math.cos(b.ry)], t=[Math.cos(b.ry),0,-Math.sin(b.ry)]; const half=Math.max(.6,b.w/2-.4); out.push({type:"wall",ox:b.x+n[0]*.05,oz:b.z+n[2]*.05,n,t,u0:-half,u1:half,y0:.35,y1:2.6,door:1.1}); }); }catch(e){}
+  return out.length?out[(Math.random()*out.length)|0]:null; }
+const _bq=new T.Quaternion(), _bm=new T.Matrix4(), _bz=new T.Vector3(0,0,1), _bqr=new T.Quaternion(), _bv=new T.Vector3(), _bu=new T.Vector3(), _br2=new T.Vector3(), _bn=new T.Vector3();
+function surfPose(o){ const S=o.surf; let n,t; if(S.type==="trunk"){ n=[Math.cos(o.u),0,Math.sin(o.u)]; t=[Math.sin(o.u),0,-Math.cos(o.u)]; o.m.position.set(S.x+n[0]*S.r,o.y,S.z+n[2]*S.r); }
+  else { n=S.n; t=S.t; o.m.position.set(S.ox+t[0]*o.u,o.y,S.oz+t[2]*o.u); }
+  _bn.set(n[0],0,n[2]); _br2.set(t[0],0,t[2]); _bu.set(0,1,0); _bm.makeBasis(_br2,_bu,_bn); _bq.setFromRotationMatrix(_bm); _bqr.setFromAxisAngle(_bz,o.th+(o.mv?Math.sin(o.ph*22)*.08:0)); o.m.quaternion.copy(_bq).multiply(_bqr); return {n,t}; }
+function bugSpawn(force){ const p=meAv.pos, night=L.slot()===0, areas=[]; for(const k in BUG_AREA) for(const r of BUG_AREA[k]){ const cx=Math.max(r[0],Math.min(r[1],p.x)), cz=Math.max(r[2],Math.min(r[3],p.y)); if(Math.hypot(cx-p.x,cz-p.y)<30) areas.push([k,r]); } if(!areas.length) return;
   const [k,r]=areas[(Math.random()*areas.length)|0]; let x,z,ok=false; for(let t=0;t<20&&!ok;t++){ const a=Math.random()*6.283, d=6+Math.random()*16; x=Math.max(r[0],Math.min(r[1],p.x+Math.sin(a)*d)); z=Math.max(r[2],Math.min(r[3],p.y+Math.cos(a)*d)); ok=TOWNX.walk(x,z)&&Math.hypot(x-p.x,z-p.y)>4; } if(!ok) return;
-  const pool=BUGS.filter(b=>b[5].split(" ").includes(k)&&(!b[6]||(b[6]==="n")===night)&&(b[0]!=="starbug"||L.starNight)); if(!pool.length) return; let tot=0; pool.forEach(b=>tot+=BUG_RW[b[4]]); let q=Math.random()*tot, b=pool[0]; for(const c of pool){ q-=BUG_RW[c[4]]; if(q<=0){ b=c; break; } }
-  const tex=new T.TextureLoader().load(bugPic(b[0])); const sp=new T.Sprite(new T.SpriteMaterial({map:tex,transparent:true,depthWrite:false})); const s0=b[4]>=3?.62:.5; sp.scale.set(s0,s0,1); const gy=bugGround(x,z), h=b[7]?.9+Math.random()*.6:.22;
-  sp.position.set(x,gy+h,z); sp.userData.noMerge=1; scene.add(sp); BG2.list.push({b,sp,x,z,gy,h,ph:Math.random()*6,age:0,esc:0,tx:null,s0}); }
-function bugRemove(o,puff){ if(puff) bugPuff(o.sp.position,"#ffffff",10); scene.remove(o.sp); o.sp.material.map&&o.sp.material.map.dispose(); o.sp.material.dispose(); BG2.list.splice(BG2.list.indexOf(o),1); }
+  const pool=BUGS.filter(b=>b[5].split(" ").includes(k)&&(!b[6]||(b[6]==="n")===night)&&(b[0]!=="starbug"||L.starNight)); if(!pool.length&&!force) return; if(!pool.length) pool.push(BUGS[0]); let tot=0; pool.forEach(b=>tot+=BUG_RW[b[4]]); let q=Math.random()*tot, b=pool[0]; for(const c of pool){ q-=BUG_RW[c[4]]; if(q<=0){ b=c; break; } } if(force&&BUG_BY[force]) b=BUG_BY[force];
+  let kind=BUGK[b[0]]||"flat", surf=null; if(kind==="wall"||kind==="perch"){ surf=bugSurface(x,z); if(!surf) kind=kind==="wall"?"flat":"walk"; }
+  const s=(BUG_SZ[b[0]]||BUG_SZ[kind])*(b[4]>=3?1.15:1)*(surf&&surf.type==="trunk"?.8:1), m=bugMesh(b,kind,s); const gy=bugGround(x,z);
+  const o={b,kind,sp:m,m,x,z,gy,h:0,ph:Math.random()*6,age:0,esc:0,tx:null,s0:1,s,th:Math.random()*6.283,mv:0,st:Math.random()*2,face:1,vx:0,vz:0,surf,u:0,y:0,base:[x,z]};
+  if(kind==="fly"){ o.h=.9+Math.random()*.7; } else if(kind==="hover"){ o.h=.7+Math.random()*.8; o.hx=x; o.hz=z; }
+  if(surf){ if(surf.type==="trunk"){ o.u=Math.random()*6.283; o.y=surf.y0+Math.random()*(surf.y1-surf.y0); } else { do{ o.u=surf.u0+Math.random()*(surf.u1-surf.u0); }while(Math.abs(o.u)<surf.door&&surf.u1-surf.u0>2.6); o.y=surf.y0+Math.random()*(surf.y1-surf.y0)*.6; } o.th=kind==="perch"?0:(Math.random()<.5?0:Math.PI)+(Math.random()-.5); }
+  if(kind==="fly"||kind==="hover"){ const sh=new T.Mesh(new T.PlaneGeometry(.4,.4),new T.MeshBasicMaterial({map:bugShadowTex(),transparent:true,depthWrite:false})); sh.rotation.x=-Math.PI/2; sh.userData.noMerge=1; scene.add(sh); o.shadow=sh; }
+  if(b[0]==="firefly"||b[0]==="starbug"){ const gl=new T.Sprite(new T.SpriteMaterial({map:FXTX(),color:new T.Color(b[0]==="firefly"?"#d8ff6a":"#bfe0ff"),transparent:true,depthWrite:false,blending:T.AdditiveBlending})); gl.scale.set(.4,.4,1); scene.add(gl); o.glow=gl; }
+  scene.add(m); bugMove(o,0); BG2.list.push(o); }
+function bugRemove(o,puff){ if(puff) bugPuff(o.sp.position,"#ffffff",10); scene.remove(o.m); o.m.geometry.dispose(); o.m.material.dispose(); if(o.shadow){ scene.remove(o.shadow); o.shadow.geometry.dispose(); o.shadow.material.dispose(); } if(o.glow){ scene.remove(o.glow); o.glow.material.dispose(); } BG2.list.splice(BG2.list.indexOf(o),1); }
+
+function faceCam(o,full){ const c=camera.position, P=o.m.position; if(full){ o.m.quaternion.copy(camera.quaternion); } else { o.m.rotation.set(0,Math.atan2(c.x-P.x,c.z-P.z),0); }
+  /* turn to face where it is going (screen-right = camera's right) */ const yaw=Math.atan2(c.x-P.x,c.z-P.z), rx=Math.cos(yaw), rz=-Math.sin(yaw); const sr=o.vx*rx+o.vz*rz; const want=Math.abs(sr)>.02?((sr>0)===BUG_R.has(o.b[0])?1:-1):o.face; o.face+=(want-o.face)*Math.min(1,o.dt*9); }
+function bugMove(o,dt){ o.dt=dt; o.ph+=dt; const P=o.m.position, k=o.kind, sp=(BUG_SP[o.b[0]]||.12)*(o.flee>0?4:1); if(o.flee>0) o.flee-=dt;
+  if(o.tx){ o.zip+=dt*2.2; const z=Math.min(1,o.zip); const nx=o.x+(o.tx[0]-o.x)*z, nz=o.z+(o.tx[1]-o.z)*z; o.vx=(o.tx[0]-o.x); o.vz=(o.tx[1]-o.z); P.set(nx,o.gy+(o.tx[2]-o.gy)*z+o.h+Math.sin(z*Math.PI)*1.6,nz); if(z>=1){ o.x=o.tx[0]; o.z=o.tx[1]; o.gy=o.tx[2]; o.base=[o.x,o.z]; o.hx=o.x; o.hz=o.z; o.tx=null; } }
+  if(k==="fly"){ if(!o.tx){ const t=o.ph; const nx=o.x+Math.sin(t*.7)*1.4+Math.sin(t*1.9)*.35, nz=o.z+Math.cos(t*.53)*1.2+Math.cos(t*1.6)*.3; o.vx=(nx-P.x)/(dt||1); o.vz=(nz-P.z)/(dt||1); P.set(nx,o.gy+o.h+Math.sin(t*2.3)*.22+Math.sin(t*5.1)*.05,nz); }
+    faceCam(o,true); const glide=Math.sin(o.ph*.6)>.82; const fl=glide?.92:.3+.7*Math.abs(Math.cos(o.ph*(o.b[4]>=3?6:8)*Math.PI/2)); o.m.scale.set(o.face,fl,1); }
+  else if(k==="hover"){ if(!o.tx){ o.st-=dt; if(o.st<=0){ o.st=1.2+Math.random()*2.5; const a=Math.random()*6.283, d=.6+Math.random()*1.6; o.hx=o.base[0]+Math.sin(a)*d; o.hz=o.base[1]+Math.cos(a)*d; o.h=.6+Math.random()*.9; } const kk=Math.min(1,dt*(o.b[0]==="dragonfly"||o.b[0]==="damsel"?5:2.2)); const nx=P.x+(o.hx-P.x)*kk, nz=P.z+(o.hz-P.z)*kk; o.vx=(nx-P.x)/(dt||1); o.vz=(nz-P.z)/(dt||1); P.set(nx+Math.sin(o.ph*47)*.006,o.gy+o.h+Math.sin(o.ph*2.1)*.06+Math.sin(o.ph*53)*.008,nz); }
+    faceCam(o,true); o.m.scale.set(o.face,1,1); o.m.rotateZ(Math.sin(o.ph*3.3)*.06); }
+  else if(o.surf){ /* climbing a trunk or a wall */ o.st-=dt; if(o.st<=0){ o.mv=k==="perch"?(Math.random()<.25?1:0):(o.mv?0:1); o.st=o.mv?.5+Math.random()*1.8:.6+Math.random()*2.6; if(o.mv) o.th+=(Math.random()-.5)*1.4; }
+    if(o.mv||o.flee>0){ const v=(k==="perch"?.04:sp)*dt; const S=o.surf; const du=-Math.sin(o.th)*v, dy=Math.cos(o.th)*v; if(S.type==="trunk"){ o.u-=du/S.r; } else o.u+=du; o.y+=dy;
+      const lo=S.type==="trunk"?-1e9:S.u0, hi=S.type==="trunk"?1e9:S.u1; if(o.y<S.y0||o.y>S.y1||o.u<lo||o.u>hi||(S.door&&Math.abs(o.u)<S.door&&o.y<2.1&&S.u1-S.u0>2.6)){ o.y=Math.max(S.y0,Math.min(S.y1,o.y)); o.u=Math.max(lo,Math.min(hi,o.u)); o.th+=Math.PI*(.7+Math.random()*.6); } }
+    if(k==="perch"){ const S=o.surf; let n; if(S.type==="trunk"){ n=[Math.cos(o.u),0,Math.sin(o.u)]; P.set(S.x+n[0]*(S.r+.02),o.y,S.z+n[2]*(S.r+.02)); } else { P.set(S.ox+S.t[0]*o.u+S.n[0]*.03,o.y,S.oz+S.t[2]*o.u+S.n[2]*.03); } o.vx=0; o.vz=0; faceCam(o,false); o.m.scale.set(o.face,1+Math.sin(o.ph*2.4)*.03,1); }
+    else { surfPose(o); o.m.scale.set(1,1+(o.mv?Math.sin(o.ph*22)*.03:0),1); } }
+  else if(k==="walk"){ const id=o.b[0]; o.st-=dt; if(o.st<=0){ o.mv=o.mv?0:1; o.st=o.mv?1+Math.random()*2.5:.8+Math.random()*2.5; if(o.mv){ o.th=Math.random()*6.283; } }
+    let v=id==="snail"?.06:id==="caterpillar"?.08:(id==="hermit"||id==="fiddler")?.5:id==="mantis"?.12:.15; if(o.flee>0) v*=4; let lift=0, sx=1;
+    if(o.mv||o.flee>0){ let step=v*dt; if(id==="caterpillar"){ const c=(Math.sin(o.ph*4)+1)/2; sx=.86+.18*c; step*=c*2; } if(id==="snail") sx=1+Math.sin(o.ph*3)*.04; if(id==="hermit"||id==="fiddler"){ const c=Math.sin(o.ph*9); step*=Math.max(0,c)*2; lift=Math.max(0,c)*.03; } if(id==="katydid"&&Math.sin(o.ph*1.7)>.93){ step=v*dt*8; lift=.25*Math.sin((o.ph*1.7%6.283)); }
+      const nx=o.x+Math.sin(o.th)*step, nz=o.z+Math.cos(o.th)*step; if(TOWNX.walk(nx,nz)&&Math.hypot(nx-o.base[0],nz-o.base[1])<4){ o.x=nx; o.z=nz; } else o.th+=Math.PI*(.6+Math.random()*.8); o.vx=Math.sin(o.th); o.vz=Math.cos(o.th); } else { o.vx=0; o.vz=0; }
+    if(!o.tx){ o.gy=bugGroundCache(o); P.set(o.x,o.gy+.01+Math.max(0,lift),o.z); } faceCam(o,false); o.m.scale.set(o.face*sx,1/sx,1); }
+  else { /* flat on the ground */ const id=o.b[0]; o.st-=dt; if(o.st<=0){ o.mv=o.mv?0:1; o.st=o.mv?(id==="grasshopper"?.5:.8+Math.random()*1.5):.8+Math.random()*2.6; if(o.mv) o.th+=(Math.random()-.5)*2; }
+    let lift=0; if(o.mv||o.flee>0){ const v=(id==="grasshopper"?1.6:id==="seaslug"?.4:.3)*(o.flee>0?3:1)*dt; const dir=id==="seaslug"?o.th+Math.PI/2:o.th; const nx=o.x+Math.sin(dir)*v, nz=o.z+Math.cos(dir)*v; if(TOWNX.walk(nx,nz)&&Math.hypot(nx-o.base[0],nz-o.base[1])<4){ o.x=nx; o.z=nz; } else o.th+=Math.PI; if(id==="grasshopper") lift=Math.sin(Math.min(1,(.5-o.st)/.5)*Math.PI)*.35; }
+    if(!o.tx){ o.gy=bugGroundCache(o); P.set(o.x,o.gy+.025+Math.max(0,lift),o.z); } o.m.rotation.set(-Math.PI/2,0,o.th+Math.PI+(o.mv?Math.sin(o.ph*20)*.06:0),"YXZ"); o.m.rotation.set(0,0,0); o.m.rotateY(o.th+Math.PI); o.m.rotateX(-Math.PI/2); }
+  if(o.shadow){ o.shadow.position.set(P.x,(o.tx?o.gy:o.gy)+.03,P.z); const hgt=Math.max(.2,P.y-o.gy); o.shadow.scale.setScalar(Math.max(.4,1.2-hgt*.35)); o.shadow.material.opacity=Math.max(.15,.7-hgt*.25); }
+  if(o.glow){ o.glow.position.copy(P); const on=o.b[0]==="starbug"||L.slot()===0; const pu=(Math.sin(o.ph*(o.b[0]==="firefly"?2.6:1.4))+1)/2; o.glow.material.opacity=on?.25+.65*pu:0; o.glow.scale.setScalar(.25+.25*pu); } }
+function bugGroundCache(o){ const kx=Math.round(o.x*2), kz=Math.round(o.z*2); if(o._gk!==kx+"_"+kz){ o._gk=kx+"_"+kz; o._gy=bugGround(o.x,o.z); } return o._gy; }
 const BUGP=[]; function bugPuff(pos,col,n,sp){ for(let i=0;i<n;i++){ const m=new T.Sprite(new T.SpriteMaterial({map:FXTX(),color:new T.Color(col),transparent:true,depthWrite:false,blending:T.AdditiveBlending})); m.position.copy(pos); const s=.12+Math.random()*.14; m.scale.set(s,s,1); scene.add(m); const a=Math.random()*6.283, e=Math.random()*1.2-.2, v=(sp||1.6)*(.5+Math.random()); BUGP.push({m,vx:Math.cos(a)*v,vy:e*v+1.2,vz:Math.sin(a)*v,t:0,l:.6+Math.random()*.5}); } }
 let _fx=null; const FXTX=()=>_fx||(_fx=new T.CanvasTexture(cvs0(64,64,(x)=>{ const g=x.createRadialGradient(32,32,2,32,32,30); g.addColorStop(0,"rgba(255,255,255,1)"); g.addColorStop(.4,"rgba(255,255,255,.6)"); g.addColorStop(1,"rgba(255,255,255,0)"); x.fillStyle=g; x.fillRect(0,0,64,64); x.fillStyle="#fff"; x.fillRect(30,4,4,56); x.fillRect(4,30,56,4); })));
 function cvs0(w,h,f){ const c=document.createElement("canvas"); c.width=w; c.height=h; f(c.getContext("2d"),w,h); return c; }
@@ -14199,9 +14269,19 @@ function bugTry(o){ const N=NETD(), b=o.b, ok=Math.random()<NET_RATE[N.t][b[4]-1
     try{ (b[4]>=3?[784,988,1175,1568,2093]:[784,988,1175]).forEach((f,k)=>tone(f,.13,.05,"triangle",k*.07)); navigator.vibrate&&navigator.vibrate(b[4]>=3?[40,40,80]:40); }catch(_){}
     setTimeout(()=>bugCard(b,first,N),520); if(N.u<=0) setTimeout(()=>toast(`${NETS[N.t].n}用壞了！`,2400),2600); }
   else { o.esc++; try{ tone(260,.18,.05,"triangle"); tone(200,.2,.04,"triangle",.1); }catch(_){} bugPuff(o.sp.position,"#ffffff",8,1.2);
-    if(b[4]>=3&&o.esc>=2){ bugSay(o,"…咻！（飛不見了）"); setTimeout(()=>{ if(BG2.list.includes(o)) bugRemove(o,true); },350); }
-    else { bugSay(o,b[4]>=3?"啊！飛走了……牠很警覺，只剩一次機會！":"啊！飛走了！"); const a=Math.random()*6.283, d=3+Math.random()*4; let tx=o.x+Math.sin(a)*d, tz=o.z+Math.cos(a)*d; if(!TOWNX.walk(tx,tz)){ tx=o.x-Math.sin(a)*d; tz=o.z-Math.cos(a)*d; } o.tx=[tx,tz,bugGround(tx,tz)]; o.zip=0; } } }
+    const W=bugRunWord(o); if(b[4]>=3&&o.esc>=2){ bugSay(o,W[1]); setTimeout(()=>{ if(BG2.list.includes(o)) bugRemove(o,true); },350); }
+    else if(o.surf||o.kind==="walk"||o.kind==="flat"){ bugSay(o,b[4]>=3?W[0]+"……牠很警覺，只剩一次機會！":W[0]); o.flee=1.6; o.mv=1; o.st=1.6; o.th+=Math.PI*(.6+Math.random()*.8); }
+    else { bugSay(o,b[4]>=3?W[0]+"……牠很警覺，只剩一次機會！":W[0]); const a=Math.random()*6.283, d=3+Math.random()*4; let tx=o.x+Math.sin(a)*d, tz=o.z+Math.cos(a)*d; if(!TOWNX.walk(tx,tz)){ tx=o.x-Math.sin(a)*d; tz=o.z-Math.cos(a)*d; } o.tx=[tx,tz,bugGround(tx,tz)]; o.zip=0; } } }
 function bugSay(o,t){ toast(t,1800); }
+/* (11/16 主委: crabs run, they don't fly) what you see when it gets away: [the first time, when it is gone for good] */
+function bugRunWord(o){ const id=o.b[0], k=o.kind;
+  if(id==="hermit"||id==="fiddler"||id==="seaslug") return ["啊！橫著跑走了！","……一溜煙鑽進沙裡，不見了。"];
+  if(id==="snail") return ["啊！縮進殼裡，慢慢爬開了。","……躲進石縫裡，找不到了。"];
+  if(id==="caterpillar") return ["啊！一扭一扭地爬開了。","……鑽進葉子底下，找不到了。"];
+  if(id==="grasshopper"||id==="katydid"||id==="cricket") return ["啊！跳走了！","……一跳就跳進草叢，不見了。"];
+  if(id==="strider") return ["啊！在水面上滑走了！","……滑得好遠，看不見了。"];
+  if(k==="wall"||k==="perch"||k==="walk") return ["啊！溜走了！","……鑽進縫裡，不見了。"];
+  return ["啊！飛走了！","……咻！飛得好高，不見了。"]; }
 function bugCard(b,first,N){ const c=document.createElement("div"); c.className="bug-card"; c.innerHTML=`<div class="bc-in r${b[4]}"><div class="bc-burst"></div><img src="${bugPic(b[0])}" alt=""><b>${b[1]}</b><span class="bc-r">${"★".repeat(b[4])}${"☆".repeat(4-b[4])}　${BUG_RN[b[4]]}</span>${first?`<span class="bc-new">新發現！</span>`:""}<small>${b[9]}</small><small class="bc-u">${NETS[N.t].n}還能用 ${Math.max(0,N.u)} 次</small></div>`;
   document.body.appendChild(c); c.onclick=()=>c.remove(); setTimeout(()=>{ c.classList.add("out"); setTimeout(()=>c.remove(),400); },2600); }
 (function(){ const st=document.createElement("style"); st.textContent=`.bug-card{position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;pointer-events:auto;background:rgba(10,20,10,.25);animation:bcF .25s}
@@ -14212,16 +14292,14 @@ function bugCard(b,first,N){ const c=document.createElement("div"); c.className=
 .bug-card .bc-burst{position:absolute;left:50%;top:78px;width:360px;height:360px;margin:-180px;background:repeating-conic-gradient(rgba(255,220,120,.35) 0 10deg,transparent 10deg 20deg);animation:bcS 6s linear infinite;border-radius:50%}
 .bug-card.out{animation:bcO .4s forwards} @keyframes bcF{from{opacity:0}} @keyframes bcP{0%{transform:scale(.3)}100%{transform:scale(1)}} @keyframes bcW{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-6px) rotate(4deg)}} @keyframes bcS{to{transform:rotate(360deg)}} @keyframes bcO{to{opacity:0;transform:scale(.9)}}`; document.head.appendChild(st); })();
 L.tick7=dt=>{ try{ bugTick(dt); }catch(e){ console.warn("bugs",e); } if(L.tick8) L.tick8(dt); };
-function bugTick(dt){ const inTown=TOWNX&&TOWNX.on, p=meAv.pos; const c=bugChip();
+let bugPre=false; function bugTick(dt){ const inTown=TOWNX&&TOWNX.on, p=meAv.pos; const c=bugChip(); if(inTown&&!bugPre){ bugPre=true; BUGS.forEach(b=>bugTexOf(b[0])); }
   for(let i=BUGP.length-1;i>=0;i--){ const q=BUGP[i]; q.t+=dt; q.m.position.x+=q.vx*dt; q.m.position.y+=q.vy*dt; q.m.position.z+=q.vz*dt; q.vy-=3*dt; q.m.material.opacity=Math.max(0,1-q.t/q.l); if(q.t>q.l){ scene.remove(q.m); q.m.material.dispose(); BUGP.splice(i,1); } }
   if(!inTown){ while(BG2.list.length) bugRemove(BG2.list[0]); c.hidden=true; return; }
   BG2.t-=dt; if(BG2.t<=0){ BG2.t=2.5; if(BG2.list.length<5) bugSpawn(); }
   const S=BG2.swing; if(S){ S.t+=dt; const k=Math.min(1,S.t/.42); S.net.rotation.x=-2.2+k*3.3; meAv.root.position.y=Math.sin(Math.min(1,S.t/.5)*Math.PI)*.18; if(k>=.6&&!S.done){ S.done=1; if(BG2.list.includes(S.o)) bugTry(S.o); } if(S.t>.85){ S.net.parent&&S.net.parent.remove(S.net); S.net.traverse(q=>{ if(q.isMesh){ q.geometry.dispose(); q.material.dispose(); } }); BG2.swing=null; meAv.root.position.y=0; } }
-  let best=null, bd=2.4; for(let i=BG2.list.length-1;i>=0;i--){ const o=BG2.list[i]; o.age+=dt; o.ph+=dt; const P=o.sp.position;
-    if(o.catching){ const hp=meAv.root.position; P.lerp(new T.Vector3(hp.x,1.4,hp.z),Math.min(1,dt*8)); o.sp.scale.multiplyScalar(Math.max(.5,1-dt*4)); if(o.sp.scale.x<.08){ bugRemove(o); } continue; }
-    if(o.tx){ o.zip+=dt*2.2; const k=Math.min(1,o.zip); P.x=o.x+(o.tx[0]-o.x)*k; P.z=o.z+(o.tx[1]-o.z)*k; P.y=o.gy+(o.tx[2]-o.gy)*k+o.h+Math.sin(k*Math.PI)*1.6; if(k>=1){ o.x=o.tx[0]; o.z=o.tx[1]; o.gy=o.tx[2]; o.tx=null; } }
-    else { P.x=o.x+(o.b[7]?Math.sin(o.ph*1.3)*.5:0); P.z=o.z+(o.b[7]?Math.cos(o.ph*.9)*.4:0); P.y=o.gy+o.h+(o.b[7]?Math.sin(o.ph*3)*.15:Math.abs(Math.sin(o.ph*6))*.05); }
-    if(o.b[7]){ const f=.75+.25*Math.abs(Math.sin(o.ph*14)); o.sp.scale.set(o.s0*f,o.s0,1); }
+  let best=null, bd=2.4; for(let i=BG2.list.length-1;i>=0;i--){ const o=BG2.list[i]; o.age+=dt; o.ph+=dt; const P=o.m.position;
+    if(o.catching){ const hp=meAv.root.position; P.lerp(new T.Vector3(hp.x,1.4,hp.z),Math.min(1,dt*8)); o.sp.scale.multiplyScalar(Math.max(.5,1-dt*4)); if(Math.abs(o.sp.scale.y)<.08){ bugRemove(o); } continue; }
+    o.ph-=dt; bugMove(o,dt);
     const d=Math.hypot(p.x-P.x,p.y-P.z); if(d>45||o.age>120){ bugRemove(o); continue; } if(d<bd&&!o.tx){ bd=d; best=o; } }
   bugNear=best; c.hidden=!(best&&!busy()&&!F&&!BG2.swing); if(best&&!c.hidden){ const N=NETD(); c.textContent=`🦋 抓${best.b[4]>=3?"（"+BUG_RN[best.b[4]]+"！）":""}${N.t?"":"（沒有網子）"}`; }
   try{ if(chip&&!chip.hidden&&!c.hidden) chip.style.bottom="calc(env(safe-area-inset-bottom,0px) + 182px)"; else if(chip) chip.style.bottom=""; }catch(e){} }
@@ -14320,7 +14398,7 @@ const DIGS=[ /* id, name, picture, kind (junk/old/fossil/gem/gift/treasure/tackl
  ["mask", "陶面具", "dig/mask.webp", "old", 750, 0.4, [], "閉著眼睛，好像在睡覺。"],
  ["compass", "舊羅盤", "dig/compass.webp", "old", 500, 0.6, [], "指針還在動！"],
  ["mosaic", "馬賽克碎片", "dig/mosaic.webp", "old", 450, 0.67, [], "上面有一隻小鳥。"],
- ["secret", "釣魚秘法", "dig/secret.webp", "tackle", 0, 4, [], "一本很舊的線裝書，封面寫著「釣魚秘法」。女神泉也許用得到。"],
+ ["secret", "釣魚秘法", "dig/secret.webp", "tackle", 0, 4, [], "一本很舊的線裝書，封面寫著「釣魚秘法」，裡面的字有些已經看不清楚了。"],
  ["hook", "古銅魚鉤", "dig/hook.webp", "tackle", 0, 2.5, [], "長滿銅綠的大魚鉤。"],
  ["jfish", "玉魚墜", "dig/jfish.webp", "tackle", 0, 2.5, [], "綠玉雕的小魚，綁著紅繩。"],
  ["lamp2", "古油燈", "dig/lamp2.webp", "old", 400, 0.75, [], "居然還點得著。"],
@@ -14516,7 +14594,7 @@ HANDLERS.lfNq=nid=>{ const c=nqCur(nid); if(!c||c.done||!c.open) return; const i
   const enc=id=>id.replace(/:/g,"~"), dec=s=>s.replace(/~/g,":");
   L.bic=(k,cls)=>{ const id=k.slice(3); if(id.startsWith("gi_")){ const g=giInfo(dec(id.slice(3))); return /\.(webp|png|jpg)$|^data:/.test(g.ic)?`<span class="bic ${cls||""}" style="background:url(${g.ic}) center/contain no-repeat"></span>`:em(g.ic,cls); } const P={q_stone:"stone",q_dust:"dust",g_dht:"dht",g_rcp:"rcp",g_spd:"spd",g_pk_duck:"pk_duck",g_pk_siwu:"pk_siwu",g_pk_lu:"pk_lu",g_pk_beef:"pk_beef"}; if(id.startsWith("in_")) P[id]=id; if(P[id]) return `<span class="bic ${cls||""}" style="background:url(${MZIMG("cook/"+P[id]+".webp")}) center/contain no-repeat"></span>`; if(id==="t_net") P[id]="net"+(NETD().t||1); if(id==="t_sh") P[id]="shovel"; if(P[id]) return `<span class="bic ${cls||""}" style="background:url(${MZIMG("cook/"+P[id]+".webp")}) center/contain no-repeat"></span>`; return I0(k,cls); };
   L.bagEntries=(out,tab)=>{ E0(out,tab); if(tab!=="all"&&tab!=="goods") return; const d=LF(), g=GI();
-    Object.keys(g).filter(k=>g[k]>0).forEach(k=>{ const q=giInfo(k); out.push({id:"lf:gi_"+enc(k),ic:"lf_gi_"+enc(k),n:g[k],name:q.n,desc:(q.d||"")+(k.startsWith("bug:")?"　可以賣給博士，或送給鎮上的人。":k.startsWith("dig:")?(DIG_BY[k.slice(4)]&&DIG_BY[k.slice(4)][3]==="tackle"?"　任務道具：女神泉的女神在找（六種古老釣具裡湊三種，再加上《釣魚秘法》）。不能賣。":"　化石、古物、寶石賣給博士，垃圾給威利回收；也可以送人。"):k.startsWith("ck:")||k.startsWith("cz:")?"":"")}); });
+    Object.keys(g).filter(k=>g[k]>0).forEach(k=>{ const q=giInfo(k); out.push({id:"lf:gi_"+enc(k),ic:"lf_gi_"+enc(k),n:g[k],name:q.n,desc:(q.d||"")+(k.startsWith("bug:")?"　可以賣給博士，或送給鎮上的人。":k.startsWith("dig:")?(DIG_BY[k.slice(4)]&&DIG_BY[k.slice(4)][3]==="tackle"?"":"　化石、古物、寶石賣給博士，垃圾給威利回收；也可以送人。"):k.startsWith("ck:")||k.startsWith("cz:")?"":"")}); });
     Object.keys(INGD()).filter(k=>INGD()[k]>0&&IB[k]).forEach(k=>out.push({id:"lf:in_"+k,ic:"lf_in_"+k,n:INGD()[k],name:IB[k][1],desc:`雜貨店買的${SEASON.has(k)?"調味料":"食材"}，在家裡的廚房煮菜用。`}));
     const N=NETD(); if(N.u>0) out.push({id:"lf:t_net",ic:"lf_t_net",n:N.u,name:NETS[N.t]?NETS[N.t].n:"捕蟲網",desc:`抓蟲用。還能用 ${N.u} 次。走近飛來飛去的蟲，按「🦋 抓蟲」。`});
     if(SHOVEL().u>0) out.push({id:"lf:t_sh",ic:"lf_t_sh",n:SHOVEL().u,name:"鏟子",desc:`地上發光的裂縫可以挖開，還能用 ${SHOVEL().u} 次。`});
