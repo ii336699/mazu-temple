@@ -511,6 +511,9 @@ body.hideui .joy,body.customizing .joy,body.hideui .camreset,body.customizing .c
 <body>
 <canvas id="c" tabindex="0" aria-label="雲端天后宮正殿 3D 場景"></canvas><div id="vig" aria-hidden="true"></div><button id="zenMusicBtn" class="spark-btn glass act-mid" hidden>🎵 禪堂音樂</button>
 <div class="loading" id="loading">正在點燈</div>
+<div class="dlpack" id="zonePack" hidden role="dialog" aria-label="讀取中" style="z-index:200"><div class="dl-in"><h2>雲端天后宮</h2><p id="zpTxt"></p>
+  <div class="dl-track"><div class="dl-fill" id="zpFill"></div><div class="dl-run" id="zpRun"></div></div>
+  <div class="dl-pct" id="zpPct">0%</div><div class="dl-what" id="zpWhat"></div></div></div>
 <div class="dlpack" id="dlPack" hidden role="dialog" aria-label="下載廟宇中"><div class="dl-in"><h2>雲端天后宮</h2><p>正在下載廟宇建築和神尊，第一次進廟會比較久。<br>下載過的會存在手機裡，下次就很快。</p>
   <div class="dl-track"><div class="dl-fill" id="dlFill"></div><div class="dl-run" id="dlRun"></div></div>
   <div class="dl-pct" id="dlPct">0%</div><div class="dl-what" id="dlWhat">準備中…</div></div></div>
@@ -2751,9 +2754,9 @@ const SAKURA={};
     const m=new T.MeshStandardMaterial({map:texRep(baseTex,1/4.3,1/4.3),roughness:.95,polygonOffset:true,polygonOffsetFactor:6,polygonOffsetUnits:6}); /* (pushed back in the depth test: it can never win over a road, a pavement or a floor, even far away on a phone) */
     /* (a flat shape with holes cut where the lower ground is: the river, the valley, the beach, the forest and the mountain — 11/16) */
     const ZT=-50; /* (11/16: only north of the temple — the temple has its own ground, and this lawn showed through its courtyard tiles far off) */ const sh=new T.Shape(); sh.moveTo(B.x0,-ZT); sh.lineTo(B.x1,-ZT); sh.lineTo(B.x1,-B.z0); sh.lineTo(B.x0,-B.z0); sh.closePath();
-    for(let [x0,x1,z0,z1] of [[-17,73,-143.6,-131.4],[86.5,134.5,-120,-50],[134.5,B.x1-.1,-140,-40],[14,118,-176,-143.6],[21,111,-257,-176]]){ z1=Math.min(z1,ZT-.1); const h=new T.Path(); h.moveTo(x0,-z1); h.lineTo(x0,-z0); h.lineTo(x1,-z0); h.lineTo(x1,-z1); h.closePath(); sh.holes.push(h); }
-    const g=mesh(new T.ShapeGeometry(sh),m); g.rotation.x=-Math.PI/2; g.position.set(0,-.06,0); g.userData.noMerge=1; g.receiveShadow=true; /* (11/16: you can walk on it now, so it stays just under the roads) */
-    const sand=new T.MeshStandardMaterial({color:"#e3cf9e",roughness:.95}); for(const [z0,z1] of [[B.z0,-140],[-40,B.z1]]){ const q=mesh(new T.PlaneGeometry(B.x1-142,z1-z0),sand); q.rotation.x=-Math.PI/2; q.position.set((142+B.x1)/2,-.045,(z0+z1)/2); q.userData.noMerge=1; }
+    for(let [x0,x1,z0,z1] of [[-17,73,-143.6,-131.4],[86.5,134.5,-120,-50],[134.5,B.x1-.1,-140,-40],[14,118,-176,-143.6],[21,111,-257,-176]]){ z1=Math.min(z1,ZT-.1); { const e=.7; x0+=e; x1-=e; z0+=e; if(z1<ZT-1) z1-=e; } /* (the holes are a little smaller than the ground that fills them, so its edge always lies on the lawn — no dark crack) */ const h=new T.Path(); h.moveTo(x0,-z1); h.lineTo(x0,-z0); h.lineTo(x1,-z0); h.lineTo(x1,-z1); h.closePath(); sh.holes.push(h); }
+    const g=mesh(new T.ShapeGeometry(sh),m); g.rotation.x=-Math.PI/2; g.position.set(0,-.06,0); g.userData.noMerge=1; g.receiveShadow=true; window.BASEG=g; window.BASESAND=[]; /* (11/16: you can walk on it now, so it stays just under the roads) */
+    const sand=new T.MeshStandardMaterial({color:"#e3cf9e",roughness:.95}); for(const [z0,z1] of [[B.z0,-139.3],[-40.7,B.z1]]){ const q=mesh(new T.PlaneGeometry(200-142,z1-z0),sand); q.rotation.x=-Math.PI/2; q.position.set((142+200)/2,-.045,(z0+z1)/2); q.userData.noMerge=1; window.BASESAND.push(q); /* (runs on under the sea: no black gap past the wall) */ }
     /* the wall: whitewashed, a red-tiled cap, a pillar every 6 m (one wall mesh per side, so it costs next to nothing) */
     const wm=mat("#efe6d6",{roughness:.85}), cm=mat("#a3392a",{roughness:.7}), H=2.2, T2=.45;
     const side=(x0,z0,x1,z1)=>{ const L=Math.hypot(x1-x0,z1-z0), cx=(x0+x1)/2, cz=(z0+z1)/2, ry=Math.atan2(x1-x0,z1-z0);
@@ -4253,7 +4256,7 @@ function botExit(n){ const sd=n.pos.x<0?-1:1, z0=Math.max(HZ+3,Math.min(HZ+YX+15
 function botVanish(n){ if(n.vanishT!=null) return; n.vanishT=.55; n.target.copy(n.pos); n.path=[]; }
 function botTick(dt){ const now=performance.now(); botFps(dt);
   // 隱藏其他玩家: checked every frame, so nobody can pop back into view — everyone else goes, the kneeling demo worshippers too (the chair's call)
-  if(!customizing){ for(const n of npcs){ const v=othersShown; if(n.root.visible!==v) n.root.visible=v; } remotes.forEach(r=>{ if(r.root.visible!==othersShown) r.root.visible=othersShown; }); }
+  if(!customizing){ const zo=typeof TOWNX!=="undefined"&&TOWNX&&TOWNX.zone&&TOWNX.zone.off; for(const n of npcs){ const v=othersShown&&!(zo&&n.pos.y>-50.5); if(n.root.visible!==v) n.root.visible=v; } remotes.forEach(r=>{ const v=othersShown&&!(zo&&r.pos.y>-50.5); if(r.root.visible!==v) r.root.visible=v; }); } /* (in the town, the people still in the temple are not drawn — 主委 11/16) */
   // a big change in how many should be here (the chair set a new number, real players came in) is acted on within a second
   if(now>(BOT.chk||0)){ BOT.chk=now+1000; let live=0; for(const n of npcs) if(!n.leaving&&!n.classic) live++; if(Math.abs(live-botWant())>4&&BOT.nextAdjust>now+4000) BOT.nextAdjust=now+rand(500,1500); }
   if(now>BOT.nextAdjust){ const live=npcs.filter(n=>!n.leaving&&!n.classic), want=botWant(); BOT.nextAdjust=now+(Math.abs(live.length-want)>10?rand(600,1500):Math.abs(live.length-want)>4?rand(1500,4000):rand(15000,40000));
@@ -9651,7 +9654,7 @@ requestAnimationFrame(()=>{ tick(); setTimeout(()=>$("#loading").setAttribute("d
    It only appears if they take more than a moment (a phone that already has them stored skips it), and closes once they are all in. */
 /* the runner on the bar is the game's own 財神爺 (the chair's 財神 costume), walking in place in a little canvas of its own */
 /* above the download bar: a white butterfly flapping along with the progress, shedding glittering dust behind it (2D canvas, no WebGL) */
-function dlRunner(){ try{ const W=150, H=110, dpr=Math.min(2,window.devicePixelRatio||1), cv=document.createElement("canvas"); cv.width=W*dpr; cv.height=H*dpr; $("#dlRun").appendChild(cv);
+function dlRunner(host){ try{ const W=150, H=110, dpr=Math.min(2,window.devicePixelRatio||1), cv=document.createElement("canvas"); cv.width=W*dpr; cv.height=H*dpr; $(host||"#dlRun").appendChild(cv);
     const x=cv.getContext("2d"); x.scale(dpr,dpr); const bx=105, by=52; let alive=true, dust=[], t0=performance.now(), last=t0;
     const wing=(up,flip,k)=>{ x.save(); x.scale(flip*Math.max(.08,k),1); x.beginPath();
         if(up){ x.moveTo(0,-2); x.bezierCurveTo(6,-22,30,-30,34,-16); x.bezierCurveTo(36,-6,22,2,0,2); }
@@ -11340,8 +11343,10 @@ const ST=()=>{ if(RM.visit) return RM.visit.room; if(!bag.room||typeof bag.room!
   if(r.v!==2||!Array.isArray(r.it)||!r.inv||typeof r.inv!=="object"){ r.v=2; r.it=[[fidx("bed09"),-2.4,-1.4,0],[fidx("plant01"),2.6,-2.1,0]]; r.inv={}; for(const id of ["bed09","plant01","table01","chair01"]) r.inv[fidx(id)]=1; } return r; };
 const invN=i=>ST().inv[i]|0, usedN=i=>ST().it.filter(t=>t[0]===i).length;
 /* a piece won somewhere else in the game: one you do not have yet if there is one */
+/* a furniture's own little picture (its square in room/f/thumb-<kind>.webp) as a picture you can show anywhere (11/16: 挖到的家具顯示那件家具) */
+RM.pic=(f,cb)=>{ try{ const im=new Image(); im.onload=()=>{ const c=document.createElement("canvas"); c.width=c.height=168; const x=c.getContext("2d"); x.imageSmoothingQuality="high"; x.drawImage(im,(f.k%8)*56*(im.width/448),Math.floor(f.k/8)*56*(im.width/448),56*(im.width/448),56*(im.width/448),0,0,168,168); try{ cb(c.toDataURL("image/png")); }catch(e){ cb(null); } }; im.onerror=()=>cb(null); im.src="room/f/thumb-"+f.c+".webp"; }catch(e){ cb(null); } };
 RM.grant=src=>{ const vis=RM.visit; RM.visit=null; try{ return grant0(src); } finally{ RM.visit=vis; } };
-const grant0=src=>{ try{ const s=ST(); const pool=FURN.map((f,i)=>i).filter(i=>FURN[i].src===src&&!FURN[i].hide); let p=pool.filter(i=>!(s.inv[i]|0)); if(!p.length) p=pool.filter(i=>(s.inv[i]|0)<MAXOWN); if(!p.length) return ""; const i=p[(Math.random()*p.length)|0]; s.inv[i]=(s.inv[i]|0)+1; save("mz.bag",bag); return FURN[i].n; }catch(e){ return ""; } };
+const grant0=src=>{ try{ const s=ST(); const pool=FURN.map((f,i)=>i).filter(i=>FURN[i].src===src&&!FURN[i].hide); let p=pool.filter(i=>!(s.inv[i]|0)); if(!p.length) p=pool.filter(i=>(s.inv[i]|0)<MAXOWN); if(!p.length) return ""; const i=p[(Math.random()*p.length)|0]; s.inv[i]=(s.inv[i]|0)+1; save("mz.bag",bag); RM.lastF=FURN[i]; return FURN[i].n; }catch(e){ return ""; } };
 const owned=(k,i)=>me.sp||!!(ST()[k==="f"?"of":k==="w"?"ow":"or"]&(1<<i));
 const LIST={f:FLOORS,w:WALLS};
 const priceOf=(k,i)=>k==="r"?RUGS[i][3]:LIST[k][i].p;
@@ -11862,7 +11867,7 @@ TW.walk=(x,z)=>{ for(const b of BLOCK) if(inR(b,x,z)) return false; for(const w 
   if(x>B.x1-.6&&!(z>-140&&z<-40)) return false;
   return true; };
 const inVil=(x,z)=>x<-17&&z<-104&&z>-252; TW.inVil=inVil;
-TW.ground=(x,z)=>inVil(x,z)?null:z<-143.6?southH(x,z):(x>=86&&z>-131&&z<-52&&TW.valleyH)?TW.valleyH(x,z):null; /* (11/16: the valley's hills too, now that you can walk on them) */
+TW.ground=(x,z)=>inVil(x,z)?null:z<-143.6?southH(x,z):(x>=86.5&&x<=134.5&&z>-120&&z<-43.5&&TW.valleyH)?TW.valleyH(x,z):(x>134.5&&z>-140&&z<-40&&TW.beachH)?TW.beachH(x,z)+.012:null; /* (the valley right up to its north end, and the beach dunes: you walk over them, not into them — 11/16) */ /* (11/16: the valley's hills too, now that you can walk on them) */
 /* the camera may not go inside a building, into the mountain or the valley hills (it was slipping into roofs) */
 let CAMBOX=null; const camBoxes=()=>CAMBOX||(CAMBOX=TOWNB.filter(b=>!b.deco).map(b=>{ const d=b.d||7, H=(b.fl||2)*3.05+3; let x0,x1,z0,z1; if(b.axis==="x"){ x0=b.c-b.w/2; x1=b.c+b.w/2; if(Math.abs(b.ry)<.1){ z0=b.f-d; z1=b.f; } else { z0=b.f; z1=b.f+d; } } else { z0=b.c-b.w/2; z1=b.c+b.w/2; if(b.ry>0){ x0=b.f-d; x1=b.f; } else { x0=b.f; x1=b.f+d; } } return [x0-.35,x1+.35,z0-.35,z1+.35,H]; }));
 TW.camOK=(x,y,z)=>{ if(y<.35) return false; for(const B of camBoxes()) if(x>B[0]&&x<B[1]&&z>B[2]&&z<B[3]&&y<B[4]) return false;
@@ -12282,7 +12287,7 @@ function nbench(C,x,z,ry){ const g=new T.Group(); g.position.set(x,0,z); g.rotat
 /* ---- the ground: a gentle valley (flat where you walk, hills round it, a cliff behind the waterfall), painted by vertex colours ---- */
 const nz=(x,z)=>Math.sin(x*.21+z*.13)*Math.cos(z*.17-x*.07)+.5*Math.sin(x*.47-z*.39);
 const walkGap=(x,z)=>{ let d=Math.min(lineD(TRAIL,x,z)[0]-1.25,lineD(TRAIL2,x,z)[0]-1.25); for(const m of MEADOW) d=Math.min(d,Math.hypot(x-m[0],z-m[1])-m[2]); return Math.max(0,d); };
-TW.valleyH=(x,z)=>valleyH(x,z);
+TW.valleyH=(x,z)=>valleyH(x,z); TW.beachH=(x,z)=>beachH(x,z);
 function valleyH(x,z){ const w=walkGap(x,z); let h=sstep(1.2,9,w)*(1.7+1.2*nz(x,z))*sstep(-120,-114,z)*sstep(-44,-50,z); h+=sstep(-59,-52.5,z)*sstep(-43.5,-50,z)*sstep(14,4,Math.abs(x-110))*6.5; /* the cliff the waterfall drops from; (11/16) the hills and the cliff slope down to the plain at the valley's ends, no cut-off half hill */
   h*=sstep(134.5,127,x)*sstep(86.5,90,x); const b=lineD(BROOK,x,z), hw=brookW(b[1],b[2]), k=sstep(hw-.3,hw+1.3,b[0]); return -.55*(1-k)+h*k; }
 function terrain(C,x0,x1,z0,z1,hf,cf,y0){ const nx=Math.round(x1-x0), nzc=Math.round(z1-z0), g=new T.PlaneGeometry(x1-x0,z1-z0,nx,nzc); g.rotateX(-Math.PI/2); g.translate((x0+x1)/2,0,(z0+z1)/2);
@@ -12292,7 +12297,9 @@ const CL=s=>new T.Color(s).convertSRGBToLinear();
 const VC={g1:CL("#86c96c"),g2:CL("#62b060"),moss:CL("#4f9a80"),path:CL("#d8c49a"),cliff:CL("#84a093"),sand:CL("#e6cf9e"),wet:CL("#c4a878"),dune:CL("#9cc97c")}; /* (deeper than they look: the bright daylight washes pale colours out to white) */
 function valleyC(x,z,h,c){ const n=.5+.5*nz(x*1.7,z*1.7); c.copy(VC.g1).lerp(VC.g2,n*.7); const b=lineD(BROOK,x,z); c.lerp(VC.moss,sstep(brookW(b[1],b[2])+2.2,brookW(b[1],b[2]),b[0])*.75);
   c.lerp(VC.cliff,sstep(2.6,5.5,h)*.6); const t=Math.min(lineD(TRAIL,x,z)[0],lineD(TRAIL2,x,z)[0]); c.lerp(VC.path,sstep(1.25,.75,t)); c.lerp(VC.dune,sstep(127,134.5,x)*.55); c.lerp(VC.sand,sstep(131,134.5,x)*.35); if(z<-72&&z>-82) c.lerp(VC.path,sstep(92,86.6,x)*.9); } /* (11/14: grass fades towards the dunes and the sand at the beach side, and the old street runs on as a sandy path into the valley — no hard edges) */
-function beachH(x,z){ const s=shoreX(z), h=-.75*sstep(s-2.2,s+5,x)+sstep(138,135.2,x)*.25+(sstep(-60,-46,z)*4.5+sstep(-127,-138,z)*3.5)*sstep(s+2,s-6,x), b=lineD(BROOK,x,z), hw=brookW(b[1],b[2]), k=sstep(hw-.3,hw+1.3,b[0]); return Math.min(h,-.55*(1-k)+h*k); } /* (dunes close the beach at both ends) */
+/* (11/16 主委「這些斷層都要修好」: the dunes at both ends and the grassy rise on the land side now come down to nothing at the beach's
+   edges, so the beach meets the valley and the lawn round it at the same height — no cut-off slab, no step) */
+function beachH(x,z){ const s=shoreX(z), h=-.75*sstep(s-2.2,s+5,x)+sstep(138,135.2,x)*sstep(134.5,135.8,x)*.25+(sstep(-60,-46,z)*4.5+sstep(-127,-138,z)*3.5)*sstep(s+2,s-6,x)*sstep(134.5,141,x)*sstep(-40,-45,z)*sstep(-140,-134,z), b=lineD(BROOK,x,z), hw=brookW(b[1],b[2]), k=sstep(hw-.3,hw+1.3,b[0]); return Math.min(h,-.55*(1-k)+h*k); } /* (dunes close the beach at both ends) */
 function beachC(x,z,h,c){ const s=shoreX(z); c.copy(VC.sand).lerp(VC.wet,sstep(s-5,s-1.2,x)*.85); c.lerp(VC.dune,sstep(141,135.6,x)*.7); c.lerp(VC.g1,sstep(137.2,134.5,x)*.5); }
 /* ---- water ---- */
 const FOGV="#include <fog_pars_vertex>\n", FOGF="#include <fog_pars_fragment>\n";
@@ -12391,6 +12398,10 @@ function meadow(C,x0,x1,z0,z1,nG,nF,hf,ok,seed){ const R=srand(seed||1), k=PHONE
   const make=(key,n,smin,smax)=>{ n=Math.round(n*k); const mats=[]; for(let i=0,t=0;i<n&&t<n*4;t++){ const x=x0+R()*(x1-x0), z=z0+R()*(z1-z0); if(ok&&!ok(x,z)) continue; const y=(hf?hf(x,z):0)||0, sc=smin+R()*(smax-smin); q.setFromAxisAngle(up,R()*6.283); s.set(sc*(.8+R()*.4),sc*(.75+R()*.5),sc); p.set(x,y-.02,z); M.compose(p,q,s); mats.push(M.clone()); i++; }
     if(!mats.length) return; const im=new T.InstancedMesh(gCross(),meadowMat(key),mats.length); mats.forEach((m,i)=>im.setMatrixAt(i,m)); im.instanceMatrix.needsUpdate=true; im.userData.keep=1; im.userData.noMerge=1; im.raycast=()=>{}; im.frustumCulled=false; C.g.add(im); };
   make("g",nG,.35,.7); for(let f=0;f<4;f++) make(f,nF/4,.32,.52); }
+/* the lawn under the whole map and the sand strips wear the same painted grass / sand and the same light as the valley and the beach,
+   so the places where one ground meets another no longer show as patches of different green (11/16 主委「這種拼湊感」) */
+try{ if(window.BASEG&&!window.BASEG.userData.painted){ const t=grassDetail().clone(); t.needsUpdate=true; t.wrapS=t.wrapT=T.RepeatWrapping; t.repeat.set(1/3.4,1/3.4); window.BASEG.material=new T.MeshLambertMaterial({map:t,color:VC.g1.clone().lerp(VC.g2,.35).multiplyScalar(1.22),polygonOffset:true,polygonOffsetFactor:6,polygonOffsetUnits:6}); window.BASEG.userData.painted=1; window.BASEG.userData.keepMat=1;
+    (window.BASESAND||[]).forEach(q=>{ const p=q.geometry.parameters, u=sandDetail().clone(); u.needsUpdate=true; u.wrapS=u.wrapT=T.RepeatWrapping; u.repeat.set(p.width/3.4,p.height/3.4); q.material=new T.MeshLambertMaterial({map:u,color:VC.sand.clone().multiplyScalar(1.22)}); q.userData.keepMat=1; }); } }catch(e){ console.warn("base paint",e); }
 /* pebbles: painted stones seen from above, lying on the ground */
 const pebbleTex=k=>scnTex("pb"+k,128,128,(x,W,H)=>{ const R=srand(50+k*7); const n=11, pts=[]; const rx=W*(.3+R()*.1), ry=H*(.24+R()*.12); for(let i=0;i<n;i++){ const a=i/n*6.283, r=1+(R()-.5)*.28; pts.push([W/2+Math.cos(a)*rx*r,H/2+Math.sin(a)*ry*r]); }
   const path=()=>{ x.beginPath(); for(let i=0;i<n;i++){ const p0=pts[i], p1=pts[(i+1)%n], mx=(p0[0]+p1[0])/2, my=(p0[1]+p1[1])/2; if(!i) x.moveTo(mx,my); else x.quadraticCurveTo(p0[0],p0[1],mx,my); } const p0=pts[0], p1=pts[1]; x.quadraticCurveTo(p0[0],p0[1],(p0[0]+p1[0])/2,(p0[1]+p1[1])/2); x.closePath(); };
@@ -12609,18 +12620,32 @@ function unload(id){ const C=LIVE[id]; if(!C) return; delete LIVE[id]; try{ scen
    away: hidden, and its shapes and pictures freed from the graphics card (the page keeps its own copy, so nothing is downloaded again).
    Walking back in, the screen fades again and the temple is drawn as before while the fade covers the moment it takes. */
 const ZN={off:false,list:[],busy:0}, ZTEX=["map","normalMap","emissiveMap","roughnessMap","metalnessMap","aoMap","alphaMap","bumpMap","lightMap","specularMap"];
-function zoneVeil(cb){ let v=document.getElementById("zoneVeil"); if(!v){ v=document.createElement("div"); v.id="zoneVeil"; v.style.cssText="position:fixed;inset:0;background:#f6efe2;opacity:0;pointer-events:none;transition:opacity .25s;z-index:3"; document.body.appendChild(v); } v.style.opacity=1; setTimeout(()=>{ try{ cb(); }catch(e){ console.warn("zone",e); } requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(()=>{ v.style.opacity=0; },120))); },270); }
+/* (14:15 主委：「閃白閃這麼快太奇怪了，用遊戲開始的讀取圖，讀取五秒，從廟門口出來就讀取」) the same picture as the start of the game,
+   five seconds, a running figure and a bar; the work is done right after it covers the screen, and the town's districts load behind it */
+function zoneVeil(cb,toTown){ const el=document.getElementById("zonePack"); if(!el){ try{ cb(); }catch(e){} return; } const D=5000; let stop=null, done=false, el0=0, last=performance.now(); /* (time counted per frame, at most 50 ms a frame: a phone busy putting things away still shows the whole five seconds) */
+  document.getElementById("zpTxt").innerHTML=toTown?"正在前往天后小鎮<br>小鎮、海邊和森林準備中，請稍等一下。":"正在回到天后宮<br>廟裡的建築和神尊準備中，請稍等一下。";
+  document.getElementById("zpWhat").textContent=toTown?"🏮 天后小鎮":"⛩️ 天后宮"; el.removeAttribute("data-done"); el.hidden=false; try{ stop=dlRunner("#zpRun"); }catch(e){}
+  try{ meAv.path=[]; meAv.target.copy(meAv.pos); }catch(e){} try{ inputReset(); }catch(e){}
+  const bar=()=>{ if(done) return; const nw=performance.now(); el0+=Math.min(50,nw-last); last=nw; const k=Math.min(1,el0/D), p=Math.round((1-Math.pow(1-k,1.6))*100); document.getElementById("zpFill").style.width=p+"%"; document.getElementById("zpRun").style.left=p+"%"; document.getElementById("zpPct").textContent=p+"%"; try{ meAv.target.copy(meAv.pos); }catch(e){} if(k<1) requestAnimationFrame(bar); else { done=true; el.setAttribute("data-done",""); setTimeout(()=>{ el.hidden=true; if(stop) stop(); const r=document.getElementById("zpRun"); if(r) r.innerHTML=""; },800); } };
+  requestAnimationFrame(bar); setTimeout(()=>{ try{ cb(); }catch(e){ console.warn("zone",e); } },150); }
+/* (14:24 主委：「過了地圖還是要顯示廟那邊的東西，只是人物模型不用讀取，那邊只留廟口基本外觀；過來小鎮只讀取小鎮這邊的人」)
+   So the temple's outside stays — walls, roofs, gates, everything without a big picture. What is put away is what you cannot see from
+   the town anyway and costs the most: things low down (under 6.5 m) wearing a big picture — the statues, the murals, the lamp wall, the
+   inn's paintings, the shop street's windows and rooms — and the people on the temple side (players and townsfolk there are not drawn
+   while you are in the town; see the npcs / remotes loop). */
 function zoneForget(){ if(ZN.off) return; if(hid.length){ hid.forEach(M=>{ M.visible=true; }); hid=[]; } scene.updateMatrixWorld(true);
   const live=new Set(Object.values(LIVE).map(C=>C.g)), bb=new T.Box3(), keepT=new Set(), goT=new Set(), goG=new Set(), list=[];
   const stay=o=>{ for(let p=o;p&&p!==scene;p=p.parent){ const u=p.userData||{}; if(live.has(p)||u.isAvatar||u.zoneKeep) return true; } return false; };
   const texOf=(o,set)=>{ const ms=Array.isArray(o.material)?o.material:[o.material]; for(const m of ms) if(m) for(const k of ZTEX){ const t=m[k]; if(t&&t.isTexture) set.add(t); } };
-  scene.traverse(o=>{ if(!(o.isMesh||o.isPoints||o.isLine||o.isSprite)) return; let side=false;
-    if(!o.isInstancedMesh&&!o.isSkinnedMesh&&o.geometry&&!stay(o)){ const g=o.geometry; if(!g.boundingBox) g.computeBoundingBox(); if(!g.boundingBox.isEmpty()){ bb.copy(g.boundingBox).applyMatrix4(o.matrixWorld); side=bb.min.z>-53; } }
+  const heavy=o=>{ const ms=Array.isArray(o.material)?o.material:[o.material]; for(const m of ms) if(m) for(const k of ZTEX){ const t=m[k], im=t&&t.image; if(im&&(im.width||0)*(im.height||0)>=700*700) return true; } return false; };
+  scene.traverse(o=>{ if(!(o.isMesh||o.isPoints||o.isSprite)) return; let side=false;
+    if(!o.isInstancedMesh&&!o.isSkinnedMesh&&o.geometry&&!stay(o)){ const g=o.geometry; if(!g.boundingBox) g.computeBoundingBox(); if(!g.boundingBox.isEmpty()){ bb.copy(g.boundingBox).applyMatrix4(o.matrixWorld);
+      if(bb.min.z>-53){ if(o.userData.mergedOff&&!o.visible){ goG.add(g); return; } side=bb.max.y<6.5&&heavy(o); } } }
     if(side){ list.push([o,o.visible]); o.visible=false; o.userData.zoneOff=1; if(!o.isSprite) goG.add(o.geometry); texOf(o,goT); } else if(o.visible) texOf(o,keepT); });
   goG.forEach(g=>{ try{ g.dispose(); }catch(e){} }); let nt=0; goT.forEach(t=>{ if(!keepT.has(t)){ try{ t.dispose(); nt++; }catch(e){} } });
   ZN.list=list; ZN.off=true; ZN.n=[list.length,goG.size,nt]; }
 function zoneBack(){ for(const [o,v] of ZN.list){ o.visible=v; delete o.userData.zoneOff; } ZN.list=[]; ZN.off=false; }
-TW.zone=ZN; TW.zoneBack=zoneBack;
+TW.zone=ZN; TW.zoneBack=zoneBack; TW.zoneForget=zoneForget;
 let hid=[]; function fogCull(px,pz){ try{ if(typeof MERGED==="undefined"||ZN.off) return; if(pz>-58){ if(hid.length){ hid.forEach(M=>{ M.visible=true; }); hid=[]; } return; } const far=(scene.fog&&scene.fog.far||90)+8, cx=camera.position.x, cz=camera.position.z;
     for(const M of MERGED){ const bs=M.geometry.boundingSphere; if(!bs) continue; const out=Math.hypot(bs.center.x-cx,bs.center.z-cz)-bs.radius>far; if(out&&M.visible){ M.visible=false; hid.push(M); } else if(!out&&!M.visible&&hid.includes(M)){ M.visible=true; hid.splice(hid.indexOf(M),1); } } }catch(e){} }
 let acc=0, greeted=false, wt=0; const LR0=(typeof Q!=="undefined"&&Q.phone)?[45,70]:[75,105];
@@ -12630,7 +12655,7 @@ let acc=0, greeted=false, wt=0; const LR0=(typeof Q!=="undefined"&&Q.phone)?[45,
 TW.loadAll=()=>{ for(const d of CH) if(!LIVE[d.id]) try{ load(d); }catch(e){ console.warn("town load",d.id,e); } }; /* (tests / the map overview: every district at once) */
 TW.preload=()=>{ for(const id of ["gate","oldE1","oldE2","mid"]){ const d=CH.find(q=>q.id===id); if(d&&!LIVE[id]) try{ load(d); }catch(e){ console.warn("town preload",e); } } };
 try{ whenEssential(()=>setTimeout(()=>TW.preload(),50)); }catch(e){} setTimeout(()=>TW.preload(),8000); /* (and in any case soon after the start) */
-TW.tick=dt=>{ const nowS=performance.now(); if(nowS>(TW.slT||0)&&TW.SL&&typeof LIFE!=="undefined"&&LIFE&&LIFE.openNow){ TW.slT=nowS+1000; for(const e of TW.SL){ const o=LIFE.openNow(e.k)?1:0; if(e.o===o) continue; e.o=o; if(e.U) e.U.lit.value=o; if(e.M){ if(e.M.ei0==null) e.M.ei0=e.M.emissiveIntensity; e.M.emissiveIntensity=o?e.M.ei0:0; e.M.color.setScalar(o?1:.55); } } } /* 沒開的店：招牌不亮、櫥窗變暗 (checked once a second) */ try{ NT.tick(dt,LIVE); }catch(e){} try{ const bx=typeof meAv!=="undefined"&&meAv?meAv.pos.x:0, onB=bx>128&&!(typeof NOFOG!=="undefined"&&NOFOG.on); if(onB&&!TW.fogB){ TW.fogB=[scene.fog.near,scene.fog.far]; } if(TW.fogB){ const k=Math.max(0,Math.min(1,(bx-128)/14)); scene.fog.near=TW.fogB[0]+(160-TW.fogB[0])*k; scene.fog.far=TW.fogB[1]+(420-TW.fogB[1])*k; if(!onB&&k<=0){ scene.fog.near=TW.fogB[0]; scene.fog.far=TW.fogB[1]; TW.fogB=null; } } if(TW.sunS) TW.sunS.material.opacity=1-(typeof _dn!=="undefined"?_dn.night:0); }catch(e){} /* (no haze over the sea: it clears as you walk onto the beach) */ if(TW.cart&&(TW._ct=(TW._ct||0)+dt)>1){ TW._ct=0; try{ const o=!!(LIFE&&LIFE.isOpen&&LIFE.isOpen("tw:congee")); TW.cart.visible=o; if(TW.cartHit) TW.cartHit.userData.act=o?"tw:congee":null; }catch(e){} } /* in the town the camera never comes closer than ~1 m to anything, so the near plane can move out: the depth test gets ~2.7× finer and close-together surfaces (signs, windows, doors on walls) stop flickering on phones */ { const nn=camera.position.z<-50.5?.4:.15; if(camera.near!==nn){ camera.near=nn; camera.updateProjectionMatrix(); } } wt+=dt; for(const id in LIVE){ const w=LIVE[id].water; if(w){ w.material.map.offset.x=wt*.02; } } acc+=dt; if(acc<.4) return; acc=0; if(typeof meAv==="undefined"||!meAv) return; const px=meAv.pos.x, pz=meAv.pos.y; TW.on=TW.in(px,pz); fogCull(px,pz); if(!ZN.busy&&typeof MERGED!=="undefined"&&MERGED.length&&(typeof LQ==="undefined"||LQ.ready)&&!(typeof BUILD!=="undefined"&&BUILD.on)){ if(!ZN.off&&pz<-58&&ZN.re){ ZN.re=0; zoneForget(); } else if(!ZN.off&&pz<-58){ ZN.busy=1; zoneVeil(()=>{ zoneForget(); ZN.busy=0; }); } else if(ZN.off&&pz>-55){ ZN.busy=1; zoneVeil(()=>{ zoneBack(); ZN.busy=0; }); } }
+TW.tick=dt=>{ const nowS=performance.now(); if(nowS>(TW.slT||0)&&TW.SL&&typeof LIFE!=="undefined"&&LIFE&&LIFE.openNow){ TW.slT=nowS+1000; for(const e of TW.SL){ const o=LIFE.openNow(e.k)?1:0; if(e.o===o) continue; e.o=o; if(e.U) e.U.lit.value=o; if(e.M){ if(e.M.ei0==null) e.M.ei0=e.M.emissiveIntensity; e.M.emissiveIntensity=o?e.M.ei0:0; e.M.color.setScalar(o?1:.55); } } } /* 沒開的店：招牌不亮、櫥窗變暗 (checked once a second) */ try{ NT.tick(dt,LIVE); }catch(e){} try{ const bx=typeof meAv!=="undefined"&&meAv?meAv.pos.x:0, onB=bx>128&&!(typeof NOFOG!=="undefined"&&NOFOG.on); if(onB&&!TW.fogB){ TW.fogB=[scene.fog.near,scene.fog.far]; } if(TW.fogB){ const k=Math.max(0,Math.min(1,(bx-128)/14)); scene.fog.near=TW.fogB[0]+(160-TW.fogB[0])*k; scene.fog.far=TW.fogB[1]+(420-TW.fogB[1])*k; if(!onB&&k<=0){ scene.fog.near=TW.fogB[0]; scene.fog.far=TW.fogB[1]; TW.fogB=null; } } if(TW.sunS) TW.sunS.material.opacity=1-(typeof _dn!=="undefined"?_dn.night:0); }catch(e){} /* (no haze over the sea: it clears as you walk onto the beach) */ if(TW.cart&&(TW._ct=(TW._ct||0)+dt)>1){ TW._ct=0; try{ const o=!!(LIFE&&LIFE.isOpen&&LIFE.isOpen("tw:congee")); TW.cart.visible=o; if(TW.cartHit) TW.cartHit.userData.act=o?"tw:congee":null; }catch(e){} } /* in the town the camera never comes closer than ~1 m to anything, so the near plane can move out: the depth test gets ~2.7× finer and close-together surfaces (signs, windows, doors on walls) stop flickering on phones */ { const nn=camera.position.z<-50.5?.4:.15; if(camera.near!==nn){ camera.near=nn; camera.updateProjectionMatrix(); } } wt+=dt; for(const id in LIVE){ const w=LIVE[id].water; if(w){ w.material.map.offset.x=wt*.02; } } acc+=dt; if(acc<.4) return; acc=0; if(typeof meAv==="undefined"||!meAv) return; const px=meAv.pos.x, pz=meAv.pos.y; TW.on=TW.in(px,pz); fogCull(px,pz); if(!ZN.busy&&typeof MERGED!=="undefined"&&MERGED.length&&(typeof LQ==="undefined"||LQ.ready)&&!(typeof BUILD!=="undefined"&&BUILD.on)){ if(!ZN.off&&pz<-52&&ZN.re){ ZN.re=0; zoneForget(); } else if(!ZN.off&&pz<-52){ ZN.busy=1; zoneVeil(()=>{ try{ zoneForget(); } finally{ ZN.busy=0; } },true); } else if(ZN.off&&pz>-49.5){ ZN.busy=1; zoneVeil(()=>{ try{ zoneBack(); } finally{ ZN.busy=0; } },false); } }
   /* 手機上路和店不見 (11/16): a phone's graphics memory runs out sooner, and when it does a district's ground or houses just are not
      drawn (no error on the page). On phones fewer districts are kept at once (load within 45 m, drop past 70 m instead of 75 / 105),
      and right after each build the page asks the graphics card whether it ran out; if so the farthest districts go and this one is
@@ -14563,11 +14588,15 @@ function digReward(o){ const S=SHOVEL(); S.u--; { const dd=LF(); dd.dgN=(dd.dgN|
   let ic=q[2], name=q[1], line=q[7], extra="";
   if(q[0]==="$coins"){ const c=50+((Math.random()*6)|0)*50; bag.coins+=c; name=`${c} 平安幣`; line="一小袋錢，誰掉的呢？"; }
   else if(q[0]==="$gacha"){ bag.gacha=Math.min(255,(bag.gacha||0)+1); name="扭蛋幣 1 枚"; line="拿去廟埕的招財貓扭蛋機轉頭飾吧。"; }
-  else if(q[0]==="$furn"){ let fu=""; try{ fu=ROOMX.grant("d"); }catch(e){} if(fu){ name=`家具「${fu}」`; line="居然挖到一件家具！回家擺擺看。"; } else { const c=300; bag.coins+=c; name="300 平安幣"; line="一個舊箱子，裡面有一些錢。"; } }
+  else if(q[0]==="$furn"){ let fu=""; try{ ROOMX.lastF=null; fu=ROOMX.grant("d"); }catch(e){} if(fu){ name=`家具「${fu}」`; line="居然挖到一件家具！回家擺擺看。"; } else { const c=300; bag.coins+=c; name="300 平安幣"; line="一個舊箱子，裡面有一些錢。"; } }
   else if(q[0]==="$hat"){ let k=null; try{ const L2=gachaLeft(); if(L2.length) k=L2[(Math.random()*L2.length)|0]; }catch(e){} if(k){ accState().owned[k]=1; saveBag(); name=`頭飾「${ACC[k].name}」`; line="埋在土裡的頭飾，洗一洗還是好好的！"; ic="🎩"; } else { bag.gacha=Math.min(255,(bag.gacha||0)+2); name="扭蛋幣 2 枚"; line="頭飾你都有了，換成扭蛋幣。"; } }
   else { giAdd("dig:"+q[0],1); }
   save(); try{ profSave(true); statInc("digN"); }catch(e){}
   const good=["fossil","gem","treasure","tackle"].includes(q[3])||q[0]==="$furn"||q[0]==="$hat"; try{ (good?[659,784,988,1319,1568]:q[3]==="junk"?[523,440]:[659,784,988]).forEach((f,k)=>tone(f,.12,.05,"triangle",k*.07)); }catch(e){}
+  const f0=q[0]==="$furn"?RM_last():null; if(f0&&!digReward.again){ const f=f0; let doneP=false; const go=u=>{ if(doneP) return; doneP=true; digReward.again={ic:u||ic,name,line}; try{ digPop(o,q,good,S); } finally{ digReward.again=null; } }; try{ ROOMX.pic(f,go); }catch(e){ go(null); } setTimeout(()=>go(null),1500); return; }
+  digPop(o,q,good,S,ic,name,line); }
+const RM_last=()=>{ try{ const f=ROOMX&&ROOMX.lastF; ROOMX.lastF=null; return f; }catch(e){ return null; } };
+function digPop(o,q,good,S,ic,name,line){ if(digReward.again){ ic=digReward.again.ic; name=digReward.again.name; line=digReward.again.line; }
   /* the thing pops out of the hole, spins up and lands in your hands */ const isImg=/\.webp$|^data:/.test(ic); const tx=new T.Sprite(new T.SpriteMaterial({map:isImg?new T.TextureLoader().load(ic):new T.CanvasTexture(cvs0(128,128,(x)=>{ x.font="92px serif"; x.textAlign="center"; x.textBaseline="middle"; x.fillText(ic,64,70); })),transparent:true,depthWrite:false})); tx.position.set(o.x,o.gy+.2,o.z); tx.scale.set(.1,.1,1); scene.add(tx); DG.pop={s:tx,t:0,o};
   bugPuff(new T.Vector3(o.x,o.gy+.3,o.z),good?"#ffe27a":"#e8d8b0",good?28:16,good?2.6:1.8);
   setTimeout(()=>digCard(ic,name,line,q,good,S),900); }
