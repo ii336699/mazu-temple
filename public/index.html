@@ -12059,8 +12059,8 @@ TW.in=(x,z)=>z<-50.5;
 /* 走路全面開放 (11/16 主委: 「很多地方有隱形的邊界，全部都開放，只有最外圍不能走」). Anywhere inside the boundary wall is ground you
    can walk on now — lawns, the beach, the forest floor, round the mountain — except: inside a house or shop, the stall boxes, the
    river (the bridges and the pier still cross it), the brook and the springs, the sea past the waterline, rocks and tree trunks. */
-let BFOOT=null; const bfoot=()=>{ if(BFOOT) return BFOOT; try{ BFOOT=TOWNB.map(b=>{ const d=b.d||6, m=.25; if(b.axis==="x"){ const zb=b.f-Math.cos(b.ry)*d; return [b.c-b.w/2+m,b.c+b.w/2-m,Math.min(b.f,zb)+m,Math.max(b.f,zb)-m]; } const xb=b.f-Math.sin(b.ry)*d; return [Math.min(b.f,xb)+m,Math.max(b.f,xb)-m,b.c-b.w/2+m,b.c+b.w/2-m]; }); }catch(e){ return []; } return BFOOT; };
-TW.walk=(x,z)=>{ for(const b of BLOCK) if(inR(b,x,z)) return false; for(const w of WALK) if(inR(w,x,z)) return true;
+let BFOOT=null; const bfoot=()=>{ if(BFOOT) return BFOOT; try{ BFOOT=TOWNB.map(b=>{ const d=b.d||6, m=-.35; /* (11/18: grown by your width, not shrunk — you stopped a hand's breadth inside the walls) */ if(b.axis==="x"){ const zb=b.f-Math.cos(b.ry)*d; return [b.c-b.w/2+m,b.c+b.w/2-m,Math.min(b.f,zb)+m,Math.max(b.f,zb)-m]; } const xb=b.f-Math.sin(b.ry)*d; return [Math.min(b.f,xb)+m,Math.max(b.f,xb)-m,b.c-b.w/2+m,b.c+b.w/2-m]; }); }catch(e){ return []; } return BFOOT; };
+TW.walk=(x,z)=>{ if(solHit(x,z)) return false; for(const b of BLOCK) if(inR(b,x,z)) return false; for(const w of WALK) if(inR(w,x,z)) return true;
   const B=WORLD_BOX; if(x<B.x0+1||z<B.z0+1) return false;
   if(x<=134.5&&z>=-143.6&&z<=-131.4&&riverH(x,z)<-.1&&!(x>RV.bx0&&x<RV.bx1)&&!(x>26.3&&x<29.7)) return false; /* (and the plank bridge at the end of the main street, 11/17) */ /* the river (its banks you can walk on; the village avenue crosses it on a bridge) */
   for(const r of bfoot()) if(inR(r,x,z)) return false;
@@ -12548,7 +12548,7 @@ const gtuft=()=>GEO.tf||(GEO.tf=(()=>{ const pos=[], uv=[]; for(let k=0;k<5;k++)
 const gpetal=()=>GEO.pt||(GEO.pt=(()=>{ const pos=[], uv=[]; for(let k=0;k<6;k++){ const a=k/6*6.283, b=a+.5, c=a-.5; pos.push(0,0,0, Math.cos(c)*.55,.12,Math.sin(c)*.55, Math.cos(a)*1,.3,Math.sin(a)*1, 0,0,0, Math.cos(a)*1,.3,Math.sin(a)*1, Math.cos(b)*.55,.12,Math.sin(b)*.55); uv.push(0,0,1,0,1,1, 0,0,1,1,0,1); } const g=new T.BufferGeometry(); g.setAttribute("position",new T.Float32BufferAttribute(pos,3)); g.setAttribute("uv",new T.Float32BufferAttribute(uv,2)); g.computeVertexNormals(); return g; })());
 function tuft(C,r,x,y,z,s){ /* (11/16: the painted standing grass replaces these) */ }
 function starFlower(C,r,x,y,z,s){ put(C,gtuft(),NM.grass,x,y,z,s*.6,s*.7,s*.6,r()*6); put(C,gpetal(),NM.petal[r()*NM.petal.length|0],x,y+.42*s,z,.2*s,.2*s,.2*s,r()*6,(r()-.5)*.4,(r()-.5)*.4); put(C,gico(),NM.flower[0],x,y+.47*s,z,.05*s); }
-function mossRock(C,r,x,y,z,s,moss){ (C.ao||(C.ao=[])).push([x,z,s*1.25]); const k=r()*4|0, sx=s*(.9+r()*.5), sy=s*(.7+r()*.4), sz=s*(.9+r()*.5), ry=r()*6.28; put(C,grock(k),NM.rock[k],x,y,z,sx,sy,sz,ry); if(moss) put(C,gmoss(k),NM.moss,x,y,z,sx,sy,sz,ry); }
+function mossRock(C,r,x,y,z,s,moss){ (C.ao||(C.ao=[])).push([x,z,s*1.25,"r",s]); const k=r()*4|0, sx=s*(.9+r()*.5), sy=s*(.7+r()*.4), sz=s*(.9+r()*.5), ry=r()*6.28; put(C,grock(k),NM.rock[k],x,y,z,sx,sy,sz,ry); if(moss) put(C,gmoss(k),NM.moss,x,y,z,sx,sy,sz,ry); }
 function put(C,geo,m,x,y,z,sx,sy,sz,ry,rx,rz){ const o=new T.Mesh(geo,m); o.position.set(x,y,z); o.scale.set(sx,sy==null?sx:sy,sz==null?sx:sz); o.rotation.set(rx||0,ry||0,rz||0); C.g.add(o); return o; }
 const rock=(C,r,x,y,z,s,k)=>s<.7?null:mossRock(C,r,x,y,z,s,s>.4&&r()<.55); /* (11/16: small stones are painted pebbles; big ones keep their shape in a painted rock skin) */
 function softTree(C,r,x,z,s,kind){ (C.lpt||(C.lpt=[])).push([x,0,z,s*.88,.85+r()*.35,r()*6.283,kind==="pink"?"pink":kind==="maple"?"maple":"leaf",4]); } /* (11/16 晚上 主委: every low-poly tree is the chair's trunk model with leaf cards now — LPT) */
@@ -12570,7 +12570,7 @@ function pathLamps(C,P,step,off){ lampMats(); let acc=step*.5, side=1; for(let i
       side=-side; acc+=step; } acc-=L; } }
 /* 石燈籠 (11/17 主委「這路燈太假了」): a proper stone lantern instead of three boxes — a hexagonal foot, a round post, a ledge, a firebox
    whose four little stone posts frame the light, a wide six-sided roof and a jewel on top; sandstone, each one a shade apart */
-function lantern(C,x,z,y){ y=y||0; (C.ao||(C.ao=[])).push([x,z,.75]); const b=GEO.b||(GEO.b=new T.BoxGeometry(1,1,1)), c6=GEO.c6||(GEO.c6=new T.CylinderGeometry(1,1,1,6)), c8=GEO.c8||(GEO.c8=new T.CylinderGeometry(1,1.12,1,8)), rf=GEO.lrf||(GEO.lrf=new T.ConeGeometry(1,1,6)), jw=GEO.ljw||(GEO.ljw=new T.SphereGeometry(1,8,6));
+function lantern(C,x,z,y){ y=y||0; (C.ao||(C.ao=[])).push([x,z,.75,"l"]); const b=GEO.b||(GEO.b=new T.BoxGeometry(1,1,1)), c6=GEO.c6||(GEO.c6=new T.CylinderGeometry(1,1,1,6)), c8=GEO.c8||(GEO.c8=new T.CylinderGeometry(1,1.12,1,8)), rf=GEO.lrf||(GEO.lrf=new T.ConeGeometry(1,1,6)), jw=GEO.ljw||(GEO.ljw=new T.SphereGeometry(1,8,6));
   const st=NM.sandA||(NM.sandA=new T.MeshStandardMaterial({color:"#c9b597",roughness:.95})), st2=NM.sandB||(NM.sandB=new T.MeshStandardMaterial({color:"#b39f80",roughness:.95})), m=((x*7.3+z*3.1)|0)%2?st:st2, ry=(x*1.7+z*.9)%1.05;
   put(C,c6,m,x,y+.07,z,.36,.14,.36,ry); put(C,c6,m,x,y+.18,z,.25,.08,.25,ry); put(C,c8,m,x,y+.5,z,.085,.58,.085); put(C,c6,m,x,y+.82,z,.27,.07,.27,ry);
   const L=put(C,b,NM.lamp,x,y+.99,z,.2,.22,.2,ry); L.userData.keep=1; for(const [dx,dz] of [[-.12,-.12],[.12,-.12],[-.12,.12],[.12,.12]]){ const c=Math.cos(ry), s=Math.sin(ry); put(C,b,m,x+dx*c+dz*s,y+.99,z-dx*s+dz*c,.055,.26,.055,ry); }
@@ -12598,7 +12598,7 @@ function antiTile(m,key){ const prev=m.onBeforeCompile; m.onBeforeCompile=sh=>{ 
      the sun's own colour carries it, so at dusk and night it fades with the light
    · LOW: Lambert like before, colour only.  原版: the old material, untouched.
    Settings → 畫面濾鏡 → 草地 (localStorage mz.grass: old / low / med / high; auto = med on phones, high elsewhere). Changing it reloads. */
-const GRASS=(()=>{ let v=""; try{ v=localStorage.getItem("mz.grass")||""; }catch(e){} if(!/^(old|low|med|high)$/.test(v)) v=(typeof Q!=="undefined"&&Q.phone)?"med":"high"; return {mode:v,q:{old:-1,low:0,med:1,high:2}[v]}; })(); window.MZ_GRASS=GRASS;
+const GRASS=(()=>{ let v=""; try{ v=localStorage.getItem("mz.grass")||""; }catch(e){} if(!/^(old|low|med|high)$/.test(v)) v=(typeof Q!=="undefined"&&Q.phone)?"low":"high"; /* (11/18 主委「玩不到幾秒都會閃退」: phones start on LOW — Lambert, colour + broad variation only, two pictures) */ return {mode:v,q:{old:-1,low:0,med:1,high:2}[v]}; })(); window.MZ_GRASS=GRASS;
 const GCFG={scale:4.6,normal:.06,variation:.06,mid:.025,detail:.7,glint:.02,roughness:.94,tint:.6}; /* (草地 V2: macroColorVariation .06, midVariationStrength .025, normalStrength .06, glintStrength .02; baseDetail .7 — the v2 picture is already very soft, at .30 it went flat) */
 /* 沙灘 (11/18 主委's sand pack, tex/sand/): its own colour, normal and glint, the grass's noise and quality levels. Dry sand: normal .04,
    variation .08, glint .015, a wide dull highlight (roughness .96); wet sand — where the beach's own colours already turn to wet sand by
@@ -12630,7 +12630,7 @@ function grassPatch(m,force,sand){ const q=force!=null?force:GRASS.q; if(q<0) re
   cA=pow(cA,vec3(2.2)); cA=gAvg+(cA-gAvg)*gDet; cA=mix(vec3(dot(cA,vec3(.3,.6,.1))),cA,.8); float dd=distance(vGW,cameraPosition); cA=mix(cA,gAvg*vec3(.9,.92,.9),smoothstep(70.,190.,dd)*.5);
   cA*=gTint*(1.+gMid*2.*mid); cA=mix(cA*(1.+gVar*2.*mac),cA*vec3(1.+gVar*2.4,1.+gVar*.9,1.-gVar*2.),clamp(mac*2.,0.,1.));
 #ifdef USE_COLOR
-  gW=smoothstep(-.02,.06,vColor.g-max(vColor.r,vColor.b)); /* (11/18 主委「草皮整個都是平滑的」: anything greenish — forest floor, moss — is the same grass now, so the forest no longer shows triangles of two different grasses) */
+  gW=smoothstep(-.14,.16,vColor.g-max(vColor.r,vColor.b)); /* (a wide soft edge: a narrow one followed the 1 m triangles and gave the dirt paths stair-step edges — 主委「路為什麼變這樣」) */ /* (11/18 主委「草皮整個都是平滑的」: anything greenish — forest floor, moss — is the same grass now, so the forest no longer shows triangles of two different grasses) */
 #else
   gW=1.;
 #endif
@@ -13175,8 +13175,14 @@ function slopeCover(C){ const g=TW.ground, out=[]; let seed=C.g.children.length*
   if(out.length) (C.lpt||(C.lpt=[])).push(...out); }
 /* 接觸陰影 (11/18 草地 v2, step 6): a soft dark round patch on the grass under every tree, palm, rock and stone lantern — one
    instanced draw per district, no extra light, no shadow map */
+/* 碰撞 (11/18 主委「人物還是會走進建築裡，碰撞還是沒做好，樹木、石頭也都沒有做好」): every tree trunk, rock and stone lantern a
+   district lays is a solid circle; TW.walk asks this first, so you, the townsfolk and the route-finder all go round them */
+const SOLS={}; let SOLG=null;
+function solGrid(){ if(SOLG) return SOLG; SOLG=new Map(); for(const id in SOLS) for(const c of SOLS[id]){ const r=c[2], i0=Math.floor((c[0]-r)/4), i1=Math.floor((c[0]+r)/4), j0=Math.floor((c[1]-r)/4), j1=Math.floor((c[1]+r)/4); for(let i=i0;i<=i1;i++) for(let j=j0;j<=j1;j++){ const k=i+","+j; let a=SOLG.get(k); if(!a) SOLG.set(k,a=[]); a.push(c); } } return SOLG; }
+function solHit(x,z){ const a=solGrid().get(Math.floor(x/4)+","+Math.floor(z/4)); if(!a) return false; for(const c of a) if((x-c[0])**2+(z-c[1])**2<c[2]*c[2]) return true; return false; }
+TW.solHit=solHit;
 let AOTEX=null;
-function aoFlush(C){ const L=[]; for(const t of C.lpt||[]){ if(t[8]==="bush") continue; L.push([t[0],t[2],1.15*t[3]]); } for(const t of C.cedar||[]) L.push([t[0],t[2],.36*t[3]*t[4]]); for(const t of C.palm||[]) L.push([t[0],t[2],.9*t[4]]); for(const t of C.ao||[]) L.push(t); C.ao=null; if(!L.length) return;
+function aoFlush(C){ try{ const S=[]; for(const t of C.lpt||[]){ if(t[8]==="bush") continue; S.push([t[0],t[2],Math.min(t[6]==="gold"?2.2:.9,.34*t[3])+.22]); } for(const t of C.cedar||[]) S.push([t[0],t[2],Math.min(.7,.1*t[3]*t[4])+.22]); for(const t of C.palm||[]) S.push([t[0],t[2],.5]); for(const t of C.ao||[]){ if(t[3]==="r"&&t[4]>=.5) S.push([t[0],t[1],t[4]*.8+.2]); else if(t[3]==="l") S.push([t[0],t[1],.6]); } if(C.id){ SOLS[C.id]=S; SOLG=null; } }catch(e){ console.warn("sol",e); } const L=[]; for(const t of C.lpt||[]){ if(t[8]==="bush") continue; L.push([t[0],t[2],1.15*t[3]]); } for(const t of C.cedar||[]) L.push([t[0],t[2],.36*t[3]*t[4]]); for(const t of C.palm||[]) L.push([t[0],t[2],.9*t[4]]); for(const t of C.ao||[]) L.push(t); C.ao=null; if(!L.length) return;
   if(!AOTEX){ const c=document.createElement("canvas"); c.width=c.height=64; const x=c.getContext("2d"), g=x.createRadialGradient(32,32,0,32,32,32); g.addColorStop(0,"rgba(0,0,0,1)"); g.addColorStop(.45,"rgba(0,0,0,.62)"); g.addColorStop(1,"rgba(0,0,0,0)"); x.fillStyle=g; x.fillRect(0,0,64,64); AOTEX=new T.CanvasTexture(c); }
   const geo=GEO.ao||(GEO.ao=new T.PlaneGeometry(2,2).rotateX(-Math.PI/2)), m=new T.MeshBasicMaterial({map:AOTEX,color:"#0d1f08",transparent:true,opacity:.38,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}), im=new T.InstancedMesh(geo,m,L.length), M=new T.Matrix4(), q=new T.Quaternion(), p=new T.Vector3(), sc=new T.Vector3();
   L.forEach((t,i)=>{ let y=0, k=1; try{ const g=TW.ground; y=g(t[0],t[1])||0; const R=t[2]*.8; for(const [dx,dz] of [[R,0],[-R,0],[0,R],[0,-R]]){ const h=g(t[0]+dx,t[1]+dz); if(h==null||Math.abs(h-y)>.12) k=0; } }catch(e){} M.compose(p.set(t[0],y+.05,t[1]),q,sc.set(t[2]*k,1,t[2]*k)); im.setMatrixAt(i,M); }); /* (none on a slope: a flat patch on sloping ground cut a straight line into it) */ im.instanceMatrix.needsUpdate=true; im.frustumCulled=false; im.renderOrder=1; im.userData.keep=1; im.userData.own=1; im.userData.noMerge=1; im.raycast=()=>{}; C.g.add(im); }
@@ -13337,12 +13343,12 @@ function bake(C){ const g=C.g; g.updateMatrixWorld(true); const bk=new Map(), go
     const G=new T.BufferGeometry(); G.setAttribute("position",new T.BufferAttribute(P,3)); G.setAttribute("normal",new T.BufferAttribute(N,3)); G.setAttribute("uv",new T.BufferAttribute(U,2)); G.setIndex(new T.BufferAttribute(I,1)); G.computeBoundingSphere(); const M=new T.Mesh(G,m); M.matrixAutoUpdate=false; M.raycast=()=>{}; M.userData.keep=1; C.baked.push(M); });
   gone.forEach(o=>{ if(o.parent) o.parent.remove(o); o.geometry.dispose(); }); C.baked.forEach(M=>g.add(M)); }
 const LIVE={};
-function load(d){ const C={g:new T.Group(),picks:[],baked:[]}; C.g.userData.noMerge=1; const t0=performance.now(); try{ d.build(C); try{ wFix(C); }catch(e){ console.warn("water depth",e); } }catch(e){ console.warn("town district "+d.id,e); (TW.loadErr||(TW.loadErr=[])).push(d.id+": "+e.message); } const t1=performance.now(); try{ bake(C); }catch(e){ console.warn("town bake "+d.id,e); (TW.loadErr||(TW.loadErr=[])).push(d.id+" 合併: "+e.message); } scene.add(C.g); try{ treesFlush(C); }catch(e){ console.warn("trees",e); } (TW.loadLog||(TW.loadLog=[])).push([d.id,Math.round(t1-t0),Math.round(performance.now()-t1)]); LIVE[d.id]=C; try{ if(typeof WORLD!=="undefined") WORLD.warm=2; }catch(e){} }
+function load(d){ const C={g:new T.Group(),picks:[],baked:[],id:d.id}; C.g.userData.noMerge=1; const t0=performance.now(); try{ d.build(C); try{ wFix(C); }catch(e){ console.warn("water depth",e); } }catch(e){ console.warn("town district "+d.id,e); (TW.loadErr||(TW.loadErr=[])).push(d.id+": "+e.message); } const t1=performance.now(); try{ bake(C); }catch(e){ console.warn("town bake "+d.id,e); (TW.loadErr||(TW.loadErr=[])).push(d.id+" 合併: "+e.message); } scene.add(C.g); try{ treesFlush(C); }catch(e){ console.warn("trees",e); } (TW.loadLog||(TW.loadLog=[])).push([d.id,Math.round(t1-t0),Math.round(performance.now()-t1)]); LIVE[d.id]=C; try{ if(typeof WORLD!=="undefined") WORLD.warm=2; }catch(e){} }
 /* 路和店不見的真正原因 (11/16): some signs carry a list of paints (one per face), and throwing such a district away used to stop on
    them with an error — and since that error broke the town's step, no district was ever built again after it: walk away from the old
    street and back and it stayed empty grass. (On phones districts are thrown away sooner, so it happened there all the time.) Each
    paint is freed on its own now, and a district that still fails to go away can never stop the others from loading. */
-function unload(id){ const C=LIVE[id]; if(!C) return; delete LIVE[id]; try{ scene.remove(C.g); C.picks.forEach(m=>{ const i=pickables.indexOf(m); if(i>=0) pickables.splice(i,1); });
+function unload(id){ const C=LIVE[id]; if(!C) return; delete LIVE[id]; if(SOLS[id]){ delete SOLS[id]; SOLG=null; } try{ scene.remove(C.g); C.picks.forEach(m=>{ const i=pickables.indexOf(m); if(i>=0) pickables.splice(i,1); });
   C.g.traverse(o=>{ if(!(o.isMesh||o.isSprite||o.isPoints)) return; if(o.userData.shared&&!o.userData.own){ if(o.isInstancedMesh&&o.dispose) o.dispose(); return; } /* (a shared model: kept for the next time) */ try{ if(o.geometry&&!o.isSprite) o.geometry.dispose(); if(o.userData.own){ for(const m of (Array.isArray(o.material)?o.material:[o.material])){ if(!m) continue; if(m.map&&m.map.isTexture) m.map.dispose(); if(m.dispose) m.dispose(); } } }catch(e){} }); }catch(e){ console.warn("town unload",id,e); (TW.loadErr||(TW.loadErr=[])).push(id+" 收起: "+e.message); } }
 /* near enough to see through the haze: build; well out of sight: throw away. One district per look, so a step never builds two. */
 /* deep in the town the temple is behind the haze: its big merged meshes are skipped until you come back within sight of them */
