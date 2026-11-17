@@ -506,7 +506,7 @@ body.hideui .joy,body.customizing .joy,body.hideui .camreset,body.customizing .c
 /*THEME>>*/
 .pos-panel{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 96px);z-index:60;background:rgba(30,18,14,.88);color:#fff3dc;border:1px solid #d9aa3d;border-radius:12px;padding:8px 10px;font-size:13px;line-height:1.5;width:min(92vw,440px);box-shadow:0 4px 16px rgba(0,0,0,.35)}
 .pos-panel b{color:#ffd98a}.pos-panel .pf-btn{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.pos-panel button{flex:1 1 auto;min-height:34px;border-radius:8px;border:1px solid #a07a3a;background:#4a2e22;color:#fff3dc;font:inherit}.pos-panel .pf-main{background:#b3261e;border-color:#e8402e}
-body.mapedit>*:not(#c):not(#edOv):not(#edPanel):not(#toast):not(script):not(style){visibility:hidden!important}
+body.mapedit>*:not(#c):not(#edOv):not(#edPanel):not(#edX):not(#toast):not(script):not(style){visibility:hidden!important}
 #edPanel{position:fixed;left:0;right:0;bottom:0;z-index:60;background:rgba(28,18,12,.92);color:#fff3dc;border-top:1px solid #d9aa3d;padding:6px 8px calc(env(safe-area-inset-bottom,0px) + 6px);font-size:13px}
 #edPanel .ed-row{display:flex;gap:6px;align-items:center;margin:4px 0;flex-wrap:wrap}#edPanel .ed-scroll{flex-wrap:nowrap;overflow-x:auto}#edPanel .ed-sp{flex:1}
 #edPanel button{flex:0 0 auto;min-height:32px;padding:4px 9px;border-radius:9px;border:1px solid #8a6a3a;background:#43291c;color:#fff3dc;font:inherit;white-space:nowrap}#edPanel button.on{background:#d9aa3d;color:#2a1410;border-color:#ffd98a;font-weight:700}
@@ -2799,7 +2799,7 @@ const LPT=(()=>{ const raw=Uint8Array.from(atob("AAB+/z8M1QrgAFQGgQTdHaUFAAB+/z8
     const tr=new T.InstancedMesh(geo,trunkMat,list.length), cards=[], lite=typeof Q!=="undefined"&&Q.lite;
     const TC=new T.Color(); list.forEach((t,i)=>{ const [x,y,z,k0,sp0,ry,kind,per]=t, k=k0*(per>6?1:(.72+R()*.6)), sp=Math.max(.9,Math.min(1.1,sp0||1)), tone=(R()-.5)*.1; /* (11/17 主委「樹幹請有深淺 樹葉也是 差別不大但就是有一點深淺變化」: each tree a shade lighter or darker, bark and leaves both) */ tr.setColorAt(i,TC.setRGB(1,1,1).multiplyScalar(.84+R()*.28).offsetHSL((R()-.5)*.02,0,0));
       E3.set((R()-.5)*.1,ry,(R()-.5)*.1); Q4.setFromEuler(E3); const bush=t[8]==="bush"; /* (11/17 主委「山上斜坡的樹都改成樹上面的那種樹叢就好」: on a slope only the crown, sitting on the ground, no trunk) */
-      if(bush){ M4.compose(V3.set(x,y-3.05*k*.8,z),Q4,S3.set(k*sp,k*.8,k*sp)); tr.setMatrixAt(i,M4.clone().scale(S3.set(.0001,.0001,.0001))); } else { M4.compose(V3.set(x,y,z),Q4,S3.set(k*sp,k,k*sp)); tr.setMatrixAt(i,M4); }
+      if(bush){ const yf=.8*(t[9]||1); M4.compose(V3.set(x,y-3.05*k*yf,z),Q4,S3.set(k*sp,k*yf,k*sp)); tr.setMatrixAt(i,M4.clone().scale(S3.set(.0001,.0001,.0001))); } else { M4.compose(V3.set(x,y,z),Q4,S3.set(k*sp,k,k*sp)); tr.setMatrixAt(i,M4); }
       const pal=PAL[kind]||PAL.leaf, base=pal[(R()*pal.length)|0], n=Math.round((per>6?per:(o.cards||52)*Math.max(1,k/1.2))*(lite?.55:1)) /* (a bigger tree gets more cards, so a big crown is as thick as a small one) */, big=(o.card||1.05)*(lite?1.25:1);
       for(const q of crown(R,n)){ U.set(q[0],q[1],q[2]).applyMatrix4(M4); const s=k*big*(.75+R()*.5);
         cards.push([U.x,U.y,U.z,(R()-.5)*1,R()*3.14,(R()-.5)*.8,s,C3.set(R()<.65?base:pal[(R()*pal.length)|0]).convertSRGBToLinear().offsetHSL(0,(R()-.5)*.08,(R()-.5)*.08+(q[3]-.55)*.16+tone).getHex(),kind]); } });
@@ -2978,10 +2978,13 @@ function rainbowTick(dt,r,c){ if(r>.45) RB.rained=Math.max(RB.rained,WX.t); cons
   if(RB.rained&&WX.t-RB.rained<600&&r<.1&&c<.5&&day>.35&&!RB.until) RB.until=WX.t+240;
   const want=RB.until&&WX.t<RB.until?1:0; if(RB.until&&WX.t>=RB.until+30){ RB.until=0; RB.rained=0; }
   RB.op+=(want*Math.min(1,day*1.5)*(1-c)-RB.op)*Math.min(1,dt*.25); if(RB.op<.003&&!RB.m) return;
-  if(!RB.m){ const g=new T.RingGeometry(84,96,96,1,0,Math.PI); RB.m=new T.Mesh(g,new T.ShaderMaterial({transparent:true,depthWrite:false,fog:false,blending:T.AdditiveBlending,side:T.DoubleSide,uniforms:{op:{value:0}},
+  if(!RB.m){ const g=new T.RingGeometry(84,96,96,1,0,Math.PI); RB.m=new T.Mesh(g,new T.ShaderMaterial({transparent:true,depthWrite:false,fog:false,side:T.DoubleSide,uniforms:{op:{value:0}},
       vertexShader:`varying vec2 vP; void main(){ vP=position.xy; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
-      fragmentShader:`uniform float op; varying vec2 vP; vec3 spec(float t){ return clamp(vec3(abs(t*6.-3.)-1.,2.-abs(t*6.-2.),2.-abs(t*6.-4.)),0.,1.); }
-        void main(){ float t=(length(vP)-84.)/12.; vec3 c=spec(mix(.78,0.,t)); float a=sin(3.1416*t); a*=a; a*=smoothstep(0.,22.,vP.y); gl_FragColor=vec4(c*a*op*.38,1.); }`})); RB.m.renderOrder=-1; RB.m.frustumCulled=false; scene.add(RB.m); }
+      fragmentShader:`uniform float op; varying vec2 vP;
+        vec3 band(float t){ /* (11/17 主委「彩虹顏色看起來只有黃色跟綠色」: added on a blue sky, the red and violet were lost and the rest burned to cyan — now laid over the sky, seven clear bands, red outside, violet inside) */
+          vec3 C[7]; C[0]=vec3(.55,.25,.85); C[1]=vec3(.3,.25,.9); C[2]=vec3(.15,.5,1.); C[3]=vec3(.2,.82,.3); C[4]=vec3(1.,.9,.15); C[5]=vec3(1.,.55,.08); C[6]=vec3(.95,.15,.12);
+          float x=clamp(t,0.,1.)*6.; int i=int(floor(min(x,5.999))); float f=fract(x); vec3 a=C[0], b=C[1]; for(int k=0;k<6;k++){ if(k==i){ a=C[k]; b=C[k+1]; } } return mix(a,b,smoothstep(0.,1.,f)); }
+        void main(){ float t=(length(vP)-84.)/12.; vec3 c=band(t); float a=smoothstep(0.,.12,t)*smoothstep(1.,.88,t); a*=smoothstep(0.,22.,vP.y); gl_FragColor=vec4(c,a*op*.62); }`})); RB.m.renderOrder=-1; RB.m.frustumCulled=false; scene.add(RB.m); }
   RB.m.visible=RB.op>.003; if(!RB.m.visible) return; RB.m.material.uniforms.op.value=RB.op;
   const vc=((window.MZ_VIEW&&window.MZ_VIEW.cam)||camera).position, sd=skyMat.uniforms.sun.value; const ax=-sd.x, az=-sd.z, L=Math.hypot(ax,az)||1;
   RB.m.position.set(vc.x+ax/L*100,vc.y-18,vc.z+az/L*100); RB.m.lookAt(vc.x,vc.y-18,vc.z); }
@@ -12057,7 +12060,7 @@ TW.walk=(x,z)=>{ for(const b of BLOCK) if(inR(b,x,z)) return false; for(const w 
   if(z<-143.6&&x>=FOREST[0]&&x<=FOREST[1]) return SW.walkOpen(x,z);
   if(z<-143.6&&x<21&&(x<14||z<-176)){ if(onFootB(x,z)) return true; if(s1D(x,z)<3.4) return false; if(westMtn(x,z)*sstep(2.5,8,wpD(x,z))>1.4) return false; for(const t of WWT) if(Math.hypot(x-t[0],z-t[1])<.45*t[2]) return false;
     const g=southH, a=g(x+.5,z), b=g(x-.5,z), c=g(x,z+.5), d=g(x,z-.5); if(Math.hypot(a-b,c-d)>TW.maxSlope) return false; return true; } /* 西山: the trails and the gentle ground; not the stream (but its footbridge), not the mountains */
-  if(z<-176&&x>92&&x<=111.5){ const S=NT.springs[2]; if(springD(S,x,z)<S[2]+.35) return false; if(Math.hypot(x-GTREE[0],z-GTREE[1])<2.6||Math.hypot(x-GSHRINE[0],z-GSHRINE[1])<1.8) return false; const b=brookD(x,z); if(b[0]<brookW(b[1],b[2])+.4) return false; if(wfMount(x,z)>1) return false; } /* 女神泉: the pool, the 神木, the shrine, the brook, the mountain */
+  if(z<-176&&x>92&&x<=111.5){ const S=NT.springs[2]; if(springD(S,x,z)<S[2]+.35) return false; if(Math.hypot(x-GTREE[0],z-GTREE[1])<2.6||(Math.hypot(x-GSHRINE[0],z-GSHRINE[1])<1.8&&!MD.gone(GSHRINE[0],GSHRINE[1]))) return false; const b=brookD(x,z); if(b[0]<brookW(b[1],b[2])+.4) return false; if(wfMount(x,z)>1) return false; } /* 女神泉: the pool, the 神木, the shrine, the brook, the mountain */
   if(x>111.5&&z<-176){ if(inRect(MOUTHB,x,z)) return true; if(springD(BHEAD,x,z)<BHEAD[2]+.35) return false; const b=brookD(x,z); if(b[0]<brookW(b[1],b[2])+.4) return false; if(x<WM.x+WM.rx+1){ if(wfMount(x,z)>1) return false; const a=eastH(x+.5,z), c=eastH(x-.5,z), d=eastH(x,z+.5), e=eastH(x,z-.5); if(Math.hypot(a-c,d-e)>TW.maxSlope) return false; } } /* the falls: the pool, the brook, the mountain (not climbable at all) */
   if(x>134.5&&eastH(x,z)<-.12) return false; /* the east river */
   if(x>B.x1-.6) return false;
@@ -12437,7 +12440,7 @@ const CH=[
    { const d=new T.Mesh(new T.PlaneGeometry(3.6,14),new T.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false})); d.rotation.x=-Math.PI/2; d.position.set(28,.06,-137.5); d.userData.floor=1; d.userData.keep=1; pickables.push(d); C.picks.push(d); C.g.add(d); } for(const [x,z] of [[26.2,-131],[29.8,-131],[26.2,-137.5],[29.8,-137.5],[26.2,-144],[29.8,-144]]) cyl(.1,.1,1.4,wood,x,.3,z,C.g,6);
    
    /* the river, and the station across it (not reachable yet) */ { nmat(); mirrorPlane(C,-17,73,-142.6,-132.4,RIVER_Y); } try{ terrain(C,-17,73,-143.6,-131.4,riverH,riverC,0); lawnHole(); }catch(e){ console.warn("river",e); } /* (the banks: grass sloping down into the water along a winding line, so the river reads as a river, not a long box — 11/16) */
-   ground(C,"pave",-14,72,-150,-143.5,.008,false,2); /* (11/17: the building across the river is gone) */  for(const z of [-112,-124]){ lamp(C,23,z); lamp(C,33,z); } }},
+   /* (11/17 晚 主委「過橋這邊的磁磚都刪除」: no tiled strip along the far bank any more — the forest's own grass and path run to the water) */  for(const z of [-112,-124]){ lamp(C,23,z); lamp(C,33,z); } }},
  {id:"parkW",c:[8,-124],r:24,build:C=>{ ground(C,"grass",-8,25,-131,-117,.014,true,4); ground(C,"pave",-8,25,-120.2,-118.8,.02,true,2); /* 涼亭 */ const red=mat("#b3261e",{roughness:.6}); for(const [x,z] of [[10.5,-125.5],[13.5,-125.5],[10.5,-122.5],[13.5,-122.5]]) cyl(.14,.14,2.8,red,x,1.4,z,C.g,8); { const r=new T.Mesh(new T.ConeGeometry(3.1,1.5,4),mat("#3f6a52",{roughness:.7})); r.position.set(12,3.55,-124); r.rotation.y=Math.PI/4; C.g.add(r); } box(3.6,.12,3.6,mat("#c9b9a2",{roughness:.8}),12,.06,-124,C.g); bench(C,12,-125.1,0);
    for(const [x,z] of [[-4,-123],[2,-128],[6,-122],[18,-128],[20,-122],[-6,-129]]) tree(C,x,z,1.25); bench(C,0,-121,0); bench(C,17,-121,0); for(const x of [-4,8,20]) lamp(C,x,-118.4); ground(C,"grass",-14,25,-131.6,-131,.006); }},
  {id:"parkE",c:[50,-124],r:24,build:C=>{ ground(C,"grass",33.2,66,-131,-117,.014,true,4); ground(C,"pave",33.2,66,-120.2,-118.8,.02,true,2); 
@@ -12487,7 +12490,8 @@ const WM={x:124,z:-245,rx:22,rz:20,H:34}, GZ=-246, WFACE=110;
 const wfMount=(x,z)=>{ const d=Math.hypot((x-WM.x)/WM.rx,(z-WM.z)/WM.rz)*(1+.07*nz(x*.09+3,z*.09)); if(d>=1) return 0; let b=WM.H*sstep(1,.28,d)*(1+.06*nz(x*.15,z*.15));
   const xc=WFACE+5*((z-GZ)/14)**2; b*=sstep(xc-1.2,xc+1.8,x); b-=3*sstep(3,1.2,Math.abs(z-GZ))*sstep(xc+7,xc+2,x)*sstep(xc-1,xc+1,x); return Math.max(0,b); };
 const WF={x:103.5,z:GZ}, BHEAD=[101.5,GZ,8,"g",-.22]; /* (11/17 主委「女神泉還是太小」: 16 m across now, its east edge right at the foot of the falls) */ /* the pool under the falls = 女神泉 */
-const gH=(x,z)=>x>111.5?eastH(x,z):southH(x,z); /* the ground there, whichever district's terrain it is */
+const gH=(x,z)=>{ const h=x>111.5?eastH(x,z):southH(x,z); const d=Math.hypot((x-(WFACE-1.4))/3,(z-GZ)/2.8); return d<1.5?Math.min(h,-.9+(h+.9)*sstep(.7,1.5,d)):h; }; /* (11/17 晚: a plunge pool dug where the falls land, so they meet water, not a wedge of grass) */
+const inFallZone=(x,z)=>(x>WFACE-3.6&&x<WM.x+4&&Math.abs(z-GZ)<3.6)||(x>WFACE-7.5&&x<=WFACE-3.6&&Math.abs(z-GZ)<5.5); TW.inFallZone=inFallZone; /* the ground there, whichever district's terrain it is */
 const BROOK=(()=>{ const c=new T.CatmullRomCurve3([[100,-240],[97.8,-236],[99,-231.5],[104,-226.5],[111,-222],[118,-218],[123,-212],[125.6,-206.5],[124.8,-200.5],[125.3,-197.2],[126.6,-195.2],[130,-193.8],[134,-193.2],[138,-192.4],[140.6,-192.5],[143.2,-191.9],[146,-193.6],[149.5,-194.6],[153,-195],[158,-195]].map(p=>new T.Vector3(p[0],0,p[1])),false,"centripetal");
   return c.getSpacedPoints(70).map(v=>[v.x,v.z]); })();
 const BN=BROOK.length-1; const brookD=(x,z)=>(x<93||z>-170||z<-252)?[99,0,0]:lineD(BROOK,x,z); /* (from 女神泉 north between 天后山 and the falls' mountain, then east to the river, 11/17) */
@@ -12609,20 +12613,122 @@ vec3 wShade(vec3 W,vec3 deep,vec2 flow){ vec4 rp=wRip(W.xz,flow); vec3 N=normali
   return c+vec3(1.,.96,.86)*(sun+sp*.55)+vec3(.75,.82,1.)*moon; }`;
 function mirrorMat(flow){ const f=flow||[.35,0]; return wmat(`varying vec3 vW; void main(){ vec4 w=modelMatrix*vec4(position,1.); vW=w.xyz; vec4 mvPosition=viewMatrix*w; gl_Position=projectionMatrix*mvPosition;\n#include <fog_vertex>\n}`,
   `uniform float uT; uniform float uNight; varying vec3 vW; ${WSURF} void main(){ vec3 deep=mix(vec3(.09,.4,.4),vec3(.03,.07,.12),uNight); gl_FragColor=vec4(wShade(vW,deep,vec2(${f[0].toFixed(2)},${f[1].toFixed(2)})),.93);\n#include <fog_fragment>\n}`); }
-function mirrorPlane(C,x0,x1,z0,z1,y){ const w=new T.Mesh(new T.PlaneGeometry(x1-x0,z1-z0),mirrorMat()); w.rotation.x=-Math.PI/2; w.position.set((x0+x1)/2,y,(z0+z1)/2); w.userData.keep=1; w.userData.own=1; w.raycast=()=>{}; C.g.add(w); return w; }
+function mirrorPlane(C,x0,x1,z0,z1,y,flow){ const f=flow||[.35,0], g=new T.PlaneGeometry(x1-x0,z1-z0,Math.max(1,Math.round((x1-x0)/1.5)),Math.max(1,Math.round((z1-z0)/1.5))); g.rotateX(-Math.PI/2); g.translate((x0+x1)/2,y,(z0+z1)/2); return wMesh(C,g,()=>f); } /* (水面 v3: one shared water, a vertex every 1.5 m so it knows how deep it is)*/
 function wmat(vs,fs,o){ return new T.ShaderMaterial(Object.assign({uniforms:Object.assign(T.UniformsUtils.merge([T.UniformsLib.fog]),NT.U),vertexShader:FOGV+vs,fragmentShader:FOGF+fs,transparent:true,depthWrite:false,fog:true},o||{})); }
+/* ===== 水面 v3 (11/17 主委「溪水請統一 用泉水的方式做…水面要漂亮、有層次、有緩慢流動的生命感，但不要犧牲 FPS」) =====
+   One water material for every river, brook, spring, pond and dug channel. No second camera, no depth pass:
+   · each water mesh carries, per vertex, which way it flows and how deep the water is there (worked out once from the ground when
+     the district is built) — deep is darker blue-green, shallow clearer and lighter, and where it thins to nothing at the bank a few
+     pale foam lines lap and the water fades into the ground (no hard edge, no depth buffer);
+   · two drifting layers of the one small ripple picture tilt the surface; the tilt picks the colour of a painted sky (more of it the
+     flatter you look — Fresnel) and a soft sun glint;
+   · up to 8 round ripples at a time (a fixed pool of slots, reused oldest-first): walking in the shallows, a cast float, a bite, the
+     foot of the falls. Rain rings on 高 quality.
+   Quality 高/中/低 (自動: phones 中): 低 is one texture read and no ripples. Settings: 主委工具 → 🧪 測試模式 → 💧 水面調整. */
+const WCFG_DEF={q:"auto",deep:"#17616e",shal:"#62c4bd",foam:"#f2fbf8",alpha:.9,amp:1,spd:1,scale:1,fres:1,spec:1,foamK:1,clear:1};
+const WCFG=Object.assign({},WCFG_DEF,(()=>{ try{ return JSON.parse(localStorage.getItem("mz.water")||"{}")||{}; }catch(e){ return {}; } })());
+const WU={uDeep:{value:new T.Color()},uShal:{value:new T.Color()},uFoamC:{value:new T.Color()},uWP:{value:new T.Vector4()},uWP2:{value:new T.Vector4()},
+  uSun:{value:new T.Vector3(-.45,.62,.64).normalize()},uRain:{value:0},uPx:{value:800},uRp:{value:Array.from({length:8},()=>new T.Vector4(0,0,-99,0))}};
+const W_MOBILE=(()=>{ try{ return /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)||matchMedia("(pointer:coarse)").matches; }catch(e){ return false; } })();
+const wQ=()=>({high:2,mid:1,low:0})[WCFG.q]??(W_MOBILE?1:2);
+const W_MATS=[];
+function wApply(){ WU.uDeep.value.set(WCFG.deep); WU.uShal.value.set(WCFG.shal); WU.uFoamC.value.set(WCFG.foam); WU.uWP.value.set(+WCFG.amp,+WCFG.spd,+WCFG.scale,+WCFG.alpha); WU.uWP2.value.set(+WCFG.fres,+WCFG.spec,+WCFG.foamK,+WCFG.clear);
+  const q=wQ(); for(const m of W_MATS){ if(m.defines.WQ!==q){ m.defines.WQ=q; m.needsUpdate=true; } } }
+wApply();
+const W_UNI=()=>Object.assign(T.UniformsUtils.merge([T.UniformsLib.fog]),NT.U,WU);
+const W_VS=`attribute vec3 aW; varying vec3 vW; varying vec3 vA; void main(){ vA=aW; vec4 w=modelMatrix*vec4(position,1.); vW=w.xyz; vec4 mvPosition=viewMatrix*w; gl_Position=projectionMatrix*mvPosition;\n#include <fog_vertex>\n}`;
+const W_FS=`uniform float uT; uniform float uNight; uniform float uRain; uniform sampler2D uRip; uniform vec3 uDeep; uniform vec3 uShal; uniform vec3 uFoamC; uniform vec3 uSun; uniform vec4 uWP; uniform vec4 uWP2; uniform vec4 uRp[8];
+varying vec3 vW; varying vec3 vA;
+float h21(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+void main(){ float D=vA.z; vec2 fl=vA.xy; float t=uT*uWP.y; vec2 p=vW.xz*uWP.z;
+  vec4 A=texture2D(uRip,p*.07+fl*t*.05+vec2(t*.008,t*.005));
+#if WQ>0
+  vec4 B=texture2D(uRip,mat2(.8,-.6,.6,.8)*p*.11+vec2(-t*.007,t*.010)+fl*t*.03); vec2 n=A.xy+B.xy-1.; float hh=(A.a+B.a)*.5;
+#else
+  vec2 n=(A.xy-.5)*1.6; float hh=A.a;
+#endif
+  float rf=0.;
+#if WQ>0
+  for(int i=0;i<8;i++){ vec4 r=uRp[i]; float age=uT-r.z; if(age<0.||age>3.) continue; vec2 dv=vW.xz-r.xy; float d=length(dv); float x=d-(.2+age*1.15); float k=exp(-x*x*7.)*(1.-age/3.)*r.w; float s=sin(x*15.); n+=dv/(d+.001)*s*k*.9; rf+=max(s,0.)*k*.7; }
+#endif
+#if WQ>1
+  if(uRain>.05){ vec2 q=vW.xz*1.4; vec2 cc=floor(q); float a=fract(uT*.9+h21(cc)); vec2 o=vec2(h21(cc+3.1),h21(cc+7.7))*.6+.2; vec2 f=fract(q)-o; float d=length(f); float x=d-a*.45; float k=exp(-x*x*300.)*(1.-a)*uRain; n+=f/(d+.001)*k*.6; rf+=k*.4; }
+#endif
+  vec3 N=normalize(vec3(n.x*.7*uWP.x,1.,n.y*.7*uWP.x)); vec3 V=normalize(cameraPosition-vW); float ndv=clamp(dot(N,V),0.,1.);
+  float fr=(.02+.98*pow(1.-ndv,5.))*uWP2.x; vec3 R=reflect(-V,N); float up=clamp(R.y,0.,1.);
+  vec3 sky=mix(vec3(.80,.89,.94),vec3(.38,.62,.88),pow(up,.6)); sky=mix(sky,vec3(.6,.64,.68),uRain*.7); sky=mix(sky,vec3(.05,.08,.15),uNight);
+  float dk=1.-exp(-max(D,0.)*.9/max(uWP2.w,.1)); vec3 body=mix(uShal,uDeep,dk)*(.88+.24*hh);
+  vec3 c=mix(body,sky,clamp(fr,0.,.85));
+  float sd=max(dot(R,uSun),0.); float sp=(pow(sd,700.)*2.2+pow(sd,60.)*.1)*uWP2.y*(1.-uNight)*(1.-uRain*.8);
+  float mo=pow(max(dot(R,normalize(vec3(.3,.55,-.78))),0.),320.)*uNight*1.4;
+#if WQ>1
+  sp+=smoothstep(.9,.97,texture2D(uRip,vW.xz*.31+vec2(uT*.03,-uT*.02)).a)*smoothstep(.55,.8,hh)*(1.-uNight*.7)*(1.-uRain)*uWP2.y*.4;
+#endif
+  c+=vec3(1.,.96,.86)*sp+vec3(.75,.82,1.)*mo;
+  float lines=smoothstep(.62,.92,sin(D*20.-uT*1.3+hh*5.)*.5+.5)*smoothstep(.5,.1,D);
+  float foam=clamp((smoothstep(.16,.0,D)*.75+lines*.45)*(.55+.7*hh)+rf,0.,1.)*uWP2.z;
+  c=mix(c,uFoamC,foam); c*=mix(1.,.42,uNight);
+  float al=mix(.5,1.,dk)*uWP.w; al=max(al,foam*.9); al=max(al,clamp(fr,0.,1.)*.95); al*=smoothstep(-.03,.06,D);
+  gl_FragColor=vec4(c,al);
+#include <fog_fragment>
+}`;
+let WMAT=null;
+function waterMat(){ if(!WMAT){ WMAT=new T.ShaderMaterial({uniforms:W_UNI(),vertexShader:FOGV+W_VS,fragmentShader:FOGF+W_FS,defines:{WQ:wQ()},transparent:true,depthWrite:false,fog:true,side:T.DoubleSide}); W_MATS.push(WMAT); } return WMAT; }
+/* a water mesh: flow per vertex now, depth filled in once the district's ground exists (wFix) */
+function wMesh(C,g,flowAt,dep){ const P=g.attributes.position, A=new Float32Array(P.count*3); for(let i=0;i<P.count;i++){ const f=flowAt?flowAt(i,P.getX(i),P.getZ(i)):[.3,0]; A[i*3]=f[0]; A[i*3+1]=f[1]; A[i*3+2]=1.5; }
+  g.setAttribute("aW",new T.BufferAttribute(A,3)); const m=new T.Mesh(g,waterMat()); m.userData.keep=1; m.userData.own=1; m.userData.wfix=dep||1; m.raycast=()=>{}; m.renderOrder=2; if(C) C.g.add(m); return m; }
+function wTers(C){ const out=[]; C.g.traverse(o=>{ const t=o.userData&&o.userData.ter; if(!t||!o.geometry) return; const b=o.geometry.boundingBox||(o.geometry.computeBoundingBox(),o.geometry.boundingBox); out.push([t,b]); }); return out; }
+function wGroundIn(L,x,z){ for(const [t,b] of L){ if(x<b.min.x-.01||x>b.max.x+.01||z<b.min.z-.01||z>b.max.z+.01) continue; return t.hf(x,z)+mdH(x,z)+(t.y0||0); } try{ return TW.ground(x,z); }catch(e){ return null; } }
+function wFix(C){ const v=new T.Vector3(), L=wTers(C); C.g.traverse(m=>{ if(!m.userData||m.userData.wfix!==1||!m.geometry) return; m.updateMatrixWorld(true); const P=m.geometry.attributes.position, A=m.geometry.attributes.aW;
+  for(let i=0;i<P.count;i++){ v.fromBufferAttribute(P,i).applyMatrix4(m.matrixWorld); const h=wGroundIn(L,v.x,v.z); A.setZ(i,h==null?1.5:Math.min(6,v.y-h)); } A.needsUpdate=true; m.userData.wfix=2; }); }
+/* round ripples: 8 slots reused oldest-first (no new objects) */
+let wRi=0; TW.ripple=(x,z,s)=>{ const r=WU.uRp.value[wRi]; wRi=(wRi+1)%8; r.set(x,z,NT.U.uT.value,s==null?1:s); };
+/* 瀑布 the same water, falling: two stretched layers of the ripple picture stream down; white at the lip and where it lands */
+function fallMat(len){ const m=new T.ShaderMaterial({uniforms:W_UNI(),defines:{LEN:len.toFixed(2),WQ:wQ()},transparent:true,depthWrite:false,fog:true,side:T.DoubleSide,
+  vertexShader:FOGV+`varying vec2 vUv; varying vec3 vW; void main(){ vUv=uv; vec4 w=modelMatrix*vec4(position,1.); vW=w.xyz; vec4 mvPosition=viewMatrix*w; gl_Position=projectionMatrix*mvPosition;\n#include <fog_vertex>\n}`,
+  fragmentShader:FOGF+`uniform float uT; uniform float uNight; uniform sampler2D uRip; uniform vec3 uDeep; uniform vec3 uShal; uniform vec3 uFoamC; uniform vec3 uSun; uniform vec4 uWP; varying vec2 vUv; varying vec3 vW;
+  void main(){ float e=abs(vUv.x-.5)*2.; float y=vUv.y*LEN; float t=uT*uWP.y;
+    float a1=texture2D(uRip,vec2(vUv.x*.6,y*.035+t*.55)).a;
+#if WQ>0
+    float a2=texture2D(uRip,vec2(vUv.x*1.1+.37,y*.07+t*.9)).a; float s=a1*.55+a2*.55;
+#else
+    float s=a1*1.05;
+#endif
+    float st=smoothstep(.42,.8,s-e*.18); vec3 body=mix(uShal,uDeep,.3+.25*(1.-st));
+    vec3 c=mix(body,uFoamC,st*.8); float bot=smoothstep(1.8,0.,y), lip=smoothstep(LEN-.9,LEN,y); c=mix(c,uFoamC,max(bot*.9,lip*.6));
+    vec3 V=normalize(cameraPosition-vW); c+=vec3(1.,.97,.9)*pow(max(dot(reflect(-V,vec3(0.,0.,1.)),uSun),0.),40.)*.15*(1.-uNight);
+    c*=mix(1.,.45,uNight); float al=(.86-e*e*e*.75)*(.72+.28*st); al=max(al,bot*.8*(1.-e*e)); al*=smoothstep(0.,.04,vUv.y);
+    gl_FragColor=vec4(c,al);\n#include <fog_fragment>\n}`}); W_MATS.push(m); return m; }
+/* where it lands: churning foam (two drifting reads of the picture) and spray — 90 droplets thrown up and falling back, moved
+   entirely in the vertex shader (no CPU), one draw */
+function fallFoot(G,x,y,z,R){ const pg=new T.CircleGeometry(R,28); pg.rotateX(-Math.PI/2);
+  const pool=new T.Mesh(pg,new T.ShaderMaterial({uniforms:W_UNI(),transparent:true,depthWrite:false,fog:true,
+    vertexShader:FOGV+`varying vec3 vL; void main(){ vL=position; vec4 mvPosition=modelViewMatrix*vec4(position,1.); gl_Position=projectionMatrix*mvPosition;\n#include <fog_vertex>\n}`,
+    fragmentShader:FOGF+`uniform float uT; uniform float uNight; uniform sampler2D uRip; uniform vec3 uFoamC; varying vec3 vL; void main(){ float r=length(vL.xz)/${R.toFixed(2)}; vec2 d=normalize(vL.xz+.001);
+      float A=texture2D(uRip,vL.xz*.22-d*uT*.18).a, B=texture2D(uRip,vL.xz*.37+vec2(uT*.11,uT*.16)).a; float f=smoothstep(.42,.72,(A+B)*.5+(1.-r)*.32);
+      gl_FragColor=vec4(uFoamC*mix(1.,.45,uNight),f*smoothstep(1.,.35,r)*.9);\n#include <fog_fragment>\n}`}));
+  pool.position.set(x,y+.03,z); pool.renderOrder=3; pool.userData.keep=1; pool.userData.own=1; pool.raycast=()=>{}; G.add(pool);
+  const N=90, P=new Float32Array(N*3), S=new Float32Array(N*4), rnd=krng(907); for(let i=0;i<N;i++){ S[i*4]=rnd(); S[i*4+1]=rnd(); S[i*4+2]=rnd(); S[i*4+3]=rnd(); }
+  const g=new T.BufferGeometry(); g.setAttribute("position",new T.BufferAttribute(P,3)); g.setAttribute("aS",new T.BufferAttribute(S,4)); g.boundingSphere=new T.Sphere(new T.Vector3(0,1.5,0),5);
+  const sp=new T.Points(g,new T.ShaderMaterial({uniforms:W_UNI(),transparent:true,depthWrite:false,fog:true,
+    vertexShader:FOGV+`attribute vec4 aS; uniform float uT; uniform float uPx; varying float vA; void main(){ float life=fract(uT*(.5+aS.x*.4)+aS.y); float ang=aS.z*6.2832; float v=1.+aS.w*2.;
+      vec3 p=vec3(cos(ang)*v*life*.9,(2.+aS.w*2.4)*life-5.2*life*life,sin(ang)*v*life*.7+ .3); p.y=max(p.y,0.); vec4 mvPosition=modelViewMatrix*vec4(p,1.); gl_Position=projectionMatrix*mvPosition;
+      gl_PointSize=(.1+aS.x*.16)*(1.-life*.5)*uPx/max(.5,-mvPosition.z); vA=(1.-life)*smoothstep(0.,.06,life);\n#include <fog_vertex>\n}`,
+    fragmentShader:FOGF+`uniform float uNight; uniform vec3 uFoamC; varying float vA; void main(){ float d=length(gl_PointCoord-.5); gl_FragColor=vec4(uFoamC*mix(1.,.45,uNight),smoothstep(.5,.12,d)*vA*.85);\n#include <fog_fragment>\n}`}));
+  sp.position.set(x,y,z); sp.renderOrder=4; sp.userData.keep=1; sp.userData.own=1; sp.raycast=()=>{}; G.add(sp); return {pool,sp}; }
+/* per frame: sun, rain, point size, ripples at the falls and where you wade */
+const wSt={t:0,fx:0,px:null,pz:null};
+function wTick(dt){ try{ WU.uRain.value=typeof WX!=="undefined"?Math.min(1,WX.r||0):0; if(typeof skyMat!=="undefined"&&skyMat.uniforms&&skyMat.uniforms.sun){ const s=skyMat.uniforms.sun.value; if(s.y>-.2) WU.uSun.value.copy(s).normalize(); } WU.uPx.value=renderer.domElement.height*.95; }catch(e){}
+  wSt.fx-=dt; try{ const cam=camera.position; if(wSt.fx<=0&&Math.hypot(cam.x-WF.x,cam.z-WF.z)<70&&TW.fallFoot){ wSt.fx=.9; { const f=TW.fallFoot||[WF.x+5,WF.z]; TW.ripple(f[0]-Math.random()*1.4,f[1]+(Math.random()-.5)*2.6,.8); }; } }catch(e){}
+  try{ const x=meAv.pos.x, z=meAv.pos.y; if(wSt.px!=null){ const mv=Math.hypot(x-wSt.px,z-wSt.pz); wSt.t-=dt; if(mv>.02&&wSt.t<=0){ const w=TW.water(x,z)||TW.water(x+.7,z)||TW.water(x-.7,z)||TW.water(x,z+.7)||TW.water(x,z-.7); if(w){ wSt.t=.45; TW.ripple(x,z,.8); } } } wSt.px=x; wSt.pz=z; }catch(e){} }
+TW.water3={WCFG,WCFG_DEF,wApply,wQ};
+
 function brookMesh(C){ const n=BROOK.length, P=new Float32Array(n*2*3), UV=new Float32Array(n*2*2), I=[]; let along=0;
   for(let i=0;i<n;i++){ const a=BROOK[Math.max(0,i-1)], b=BROOK[Math.min(n-1,i+1)], dx=b[0]-a[0], dz=b[1]-a[1], L=Math.hypot(dx,dz)||1, px=-dz/L, pz=dx/L, hw=brookW(Math.min(BN-1,i),0)+.25, x=BROOK[i][0], z=BROOK[i][1];
     if(i) along+=Math.hypot(x-BROOK[i-1][0],z-BROOK[i-1][1]); const y=-.1;
     P.set([x+px*hw,y,z+pz*hw,x-px*hw,y,z-pz*hw],i*6); UV.set([0,along,1,along],i*4); if(i<n-1){ const k=i*2; I.push(k,k+1,k+2,k+1,k+3,k+2); } }
   const g=new T.BufferGeometry(); g.setAttribute("position",new T.BufferAttribute(P,3)); g.setAttribute("uv",new T.BufferAttribute(UV,2)); g.setIndex(I); g.computeBoundingSphere();
-  const m=new T.Mesh(g,wmat(`uniform float uT; varying vec2 vUv; varying vec3 vW; void main(){ vUv=uv; vec4 w=modelMatrix*vec4(position,1.); vW=w.xyz; vec4 mvPosition=viewMatrix*w; gl_Position=projectionMatrix*mvPosition;\n#include <fog_vertex>\n}`,
-    `uniform float uT; uniform float uNight; varying vec2 vUv; varying vec3 vW; void main(){ float e=abs(vUv.x-.5)*2.; float f=vUv.y*.9-uT*1.1;
-      float st=sin(f*3.1+sin(vUv.x*9.+vUv.y*.7)*1.3)*.5+.5; st=smoothstep(.72,1.,st)*(1.-e*.6);
-      vec3 c=mix(vec3(.38,.76,.80),vec3(.62,.90,.88),e*e); c+=st*.22; float foam=smoothstep(.72,1.,e)*(.55+.45*sin(vUv.y*2.3-uT*2.6+vUv.x*5.)); c=mix(c,vec3(.97,.99,1.),foam*.65);
-      float sp=pow(max(0.,sin(vW.x*3.1+uT*2.3)*sin(vW.z*2.7-uT*1.9)),30.)*(1.-uNight); c+=sp*.7; c*=mix(1.,.38,uNight);
-      gl_FragColor=vec4(c,.86-e*.12);\n#include <fog_fragment>\n}`));
-  m.material.side=T.DoubleSide; m.renderOrder=2; m.userData.keep=1; m.userData.own=1; m.raycast=()=>{}; C.g.add(m); }
+  const m=wMesh(C,g,i=>{ const k=Math.min(n-1,i>>1), a=BROOK[Math.max(0,k-1)], b=BROOK[Math.min(n-1,k+1)], L=Math.hypot(b[0]-a[0],b[1]-a[1])||1; return [(b[0]-a[0])/L*.7,(b[1]-a[1])/L*.7]; }); }
 function waterfall(C){ const g=new T.PlaneGeometry(2.6,7.3,1,10); const m=new T.Mesh(g,wmat(`varying vec2 vUv; void main(){ vUv=uv; vec4 mvPosition=modelViewMatrix*vec4(position,1.); gl_Position=projectionMatrix*mvPosition;\n#include <fog_vertex>\n}`,
     `uniform float uT; uniform float uNight; varying vec2 vUv; void main(){ float e=abs(vUv.x-.5)*2.; float s=sin((vUv.y*7.+uT*3.2)+sin(vUv.x*17.)*1.8)*.5+.5; vec3 c=mix(vec3(.72,.92,.95),vec3(1.),smoothstep(.45,1.,s)*.8); c*=mix(1.,.4,uNight);
       gl_FragColor=vec4(c,(.78-e*e*.6)*smoothstep(0.,.08,vUv.y));\n#include <fog_fragment>\n}`,{side:T.DoubleSide}));
@@ -12802,18 +12908,27 @@ TW.eastH=(x,z)=>eastH(x,z);
 function farMtTick(){ return; /* (11/17: off — its cut-off edges stood up as dark slabs over 女神泉; the real mountain loads from far enough) */ if(!TW.on){ if(TW.farMt&&TW.farMt.isObject3D) TW.farMt.visible=false; return; }
   if(!TW.farMt){ TW.farMt=1; try{ nmat(); const C={g:new T.Group(),picks:[],baked:[]}; const m=terrain(C,96,138,-262,-224,(x,z)=>wfMount(x,z)>.02?gH(x,z):-4,eastC,.02); { const i=pickables.indexOf(m); if(i>=0) pickables.splice(i,1); } m.userData.floor=0; waterfallAt(C,WF.x,WF.z,1); C.g.traverse(o=>{ o.raycast=()=>{}; }); C.g.userData.noMerge=1; scene.add(C.g); TW.farMt=C.g; }catch(e){ console.warn("far mountain",e); } }
   if(TW.farMt.isObject3D) TW.farMt.visible=!LIVE.east2&&!LIVE.gspring&&!LIVE.mount; } /* (11/17 主委「瀑布呢 這是破圖嗎」: the light far copy stood in the way when you were right at 女神泉 — its edges are tall dark skirts. It only shows when none of the real ground there is loaded) */
-function waterfallAt(C,x,z,far){ const G=new T.Group(); G.position.set(x,0,z); G.rotation.y=-Math.PI/2; G.userData.noMerge=1; C.g.add(G); const top=gH(WFACE+2.4,z)-.3, dz=x+.9-WFACE; /* (faces west, down into 女神泉: the group is turned a quarter, so its 'south' is the cliff to the east) */ /* (top: where the cliff's edge is; the water leans out a little from the face as it falls) */
-  const m=new T.Mesh(new T.PlaneGeometry(3.4,top+.6,1,24),wmat(`varying vec2 vUv; void main(){ vUv=uv; vec4 mvPosition=modelViewMatrix*vec4(position,1.); gl_Position=projectionMatrix*mvPosition;\n#include <fog_vertex>\n}`,
-    `uniform float uT; uniform float uNight; varying vec2 vUv; void main(){ float e=abs(vUv.x-.5)*2.; float s=sin((vUv.y*${(top/1.1).toFixed(1)}+uT*5.)+sin(vUv.x*17.+vUv.y*9.)*1.8)*.5+.5; vec3 c=mix(vec3(.72,.9,.95),vec3(1.),smoothstep(.4,1.,s)*.85); c*=mix(1.,.45,uNight);
-      gl_FragColor=vec4(c,(.85-e*e*e*.7)*smoothstep(0.,.03,vUv.y));\n#include <fog_fragment>\n}`,{side:T.DoubleSide}));
-  m.position.set(0,(top+.6)/2-.3,dz-.35); m.rotation.x=-Math.atan2(1.1,top); m.userData.keep=1; m.userData.own=1; m.raycast=()=>{}; m.renderOrder=2; G.add(m);
-  if(!far){ const pg=new T.CircleGeometry(2.4,28); pg.rotateX(-Math.PI/2); const pool=new T.Mesh(pg,wmat(`varying vec3 vL; void main(){ vL=position; vec4 mvPosition=modelViewMatrix*vec4(position,1.); gl_Position=projectionMatrix*mvPosition;\n#include <fog_vertex>\n}`,
-    `uniform float uT; uniform float uNight; varying vec3 vL; void main(){ float r=length(vL.xz); float ring=smoothstep(.15,0.,abs(fract(r*.9-uT*.6)-.5)-.3)*(1.-r/2.4); vec3 c=vec3(.97,.99,1.)*mix(1.,.4,uNight); gl_FragColor=vec4(c,ring*.5+smoothstep(1.3,0.,r)*.4);\n#include <fog_fragment>\n}`));
-    pool.position.set(0,-.06,dz-.2); pool.renderOrder=3; pool.userData.keep=1; pool.userData.own=1; pool.raycast=()=>{}; G.add(pool); }
-  /* spray where it lands: soft white puffs, a fine mist hanging in front of the face */ for(let k=0;k<(far?3:7);k++){ const sp=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:"#ffffff",transparent:true,opacity:far?.3:.22,depthWrite:false})); const q=k/6; sp.scale.set(3.4+q*3,2.6+q*2.4,1); sp.position.set((k%3-1)*1.1,.6+q*2.4,dz+.4+q*.8); sp.userData.keep=1; sp.userData.own=1; sp.raycast=()=>{}; G.add(sp); }
+/* 瀑布 v3 (11/17 晚 主委「請讓瀑布從最上方下來 並確保不會被石頭遮住 或衝進去石頭裡導致破圖」): the water starts at the very top of the
+   mountain and follows the ground all the way down — a stream over the dome, then the drop down the cliff — always a little in front of
+   the rock (pushed out along the slope, and lifted wherever the ground beside it is higher), so it can never pass into the stone. Where it
+   lands: churning foam and spray (fallFoot) */
+function fallProfile(z){ let x0=WFACE, top=-1e9; for(let x=WFACE;x<=WM.x+2;x+=.25){ const h=gH(x,z); if(h>top){ top=h; x0=x; } }
+  const P=[]; let px=x0, py=gH(x0,z), acc=0; P.push([px,py]); for(let x=x0-.05;x>WFACE-6;x-=.05){ const y=gH(x,z); acc+=Math.hypot(x-px,y-py); px=x; py=y; if(acc>=.55||y<-.15){ P.push([x,y]); acc=0; } if(y<-.15) break; } return P; }
+function waterfallAt(C,x,z,far){ const G=new T.Group(); G.userData.noMerge=1; C.g.add(G);
+  const prof=fallProfile(z), n=prof.length, L=[0]; for(let i=1;i<n;i++) L.push(L[i-1]+Math.hypot(prof[i][0]-prof[i-1][0],prof[i][1]-prof[i-1][1])); const LEN=L[n-1]||1;
+  const cols=[-1,-.5,0,.5,1], P=[], UV=[], I=[];
+  for(let i=0;i<n;i++){ const [px,py]=prof[i], a=prof[Math.max(0,i-1)], b=prof[Math.min(n-1,i+1)]; let tx=b[0]-a[0], ty=b[1]-a[1]; const tl=Math.hypot(tx,ty)||1; tx/=tl; ty/=tl; let nx=ty, ny=-tx; if(ny<0){ nx=-nx; ny=-ny; } /* (the side of the slope that faces up and out, to the west) */
+    const v=1-L[i]/LEN, hw=.7+1.1*Math.pow(v,.7); /* (narrow at the top, 3.6 m wide where it lands) */
+    for(const c of cols){ const zz=z+c*hw; let X=px+nx*.32, Y=py+ny*.32; const gs=gH(X,zz); if(gs!=null&&gs+.18>Y) Y=gs+.18; P.push(X,Y,zz); UV.push(c*.5+.5,v); }
+    if(i) for(let k=0;k<cols.length-1;k++){ const a0=(i-1)*cols.length+k, b0=i*cols.length+k; I.push(a0,b0,a0+1, a0+1,b0,b0+1); } }
+  const g=new T.BufferGeometry(); g.setAttribute("position",new T.Float32BufferAttribute(P,3)); g.setAttribute("uv",new T.Float32BufferAttribute(UV,2)); g.setIndex(I); g.computeBoundingSphere();
+  const m=new T.Mesh(g,fallMat(LEN)); m.userData.keep=1; m.userData.own=1; m.raycast=()=>{}; m.renderOrder=2; G.add(m);
+  const ft=prof[n-1]; TW.fallFoot=[ft[0]-.6,z];
+  if(!far){ fallFoot(G,ft[0]-.7,-.2,z,2.6);
+    /* a fine mist hanging in front of the drop */ for(let k=0;k<5;k++){ const sp=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:"#ffffff",transparent:true,opacity:.18,depthWrite:false})); const q=k/4; sp.scale.set(3.4+q*3,2.4+q*2.2,1); sp.position.set(ft[0]-1.2-q*.9,.7+q*2.2,z+(k%3-1)*1.1); sp.userData.keep=1; sp.userData.own=1; sp.raycast=()=>{}; G.add(sp); } }
   return G; }
 function eastBuild(C,z0,z1){ terrain(C,134.5,232,z0,z1,eastH,eastC,.012);
-  mirrorPlane(C,141,232,z0,z1,RIVER_Y);
+  mirrorPlane(C,141,232,z0,z1,RIVER_Y,[0,.3]);
   const r=rng(Math.round(-z0)); for(let k=0;k<Math.round((z1-z0)*.9);k++){ const z=z0+r()*(z1-z0), rc=eRC(z), x=rc+eHW(z)+3+r()*(232-rc-eHW(z)-4); if(x>229) continue; const y=eastH(x,z); if(r()<.55) pine(C,x,y,z,1.1+r()*.6,r); else softTree(C,r,x,z,1.2+r()*.4,r()<.2?"maple":""); C.g.children.slice(-1)[0].position.y+=0; }
   for(let k=0;k<Math.round((z1-z0)*.25);k++){ const z=z0+r()*(z1-z0), rc=eRC(z), x=rc-eHW(z)-.6-r()*1.2; reeds(C,r,x,z); } }
 /* ---- the districts ---- */
@@ -12853,7 +12968,7 @@ const NCH=[
 ];
 /* ---- every frame: the shared clock, the lanterns at night, the gulls, and the sound of water when you are near ---- */
 let NA=null;
-NT.tick=(dt,LIVE)=>{ NT.U.uT.value+=dt; const night=typeof _dn!=="undefined"?_dn.night:0; NT.U.uNight.value=night; if(KM.lampB){ KM.lampB.emissiveIntensity=.5+night*2.2; KM.lampPool.opacity=night*.5; KM.lampHalo.opacity=night*.8; } if(KM.w1){ KM.w1.emissiveIntensity=night*.9; } if(KM.w0) KM.w0.emissiveIntensity=night*.25; if(KM.lan) KM.lan.emissiveIntensity=.4+night*1.6; if(NM){ NM.lamp.emissiveIntensity=.35+night*1.6; NM.glow.emissiveIntensity=.9+night*2; }
+NT.tick=(dt,LIVE)=>{ NT.U.uT.value+=dt; wTick(dt); const night=typeof _dn!=="undefined"?_dn.night:0; NT.U.uNight.value=night; if(KM.lampB){ KM.lampB.emissiveIntensity=.5+night*2.2; KM.lampPool.opacity=night*.5; KM.lampHalo.opacity=night*.8; } if(KM.w1){ KM.w1.emissiveIntensity=night*.9; } if(KM.w0) KM.w0.emissiveIntensity=night*.25; if(KM.lan) KM.lan.emissiveIntensity=.4+night*1.6; if(NM){ NM.lamp.emissiveIntensity=.35+night*1.6; NM.glow.emissiveIntensity=.9+night*2; }
   { const B=LIVE.front; if(B&&B.beam){ B.beam.rotation.y+=dt*.55; B.beamM.opacity=night*.2; B.beam.visible=night>.04; } }
   const C=LIVE.front; if(C&&C.gulls) C.gulls.forEach(q=>{ const t=NT.U.uT.value*.25+q.ph; q.g.position.set(176+Math.cos(t)*q.r,q.h+Math.sin(t*2.3)*.4,-88+Math.sin(t)*q.r*1.4); q.g.rotation.y=-t; q.g.children.forEach((w,i)=>{ w.rotation.z=(i?1:-1)*(.35+Math.sin(NT.U.uT.value*5+q.ph)*.25); }); });
   sound(dt); };
@@ -12935,17 +13050,26 @@ function treeModel(name,cb){ if(TREEM[name]){ cb(TREEM[name]); return; } loadSha
 /* (11/17 主委「刪除椰子樹跟杉木」: where a cedar stood there is one of the chair's trunk trees now, deep green; the palms are gone) */
 function pine(C,x,y,z,s,r){ (C.lpt||(C.lpt=[])).push([x,y,z,s*(.8+r()*.55),1,r()*6.283,"deep"]); }
 function palmAt(){}
+/* 山坡鋪滿樹叢 (11/17 晚 主委「讓山坡全部都種滿像樹欉的草皮 也就是樹冠變小變矮 鋪滿」): every slope in a district's ground gets a
+   carpet of low, small crowns sitting in the ground — one every 2 m or so, a few cards each, all in the district's one tree draw. Not on
+   cliffs (the bare rock stays), not in or at water, not on cleared spots, not round the falls */
+function slopeCover(C){ const g=TW.ground, out=[]; let seed=C.g.children.length*977+13; const R=()=>{ seed=(seed*16807)%2147483647; return seed/2147483647; };
+  C.g.traverse(m=>{ if(!m.userData||!m.userData.ter||!m.geometry) return; const b=m.geometry.boundingBox||(m.geometry.computeBoundingBox(),m.geometry.boundingBox);
+    for(let z=b.min.z+1;z<b.max.z-1;z+=1.6) for(let x=b.min.x+1;x<b.max.x-1;x+=1.6){ const px=x+(R()-.5)*1.1, pz=z+(R()-.5)*1.1; if(px>100&&px<WM.x+5&&Math.abs(pz-GZ)<(px<112?13:4.5)) continue;
+      const a=g(px+.9,pz), bb=g(px-.9,pz), c=g(px,pz+.9), d=g(px,pz-.9), h=g(px,pz); if(a==null||bb==null||c==null||d==null||h==null) continue; const sl=Math.hypot(a-bb,c-d)/1.8; if(sl<.3||sl>1.5) continue;
+      if(h<RIVER_Y+.25) continue; try{ if(MD.h(px,pz)<-.05||MD.gone(px,pz)||TW.water(px,pz)||TW.water(px+1.2,pz)||TW.water(px-1.2,pz)||TW.water(px,pz+1.2)||TW.water(px,pz-1.2)) continue; }catch(e){}
+      out.push([px,h+.05,pz,.62+R()*.38,1+R()*.1,R()*6.283,R()<.75?"leaf":"deep",8,"bush",.42+R()*.16]); } });
+  if(out.length) (C.lpt||(C.lpt=[])).push(...out); }
 function treesFlush(C){ if(C.lpt&&!C.md) try{ C.lpt=C.lpt.filter(t=>!MD.gone(t[0],t[2])); for(const t of C.lpt){ const dh=MD.h(t[0],t[2]); if(dh) t[1]=(t[1]||0)+dh; } }catch(e){} /* (地圖編輯: cleared spots, the chair's ground) */
   if(C.lpt) try{ const g=TW.ground; for(const t of C.lpt){ if(t[6]==="gold"||t[6]==="pink") continue; const a=g(t[0]+1.2,t[2]), b=g(t[0]-1.2,t[2]), c=g(t[0],t[2]+1.2), d=g(t[0],t[2]-1.2); if(a==null||b==null||c==null||d==null) continue; if(Math.hypot(a-b,c-d)/2.4>.32){ t[8]="bush"; if(!(t[7]>6)) t[3]*=.85; } } }catch(e){} /* (trees on a slope become bushes) */
-  if(C.lpt) C.lpt=C.lpt.filter(t=>t[6]==="gold"||!(t[0]>78&&t[0]<111&&Math.abs(t[2]-GZ)<10)); /* (the view from the path across 女神泉 to the falls stays open, 11/17) */ if(C.lpt) C.lpt=C.lpt.filter(t=>![[0,0],[.8,0],[-.8,0],[0,.8],[0,-.8]].some(([dx,dz])=>{ try{ return !!waterAt(t[0]+dx,t[2]+dz); }catch(e){ return false; } })); /* (11/17 主委「為什麼有樹長在水裡」: no tree stands in or right at the edge of water) */
+  if(C.lpt) C.lpt=C.lpt.filter(t=>t[6]==="gold"||!(t[0]>78&&t[0]<111&&Math.abs(t[2]-GZ)<10)); if(C.lpt) C.lpt=C.lpt.filter(t=>!(t[0]>WFACE-4&&t[0]<WM.x+5&&Math.abs(t[2]-GZ)<4.5)); /* (nothing stands on the falls' way down) */ /* (the view from the path across 女神泉 to the falls stays open, 11/17) */ if(C.lpt) C.lpt=C.lpt.filter(t=>![[0,0],[.8,0],[-.8,0],[0,.8],[0,-.8]].some(([dx,dz])=>{ try{ return !!waterAt(t[0]+dx,t[2]+dz); }catch(e){ return false; } })); /* (11/17 主委「為什麼有樹長在水裡」: no tree stands in or right at the edge of water) */
+  if(!C.md) try{ slopeCover(C); }catch(e){ console.warn("slope cover",e); }
   if(C.lpt&&!C.md) C.genT=C.lpt.slice(); if(C.lpt&&C.lpt.length){ const B=LPT.build(C.lpt,{seed:C.lpt.length*31+7}); for(const o of [B.trunks,...B.leaves]){ o.userData.keep=1; C.g.add(o); } C.lpt=null; } for(const name of ["cedar","palm"]){ const L=C[name]; if(!L||!L.length) continue; treeModel(name,M=>{ if(!C.g.parent) return; const q=new T.Quaternion(), e=new T.Euler(), p=new T.Vector3(), sc=new T.Vector3(), mx=new T.Matrix4();
     for(const P of M.parts){ const im=new T.InstancedMesh(P.g,P.m,L.length); L.forEach((t,i)=>{ const k=t[3]/M.h, lean=name==="palm"?.12:.04; e.set(Math.sin(i*12.9)*lean,t[5],Math.cos(i*7.3)*lean); q.setFromEuler(e); mx.compose(p.set(t[0],t[1],t[2]),q,sc.set(k*t[4],k,k*t[4])); im.setMatrixAt(i,mx); }); im.instanceMatrix.needsUpdate=true; im.frustumCulled=false; im.userData.keep=1; im.userData.shared=1; im.userData.noMerge=1; im.raycast=()=>{}; C.g.add(im); } try{ markDirty(); }catch(_){} }); } }
 function mushroom(C,x,z,r){ const y=0; put(C,GEO.cy||(GEO.cy=new T.CylinderGeometry(1,1,1,16)),NM.white,x,y+.07,z,.035,.14,.035); put(C,gsph(),r()<.5?NM.red:NM.maple,x,y+.15,z,.1,.06,.1); }
-function springPool(C,S,r){ const [x,z,R,k,y]=S; const g=new T.CircleGeometry(R+.2,72); g.rotateX(-Math.PI/2); { const P=g.attributes.position, rn=new Float32Array(P.count); for(let i=0;i<P.count;i++){ const px=P.getX(i), pz=P.getZ(i), d=Math.hypot(px,pz); rn[i]=d/(R+.2); if(d>1e-4){ const kk=springK(S,x+px,z+pz); P.setX(i,px*kk); P.setZ(i,pz*kk); } } g.setAttribute("aR",new T.BufferAttribute(rn,1)); }
+function springPool(C,S,r){ const [x,z,R,k,y]=S; let Rm=R+1.8; for(let a=0;a<6.28;a+=.2) Rm=Math.max(Rm,(R+1.8)*springK(S,x+Math.cos(a)*R,z+Math.sin(a)*R)); const nn=Math.ceil(Rm*2/1.1), g=new T.PlaneGeometry(Rm*2,Rm*2,nn,nn); g.rotateX(-Math.PI/2); /* (水面 v3: a fine grid wider than the pool — the water knows its depth at every metre, fades out up the bank by itself, so the shore follows the ground; 11/17 晚 the old fan of long thin triangles showed as pale wedges) */
   /* (and a soft mirror: looking across it you see the sky and a dark rim of the trees round it, looking straight down you see into it) */
-  const m=new T.Mesh(g,wmat(`attribute float aR; varying vec3 vL; varying float vR; varying vec3 vW; void main(){ vL=position; vR=aR; vW=(modelMatrix*vec4(position,1.)).xyz; vec4 mvPosition=modelViewMatrix*vec4(position,1.); gl_Position=projectionMatrix*mvPosition;\n#include <fog_vertex>\n}`,
-   `uniform float uT; uniform float uNight; varying vec3 vL; varying float vR; varying vec3 vW; ${WSURF} void main(){ float r=vR; vec3 c=mix(vec3(.55,.92,.95),vec3(.25,.62,.82),r); vec3 V=normalize(cameraPosition-vW); float fr=pow(1.-clamp(V.y,0.,1.),2.2); vec3 sky=mix(vec3(.62,.8,.95),vec3(.1,.14,.22),uNight); float rim=smoothstep(.6,1.,r)*.7; vec3 refl=mix(sky,vec3(.16,.3,.2),rim*.75); c=mix(c,refl,.3+.6*fr); c=mix(c,wShade(vW,c*.55,vec2(.05,.03)),.7); ${k==="g"?"c=mix(c,vec3(.75,.95,1.),.35+.15*sin(uT*1.3));":""} c*=mix(1.,${k==="g"?".7":".42"},uNight); gl_FragColor=vec4(c,.88);\n#include <fog_fragment>\n}`));
-  m.position.set(x,y,z); m.renderOrder=2; m.userData.keep=1; m.userData.own=1; m.raycast=()=>{}; C.g.add(m);
+  const m=wMesh(C,g,()=>[.05,.03]); m.position.set(x,y,z); /* (水面 v3: the same water as the rivers — 主委「溪水請統一 用泉水的方式做」) */
   for(let k2=0;k2<7;k2++){ const a=k2/7*6.283+r()*.5, px=x+Math.cos(a)*(R+.4), pz=z+Math.sin(a)*(R+.4), kk=springK(S,px,pz); mossRock(C,r,x+Math.cos(a)*(R*kk+.45),-.2,z+Math.sin(a)*(R*kk+.45),.75+r()*.45,r()<.6); } for(let k2=0;k2<6;k2++){ const a=r()*6.283; reeds(C,r,x+Math.cos(a)*(R+.9),z+Math.sin(a)*(R+.9)); }
   for(let k2=0;k2<5;k2++){ const a=r()*6.283, d=r()*R*.7; const pad=put(C,GEO.pad||(GEO.pad=new T.CircleGeometry(1,12).rotateX(-Math.PI/2)),NM.pad,x+Math.cos(a)*d,y+.02,z+Math.sin(a)*d,.3); pad.userData.keep=1; }
   if(k==="g"){ /* the goddess's spring: white stone steps, two lamps, a carved stone tablet */ for(const s of [-1,1]) lantern(C,x+s*2.6,z+R+1.4); sparkles(C,70,x,z,R+.6,y); shafts(C,x,z,R); fireflies(C,40,x,z,R+3,21); } /* (no name board: only glitter rising off the water and light falling through — 主委 11/14) */
@@ -12999,7 +13123,7 @@ function westC(x,z,h,c){ const n=.5+.5*nz(x*1.3,z*1.3); c.copy(LAWN).multiplySca
 function streamMesh(C){ const n=SPATH.length, P=[], UV=[], I=[]; let along=0; for(let i=0;i<n;i++){ const a=SPATH[Math.max(0,i-1)], b=SPATH[Math.min(n-1,i+1)], dx=b[0]-a[0], dz=b[1]-a[1], L=Math.hypot(dx,dz)||1, nx=-dz/L, nzz=dx/L, w=3.5; if(i) along+=Math.hypot(SPATH[i][0]-SPATH[i-1][0],SPATH[i][1]-SPATH[i-1][1]);
     P.push(SPATH[i][0]+nx*w,RIVER_Y,SPATH[i][1]+nzz*w, SPATH[i][0]-nx*w,RIVER_Y,SPATH[i][1]-nzz*w); UV.push(0,along/4,1,along/4); if(i) I.push((i-1)*2,(i-1)*2+1,i*2, (i-1)*2+1,i*2+1,i*2); }
   const g=new T.BufferGeometry(); g.setAttribute("position",new T.Float32BufferAttribute(P,3)); g.setAttribute("uv",new T.Float32BufferAttribute(UV,2)); g.setIndex(I); g.computeVertexNormals();
-  const m=new T.Mesh(g,mirrorMat([-.25,.3])); m.material.side=T.DoubleSide; m.userData.keep=1; /* (its triangles face down along this direction: drawn both sides) */ m.userData.own=1; m.raycast=()=>{}; C.g.add(m); }
+  wMesh(C,g,i=>{ const k=Math.min(n-1,i>>1), a=SPATH[Math.max(0,k-1)], b=SPATH[Math.min(n-1,k+1)], L=Math.hypot(b[0]-a[0],b[1]-a[1])||1; return [(b[0]-a[0])/L*.7,(b[1]-a[1])/L*.7]; }); }
 function footBridge(C){ const dx=WP2[1][0]-WP2[0][0], dz=WP2[1][1]-WP2[0][1], ang=Math.atan2(dx,dz); for(let k=-9;k<=9;k++){ const t=k*.5, x=FOOTB.x+Math.sin(ang)*t, z=FOOTB.z+Math.cos(ang)*t; put(C,GEO.b||(GEO.b=new T.BoxGeometry(1,1,1)),NM.wood,x,.06+.18*Math.cos(k/9*Math.PI/2),z,2.2,.07,.44,ang); }
   for(const sd of [-1.05,1.05]) for(let k=-4;k<=4;k++){ const t=k*1.1, x=FOOTB.x+Math.sin(ang)*t+Math.cos(ang)*sd, z=FOOTB.z+Math.cos(ang)*t-Math.sin(ang)*sd; put(C,GEO.b,NM.woodD,x,.5,z,.07,.75,.07,ang); }
   for(let k=-9;k<=9;k+=18){} }
@@ -13014,6 +13138,14 @@ NCH.push({id:"westN",c:[-40,-172],r:58,build:C=>{ WWD(-200,-143.6)(C); streamMes
 NCH.push({id:"westS",c:[-40,-231],r:58,build:C=>{ WWD(-262,-200)(C); }});
 /* 女神泉 (11/17): the pool at the foot of the falls; a giant 神木 with golden leaves; the chair's stone shrine; the end of the west trail */
 const GTREE=[83.5,-259], GSHRINE=[96.5,-256.8];
+/* 石頭神社 (11/17 主委「把神社做成石頭的 上面點綴青苔」): the chair's model kept as it is; only its colour — grey stone in place of sandstone,
+   and moss settling where the surface faces up and low down, in soft patches (worked out in the shader, nothing added) */
+const SHRINE_MAT=new Map();
+function shrineStone(o){ o.traverse(m=>{ if(!m.isMesh||!m.material) return; const ms=Array.isArray(m.material)?m.material:[m.material]; const out=ms.map(a=>{ let b=SHRINE_MAT.get(a); if(b) return b; b=a.clone();
+    b.onBeforeCompile=sh=>{ sh.vertexShader=sh.vertexShader.replace("#include <common>","#include <common>\nvarying vec3 vSWN; varying vec3 vSWP;").replace("#include <fog_vertex>","#include <fog_vertex>\nvSWN=normalize(mat3(modelMatrix)*objectNormal); vSWP=(modelMatrix*vec4(transformed,1.)).xyz;");
+      sh.fragmentShader=sh.fragmentShader.replace("#include <common>","#include <common>\nvarying vec3 vSWN; varying vec3 vSWP; float sHash(vec2 p){ return fract(sin(dot(p,vec2(41.3,289.1)))*43758.5); } float sNoise(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.-2.*f); return mix(mix(sHash(i),sHash(i+vec2(1,0)),f.x),mix(sHash(i+vec2(0,1)),sHash(i+vec2(1,1)),f.x),f.y); }")
+        .replace("#include <map_fragment>","#include <map_fragment>\n{ float l=dot(diffuseColor.rgb,vec3(.3,.59,.11)); vec3 st=vec3(l)*vec3(.86,.89,.9)*1.05+vec3(.03); float n=sNoise(vSWP.xz*2.3+vSWP.y*.7)*.65+sNoise(vSWP.xz*7.1-vSWP.y*2.)*.35; float up=smoothstep(.25,.8,normalize(vSWN).y); float lo=smoothstep(.9,.0,vSWP.y-"+"0.0"+"); float moss=smoothstep(.5,.75,n*.8+up*.45+lo*.2-.18); vec3 mc=mix(vec3(.25,.4,.18),vec3(.42,.56,.26),sNoise(vSWP.xz*13.)); diffuseColor.rgb=mix(st,mc,moss*.9); }"); };
+    b.customProgramCacheKey=()=>"shrineStone"; SHRINE_MAT.set(a,b); return b; }); m.material=Array.isArray(m.material)?out:out[0]; }); }
 /* (11/17) the falls' mountain and 女神泉 are one piece of ground, built by this district alone: the neighbouring districts' ground dips half a
    metre under it there, so no seam runs through the cliff */
 const GB=[94,148,-266,-221]; const GBsink=f=>(x,z)=>(x>GB[0]&&x<GB[1]&&z>GB[2]&&z<GB[3])?f(x,z)-.5:f(x,z); /* (moved back from the bigger pool; the 神木 out of the way of the view to the falls) */
@@ -13024,8 +13156,10 @@ NCH.push({id:"gspring",c:[110,-245],r:48,build:C=>{ nmat(); const r=krng(717), S
   for(let k=0;k<110;k++){ const a=r()*6.283, d=Math.sqrt(r())*.92, x=WM.x+Math.cos(a)*d*WM.rx, z=WM.z+Math.sin(a)*d*WM.rz; if(x>111.5) continue; if(Math.abs(z-GZ)<11&&x<WFACE+7) continue; if(Math.hypot(x-WF.x,z-WF.z)<S[2]+3) continue; (C.lpt||(C.lpt=[])).push([x,gH(x,z)-.12,z,1.3+r()*.9,1,r()*6.283,"deep"]); } /* the mountain's wooded west side */
   for(let k=0;k<60;k++){ const x=84+r()*18, z=-261+r()*30; if(Math.abs(z-GZ)<13) continue; /* (11/17 主委「瀑布呢」: nothing grows between the path and the falls — they stand in full view across the pool) */ if(Math.hypot(x-WF.x,z-WF.z)<S[2]+2.5||Math.hypot(x-GTREE[0],z-GTREE[1])<7||Math.hypot(x-GSHRINE[0],z-GSHRINE[1])<3.5||lineD(WP1,x,z)[0]<3||lineD(BROOK,x,z)[0]<3||wfMount(x,z)>3) continue; const h=gH(x,z); if(h>2) continue; if(r()<.5) (C.lpt||(C.lpt=[])).push([x,h-.1,z,1.2+r()*.8,1,r()*6.283,"deep"]); else tuft(C,r,x,h,z,.6+r()*.5); }
   /* 神木 (主委「旁邊神木的樹葉要是金黃色 然後再大一點」): golden leaves, bigger; a red sash round the trunk */ (C.lpt||(C.lpt=[])).push([GTREE[0],-.1,GTREE[1],5.6,1,.7,"gold",560]);
-  { const sash=new T.Mesh(new T.TorusGeometry(1.55,.18,8,30),new T.MeshStandardMaterial({color:"#c0261c",roughness:.6})); sash.rotation.x=Math.PI/2; sash.position.set(GTREE[0],2.6,GTREE[1]); C.g.add(sash); }
-  /* the chair's stone shrine, by the pool, facing it */ loadRaw("shrine",false,o=>{ if(!C.g.parent&&C.g.userData.gone) return; o.position.set(GSHRINE[0],gH(GSHRINE[0],GSHRINE[1])-.05,GSHRINE[1]); o.rotation.y=Math.atan2(WF.x-GSHRINE[0],WF.z-GSHRINE[1]); o.traverse(m=>{ if(m.isMesh){ m.castShadow=false; m.userData.keep=1; } }); o.userData.noMerge=1; C.g.add(o); });
+  if(!MD.gone(GTREE[0],GTREE[1])){ const sash=new T.Mesh(new T.TorusGeometry(1.55,.18,8,30),new T.MeshStandardMaterial({color:"#c0261c",roughness:.6})); sash.rotation.x=Math.PI/2; sash.position.set(GTREE[0],2.6+MD.h(GTREE[0],GTREE[1]),GTREE[1]); C.g.add(sash); } /* (11/17 主委「我刪掉神木 結果這個紅圈刪不掉」: the sash goes with the tree) */
+  /* the chair's stone shrine, by the pool, facing it — (11/17 主委「原本擺放的神社為什麼選不了」) the map editor can pick it, move it or take it away */
+  if(!MD.gone(GSHRINE[0],GSHRINE[1])){ const sr=Math.atan2(WF.x-GSHRINE[0],WF.z-GSHRINE[1]); (C.gen||(C.gen=[])).push({k:"shrine",x:GSHRINE[0],z:GSHRINE[1],s:1,r:sr});
+    loadRaw("shrine",false,o=>{ if(!C.g.parent&&C.g.userData.gone) return; o.position.set(GSHRINE[0],gH(GSHRINE[0],GSHRINE[1])-.05+MD.h(GSHRINE[0],GSHRINE[1]),GSHRINE[1]); o.rotation.y=sr; shrineStone(o); o.traverse(m=>{ if(m.isMesh){ m.castShadow=false; m.userData.keep=1; } }); o.userData.noMerge=1; C.g.add(o); }); }
   pathLamps(C,WP1.filter(q=>q[0]>18),9,1.8); lantern(C,92,-251.5,gH(92,-251.5)); lantern(C,92.3,-240.5,gH(92.3,-240.5)); fireflies(C,40,WF.x-3,WF.z-2,10,8); }});
 NCH.push({id:"forest",c:[66,-160],r:50,build:C=>SW.build(C)},{id:"mount",c:[66,-212],r:44,build:C=>SW.buildMt(C)});
 NCH.push({id:"east",c:[165,-90],r:55,build:C=>{ nmat(); const r=rng(31); eastBuild(C,-140,-40);
@@ -13074,7 +13208,7 @@ function bake(C){ const g=C.g; g.updateMatrixWorld(true); const bk=new Map(), go
     const G=new T.BufferGeometry(); G.setAttribute("position",new T.BufferAttribute(P,3)); G.setAttribute("normal",new T.BufferAttribute(N,3)); G.setAttribute("uv",new T.BufferAttribute(U,2)); G.setIndex(new T.BufferAttribute(I,1)); G.computeBoundingSphere(); const M=new T.Mesh(G,m); M.matrixAutoUpdate=false; M.raycast=()=>{}; M.userData.keep=1; C.baked.push(M); });
   gone.forEach(o=>{ if(o.parent) o.parent.remove(o); o.geometry.dispose(); }); C.baked.forEach(M=>g.add(M)); }
 const LIVE={};
-function load(d){ const C={g:new T.Group(),picks:[],baked:[]}; C.g.userData.noMerge=1; const t0=performance.now(); try{ d.build(C); }catch(e){ console.warn("town district "+d.id,e); (TW.loadErr||(TW.loadErr=[])).push(d.id+": "+e.message); } const t1=performance.now(); try{ bake(C); }catch(e){ console.warn("town bake "+d.id,e); (TW.loadErr||(TW.loadErr=[])).push(d.id+" 合併: "+e.message); } scene.add(C.g); try{ treesFlush(C); }catch(e){ console.warn("trees",e); } (TW.loadLog||(TW.loadLog=[])).push([d.id,Math.round(t1-t0),Math.round(performance.now()-t1)]); LIVE[d.id]=C; try{ if(typeof WORLD!=="undefined") WORLD.warm=2; }catch(e){} }
+function load(d){ const C={g:new T.Group(),picks:[],baked:[]}; C.g.userData.noMerge=1; const t0=performance.now(); try{ d.build(C); try{ wFix(C); }catch(e){ console.warn("water depth",e); } }catch(e){ console.warn("town district "+d.id,e); (TW.loadErr||(TW.loadErr=[])).push(d.id+": "+e.message); } const t1=performance.now(); try{ bake(C); }catch(e){ console.warn("town bake "+d.id,e); (TW.loadErr||(TW.loadErr=[])).push(d.id+" 合併: "+e.message); } scene.add(C.g); try{ treesFlush(C); }catch(e){ console.warn("trees",e); } (TW.loadLog||(TW.loadLog=[])).push([d.id,Math.round(t1-t0),Math.round(performance.now()-t1)]); LIVE[d.id]=C; try{ if(typeof WORLD!=="undefined") WORLD.warm=2; }catch(e){} }
 /* 路和店不見的真正原因 (11/16): some signs carry a list of paints (one per face), and throwing such a district away used to stop on
    them with an error — and since that error broke the town's step, no district was ever built again after it: walk away from the old
    street and back and it stayed empty grass. (On phones districts are thrown away sooner, so it happened there all the time.) Each
@@ -13198,74 +13332,91 @@ MD.blocked=(x,z)=>{ if(!MD.objs.length) return false; const a=MD.obG.get(Math.fl
 /* the code's own things: each maker is wrapped — a thing standing in a cleared spot is taken away again right after it is made (so the
    dice for everything after it fall the same), the rest are lifted with the chair's ground and remembered, so a tap can pick them */
 function mdWrap(name,fn,ix,iz,kind){ RAW[name]=fn; return function(...a){ const C=a[0]; if(!C||!C.g||C.md) return fn.apply(this,a); const x=a[ix], z=a[iz]; const n0=C.g.children.length, p0=C.picks?C.picks.length:0; const out=fn.apply(this,a); const nw=C.g.children.slice(n0);
-  if(MD.gone(x,z)){ for(const o of nw) C.g.remove(o); if(C.picks&&C.picks.length>p0){ C.picks.splice(p0).forEach(m=>{ const i=pickables.indexOf(m); if(i>=0) pickables.splice(i,1); }); } return out; }
+  if(MD.gone(x,z)||(name!=="lamp"&&name!=="lantern"&&inFallZone(x,z))){ for(const o of nw) C.g.remove(o); if(C.picks&&C.picks.length>p0){ C.picks.splice(p0).forEach(m=>{ const i=pickables.indexOf(m); if(i>=0) pickables.splice(i,1); }); } return out; }
   const dh=MD.h(x,z); if(dh) for(const o of nw) o.position.y+=dh; (C.gen||(C.gen=[])).push({k:kind,x,z,s:kind==="rock"||kind==="mrock"?a[5]:1}); return out; }; }
 mossRock=mdWrap("mossRock",mossRock,2,4,"rock"); starFlower=mdWrap("starFlower",starFlower,2,4,"flower"); reeds=mdWrap("reeds",reeds,2,3,"reeds");
 lantern=mdWrap("lantern",lantern,1,2,"lantern"); nbench=mdWrap("nbench",nbench,1,2,"bench"); lamp=mdWrap("lamp",lamp,1,2,"lamp"); bench=mdWrap("bench",bench,1,2,"bench");
 /* the ground, walking and water with the chair's changes */
 { const g0=TW.ground, w0=TW.walk, wa0=TW.water; MD.g0=g0;
-  TW.ground=(x,z)=>{ const b=g0(x,z); if(b==null) return b; return b+MD.h(x,z); };
+  TW.ground=(x,z)=>{ const b=g0(x,z); if(b==null){ if(MD.outSet&&MD.outSet.has(Math.floor(x/16)+","+Math.floor(z/16))) return MD.h(x,z); return b; } return b+MD.h(x,z); };
+  /* 邊界外 (11/17 晚 主委「主委可以超過邊界 並且在邊界外編輯地圖」): outside the map's ground the chair can raise, dig and paint too —
+     new ground is laid there (one small piece per 16 m square that has been changed), from the lawn's height */
+  MD.out=(x,z)=>g0(x,z)==null&&!inVil(x,z)&&Math.abs(x)<390&&Math.abs(z)<390;
   MD.isWater=(x,z)=>{ if(!MD.water) return false; const k=Math.round(x)+","+Math.round(z); return MD.water.has(k); };
   TW.water=(x,z)=>MD.isWater(x,z)?{k:"r",y:RIVER_Y}:wa0(x,z);
-  TW.walk=(x,z)=>{ if(MD.blocked(x,z)) return false; const dh=MD.ch.size?MD.h(x,z):0, gone=MD.gone(x,z); if(!dh&&!gone) return w0(x,z);
+  TW.walk=(x,z)=>{ if(MD.blocked(x,z)) return false; if(window.MZ_FREE&&!MD.isWater(x,z)) return true; const dh=MD.ch.size?MD.h(x,z):0, gone=MD.gone(x,z); if(!dh&&!gone) return w0(x,z);
     if(MD.isWater(x,z)) return false; if(!dh&&w0(x,z)) return true; const g=TW.ground, a=g(x+.5,z), b=g(x-.5,z), c=g(x,z+.5), d=g(x,z-.5); if(a==null||b==null||c==null||d==null) return w0(x,z);
     { const b0=MD.g0(x,z); if(b0!=null&&b0+dh<RIVER_Y-.05) return false; } return Math.hypot(a-b,c-d)<=TW.maxSlope; }; } /* (11/17 主委「地形升降一點下去就當掉了」: this used to ask TW.water, which asks TW.walk — round and round for ever on any changed ground, and the game's frame stopped. Water here is worked out from the height alone) */
 /* water where the chair dug below the water line: a flat sheet over just those cells */
-function mdWaterBuild(){ const W=new Set(); for(const [k,c] of MD.ch){ if(!c.h) continue; const [cx,cz]=k.split(",").map(Number); for(let i=0;i<256;i++){ const dh=c.h[i]/100; if(dh>-.05) continue; const ix=cx*16+(i%16), iz=cz*16+(i>>4); const b=MD.g0(ix,iz); if(b==null) continue; if(b+dh<RIVER_Y-.04) W.add(ix+","+iz); } }
+function mdWaterBuild(){ const W=new Set(); for(const [k,c] of MD.ch){ if(!c.h) continue; const [cx,cz]=k.split(",").map(Number); for(let i=0;i<256;i++){ const dh=c.h[i]/100; if(dh>-.05) continue; const ix=cx*16+(i%16), iz=cz*16+(i>>4); let b=MD.g0(ix,iz); if(b==null){ if(!MD.out(ix,iz)) continue; b=0; } if(b+dh<RIVER_Y-.04) W.add(ix+","+iz); } }
   MD.water=W.size?W:null; if(MD.wm){ MDG.remove(MD.wm); MD.wm.geometry.dispose(); MD.wm=null; } if(!W.size) return;
-  const P=[]; for(const k of W){ const [x,z]=k.split(",").map(Number); P.push(x-.75,RIVER_Y,z-.75, x+.75,RIVER_Y,z-.75, x+.75,RIVER_Y,z+.75, x-.75,RIVER_Y,z-.75, x+.75,RIVER_Y,z+.75, x-.75,RIVER_Y,z+.75); }
-  const g=new T.BufferGeometry(); g.setAttribute("position",new T.Float32BufferAttribute(P,3)); g.computeVertexNormals(); const m=new T.Mesh(g,MD.wmat||(MD.wmat=mirrorMat([.1,.05]))); m.material.side=T.DoubleSide; m.raycast=()=>{}; m.renderOrder=1; MDG.add(m); MD.wm=m; }
+  /* (水面 v3, 11/17 主委「為什麼會有高低差裂縫 還有一片黑」: the old sheet was 1.5 m squares on a 1 m grid — they overlapped, every overlap twice as dark, in the
+     rain nearly black. Now one seamless grid, one cell a metre, a ring of cells past the edge, the depth at every corner from the ground — so it is
+     the same water as the springs and fades out up the bank) */
+  const cells=new Set(); for(const k of W){ const [x,z]=k.split(",").map(Number); for(let dz=-1;dz<=1;dz++) for(let dx=-1;dx<=1;dx++) cells.add((x+dx)+","+(z+dz)); }
+  const VI=new Map(), P=[], A=[], I=[]; const vi=(x,z)=>{ const k=x+","+z; let i=VI.get(k); if(i!=null) return i; i=P.length/3; VI.set(k,i); P.push(x,RIVER_Y,z); let h=null; try{ h=TW.ground(x,z); }catch(e){} A.push(.08,.05,h==null?1:Math.min(6,RIVER_Y-h)); return i; };
+  for(const k of cells){ const [x,z]=k.split(",").map(Number); const a=vi(x-.5,z-.5), b=vi(x+.5,z-.5), c=vi(x+.5,z+.5), d=vi(x-.5,z+.5); I.push(a,c,b, a,d,c); }
+  const g=new T.BufferGeometry(); g.setAttribute("position",new T.Float32BufferAttribute(P,3)); g.setIndex(I); g.computeBoundingSphere(); const m=wMesh(null,g); m.geometry.setAttribute("aW",new T.Float32BufferAttribute(A,3)); m.userData.wfix=2; MDG.add(m); MD.wm=m; }
+function mdOutBuild(){ const C=MD.outC||(MD.outC={g:new T.Group(),picks:[],baked:[],md:1}); if(!C.g.parent){ C.g.userData.noMerge=1; scene.add(C.g); }
+  C.g.children.slice().forEach(m=>{ C.g.remove(m); if(m.geometry) m.geometry.dispose(); }); C.picks.forEach(m=>{ const i=pickables.indexOf(m); if(i>=0) pickables.splice(i,1); }); C.picks=[]; const S=new Set();
+  for(const [k,c] of MD.ch){ if(!(c.h&&c.h.some(v=>v))&&!(c.p&&c.p.some(v=>v))) continue; const [cx,cz]=k.split(",").map(Number); let out=0; for(const [dx,dz] of [[2,2],[8,8],[14,14],[2,14],[14,2]]) if(MD.out(cx*16+dx,cz*16+dz)) out++; if(out>=3) S.add(k); }
+  MD.outSet=S.size?S:null; for(const k of S){ const [cx,cz]=k.split(",").map(Number); try{ terrain(C,cx*16-.5,cx*16+16.5,cz*16-.5,cz*16+16.5,(x,z)=>{ const b=MD.g0(x,z); return b==null?0:b-.1; },(x,z,h,c)=>c.copy(LAWN),0); }catch(e){ console.warn("map edit outside",e); } } }
 /* the placed things */
 const MDKINDS=[["t_leaf","🌳","樹"],["t_deep","🌲","深綠樹"],["t_maple","🍁","楓樹"],["t_pink","🌸","櫻花"],["t_gold","🌟","金葉神木"],["b_leaf","🌿","樹叢"],["b_deep","🌱","深綠樹叢"],["rock","🪨","石頭"],["mrock","🗿","苔石"],["flower","🌼","花"],["reeds","🌾","蘆葦"],["lantern","🏮","石燈籠"],["bench","🪑","長椅"],["lamp","💡","路燈"],["shrine","⛩️","神社"]];
-const MDNAME=Object.fromEntries(MDKINDS.map(k=>[k[0],k[2]])), MDGEN={rock:"rock",mrock:"mrock",flower:"flower",reeds:"reeds",lantern:"lantern",bench:"bench",lamp:"lamp"};
+const MDNAME=Object.fromEntries(MDKINDS.map(k=>[k[0],k[2]])), MDGEN={rock:"rock",mrock:"mrock",flower:"flower",reeds:"reeds",lantern:"lantern",bench:"bench",lamp:"lamp",shrine:"shrine"};
 function mdMake(o){ const g=new T.Group(); g.userData.md=o; const C={g,picks:[],baked:[],md:1}; const r=krng(o.id*7919+3); nmat();
-  try{ const k=o.k; if(k[1]==="_"){ const B=LPT.build([[0,0,0,1,1,0,k.slice(2),k==="t_gold"?320:60,k[0]==="b"?"bush":undefined]],{seed:o.id*31+7}); for(const m of [B.trunks,...B.leaves]){ m.userData.keep=1; g.add(m); } }
+  try{ const k=o.k; if(k[1]==="_"){ const B=LPT.build([[0,0,0,1,o.w||1,0,k.slice(2),k==="t_gold"?320:60,k[0]==="b"?"bush":undefined]],{seed:o.id*31+7}); for(const m of [B.trunks,...B.leaves]){ m.userData.keep=1; g.add(m); }
+      if(k==="t_gold"){ const sash=new T.Mesh(new T.TorusGeometry(.277,.032,8,30),new T.MeshStandardMaterial({color:"#c0261c",roughness:.6})); sash.rotation.x=Math.PI/2; sash.position.y=.464; g.add(sash); } /* (神木 keeps its red sash when the chair moves it) */ }
     else if(k==="rock") RAW.mossRock(C,r,0,0,0,1,false); else if(k==="mrock") RAW.mossRock(C,r,0,0,0,1,true);
     else if(k==="flower"){ for(let i=0;i<6;i++) RAW.starFlower(C,r,(r()-.5)*1.4,0,(r()-.5)*1.4,.8+r()*.4); }
     else if(k==="reeds") RAW.reeds(C,r,0,0); else if(k==="lantern") RAW.lantern(C,0,0,0); else if(k==="bench") RAW.nbench(C,0,0,0); else if(k==="lamp") RAW.lamp(C,0,0);
-    else if(k==="shrine") loadRaw("shrine",false,m=>{ if(g.parent) g.add(m); }); }catch(e){ console.warn("map edit object",o,e); }
+    else if(k==="shrine") loadRaw("shrine",false,m=>{ shrineStone(m); m.traverse(q=>{ if(q.isMesh) q.raycast=T.Mesh.prototype.raycast; }); g.add(m); }); }catch(e){ console.warn("map edit object",o,e); }
   return g; }
 function mdPlace(o){ if(o.g){ MDG.remove(o.g); } o.g=mdMake(o); mdPos(o); MDG.add(o.g); }
 function mdPos(o){ const b=TW.ground(o.x,o.z); o.g.position.set(o.x,(b==null?0:b)+(o.dy||0),o.z); o.g.rotation.y=o.r||0; o.g.scale.setScalar(o.s||1); }
 function mdAllPlace(){ MDG.children.slice().forEach(c=>{ if(c!==MD.wm) MDG.remove(c); }); MD.objs.forEach(o=>{ o.g=null; mdPlace(o); }); }
 /* the terrain under a change is redrawn in place (fast, while you brush); the districts are rebuilt once you stop, so the code's own trees and
    rocks sit on the new ground and cleared spots empty out */
-function mdPatch(x0,x1,z0,z1,colOnly){ for(const id in LIVE){ const C=LIVE[id]; C.g.traverse(m=>{ const t=m.userData&&m.userData.ter; if(!t) return; const P=m.geometry.attributes.position, col=m.geometry.attributes.color; let any=false; const c=new T.Color();
+function mdPatch(x0,x1,z0,z1,colOnly){ const LL=Object.assign({},LIVE); if(MD.outC) LL.__out=MD.outC; for(const id in LL){ const C=LL[id]; C.g.traverse(m=>{ const t=m.userData&&m.userData.ter; if(!t) return; const P=m.geometry.attributes.position, col=m.geometry.attributes.color; let any=false; const c=new T.Color();
     for(let i=0;i<P.count;i++){ const x=P.getX(i), z=P.getZ(i); if(x<x0||x>x1||z<z0||z>z1) continue; const h=t.hf(x,z)+MD.h(x,z); if(!colOnly) P.setY(i,h+(t.y0||0)); t.cf(x,z,h,c); MD.pc(x,z,c); col.setXYZ(i,c.r,c.g,c.b); any=true; }
     if(any){ col.needsUpdate=true; if(!colOnly){ P.needsUpdate=true; m.geometry.computeVertexNormals(); m.geometry.computeBoundingSphere(); m.geometry.computeBoundingBox(); } } }); }
   MD.objs.forEach(o=>{ if(o.x>x0-2&&o.x<x1+2&&o.z>z0-2&&o.z<z1+2&&o.g) mdPos(o); }); }
 function mdRebuild(x0,x1,z0,z1){ for(const id of Object.keys(LIVE)){ const d=CH.find(q=>q.id===id); if(!d) continue; const dx=Math.max(x0-d.c[0],0,d.c[0]-x1), dz=Math.max(z0-d.c[1],0,d.c[1]-z1); if(Math.hypot(dx,dz)>d.r+6) continue; try{ unload(id); load(d); }catch(e){ console.warn("map edit rebuild",id,e); } } }
 MD.dirty=null; MD.flushT=0;
 function mdDirty(x0,x1,z0,z1){ const D=MD.dirty; MD.dirty=D?[Math.min(D[0],x0),Math.max(D[1],x1),Math.min(D[2],z0),Math.max(D[3],z1)]:[x0,x1,z0,z1]; MD.flushT=performance.now()+700; }
-function mdFlush(){ if(!MD.dirty||performance.now()<MD.flushT||MD.down) return; const D=MD.dirty; MD.dirty=null; mdWaterBuild(); mdRebuild(D[0],D[1],D[2],D[3]); }
+function mdFlush(){ if(!MD.dirty||performance.now()<MD.flushT||MD.down) return; const D=MD.dirty; MD.dirty=null; mdOutBuild(); mdWaterBuild(); mdRebuild(D[0],D[1],D[2],D[3]); }
 /* save / load: one small text — chunks as base64, things and cleared spots as numbers */
 const b64e=u=>{ let s=""; for(let i=0;i<u.length;i++) s+=String.fromCharCode(u[i]); return btoa(s); }, b64d=s=>{ const b=atob(s), u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); return u; };
 MD.pack=()=>{ const ch={}; for(const [k,c] of MD.ch){ const h=c.h&&c.h.some(v=>v)?b64e(new Uint8Array(c.h.buffer.slice(0))):"", p=c.p&&c.p.some(v=>v)?b64e(c.p):""; if(h||p) ch[k]=[h,p]; }
-  return {v:1,ch,o:MD.objs.map(o=>[o.id,o.k,+o.x.toFixed(2),+o.z.toFixed(2),+(o.dy||0).toFixed(2),+(o.r||0).toFixed(3),+(o.s||1).toFixed(3)]),e:MD.er.map(e=>e.map(v=>+v.toFixed(2)))}; };
+  return {v:1,ch,o:MD.objs.map(o=>[o.id,o.k,+o.x.toFixed(2),+o.z.toFixed(2),+(o.dy||0).toFixed(2),+(o.r||0).toFixed(3),+(o.s||1).toFixed(3)].concat(o.w&&o.w!==1?[+o.w.toFixed(3)]:[])),e:MD.er.map(e=>e.map(v=>+v.toFixed(2)))}; };
 MD.unpack=d=>{ MD.ch=new Map(); MD.objs=[]; MD.er=[]; if(d&&d.ch) for(const k in d.ch){ const [h,p]=d.ch[k]||[]; const c={h:null,p:null}; try{ if(h){ const u=b64d(h); c.h=new Int16Array(u.buffer.slice(0,512)); } if(p) c.p=b64d(p).slice(0,256); }catch(e){} MD.ch.set(k,c); }
-  if(d&&Array.isArray(d.o)) d.o.forEach(q=>MD.objs.push({id:q[0],k:q[1],x:q[2],z:q[3],dy:q[4],r:q[5],s:q[6]})); if(d&&Array.isArray(d.e)) MD.er=d.e.slice();
+  if(d&&Array.isArray(d.o)) d.o.forEach(q=>MD.objs.push({id:q[0],k:q[1],x:q[2],z:q[3],dy:q[4],r:q[5],s:q[6],w:q[7]||1})); if(d&&Array.isArray(d.e)) MD.er=d.e.slice();
   MD.nid=MD.objs.reduce((m,o)=>Math.max(m,o.id+1),1); mdRegrid(); };
-MD.applyAll=()=>{ mdWaterBuild(); mdAllPlace(); for(const id of Object.keys(LIVE)){ const d=CH.find(q=>q.id===id); if(d) try{ unload(id); load(d); }catch(e){} } };
+MD.applyAll=()=>{ try{ mdOutBuild(); }catch(e){} mdWaterBuild(); mdAllPlace(); for(const id of Object.keys(LIVE)){ const d=CH.find(q=>q.id===id); if(d) try{ unload(id); load(d); }catch(e){} } };
 MD.baked=null; /* (a 配置碼 written into the game: used when the server has none) */
 MD.fetch=async()=>{ let d=null; try{ if(typeof USE_CF!=="undefined"&&USE_CF){ const r=await fetch("/mapedit",{cache:"no-store"}); const j=await r.json(); d=j&&j.map; } else d=JSON.parse(localStorage.getItem("mz.mapedit")||"null"); }catch(e){} if(!d) d=MD.baked; if(!d) return; MD.unpack(d); MD.applyAll(); };
 setTimeout(()=>{ MD.fetch(); },2500);
 TW.MD=MD;
 /* ---- the editor ---- */
-const ED={tool:"sel",kind:"t_leaf",size:4,str:.5,paint:1,sel:null,cam:null,tgt:new T.Vector3(),yaw:0,pitch:.9,dist:34,ptr:new Map(),ring:null,raf:0,last:0,flatH:0,moving:false};
+const ED={rnd:true,keys:new Set(),tool:"sel",kind:"t_leaf",size:4,str:.5,paint:1,sel:null,cam:null,tgt:new T.Vector3(),yaw:0,pitch:.9,dist:34,ptr:new Map(),ring:null,raf:0,last:0,flatH:0,moving:false};
 function edCamUpdate(){ const c=ED.cam, t=ED.tgt, b=TW.ground(t.x,t.z); t.y=b==null?0:b; c.position.set(t.x+Math.sin(ED.yaw)*Math.cos(ED.pitch)*ED.dist,t.y+Math.sin(ED.pitch)*ED.dist,t.z+Math.cos(ED.yaw)*Math.cos(ED.pitch)*ED.dist); c.lookAt(t); c.aspect=innerWidth/innerHeight; c.updateProjectionMatrix();
   try{ meAv.pos.set(t.x,t.z); meAv.target.set(t.x,t.z); meAv.path=[]; }catch(e){} }
 function edRay(cx,cy){ const r=canvas.getBoundingClientRect(); ndc.set((cx-r.left)/r.width*2-1,-(cy-r.top)/r.height*2+1); raycaster.setFromCamera(ndc,ED.cam); return raycaster; }
-function edGround(cx,cy){ const rc=edRay(cx,cy); const ms=[]; for(const id in LIVE) LIVE[id].g.traverse(m=>{ if(m.userData&&(m.userData.ter||m.userData.floor)&&m.isMesh) ms.push(m); }); if(MD.wm) ms.push(MD.wm);
+function edGround(cx,cy){ const rc=edRay(cx,cy); const ms=[]; for(const id in LIVE) LIVE[id].g.traverse(m=>{ if(m.userData&&(m.userData.ter||m.userData.floor)&&m.isMesh) ms.push(m); }); if(MD.outC) MD.outC.g.children.forEach(m=>ms.push(m)); if(MD.wm) ms.push(MD.wm);
   const h=rc.intersectObjects(ms,false)[0]; if(h) return h.point; const pl=new T.Plane(new T.Vector3(0,1,0),0), p=new T.Vector3(); return rc.ray.intersectPlane(pl,p)?p:null; }
 function edPickObj(cx,cy){ const rc=edRay(cx,cy); const h=rc.intersectObjects(MDG.children.filter(c=>c!==MD.wm),true)[0]; if(!h) return null; let o=h.object; while(o&&!o.userData.md) o=o.parent; return o&&o.userData.md; }
 function edPickGen(p){ let best=null, bd=2.2; for(const id in LIVE){ for(const g of (LIVE[id].gen||[])){ const d=Math.hypot(g.x-p.x,g.z-p.z); if(d<bd){ bd=d; best=g; } } } return best; }
+/* (11/17 主委「我放了神木 要點他刪除點不到了」: a tap that misses the leaves still finds the placed thing standing there) */
+function edPickNear(p){ if(!p) return null; let best=null, bd=1e9; for(const o of MD.objs){ const r=Math.max(1.3,(o.s||1)*(o.k[1]==="_"?.8:o.k==="shrine"?1.6:.9)), d=Math.hypot(o.x-p.x,o.z-p.z); if(d<r&&d<bd){ bd=d; best=o; } } return best; }
+/* (11/17 主委「每次擺放隨機生成一個高度 大小不同的樹」) */
+function edRnd(k){ if(!ED.rnd) return {}; const R=(a,b)=>+(a+Math.random()*(b-a)).toFixed(3); if(k[1]==="_") return {s:k==="t_gold"?R(1.6,3.2):R(.72,1.4),w:R(.8,1.25)}; if(k==="rock"||k==="mrock") return {s:R(.55,1.5)}; if(k==="flower"||k==="reeds") return {s:R(.8,1.3)}; return {}; }
 function edSnap(){ MD.hist.push(JSON.stringify(MD.pack())); if(MD.hist.length>30) MD.hist.shift(); }
 function edUndo(){ const s=MD.hist.pop(); if(!s){ toast("沒有可以復原的步驟"); return; } MD.unpack(JSON.parse(s)); ED.sel=null; MD.applyAll(); edPanel(); toast("已復原上一步",1400); }
 function edBrush(p,dt){ const R=ED.size, S=ED.str, x0=Math.floor(p.x-R), x1=Math.ceil(p.x+R), z0=Math.floor(p.z-R), z1=Math.ceil(p.z+R), t=ED.tool;
   if(t==="erase"){ return; }
   for(let iz=z0;iz<=z1;iz++) for(let ix=x0;ix<=x1;ix++){ const d=Math.hypot(ix-p.x,iz-p.z); if(d>R) continue; const f=sstep(R,R*.35,d);
     if(t==="paint"||t==="unpaint"){ if(d>R*.85&&Math.random()>.5) continue; const c=mdChunk(ix,iz,true); if(!c.p) c.p=new Uint8Array(256); c.p[mdIdx(ix,iz)]=t==="paint"?ED.paint:0; continue; }
-    const b=MD.g0(ix,iz); if(b==null) continue; const c=mdChunk(ix,iz,true); if(!c.h) c.h=new Int16Array(256); const i=mdIdx(ix,iz); let dh=c.h[i]/100; const tot=b+dh;
+    let b=MD.g0(ix,iz); if(b==null){ if(!MD.out(ix,iz)) continue; b=0; } const c=mdChunk(ix,iz,true); if(!c.h) c.h=new Int16Array(256); const i=mdIdx(ix,iz); let dh=c.h[i]/100; const tot=b+dh;
     if(t==="up") dh+=S*4*f*dt; else if(t==="down") dh-=S*4*f*dt; else if(t==="flat") dh+=(ED.flatH-tot)*Math.min(1,f*dt*6*S+.02);
     else if(t==="river"){ const tg=RIVER_Y-1.05; if(tot>tg) dh+=(tg-tot)*Math.min(1,f*dt*5*S+.02); }
     else if(t==="smooth"){ const n=(ix2,iz2)=>{ const bb=MD.g0(ix2,iz2); return (bb==null?b:bb)+mdHi(ix2,iz2); }; const av=(n(ix+1,iz)+n(ix-1,iz)+n(ix,iz+1)+n(ix,iz-1))/4; dh+=(av-tot)*Math.min(1,f*dt*8*S); }
@@ -13275,8 +13426,10 @@ function edBrush(p,dt){ const R=ED.size, S=ED.str, x0=Math.floor(p.x-R), x1=Math
 function edErase(p){ const R=ED.size; MD.er.push([+p.x.toFixed(2),+p.z.toFixed(2),R]); mdGridAdd(MD.erG,p.x,p.z,R,MD.er[MD.er.length-1]);
   const rm=MD.objs.filter(o=>Math.hypot(o.x-p.x,o.z-p.z)<R); rm.forEach(o=>{ if(o.g) MDG.remove(o.g); }); if(rm.length){ MD.objs=MD.objs.filter(o=>!rm.includes(o)); mdRegrid(); } mdDirty(p.x-R,p.x+R,p.z-R,p.z+R); }
 function edAdd(k,x,z,extra){ const o=Object.assign({id:MD.nid++,k,x,z,dy:0,r:Math.random()*6.283,s:1},extra||{}); MD.objs.push(o); mdGridAdd(MD.obG,o.x,o.z,2,o); mdPlace(o); return o; }
-function edSelect(o){ ED.sel=o; if(!ED.ring){ ED.ring=new T.Mesh(new T.RingGeometry(.9,1.05,40).rotateX(-Math.PI/2),new T.MeshBasicMaterial({color:"#ffd24a",depthTest:false,transparent:true})); ED.ring.renderOrder=999; } if(o){ if(!ED.ring.parent) scene.add(ED.ring); } else if(ED.ring.parent) scene.remove(ED.ring); edPanel(); }
-function edLoop(){ if(!MD.on) return; ED.raf=requestAnimationFrame(edLoop); const now=performance.now(), dt=Math.min(.05,(now-ED.last)/1000||.016); ED.last=now; edCamUpdate();
+function edSelect(o){ ED.sel=o; if(!MD.on){ if(ED.ring&&ED.ring.parent) scene.remove(ED.ring); return; } /* (11/17 主委「我按了完成 地圖編輯還是在」: closing redrew the panel here) */ if(!ED.ring){ ED.ring=new T.Mesh(new T.RingGeometry(.9,1.05,40).rotateX(-Math.PI/2),new T.MeshBasicMaterial({color:"#ffd24a",depthTest:false,transparent:true})); ED.ring.renderOrder=999; } if(o){ if(!ED.ring.parent) scene.add(ED.ring); } else if(ED.ring.parent) scene.remove(ED.ring); edPanel(); }
+function edLoop(){ if(!MD.on) return; ED.raf=requestAnimationFrame(edLoop); const now=performance.now(), dt=Math.min(.05,(now-ED.last)/1000||.016); ED.last=now; { const K=ED.keys; if(K.size){ const f=(K.has("w")?1:0)-(K.has("s")?1:0), rt=(K.has("d")?1:0)-(K.has("a")?1:0), sp=Math.max(6,ED.dist*.7)*dt, sy=Math.sin(ED.yaw), cy=Math.cos(ED.yaw);
+    ED.tgt.x+=(-sy*f+cy*rt)*sp; ED.tgt.z+=(-cy*f-sy*rt)*sp; if(K.has("q")) ED.yaw+=dt*1.6; if(K.has("e")) ED.yaw-=dt*1.6; if(K.has("r")) ED.pitch=Math.min(1.45,ED.pitch+dt*.8); if(K.has("f")) ED.pitch=Math.max(.2,ED.pitch-dt*.8);
+    if(K.has("z")) ED.dist=Math.max(6,ED.dist*(1-dt*1.2)); if(K.has("x")) ED.dist=Math.min(160,ED.dist*(1+dt*1.2)); } } edCamUpdate();
   if(MD.down&&ED.bp&&/^(up|down|flat|river|smooth|reset|paint|unpaint)$/.test(ED.tool)) edBrush(ED.bp,dt);
   if(ED.ring&&ED.sel&&ED.sel.g){ const o=ED.sel; ED.ring.position.set(o.x,o.g.position.y+.08,o.z); ED.ring.scale.setScalar(Math.max(.6,o.s*(o.k[1]==="_"?2.2:1))); }
   if(ED.cur){ const p=ED.hover; ED.cur.visible=!!p&&ED.tool!=="sel"&&ED.tool!=="place"&&ED.tool!=="view"; if(p){ ED.cur.position.set(p.x,p.y+.15,p.z); ED.cur.scale.setScalar(ED.size); } }
@@ -13284,33 +13437,41 @@ function edLoop(){ if(!MD.on) return; ED.raf=requestAnimationFrame(edLoop); cons
 function edOpen(){ if(MD.on) return; MD.on=true; closeSheet(); ED.cam=new T.PerspectiveCamera(55,innerWidth/innerHeight,.3,700); ED.tgt.set(meAv.pos.x,0,meAv.pos.y); ED.yaw=(typeof camYaw!=="undefined"?camYaw:0); window.MZ_VIEW={scene,cam:ED.cam}; window.MZ_HOLD=true; document.body.classList.add("mapedit"); edCamUpdate();
   ED.cur=new T.Mesh(new T.RingGeometry(.94,1,48).rotateX(-Math.PI/2),new T.MeshBasicMaterial({color:"#ffffff",depthTest:false,transparent:true,opacity:.85})); ED.cur.renderOrder=999; scene.add(ED.cur);
   const ov=document.createElement("div"); ov.id="edOv"; ov.style.cssText="position:fixed;inset:0;z-index:55;touch-action:none"; document.body.appendChild(ov); ED.ov=ov;
-  const pd=e=>{ ov.setPointerCapture(e.pointerId); ED.ptr.set(e.pointerId,{x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY,t:performance.now()}); if(ED.ptr.size>1){ MD.down=false; ED.pinch=null; return; } const p=edGround(e.clientX,e.clientY); ED.hover=p;
-    if(ED.tool==="view") return; if(ED.tool==="sel"){ if(ED.sel&&p&&ED.moving){ edSnap(); ED.drag=true; } return; } if(ED.tool==="place") return;
+  ov.addEventListener("contextmenu",e=>e.preventDefault());
+  const KM={w:"w",a:"a",s:"s",d:"d",arrowup:"w",arrowdown:"s",arrowleft:"a",arrowright:"d",q:"q",e:"e",r:"r",f:"f",z:"z",x:"x"};
+  ED.kd=e=>{ if(!MD.on||/INPUT|TEXTAREA|SELECT/.test((e.target&&e.target.tagName)||"")) return; const k=KM[(e.key||"").toLowerCase()]; if(!k) return; e.preventDefault(); e.stopImmediatePropagation(); ED.keys.add(k); };
+  ED.ku=e=>{ const k=KM[(e.key||"").toLowerCase()]; if(k) ED.keys.delete(k); }; ED.blur=()=>ED.keys.clear();
+  window.addEventListener("keydown",ED.kd,true); window.addEventListener("keyup",ED.ku,true); window.addEventListener("blur",ED.blur);
+  { const x=document.createElement("button"); x.id="edX"; x.textContent="✕ 離開編輯"; x.style.cssText="position:fixed;top:calc(10px + env(safe-area-inset-top));right:10px;z-index:60;padding:10px 14px;border-radius:22px;border:0;background:rgba(40,30,25,.82);color:#fff;font-size:15px;font-weight:700"; x.onclick=()=>edClose(); document.body.appendChild(x); }
+  const pd=e=>{ ov.setPointerCapture(e.pointerId); ED.ptr.set(e.pointerId,{x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY,t:performance.now(),rot:e.button===2||e.button===1}); if(ED.ptr.size>1){ MD.down=false; ED.pinch=null; return; } const p=edGround(e.clientX,e.clientY); ED.hover=p;
+    if(e.button===2||e.button===1) return; if(ED.tool==="view") return; if(ED.tool==="sel"){ if(ED.sel&&p&&ED.moving){ edSnap(); ED.drag=true; } return; } if(ED.tool==="place") return;
     if(!p) return; edSnap(); MD.down=true; ED.bp=p; if(ED.tool==="flat") ED.flatH=TW.ground(p.x,p.z)||0; if(ED.tool==="erase") edErase(p); };
   const pm=e=>{ const q=ED.ptr.get(e.pointerId); if(!q) return; const dx=e.clientX-q.x, dy=e.clientY-q.y; q.x=e.clientX; q.y=e.clientY;
-    if(ED.ptr.size>=2){ const a=[...ED.ptr.values()], d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y), mx=(a[0].x+a[1].x)/2; if(ED.pinch){ ED.dist=Math.max(6,Math.min(160,ED.dist*ED.pinch.d/d)); ED.yaw-=(mx-ED.pinch.mx)*.008; } ED.pinch={d,mx}; return; }
+    if(ED.ptr.size>=2){ const a=[...ED.ptr.values()], d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y), mx=(a[0].x+a[1].x)/2; const my=(a[0].y+a[1].y)/2; if(ED.pinch){ ED.dist=Math.max(6,Math.min(160,ED.dist*ED.pinch.d/d)); ED.yaw-=(mx-ED.pinch.mx)*.008; ED.pitch=Math.max(.2,Math.min(1.45,ED.pitch+(my-ED.pinch.my)*.005)); } ED.pinch={d,mx,my}; return; }
+    if(q.rot){ q.pan=true; ED.yaw-=dx*.008; ED.pitch=Math.max(.2,Math.min(1.45,ED.pitch+dy*.005)); return; } /* (right or middle mouse button: turn the view) */
     const p=edGround(e.clientX,e.clientY); ED.hover=p;
     if(ED.tool==="view"||(ED.tool==="sel"&&!ED.drag)||ED.tool==="place"){ if(Math.hypot(e.clientX-q.x0,e.clientY-q.y0)<8) return; q.pan=true; const k=ED.dist/innerHeight*1.6, s=Math.sin(ED.yaw), c=Math.cos(ED.yaw); ED.tgt.x-=(dx*c+dy*s)*k; ED.tgt.z-=(-dx*s+dy*c)*k; return; }
     if(ED.tool==="sel"&&ED.drag&&ED.sel&&p){ const o=ED.sel; o.x=p.x; o.z=p.z; mdPos(o); return; }
     if(MD.down&&p){ if(ED.tool==="erase"){ if(!ED.bp||Math.hypot(p.x-ED.bp.x,p.z-ED.bp.z)>ED.size*.6){ edErase(p); ED.bp=p; } } else ED.bp=p; } };
   const pu=e=>{ const q=ED.ptr.get(e.pointerId); ED.ptr.delete(e.pointerId); if(ED.ptr.size<2) ED.pinch=null; if(!q) return; const tap=!q.pan&&Math.hypot(e.clientX-q.x0,e.clientY-q.y0)<8&&performance.now()-q.t<600;
     if(ED.drag){ ED.drag=false; mdRegrid(); edPanel(); return; } MD.down=false;
-    if(tap&&ED.tool==="place"){ const p=edGround(e.clientX,e.clientY); if(p){ edSnap(); const o=edAdd(ED.kind,p.x,p.z); edSelect(o); ED.tool="place"; edPanel(); try{ tone(620,.05,.05,"triangle"); }catch(_){} } }
-    else if(tap&&ED.tool==="sel"){ const o=edPickObj(e.clientX,e.clientY); if(o){ ED.moving=false; edSelect(o); return; } const p=edGround(e.clientX,e.clientY); const g=p&&edPickGen(p);
-      if(g){ edSnap(); MD.er.push([+g.x.toFixed(2),+g.z.toFixed(2),.7]); mdGridAdd(MD.erG,g.x,g.z,.7,MD.er[MD.er.length-1]); const o2=edAdd(MDGEN[g.k]||"rock",g.x,g.z,{s:g.k==="rock"||g.k==="mrock"?g.s:1}); mdDirty(g.x-1,g.x+1,g.z-1,g.z+1); MD.flushT=0; edSelect(o2); toast(`選了「${MDNAME[o2.k]}」：可以移動、轉向、大小、刪除`,2200); return; }
+    if(tap&&ED.tool==="place"){ const p=edGround(e.clientX,e.clientY); if(p){ edSnap(); const o=edAdd(ED.kind,p.x,p.z,edRnd(ED.kind)); edSelect(o); ED.tool="place"; edPanel(); try{ tone(620,.05,.05,"triangle"); }catch(_){} } }
+    else if(tap&&ED.tool==="sel"){ const p=edGround(e.clientX,e.clientY); const o=edPickObj(e.clientX,e.clientY)||edPickNear(p); if(o){ ED.moving=false; edSelect(o); return; } const g=p&&edPickGen(p);
+      if(g){ edSnap(); MD.er.push([+g.x.toFixed(2),+g.z.toFixed(2),.7]); mdGridAdd(MD.erG,g.x,g.z,.7,MD.er[MD.er.length-1]); const o2=edAdd(MDGEN[g.k]||"rock",g.x,g.z,Object.assign({s:g.k==="rock"||g.k==="mrock"?g.s:1},g.r!=null?{r:g.r}:{})); mdDirty(g.x-1,g.x+1,g.z-1,g.z+1); MD.flushT=0; edSelect(o2); toast(`選了「${MDNAME[o2.k]}」：可以移動、轉向、大小、刪除`,2200); return; }
       if(p){ /* a tree of the code's own? */ let best=null, bd=2.4; for(const id in LIVE) for(const t of (LIVE[id].genT||[])){ const d=Math.hypot(t[0]-p.x,t[2]-p.z); if(d<bd){ bd=d; best=t; } }
         if(best){ edSnap(); MD.er.push([+best[0].toFixed(2),+best[2].toFixed(2),.8]); mdGridAdd(MD.erG,best[0],best[2],.8,MD.er[MD.er.length-1]); const k=(best[8]==="bush"?"b_":"t_")+(["leaf","deep","maple","pink","gold"].includes(best[6])?best[6]:"leaf"); const o2=edAdd(k,best[0],best[2],{s:+best[3].toFixed(2),r:best[5]||0}); mdDirty(best[0]-1,best[0]+1,best[2]-1,best[2]+1); MD.flushT=0; edSelect(o2); toast("選了這棵樹：可以移動、轉向、大小、刪除",2000); return; } }
       edSelect(null); } };
   ov.addEventListener("pointerdown",pd); ov.addEventListener("pointermove",pm); ov.addEventListener("pointerup",pu); ov.addEventListener("pointercancel",pu);
   ov.addEventListener("wheel",e=>{ e.preventDefault(); ED.dist=Math.max(6,Math.min(160,ED.dist*(e.deltaY>0?1.12:.9))); },{passive:false});
   ED.last=performance.now(); edLoop(); edPanel(); toast("地圖編輯：拖曳移動畫面、兩指縮放；下面選工具",3000); }
-function edClose(){ MD.on=false; cancelAnimationFrame(ED.raf); if(ED.ov) ED.ov.remove(); const p=document.getElementById("edPanel"); if(p) p.remove(); if(ED.cur){ scene.remove(ED.cur); ED.cur=null; } edSelect(null); window.MZ_VIEW=null; window.MZ_HOLD=false; document.body.classList.remove("mapedit"); MD.flushT=0; mdFlush(); toast("離開地圖編輯。記得按「固定」才會存給大家",2600); }
+function edClose(){ MD.on=false; cancelAnimationFrame(ED.raf); if(ED.ov) ED.ov.remove(); { const x=document.getElementById("edX"); if(x) x.remove(); } try{ window.removeEventListener("keydown",ED.kd,true); window.removeEventListener("keyup",ED.ku,true); window.removeEventListener("blur",ED.blur); }catch(e){} ED.keys.clear(); const p=document.getElementById("edPanel"); if(p) p.remove(); if(ED.cur){ scene.remove(ED.cur); ED.cur=null; } edSelect(null); window.MZ_VIEW=null; window.MZ_HOLD=false; document.body.classList.remove("mapedit"); MD.flushT=0; mdFlush(); toast("離開地圖編輯。記得按「固定」才會存給大家",2600); }
 const ED_TOOLS=[["sel","👆","選取"],["place","➕","擺放"],["up","⛰️","升高"],["down","🕳️","降低"],["flat","➖","整平"],["smooth","〰️","抹平"],["river","🌊","挖河"],["reset","↩️","還原地形"],["paint","🎨","噴漆"],["unpaint","🧽","擦漆"],["erase","🧹","清除"],["view","🎥","只看"]];
 function edPanel(){ let p=document.getElementById("edPanel"); if(!p){ p=document.createElement("div"); p.id="edPanel"; document.body.appendChild(p); p.addEventListener("pointerdown",e=>e.stopPropagation()); p.onclick=edClick; p.oninput=edInput; }
   const t=ED.tool, o=ED.sel, brush=/^(up|down|flat|river|smooth|reset|paint|unpaint|erase)$/.test(t);
   let h=`<div class="ed-row ed-top"><b>🗺️ 地圖編輯</b><span id="edXY"></span><span class="ed-sp"></span><button data-e="undo">↶ 復原</button><button data-e="save" class="ed-main">💾 固定</button><button data-e="code">📋 配置碼</button><button data-e="close">完成</button></div>`;
+  h+=`<div class="ed-row ed-scroll ed-view"><button data-e="yaw" data-v="1">⟲ 左轉</button><button data-e="yaw" data-v="-1">⟳ 右轉</button><button data-e="pit" data-v="1">⤒ 往下看</button><button data-e="pit" data-v="-1">⤓ 平視</button><button data-e="zoom" data-v=".8">＋ 拉近</button><button data-e="zoom" data-v="1.25">－ 拉遠</button><button data-e="help">❔ 操作</button></div>`;
   h+=`<div class="ed-row ed-scroll">${ED_TOOLS.map(q=>`<button data-e="tool" data-v="${q[0]}" class="${t===q[0]?"on":""}">${q[1]} ${q[2]}</button>`).join("")}</div>`;
-  if(t==="place") h+=`<div class="ed-row ed-scroll">${MDKINDS.map(k=>`<button data-e="kind" data-v="${k[0]}" class="${ED.kind===k[0]?"on":""}">${k[1]} ${k[2]}</button>`).join("")}</div><div class="ed-note">選好種類，點地面就放一個</div>`;
+  if(t==="place") h+=`<div class="ed-row ed-scroll"><button data-e="rnd" class="${ED.rnd?"on":""}">🎲 隨機大小：${ED.rnd?"開":"關"}</button>${MDKINDS.map(k=>`<button data-e="kind" data-v="${k[0]}" class="${ED.kind===k[0]?"on":""}">${k[1]} ${k[2]}</button>`).join("")}</div><div class="ed-note">選好種類，點地面就放一個</div>`;
   if(t==="paint") h+=`<div class="ed-row ed-scroll">${MDPAL.map((c,i)=>i?`<button data-e="paint" data-v="${i}" class="${ED.paint===i?"on":""}"><i style="background:${c}"></i>${MDPN[i]}</button>`:"").join("")}</div>`;
   if(brush) h+=`<div class="ed-row"><label>大小 <input type="range" min="1" max="16" step=".5" value="${ED.size}" data-i="size"></label>${t!=="erase"&&t!=="paint"&&t!=="unpaint"?`<label>力道 <input type="range" min=".1" max="1" step=".05" value="${ED.str}" data-i="str"></label>`:""}</div><div class="ed-note">${t==="erase"?"刷過的地方，原本程式種的樹、石頭、燈都會拿掉（擺放的東西也會刪掉）":t==="river"?"刷過的地方挖到水面下，自動變成水":t==="flat"?"整平成按下去那一點的高度":t==="reset"?"刷過的地方回到原本的地形":"按住拖曳就是在刷"}</div>`;
   if((t==="sel"||t==="place")&&o) h+=`<div class="ed-row ed-sel"><b>${MDNAME[o.k]||o.k}</b><button data-e="mv" class="${ED.moving?"on":""}">✋ ${ED.moving?"拖曳移動中":"移動"}</button><button data-e="rot" data-v="-1">↺</button><button data-e="rot" data-v="1">↻</button><button data-e="sz" data-v=".88">－小</button><button data-e="sz" data-v="1.14">＋大</button><button data-e="dy" data-v="-.15">⬇</button><button data-e="dy" data-v=".15">⬆</button><button data-e="dup">複製</button><button data-e="del" class="ed-del">刪除</button></div>`;
@@ -13319,7 +13480,8 @@ function edPanel(){ let p=document.getElementById("edPanel"); if(!p){ p=document
 function edInput(e){ const k=e.target.dataset.i; if(!k) return; ED[k]=+e.target.value; }
 async function edClick(e){ const b=e.target.closest("button"); if(!b) return; const a=b.dataset.e, v=b.dataset.v, o=ED.sel;
   if(a==="tool"){ ED.tool=v; ED.moving=false; if(v!=="sel"&&v!=="place") edSelect(null); edPanel(); return; }
-  if(a==="kind"){ ED.kind=v; edPanel(); return; } if(a==="paint"){ ED.paint=+v; edPanel(); return; }
+  if(a==="kind"){ ED.kind=v; edPanel(); return; } if(a==="rnd"){ ED.rnd=!ED.rnd; edPanel(); return; }
+  if(a==="help"){ toast("電腦：WASD／方向鍵移動、Q E 轉向、R F 俯仰、Z X 縮放、右鍵拖曳轉視角。手機：一指拖曳移動、兩指捏合縮放、兩指左右轉向、兩指上下俯仰",6000); return; } if(a==="yaw"){ ED.yaw+=(+v)*Math.PI/8; return; } if(a==="pit"){ ED.pitch=Math.max(.2,Math.min(1.45,ED.pitch+(+v)*.2)); return; } if(a==="zoom"){ ED.dist=Math.max(6,Math.min(160,ED.dist*(+v))); return; } if(a==="paint"){ ED.paint=+v; edPanel(); return; }
   if(a==="undo"){ edUndo(); return; } if(a==="close"){ edClose(); return; }
   if(a==="save"){ await edSave(); return; } if(a==="code"){ edCode(); return; }
   if(!o) return;
@@ -13712,14 +13874,14 @@ HANDLERS.lfRelease=()=>{ if(HELD) HELD.t=9; const d=LF(); const e=d.inv.pop(); s
 function fishTick(dt){ { const h=!!F; if(h&&!window.MZ_HOLD){ try{ meAv.path=[]; meAv.target.set(meAv.pos.x,meAv.pos.y); }catch(e){} } window.MZ_HOLD=h||!!CHUTE; } /* 釣魚時不能移動 (11/14 晚上): the walking code checks MZ_HOLD */ if(F&&Math.hypot(meAv.pos.x-F.w.x,meAv.pos.y-F.w.z)>14){ endFish(); return; } /* (taken somewhere else — the map, a teleport: put the rod away) */ if(F&&F.ph==="wait"&&!baitFor(F.w.w.k)){ F.ph="nobait"; F.t=0; msg("釣餌用完了，到釣具行補貨吧"); } if(F&&F.ph==="nobait"){ F.t+=dt; if(F.t>2.2) endFish(); return; } try{ fshTick(dt); chargeTick(dt); fxTick(dt); }catch(e){ console.warn("fsh",e); } if(!F){ nearT-=dt; if(nearT<=0){ nearT=.35; const can=!busy()&&TOWNX&&(TOWNX.on||meAv.pos.y>FRONT.walk1); near=can&&!HELD?findWater():null; if(chip) chip.hidden=!near; } return; }
   F.t+=dt; const w=F.w, y=F.y, a=meAv.root.position; fishCam(dt,w.x,w.z,y);
   /* the line from the rod tip to the float */ const tip=new T.Vector3(.18,1.15+.85*Math.cos(1.0),.55+.85*Math.sin(1.0)).applyMatrix4(meAv.root.matrixWorld), bp=F.bob.position, mid=tip.clone().add(bp).multiplyScalar(.5), L=tip.distanceTo(bp); F.line.position.copy(mid); F.line.scale.set(1,L,1); F.line.lookAt(bp); F.line.rotateX(Math.PI/2);
-  if(F.ph==="cast"){ const k=Math.min(1,F.t/F.cd); bp.set(a.x+(w.x-a.x)*k,y+Math.sin(k*Math.PI)*F.arc+(1-k)*1.2,a.z+(w.z-a.z)*k); if(k>=1){ F.ph="wait"; F.t=0; fishWait(); msg(F.came?"有魚影靠過來了……浮標整個沉下去再拉":"等魚靠過來……浮標整個沉下去再拉"); F.ring.position.set(w.x,y+.01,w.z); F.ring.material.opacity=.7; F.rt=0; try{ tone(300,.08,.05,"sine"); }catch(e){} } return; }
+  if(F.ph==="cast"){ const k=Math.min(1,F.t/F.cd); bp.set(a.x+(w.x-a.x)*k,y+Math.sin(k*Math.PI)*F.arc+(1-k)*1.2,a.z+(w.z-a.z)*k); if(k>=1){ F.ph="wait"; F.t=0; try{ TOWNX.ripple(bp.x,bp.z,1); }catch(_){} fishWait(); msg(F.came?"有魚影靠過來了……浮標整個沉下去再拉":"等魚靠過來……浮標整個沉下去再拉"); F.ring.position.set(w.x,y+.01,w.z); F.ring.material.opacity=.7; F.rt=0; try{ tone(300,.08,.05,"sine"); }catch(e){} } return; }
   F.rt=(F.rt||0)+dt; F.ring.scale.setScalar(1+F.rt*3); F.ring.material.opacity=Math.max(0,.7-F.rt*.8);
   const bob=Math.sin(F.t*2.2)*.012; bp.set(w.x,y+bob,w.z);
   if(F.ph==="wait"){ const f=F.fish, s=F.came?F.came.L:.45+f.sh*.16;
     if(F.empty){ if(F.t>F.wt*.5&&!F.said){ F.said=1; msg("一點動靜也沒有……"); } if(F.t>F.wt){ msg("這裡好像沒有魚了，換個地方試試吧"); try{ tone(260,.2,.04,"triangle"); }catch(e){} F.ph="nobait"; F.t=0; } return; }
     const ws=F.came?0:F.wt*.45; if(F.t>ws){ const k=sm(ws,F.wt,F.t), an=F.an??(F.an=F.came?Math.atan2(F.came.x-w.x,F.came.z-w.z):Math.random()*6.283), d0=F.came?Math.max(.6,Math.hypot(F.came.x-w.x,F.came.z-w.z)):2.6, dd=(1-k)*d0+.2, wig=Math.sin(F.t*5)*.1*(1-k); F.sh.position.set(w.x+Math.sin(an+wig)*dd,y+.015,w.z+Math.cos(an+wig)*dd); F.sh.scale.setScalar(s); F.sh.rotation.z=an+Math.sin(F.t*6)*.1; F.sh.material.opacity=.36*(F.came?Math.min(1,F.t*2):sm(ws,ws+F.wt*.2,F.t)); }
     if(F.t>F.wt){ F.ph="nibble"; F.t=0; F.nn=1+(Math.random()*(1+f.r)|0); F.nt=.5; F.dip=0; msg("有動靜了……看浮標"); const b=baitFor(w.w.k); F.bm=!!(b&&b.t.includes(f.id)); if(b){ const d=LF(), bi=BAITS.indexOf(b); d.bait[bi]--; save(); F.showBait(); } } return; }
-  if(F.ph==="nibble"){ F.dip=Math.max(0,F.dip-dt*.35); bp.y=y+bob-F.dip; F.nt-=dt; if(F.nt<=0){ if(F.nn<=0){ F.ph="bite"; F.t=0; F.bt=0; F.rt=0; F.ring.material.opacity=.95; msg("浮標沉下去了！"); try{ tone(180,.18,.08,"sine"); tone(120,.25,.06,"sine",.05); navigator.vibrate&&navigator.vibrate(120); }catch(e){} return; }
+  if(F.ph==="nibble"){ F.dip=Math.max(0,F.dip-dt*.35); bp.y=y+bob-F.dip; F.nt-=dt; if(F.nt<=0){ if(F.nn<=0){ F.ph="bite"; F.t=0; F.bt=0; F.rt=0; try{ TOWNX.ripple(bp.x,bp.z,1.3); }catch(_){} F.ring.material.opacity=.95; msg("浮標沉下去了！"); try{ tone(180,.18,.08,"sine"); tone(120,.25,.06,"sine",.05); navigator.vibrate&&navigator.vibrate(120); }catch(e){} return; }
       F.nn--; F.nt=.65+Math.random()*.9; F.dip=F.fish.r>=2&&Math.random()<.35?.2:.07+Math.random()*.05; /* (a teasing deeper dip now and then) */ F.rt=0; F.ring.material.opacity=.5; try{ tone(420,.05,.03,"sine"); }catch(e){} } return; }
   if(F.ph==="bite"){ F.bt=F.t; bp.y=y-.42+Math.sin(F.t*30)*.015; F.sh.position.set(w.x,y+.015,w.z); if(F.t>biteWin(F.fish)){ msg("慢了一步，魚吃完餌跑掉了……"); try{ tone(200,.2,.05,"triangle"); }catch(e){} F.ph="miss"; F.t=0; spotUse(w.w.k,w.x,w.z); } return; }
   if(F.ph==="fight"){ const f=F.fish, R=F.R, pull=(f.r*.9+f.sh*.3)*.2/(.5+R.pow*.5); F.tn+=(F.hold?.95:-.75)*dt; F.tn+=(Math.sin(F.t*(2+f.r))*pull+(Math.random()-.5)*pull*2.2)*dt; F.gc=.5+Math.sin(F.t*.9*(1+f.r*.3))*(.1+f.r*.05); F.tn=Math.max(0,Math.min(1,F.tn));
@@ -14315,6 +14477,7 @@ const TP_SHOPS=[["tw:bfast","元氣早餐店"],["tw:congee","一粥七天"],["tw
 L.testPanel=()=>{ if(!me.sp) return; const b=(act,v,t,cls)=>`<button class="${cls||"secondary"}" style="flex:none;width:auto;min-height:0;padding:8px 12px;font-size:14px;margin:3px" data-act="${act}" data-v="${v}">${t}</button>`;
   const hr=TM.hour, hrs=[-1,6,9,12,15,18,21,0,3];
   openSheet("tmode","🧪 測試模式",`<p class="lead">只有主委看得到。重新整理就會關掉，不會存檔。</p>
+   <h4 style="margin:10px 0 4px">第 54 批（11/17 晚上）</h4><div>${b("wTune",1,"💧 水面調整（顏色、波紋、品質）","primary")}${b("mapEdT",1,"🗺️ 地圖編輯（轉視角、WASD、隨機大小）","primary")}${b("tmFree",window.MZ_FREE?0:1,window.MZ_FREE?"✅ 穿越邊界開著（點一下關）":"🚶 主委穿越邊界（自由走動）")}${b("tmDish",1,"🫧 洗碗（搓洗縮小、自己沖水）")}</div><div>${b("tmGo","gvs","💧 女神泉・瀑布噴濺・石頭神社")}${b("tmGo","bridge","🌊 大河")}${b("tmGo","west","🏞️ 西山溪流")}${b("tmGo","forest","🌲 森林（挖河的水）")}${b("tmGo","valley","🌿 山谷小溪")}</div><div>${b("tmRainbow",1,"🌈 彩虹（七色）")}${b("tmRainNow",1,"🌧️ 下雨（看水面雨滴）")}${b("tmNight",1,"🌙 晚上（看月光）")}${b("tmDay",1,"☀️ 白天")}</div>
    <h4 style="margin:10px 0 4px">第 52 批（11/17 上午）</h4><div>${b("tmGo","gvs","💧 女神泉・瀑布・神木・神社","primary")}${b("tmGo","west","⛰️ 西山小徑・溪流・木橋")}${b("tmGo","avbr","🌉 新村大道的石橋")}${b("tmGo","gate","🚥 鎮口（對稱人行道）")}${b("tmGo","forest","🌲 森林小路")}</div><div>${b("tmRainbow",1,"🌈 彩虹（白天看）")}${b("tmRainNow",1,"🌧️ 下雨（看雨傘）")}${b("lfChuteGo",1,"🪂 跳傘（看遠處天空）")}</div>
    <h4 style="margin:10px 0 4px">第 51 批（11/17）</h4><div>${b("tmDish",1,"🫧 洗碗泡泡大戰（3D）","primary")}${b("posOpen",1,"📍 座標定位","primary")}</div><div>${b("tmGo","vil","🏘️ 天后新村（廟後）")}${b("tmGo","gv","🌿 西山小徑")}${b("tmGo","gvs","💧 女神泉・神木・瀑布")}${b("tmGo","bridge","🌉 主街尾的木橋")}${b("tmGo","forest","🌲 森林小路")}${b("tmGo","gate","🚥 主街（對稱人行道）")}</div><div>${b("tmRainNow",1,"🌧️ 下雨（看撐傘）")}${b("tmNight",1,"🌙 晚上（看月亮、石柱燈、家裡燈光）")}${b("tmDay",1,"☀️ 白天（看太陽）")}</div>
    <h4 style="margin:10px 0 4px">🔎 找問題（11/15 晚上）</h4><div>${b("tmProbe",1,"🔎 點東西看它是什麼（看到黑點：按這個，再點黑點）","primary")}${b("tmTown",1,"🔎 小鎮讀取狀態（建築不見時按這個）","primary")}</div>
@@ -14356,7 +14519,21 @@ HANDLERS.tmHour=v=>{ const h=+v; TM.hour=h<0?null:h; L.testPanel(); };
 HANDLERS.tmDish=()=>{ closeSheet(); dwGame(); };
 HANDLERS.tmRainbow=()=>{ closeSheet(); window.MZ_WX="clear"; RB.rained=WX.t; RB.until=WX.t+240; toast("雨過天晴：太陽對面的天空會出現彩虹",2600); };
 HANDLERS.tmRainNow=()=>{ closeSheet(); window.MZ_WX="rain"; toast("下雨了（重新整理恢復）",2000); }; HANDLERS.tmNight=()=>{ closeSheet(); window.MZ_TOD=.7; toast("晚上（重新整理恢復）",2000); }; HANDLERS.tmDay=()=>{ closeSheet(); window.MZ_TOD=.3; toast("白天（重新整理恢復）",2000); };
-HANDLERS.tmGo=v=>{ closeSheet(); const P={vil:[-23,-80],gv:[-22.5,-152],gvs:[91,-247],wf:[91,-247],west:[-14,-190],avbr:[-23,-130],bridge:[28,-128],forest:[50,-156],gate:[28,-70],furn:[34.5,-75.5],town:[28,-62],zen:[-30,-28],temple:[0,30],alley:[8.2,-86.5],beach:[148,-112],garden:[42,-120.5],pier:[28,-136.6],street:[60,-77]}[v]; if(P){ meAv.pos.set(P[0],P[1]); meAv.target.set(P[0],P[1]); meAv.path=[]; } };
+HANDLERS.tmFree=v=>{ window.MZ_FREE=v==="1"; toast(window.MZ_FREE?"🚶 可以走出邊界了（只有你，重新整理就關掉）":"穿越邊界關閉",2200); L.testPanel(); };
+HANDLERS.mapEdT=()=>{ closeSheet(); setTimeout(()=>{ try{ TOWNX.edOpen(); }catch(e){ console.warn(e); } },60); };
+/* 💧 水面調整 (11/17): the chair tries the water's colours and feel live; kept on this device only. Numbers worth keeping: tell Claude to make them everyone's */
+const WT_SL=[["alpha","不透明度",.4,1,.02],["amp","波紋強度",0,2.5,.05],["spd","流動速度",0,3,.05],["scale","波紋大小（大→細）",.4,2.5,.05],["fres","天空反光",0,2,.05],["spec","陽光高光",0,2.5,.05],["foamK","岸邊白色水紋",0,2,.05],["clear","清澈度（大→更透）",.3,3,.05]];
+HANDLERS.wTune=()=>{ const W=TOWNX.water3; if(!W) return; const C=W.WCFG, q=C.q; const qb=(v,t)=>`<button class="${q===v?"primary":"secondary"}" style="flex:none;width:auto;min-height:0;padding:8px 12px;font-size:14px;margin:3px" data-act="wQ" data-v="${v}">${t}</button>`;
+  openSheet("wtune","💧 水面調整",`<p class="lead">拖動就會即時改變，只存在這台裝置。調到喜歡的數值，按「複製數值」貼給 Claude 就能變成大家看到的。</p>
+   <h4 style="margin:8px 0 4px">品質</h4><div>${qb("auto","自動（手機=中）")}${qb("high","高")}${qb("mid","中")}${qb("low","低（最省電）")}</div>
+   <h4 style="margin:8px 0 4px">顏色</h4><div style="display:flex;gap:14px;flex-wrap:wrap"><label>深水 <input type="color" data-w="deep" value="${C.deep}"></label><label>淺水 <input type="color" data-w="shal" value="${C.shal}"></label><label>水紋 <input type="color" data-w="foam" value="${C.foam}"></label></div>
+   ${WT_SL.map(([k,n,a,b,st])=>`<label style="display:block;margin:8px 0">${n} <b data-wv="${k}">${(+C[k]).toFixed(2)}</b><input type="range" style="width:100%" min="${a}" max="${b}" step="${st}" value="${C[k]}" data-w="${k}"></label>`).join("")}
+   <div class="row"><button class="secondary" data-act="wReset">↩️ 回到預設</button><button class="primary" data-act="wCopy">📋 複製數值</button></div>`); };
+document.addEventListener("input",e=>{ const k=e.target&&e.target.dataset&&e.target.dataset.w; if(!k) return; const W=TOWNX&&TOWNX.water3; if(!W) return; W.WCFG[k]=e.target.type==="range"?+e.target.value:e.target.value; W.wApply(); const lb=document.querySelector(`[data-wv="${k}"]`); if(lb) lb.textContent=(+e.target.value).toFixed(2); try{ localStorage.setItem("mz.water",JSON.stringify(W.WCFG)); }catch(_){} });
+HANDLERS.wQ=v=>{ const W=TOWNX.water3; W.WCFG.q=v; W.wApply(); try{ localStorage.setItem("mz.water",JSON.stringify(W.WCFG)); }catch(_){} HANDLERS.wTune(); };
+HANDLERS.wReset=()=>{ const W=TOWNX.water3; Object.assign(W.WCFG,W.WCFG_DEF); W.wApply(); try{ localStorage.removeItem("mz.water"); }catch(_){} HANDLERS.wTune(); };
+HANDLERS.wCopy=async()=>{ const txt="MZWATER:"+JSON.stringify(TOWNX.water3.WCFG); let ok=false; try{ await navigator.clipboard.writeText(txt); ok=true; }catch(e){} toast(ok?"已複製水面數值，貼給 Claude":"複製不了："+txt,3200); };
+HANDLERS.tmGo=v=>{ closeSheet(); const P={valley:[110,-80],vil:[-23,-80],gv:[-22.5,-152],gvs:[91,-247],wf:[91,-247],west:[-14,-190],avbr:[-23,-130],bridge:[28,-128],forest:[50,-156],gate:[28,-70],furn:[34.5,-75.5],town:[28,-62],zen:[-30,-28],temple:[0,30],alley:[8.2,-86.5],beach:[148,-112],garden:[42,-120.5],pier:[28,-136.6],street:[60,-77]}[v]; if(P){ meAv.pos.set(P[0],P[1]); meAv.target.set(P[0],P[1]); meAv.path=[]; } };
 HANDLERS.tmShop=v=>{ closeSheet(); const b=TOWNX&&TOWNX.bOf&&TOWNX.bOf(v); if(b){ const fx=b.x+Math.sin(b.ry)*2.2, fz=b.z+Math.cos(b.ry)*2.2; meAv.pos.set(fx,fz); meAv.target.set(fx,fz); meAv.path=[]; } setTimeout(()=>{ try{ openStation(v); }catch(e){ console.warn(e); } },b?900:50); };
 HANDLERS.tmGame=v=>{ closeSheet(); try{ GL[v](); }catch(e){ console.warn(e); toast("這個遊戲還打不開",1800); } };
 HANDLERS.tmRain=()=>{ closeSheet(); try{ hbStart({id:"test"+Date.now(),seed:(Math.random()*1e9)|0,n:24,x:meAv.pos.x,z:meAv.pos.y,at:Date.now()}); }catch(e){ console.warn(e); } };
@@ -14736,7 +14913,7 @@ function dwGame(){ if(!SHOPX||!SHOPX.enter) return;
   /* where on the bowl a screen point lands: [side (0 inside, 1 outside), uv, world point] — only the side you are working on counts */
   const hit=(cx,cy)=>{ const r=renderer.domElement.getBoundingClientRect(); nd.set((cx-r.left)/r.width*2-1,-(cy-r.top)/r.height*2+1); ray.setFromCamera(nd,cam); const h=ray.intersectObject(bowl,false)[0]; if(!h||!h.uv) return null; const n=h.face?h.face.normal.clone().transformDirection(bowl.matrixWorld):new T.Vector3(0,1,0); if(n.dot(ray.ray.direction)>0) n.negate(); return {side:h.uv.x>=.5?1:0,uv:h.uv,p:h.point,n}; }; /* (n: the face's normal in the world, turned toward the eye) */
   const rUV=(m,side)=>m/(side?bg.userData.Lo:bg.userData.Li)*.235;
-  const scrubAt=(cx,cy)=>{ const H=hit(cx,cy); if(!H) return; const want=ST.ph==="in"?0:1; if(H.side!==want) return; stamp(H.side,H.uv.x,H.uv.y,rUV(.6,H.side),"scrub"); /* (11/17 主委「洗碗還是太難了…搓洗面積加大 沖水面積加大」: a sponge twice as wide) */ if(Math.random()<.5) sbAdd(H.p,H.n); if(Math.random()<.2) bubble(H.p); try{ if(Math.random()<.25) noiseBurst(.05,.025,1800+Math.random()*900); }catch(e){} };
+  const scrubAt=(cx,cy)=>{ const H=hit(cx,cy); if(!H) return; const want=ST.ph==="in"?0:1; if(H.side!==want) return; stamp(H.side,H.uv.x,H.uv.y,rUV(.3,H.side),"scrub"); /* (11/17 晚 主委「範圍改太大了減少一半」) */ /* (11/17 主委「洗碗還是太難了…搓洗面積加大 沖水面積加大」: a sponge twice as wide) */ if(Math.random()<.5) sbAdd(H.p,H.n); if(Math.random()<.2) bubble(H.p); try{ if(Math.random()<.25) noiseBurst(.05,.025,1800+Math.random()*900); }catch(e){} };
   let drag=null; tl.style.touchAction="none";
   tl.addEventListener("pointerdown",e=>{ if(ST.over) return; try{ tl.setPointerCapture(e.pointerId); }catch(_){} drag={x:e.clientX,y:e.clientY,id:e.pointerId}; ST.last=null; });
   tl.addEventListener("pointermove",e=>{ if(!drag||drag.id!==e.pointerId||ST.over||!ST.go) return; const dx=e.clientX-drag.x, dy=e.clientY-drag.y; drag.x=e.clientX; drag.y=e.clientY;
@@ -14758,17 +14935,17 @@ function dwGame(){ if(!SHOPX||!SHOPX.enter) return;
     if(ST.ph==="flip"){ ST.flipT+=dt/.6; const k=Math.min(1,ST.flipT), e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2; pivot.rotation.set(Math.PI*e,ST.spin||0,0); pivot.position.y=-.03+.03*k+Math.sin(Math.PI*k)*.35; if(k>=1){ ST.ph="out"; hud(); } }
     else if(ST.ph==="in"){ ST.spin=(ST.spin||0)+dt*.45; pivot.rotation.set(0,ST.spin,0); pivot.position.y=-.03; } /* (the bowl turns slowly in your hand, so every part comes round to you) */
     else if(ST.ph==="out"){ ST.spin=(ST.spin||0)+dt*.45; pivot.rotation.set(Math.PI,ST.spin,0); pivot.position.y=0; if(cleanOf(1)>=DW_CLEAN){ ST.ph="rinse"; ST.yaw=0; ST.pitch=.25; ST.rt=0; hud(); try{ noiseBurst(.25,.04,500); }catch(e){} } }
-    else if(ST.ph==="rinse"){ if(!drag){ ST.yaw+=dt*3.2; ST.rt=(ST.rt||0)+dt; ST.pitch+=((1.6-1.45*Math.cos(ST.rt*2.1))-ST.pitch)*Math.min(1,dt*5); } /* (11/17 主委「洗碗還是太難了…想簡單一點的方式」: under the tap the bowl turns and tips by itself, inside then outside and back — you can still steer it) */ E.set(ST.pitch,ST.yaw,0,"XYZ"); /* (it keeps turning by itself under the water; you only tip it up and down) */ /* (left–right turns the bowl round its own middle, so every part of a wall comes under the water; up–down tips it) */ pivot.quaternion.setFromEuler(E); pivot.position.y=Math.min(.32,pivot.position.y+dt*1.2); } /* (lifted up under the tap, clear of the sink floor however it is tipped) */
+    else if(ST.ph==="rinse"){ /* (11/17 晚 主委「不要自動沖水…還是要玩家沖」: the bowl no longer turns by itself; you turn it under the water) */ /* (11/17 主委「洗碗還是太難了…想簡單一點的方式」: under the tap the bowl turns and tips by itself, inside then outside and back — you can still steer it) */ E.set(ST.pitch,ST.yaw,0,"XYZ"); /* (it keeps turning by itself under the water; you only tip it up and down) */ /* (left–right turns the bowl round its own middle, so every part of a wall comes under the water; up–down tips it) */ pivot.quaternion.setFromEuler(E); pivot.position.y=Math.min(.32,pivot.position.y+dt*1.2); } /* (lifted up under the tap, clear of the sink floor however it is tipped) */
     else if(ST.ph==="next"){ ST.nextT-=dt; pivot.position.x+=dt*5; if(ST.nextT<=0){ newBowl(); pivot.position.set(-2.2,-.03,.12); pivot.rotation.set(0,0,0); ST.ph="slide"; } }
     else if(ST.ph==="slide"){ pivot.position.x=Math.min(0,pivot.position.x+dt*7); if(pivot.position.x>=0){ ST.ph="in"; ST.spin=0; hud(); } }
     pivot.updateMatrixWorld(true);
     /* the water: only while rinsing; it finds the bowl straight below the tap and washes the foam off there */
     const rin=ST.ph==="rinse"&&!ST.over; jet.visible=rin; splash.visible=false; ST.dbg=null;
     if(rin){ ray.set(P3.set(TAP.x,TAP.y-.1,TAP.z),down); const h=ray.intersectObject(bowl,false)[0]; const yb=h?h.point.y:-.27, top=TAP.y-.1, len=Math.max(.05,top-yb); jet.scale.set(1,len,1); jet.position.set(TAP.x,top-len/2,TAP.z);
-      ST.dbg=h?[+h.point.x.toFixed(2),+h.point.y.toFixed(2),+h.point.z.toFixed(2),h.uv&&+h.uv.x.toFixed(2),h.uv&&+h.uv.y.toFixed(2)]:"miss"; if(h&&h.uv){ const sd=h.uv.x>=.5?1:0; stamp(sd,h.uv.x,h.uv.y,rUV(.6,sd),"rinse"); sbWash(h.point,.6); splash.visible=true; splash.position.copy(h.point); const k=.22+.05*Math.sin(U.uT.value*30); splash.scale.set(k,k,1);
+      ST.dbg=h?[+h.point.x.toFixed(2),+h.point.y.toFixed(2),+h.point.z.toFixed(2),h.uv&&+h.uv.x.toFixed(2),h.uv&&+h.uv.y.toFixed(2)]:"miss"; if(h&&h.uv){ const sd=h.uv.x>=.5?1:0; stamp(sd,h.uv.x,h.uv.y,rUV(.78,sd),"rinse"); sbWash(h.point,.78); /* (a wider stream: 主委「沖水範圍可以大一點」) */ splash.visible=true; splash.position.copy(h.point); const k=.22+.05*Math.sin(U.uT.value*30); splash.scale.set(k,k,1);
         /* (11/17 主委「水流到碗的地方要稍微擴散往下 水不會只沖到落點 會有溢流」): from where it lands the water runs on downhill over the bowl,
            spreading a little — a few steps along the slope, each washing a narrower band, with drops that show the way */
-        const nW=h.face.normal.clone().transformDirection(bowl.matrixWorld); if(nW.y<0) nW.negate(); let q=h.point.clone(), nn=nW.clone(); for(let st=1;st<=10;st++){ const gt=new T.Vector3(0,-1,0).addScaledVector(nn,nn.y); if(gt.lengthSq()<1e-4) break; gt.normalize(); q.addScaledVector(gt,.075); ray.set(q.clone().addScaledVector(nn,.25),nn.clone().negate()); const hh=ray.intersectObject(bowl,false)[0]; if(!hh||!hh.uv) break; const sd2=hh.uv.x>=.5?1:0, w=.5-st*.02;
+        const nW=h.face.normal.clone().transformDirection(bowl.matrixWorld); if(nW.y<0) nW.negate(); let q=h.point.clone(), nn=nW.clone(); for(let st=1;st<=10;st++){ const gt=new T.Vector3(0,-1,0).addScaledVector(nn,nn.y); if(gt.lengthSq()<1e-4) break; gt.normalize(); q.addScaledVector(gt,.075); ray.set(q.clone().addScaledVector(nn,.25),nn.clone().negate()); const hh=ray.intersectObject(bowl,false)[0]; if(!hh||!hh.uv) break; const sd2=hh.uv.x>=.5?1:0, w=.62-st*.025;
           stamp(sd2,hh.uv.x,hh.uv.y,rUV(w,sd2),"rinse"); sbWash(hh.point,w); q.copy(hh.point); { const n2=hh.face.normal.clone().transformDirection(bowl.matrixWorld); if(n2.dot(nn)<0) n2.negate(); nn.copy(n2); } if(Math.random()<.04) bubble(hh.point); } }
       if((G.nf[0]+G.nf[1])<=(1-DW_RINSE)*(G.ni[0]+G.ni[1])&&!SB.some(b=>!b.pop)) done1(); else if((G.nf[0]+G.nf[1])<=(1-DW_RINSE)*(G.ni[0]+G.ni[1])) for(const b of SB) b.pop=b.pop||.3; }
     flush(stC,cleanRT); flush(stF,foamRT); flush(stR,foamRT);

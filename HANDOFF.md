@@ -1300,3 +1300,17 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - 原因 2（設計，待主委決定）：11/12 改成「睡覺不給精力」（REGEN bed:0, futon:0），但禪房通鋪 50、套房 100 照收錢，提示也還寫「精力恢復中」—— 玩家付了錢睡覺卻沒回精力。
 - 修法擴大：全域 today 改成 let、台灣日期、每 30 秒更新（精力、財神爺 fcDay、月老 rxDay、每日平安幣 bag.day、卡住 stuck 都跟著對）。hotfix-energy 最新 commit 見 git log。
 - 11/17 16:08 已部署 hotfix-energy → main（44b5038），Workers Builds success。正式網址這個環境連不到，沒能用 curl 抓頁面確認。audio-fix 不含 main 的這兩個 hotfix commit，但同樣的修改已在 audio-fix，下次部署 audio-fix:main 前要先 merge origin/main（不是祖先關係）。
+
+## 第 54 批（11/17 晚）💧 水面 v3、瀑布、地圖編輯補強、彩虹、洗碗
+- 「一片黑／高低差裂縫」：地圖編輯「挖河」鋪的水是 1.5 m 方塊放在 1 m 格上，互相重疊（重疊處變兩倍深），雨天幾乎黑。現在 mdWaterBuild = 一張無縫 1 m 網格＋外圍一圈，每個角算水深。
+- 水面 v3（TOWNX 內，wmat 後面）：一個共用 ShaderMaterial（waterMat），所有河、溪、泉、池、挖的水都用它。每個頂點帶 aW=(流向x, 流向z, 水深)；水深在區塊 build 完由 wFix(C) 用該區地形（ter.hf+mdH）算一次。深→深藍綠、淺→透明淺色、岸邊淡色水紋、到岸自己淡出（不用深度貼圖）。兩層 RIPTEX 法線、Fresnel 假天空、柔和陽光高光；8 格漣漪池 TW.ripple(x,z,s)（走在水邊、拋竿落水、咬鉤、瀑布腳）；高品質才有雨滴圈和閃光。品質 高/中/低（自動：手機中）WQ define。
+- 參數：WCFG（localStorage mz.water，只在該裝置）＋測試模式「💧 水面調整」滑桿、📋 複製數值（MZWATER:{...}）→ 要變成大家的預設就改 WCFG_DEF。
+- mirrorPlane 改成 1.5 m 細分格；springPool 改成比池子大一圈的 1.1 m 網格（舊的扇形長三角形會出現淡色楔形）；brookMesh／streamMesh 改 wMesh。海（sea）沒有改，還是原本的海浪 shader。
+- 瀑布 v3：fallProfile(z) 從山頂（WFACE→WM.x 最高點）沿地面往下取樣，網格沿坡面法線往外 .32 m、兩側地面較高就抬高，所以不會穿進石頭；上窄下寬。fallMat = 同一套顏色參數，兩層拉長的波紋往下流。fallFoot：泡沫圓盤（兩層貼圖）＋90 顆 GPU 水花（Points，頂點著色器算拋物線，不吃 CPU）＋水霧。gH 在瀑布腳挖了一個小深潭。inFallZone：程式生的石頭/花/蘆葦不擺在瀑布路徑上，樹也不擺。
+- 山坡鋪樹叢：slopeCover(C)（treesFlush 裡），每個區塊地形上坡度 .3–1.5 的地方每 1.6 m 一叢矮樹冠（LPT 第 10 欄 = 高度壓扁倍數），避開水、清除區、挖過的地、瀑布。
+- 地圖編輯：轉視角按鈕＋WASD/方向鍵、QE 轉、RF 俯仰、ZX 縮放、右鍵拖曳轉；兩指上下＝俯仰；右上角固定「✕ 離開編輯」；「完成」後面板又冒出來的 bug（edSelect 重畫 panel）已修。擺放「🎲 隨機大小」（樹：大小＋寬窄 o.w，存在 pack 第 8 欄，worker 也收）。點不到放的樹 → edPickNear 用地面點找最近的物件。神木紅布條跟著神木（清除時不留下、擺放的金葉神木也有布條）。原本的神社也能選（C.gen 加 shrine）。邊界外也能升降挖噴（MD.out：g0 為 null 的地方以 0 為底，mdOutBuild 每 16 m 一片新地形）；測試模式「🚶 主委穿越邊界」= window.MZ_FREE。
+- 神社 shrineStone()：保留主委的模型，只改材質成灰石＋朝上/低處長青苔（shader）。
+- 彩虹：不再用加法混色（藍天上紅紫都不見、其他變青色），改七色帶一般透明疊上。
+- 洗碗：搓洗 rUV .6→.3（減半）；沖水時碗不再自己轉（玩家自己轉）；沖水 .6→.78、溢流也加寬。
+- 過橋那頭的磁磚帶（pier 區 ground pave −14..72 × −150..−143.5）刪了。
+- 沒驗到：手機實機手感、編輯器挖的水在模擬器沒拍到（森林樹冠擋住、山谷那次被讀取畫面蓋住）、邊界外編輯和穿越邊界只確認語法。
