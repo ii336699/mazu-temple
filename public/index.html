@@ -13209,7 +13209,7 @@ lantern=mdWrap("lantern",lantern,1,2,"lantern"); nbench=mdWrap("nbench",nbench,1
   TW.water=(x,z)=>MD.isWater(x,z)?{k:"r",y:RIVER_Y}:wa0(x,z);
   TW.walk=(x,z)=>{ if(MD.blocked(x,z)) return false; const dh=MD.ch.size?MD.h(x,z):0, gone=MD.gone(x,z); if(!dh&&!gone) return w0(x,z);
     if(MD.isWater(x,z)) return false; if(!dh&&w0(x,z)) return true; const g=TW.ground, a=g(x+.5,z), b=g(x-.5,z), c=g(x,z+.5), d=g(x,z-.5); if(a==null||b==null||c==null||d==null) return w0(x,z);
-    if(wa0(x,z)&&!dh) return false; return Math.hypot(a-b,c-d)<=TW.maxSlope; }; }
+    { const b0=MD.g0(x,z); if(b0!=null&&b0+dh<RIVER_Y-.05) return false; } return Math.hypot(a-b,c-d)<=TW.maxSlope; }; } /* (11/17 主委「地形升降一點下去就當掉了」: this used to ask TW.water, which asks TW.walk — round and round for ever on any changed ground, and the game's frame stopped. Water here is worked out from the height alone) */
 /* water where the chair dug below the water line: a flat sheet over just those cells */
 function mdWaterBuild(){ const W=new Set(); for(const [k,c] of MD.ch){ if(!c.h) continue; const [cx,cz]=k.split(",").map(Number); for(let i=0;i<256;i++){ const dh=c.h[i]/100; if(dh>-.05) continue; const ix=cx*16+(i%16), iz=cz*16+(i>>4); const b=MD.g0(ix,iz); if(b==null) continue; if(b+dh<RIVER_Y-.04) W.add(ix+","+iz); } }
   MD.water=W.size?W:null; if(MD.wm){ MDG.remove(MD.wm); MD.wm.geometry.dispose(); MD.wm=null; } if(!W.size) return;
