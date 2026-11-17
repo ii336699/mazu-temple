@@ -10578,7 +10578,10 @@ SX.bic=(k,cls="")=>`<span class="bic ${cls}" style="background:url(${snackIcon(k
 const snImg=(k,sz=40)=>`<img src="${snackIcon(k)}" width="${sz}" height="${sz}" alt="" style="display:block">`;
 /* ---------- 精力 ---------- */
 /* a new day: 精力 back to 100, and the day's 66 points of rest start again */
-function enDay(){ if(bag.enDay!==today){ bag.enDay=today; bag.en=enMax(); bag.enRec=0; try{ saveBag(); }catch(e){} } }
+/* (11/17 有玩家說精力沒有恢復: the day was the UTC date taken once when the page opened — in Taiwan the new day's 精力 came at 8 a.m., and a page left open never got it at all. Now it is Taiwan's date, asked every time) */
+const enToday=()=>new Date(Date.now()+288e5).toISOString().slice(0,10);
+function enDay(){ const t=enToday(); if(bag.enDay!==t){ bag.enDay=t; bag.en=Math.max(bag.en||0,enMax()); bag.enRec=0; try{ saveBag(); }catch(e){} } }
+setInterval(()=>{ const b=bag.en; try{ enDay(); }catch(e){} if(bag.en!==b) try{ SX.wallet(); }catch(e){} },60000); /* (a page left open past midnight gets the new day's 精力 within a minute) */
 enDay();
 const recLeft=()=>{ enDay(); return Math.max(0,EN_REC_MAX-(bag.enRec||0)); };
 const en=()=>Math.round(bag.en);
