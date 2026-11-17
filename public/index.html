@@ -12622,7 +12622,7 @@ vec3 wShade(vec3 W,vec3 deep,vec2 flow){ vec4 rp=wRip(W.xz,flow); vec3 N=normali
   return c+vec3(1.,.96,.86)*(sun+sp*.55)+vec3(.75,.82,1.)*moon; }`;
 function mirrorMat(flow){ const f=flow||[.35,0]; return wmat(`varying vec3 vW; void main(){ vec4 w=modelMatrix*vec4(position,1.); vW=w.xyz; vec4 mvPosition=viewMatrix*w; gl_Position=projectionMatrix*mvPosition;\n#include <fog_vertex>\n}`,
   `uniform float uT; uniform float uNight; varying vec3 vW; ${WSURF} void main(){ vec3 deep=mix(vec3(.09,.4,.4),vec3(.03,.07,.12),uNight); gl_FragColor=vec4(wShade(vW,deep,vec2(${f[0].toFixed(2)},${f[1].toFixed(2)})),.93);\n#include <fog_fragment>\n}`); }
-function mirrorPlane(C,x0,x1,z0,z1,y,flow){ wSheet(x0,x1,z0,z1,y); const f=flow||[.35,0], g=new T.PlaneGeometry(x1-x0,z1-z0,Math.max(1,Math.round((x1-x0)/1.5)),Math.max(1,Math.round((z1-z0)/1.5))); g.rotateX(-Math.PI/2); g.translate((x0+x1)/2,y,(z0+z1)/2); return wMesh(C,g,()=>f); } /* (水面 v3: one shared water, a vertex every 1.5 m so it knows how deep it is)*/
+function mirrorPlane(C,x0,x1,z0,z1,y,flow,ext){ { const e=ext||(x1-x0>z1-z0?[0,0,4,4]:[4,0,0,0]); x0-=e[0]; x1+=e[1]; z0-=e[2]; z1+=e[3]; } /* (11/18: drawn 4 m past its banks — where the ground is higher it fades out by itself; where the chair dug the bank away the river simply goes on, one water, no straight seam) */ wSheet(x0,x1,z0,z1,y); const f=flow||[.35,0], g=new T.PlaneGeometry(x1-x0,z1-z0,Math.max(1,Math.round((x1-x0)/1.5)),Math.max(1,Math.round((z1-z0)/1.5))); g.rotateX(-Math.PI/2); g.translate((x0+x1)/2,y,(z0+z1)/2); return wMesh(C,g,()=>f); } /* (水面 v3: one shared water, a vertex every 1.5 m so it knows how deep it is)*/
 function wmat(vs,fs,o){ return new T.ShaderMaterial(Object.assign({uniforms:Object.assign(T.UniformsUtils.merge([T.UniformsLib.fog]),NT.U),vertexShader:FOGV+vs,fragmentShader:FOGF+fs,transparent:true,depthWrite:false,fog:true},o||{})); }
 /* ===== 水面 v3 (11/17 主委「溪水請統一 用泉水的方式做…水面要漂亮、有層次、有緩慢流動的生命感，但不要犧牲 FPS」) =====
    One water material for every river, brook, spring, pond and dug channel. No second camera, no depth pass:
@@ -12634,7 +12634,7 @@ function wmat(vs,fs,o){ return new T.ShaderMaterial(Object.assign({uniforms:Obje
    · up to 8 round ripples at a time (a fixed pool of slots, reused oldest-first): walking in the shallows, a cast float, a bite, the
      foot of the falls. Rain rings on 高 quality.
    Quality 高/中/低 (自動: phones 中): 低 is one texture read and no ripples. Settings: 主委工具 → 🧪 測試模式 → 💧 水面調整. */
-const WCFG_DEF={q:"auto",deep:"#17616e",shal:"#62c4bd",foam:"#f2fbf8",alpha:.9,amp:1,spd:1,scale:1,fres:1,spec:1,foamK:1,clear:1};
+const WCFG_DEF={q:"auto",deep:"#17616e",shal:"#48a8a3",foam:"#f2fbf8",alpha:.9,amp:1,spd:1,scale:1,fres:1,spec:1,foamK:1,clear:1};
 const WCFG=Object.assign({},WCFG_DEF,(()=>{ try{ return JSON.parse(localStorage.getItem("mz.water")||"{}")||{}; }catch(e){ return {}; } })());
 const WU={uDeep:{value:new T.Color()},uShal:{value:new T.Color()},uFoamC:{value:new T.Color()},uWP:{value:new T.Vector4()},uWP2:{value:new T.Vector4()},
   uSun:{value:new T.Vector3(-.45,.62,.64).normalize()},uRain:{value:0},uPx:{value:800},uRp:{value:Array.from({length:8},()=>new T.Vector4(0,0,-99,0))}};
@@ -12666,7 +12666,7 @@ void main(){ float D=vA.z; vec2 fl=vA.xy; float t=uT*uWP.y; vec2 p=vW.xz*uWP.z;
   vec3 N=normalize(vec3(n.x*.7*uWP.x,1.,n.y*.7*uWP.x)); vec3 V=normalize(cameraPosition-vW); float ndv=clamp(dot(N,V),0.,1.);
   float fr=(.02+.98*pow(1.-ndv,5.))*uWP2.x; vec3 R=reflect(-V,N); float up=clamp(R.y,0.,1.);
   vec3 sky=mix(vec3(.80,.89,.94),vec3(.38,.62,.88),pow(up,.6)); sky=mix(sky,vec3(.6,.64,.68),uRain*.7); sky=mix(sky,vec3(.05,.08,.15),uNight);
-  float dk=1.-exp(-max(D,0.)*.9/max(uWP2.w,.1)); vec3 body=mix(uShal,uDeep,dk)*(.88+.24*hh);
+  float dk=1.-exp(-max(D,0.)*1.6/max(uWP2.w,.1)); vec3 body=mix(uShal,uDeep,dk)*(.88+.24*hh);
   vec3 c=mix(body,sky,clamp(fr,0.,.85));
   float sd=max(dot(R,uSun),0.); float sp=(pow(sd,700.)*2.2+pow(sd,60.)*.1)*uWP2.y*(1.-uNight)*(1.-uRain*.8);
   float mo=pow(max(dot(R,normalize(vec3(.3,.55,-.78))),0.),320.)*uNight*1.4;
@@ -12674,10 +12674,10 @@ void main(){ float D=vA.z; vec2 fl=vA.xy; float t=uT*uWP.y; vec2 p=vW.xz*uWP.z;
   sp+=smoothstep(.9,.97,texture2D(uRip,vW.xz*.31+vec2(uT*.03,-uT*.02)).a)*smoothstep(.55,.8,hh)*(1.-uNight*.7)*(1.-uRain)*uWP2.y*.4;
 #endif
   c+=vec3(1.,.96,.86)*sp+vec3(.75,.82,1.)*mo;
-  float lines=smoothstep(.62,.92,sin(D*20.-uT*1.3+hh*5.)*.5+.5)*smoothstep(.5,.1,D);
-  float foam=clamp((smoothstep(.16,.0,D)*.75+lines*.45)*(.55+.7*hh)+rf,0.,1.)*uWP2.z;
+  float lines=smoothstep(.7,.95,sin(D*24.-uT*1.3+hh*5.)*.5+.5)*smoothstep(.22,.04,D);
+  float foam=clamp((smoothstep(.1,.0,D)*.6+lines*.35)*(.55+.7*hh)+rf,0.,1.)*uWP2.z; /* (11/18 主委「為什麼這條河是白色」: the pale shore lines only right at the edge now, not over a whole shallow stream) */
   c=mix(c,uFoamC,foam); c*=mix(1.,.6,uNight);
-  float al=mix(.5,1.,dk)*uWP.w; al=max(al,foam*.9); al=max(al,clamp(fr,0.,1.)*.95); al*=smoothstep(-.03,.06,D);
+  float al=mix(.72,1.,dk)*uWP.w; al=max(al,foam*.9); al=max(al,clamp(fr,0.,1.)*.95); al*=smoothstep(-.03,.06,D);
   gl_FragColor=vec4(c,al);
 #include <fog_fragment>
 }`;
@@ -13073,14 +13073,14 @@ function slopeCover(C){ const g=TW.ground, out=[]; let seed=C.g.children.length*
      on a steep face extra crowns are set at several heights between the samples so the wall is covered top to bottom. Not on flat tops, not on
      paths, not in water, not on cleared or dug spots, not round the falls */
   const onPath=(x,z)=>{ try{ if(pathD(x,z)<1.7) return true; }catch(e){} try{ if(lineD(SPI2,x,z)[0]<1.9) return true; }catch(e){} try{ if(wpD(x,z)<1.8) return true; }catch(e){} try{ if(Math.min(lineD(TRAIL,x,z)[0],lineD(TRAIL2,x,z)[0])<1.6) return true; }catch(e){} return false; };
-  const ok=(px,pz,h)=>{ if(h==null||h<RIVER_Y+.25) return false; if(px>100&&px<WM.x+5&&Math.abs(pz-GZ)<(px<112?13:4.5)) return false; if(onPath(px,pz)) return false;
+  const ok=(px,pz,h)=>{ if(h==null||h<RIVER_Y+.25) return false; if(pz>-146&&pz<-130) return false; /* (not on the river's banks: the bridges cross there) */ try{ if(onFootB(px,pz)||brookD(px,pz)[0]<3.2||s1D(px,pz)<3.6) return false; }catch(e){} if(px>100&&px<WM.x+5&&Math.abs(pz-GZ)<(px<112?13:4.5)) return false; if(onPath(px,pz)) return false;
     try{ if(MD.h(px,pz)<-.05||MD.gone(px,pz)||TW.water(px,pz)) return false; }catch(e){} return true; }; /* (one water test: the height test above already keeps them off the banks) */
-  const add=(px,h,pz,big)=>out.push([px,h+.05,pz,(.62+R()*.38)*(big||1),1+R()*.1,R()*6.283,R()<.75?"leaf":"deep",8,"bush",.42+R()*.16]);
+  const add=(px,h,pz,big)=>out.push([px,h+.05,pz,(.8+R()*.4)*(big||1),1+R()*.1,R()*6.283,R()<.75?"leaf":"deep",7,"bush",.42+R()*.16]); /* (11/18 主委「變好卡」: fewer, a little bigger crowns — about half the leaf cards) */
   C.g.traverse(m=>{ if(!m.userData||!m.userData.ter||!m.geometry) return; const b=m.geometry.boundingBox||(m.geometry.computeBoundingBox(),m.geometry.boundingBox);
-    for(let z=b.min.z+.8;z<b.max.z-.8;z+=1.45) for(let x=b.min.x+.8;x<b.max.x-.8;x+=1.45){ const px=x+(R()-.5)*1, pz=z+(R()-.5)*1;
+    const SP=(typeof Q!=="undefined"&&Q.lite)?2.4:1.95; for(let z=b.min.z+.8;z<b.max.z-.8;z+=SP) for(let x=b.min.x+.8;x<b.max.x-.8;x+=SP){ const px=x+(R()-.5)*1.2, pz=z+(R()-.5)*1.2;
       const a=g(px+.9,pz), bb=g(px-.9,pz), c=g(px,pz+.9), d=g(px,pz-.9), h=g(px,pz); if(a==null||bb==null||c==null||d==null||h==null) continue; const gx=(a-bb)/1.8, gz=(c-d)/1.8, sl=Math.hypot(gx,gz); if(sl<.22) continue;
       if(!ok(px,pz,h)) continue; add(px,h,pz,sl>1?1.15:1);
-      if(sl>.9){ const k=Math.min(6,Math.floor(sl*1.2)), ux=-gx/sl, uz=-gz/sl; for(let j=1;j<=k;j++){ const t=j/(k+1)*1.45, qx=px+ux*t, qz=pz+uz*t, qh=g(qx,qz); if(ok(qx,qz,qh)) add(qx,qh,qz,1.15); } } } });
+      if(sl>1){ const k=Math.min(3,Math.floor(sl*.8)), ux=-gx/sl, uz=-gz/sl; for(let j=1;j<=k;j++){ const t=j/(k+1)*SP, qx=px+ux*t, qz=pz+uz*t, qh=g(qx,qz); if(ok(qx,qz,qh)) add(qx,qh,qz,1.15); } } } });
   if(out.length) (C.lpt||(C.lpt=[])).push(...out); }
 function treesFlush(C){ if(C.lpt&&!C.md) try{ C.lpt=C.lpt.filter(t=>!MD.gone(t[0],t[2])); for(const t of C.lpt){ const dh=MD.h(t[0],t[2]); if(dh) t[1]=(t[1]||0)+dh; } }catch(e){} /* (地圖編輯: cleared spots, the chair's ground) */
   if(C.lpt) try{ const g=TW.ground; for(const t of C.lpt){ if(t[6]==="gold"||t[6]==="pink") continue; const a=g(t[0]+1.2,t[2]), b=g(t[0]-1.2,t[2]), c=g(t[0],t[2]+1.2), d=g(t[0],t[2]-1.2); if(a==null||b==null||c==null||d==null) continue; if(Math.hypot(a-b,c-d)/2.4>.32){ t[8]="bush"; if(!(t[7]>6)) t[3]*=.85; } } }catch(e){} /* (trees on a slope become bushes) */
@@ -13145,7 +13145,7 @@ function westC(x,z,h,c){ const n=.5+.5*nz(x*1.3,z*1.3); c.copy(LAWN).multiplySca
 function streamMesh(C){ const n=SPATH.length, P=[], UV=[], I=[]; let along=0; for(let i=0;i<n;i++){ const a=SPATH[Math.max(0,i-1)], b=SPATH[Math.min(n-1,i+1)], dx=b[0]-a[0], dz=b[1]-a[1], L=Math.hypot(dx,dz)||1, nx=-dz/L, nzz=dx/L, w=3.5; if(i) along+=Math.hypot(SPATH[i][0]-SPATH[i-1][0],SPATH[i][1]-SPATH[i-1][1]);
     P.push(SPATH[i][0]+nx*w,RIVER_Y,SPATH[i][1]+nzz*w, SPATH[i][0]-nx*w,RIVER_Y,SPATH[i][1]-nzz*w); UV.push(0,along/4,1,along/4); if(i) I.push((i-1)*2,(i-1)*2+1,i*2, (i-1)*2+1,i*2+1,i*2); }
   const g=new T.BufferGeometry(); g.setAttribute("position",new T.Float32BufferAttribute(P,3)); g.setAttribute("uv",new T.Float32BufferAttribute(UV,2)); g.setIndex(I); g.computeVertexNormals();
-  wMesh(C,g,i=>{ const k=Math.min(n-1,i>>1), a=SPATH[Math.max(0,k-1)], b=SPATH[Math.min(n-1,k+1)], L=Math.hypot(b[0]-a[0],b[1]-a[1])||1; return [(b[0]-a[0])/L*.7,(b[1]-a[1])/L*.7]; }); }
+  const m=wMesh(C,g,i=>{ const k=Math.min(n-1,i>>1), a=SPATH[Math.max(0,k-1)], b=SPATH[Math.min(n-1,k+1)], L=Math.hypot(b[0]-a[0],b[1]-a[1])||1; return [(b[0]-a[0])/L*.7,(b[1]-a[1])/L*.7]; }); m.userData.wclip=(qx,qz)=>qz>-146.4; /* (inside the river's own sheet the river shows it — no second layer at the mouth) */ }
 function footBridge(C){ const dx=WP2[1][0]-WP2[0][0], dz=WP2[1][1]-WP2[0][1], ang=Math.atan2(dx,dz); for(let k=-9;k<=9;k++){ const t=k*.5, x=FOOTB.x+Math.sin(ang)*t, z=FOOTB.z+Math.cos(ang)*t; put(C,GEO.b||(GEO.b=new T.BoxGeometry(1,1,1)),NM.wood,x,.06+.18*Math.cos(k/9*Math.PI/2),z,2.2,.07,.44,ang); }
   for(const sd of [-1.05,1.05]) for(let k=-4;k<=4;k++){ const t=k*1.1, x=FOOTB.x+Math.sin(ang)*t+Math.cos(ang)*sd, z=FOOTB.z+Math.cos(ang)*t-Math.sin(ang)*sd; put(C,GEO.b,NM.woodD,x,.5,z,.07,.75,.07,ang); }
   for(let k=-9;k<=9;k+=18){} }
@@ -13400,7 +13400,7 @@ function mdWaterBuild(){ const W=new Set(); MD.lv=new Map(); for(const [k,c] of 
   /* (水面 v3, 11/17 主委「為什麼會有高低差裂縫 還有一片黑」: the old sheet was 1.5 m squares on a 1 m grid — they overlapped, every overlap twice as dark, in the
      rain nearly black. Now one seamless grid, one cell a metre, a ring of cells past the edge, the depth at every corner from the ground — so it is
      the same water as the springs and fades out up the bank) */
-  const cells=new Set(); for(const k of W){ const [x,z]=k.split(",").map(Number); for(let dz=-1;dz<=1;dz++) for(let dx=-1;dx<=1;dx++) cells.add((x+dx)+","+(z+dz)); }
+  const cells=new Set(); for(const k of W){ const [x,z]=k.split(",").map(Number); for(let dz=-1;dz<=1;dz++) for(let dx=-1;dx<=1;dx++){ if((dx||dz)&&mdLevel(x+dx,z+dz).in) continue; cells.add((x+dx)+","+(z+dz)); } }
   const VI=new Map(), P=[], A=[], I=[]; const vi=(x,z)=>{ const k=x+","+z; let i=VI.get(k); if(i!=null) return i; i=P.length/3; VI.set(k,i); let Y=RIVER_Y; for(const [ddx,ddz] of [[.5,.5],[-.5,.5],[.5,-.5],[-.5,-.5]]){ const q=MD.lv.get(Math.round(x+ddx)+","+Math.round(z+ddz)); if(q!=null){ Y=q; break; } } P.push(x,Y,z); let h=null; try{ h=TW.ground(x,z); }catch(e){} A.push(.08,.05,h==null?1:Math.min(6,Y-h)); return i; };
   for(const k of cells){ const [x,z]=k.split(",").map(Number); const a=vi(x-.5,z-.5), b=vi(x+.5,z-.5), c=vi(x+.5,z+.5), d=vi(x-.5,z+.5); I.push(a,c,b, a,d,c); }
   const g=new T.BufferGeometry(); g.setAttribute("position",new T.Float32BufferAttribute(P,3)); g.setIndex(I); g.computeBoundingSphere(); const m=wMesh(null,g); m.geometry.setAttribute("aW",new T.Float32BufferAttribute(A,3)); m.userData.wfix=2; MDG.add(m); MD.wm=m; }
