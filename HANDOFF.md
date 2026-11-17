@@ -1299,3 +1299,4 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - 原因 1（主要，財神爺「今天已經玩過」也是同一個）：每天一次的東西用的「今天」是頁面打開那一刻的 UTC 日期（const today），台灣要到早上 8 點才算新的一天，而且頁面開著不重新整理就永遠不會補。修：enToday() 每次都算台灣日期，並每分鐘檢查一次。audio-fix 已改；正式站修正在分支 hotfix-energy（c38f83d，只改這一處，從 main 開出來），主委說部署才推：`git push origin hotfix-energy:main`。
 - 原因 2（設計，待主委決定）：11/12 改成「睡覺不給精力」（REGEN bed:0, futon:0），但禪房通鋪 50、套房 100 照收錢，提示也還寫「精力恢復中」—— 玩家付了錢睡覺卻沒回精力。
 - 修法擴大：全域 today 改成 let、台灣日期、每 30 秒更新（精力、財神爺 fcDay、月老 rxDay、每日平安幣 bag.day、卡住 stuck 都跟著對）。hotfix-energy 最新 commit 見 git log。
+- 11/17 16:08 已部署 hotfix-energy → main（44b5038），Workers Builds success。正式網址這個環境連不到，沒能用 curl 抓頁面確認。audio-fix 不含 main 的這兩個 hotfix commit，但同樣的修改已在 audio-fix，下次部署 audio-fix:main 前要先 merge origin/main（不是祖先關係）。
