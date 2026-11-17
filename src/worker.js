@@ -7,9 +7,9 @@ import { buildPaper } from "../public/paper-gen.js";
 function snapInfo(str) { try { const raw = atob(String(str).slice(3).replace(/-/g, "+").replace(/_/g, "/")); const bits = []; for (const ch of raw) { const b = ch.charCodeAt(0); for (let i = 7; i >= 0; i--) bits.push((b >> i) & 1); } let p = 0; const get = n => { let v = 0; for (let i = 0; i < n; i++) v = v * 2 + (bits[p++] || 0); return v; };
   if (get(4) !== 1) return {}; get(65); const coins = get(16); get(30); get(1); const pn = get(3); get(pn * 6); get(24); const nl = get(4); let name = ""; for (let i = 0; i < nl; i++) name += String.fromCharCode(get(16)); return { name, coins }; } catch { return {}; } }
 const HALLS = 10, CAP = 100, MAX_MSG = 4000;
-const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000, "/puppet": 5000, "/crowd": 5000, "/market": 5000, "/layout": 5000 };
-const LOBBY_PATHS = ["/photospots", "/photospot", "/rank", "/rankclaim", "/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather", "/stat", "/nev", "/paper", "/sponsor", "/hatfit", "/honor", "/lookup", "/crash", "/meteor"];
-const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage", "/puppet": "/puppet", "/crowd": "/crowd", "/market": "/market", "/layout": "/layout" }; // a POST here makes that cached list stale
+const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000, "/puppet": 5000, "/crowd": 5000, "/market": 5000, "/layout": 5000, "/mapedit": 5000 };
+const LOBBY_PATHS = ["/mapedit", "/photospots", "/photospot", "/rank", "/rankclaim", "/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather", "/stat", "/nev", "/paper", "/sponsor", "/hatfit", "/honor", "/lookup", "/crash", "/meteor"];
+const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage", "/puppet": "/puppet", "/crowd": "/crowd", "/market": "/market", "/layout": "/layout", "/mapedit": "/mapedit" }; // a POST here makes that cached list stale
 
 export default {
   async fetch(req, env) {
@@ -81,6 +81,7 @@ export class Hall extends DurableObject {
       if (b.all) { const m = JSON.stringify(b.gift ? { t: "giftnow", g: b.gift } : { t: "gift" }); for (const w of this.ctx.getWebSockets()) { try { w.send(m); } catch {} } return new Response("ok"); } /* a gift for everyone (giftnow: only whoever is connected right now) */
       if (to) for (const w of this.ctx.getWebSockets(to)) { try { w.send(JSON.stringify({ t: "gift" })); } catch {} } return new Response("ok");
     }
+    if (url.pathname === "/mapedit") { const out = JSON.stringify({ t: "mapedit", at: Date.now() }); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok"); } // 地圖編輯 saved: pages fetch it again
     if (url.pathname === "/layout") { // from the lobby: the chair saved a new building layout; pages fetch it again
       const out = JSON.stringify({ t: "layout", at: Date.now() }); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
     }
@@ -628,6 +629,21 @@ export class Lobby extends DurableObject {
       return json({ ok: true, at: st.at });
     }
     if (url.pathname === "/layout") return json((await this.ctx.storage.get("layout")) || { layout: null, at: 0 });
+    // 地圖編輯 (11/17): the chair's terrain heights / ground paint (base64 chunks), placed things and cleared spots. Only that shape is kept; at most ~1.8 MB.
+    if (url.pathname === "/mapedit" && req.method === "POST") {
+      const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
+      let b = {}; try { b = await req.json(); } catch {}
+      const M = b.map || {}, n = (v, lo, hi, d) => { v = Number(v); return Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : d; }, B64 = /^[A-Za-z0-9+/=]*$/;
+      const out = { v: 1, ch: {}, o: [], e: [] };
+      if (M.ch && typeof M.ch === "object") for (const [k, v] of Object.entries(M.ch).slice(0, 2500)) { if (!/^-?\d{1,3},-?\d{1,3}$/.test(k) || !Array.isArray(v)) continue; const h = String(v[0] || ""), p = String(v[1] || ""); if (h.length > 700 || p.length > 360 || !B64.test(h) || !B64.test(p)) continue; out.ch[k] = [h, p]; }
+      if (Array.isArray(M.o)) for (const q of M.o.slice(0, 4000)) { if (!Array.isArray(q) || typeof q[1] !== "string" || !/^[a-z_]{1,12}$/.test(q[1])) continue; out.o.push([Math.round(n(q[0], 0, 1e7, 0)), q[1], +n(q[2], -400, 400, 0).toFixed(2), +n(q[3], -400, 400, 0).toFixed(2), +n(q[4], -20, 20, 0).toFixed(2), +n(q[5], -100, 100, 0).toFixed(3), +n(q[6], .1, 10, 1).toFixed(3)]); }
+      if (Array.isArray(M.e)) for (const q of M.e.slice(0, 6000)) { if (!Array.isArray(q)) continue; out.e.push([+n(q[0], -400, 400, 0).toFixed(2), +n(q[1], -400, 400, 0).toFixed(2), +n(q[2], .1, 40, 1).toFixed(2)]); }
+      const st = { map: out, at: Date.now() }; if (JSON.stringify(st).length > 1900000) return json({ ok: false, big: true });
+      await this.ctx.storage.put("mapedit", st);
+      await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/mapedit", { method: "POST" }).catch(() => {})));
+      return json({ ok: true, at: st.at });
+    }
+    if (url.pathname === "/mapedit") return json((await this.ctx.storage.get("mapedit")) || { map: null, at: 0 });
     // ---- 角色存檔 / 取回碼 / 主委送禮 (reached through profile() above, which adds x-uid from the player's cookie) ----
     if (url.pathname === "/houses" || url.pathname === "/house") { // 天后新村 (11/16): 40 houses, one owner each, one house per player; the owner decides whether others may come in
       const uid = String(req.headers.get("x-uid") || "").replace(/[^a-f0-9]/g, "").slice(0, 40); if (!uid) return json({ ok: false });

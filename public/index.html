@@ -506,6 +506,11 @@ body.hideui .joy,body.customizing .joy,body.hideui .camreset,body.customizing .c
 /*THEME>>*/
 .pos-panel{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 96px);z-index:60;background:rgba(30,18,14,.88);color:#fff3dc;border:1px solid #d9aa3d;border-radius:12px;padding:8px 10px;font-size:13px;line-height:1.5;width:min(92vw,440px);box-shadow:0 4px 16px rgba(0,0,0,.35)}
 .pos-panel b{color:#ffd98a}.pos-panel .pf-btn{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.pos-panel button{flex:1 1 auto;min-height:34px;border-radius:8px;border:1px solid #a07a3a;background:#4a2e22;color:#fff3dc;font:inherit}.pos-panel .pf-main{background:#b3261e;border-color:#e8402e}
+body.mapedit>*:not(#c):not(#edOv):not(#edPanel):not(#toast):not(script):not(style){visibility:hidden!important}
+#edPanel{position:fixed;left:0;right:0;bottom:0;z-index:60;background:rgba(28,18,12,.92);color:#fff3dc;border-top:1px solid #d9aa3d;padding:6px 8px calc(env(safe-area-inset-bottom,0px) + 6px);font-size:13px}
+#edPanel .ed-row{display:flex;gap:6px;align-items:center;margin:4px 0;flex-wrap:wrap}#edPanel .ed-scroll{flex-wrap:nowrap;overflow-x:auto}#edPanel .ed-sp{flex:1}
+#edPanel button{flex:0 0 auto;min-height:32px;padding:4px 9px;border-radius:9px;border:1px solid #8a6a3a;background:#43291c;color:#fff3dc;font:inherit;white-space:nowrap}#edPanel button.on{background:#d9aa3d;color:#2a1410;border-color:#ffd98a;font-weight:700}
+#edPanel .ed-main{background:#b3261e;border-color:#e8402e}#edPanel .ed-del{background:#6a1e1a}#edPanel i{display:inline-block;width:14px;height:14px;border-radius:4px;margin-right:4px;vertical-align:-2px}#edPanel label{display:flex;align-items:center;gap:6px;flex:1;min-width:140px}#edPanel input[type=range]{flex:1}#edPanel .ed-note{opacity:.8;font-size:12px}#edXY{opacity:.75;font-size:12px}
 </style>
 
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
@@ -4515,7 +4520,7 @@ function initCF(first){
       if(m.t==="ann"&&typeof m.text==="string"){ if(m.text===CS_TEXT) csGoOffer(Number.isInteger(m.h)?m.h:-1,+m.at||Date.now()); if(seenOnce("a"+(m.at||m.text))) return; showMarquee(m.text); return; }
       if(m.t==="stage"){ opSet(!!m.on,+m.at||0,m.name||"",m.cats); return; }
       if(m.t==="puppet"){ ptSet(m); return; }
-      if(m.t==="layout"){ if(!BUILD.on) buildFetch(); return; }
+      if(m.t==="layout"){ if(!BUILD.on) buildFetch(); return; } if(m.t==="mapedit"){ try{ if(!TOWNX.MD.on) TOWNX.MD.fetch(); }catch(e){} return; }
       if(m.t==="market"){ mkSet(m.open||{}); return; }
       if(m.t==="wx"){ WX.set=m.w||null; WX.setUntil=+m.until||0; return; }
       if(m.t==="hb"){ hbStart(m); return; }
@@ -4823,7 +4828,7 @@ function openChair(){ if(!me.sp) return;
   <div class="ct-group"><span class="group-label">線上人數</span><div class="crowd-row"><span class="crowd-now"><span>全廟 <b>${shownTotal()}</b> 人</span><small>這殿 ${hallShown(HALLS.current(),Date.now())} 人・${CROWD.real?"真實人數":CROWD.at&&CROWD.target!=null?`目標 ${CROWD.target}`:"自動"}</small></span><input id="crowdIn" type="text" inputmode="numeric" maxlength="3" placeholder="目標"><button class="chip" data-act="crowdSet">設定</button><button class="chip" data-act="crowdAuto">自動</button><button class="chip" data-act="crowdReal" aria-pressed="${!!CROWD.real}">真實人數</button></div>
     <p class="real-count" id="realCount">真實在線：讀取中…</p><p class="note">目標是全廟人數，會依序分到各殿（前一殿快滿才開下一殿）。約 1 分鐘慢慢變到目標，之後在上下 10 人內浮動。「自動」：真實玩家超過 60 人時只顯示真實玩家；60 人以下會再加上約 20 位假人（上下浮動）。「真實人數」不加假人，有多少玩家就顯示多少。</p></div>
   <div class="ct-group"><span class="group-label">主委自己</span><div class="ct-grid">${ctTile("chairHide",chairHidden?"👁":"🫥",chairHidden?"解除隱形":"隱形",chairHidden?"隱形中":"")}${ctTile("chairBuild","🏗️","建築模式","移動屋頂與裝飾")}${ctTile("chairSpeed","🏃","移動速度",CHAIR_SPD+"×")}${ctTile("chairFly","🕊️",myFly?"降落":"飛行",myFly?"飛行中":"")}${ctTile("chairTod","🌗","白天黑夜",["自動","白天","黃昏","夜晚"][TODSET.i])}${ctTile("chairEn","⚡",window.MZ_ENTEST?"精力照扣":"精力不扣",window.MZ_ENTEST?"測試中":"主委免扣")}${ctTile("chairCs","💰",myCs?"變回主委":"變身財神爺",myCs?"發金光中":"")}${ctTile("giftList","🎁","送禮","平安幣・道具")}</div></div>
-  <div class="ct-group"><span class="group-label">測試工具</span><div class="ct-grid">${ctTile("tmOpen","🧪","測試模式","每次改版的新東西")}${ctTile("catTest","🐈","貓咪測試","直接養貓・各種狀況")}${ctTile("crashOpen","💥","閃退紀錄","哪裡、哪種手機")}${ctTile("chairReset","🔄","重置今日","測試用")}${ctTile("posOpen","📍","座標定位","點東西看座標・要移到哪")}${ctTile("camCode","📷","記錄視角","給 Claude")}</div></div>`);
+  <div class="ct-group"><span class="group-label">測試工具</span><div class="ct-grid">${ctTile("tmOpen","🧪","測試模式","每次改版的新東西")}${ctTile("catTest","🐈","貓咪測試","直接養貓・各種狀況")}${ctTile("crashOpen","💥","閃退紀錄","哪裡、哪種手機")}${ctTile("chairReset","🔄","重置今日","測試用")}${ctTile("mapEd","🗺️","地圖編輯","擺樹石頭・造山挖河・噴漆")}${ctTile("posOpen","📍","座標定位","點東西看座標・要移到哪")}${ctTile("camCode","📷","記錄視角","給 Claude")}</div></div>`);
   const k=$("#readKey"); const keep=()=>{ save("mz.rk",k.value.trim()); }; k.addEventListener("input",keep); k.addEventListener("change",keep); realStats(); }
 // real players only (no demo worshippers, no added numbers), straight from the server's hall counts
 async function realStats(){ const el=$("#realCount"); if(!el) return; let c=null; if(USE_CF){ const j=await probeCF(); if(j) c=j.counts; } else if(room) c=(HALLS.counts||[]).slice();
@@ -4986,6 +4991,7 @@ POSF.open=()=>{ if(POSF.on) return; POSF.on=true; const e=document.createElement
     if(k==="x") POSF.close(); POSF.draw(); };
   POSF.iv=setInterval(POSF.draw,300); POSF.draw(); toast("定位開著：點畫面不會走路，會顯示座標",2600); };
 POSF.close=()=>{ POSF.on=false; clearInterval(POSF.iv); if(POSF.el) POSF.el.remove(); POSF.el=null; if(POSF.pin){ scene.remove(POSF.pin); POSF.pin.geometry.dispose(); POSF.pin.material.dispose(); POSF.pin=null; } POSF.a=POSF.b=POSF.last=null; };
+HANDLERS.mapEd=()=>{ if(!me.sp) return; closeSheet(); try{ TOWNX.edOpen(); }catch(e){ console.warn(e); toast("地圖編輯打不開："+e.message,3000); } };
 HANDLERS.posOpen=()=>{ if(!me.sp) return; closeSheet(); POSF.open(); };
 HANDLERS.camCode=async()=>{ closeSheet(); await new Promise(r=>setTimeout(r,350)); const p=camera.position, d=new T.Vector3(); camera.getWorldDirection(d); const t=p.clone().addScaledVector(d,40), f=v=>+v.toFixed(2);
   const c="MZVIEW:"+JSON.stringify({p:[f(p.x),f(p.y),f(p.z)],t:[f(t.x),f(t.y),f(t.z)],fov:f(camera.fov),me:[f(meAv.pos.x),f(meAv.flyCur||0),f(meAv.pos.y)]});
@@ -12536,7 +12542,7 @@ function forestShafts(C,r,B){ B=B||[FOREST[0]+3,FOREST[1]-3,-173,-146]; const ma
     const m=new T.Mesh(geo,mat); m.scale.x=1+r()*1.6; m.position.set(x,3.3,z); m.rotation.set(0,r()*6.283,.38); m.userData.keep=1; m.userData.own=1; m.userData.shared=1; m.raycast=()=>{}; C.g.add(m); n++; } }
 /* 石柱燈 along a path, every so many metres, side to side: a stone post with a lamp box that lights a pool on the path at night (11/17) */
 function pathLamps(C,P,step,off){ lampMats(); let acc=step*.5, side=1; for(let i=0;i<P.length-1;i++){ const [x0,z0]=P[i], [x1,z1]=P[i+1], L=Math.hypot(x1-x0,z1-z0); if(!L) continue; const ux=(x1-x0)/L, uz=(z1-z0)/L;
-    while(acc<L){ const x=x0+ux*acc-uz*off*side, z=z0+uz*acc+ux*off*side; if(!NT.springs.some(S=>springD(S,x,z)<S[2]+.6)){ lantern(C,x,z); const h=new T.Sprite(KM.lampHalo); h.scale.set(1.1,1.1,1); h.position.set(x,.99,z); h.userData.keep=1; h.userData.own=1; C.g.add(h);
+    while(acc<L){ const x=x0+ux*acc-uz*off*side, z=z0+uz*acc+ux*off*side; if(!NT.springs.some(S=>springD(S,x,z)<S[2]+.6)&&!MD.gone(x,z)){ lantern(C,x,z); const h=new T.Sprite(KM.lampHalo); h.scale.set(1.1,1.1,1); h.position.set(x,.99,z); h.userData.keep=1; h.userData.own=1; C.g.add(h);
         const pl=new T.Mesh(GEO.pool||(GEO.pool=new T.PlaneGeometry(7,7).rotateX(-Math.PI/2)),KM.lampPool); pl.scale.set(.75,1,.75); pl.position.set(x+uz*off*side*.6,.06,z-ux*off*side*.6); pl.userData.keep=1; pl.userData.own=1; pl.userData.shared=1; pl.raycast=()=>{}; pl.renderOrder=1; C.g.add(pl); }
       side=-side; acc+=step; } acc-=L; } }
 /* 石燈籠 (11/17 主委「這路燈太假了」): a proper stone lantern instead of three boxes — a hexagonal foot, a round post, a ledge, a firebox
@@ -12559,8 +12565,9 @@ function valleyH(x,z){ const w=walkGap(x,z); let h=sstep(1.2,9,w)*(1.7+1.2*nz(x,
 const AT_FRAG="#ifdef USE_MAP\n vec4 t1=texture2D(map,vUv), t2=texture2D(map,vUv*.29+vec2(.43,.17)); float lf=sin(vUv.x*.37+sin(vUv.y*.29)*1.7)*sin(vUv.y*.41+1.3); vec4 texelColor=mix(t1,t2,.45); texelColor.rgb*=.95+.08*lf; texelColor=mapTexelToLinear(texelColor); diffuseColor*=texelColor;\n#endif";
 function antiTile(m,key){ const prev=m.onBeforeCompile; m.onBeforeCompile=sh=>{ prev&&prev.call(m,sh); sh.fragmentShader=sh.fragmentShader.replace("#include <map_fragment>",AT_FRAG); }; const k0=m.customProgramCacheKey; m.customProgramCacheKey=()=>(key||"at")+(k0&&k0!==T.Material.prototype.customProgramCacheKey?k0():""); return m; }
 function terrain(C,x0,x1,z0,z1,hf,cf,y0){ const nx=Math.round(x1-x0), nzc=Math.round(z1-z0), g=new T.PlaneGeometry(x1-x0,z1-z0,nx,nzc); g.rotateX(-Math.PI/2); g.translate((x0+x1)/2,0,(z0+z1)/2);
-  const P=g.attributes.position, col=new Float32Array(P.count*3), c=new T.Color(); for(let i=0;i<P.count;i++){ const x=P.getX(i), z=P.getZ(i), h=hf(x,z); P.setY(i,h+(y0||0)); cf(x,z,h,c); col[i*3]=c.r; col[i*3+1]=c.g; col[i*3+2]=c.b; }
-  g.setAttribute("color",new T.BufferAttribute(col,3)); g.computeVertexNormals(); { const U=g.attributes.uv; for(let i=0;i<P.count;i++) U.setXY(i,P.getX(i)/3.4,P.getZ(i)/3.4); } const m=new T.Mesh(g,antiTile(new T.MeshLambertMaterial({vertexColors:true,map:cf===beachC?sandDetail():grassDetail(),color:new T.Color(1.22,1.22,1.22)}))); /* (11/16: a painted grass / sand grain over the colours) */ m.userData.keep=1; m.userData.floor=1; m.userData.own=1; C.g.add(m); pickables.push(m); C.picks.push(m); return m; }
+  const P=g.attributes.position, col=new Float32Array(P.count*3), c=new T.Color(); for(let i=0;i<P.count;i++){ const x=P.getX(i), z=P.getZ(i), h=hf(x,z)+mdH(x,z); P.setY(i,h+(y0||0)); cf(x,z,h,c); mdPC(x,z,c); col[i*3]=c.r; col[i*3+1]=c.g; col[i*3+2]=c.b; }
+  g.setAttribute("color",new T.BufferAttribute(col,3)); g.computeVertexNormals(); { const U=g.attributes.uv; for(let i=0;i<P.count;i++) U.setXY(i,P.getX(i)/3.4,P.getZ(i)/3.4); } const m=new T.Mesh(g,antiTile(new T.MeshLambertMaterial({vertexColors:true,map:cf===beachC?sandDetail():grassDetail(),color:new T.Color(1.22,1.22,1.22)}))); /* (11/16: a painted grass / sand grain over the colours) */ m.userData.keep=1; m.userData.floor=1; m.userData.own=1; m.userData.ter={hf,cf,y0}; C.g.add(m); pickables.push(m); C.picks.push(m); return m; }
+/* (the chair's map edits, see 地圖編輯 below; safe before it is defined) */ function mdH(x,z){ try{ return MD.ch.size?MD.h(x,z):0; }catch(e){ return 0; } } function mdPC(x,z,c){ try{ if(MD.ch.size) MD.pc(x,z,c); }catch(e){} }
 const CL=s=>new T.Color(s).convertSRGBToLinear();
 const VC={g1:CL("#86c96c"),g2:CL("#62b060"),moss:CL("#4f9a80"),path:CL("#d8c49a"),cliff:CL("#84a093"),sand:CL("#e6cf9e"),wet:CL("#c4a878"),dune:CL("#9cc97c")}; /* (deeper than they look: the bright daylight washes pale colours out to white) */
 function valleyC(x,z,h,c){ const n=.5+.5*nz(x*1.7,z*1.7); c.copy(LAWN).multiplyScalar(.95+.1*n); /* (one lawn everywhere — 11/16 「不要一塊深綠一塊淺綠」) */ const b=brookD(x,z); c.lerp(VC.moss,sstep(brookW(b[1],b[2])+2.2,brookW(b[1],b[2]),b[0])*.75);
@@ -12924,9 +12931,10 @@ function treeModel(name,cb){ if(TREEM[name]){ cb(TREEM[name]); return; } loadSha
 /* (11/17 主委「刪除椰子樹跟杉木」: where a cedar stood there is one of the chair's trunk trees now, deep green; the palms are gone) */
 function pine(C,x,y,z,s,r){ (C.lpt||(C.lpt=[])).push([x,y,z,s*(.8+r()*.55),1,r()*6.283,"deep"]); }
 function palmAt(){}
-function treesFlush(C){ if(C.lpt) try{ const g=TW.ground; for(const t of C.lpt){ if(t[6]==="gold"||t[6]==="pink") continue; const a=g(t[0]+1.2,t[2]), b=g(t[0]-1.2,t[2]), c=g(t[0],t[2]+1.2), d=g(t[0],t[2]-1.2); if(a==null||b==null||c==null||d==null) continue; if(Math.hypot(a-b,c-d)/2.4>.32){ t[8]="bush"; if(!(t[7]>6)) t[3]*=.85; } } }catch(e){} /* (trees on a slope become bushes) */
+function treesFlush(C){ if(C.lpt&&!C.md) try{ C.lpt=C.lpt.filter(t=>!MD.gone(t[0],t[2])); for(const t of C.lpt){ const dh=MD.h(t[0],t[2]); if(dh) t[1]=(t[1]||0)+dh; } }catch(e){} /* (地圖編輯: cleared spots, the chair's ground) */
+  if(C.lpt) try{ const g=TW.ground; for(const t of C.lpt){ if(t[6]==="gold"||t[6]==="pink") continue; const a=g(t[0]+1.2,t[2]), b=g(t[0]-1.2,t[2]), c=g(t[0],t[2]+1.2), d=g(t[0],t[2]-1.2); if(a==null||b==null||c==null||d==null) continue; if(Math.hypot(a-b,c-d)/2.4>.32){ t[8]="bush"; if(!(t[7]>6)) t[3]*=.85; } } }catch(e){} /* (trees on a slope become bushes) */
   if(C.lpt) C.lpt=C.lpt.filter(t=>t[6]==="gold"||!(t[0]>78&&t[0]<111&&Math.abs(t[2]-GZ)<10)); /* (the view from the path across 女神泉 to the falls stays open, 11/17) */ if(C.lpt) C.lpt=C.lpt.filter(t=>![[0,0],[.8,0],[-.8,0],[0,.8],[0,-.8]].some(([dx,dz])=>{ try{ return !!waterAt(t[0]+dx,t[2]+dz); }catch(e){ return false; } })); /* (11/17 主委「為什麼有樹長在水裡」: no tree stands in or right at the edge of water) */
-  if(C.lpt&&C.lpt.length){ const B=LPT.build(C.lpt,{seed:C.lpt.length*31+7}); for(const o of [B.trunks,...B.leaves]){ o.userData.keep=1; C.g.add(o); } C.lpt=null; } for(const name of ["cedar","palm"]){ const L=C[name]; if(!L||!L.length) continue; treeModel(name,M=>{ if(!C.g.parent) return; const q=new T.Quaternion(), e=new T.Euler(), p=new T.Vector3(), sc=new T.Vector3(), mx=new T.Matrix4();
+  if(C.lpt&&!C.md) C.genT=C.lpt.slice(); if(C.lpt&&C.lpt.length){ const B=LPT.build(C.lpt,{seed:C.lpt.length*31+7}); for(const o of [B.trunks,...B.leaves]){ o.userData.keep=1; C.g.add(o); } C.lpt=null; } for(const name of ["cedar","palm"]){ const L=C[name]; if(!L||!L.length) continue; treeModel(name,M=>{ if(!C.g.parent) return; const q=new T.Quaternion(), e=new T.Euler(), p=new T.Vector3(), sc=new T.Vector3(), mx=new T.Matrix4();
     for(const P of M.parts){ const im=new T.InstancedMesh(P.g,P.m,L.length); L.forEach((t,i)=>{ const k=t[3]/M.h, lean=name==="palm"?.12:.04; e.set(Math.sin(i*12.9)*lean,t[5],Math.cos(i*7.3)*lean); q.setFromEuler(e); mx.compose(p.set(t[0],t[1],t[2]),q,sc.set(k*t[4],k,k*t[4])); im.setMatrixAt(i,mx); }); im.instanceMatrix.needsUpdate=true; im.frustumCulled=false; im.userData.keep=1; im.userData.shared=1; im.userData.noMerge=1; im.raycast=()=>{}; C.g.add(im); } try{ markDirty(); }catch(_){} }); } }
 function mushroom(C,x,z,r){ const y=0; put(C,GEO.cy||(GEO.cy=new T.CylinderGeometry(1,1,1,16)),NM.white,x,y+.07,z,.035,.14,.035); put(C,gsph(),r()<.5?NM.red:NM.maple,x,y+.15,z,.1,.06,.1); }
 function springPool(C,S,r){ const [x,z,R,k,y]=S; const g=new T.CircleGeometry(R+.2,72); g.rotateX(-Math.PI/2); { const P=g.attributes.position, rn=new Float32Array(P.count); for(let i=0;i<P.count;i++){ const px=P.getX(i), pz=P.getZ(i), d=Math.hypot(px,pz); rn[i]=d/(R+.2); if(d>1e-4){ const kk=springK(S,x+px,z+pz); P.setX(i,px*kk); P.setZ(i,pz*kk); } } g.setAttribute("aR",new T.BufferAttribute(rn,1)); }
@@ -13155,6 +13163,176 @@ TW.water=(x,z)=>{ if(z>FRONT.walk1){ return z>FRONT.shore(x)+.4&&Math.abs(x)<130
   if(x>86&&x<182&&z<-50&&z>-140){ const b=brookD(x,z); if(b[0]<brookW(b[1],b[2])-.1) return {k:"b",y:-.1}; }
   return null; };
 TW.zrect=ZR; TW.live=()=>Object.keys(LIVE); TW.unload=unload; TW.LIVE=LIVE; TW.LOTS=LOTS; TW.LOT_SZ=LOT_SZ; TW.VIL=VIL;
+/* ================= 🗺️ 地圖編輯 (11/17 主委「增加一個讓我放樹佈置石頭移動石頭 造山 造河的功能 地表貼圖噴漆 把地圖上所有的元素讓我都可以變動移動刪除增減」)
+   The map stays made by the code; the chair's changes are kept as an overlay on top of it, saved with 「固定」 for everyone:
+   - 地形: a height change on a 1 m lattice (in 16 × 16 chunks, centimetres) added to every terrain; dug below the water line it turns to water;
+   - 噴漆: a ground paint per lattice point (grass, dark grass, dirt, path, sand, rock, moss) laid over the terrain's own colours;
+   - 擺放: trees, bushes, rocks, flowers, reeds, stone lanterns, benches, street lamps, the shrine — each one moved, turned, sized or deleted;
+   - 清除: round patches where the code's own trees, rocks, lanterns… are not grown any more. Moving one of the code's own things clears its
+     spot and puts an editable copy there.
+   Buildings and streets are not part of this (主委: 「建築不用 我只要地形這些」). ================= */
+const MD={CS:16,ch:new Map(),objs:[],er:[],erG:new Map(),obG:new Map(),nid:1,on:false,hist:[],water:null,ver:0};
+const MDG=new T.Group(); MDG.userData.noMerge=1; scene.add(MDG); const RAW={};
+const MDPAL=[null,"#6fb35a","#4a8a40","#9a7650","#d8c49a","#e6cf9e","#8d8172","#4f9a80"], MDPN=["","草地","深草","泥土","小路","沙地","石頭","苔蘚"];
+const MDPC=MDPAL.map(c=>c&&new T.Color(c).convertSRGBToLinear());
+const mdKey=(cx,cz)=>cx+","+cz;
+function mdChunk(ix,iz,make){ const cx=Math.floor(ix/16), cz=Math.floor(iz/16), k=mdKey(cx,cz); let c=MD.ch.get(k); if(!c&&make){ c={h:null,p:null}; MD.ch.set(k,c); } return c; }
+const mdIdx=(ix,iz)=>(((iz%16)+16)%16)*16+(((ix%16)+16)%16);
+function mdHi(ix,iz){ if(!MD.ch.size) return 0; const c=mdChunk(ix,iz); return c&&c.h?c.h[mdIdx(ix,iz)]/100:0; }
+function mdPi(ix,iz){ if(!MD.ch.size) return 0; const c=mdChunk(ix,iz); return c&&c.p?c.p[mdIdx(ix,iz)]:0; }
+MD.h=(x,z)=>{ if(!MD.ch.size) return 0; const ix=Math.floor(x), iz=Math.floor(z), fx=x-ix, fz=z-iz; const a=mdHi(ix,iz), b=mdHi(ix+1,iz), c=mdHi(ix,iz+1), d=mdHi(ix+1,iz+1); if(!a&&!b&&!c&&!d) return 0; return (a*(1-fx)+b*fx)*(1-fz)+(c*(1-fx)+d*fx)*fz; };
+const _pc=new T.Color();
+MD.pc=(x,z,c)=>{ if(!MD.ch.size) return; const ix=Math.floor(x), iz=Math.floor(z), fx=x-ix, fz=z-iz; let w=0; _pc.setRGB(0,0,0);
+  for(const [dx,dz,ww] of [[0,0,(1-fx)*(1-fz)],[1,0,fx*(1-fz)],[0,1,(1-fx)*fz],[1,1,fx*fz]]){ const p=mdPi(ix+dx,iz+dz); if(!p||ww<=0) continue; const q=MDPC[p]; _pc.r+=q.r*ww; _pc.g+=q.g*ww; _pc.b+=q.b*ww; w+=ww; }
+  if(w<=0) return; _pc.multiplyScalar(1/w).multiplyScalar(.94+.12*(.5+.5*nz(x*1.3,z*1.3))); c.lerp(_pc,Math.min(1,w*1.15)*.95); };
+/* erased spots and placed objects: a coarse grid, so asking about one point stays cheap */
+function mdGridAdd(G,x,z,r,item){ for(let gx=Math.floor((x-r)/8);gx<=Math.floor((x+r)/8);gx++) for(let gz=Math.floor((z-r)/8);gz<=Math.floor((z+r)/8);gz++){ const k=gx+","+gz; let a=G.get(k); if(!a) G.set(k,a=[]); a.push(item); } }
+function mdRegrid(){ MD.erG=new Map(); MD.er.forEach(e=>mdGridAdd(MD.erG,e[0],e[1],e[2],e)); MD.obG=new Map(); MD.objs.forEach(o=>mdGridAdd(MD.obG,o.x,o.z,2,o)); }
+MD.gone=(x,z)=>{ if(!MD.er.length) return false; const a=MD.erG.get(Math.floor(x/8)+","+Math.floor(z/8)); if(!a) return false; for(const e of a) if((x-e[0])**2+(z-e[1])**2<e[2]*e[2]) return true; return false; };
+const MDBLK={t:.45,b:.6,rock:.7,mrock:.7,lantern:.35,bench:.75,lamp:.2,shrine:1.6,flower:0,reeds:0};
+MD.blocked=(x,z)=>{ if(!MD.objs.length) return false; const a=MD.obG.get(Math.floor(x/8)+","+Math.floor(z/8)); if(!a) return false; for(const o of a){ const k=o.k[1]==="_"?o.k[0]:o.k, r=(MDBLK[k]||0)*o.s; if(r&&(x-o.x)**2+(z-o.z)**2<r*r) return true; } return false; };
+/* the code's own things: each maker is wrapped — a thing standing in a cleared spot is taken away again right after it is made (so the
+   dice for everything after it fall the same), the rest are lifted with the chair's ground and remembered, so a tap can pick them */
+function mdWrap(name,fn,ix,iz,kind){ RAW[name]=fn; return function(...a){ const C=a[0]; if(!C||!C.g||C.md) return fn.apply(this,a); const x=a[ix], z=a[iz]; const n0=C.g.children.length, p0=C.picks?C.picks.length:0; const out=fn.apply(this,a); const nw=C.g.children.slice(n0);
+  if(MD.gone(x,z)){ for(const o of nw) C.g.remove(o); if(C.picks&&C.picks.length>p0){ C.picks.splice(p0).forEach(m=>{ const i=pickables.indexOf(m); if(i>=0) pickables.splice(i,1); }); } return out; }
+  const dh=MD.h(x,z); if(dh) for(const o of nw) o.position.y+=dh; (C.gen||(C.gen=[])).push({k:kind,x,z,s:kind==="rock"||kind==="mrock"?a[5]:1}); return out; }; }
+mossRock=mdWrap("mossRock",mossRock,2,4,"rock"); starFlower=mdWrap("starFlower",starFlower,2,4,"flower"); reeds=mdWrap("reeds",reeds,2,3,"reeds");
+lantern=mdWrap("lantern",lantern,1,2,"lantern"); nbench=mdWrap("nbench",nbench,1,2,"bench"); lamp=mdWrap("lamp",lamp,1,2,"lamp"); bench=mdWrap("bench",bench,1,2,"bench");
+/* the ground, walking and water with the chair's changes */
+{ const g0=TW.ground, w0=TW.walk, wa0=TW.water; MD.g0=g0;
+  TW.ground=(x,z)=>{ const b=g0(x,z); if(b==null) return b; return b+MD.h(x,z); };
+  MD.isWater=(x,z)=>{ if(!MD.water) return false; const k=Math.round(x)+","+Math.round(z); return MD.water.has(k); };
+  TW.water=(x,z)=>MD.isWater(x,z)?{k:"r",y:RIVER_Y}:wa0(x,z);
+  TW.walk=(x,z)=>{ if(MD.blocked(x,z)) return false; const dh=MD.ch.size?MD.h(x,z):0, gone=MD.gone(x,z); if(!dh&&!gone) return w0(x,z);
+    if(MD.isWater(x,z)) return false; if(!dh&&w0(x,z)) return true; const g=TW.ground, a=g(x+.5,z), b=g(x-.5,z), c=g(x,z+.5), d=g(x,z-.5); if(a==null||b==null||c==null||d==null) return w0(x,z);
+    if(wa0(x,z)&&!dh) return false; return Math.hypot(a-b,c-d)<=TW.maxSlope; }; }
+/* water where the chair dug below the water line: a flat sheet over just those cells */
+function mdWaterBuild(){ const W=new Set(); for(const [k,c] of MD.ch){ if(!c.h) continue; const [cx,cz]=k.split(",").map(Number); for(let i=0;i<256;i++){ const dh=c.h[i]/100; if(dh>-.05) continue; const ix=cx*16+(i%16), iz=cz*16+(i>>4); const b=MD.g0(ix,iz); if(b==null) continue; if(b+dh<RIVER_Y-.04) W.add(ix+","+iz); } }
+  MD.water=W.size?W:null; if(MD.wm){ MDG.remove(MD.wm); MD.wm.geometry.dispose(); MD.wm=null; } if(!W.size) return;
+  const P=[]; for(const k of W){ const [x,z]=k.split(",").map(Number); P.push(x-.75,RIVER_Y,z-.75, x+.75,RIVER_Y,z-.75, x+.75,RIVER_Y,z+.75, x-.75,RIVER_Y,z-.75, x+.75,RIVER_Y,z+.75, x-.75,RIVER_Y,z+.75); }
+  const g=new T.BufferGeometry(); g.setAttribute("position",new T.Float32BufferAttribute(P,3)); g.computeVertexNormals(); const m=new T.Mesh(g,MD.wmat||(MD.wmat=mirrorMat([.1,.05]))); m.material.side=T.DoubleSide; m.raycast=()=>{}; m.renderOrder=1; MDG.add(m); MD.wm=m; }
+/* the placed things */
+const MDKINDS=[["t_leaf","🌳","樹"],["t_deep","🌲","深綠樹"],["t_maple","🍁","楓樹"],["t_pink","🌸","櫻花"],["t_gold","🌟","金葉神木"],["b_leaf","🌿","樹叢"],["b_deep","🌱","深綠樹叢"],["rock","🪨","石頭"],["mrock","🗿","苔石"],["flower","🌼","花"],["reeds","🌾","蘆葦"],["lantern","🏮","石燈籠"],["bench","🪑","長椅"],["lamp","💡","路燈"],["shrine","⛩️","神社"]];
+const MDNAME=Object.fromEntries(MDKINDS.map(k=>[k[0],k[2]])), MDGEN={rock:"rock",mrock:"mrock",flower:"flower",reeds:"reeds",lantern:"lantern",bench:"bench",lamp:"lamp"};
+function mdMake(o){ const g=new T.Group(); g.userData.md=o; const C={g,picks:[],baked:[],md:1}; const r=krng(o.id*7919+3); nmat();
+  try{ const k=o.k; if(k[1]==="_"){ const B=LPT.build([[0,0,0,1,1,0,k.slice(2),k==="t_gold"?320:60,k[0]==="b"?"bush":undefined]],{seed:o.id*31+7}); for(const m of [B.trunks,...B.leaves]){ m.userData.keep=1; g.add(m); } }
+    else if(k==="rock") RAW.mossRock(C,r,0,0,0,1,false); else if(k==="mrock") RAW.mossRock(C,r,0,0,0,1,true);
+    else if(k==="flower"){ for(let i=0;i<6;i++) RAW.starFlower(C,r,(r()-.5)*1.4,0,(r()-.5)*1.4,.8+r()*.4); }
+    else if(k==="reeds") RAW.reeds(C,r,0,0); else if(k==="lantern") RAW.lantern(C,0,0,0); else if(k==="bench") RAW.nbench(C,0,0,0); else if(k==="lamp") RAW.lamp(C,0,0);
+    else if(k==="shrine") loadRaw("shrine",false,m=>{ if(g.parent) g.add(m); }); }catch(e){ console.warn("map edit object",o,e); }
+  return g; }
+function mdPlace(o){ if(o.g){ MDG.remove(o.g); } o.g=mdMake(o); mdPos(o); MDG.add(o.g); }
+function mdPos(o){ const b=TW.ground(o.x,o.z); o.g.position.set(o.x,(b==null?0:b)+(o.dy||0),o.z); o.g.rotation.y=o.r||0; o.g.scale.setScalar(o.s||1); }
+function mdAllPlace(){ MDG.children.slice().forEach(c=>{ if(c!==MD.wm) MDG.remove(c); }); MD.objs.forEach(o=>{ o.g=null; mdPlace(o); }); }
+/* the terrain under a change is redrawn in place (fast, while you brush); the districts are rebuilt once you stop, so the code's own trees and
+   rocks sit on the new ground and cleared spots empty out */
+function mdPatch(x0,x1,z0,z1,colOnly){ for(const id in LIVE){ const C=LIVE[id]; C.g.traverse(m=>{ const t=m.userData&&m.userData.ter; if(!t) return; const P=m.geometry.attributes.position, col=m.geometry.attributes.color; let any=false; const c=new T.Color();
+    for(let i=0;i<P.count;i++){ const x=P.getX(i), z=P.getZ(i); if(x<x0||x>x1||z<z0||z>z1) continue; const h=t.hf(x,z)+MD.h(x,z); if(!colOnly) P.setY(i,h+(t.y0||0)); t.cf(x,z,h,c); MD.pc(x,z,c); col.setXYZ(i,c.r,c.g,c.b); any=true; }
+    if(any){ col.needsUpdate=true; if(!colOnly){ P.needsUpdate=true; m.geometry.computeVertexNormals(); m.geometry.computeBoundingSphere(); m.geometry.computeBoundingBox(); } } }); }
+  MD.objs.forEach(o=>{ if(o.x>x0-2&&o.x<x1+2&&o.z>z0-2&&o.z<z1+2&&o.g) mdPos(o); }); }
+function mdRebuild(x0,x1,z0,z1){ for(const id of Object.keys(LIVE)){ const d=CH.find(q=>q.id===id); if(!d) continue; const dx=Math.max(x0-d.c[0],0,d.c[0]-x1), dz=Math.max(z0-d.c[1],0,d.c[1]-z1); if(Math.hypot(dx,dz)>d.r+6) continue; try{ unload(id); load(d); }catch(e){ console.warn("map edit rebuild",id,e); } } }
+MD.dirty=null; MD.flushT=0;
+function mdDirty(x0,x1,z0,z1){ const D=MD.dirty; MD.dirty=D?[Math.min(D[0],x0),Math.max(D[1],x1),Math.min(D[2],z0),Math.max(D[3],z1)]:[x0,x1,z0,z1]; MD.flushT=performance.now()+700; }
+function mdFlush(){ if(!MD.dirty||performance.now()<MD.flushT||MD.down) return; const D=MD.dirty; MD.dirty=null; mdWaterBuild(); mdRebuild(D[0],D[1],D[2],D[3]); }
+/* save / load: one small text — chunks as base64, things and cleared spots as numbers */
+const b64e=u=>{ let s=""; for(let i=0;i<u.length;i++) s+=String.fromCharCode(u[i]); return btoa(s); }, b64d=s=>{ const b=atob(s), u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); return u; };
+MD.pack=()=>{ const ch={}; for(const [k,c] of MD.ch){ const h=c.h&&c.h.some(v=>v)?b64e(new Uint8Array(c.h.buffer.slice(0))):"", p=c.p&&c.p.some(v=>v)?b64e(c.p):""; if(h||p) ch[k]=[h,p]; }
+  return {v:1,ch,o:MD.objs.map(o=>[o.id,o.k,+o.x.toFixed(2),+o.z.toFixed(2),+(o.dy||0).toFixed(2),+(o.r||0).toFixed(3),+(o.s||1).toFixed(3)]),e:MD.er.map(e=>e.map(v=>+v.toFixed(2)))}; };
+MD.unpack=d=>{ MD.ch=new Map(); MD.objs=[]; MD.er=[]; if(d&&d.ch) for(const k in d.ch){ const [h,p]=d.ch[k]||[]; const c={h:null,p:null}; try{ if(h){ const u=b64d(h); c.h=new Int16Array(u.buffer.slice(0,512)); } if(p) c.p=b64d(p).slice(0,256); }catch(e){} MD.ch.set(k,c); }
+  if(d&&Array.isArray(d.o)) d.o.forEach(q=>MD.objs.push({id:q[0],k:q[1],x:q[2],z:q[3],dy:q[4],r:q[5],s:q[6]})); if(d&&Array.isArray(d.e)) MD.er=d.e.slice();
+  MD.nid=MD.objs.reduce((m,o)=>Math.max(m,o.id+1),1); mdRegrid(); };
+MD.applyAll=()=>{ mdWaterBuild(); mdAllPlace(); for(const id of Object.keys(LIVE)){ const d=CH.find(q=>q.id===id); if(d) try{ unload(id); load(d); }catch(e){} } };
+MD.baked=null; /* (a 配置碼 written into the game: used when the server has none) */
+MD.fetch=async()=>{ let d=null; try{ if(typeof USE_CF!=="undefined"&&USE_CF){ const r=await fetch("/mapedit",{cache:"no-store"}); const j=await r.json(); d=j&&j.map; } else d=JSON.parse(localStorage.getItem("mz.mapedit")||"null"); }catch(e){} if(!d) d=MD.baked; if(!d) return; MD.unpack(d); MD.applyAll(); };
+setTimeout(()=>{ MD.fetch(); },2500);
+TW.MD=MD;
+/* ---- the editor ---- */
+const ED={tool:"sel",kind:"t_leaf",size:4,str:.5,paint:1,sel:null,cam:null,tgt:new T.Vector3(),yaw:0,pitch:.9,dist:34,ptr:new Map(),ring:null,raf:0,last:0,flatH:0,moving:false};
+function edCamUpdate(){ const c=ED.cam, t=ED.tgt, b=TW.ground(t.x,t.z); t.y=b==null?0:b; c.position.set(t.x+Math.sin(ED.yaw)*Math.cos(ED.pitch)*ED.dist,t.y+Math.sin(ED.pitch)*ED.dist,t.z+Math.cos(ED.yaw)*Math.cos(ED.pitch)*ED.dist); c.lookAt(t); c.aspect=innerWidth/innerHeight; c.updateProjectionMatrix();
+  try{ meAv.pos.set(t.x,t.z); meAv.target.set(t.x,t.z); meAv.path=[]; }catch(e){} }
+function edRay(cx,cy){ const r=canvas.getBoundingClientRect(); ndc.set((cx-r.left)/r.width*2-1,-(cy-r.top)/r.height*2+1); raycaster.setFromCamera(ndc,ED.cam); return raycaster; }
+function edGround(cx,cy){ const rc=edRay(cx,cy); const ms=[]; for(const id in LIVE) LIVE[id].g.traverse(m=>{ if(m.userData&&(m.userData.ter||m.userData.floor)&&m.isMesh) ms.push(m); }); if(MD.wm) ms.push(MD.wm);
+  const h=rc.intersectObjects(ms,false)[0]; if(h) return h.point; const pl=new T.Plane(new T.Vector3(0,1,0),0), p=new T.Vector3(); return rc.ray.intersectPlane(pl,p)?p:null; }
+function edPickObj(cx,cy){ const rc=edRay(cx,cy); const h=rc.intersectObjects(MDG.children.filter(c=>c!==MD.wm),true)[0]; if(!h) return null; let o=h.object; while(o&&!o.userData.md) o=o.parent; return o&&o.userData.md; }
+function edPickGen(p){ let best=null, bd=2.2; for(const id in LIVE){ for(const g of (LIVE[id].gen||[])){ const d=Math.hypot(g.x-p.x,g.z-p.z); if(d<bd){ bd=d; best=g; } } } return best; }
+function edSnap(){ MD.hist.push(JSON.stringify(MD.pack())); if(MD.hist.length>30) MD.hist.shift(); }
+function edUndo(){ const s=MD.hist.pop(); if(!s){ toast("沒有可以復原的步驟"); return; } MD.unpack(JSON.parse(s)); ED.sel=null; MD.applyAll(); edPanel(); toast("已復原上一步",1400); }
+function edBrush(p,dt){ const R=ED.size, S=ED.str, x0=Math.floor(p.x-R), x1=Math.ceil(p.x+R), z0=Math.floor(p.z-R), z1=Math.ceil(p.z+R), t=ED.tool;
+  if(t==="erase"){ return; }
+  for(let iz=z0;iz<=z1;iz++) for(let ix=x0;ix<=x1;ix++){ const d=Math.hypot(ix-p.x,iz-p.z); if(d>R) continue; const f=sstep(R,R*.35,d);
+    if(t==="paint"||t==="unpaint"){ if(d>R*.85&&Math.random()>.5) continue; const c=mdChunk(ix,iz,true); if(!c.p) c.p=new Uint8Array(256); c.p[mdIdx(ix,iz)]=t==="paint"?ED.paint:0; continue; }
+    const b=MD.g0(ix,iz); if(b==null) continue; const c=mdChunk(ix,iz,true); if(!c.h) c.h=new Int16Array(256); const i=mdIdx(ix,iz); let dh=c.h[i]/100; const tot=b+dh;
+    if(t==="up") dh+=S*4*f*dt; else if(t==="down") dh-=S*4*f*dt; else if(t==="flat") dh+=(ED.flatH-tot)*Math.min(1,f*dt*6*S+.02);
+    else if(t==="river"){ const tg=RIVER_Y-1.05; if(tot>tg) dh+=(tg-tot)*Math.min(1,f*dt*5*S+.02); }
+    else if(t==="smooth"){ const n=(ix2,iz2)=>{ const bb=MD.g0(ix2,iz2); return (bb==null?b:bb)+mdHi(ix2,iz2); }; const av=(n(ix+1,iz)+n(ix-1,iz)+n(ix,iz+1)+n(ix,iz-1))/4; dh+=(av-tot)*Math.min(1,f*dt*8*S); }
+    else if(t==="reset") dh+=(0-dh)*Math.min(1,f*dt*6*S+.05);
+    c.h[i]=Math.max(-6000,Math.min(6000,Math.round(dh*100))); }
+  const col=t==="paint"||t==="unpaint"; mdPatch(x0-1,x1+1,z0-1,z1+1,col); mdDirty(x0-1,x1+1,z0-1,z1+1); }
+function edErase(p){ const R=ED.size; MD.er.push([+p.x.toFixed(2),+p.z.toFixed(2),R]); mdGridAdd(MD.erG,p.x,p.z,R,MD.er[MD.er.length-1]);
+  const rm=MD.objs.filter(o=>Math.hypot(o.x-p.x,o.z-p.z)<R); rm.forEach(o=>{ if(o.g) MDG.remove(o.g); }); if(rm.length){ MD.objs=MD.objs.filter(o=>!rm.includes(o)); mdRegrid(); } mdDirty(p.x-R,p.x+R,p.z-R,p.z+R); }
+function edAdd(k,x,z,extra){ const o=Object.assign({id:MD.nid++,k,x,z,dy:0,r:Math.random()*6.283,s:1},extra||{}); MD.objs.push(o); mdGridAdd(MD.obG,o.x,o.z,2,o); mdPlace(o); return o; }
+function edSelect(o){ ED.sel=o; if(!ED.ring){ ED.ring=new T.Mesh(new T.RingGeometry(.9,1.05,40).rotateX(-Math.PI/2),new T.MeshBasicMaterial({color:"#ffd24a",depthTest:false,transparent:true})); ED.ring.renderOrder=999; } if(o){ if(!ED.ring.parent) scene.add(ED.ring); } else if(ED.ring.parent) scene.remove(ED.ring); edPanel(); }
+function edLoop(){ if(!MD.on) return; ED.raf=requestAnimationFrame(edLoop); const now=performance.now(), dt=Math.min(.05,(now-ED.last)/1000||.016); ED.last=now; edCamUpdate();
+  if(MD.down&&ED.bp&&/^(up|down|flat|river|smooth|reset|paint|unpaint)$/.test(ED.tool)) edBrush(ED.bp,dt);
+  if(ED.ring&&ED.sel&&ED.sel.g){ const o=ED.sel; ED.ring.position.set(o.x,o.g.position.y+.08,o.z); ED.ring.scale.setScalar(Math.max(.6,o.s*(o.k[1]==="_"?2.2:1))); }
+  if(ED.cur){ const p=ED.hover; ED.cur.visible=!!p&&ED.tool!=="sel"&&ED.tool!=="place"&&ED.tool!=="view"; if(p){ ED.cur.position.set(p.x,p.y+.15,p.z); ED.cur.scale.setScalar(ED.size); } }
+  mdFlush(); const i=document.getElementById("edXY"); if(i&&ED.hover) i.textContent=`（${ED.hover.x.toFixed(1)}, ${ED.hover.z.toFixed(1)}）`; }
+function edOpen(){ if(MD.on) return; MD.on=true; closeSheet(); ED.cam=new T.PerspectiveCamera(55,innerWidth/innerHeight,.3,700); ED.tgt.set(meAv.pos.x,0,meAv.pos.y); ED.yaw=(typeof camYaw!=="undefined"?camYaw:0); window.MZ_VIEW={scene,cam:ED.cam}; window.MZ_HOLD=true; document.body.classList.add("mapedit"); edCamUpdate();
+  ED.cur=new T.Mesh(new T.RingGeometry(.94,1,48).rotateX(-Math.PI/2),new T.MeshBasicMaterial({color:"#ffffff",depthTest:false,transparent:true,opacity:.85})); ED.cur.renderOrder=999; scene.add(ED.cur);
+  const ov=document.createElement("div"); ov.id="edOv"; ov.style.cssText="position:fixed;inset:0;z-index:55;touch-action:none"; document.body.appendChild(ov); ED.ov=ov;
+  const pd=e=>{ ov.setPointerCapture(e.pointerId); ED.ptr.set(e.pointerId,{x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY,t:performance.now()}); if(ED.ptr.size>1){ MD.down=false; ED.pinch=null; return; } const p=edGround(e.clientX,e.clientY); ED.hover=p;
+    if(ED.tool==="view") return; if(ED.tool==="sel"){ if(ED.sel&&p&&ED.moving){ edSnap(); ED.drag=true; } return; } if(ED.tool==="place") return;
+    if(!p) return; edSnap(); MD.down=true; ED.bp=p; if(ED.tool==="flat") ED.flatH=TW.ground(p.x,p.z)||0; if(ED.tool==="erase") edErase(p); };
+  const pm=e=>{ const q=ED.ptr.get(e.pointerId); if(!q) return; const dx=e.clientX-q.x, dy=e.clientY-q.y; q.x=e.clientX; q.y=e.clientY;
+    if(ED.ptr.size>=2){ const a=[...ED.ptr.values()], d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y), mx=(a[0].x+a[1].x)/2; if(ED.pinch){ ED.dist=Math.max(6,Math.min(160,ED.dist*ED.pinch.d/d)); ED.yaw-=(mx-ED.pinch.mx)*.008; } ED.pinch={d,mx}; return; }
+    const p=edGround(e.clientX,e.clientY); ED.hover=p;
+    if(ED.tool==="view"||(ED.tool==="sel"&&!ED.drag)||ED.tool==="place"){ if(Math.hypot(e.clientX-q.x0,e.clientY-q.y0)<8) return; q.pan=true; const k=ED.dist/innerHeight*1.6, s=Math.sin(ED.yaw), c=Math.cos(ED.yaw); ED.tgt.x-=(dx*c+dy*s)*k; ED.tgt.z-=(-dx*s+dy*c)*k; return; }
+    if(ED.tool==="sel"&&ED.drag&&ED.sel&&p){ const o=ED.sel; o.x=p.x; o.z=p.z; mdPos(o); return; }
+    if(MD.down&&p){ if(ED.tool==="erase"){ if(!ED.bp||Math.hypot(p.x-ED.bp.x,p.z-ED.bp.z)>ED.size*.6){ edErase(p); ED.bp=p; } } else ED.bp=p; } };
+  const pu=e=>{ const q=ED.ptr.get(e.pointerId); ED.ptr.delete(e.pointerId); if(ED.ptr.size<2) ED.pinch=null; if(!q) return; const tap=!q.pan&&Math.hypot(e.clientX-q.x0,e.clientY-q.y0)<8&&performance.now()-q.t<600;
+    if(ED.drag){ ED.drag=false; mdRegrid(); edPanel(); return; } MD.down=false;
+    if(tap&&ED.tool==="place"){ const p=edGround(e.clientX,e.clientY); if(p){ edSnap(); const o=edAdd(ED.kind,p.x,p.z); edSelect(o); ED.tool="place"; edPanel(); try{ tone(620,.05,.05,"triangle"); }catch(_){} } }
+    else if(tap&&ED.tool==="sel"){ const o=edPickObj(e.clientX,e.clientY); if(o){ ED.moving=false; edSelect(o); return; } const p=edGround(e.clientX,e.clientY); const g=p&&edPickGen(p);
+      if(g){ edSnap(); MD.er.push([+g.x.toFixed(2),+g.z.toFixed(2),.7]); mdGridAdd(MD.erG,g.x,g.z,.7,MD.er[MD.er.length-1]); const o2=edAdd(MDGEN[g.k]||"rock",g.x,g.z,{s:g.k==="rock"||g.k==="mrock"?g.s:1}); mdDirty(g.x-1,g.x+1,g.z-1,g.z+1); MD.flushT=0; edSelect(o2); toast(`選了「${MDNAME[o2.k]}」：可以移動、轉向、大小、刪除`,2200); return; }
+      if(p){ /* a tree of the code's own? */ let best=null, bd=2.4; for(const id in LIVE) for(const t of (LIVE[id].genT||[])){ const d=Math.hypot(t[0]-p.x,t[2]-p.z); if(d<bd){ bd=d; best=t; } }
+        if(best){ edSnap(); MD.er.push([+best[0].toFixed(2),+best[2].toFixed(2),.8]); mdGridAdd(MD.erG,best[0],best[2],.8,MD.er[MD.er.length-1]); const k=(best[8]==="bush"?"b_":"t_")+(["leaf","deep","maple","pink","gold"].includes(best[6])?best[6]:"leaf"); const o2=edAdd(k,best[0],best[2],{s:+best[3].toFixed(2),r:best[5]||0}); mdDirty(best[0]-1,best[0]+1,best[2]-1,best[2]+1); MD.flushT=0; edSelect(o2); toast("選了這棵樹：可以移動、轉向、大小、刪除",2000); return; } }
+      edSelect(null); } };
+  ov.addEventListener("pointerdown",pd); ov.addEventListener("pointermove",pm); ov.addEventListener("pointerup",pu); ov.addEventListener("pointercancel",pu);
+  ov.addEventListener("wheel",e=>{ e.preventDefault(); ED.dist=Math.max(6,Math.min(160,ED.dist*(e.deltaY>0?1.12:.9))); },{passive:false});
+  ED.last=performance.now(); edLoop(); edPanel(); toast("地圖編輯：拖曳移動畫面、兩指縮放；下面選工具",3000); }
+function edClose(){ MD.on=false; cancelAnimationFrame(ED.raf); if(ED.ov) ED.ov.remove(); const p=document.getElementById("edPanel"); if(p) p.remove(); if(ED.cur){ scene.remove(ED.cur); ED.cur=null; } edSelect(null); window.MZ_VIEW=null; window.MZ_HOLD=false; document.body.classList.remove("mapedit"); MD.flushT=0; mdFlush(); toast("離開地圖編輯。記得按「固定」才會存給大家",2600); }
+const ED_TOOLS=[["sel","👆","選取"],["place","➕","擺放"],["up","⛰️","升高"],["down","🕳️","降低"],["flat","➖","整平"],["smooth","〰️","抹平"],["river","🌊","挖河"],["reset","↩️","還原地形"],["paint","🎨","噴漆"],["unpaint","🧽","擦漆"],["erase","🧹","清除"],["view","🎥","只看"]];
+function edPanel(){ let p=document.getElementById("edPanel"); if(!p){ p=document.createElement("div"); p.id="edPanel"; document.body.appendChild(p); p.addEventListener("pointerdown",e=>e.stopPropagation()); p.onclick=edClick; p.oninput=edInput; }
+  const t=ED.tool, o=ED.sel, brush=/^(up|down|flat|river|smooth|reset|paint|unpaint|erase)$/.test(t);
+  let h=`<div class="ed-row ed-top"><b>🗺️ 地圖編輯</b><span id="edXY"></span><span class="ed-sp"></span><button data-e="undo">↶ 復原</button><button data-e="save" class="ed-main">💾 固定</button><button data-e="code">📋 配置碼</button><button data-e="close">完成</button></div>`;
+  h+=`<div class="ed-row ed-scroll">${ED_TOOLS.map(q=>`<button data-e="tool" data-v="${q[0]}" class="${t===q[0]?"on":""}">${q[1]} ${q[2]}</button>`).join("")}</div>`;
+  if(t==="place") h+=`<div class="ed-row ed-scroll">${MDKINDS.map(k=>`<button data-e="kind" data-v="${k[0]}" class="${ED.kind===k[0]?"on":""}">${k[1]} ${k[2]}</button>`).join("")}</div><div class="ed-note">選好種類，點地面就放一個</div>`;
+  if(t==="paint") h+=`<div class="ed-row ed-scroll">${MDPAL.map((c,i)=>i?`<button data-e="paint" data-v="${i}" class="${ED.paint===i?"on":""}"><i style="background:${c}"></i>${MDPN[i]}</button>`:"").join("")}</div>`;
+  if(brush) h+=`<div class="ed-row"><label>大小 <input type="range" min="1" max="16" step=".5" value="${ED.size}" data-i="size"></label>${t!=="erase"&&t!=="paint"&&t!=="unpaint"?`<label>力道 <input type="range" min=".1" max="1" step=".05" value="${ED.str}" data-i="str"></label>`:""}</div><div class="ed-note">${t==="erase"?"刷過的地方，原本程式種的樹、石頭、燈都會拿掉（擺放的東西也會刪掉）":t==="river"?"刷過的地方挖到水面下，自動變成水":t==="flat"?"整平成按下去那一點的高度":t==="reset"?"刷過的地方回到原本的地形":"按住拖曳就是在刷"}</div>`;
+  if((t==="sel"||t==="place")&&o) h+=`<div class="ed-row ed-sel"><b>${MDNAME[o.k]||o.k}</b><button data-e="mv" class="${ED.moving?"on":""}">✋ ${ED.moving?"拖曳移動中":"移動"}</button><button data-e="rot" data-v="-1">↺</button><button data-e="rot" data-v="1">↻</button><button data-e="sz" data-v=".88">－小</button><button data-e="sz" data-v="1.14">＋大</button><button data-e="dy" data-v="-.15">⬇</button><button data-e="dy" data-v=".15">⬆</button><button data-e="dup">複製</button><button data-e="del" class="ed-del">刪除</button></div>`;
+  else if(t==="sel") h+=`<div class="ed-note">點一下樹、石頭、燈籠、長椅…就能選取（程式原本種的也可以）</div>`;
+  p.innerHTML=h; }
+function edInput(e){ const k=e.target.dataset.i; if(!k) return; ED[k]=+e.target.value; }
+async function edClick(e){ const b=e.target.closest("button"); if(!b) return; const a=b.dataset.e, v=b.dataset.v, o=ED.sel;
+  if(a==="tool"){ ED.tool=v; ED.moving=false; if(v!=="sel"&&v!=="place") edSelect(null); edPanel(); return; }
+  if(a==="kind"){ ED.kind=v; edPanel(); return; } if(a==="paint"){ ED.paint=+v; edPanel(); return; }
+  if(a==="undo"){ edUndo(); return; } if(a==="close"){ edClose(); return; }
+  if(a==="save"){ await edSave(); return; } if(a==="code"){ edCode(); return; }
+  if(!o) return;
+  if(a==="mv"){ ED.moving=!ED.moving; ED.tool="sel"; toast(ED.moving?"按住它拖到新位置":"移動結束",1600); edPanel(); return; }
+  edSnap();
+  if(a==="rot") o.r=(o.r||0)+(+v)*Math.PI/12; else if(a==="sz") o.s=Math.max(.2,Math.min(8,(o.s||1)*(+v))); else if(a==="dy") o.dy=+((o.dy||0)+(+v)).toFixed(2);
+  else if(a==="dup"){ const n=edAdd(o.k,o.x+1.5,o.z+1.5,{r:o.r,s:o.s,dy:o.dy}); edSelect(n); return; }
+  else if(a==="del"){ if(o.g) MDG.remove(o.g); MD.objs=MD.objs.filter(q=>q!==o); mdRegrid(); edSelect(null); return; }
+  if(o.g) mdPos(o); }
+async function edSave(){ const d=MD.pack(), txt=JSON.stringify(d); if(txt.length>1800000){ toast("改的地方太多了，存不下（請清掉一些）",3000); return; }
+  if(typeof USE_CF==="undefined"||!USE_CF){ save("mz.mapedit",d); toast("已固定（單機版存在這台裝置）",2600); return; }
+  const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return; }
+  try{ const r=await fetch("/mapedit",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({map:d})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
+    toast(j.ok?`已固定，所有人都看得到了（${Math.round(txt.length/1024)} KB）`:r.status===503?"伺服器今天額度用完了，晚點再試":j.big?"改的地方太多了，存不下":"密碼不對，沒有存起來",3200); if(j.ok) save("mz.rk",key); }catch(e){ toast("沒有存起來，請稍後再試"); } }
+async function edCode(){ const txt="MZMAP:"+JSON.stringify(MD.pack()); let ok=false; try{ await navigator.clipboard.writeText(txt); ok=true; }catch(e){} toast(ok?`已複製配置碼（${Math.round(txt.length/1024)} KB），貼給 Claude 就能寫進遊戲`:"複製不了，請改用「固定」",3200); }
+TW.edOpen=edOpen;
+
 return TW; })();
 /*TOWN>>*/
 /*<<LIFE*/
