@@ -5176,11 +5176,12 @@ function openGfx(){ const opt=(v,t,d)=>`<button class="good" data-act="quality" 
   openSheet("gfx","設定",`<div class="group"><span class="group-label">伺服器與人數</span><div class="chips"><button class="chip" data-act="hallsOpen">${esc(($(".hall-name")||{}).textContent||"")}・${esc(($("#countText")||{}).textContent||"")}　切換 ▾</button></div></div><div class="group"><span class="group-label">畫質</span><p class="lead">畫面卡頓或手機發燙時，可以改用省電畫質。</p></div><div class="goods">${opt("auto","自動","進場後自動偵測，太卡會切到省電")}${opt("high","高畫質","光束、灰塵、全部燈光，最漂亮")}${opt("low","省電","降低解析度與特效，舊手機也順")}${opt("lite","低配","最省：模型減面、小貼圖、關閉抗鋸齒，給比較舊的手機（會重新載入）")}</div><p class="note">目前：${Q.lite?"低配":Q.low?"省電畫質":"高畫質"}</p>`
     +`<div class="group"><span class="group-label">畫面上的人物</span><div class="chips">${[[0,"全部"],[1,"減少一半"],[2,"全部關掉"]].map(([v,t])=>`<button class="chip" data-act="cutSet" data-v="${v}" aria-pressed="${CUT.lv===v}">${t}</button>`).join("")}</div><p class="note">手機常被關掉（閃退）時，少畫一點人會比較穩。遊戲被關掉時會自動幫你調低，並先跟你說。</p></div>`
     +`<div class="group"><span class="group-label">流暢度</span><div class="chips"><button class="chip" data-act="fps60" aria-pressed="${PACE.smooth}">流暢模式（一直 60 格，較耗電）</button></div><p class="note">關閉時：操作和走路時 60 格，站著看時 30 格，半分鐘沒碰螢幕 20 格，比較省電。</p></div>`
-    +(()=>{ const f=fltApply(); const c=(v,t)=>`<button class="chip" data-act="flt" data-v="${v}" aria-pressed="${f===v}">${t}</button>`; return `<div class="group"><span class="group-label">畫面濾鏡</span><div class="chips">${c("off","關閉")}${c("soft","柔和")}${c("film","電影感")}</div><p class="note">讓顏色更有層次、四周微微變暗。</p><div class="chips" style="margin-top:6px"><button class="chip" data-act="grade" data-v="1" aria-pressed="${!!window.MZ_GRADE}">質感調色：開</button><button class="chip" data-act="grade" data-v="0" aria-pressed="${!window.MZ_GRADE}">質感調色：關</button></div><p class="note">質感調色：白天亮處不過曝、暗部偏冷亮部偏暖，不耗電。</p></div>`; })()
+    +(()=>{ const f=fltApply(); const c=(v,t)=>`<button class="chip" data-act="flt" data-v="${v}" aria-pressed="${f===v}">${t}</button>`; return `<div class="group"><span class="group-label">畫面濾鏡</span><div class="chips">${c("off","關閉")}${c("soft","柔和")}${c("film","電影感")}</div><p class="note">讓顏色更有層次、四周微微變暗。</p><div class="chips" style="margin-top:6px"><button class="chip" data-act="grade" data-v="1" aria-pressed="${!!window.MZ_GRADE}">質感調色：開</button><button class="chip" data-act="grade" data-v="0" aria-pressed="${!window.MZ_GRADE}">質感調色：關</button></div><p class="note">質感調色：白天亮處不過曝、暗部偏冷亮部偏暖，不耗電。</p></div>`+(()=>{ const g=(v,t)=>`<button class="chip" data-act="grassQ" data-v="${v}" aria-pressed="${(window.MZ_GRASS||{}).mode===v}">${t}</button>`; return `<div class="group"><span class="group-label">草地・沙灘</span><div class="chips">${g("old","原版")}${g("low","新版・低")}${g("med","新版・中")}${g("high","新版・高")}</div><p class="note">草地和沙灘一起切換。低：只有新的草色、沙色。中：加上草絲／細沙的立體感和陽光反光（水邊的濕沙反光較亮）。高：再加防重複細節。切換後會重新載入畫面。</p></div>`; })(); })()
     +`<div class="group"><span class="group-label">下載到手機</span><p class="lead">先把模型、音樂和圖片存進手機，之後進廟更快、更省流量。</p><div class="chips"><button class="chip" data-act="preDl">${PREDL.done?"✓ 已預先下載":"📥 預先下載全部"}</button></div></div>${installBlock()}`
     +(me.sp?`<div class="group"><span class="group-label">主委測試工具</span><div class="chips"><button class="chip" data-act="perfPanel" aria-pressed="${PERF.on}">效能面板</button></div></div>${dbgHTML()}`:"")); }
 /* 畫面濾鏡: a light colour grade (contrast, saturation) on the canvas plus a soft vignette — done by the browser, no extra 3D pass */
 const FLT={v:load("mz.flt",null)}; function fltApply(){ let v=FLT.v; if(v==null) v=Q.lite?"off":"soft"; document.body.classList.toggle("flt-soft",v==="soft"); document.body.classList.toggle("flt-film",v==="film"); return v; }
+HANDLERS.grassQ=v=>{ if(v===(window.MZ_GRASS||{}).mode) return; try{ localStorage.setItem("mz.grass",v); }catch(e){} toast("草地設定已更換，重新載入中…",1500); setTimeout(()=>location.reload(),600); }; /* (11/18 主委 草地材質 v2: 原版／低／中／高) */
 HANDLERS.grade=v=>{ window.MZ_GRADE=v==="1"; try{ localStorage.setItem("mz.grade",window.MZ_GRADE?"1":"0"); }catch(e){} renderer.toneMapping=window.MZ_GRADE?T.CustomToneMapping:T.ACESFilmicToneMapping; openGfx(); }; /* (11/18 主委「那個濾鏡也要可以開關」) */
 HANDLERS.flt=(v)=>{ FLT.v=v; save("mz.flt",v); fltApply(); openGfx(); }; try{ fltApply(); }catch(e){}
 /* 綠點測試: switches to find which part of the lighting makes the green/dark speckles some phones show. They only change this screen. */
@@ -12542,7 +12543,7 @@ const gtuft=()=>GEO.tf||(GEO.tf=(()=>{ const pos=[], uv=[]; for(let k=0;k<5;k++)
 const gpetal=()=>GEO.pt||(GEO.pt=(()=>{ const pos=[], uv=[]; for(let k=0;k<6;k++){ const a=k/6*6.283, b=a+.5, c=a-.5; pos.push(0,0,0, Math.cos(c)*.55,.12,Math.sin(c)*.55, Math.cos(a)*1,.3,Math.sin(a)*1, 0,0,0, Math.cos(a)*1,.3,Math.sin(a)*1, Math.cos(b)*.55,.12,Math.sin(b)*.55); uv.push(0,0,1,0,1,1, 0,0,1,1,0,1); } const g=new T.BufferGeometry(); g.setAttribute("position",new T.Float32BufferAttribute(pos,3)); g.setAttribute("uv",new T.Float32BufferAttribute(uv,2)); g.computeVertexNormals(); return g; })());
 function tuft(C,r,x,y,z,s){ /* (11/16: the painted standing grass replaces these) */ }
 function starFlower(C,r,x,y,z,s){ put(C,gtuft(),NM.grass,x,y,z,s*.6,s*.7,s*.6,r()*6); put(C,gpetal(),NM.petal[r()*NM.petal.length|0],x,y+.42*s,z,.2*s,.2*s,.2*s,r()*6,(r()-.5)*.4,(r()-.5)*.4); put(C,gico(),NM.flower[0],x,y+.47*s,z,.05*s); }
-function mossRock(C,r,x,y,z,s,moss){ const k=r()*4|0, sx=s*(.9+r()*.5), sy=s*(.7+r()*.4), sz=s*(.9+r()*.5), ry=r()*6.28; put(C,grock(k),NM.rock[k],x,y,z,sx,sy,sz,ry); if(moss) put(C,gmoss(k),NM.moss,x,y,z,sx,sy,sz,ry); }
+function mossRock(C,r,x,y,z,s,moss){ (C.ao||(C.ao=[])).push([x,z,s*1.25]); const k=r()*4|0, sx=s*(.9+r()*.5), sy=s*(.7+r()*.4), sz=s*(.9+r()*.5), ry=r()*6.28; put(C,grock(k),NM.rock[k],x,y,z,sx,sy,sz,ry); if(moss) put(C,gmoss(k),NM.moss,x,y,z,sx,sy,sz,ry); }
 function put(C,geo,m,x,y,z,sx,sy,sz,ry,rx,rz){ const o=new T.Mesh(geo,m); o.position.set(x,y,z); o.scale.set(sx,sy==null?sx:sy,sz==null?sx:sz); o.rotation.set(rx||0,ry||0,rz||0); C.g.add(o); return o; }
 const rock=(C,r,x,y,z,s,k)=>s<.7?null:mossRock(C,r,x,y,z,s,s>.4&&r()<.55); /* (11/16: small stones are painted pebbles; big ones keep their shape in a painted rock skin) */
 function softTree(C,r,x,z,s,kind){ (C.lpt||(C.lpt=[])).push([x,0,z,s*.88,.85+r()*.35,r()*6.283,kind==="pink"?"pink":kind==="maple"?"maple":"leaf",4]); } /* (11/16 晚上 主委: every low-poly tree is the chair's trunk model with leaf cards now — LPT) */
@@ -12564,7 +12565,7 @@ function pathLamps(C,P,step,off){ lampMats(); let acc=step*.5, side=1; for(let i
       side=-side; acc+=step; } acc-=L; } }
 /* 石燈籠 (11/17 主委「這路燈太假了」): a proper stone lantern instead of three boxes — a hexagonal foot, a round post, a ledge, a firebox
    whose four little stone posts frame the light, a wide six-sided roof and a jewel on top; sandstone, each one a shade apart */
-function lantern(C,x,z,y){ y=y||0; const b=GEO.b||(GEO.b=new T.BoxGeometry(1,1,1)), c6=GEO.c6||(GEO.c6=new T.CylinderGeometry(1,1,1,6)), c8=GEO.c8||(GEO.c8=new T.CylinderGeometry(1,1.12,1,8)), rf=GEO.lrf||(GEO.lrf=new T.ConeGeometry(1,1,6)), jw=GEO.ljw||(GEO.ljw=new T.SphereGeometry(1,8,6));
+function lantern(C,x,z,y){ y=y||0; (C.ao||(C.ao=[])).push([x,z,.75]); const b=GEO.b||(GEO.b=new T.BoxGeometry(1,1,1)), c6=GEO.c6||(GEO.c6=new T.CylinderGeometry(1,1,1,6)), c8=GEO.c8||(GEO.c8=new T.CylinderGeometry(1,1.12,1,8)), rf=GEO.lrf||(GEO.lrf=new T.ConeGeometry(1,1,6)), jw=GEO.ljw||(GEO.ljw=new T.SphereGeometry(1,8,6));
   const st=NM.sandA||(NM.sandA=new T.MeshStandardMaterial({color:"#c9b597",roughness:.95})), st2=NM.sandB||(NM.sandB=new T.MeshStandardMaterial({color:"#b39f80",roughness:.95})), m=((x*7.3+z*3.1)|0)%2?st:st2, ry=(x*1.7+z*.9)%1.05;
   put(C,c6,m,x,y+.07,z,.36,.14,.36,ry); put(C,c6,m,x,y+.18,z,.25,.08,.25,ry); put(C,c8,m,x,y+.5,z,.085,.58,.085); put(C,c6,m,x,y+.82,z,.27,.07,.27,ry);
   const L=put(C,b,NM.lamp,x,y+.99,z,.2,.22,.2,ry); L.userData.keep=1; for(const [dx,dz] of [[-.12,-.12],[.12,-.12],[-.12,.12],[.12,.12]]){ const c=Math.cos(ry), s=Math.sin(ry); put(C,b,m,x+dx*c+dz*s,y+.99,z-dx*s+dz*c,.055,.26,.055,ry); }
@@ -12581,9 +12582,87 @@ function valleyH(x,z){ const w=walkGap(x,z); let h=sstep(1.2,9,w)*(1.7+1.2*nz(x,
    and a slow light/dark wave runs over it, so no square repeats */
 const AT_FRAG="#ifdef USE_MAP\n vec4 t1=texture2D(map,vUv), t2=texture2D(map,vUv*.29+vec2(.43,.17)); float lf=sin(vUv.x*.37+sin(vUv.y*.29)*1.7)*sin(vUv.y*.41+1.3); vec4 texelColor=mix(t1,t2,.45); texelColor.rgb*=.95+.08*lf; texelColor=mapTexelToLinear(texelColor); diffuseColor*=texelColor;\n#endif";
 function antiTile(m,key){ const prev=m.onBeforeCompile; m.onBeforeCompile=sh=>{ prev&&prev.call(m,sh); sh.fragmentShader=sh.fragmentShader.replace("#include <map_fragment>",AT_FRAG); }; const k0=m.customProgramCacheKey; m.customProgramCacheKey=()=>(key||"at")+(k0&&k0!==T.Material.prototype.customProgramCacheKey?k0():""); return m; }
+/* ===== 草地材質 v2 (11/18 主委's soft grass pack: tex/grass/color · normal · noise · glint) =====
+   One grass for every ground — the lawn under the map, the temple's lawn, the town's parks and every piece of terrain — laid by world
+   position, so neighbouring pieces can never show a seam. Where the terrain's own colour is not grass (paths, sand, rock, the chair's
+   paint) the old look stays.
+   · colour: grass_color_soft at 4.6 m; HIGH reads it a second time turned 36° and 1.31× larger and blends the two by a slow noise, so no
+     square repeats; a ±10 % light/dark drift from the noise picture at 57 m and 19 m on all levels; far off it settles to its mean colour
+   · MEDIUM/HIGH: per-pixel light (Phong) with the soft normal at 0.08 in a world-aligned frame, and the glint — a soft half-vector
+     highlight from the real sun, masked by grass_glint_mask, strength 0.035, gone by 38 m so it never sparkles in the distance;
+     the sun's own colour carries it, so at dusk and night it fades with the light
+   · LOW: Lambert like before, colour only.  原版: the old material, untouched.
+   Settings → 畫面濾鏡 → 草地 (localStorage mz.grass: old / low / med / high; auto = med on phones, high elsewhere). Changing it reloads. */
+const GRASS=(()=>{ let v=""; try{ v=localStorage.getItem("mz.grass")||""; }catch(e){} if(!/^(old|low|med|high)$/.test(v)) v=(typeof Q!=="undefined"&&Q.phone)?"med":"high"; return {mode:v,q:{old:-1,low:0,med:1,high:2}[v]}; })(); window.MZ_GRASS=GRASS;
+const GCFG={scale:4.6,normal:.08,variation:.10,glint:.035,roughness:.93,tint:.66};
+/* 沙灘 (11/18 主委's sand pack, tex/sand/): its own colour, normal and glint, the grass's noise and quality levels. Dry sand: normal .04,
+   variation .08, glint .015, a wide dull highlight (roughness .96); wet sand — where the beach's own colours already turn to wet sand by
+   the shoreline (FRONT.shore) — a little darker and a tighter, stronger highlight (roughness .55). */
+const SCFG={scale:5.2,normal:.04,variation:.08,dryGlint:.015,wetGlint:.06,dryRough:.96,wetRough:.55,tint:.78}; /* (initial values from the brief; tint brings the bright picture into the scene's light) */
+let GU=null; GU=(()=>{ const one=(r,g,b)=>{ const t=new T.DataTexture(new Uint8Array([r,g,b,255]),1,1); t.needsUpdate=true; return t; };
+  const U={gCol:{value:one(145,206,67)},gNor:{value:one(128,128,255)},gNoi:{value:one(128,128,128)},gGli:{value:one(0,0,0)},GS:{value:GCFG.scale},gNS:{value:GCFG.normal},gVar:{value:GCFG.variation},gGS:{value:GCFG.glint},gTint:{value:GCFG.tint},gAvg:{value:new T.Vector3(.28,.62,.056)},gLum:{value:.40}};
+  Object.assign(U,{sCol:{value:one(250,214,150)},sNor:{value:one(128,128,255)},sGli:{value:one(0,0,0)},SS:{value:SCFG.scale},sNS:{value:SCFG.normal},sVar:{value:SCFG.variation},sDG:{value:SCFG.dryGlint},sWG:{value:SCFG.wetGlint},sTint:{value:SCFG.tint},sSand:{value:new T.Color()},sWet:{value:new T.Color()}});
+  if(GRASS.q>=0){ const L=new T.TextureLoader(), an=Math.min(renderer.capabilities.getMaxAnisotropy?renderer.capabilities.getMaxAnisotropy():1,GRASS.q>1?8:4);
+    const get=(f,k)=>L.load("tex/grass/"+f,t=>{ t.wrapS=t.wrapT=T.RepeatWrapping; t.anisotropy=k==="gNoi"?1:an; t.needsUpdate=true; U[k].value=t; });
+    get("color.webp","gCol"); get("noise.webp","gNoi"); if(GRASS.q>0){ get("normal.webp","gNor"); get("glint.webp","gGli"); }
+    get("../sand/color.webp","sCol"); if(GRASS.q>0){ get("../sand/normal.webp","sNor"); get("../sand/glint.webp","sGli"); } }
+  return U; })(); window.MZ_GU=GU;
+/* LAWN's brightness, for keeping the terrain's painted light and shade on the new grass */
+function grassPatch(m,force,sand){ const q=force!=null?force:GRASS.q; if(q<0) return m; const prev=m.onBeforeCompile, ref=m.color.clone(), k0=m.customProgramCacheKey;
+  m.onBeforeCompile=sh=>{ prev&&prev.call(m,sh); Object.assign(sh.uniforms,GU); GU.sSand.value.copy(VC.sand); GU.sWet.value.copy(VC.wet); sh.uniforms.gRef={value:ref}; sh.uniforms.gLum.value=LAWN.r*.3+LAWN.g*.6+LAWN.b*.1;
+    sh.vertexShader="varying vec3 vGW; varying vec3 vWN;\n"+sh.vertexShader.replace("#include <begin_vertex>","#include <begin_vertex>\n vGW=(modelMatrix*vec4(transformed,1.)).xyz; vWN=normalize(mat3(modelMatrix)*objectNormal);");
+    sh.fragmentShader="#define GQ "+q+"\n"+(sand?"#define SANDM\n":"")+"uniform sampler2D sCol; uniform sampler2D sNor; uniform sampler2D sGli; uniform float SS; uniform float sNS; uniform float sVar; uniform float sDG; uniform float sWG; uniform float sTint; uniform vec3 sSand; uniform vec3 sWet; float sW=0.; float sT=0.; float gP=18.;\nuniform sampler2D gCol; uniform sampler2D gNor; uniform sampler2D gNoi; uniform sampler2D gGli; uniform float GS; uniform float gNS; uniform float gVar; uniform float gGS; uniform float gTint; uniform vec3 gAvg; uniform float gLum; uniform vec3 gRef;\nvarying vec3 vGW; varying vec3 vWN; vec2 gUV; vec3 gGC; float gW; float gGlint;\n"+sh.fragmentShader
+      .replace("#include <color_fragment>",`{ vec2 gp=vGW.xz; float n1=texture2D(gNoi,gp/57.).r, n2=texture2D(gNoi,gp/19.+vec2(.37,.11)).r; gUV=gp/GS; vec3 cA=texture2D(gCol,gUV).rgb;
+#if GQ>1
+  vec2 uB=mat2(.809,-.588,.588,.809)*gp/(GS*1.31)+vec2(.31,.67); cA=mix(cA,texture2D(gCol,uB).rgb,smoothstep(.3,.7,n1));
+#endif
+  cA=pow(cA,vec3(2.2)); cA=mix(vec3(dot(cA,vec3(.3,.6,.1))),cA,.8); float dd=distance(vGW,cameraPosition); cA=mix(cA,gAvg,smoothstep(70.,190.,dd)*.55); cA*=gTint*(1.+gVar*((n1-.5)*1.5+(n2-.5)*.9));
+#ifdef USE_COLOR
+  gW=smoothstep(.07,.19,vColor.g-max(vColor.r,vColor.b)); cA*=clamp(dot(vColor,vec3(.3,.6,.1))/gLum,.55,1.3);
+#else
+  gW=1.;
+#endif
+  gGC=cA*diffuse/max(gRef,vec3(.001)); gGlint=0.;
+#if GQ>0
+  gGlint=texture2D(gGli,gUV).r*gGS*(1.-smoothstep(10.,38.,dd))*gW;
+#endif
+}
+#ifdef USE_COLOR
+ diffuseColor.rgb=mix(diffuseColor.rgb*vColor,gGC,gW);
+#else
+ diffuseColor.rgb=gGC;
+#endif
+#if defined(SANDM) && defined(USE_COLOR)
+ { vec3 ax=sWet-sSand; sT=clamp(dot(vColor-sSand,ax)/dot(ax,ax),0.,1.); sW=(1.-smoothstep(.03,.09,distance(vColor,sSand+ax*sT)))*(1.-gW);
+   vec2 gp=vGW.xz; float n1=texture2D(gNoi,gp/61.+vec2(.5,.2)).r, n2=texture2D(gNoi,gp/21.+vec2(.13,.71)).r; vec3 sc=texture2D(sCol,gp/SS).rgb;
+#if GQ>1
+   sc=mix(sc,texture2D(sCol,mat2(.809,-.588,.588,.809)*gp/(SS*1.27)+vec2(.21,.57)).rgb,smoothstep(.3,.7,n1));
+#endif
+   sc=pow(sc,vec3(2.2))*sTint*(1.+sVar*((n1-.5)*1.5+(n2-.5)*.9)); sc=mix(sc,sc*vec3(.70,.66,.62),smoothstep(0.,1.,sT));
+   diffuseColor.rgb=mix(diffuseColor.rgb,sc*diffuse/max(gRef,vec3(.001)),sW);
+#if GQ>0
+   float dd2=distance(vGW,cameraPosition); gGlint=mix(gGlint,texture2D(sGli,gp/SS).r*mix(sDG,sWG,sT)*(1.-smoothstep(10.,36.,dd2)),sW); gP=mix(18.,mix(10.,46.,sT),sW);
+#endif
+ }
+#endif`)
+      .replace("#include <normal_fragment_maps>",`#include <normal_fragment_maps>
+#if GQ>0
+ { vec3 tn=texture2D(gNor,gUV).xyz*2.-1.; tn.xy*=gNS*gW;
+#ifdef SANDM
+ { vec3 ts=texture2D(sNor,vGW.xz/SS).xyz*2.-1.; tn.xy+=ts.xy*sNS*sW; }
+#endif
+ vec3 Nw=normalize(vWN); vec3 Tw=normalize(cross(vec3(0.,0.,1.),Nw)+vec3(1e-5)); vec3 Bw=cross(Nw,Tw); normal=normalize((viewMatrix*vec4(normalize(Tw*tn.x+Bw*tn.y+Nw*tn.z),0.)).xyz); }
+#endif`)
+      .replace("#include <lights_fragment_end>",`#include <lights_fragment_end>
+#if GQ>0 && NUM_DIR_LIGHTS>0
+ { vec3 Ld=directionalLights[0].direction, Vd=normalize(-vViewPosition), Hd=normalize(Ld+Vd); float sp=pow(max(dot(normal,Hd),0.),gP)*max(dot(normal,Ld),0.)*(gP/18.); reflectedLight.directSpecular+=directionalLights[0].color*sp*gGlint*14.; }
+#endif`); };
+  m.customProgramCacheKey=()=>"grass"+q+(sand?"s":"")+(k0&&k0!==T.Material.prototype.customProgramCacheKey?k0.call(m):""); m.userData.grass=q; return m; }
+/* a ground material: Lambert (原版 / LOW) or per-pixel Phong (MEDIUM / HIGH), then the grass */
+function gMat(o,force){ const q=force!=null?force:GRASS.q; const m=q>0?new T.MeshPhongMaterial(Object.assign({specular:new T.Color(0,0,0),shininess:2},o)):new T.MeshLambertMaterial(o); return m; }
 function terrain(C,x0,x1,z0,z1,hf,cf,y0){ const nx=Math.round(x1-x0), nzc=Math.round(z1-z0), g=new T.PlaneGeometry(x1-x0,z1-z0,nx,nzc); g.rotateX(-Math.PI/2); g.translate((x0+x1)/2,0,(z0+z1)/2);
   const P=g.attributes.position, col=new Float32Array(P.count*3), c=new T.Color(); for(let i=0;i<P.count;i++){ const x=P.getX(i), z=P.getZ(i), h=hf(x,z)+mdH(x,z); P.setY(i,h+(y0||0)); cf(x,z,h,c); mdPC(x,z,c); col[i*3]=c.r; col[i*3+1]=c.g; col[i*3+2]=c.b; }
-  g.setAttribute("color",new T.BufferAttribute(col,3)); g.computeVertexNormals(); { const U=g.attributes.uv; for(let i=0;i<P.count;i++) U.setXY(i,P.getX(i)/3.4,P.getZ(i)/3.4); } const m=new T.Mesh(g,antiTile(new T.MeshLambertMaterial({vertexColors:true,map:cf===beachC?sandDetail():grassDetail(),color:new T.Color(1.22,1.22,1.22)}))); /* (11/16: a painted grass / sand grain over the colours) */ m.userData.keep=1; m.userData.floor=1; m.userData.own=1; m.userData.ter={hf,cf,y0}; C.g.add(m); pickables.push(m); C.picks.push(m); return m; }
+  g.setAttribute("color",new T.BufferAttribute(col,3)); g.computeVertexNormals(); { const U=g.attributes.uv; for(let i=0;i<P.count;i++) U.setXY(i,P.getX(i)/3.4,P.getZ(i)/3.4); } const m=new T.Mesh(g,grassPatch(antiTile(gMat({vertexColors:true,map:cf===beachC?sandDetail():grassDetail(),color:new T.Color(1.22,1.22,1.22)})),null,cf===beachC)); /* (11/16: a painted grass / sand grain over the colours; 11/18 the new grass where it is grass) */ m.userData.keep=1; m.userData.floor=1; m.userData.own=1; m.userData.ter={hf,cf,y0}; C.g.add(m); pickables.push(m); C.picks.push(m); return m; }
 /* (the chair's map edits, see 地圖編輯 below; safe before it is defined) */ function mdH(x,z){ try{ return MD.ch.size?MD.h(x,z):0; }catch(e){ return 0; } } function mdPC(x,z,c){ try{ if(MD.ch.size) MD.pc(x,z,c); }catch(e){} }
 const CL=s=>new T.Color(s).convertSRGBToLinear();
 const VC={g1:CL("#86c96c"),g2:CL("#62b060"),moss:CL("#4f9a80"),path:CL("#d8c49a"),cliff:CL("#84a093"),sand:CL("#e6cf9e"),wet:CL("#c4a878"),dune:CL("#9cc97c")}; /* (deeper than they look: the bright daylight washes pale colours out to white) */
@@ -12666,7 +12745,7 @@ void main(){ float D=vA.z; vec2 fl=vA.xy; float t=uT*uWP.y; vec2 p=vW.xz*uWP.z;
   vec3 N=normalize(vec3(n.x*.7*uWP.x,1.,n.y*.7*uWP.x)); vec3 V=normalize(cameraPosition-vW); float ndv=clamp(dot(N,V),0.,1.);
   float fr=(.02+.98*pow(1.-ndv,5.))*uWP2.x; vec3 R=reflect(-V,N); float up=clamp(R.y,0.,1.);
   vec3 sky=mix(vec3(.80,.89,.94),vec3(.38,.62,.88),pow(up,.6)); sky=mix(sky,vec3(.6,.64,.68),uRain*.7); sky=mix(sky,vec3(.05,.08,.15),uNight);
-  float dk=1.-exp(-max(D,0.)*1.6/max(uWP2.w,.1)); vec3 body=mix(uShal,uDeep,dk)*(.88+.24*hh);
+  float dk=(1.-exp(-1.2*1.6/max(uWP2.w,.1)))*smoothstep(0.,.35,D); vec3 body=mix(uShal,uDeep,dk)*(.88+.24*hh); /* (11/18 主委「河不一樣顏色是因為深度不同，我要一樣顏色，把深度挖到一樣」: every water reads as 1.2 m deep — one colour for all rivers, streams, springs and dug water; only the last 35 cm at the bank still fades out) */
   vec3 c=mix(body,sky,clamp(fr,0.,.85));
   float sd=max(dot(R,uSun),0.); float sp=(pow(sd,700.)*2.2+pow(sd,60.)*.1)*uWP2.y*(1.-uNight)*(1.-uRain*.8);
   float mo=pow(max(dot(R,normalize(vec3(.3,.55,-.78))),0.),320.)*uNight*1.4;
@@ -12826,7 +12905,7 @@ function meadow(C,x0,x1,z0,z1,nG,nF,hf,ok,seed){ const R=srand(seed||1), k=PHONE
    so the places where one ground meets another no longer show as patches of different green (11/16 主委「這種拼湊感」) */
 /* one lawn (11/16 主委「統一草皮，不要一塊深綠一塊淺綠，還不同草皮」): every flat piece of grass — the lawn under the map, the temple's
    lawn, the town's parks and verges — uses this one material, its picture laid by world position, so neighbouring pieces match exactly */
-const lawnMat=o=>{ const m=new T.MeshLambertMaterial(Object.assign({map:grassDetail(),color:LAWN.clone().multiplyScalar(1.22)},o||{})); m.onBeforeCompile=sh=>{ sh.vertexShader=sh.vertexShader.replace("#include <uv_vertex>","#ifdef USE_UV\n vUv=(modelMatrix*vec4(position,1.)).xz/3.4;\n#endif"); }; m.customProgramCacheKey=()=>"lawnUV"; return antiTile(m,"lawnAT"); };
+const lawnMat=o=>{ const m=gMat(Object.assign({map:grassDetail(),color:LAWN.clone().multiplyScalar(1.22)},o||{})); m.onBeforeCompile=sh=>{ sh.vertexShader=sh.vertexShader.replace("#include <uv_vertex>","#ifdef USE_UV\n vUv=(modelMatrix*vec4(position,1.)).xz/3.4;\n#endif"); }; m.customProgramCacheKey=()=>"lawnUV"; return grassPatch(antiTile(m,"lawnAT")); };
 TW.lawnMat=lawnMat;
 try{ GMAT.grass=lawnMat({polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
   if(!outsideGround.userData.lawn){ outsideGround.userData.lawn=1; const m=lawnMat(); outsideGround.material=m; outsideGround.userData.keepMat=1; try{ if(typeof WX!=="undefined"&&WX.grass){ WX.grass.m=m; WX.grass.col=m.color.clone(); WX.grass.r=1; WX.grass.mt=0; } }catch(e){} lawnHole(); } }catch(e){ console.warn("lawn",e); }
@@ -12837,7 +12916,7 @@ try{ if(window.BASEG&&!window.BASEG.userData.painted){ window.BASEG.material=law
       const P=[],U=[],Cc=[],I=[], c=new T.Color(); for(let j=0;j<=nzS;j++){ const z=z0+(z1-z0)*j/nzS; for(const x of xs){ P.push(x,beachH(x,z)+.057,z); U.push(x/3.4,z/3.4); beachC(x,z,0,c); /* (and its shape: it dips under the sea like the beach, so the waves no longer show through it as round pools) */ Cc.push(c.r,c.g,c.b); } }
       const W=xs.length; for(let j=0;j<nzS;j++) for(let i=0;i<W-1;i++){ const a0=j*W+i, b0=a0+1, d0=a0+W, e0=d0+1; I.push(a0,d0,b0,b0,d0,e0); }
       const g=new T.BufferGeometry(); g.setAttribute("position",new T.Float32BufferAttribute(P,3)); g.setAttribute("uv",new T.Float32BufferAttribute(U,2)); g.setAttribute("color",new T.Float32BufferAttribute(Cc,3)); g.setIndex(I); g.computeVertexNormals();
-      q.geometry.dispose(); q.geometry=g; q.rotation.set(0,0,0); q.position.set(0,-.045,0); q.material=new T.MeshLambertMaterial({vertexColors:true,map:sandDetail(),color:new T.Color(1.22,1.22,1.22)}); q.userData.keepMat=1; }); } }catch(e){ console.warn("base paint",e); }
+      q.geometry.dispose(); q.geometry=g; q.rotation.set(0,0,0); q.position.set(0,-.045,0); q.material=grassPatch(gMat({vertexColors:true,map:sandDetail(),color:new T.Color(1.22,1.22,1.22)}),null,true); q.userData.keepMat=1; }); } }catch(e){ console.warn("base paint",e); }
 /* pebbles: painted stones seen from above, lying on the ground */
 const pebbleTex=k=>scnTex("pb"+k,128,128,(x,W,H)=>{ const R=srand(50+k*7); const n=11, pts=[]; const rx=W*(.3+R()*.1), ry=H*(.24+R()*.12); for(let i=0;i<n;i++){ const a=i/n*6.283, r=1+(R()-.5)*.28; pts.push([W/2+Math.cos(a)*rx*r,H/2+Math.sin(a)*ry*r]); }
   const path=()=>{ x.beginPath(); for(let i=0;i<n;i++){ const p0=pts[i], p1=pts[(i+1)%n], mx=(p0[0]+p1[0])/2, my=(p0[1]+p1[1])/2; if(!i) x.moveTo(mx,my); else x.quadraticCurveTo(p0[0],p0[1],mx,my); } const p0=pts[0], p1=pts[1]; x.quadraticCurveTo(p0[0],p0[1],(p0[0]+p1[0])/2,(p0[1]+p1[1])/2); x.closePath(); };
@@ -12892,7 +12971,7 @@ function frontGround(C){ const F=FRONT, X0=-140, X1=140, Z0=53.8, Z1=176, P=[], 
   for(const z of zs) for(const x of xs){ const h=F.h(x,z); P.push(x,h+.01,z); U.push(x/3.4,z/3.4); const sh=F.shore(x); if(z<F.walk1+.2) c.copy(LAWN); else { c.copy(VC.sand).lerp(VC.wet,sstep(sh-5,sh-1.2,z)*.85); } Cc.push(c.r,c.g,c.b); }
   const W=xs.length; for(let j=0;j<zs.length-1;j++) for(let i=0;i<W-1;i++){ const a=j*W+i, b=a+1, d=a+W, e=d+1; I.push(a,d,b,b,d,e); }
   const g=new T.BufferGeometry(); g.setAttribute("position",new T.Float32BufferAttribute(P,3)); g.setAttribute("uv",new T.Float32BufferAttribute(U,2)); g.setAttribute("color",new T.Float32BufferAttribute(Cc,3)); g.setIndex(I); g.computeVertexNormals();
-  const m=new T.Mesh(g,antiTile(new T.MeshLambertMaterial({vertexColors:true,map:sandDetail(),color:new T.Color(1.22,1.22,1.22)}))); m.userData.keep=1; m.userData.floor=1; m.userData.own=1; C.g.add(m); pickables.push(m); C.picks.push(m);
+  const m=new T.Mesh(g,grassPatch(antiTile(gMat({vertexColors:true,map:sandDetail(),color:new T.Color(1.22,1.22,1.22)})),null,true)); m.userData.keep=1; m.userData.floor=1; m.userData.own=1; C.g.add(m); pickables.push(m); C.picks.push(m);
   /* the road: a pavement in front of the gate, two lanes with a yellow line, the pavement along the railing */
   ground(C,"pave",X0,X1,F.apron0,F.road0,.03); ground(C,"asphalt",X0,X1,F.road0,F.road1,.02); ground(C,"pave",X0,X1,F.road1,F.walk1,.03);
   { /* (11/16 晚上: the same markings as the road outside the temple and the town streets — a double yellow centre line, white edge lines, granite kerbs) */ const cz=(F.road0+F.road1)/2, L=X1-X0, mx=(X0+X1)/2; GEO.b=GEO.b||new T.BoxGeometry(1,1,1);
@@ -13082,10 +13161,18 @@ function slopeCover(C){ const g=TW.ground, out=[]; let seed=C.g.children.length*
       if(!ok(px,pz,h)) continue; add(px,h,pz,sl>1?1.15:1);
       if(sl>1){ const k=Math.min(3,Math.floor(sl*.8)), ux=-gx/sl, uz=-gz/sl; for(let j=1;j<=k;j++){ const t=j/(k+1)*SP, qx=px+ux*t, qz=pz+uz*t, qh=g(qx,qz); if(ok(qx,qz,qh)) add(qx,qh,qz,1.15); } } } });
   if(out.length) (C.lpt||(C.lpt=[])).push(...out); }
+/* 接觸陰影 (11/18 草地 v2, step 6): a soft dark round patch on the grass under every tree, palm, rock and stone lantern — one
+   instanced draw per district, no extra light, no shadow map */
+let AOTEX=null;
+function aoFlush(C){ const L=[]; for(const t of C.lpt||[]){ if(t[8]==="bush") continue; L.push([t[0],t[2],1.15*t[3]]); } for(const t of C.cedar||[]) L.push([t[0],t[2],.36*t[3]*t[4]]); for(const t of C.palm||[]) L.push([t[0],t[2],.9*t[4]]); for(const t of C.ao||[]) L.push(t); C.ao=null; if(!L.length) return;
+  if(!AOTEX){ const c=document.createElement("canvas"); c.width=c.height=64; const x=c.getContext("2d"), g=x.createRadialGradient(32,32,0,32,32,32); g.addColorStop(0,"rgba(0,0,0,1)"); g.addColorStop(.45,"rgba(0,0,0,.62)"); g.addColorStop(1,"rgba(0,0,0,0)"); x.fillStyle=g; x.fillRect(0,0,64,64); AOTEX=new T.CanvasTexture(c); }
+  const geo=GEO.ao||(GEO.ao=new T.PlaneGeometry(2,2).rotateX(-Math.PI/2)), m=new T.MeshBasicMaterial({map:AOTEX,color:"#0d1f08",transparent:true,opacity:.38,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}), im=new T.InstancedMesh(geo,m,L.length), M=new T.Matrix4(), q=new T.Quaternion(), p=new T.Vector3(), sc=new T.Vector3();
+  L.forEach((t,i)=>{ let y=0; try{ y=TW.ground(t[0],t[1])||0; }catch(e){} M.compose(p.set(t[0],y+.04,t[1]),q,sc.set(t[2],1,t[2])); im.setMatrixAt(i,M); }); im.instanceMatrix.needsUpdate=true; im.frustumCulled=false; im.renderOrder=1; im.userData.keep=1; im.userData.own=1; im.userData.noMerge=1; im.raycast=()=>{}; C.g.add(im); }
 function treesFlush(C){ if(C.lpt&&!C.md) try{ C.lpt=C.lpt.filter(t=>!MD.gone(t[0],t[2])); for(const t of C.lpt){ const dh=MD.h(t[0],t[2]); if(dh) t[1]=(t[1]||0)+dh; } }catch(e){} /* (地圖編輯: cleared spots, the chair's ground) */
   if(C.lpt) try{ const g=TW.ground; for(const t of C.lpt){ if(t[6]==="gold"||t[6]==="pink") continue; const a=g(t[0]+1.2,t[2]), b=g(t[0]-1.2,t[2]), c=g(t[0],t[2]+1.2), d=g(t[0],t[2]-1.2); if(a==null||b==null||c==null||d==null) continue; if(Math.hypot(a-b,c-d)/2.4>.32){ t[8]="bush"; if(!(t[7]>6)) t[3]*=.85; } } }catch(e){} /* (trees on a slope become bushes) */
   if(C.lpt) C.lpt=C.lpt.filter(t=>t[6]==="gold"||!(t[0]>78&&t[0]<111&&Math.abs(t[2]-GZ)<10)); if(C.lpt) C.lpt=C.lpt.filter(t=>!(t[0]>WFACE-4&&t[0]<WM.x+5&&Math.abs(t[2]-GZ)<4.5)); /* (nothing stands on the falls' way down) */ /* (the view from the path across 女神泉 to the falls stays open, 11/17) */ if(C.lpt) C.lpt=C.lpt.filter(t=>![[0,0],[.8,0],[-.8,0],[0,.8],[0,-.8]].some(([dx,dz])=>{ try{ return !!waterAt(t[0]+dx,t[2]+dz); }catch(e){ return false; } })); /* (11/17 主委「為什麼有樹長在水裡」: no tree stands in or right at the edge of water) */
-  if(!C.md) try{ slopeCover(C); }catch(e){ console.warn("slope cover",e); }
+  /* (11/18 主委「把前幾次要求山壁加樹叢那次增加的樹叢都拔掉」: slopeCover is no longer laid) */
+  try{ aoFlush(C); }catch(e){ console.warn("ao",e); }
   if(C.lpt&&!C.md) C.genT=C.lpt.slice(); if(C.lpt&&C.lpt.length){ const B=LPT.build(C.lpt,{seed:C.lpt.length*31+7}); for(const o of [B.trunks,...B.leaves]){ o.userData.keep=1; C.g.add(o); } C.lpt=null; } for(const name of ["cedar","palm"]){ const L=C[name]; if(!L||!L.length) continue; treeModel(name,M=>{ if(!C.g.parent) return; const q=new T.Quaternion(), e=new T.Euler(), p=new T.Vector3(), sc=new T.Vector3(), mx=new T.Matrix4();
     for(const P of M.parts){ const im=new T.InstancedMesh(P.g,P.m,L.length); L.forEach((t,i)=>{ const k=t[3]/M.h, lean=name==="palm"?.12:.04; e.set(Math.sin(i*12.9)*lean,t[5],Math.cos(i*7.3)*lean); q.setFromEuler(e); mx.compose(p.set(t[0],t[1],t[2]),q,sc.set(k*t[4],k,k*t[4])); im.setMatrixAt(i,mx); }); im.instanceMatrix.needsUpdate=true; im.frustumCulled=false; im.userData.keep=1; im.userData.shared=1; im.userData.noMerge=1; im.raycast=()=>{}; C.g.add(im); } try{ markDirty(); }catch(_){} }); } }
 function mushroom(C,x,z,r){ const y=0; put(C,GEO.cy||(GEO.cy=new T.CylinderGeometry(1,1,1,16)),NM.white,x,y+.07,z,.035,.14,.035); put(C,gsph(),r()<.5?NM.red:NM.maple,x,y+.15,z,.1,.06,.1); }
@@ -13301,7 +13388,7 @@ function backdrop(){ if(TW.bd) return; TW.bd=1; try{ const X0=-330, X1=360, Z0=-
   const g=new T.PlaneGeometry(X1-X0,Z1-Z0,nx,NZc); g.rotateX(-Math.PI/2); g.translate((X0+X1)/2,0,(Z0+Z1)/2); const P=g.attributes.position, col=new Float32Array(P.count*3), c=new T.Color(), dark=CL("#2f6a3a"), base=LAWN.clone();
   for(let k=0;k<P.count;k++){ const x=P.getX(k), z=P.getZ(k), i=Math.round((x-X0)/S), j=Math.round((z-Z0)/S); let m=1e9; for(let dj=-1;dj<=1;dj++) for(let di=-1;di<=1;di++){ const ii=Math.max(0,Math.min(nx,i+di)), jj=Math.max(0,Math.min(NZc,j+dj)); m=Math.min(m,H[jj*(nx+1)+ii]); }
     const od=out[j*(nx+1)+i]; P.setY(k,m-(od>0?.2:.45)); c.copy(base).lerp(dark,Math.min(.85,sstep(4,60,od)*.7+.25*(.5+.5*nz(x*.03,z*.03))*sstep(0,20,od))); col[k*3]=c.r; col[k*3+1]=c.g; col[k*3+2]=c.b; }
-  g.setAttribute("color",new T.BufferAttribute(col,3)); g.computeVertexNormals(); const m=new T.Mesh(g,new T.MeshLambertMaterial({vertexColors:true})); m.userData.noMerge=1; m.userData.noBuild=1; m.raycast=()=>{}; m.renderOrder=-2; scene.add(m); TW.bdM=m;
+  g.setAttribute("color",new T.BufferAttribute(col,3)); g.computeVertexNormals(); const m=new T.Mesh(g,grassPatch(new T.MeshLambertMaterial({vertexColors:true}),0)); m.userData.noMerge=1; m.userData.noBuild=1; m.raycast=()=>{}; m.renderOrder=-2; scene.add(m); TW.bdM=m;
   /* trees out past the edge */ const L=[]; for(let k=0;k<4000&&L.length<700;k++){ const x=X0+r()*(X1-X0), z=Z0+r()*(Z1-Z0), ox=Math.max(B.x0-x,0,x-B.x1), oz=Math.max(B.z0-z,0,z-B.z1), od=Math.hypot(ox,oz); if(od<4) continue; const i=Math.round((x-X0)/S), j=Math.round((z-Z0)/S); L.push([x,H[j*(nx+1)+i]-.3,z,2.2+r()*2.2]); }
   const im=new T.InstancedMesh(new T.IcosahedronGeometry(1,0),new T.MeshLambertMaterial({color:"#3f7a42",flatShading:true}),L.length), M=new T.Matrix4(), Q=new T.Quaternion(), E=new T.Euler(); L.forEach((t,i)=>{ E.set(0,r()*6,0); Q.setFromEuler(E); M.compose(new T.Vector3(t[0],t[1]+t[3]*.9,t[2]),Q,new T.Vector3(t[3],t[3]*1.25,t[3])); im.setMatrixAt(i,M); im.setColorAt(i,c.copy(CL("#4f8a4a")).multiplyScalar(.75+r()*.4)); });
   im.instanceMatrix.needsUpdate=true; if(im.instanceColor) im.instanceColor.needsUpdate=true; im.userData.noMerge=1; im.userData.noBuild=1; im.raycast=()=>{}; scene.add(im); TW.bdT=im; }catch(e){ TW.bdErr=String(e&&e.stack||e).slice(0,300); console.warn("backdrop",e); } }

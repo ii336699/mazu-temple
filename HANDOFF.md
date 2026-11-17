@@ -1343,3 +1343,15 @@ audio-fix（測試版）另外完成、**尚未部署**：
   3. 睡覺精力：主委說先不動。
 - 已知沒驗到：手機實機效能（山坡樹叢已減半；若還卡可只在遠處鋪或省電畫質不鋪）、主委自己挖過的河（存在主委手機 localStorage mz.mapedit，模擬器重現不了）、NPC 只走鋪面的實際行為、北邊新地形走一圈。
 - 模擬器注意：瞬移到小鎮後常會跳「正在前往天后小鎮」讀取畫面（LQ.ready 之後 zoneForget），截圖前要等 #zonePack hidden；整體大約 1 fps，GO/等待要給足時間。
+
+## 第 56 批（11/18 凌晨，主委 00:59–01:05）河同一個顏色、拔掉山壁樹叢、草地材質 v2、沙灘材質
+- 河的顏色：水面 shader 的深淺不再看實際深度——每一處水都當作 1.2 m 深算顏色（dk 固定），只有岸邊最後 35 cm 淡出。所有河、溪、泉、挖的水同一個顏色、同一個透明度。
+- 山壁樹叢：treesFlush 不再呼叫 slopeCover（第 54/55 批加的山坡樹叢全部拔掉；函式還在）。
+- 草地材質 v2（public/tex/grass/：color 1024、normal 512、noise 256、glint 512，webp）：
+  - grassPatch(m,force,sand) 套在 terrain()、lawnMat()（outsideGround、BASEG、GMAT.grass）、backdrop（強制 LOW）。世界座標貼圖（GCFG.scale 4.6 m），所以所有地面接在一起沒有接縫。
+  - 顏色：草地權重 gW＝地形頂點色「綠的程度」（g−max(r,b)），所以路、沙、岩、主委噴漆的地方維持舊樣子；保留頂點色的明暗（lu/gLum）。noise 兩個尺度（57 m、19 m）±10% 深淺；HIGH 再讀一次轉 36°、放大 1.31 倍的貼圖用 noise 混合（防重複）；70–190 m 外慢慢收成平均色避免閃爍；整體 tint .66、降 20% 飽和（新貼圖本身很亮很黃）。
+  - MEDIUM/HIGH 改用 MeshPhongMaterial（逐像素光，specular 黑）：法線 .08（世界座標切線空間、Linear 讀取）、反光＝太陽方向的半向量高光×glint 遮罩×.035，38 m 外消失；吃太陽顏色，所以黃昏夜晚自然變弱。專案沒有陰影貼圖，所以樹蔭裡仍會有一點點反光（強度很小）。LOW＝Lambert 只換顏色。原版＝完全不套。
+  - 設定 → 畫面濾鏡 →「草地・沙灘」原版／新版・低／中／高（localStorage mz.grass；自動＝手機中、電腦高），切換後重新載入。window.MZ_GRASS、window.MZ_GU（共用 uniforms，可現場調 GS、gNS、gVar、gGS、gTint）。
+- 沙灘材質（public/tex/sand/，主委 4 張圖，已做成可無縫平鋪）：同一個 grassPatch 加 SANDM（frontGround 廟前沙灘、BASESAND、beachC 地形）。沙的權重＝頂點色在 VC.sand→VC.wet 線段附近；濕沙比例 sT 直接用原本依海岸線（FRONT.shore）算好的濕沙顏色，所以濕沙位置是真的海岸線、過渡是原本的柔和漸層。乾沙：法線 .04、變化 8%、反光 .015、寬鬆高光；濕沙：顏色 ×(.70,.66,.62)、反光 .06、高光較集中。共用草地的 noise 和畫質設定（SCFG）。
+- 接觸陰影：aoFlush(C) 在每棵樹（LPT 非樹叢、針葉、椰子）、每顆 mossRock、每座石燈底下放一個柔和的深色圓（每區 1 個 InstancedMesh、不加光源）。
+- 驗證（模擬器）：HIGH/MED/LOW/原版都沒有 shader 錯誤；俯視 5×5、10×10 格看不出重複；草地區 draw calls 原版與 HIGH 一樣（243/287/303），貼圖多 12 張（約 17 MB 顯示記憶體）。沒驗：手機實際 FPS、GPU 時間（模擬器 1 fps 量不準）。
