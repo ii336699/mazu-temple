@@ -875,7 +875,8 @@ THANKS.map((t,i)=>[t,i]).sort((a,b)=>b[0].amt-a[0].amt||a[1]-b[1]).forEach(([t],
 /* ================= persisted per-viewer state ================= */
 function load(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } }
 function save(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
-const today = new Date().toISOString().slice(0,10);
+/* (11/17 玩家說精力沒恢復、財神爺說今天玩過了: "today" was the UTC date taken once when the page opened — in Taiwan a new day began at 8 a.m., and a page left open stayed on the old day for good. Now it is Taiwan's date and follows the clock) */
+let today = new Date(Date.now()+288e5).toISOString().slice(0,10); setInterval(()=>{ today=new Date(Date.now()+288e5).toISOString().slice(0,10); },30000);
 let me = load("mz.me", null);
 const firstVisit = !me;
 /* ---- random names: a cheerful or silly adjective, a fruit and an animal. Only kind words; animals that double as insults are left out. ---- */
