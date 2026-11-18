@@ -962,7 +962,7 @@ function saveBag(){ save("mz.bag",bag); renderWallet(); }
 function sanitizeLook(l,allowChair=false){ const out=[]; for(let i=0;i<LOOK_RANGE.length;i++){ const v=Array.isArray(l)?l[i]|0:0; out.push(Math.max(0,Math.min(LOOK_RANGE[i]-1, Number.isFinite(v)?v:0))); } if(!allowChair&&out[3]===16) out[3]=0; if(EYE_DROP(out[7])) out[7]=0; return out; }
 
 /* ================= quality ================= */
-const Q={mode:load("mz.q","auto")}; Q.lite=Q.mode==="lite"; Q.low=Q.mode==="low"||Q.lite; Q.phone=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Mac/.test(navigator.userAgent)); Q.safe=Date.now()-(+load("mz.crash",0)||0)<20*60e3; if(Q.safe&&Q.mode==="auto") Q.low=true; /* 閃退後省電 (KQ): when the phone itself closed the game (out of memory), the next visits start lighter instead of crashing the same way
+const Q={mode:load("mz.q","auto")}; Q.lite=Q.mode==="lite"; Q.low=Q.mode==="low"||Q.lite; Q.phone=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Mac/.test(navigator.userAgent)); Q.safe=Date.now()-(+load("mz.crash",0)||0)<120*60e3; /* (11/18: 2 h, was 20 min — phones kept crashing again once it ran out) */ if(Q.safe&&Q.mode==="auto") Q.low=true; /* 閃退後省電 (KQ): when the phone itself closed the game (out of memory), the next visits start lighter instead of crashing the same way
    again — iPhones that crash right while loading kept reloading into the same crash until Safari gave up ("重複發生問題").
    Closed within the first 1½ minutes, or twice within 10 minutes: one step lighter (1 = 省電, 2 = 低配). Three days without being
    closed: one step back. Phones only; picking a 畫質 by hand (or 維持原本 on the card) turns it off. */
@@ -991,6 +991,10 @@ function ctxArm(){ clearTimeout(CTXL.tm); if(!CTXL.lost) return; if(document.hid
 canvas.addEventListener("webglcontextlost",e=>{ e.preventDefault(); CTXL.lost=Date.now(); CTXL.hid=document.hidden?1:0; try{ crumb("畫面中斷"+(CTXL.hid?"(背景)":"")); }catch(_){ } try{ if(!document.hidden) toast("畫面暫停一下，正在恢復…",3000); }catch(_){ } ctxArm(); },false);
 document.addEventListener("visibilitychange",ctxArm);
 canvas.addEventListener("webglcontextrestored",()=>{ const was=CTXL.lost; CTXL.lost=0; clearTimeout(CTXL.tm);
+  /* (11/18 11:34 主委「出禪堂還是一樣黑畫面」 + 「畫面恢復了」: after a loss while playing, the 3D comes back but stays black — the pictures
+     put away at the 禪房 door and the shrunk ones cannot be sent again. So a loss on screen now reloads the page straight into the light
+     mode (mz.crash: smaller pictures, fewer districts, old grass, no forest props) instead of leaving a black screen.) */
+  if(!CTXL.hid){ try{ save("mz.crash",Date.now()); }catch(_){ } try{ crSend("ctx",Object.assign(crInfo(),{msg:"恢復後重新整理"})); }catch(_){ } try{ toast("畫面記憶體不足，重新整理並改用省電畫質",2500); }catch(_){ } setTimeout(()=>location.reload(),900); return; }
   try{ /* pictures drawn once into the graphics memory are gone: draw them again */ if(typeof WX!=="undefined"&&WX.cube){ WX.cube.face=0; WX.cube.done=false; } if(typeof ZEN!=="undefined"&&ZEN.cube&&ZEN.cube.rt){ ZEN.cube.face=0; ZEN.cube.done=0; } if(typeof INN!=="undefined"&&INN.cube&&INN.cube.rt){ INN.cube.face=0; INN.cube.done=0; } if(typeof LAKE!=="undefined"&&LAKE.on) setTimeout(()=>{ try{ lakeReflect(); }catch(_){ } },500); }catch(_){ }
   try{ crSend("ctxok",Object.assign(crInfo(),{msg:"恢復 "+Math.round((Date.now()-was)/100)/10+" 秒"+(CTXL.hid?"・在背景時中斷":"")})); }catch(_){ } try{ toast("畫面恢復了",1600); }catch(_){ } },false);
 /* ---- 閃退紀錄: every few seconds the page notes what the player is doing; if the next visit finds that note was never closed (the page
@@ -12641,7 +12645,7 @@ function grassPatch(m,force,sand){ const q=force!=null?force:GRASS.q; if(q<0) re
 #endif
   gGC=cA*diffuse/max(gRef,vec3(.001)); gGlint=0.; gP=10.;
 #if GQ>1
-  gGlint=gGS*(4.+40.*texture2D(gGli,gUV).a)*(1.-smoothstep(14.,45.,dd))*gW; /* (only the few blades the mask picks, never the whole lawn; gone by 40 m) */
+  float ga=texture2D(gGli,gUV).a; gGlint=gGS*(3.+100.*ga*ga)*(1.-smoothstep(14.,45.,dd))*gW; /* (11/18 11:31 主委「還是沒有反光」: the glint picture is almost black (99% of it under .07) — the alpha is now stretched (tex/grass/normal.webp) and the blades it picks shine about 2× the light) */ /* (only the few blades the mask picks, never the whole lawn; gone by 40 m) */
 #endif
 }
 #ifdef USE_COLOR
@@ -12658,7 +12662,7 @@ function grassPatch(m,force,sand){ const q=force!=null?force:GRASS.q; if(q<0) re
    sc=pow(sc,vec3(2.2))*sTint*(1.+sVar*((n1-.5)*1.5+(n2-.5)*.9)); sc=mix(sc,sc*vec3(.70,.66,.62),smoothstep(0.,1.,sT));
    diffuseColor.rgb=mix(diffuseColor.rgb,sc*diffuse/max(gRef,vec3(.001)),sW);
 #if GQ>1
-   float dd2=distance(vGW,cameraPosition); gGlint=mix(gGlint,mix(sDG,sWG,sT)*(6.+50.*texture2D(sGli,gp/SS).a)*(1.-smoothstep(12.,40.,dd2)),sW); gP=mix(gP,mix(8.,24.,sT),sW);
+   float dd2=distance(vGW,cameraPosition); gGlint=mix(gGlint,mix(sDG,sWG,sT)*(6.+160.*texture2D(sGli,gp/SS).a)*(1.-smoothstep(12.,40.,dd2)),sW); gP=mix(gP,mix(8.,24.,sT),sW);
 #endif
  }
 #endif`)
@@ -12672,7 +12676,7 @@ function grassPatch(m,force,sand){ const q=force!=null?force:GRASS.q; if(q<0) re
 #endif`)
       .replace("#include <lights_fragment_end>",`#include <lights_fragment_end>
 #if GQ>1 && NUM_DIR_LIGHTS>0
- { vec3 Ld=directionalLights[0].direction, Vd=normalize(-vViewPosition), Hd=normalize(Ld+Vd); float nl=max(dot(normal,Ld),0.), nv=max(dot(normal,Vd),0.); float sp=(pow(max(dot(normal,Hd),0.),gP)*.9+pow(1.-nv,3.)*.3)*nl; reflectedLight.directSpecular+=directionalLights[0].color*sp*gGlint; } /* (11/18 10:50 主委「開高畫質也沒有反光」: a half-vector highlight alone only shows looking into the sun; a soft sheen at low angles now shows it from anywhere, sparkling where the mask picks blades) */
+ { vec3 Ld=directionalLights[0].direction, Vd=normalize(-vViewPosition), Hd=normalize(Ld+Vd); float nl=max(dot(normal,Ld),0.), nv=max(dot(normal,Vd),0.); float sp=(pow(max(dot(normal,Hd),0.),gP)*.9+.3+pow(1.-nv,3.)*.3)*nl; /* (+.3: the picked blades and sand grains catch the sun from any side, not only looking into it) */ reflectedLight.directSpecular+=directionalLights[0].color*vec3(1.,1.,.72)*sp*gGlint; } /* (11/18 10:50 主委「開高畫質也沒有反光」: a half-vector highlight alone only shows looking into the sun; a soft sheen at low angles now shows it from anywhere, sparkling where the mask picks blades) */
 #endif`); };
   m.customProgramCacheKey=()=>"grass"+q+(sand?"s":"")+(k0&&k0!==T.Material.prototype.customProgramCacheKey?k0.call(m):""); m.userData.grass=q; return m; }
 /* a ground material: Lambert (原版 / LOW) or per-pixel Phong (MEDIUM / HIGH), then the grass */
