@@ -975,6 +975,10 @@ if(Q.phone){ const now=Date.now(), prev=load("mz.alive",null), ctx=now-(+load("m
   if(KQ.lv>=1&&(Q.mode==="auto"||Q.mode==="low")) Q.low=true; if(KQ.lv>=2&&Q.mode!=="high"){ Q.lite=true; Q.low=true; } } /* the 3D drawing crashed in the last 20 minutes: run lighter for a while */ // 低配 (lite) = 省電 plus lighter models, small textures and no anti-aliasing
 /* ================= renderer & scene ================= */
 const canvas=$("#c");
+/* 手機一走到小鎮就全黑 (11/18): the shop rooms, signs and murals are 2048-pixel pictures (about 13 MB each in graphics memory); with the
+   town's districts loaded a phone went past ~400 MB and iOS took the 3D away. On phones every picture is now sent to the graphics card at
+   most 1024 wide (three.js shrinks anything over the card's reported limit), a quarter of the memory; it barely shows on a phone screen. */
+if(Q.phone) try{ const cap=(P,o)=>{ const g=P.getParameter; P.getParameter=function(k){ const v=g.call(this,k); return k===0x0D33?Math.min(v,Q.safe?512:1024):v; /* (512 for 20 min after a crash) */ }; }; window.WebGLRenderingContext&&cap(WebGLRenderingContext.prototype); window.WebGL2RenderingContext&&cap(WebGL2RenderingContext.prototype); }catch(e){}
 const renderer=new T.WebGLRenderer({canvas,antialias:!Q.lite,powerPreference:"high-performance"});
 /* If the phone runs out of graphics memory the browser takes the 3D drawing away (it would freeze or close the page). Remember it,
    reload, and run lighter for 20 minutes instead of crashing again. */
@@ -12598,19 +12602,20 @@ function antiTile(m,key){ const prev=m.onBeforeCompile; m.onBeforeCompile=sh=>{ 
      the sun's own colour carries it, so at dusk and night it fades with the light
    · LOW: Lambert like before, colour only.  原版: the old material, untouched.
    Settings → 畫面濾鏡 → 草地 (localStorage mz.grass: old / low / med / high; auto = med on phones, high elsewhere). Changing it reloads. */
-const GRASS=(()=>{ let v=""; try{ v=localStorage.getItem("mz.grass")||""; }catch(e){} if(!/^(old|low|med|high)$/.test(v)) v=(typeof Q!=="undefined"&&Q.phone)?"low":"high"; /* (11/18 主委「玩不到幾秒都會閃退」: phones start on LOW — Lambert, colour + broad variation only, two pictures) */ return {mode:v,q:{old:-1,low:0,med:1,high:2}[v]}; })(); window.MZ_GRASS=GRASS;
+const GRASS=(()=>{ let v=""; try{ v=localStorage.getItem("mz.grass")||""; }catch(e){} if(!/^(old|low|med|high)$/.test(v)) v=(typeof Q!=="undefined"&&Q.phone)?"low":"high"; if(typeof Q!=="undefined"&&Q.safe&&Q.phone) v="old"; /* (11/18 主委「手機一走到靠近小鎮就會全黑」: right after the phone's 3D memory ran out, the next 20 min use the old grass — no new pictures at all) */ /* (11/18 主委「玩不到幾秒都會閃退」: phones start on LOW — Lambert, colour + broad variation only, two pictures) */ return {mode:v,q:{old:-1,low:0,med:1,high:2}[v]}; })(); window.MZ_GRASS=GRASS;
 const GCFG={scale:4.6,normal:.06,variation:.06,mid:.025,detail:.7,glint:.02,roughness:.94,tint:.6}; /* (草地 V2: macroColorVariation .06, midVariationStrength .025, normalStrength .06, glintStrength .02; baseDetail .7 — the v2 picture is already very soft, at .30 it went flat) */
 /* 沙灘 (11/18 主委's sand pack, tex/sand/): its own colour, normal and glint, the grass's noise and quality levels. Dry sand: normal .04,
    variation .08, glint .015, a wide dull highlight (roughness .96); wet sand — where the beach's own colours already turn to wet sand by
    the shoreline (FRONT.shore) — a little darker and a tighter, stronger highlight (roughness .55). */
 const SCFG={scale:5.2,normal:.04,variation:.08,dryGlint:.015,wetGlint:.06,dryRough:.96,wetRough:.55,tint:.78}; /* (initial values from the brief; tint brings the bright picture into the scene's light) */
-let GU=null; GU=(()=>{ const one=(r,g,b)=>{ const t=new T.DataTexture(new Uint8Array([r,g,b,255]),1,1); t.needsUpdate=true; return t; };
-  const U={gCol:{value:one(145,206,67)},gNor:{value:one(128,128,255)},gNoi:{value:one(128,128,128)},gGli:{value:one(0,0,0)},GS:{value:GCFG.scale},gNS:{value:GCFG.normal},gVar:{value:GCFG.variation},gGS:{value:GCFG.glint},gTint:{value:GCFG.tint},gMid:{value:GCFG.mid},gDet:{value:GCFG.detail},gAvg:{value:new T.Vector3(.347,.706,.059)},gLum:{value:.40}};
-  Object.assign(U,{sCol:{value:one(250,214,150)},sNor:{value:one(128,128,255)},sGli:{value:one(0,0,0)},SS:{value:SCFG.scale},sNS:{value:SCFG.normal},sVar:{value:SCFG.variation},sDG:{value:SCFG.dryGlint},sWG:{value:SCFG.wetGlint},sTint:{value:SCFG.tint},sSand:{value:new T.Color()},sWet:{value:new T.Color()}});
+let GU=null; GU=(()=>{ const one=(r,g,b,a)=>{ const t=new T.DataTexture(new Uint8Array([r,g,b,a==null?255:a]),1,1); t.needsUpdate=true; return t; }; /* (the glint mask now rides in the normal picture's alpha — two files fewer, 11/18) */
+  const U={gCol:{value:one(145,206,67)},gNor:{value:one(128,128,255)},gNoi:{value:one(128,128,128)},gGli:{value:one(128,128,255,0)},GS:{value:GCFG.scale},gNS:{value:GCFG.normal},gVar:{value:GCFG.variation},gGS:{value:GCFG.glint},gTint:{value:GCFG.tint},gMid:{value:GCFG.mid},gDet:{value:GCFG.detail},gAvg:{value:new T.Vector3(.347,.706,.059)},gLum:{value:.40}};
+  Object.assign(U,{sCol:{value:one(250,214,150)},sNor:{value:one(128,128,255)},sGli:{value:one(128,128,255,0)},SS:{value:SCFG.scale},sNS:{value:SCFG.normal},sVar:{value:SCFG.variation},sDG:{value:SCFG.dryGlint},sWG:{value:SCFG.wetGlint},sTint:{value:SCFG.tint},sSand:{value:new T.Color()},sWet:{value:new T.Color()}});
   if(GRASS.q>=0){ const L=new T.TextureLoader(), an=Math.min(renderer.capabilities.getMaxAnisotropy?renderer.capabilities.getMaxAnisotropy():1,GRASS.q>1?8:4);
-    const get=(f,k)=>L.load("tex/grass/"+f,t=>{ t.wrapS=t.wrapT=T.RepeatWrapping; t.anisotropy=k==="gNoi"?1:an; t.needsUpdate=true; U[k].value=t; });
-    get("color.webp","gCol"); get("noise.webp","gNoi"); if(GRASS.q>0){ get("normal.webp","gNor"); get("glint.webp","gGli"); }
-    get("../sand/color.webp","sCol"); if(GRASS.q>0){ get("../sand/normal.webp","sNor"); get("../sand/glint.webp","sGli"); } }
+    const small=t=>{ /* on phones the 1024 pictures are drawn at 512: a quarter of the graphics memory (11/18 black screen near town) */ try{ const im=t.image; if(!(typeof Q!=="undefined"&&Q.phone)||!im||!(im.width>512)) return; const c=document.createElement("canvas"); c.width=c.height=512; c.getContext("2d").drawImage(im,0,0,512,512); t.image=c; }catch(e){} };
+    const get=(f,k,also)=>L.load("tex/grass/"+f,t=>{ small(t); t.wrapS=t.wrapT=T.RepeatWrapping; t.anisotropy=k==="gNoi"?1:an; t.needsUpdate=true; U[k].value=t; also&&also(t); });
+    get("color.webp","gCol"); get("noise.webp","gNoi"); if(GRASS.q>0){ get("normal.webp","gNor",t=>{ U.gGli.value=t; }); }
+    get("../sand/color.webp","sCol"); if(GRASS.q>0){ get("../sand/normal.webp","sNor",t=>{ U.sGli.value=t; }); } }
   return U; })(); window.MZ_GU=GU;
 /* LAWN's brightness, for keeping the terrain's painted light and shade on the new grass */
 function grassPatch(m,force,sand){ const q=force!=null?force:GRASS.q; if(q<0) return m; const prev=m.onBeforeCompile, ref=m.color.clone(), k0=m.customProgramCacheKey;
@@ -12636,7 +12641,7 @@ function grassPatch(m,force,sand){ const q=force!=null?force:GRASS.q; if(q<0) re
 #endif
   gGC=cA*diffuse/max(gRef,vec3(.001)); gGlint=0.; gP=10.;
 #if GQ>1
-  gGlint=gGS*28.*texture2D(gGli,gUV).r*(1.-smoothstep(12.,40.,dd))*gW; /* (only the few blades the mask picks, never the whole lawn; gone by 40 m) */
+  gGlint=gGS*(4.+40.*texture2D(gGli,gUV).a)*(1.-smoothstep(14.,45.,dd))*gW; /* (only the few blades the mask picks, never the whole lawn; gone by 40 m) */
 #endif
 }
 #ifdef USE_COLOR
@@ -12653,7 +12658,7 @@ function grassPatch(m,force,sand){ const q=force!=null?force:GRASS.q; if(q<0) re
    sc=pow(sc,vec3(2.2))*sTint*(1.+sVar*((n1-.5)*1.5+(n2-.5)*.9)); sc=mix(sc,sc*vec3(.70,.66,.62),smoothstep(0.,1.,sT));
    diffuseColor.rgb=mix(diffuseColor.rgb,sc*diffuse/max(gRef,vec3(.001)),sW);
 #if GQ>1
-   float dd2=distance(vGW,cameraPosition); gGlint=mix(gGlint,mix(sDG,sWG,sT)*(2.+20.*texture2D(sGli,gp/SS).r)*(1.-smoothstep(12.,40.,dd2)),sW); gP=mix(gP,mix(8.,24.,sT),sW);
+   float dd2=distance(vGW,cameraPosition); gGlint=mix(gGlint,mix(sDG,sWG,sT)*(6.+50.*texture2D(sGli,gp/SS).a)*(1.-smoothstep(12.,40.,dd2)),sW); gP=mix(gP,mix(8.,24.,sT),sW);
 #endif
  }
 #endif`)
@@ -12667,7 +12672,7 @@ function grassPatch(m,force,sand){ const q=force!=null?force:GRASS.q; if(q<0) re
 #endif`)
       .replace("#include <lights_fragment_end>",`#include <lights_fragment_end>
 #if GQ>1 && NUM_DIR_LIGHTS>0
- { vec3 Ld=directionalLights[0].direction, Vd=normalize(-vViewPosition), Hd=normalize(Ld+Vd); float sp=pow(max(dot(normal,Hd),0.),gP)*max(dot(normal,Ld),0.); reflectedLight.directSpecular+=directionalLights[0].color*sp*gGlint; }
+ { vec3 Ld=directionalLights[0].direction, Vd=normalize(-vViewPosition), Hd=normalize(Ld+Vd); float nl=max(dot(normal,Ld),0.), nv=max(dot(normal,Vd),0.); float sp=(pow(max(dot(normal,Hd),0.),gP)*.9+pow(1.-nv,3.)*.3)*nl; reflectedLight.directSpecular+=directionalLights[0].color*sp*gGlint; } /* (11/18 10:50 主委「開高畫質也沒有反光」: a half-vector highlight alone only shows looking into the sun; a soft sheen at low angles now shows it from anywhere, sparkling where the mask picks blades) */
 #endif`); };
   m.customProgramCacheKey=()=>"grass"+q+(sand?"s":"")+(k0&&k0!==T.Material.prototype.customProgramCacheKey?k0.call(m):""); m.userData.grass=q; return m; }
 /* a ground material: Lambert (原版 / LOW) or per-pixel Phong (MEDIUM / HIGH), then the grass */
@@ -12757,7 +12762,7 @@ void main(){ float D=vA.z; vec2 fl=vA.xy; float t=uT*uWP.y; vec2 p=vW.xz*uWP.z;
   vec3 N=normalize(vec3(n.x*.7*uWP.x,1.,n.y*.7*uWP.x)); vec3 V=normalize(cameraPosition-vW); float ndv=clamp(dot(N,V),0.,1.);
   float fr=(.02+.98*pow(1.-ndv,5.))*uWP2.x; vec3 R=reflect(-V,N); float up=clamp(R.y,0.,1.);
   vec3 sky=mix(vec3(.80,.89,.94),vec3(.38,.62,.88),pow(up,.6)); sky=mix(sky,vec3(.6,.64,.68),uRain*.7); sky=mix(sky,vec3(.05,.08,.15),uNight);
-  float dk=smoothstep(.02,.32,D); /* (a bank mask, not the real depth: soft teal at the edge, lake blue from 70 cm in — so every river, stream and pond is the same colour in the middle, 11/18) */ vec3 body=mix(uShal,uDeep,dk)*(.88+.24*hh); /* (11/18 主委「河不一樣顏色是因為深度不同，我要一樣顏色，把深度挖到一樣」: every water reads as 1.2 m deep — one colour for all rivers, streams, springs and dug water; only the last 35 cm at the bank still fades out) */
+  float dk=.55; /* (11/18 10:50 主委「水都用一樣的顏色，不要有這種斷層」: the colour no longer looks at the depth or the bank at all — every water, everywhere, is one colour) */ /* (a bank mask, not the real depth: soft teal at the edge, lake blue from 70 cm in — so every river, stream and pond is the same colour in the middle, 11/18) */ vec3 body=mix(uShal,uDeep,dk)*(.88+.24*hh); /* (11/18 主委「河不一樣顏色是因為深度不同，我要一樣顏色，把深度挖到一樣」: every water reads as 1.2 m deep — one colour for all rivers, streams, springs and dug water; only the last 35 cm at the bank still fades out) */
   vec3 c=mix(body,sky,clamp(fr,0.,.85));
   float sd=max(dot(R,uSun),0.); float sp=(pow(sd,220.)*.55+pow(sd,36.)*.07)*uWP2.y*(1.-uNight)*(1.-uRain*.8); /* (soft sun glints, no hard white sparks) */
   float mo=pow(max(dot(R,normalize(vec3(.3,.55,-.78))),0.),320.)*uNight*1.4;
@@ -12768,7 +12773,7 @@ void main(){ float D=vA.z; vec2 fl=vA.xy; float t=uT*uWP.y; vec2 p=vW.xz*uWP.z;
   float lines=smoothstep(.7,.95,sin(D*24.-uT*1.3+hh*5.)*.5+.5)*smoothstep(.22,.04,D);
   float foam=clamp((smoothstep(.1,.0,D)*.6+lines*.35)*(.55+.7*hh)+rf,0.,1.)*uWP2.z; /* (11/18 主委「為什麼這條河是白色」: the pale shore lines only right at the edge now, not over a whole shallow stream) */
   c=mix(c,uFoamC,foam); c*=mix(1.,.6,uNight);
-  float al=mix(.9,1.,dk)*uWP.w; /* (mostly opaque now; only the bank edge fades) */ al=max(al,foam*.9); al=max(al,clamp(fr,0.,1.)*.95); al*=smoothstep(-.03,.06,D);
+  float al=.74*uWP.w; /* (主委「透明度咧？」: you see the bed through it again — the same for all water) */ al=max(al,foam*.9); al=max(al,clamp(fr,0.,1.)*.92); al*=smoothstep(-.03,.015,D);
   gl_FragColor=vec4(c,al);
 #include <fog_fragment>
 }`;
@@ -13145,7 +13150,7 @@ const VS=s=>new T.Color(s).convertSRGBToLinear();
 const SC={g1:VS("#7cc46a"),g2:VS("#5aa45c"),dark:VS("#3f8a5a"),rock:VS("#9a9a8e"),path:VS("#d8c49a"),moss:VS("#6aa880"),top:VS("#a8d07a")};
 function southC(x,z,h,c){ const n=.5+.5*nz(x*1.3,z*1.3); c.copy(LAWN).multiplyScalar(.95+.1*n); const r=Math.hypot(x-MT.cx,z-MT.cz);
   if(r<MT.R){ c.lerp(SC.dark,sstep(4,16,h)*.5); c.lerp(SC.rock,sstep(22,30,h)*.55*(r>MT.top+1?1:0)); if(r<MT.top+.6) c.copy(SC.top); }
-  const L=lineD(SPI2,x,z)[0], P=pathD(x,z); if(r<MT.R+2) c.lerp(SC.path,sstep(1.5,.9,L)); c.lerp(SC.path,sstep(1.4,.8,P)*.85);
+  /* (paths are drawn as their own strips now — pathRibbons — not painted into the 1 m ground grid, 11/18) */
   for(const S of NT.springs){ const d=springD(S,x,z); if(d<S[2]+2) c.lerp(SC.moss,sstep(S[2]+2,S[2],d)*.6); }
   if(z<-176&&x>WM.x-WM.rx-1&&wfMount(x,z)>.3){ const m=wfMount(x,z), sl=Math.hypot(wfMount(x+.7,z)-wfMount(x-.7,z),wfMount(x,z+.7)-wfMount(x,z-.7))/1.4, k=sstep(.6,3,m)*sstep(.75,1.5,sl); c.lerp(VC.moss,sstep(2,WM.H*.6,m)*.45); c.lerp(VC.rockf||(VC.rockf=CL("#8d8172")),k*(.72+.28*nz(x*.9,z*.45))); } }
 /* 樹的模型 (11/16 主委's two trees: 針葉樹 ac_cedar_spring.glb in the forest, the valley and on the mountain, 椰子樹 ac_palm.glb on the
@@ -13181,8 +13186,39 @@ const SOLS={}; let SOLG=null;
 function solGrid(){ if(SOLG) return SOLG; SOLG=new Map(); for(const id in SOLS) for(const c of SOLS[id]){ const r=c[2], i0=Math.floor((c[0]-r)/4), i1=Math.floor((c[0]+r)/4), j0=Math.floor((c[1]-r)/4), j1=Math.floor((c[1]+r)/4); for(let i=i0;i<=i1;i++) for(let j=j0;j<=j1;j++){ const k=i+","+j; let a=SOLG.get(k); if(!a) SOLG.set(k,a=[]); a.push(c); } } return SOLG; }
 function solHit(x,z){ const a=solGrid().get(Math.floor(x/4)+","+Math.floor(z/4)); if(!a) return false; for(const c of a) if((x-c[0])**2+(z-c[1])**2<c[2]*c[2]) return true; return false; }
 TW.solHit=solHit;
+/* 小路 (11/18 10:50 主委「那條路現在一樣是鋸齒狀，請重畫，不是上霧邊」): the forest, mountain and 西山 paths are drawn as their own
+   smooth strips laid on the ground, following the path line exactly — the ground under them is plain grass. A soft worn edge on
+   both sides, a sandy dirt picture, one draw per district. */
+let PATHTEX=null;
+function pathTex(){ if(PATHTEX) return PATHTEX; const W=64, H=256, c=document.createElement("canvas"); c.width=W; c.height=H; const x=c.getContext("2d"), im=x.createImageData(W,H), r=krng(4242);
+  for(let j=0;j<H;j++) for(let i=0;i<W;i++){ const u=i/(W-1), e=Math.min(u,1-u)*2, n=r(), wob=.06*Math.sin(j*.21)+.05*Math.sin(j*.073+1.3); const a=Math.max(0,Math.min(1,(e-.06-wob*(u<.5?1:-1)*.5)/.42)); const k=(i+j*W)*4, sh=.9+.14*n-.06*Math.sin(j*.5+i*.3);
+    im.data[k]=Math.min(255,216*sh); im.data[k+1]=Math.min(255,196*sh); im.data[k+2]=Math.min(255,154*sh); im.data[k+3]=Math.round(255*a*a*(3-2*a)); }
+  x.putImageData(im,0,0); PATHTEX=new T.CanvasTexture(c); PATHTEX.wrapT=T.RepeatWrapping; PATHTEX.anisotropy=4; return PATHTEX; }
+function pathRibbons(C,x0,x1,z0,z1,lines,hf){ const P=[], UV=[], I=[]; let base=0;
+  for(const [pts,hw,keep] of lines){ const S=[]; for(let i=0;i<pts.length-1;i++){ const a=pts[i], b=pts[i+1], L=Math.hypot(b[0]-a[0],b[1]-a[1]), n=Math.max(1,Math.ceil(L/.6)); for(let k=0;k<n;k++){ const t=k/n; S.push([a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t]); } } S.push(pts[pts.length-1]);
+    let run=null, along=0;
+    const flush=()=>{ if(run&&run.length>1){ const n=run.length; for(let i=0;i<n;i++){ const q=run[i]; for(let s=0;s<3;s++){ const o=(s-1)*q.hw, x=q.x+q.px*o, z=q.z+q.pz*o; let y=0; try{ y=hf(x,z); }catch(e){} P.push(x,(y==null?0:y)+.045,z); UV.push(s/2,q.v); } if(i<n-1){ const k=base+i*3; I.push(k,k+3,k+1,k+1,k+3,k+4,k+1,k+4,k+2,k+2,k+4,k+5); } } base+=n*3; } run=null; };
+    for(let i=0;i<S.length;i++){ const p=S[i], q=S[Math.min(i+1,S.length-1)], o=S[Math.max(i-1,0)]; let dx=q[0]-o[0], dz=q[1]-o[1]; const L=Math.hypot(dx,dz)||1; dx/=L; dz/=L; if(i>0) along+=Math.hypot(p[0]-S[i-1][0],p[1]-S[i-1][1]);
+      const inside=p[0]>x0-.5&&p[0]<x1+.5&&p[1]>z0-.5&&p[1]<z1+.5&&(!keep||keep(p[0],p[1])); if(!inside){ flush(); continue; } (run||(run=[])).push({x:p[0],z:p[1],px:-dz,pz:dx,hw:hw*(1+.08*Math.sin(along*.37)),v:along/2.2}); }
+    flush(); }
+  if(!I.length) return; const g=new T.BufferGeometry(); g.setAttribute("position",new T.Float32BufferAttribute(P,3)); g.setAttribute("uv",new T.Float32BufferAttribute(UV,2)); g.setIndex(I); g.computeVertexNormals();
+  const m=new T.Mesh(g,new T.MeshLambertMaterial({map:pathTex(),transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3})); m.renderOrder=1; m.userData.keep=1; m.userData.own=1; m.userData.noMerge=1; m.raycast=()=>{}; C.g.add(m); }
+/* 森林小物 (11/18 主委's HigherPoly Forest Props pack): the pack's fallen log, mossy rocks with ferns, mushrooms (blue and red) and
+   wildflowers — three variants of each, cut apart and lightened (props.glb, vertex colours) — scattered at random through the woods,
+   the mountain, 西山, 女神泉 and the north; one instanced draw per piece per district; logs and rocks are solid. The fox statue is
+   only in 建築模式. */
+let PROPG=null, PROPQ=null;
+function propGeo(cb){ if(PROPG){ cb(PROPG); return; } (PROPQ||(PROPQ=[])).push(cb); if(PROPQ.length>1) return; loadShared("props",m=>{ const out={}; const mat=new T.MeshLambertMaterial({vertexColors:true}); m.traverse(o=>{ if(o.isMesh) out[o.name||o.parent.name]={g:o.geometry,m:mat}; }); PROPG=out; PROPQ.splice(0).forEach(f=>f(out)); }); }
+const PROPOK=(x,z)=>{ try{ return pathD(x,z)>2.6&&wpD(x,z)>2.6; }catch(e){ return true; } };
+const PROPK=[["rock",.3,.85,1.1],["mush",.25,0,1.15],["flower",.3,0,1.1],["log",.15,.75,1.15]]; /* [kind, share, solid radius, scale] */
+function propsScatter(C,x0,x1,z0,z1,seed,ok){ const r=krng(seed), n=(typeof Q!=="undefined"&&Q.phone)?(Q.safe?0:Math.min(22,Math.round((x1-x0)*(z1-z0)/280))):Math.min(44,Math.round((x1-x0)*(z1-z0)/140)), L=[]; if(!n) return; /* (phones: half as many; none right after a crash) */
+  for(let t=0;t<n*6&&L.length<n;t++){ const x=x0+r()*(x1-x0), z=z0+r()*(z1-z0); if(ok&&!ok(x,z)) continue; let y=null; try{ if(TW.water(x,z)) continue; y=TW.ground(x,z); if(y==null) continue; const a=TW.ground(x+1,z), b=TW.ground(x,z+1); if(a==null||b==null||Math.abs(a-y)>.35||Math.abs(b-y)>.35) continue; if(!TW.walk(x,z)) continue; }catch(e){ continue; }
+    if(L.some(q=>Math.hypot(q[0]-x,q[1]-z)<3)) continue; let u=r(), k=PROPK[0]; for(const q of PROPK){ if(u<q[1]){ k=q; break; } u-=q[1]; } L.push([x,z,y,k,(r()*3)|0,r()*6.283,k[3]*(.85+r()*.35)]); }
+  if(!L.length) return; const S=SOLS[C.id]||(SOLS[C.id]=[]); for(const q of L) if(q[3][2]) S.push([q[0],q[1],q[3][2]*q[6]*(q[3][0]==="log"?.6:1)]); SOLG=null;
+  propGeo(P=>{ if(!C.g.parent&&!LIVE[C.id]) return; const by={}; for(const q of L){ const key=q[3][0]+q[4]; (by[key]||(by[key]=[])).push(q); } const M=new T.Matrix4(), Q=new T.Quaternion(), E=new T.Euler(), V=new T.Vector3(), Sc=new T.Vector3();
+    for(const key in by){ const it=P[key]; if(!it) continue; const A=by[key], im=new T.InstancedMesh(it.g,it.m,A.length); A.forEach((q,i)=>{ E.set(0,q[5],0); Q.setFromEuler(E); M.compose(V.set(q[0],q[2]-.04,q[1]),Q,Sc.setScalar(q[6])); im.setMatrixAt(i,M); }); im.instanceMatrix.needsUpdate=true; im.frustumCulled=false; im.userData.keep=1; im.userData.shared=1; im.userData.noMerge=1; im.raycast=()=>{}; C.g.add(im); } try{ markDirty(); }catch(e){} }); }
 let AOTEX=null;
-function aoFlush(C){ try{ const S=[]; for(const t of C.lpt||[]){ if(t[8]==="bush") continue; S.push([t[0],t[2],Math.min(t[6]==="gold"?2.2:.9,.34*t[3])+.22]); } for(const t of C.cedar||[]) S.push([t[0],t[2],Math.min(.7,.1*t[3]*t[4])+.22]); for(const t of C.palm||[]) S.push([t[0],t[2],.5]); for(const t of C.ao||[]){ if(t[3]==="r"&&t[4]>=.5) S.push([t[0],t[1],t[4]*.8+.2]); else if(t[3]==="l") S.push([t[0],t[1],.6]); } if(C.id){ SOLS[C.id]=S; SOLG=null; } }catch(e){ console.warn("sol",e); } const L=[]; for(const t of C.lpt||[]){ if(t[8]==="bush") continue; L.push([t[0],t[2],1.15*t[3]]); } for(const t of C.cedar||[]) L.push([t[0],t[2],.36*t[3]*t[4]]); for(const t of C.palm||[]) L.push([t[0],t[2],.9*t[4]]); for(const t of C.ao||[]) L.push(t); C.ao=null; if(!L.length) return;
+function aoFlush(C){ try{ const S=[]; for(const t of C.lpt||[]){ if(t[8]==="bush") continue; S.push([t[0],t[2],Math.min(t[6]==="gold"?2.2:.9,.34*t[3])+.22]); } for(const t of C.cedar||[]) S.push([t[0],t[2],Math.min(.7,.1*t[3]*t[4])+.22]); for(const t of C.palm||[]) S.push([t[0],t[2],.5]); for(const t of C.ao||[]){ if(t[3]==="r"&&t[4]>=.5) S.push([t[0],t[1],t[4]*.8+.2]); else if(t[3]==="l") S.push([t[0],t[1],.6]); } if(C.id){ SOLS[C.id]=(SOLS[C.id]||[]).concat(S); SOLG=null; } }catch(e){ console.warn("sol",e); } if(C.props&&!C.md) try{ propsScatter(C,...C.props); }catch(e){ console.warn("props",e); } const L=[]; for(const t of C.lpt||[]){ if(t[8]==="bush") continue; L.push([t[0],t[2],1.15*t[3]]); } for(const t of C.cedar||[]) L.push([t[0],t[2],.36*t[3]*t[4]]); for(const t of C.palm||[]) L.push([t[0],t[2],.9*t[4]]); for(const t of C.ao||[]) L.push(t); C.ao=null; if(!L.length) return;
   if(!AOTEX){ const c=document.createElement("canvas"); c.width=c.height=64; const x=c.getContext("2d"), g=x.createRadialGradient(32,32,0,32,32,32); g.addColorStop(0,"rgba(0,0,0,1)"); g.addColorStop(.45,"rgba(0,0,0,.62)"); g.addColorStop(1,"rgba(0,0,0,0)"); x.fillStyle=g; x.fillRect(0,0,64,64); AOTEX=new T.CanvasTexture(c); }
   const geo=GEO.ao||(GEO.ao=new T.PlaneGeometry(2,2).rotateX(-Math.PI/2)), m=new T.MeshBasicMaterial({map:AOTEX,color:"#0d1f08",transparent:true,opacity:.38,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}), im=new T.InstancedMesh(geo,m,L.length), M=new T.Matrix4(), q=new T.Quaternion(), p=new T.Vector3(), sc=new T.Vector3();
   L.forEach((t,i)=>{ let y=0, k=1; try{ const g=TW.ground; y=g(t[0],t[1])||0; const R=t[2]*.8; for(const [dx,dz] of [[R,0],[-R,0],[0,R],[0,-R]]){ const h=g(t[0]+dx,t[1]+dz); if(h==null||Math.abs(h-y)>.12) k=0; } }catch(e){} M.compose(p.set(t[0],y+.05,t[1]),q,sc.set(t[2]*k,1,t[2]*k)); im.setMatrixAt(i,M); }); /* (none on a slope: a flat patch on sloping ground cut a straight line into it) */ im.instanceMatrix.needsUpdate=true; im.frustumCulled=false; im.renderOrder=1; im.userData.keep=1; im.userData.own=1; im.userData.noMerge=1; im.raycast=()=>{}; C.g.add(im); }
@@ -13202,7 +13238,7 @@ function springPool(C,S,r){ const [x,z,R,k,y]=S; let Rm=R+1.8; for(let a=0;a<6.2
   if(k==="g"){ /* the goddess's spring: white stone steps, two lamps, a carved stone tablet */ for(const s of [-1,1]) lantern(C,x+s*2.6,z+R+1.4); sparkles(C,70,x,z,R+.6,y); shafts(C,x,z,R); fireflies(C,40,x,z,R+3,21); } /* (no name board: only glitter rising off the water and light falling through — 主委 11/14) */
   }
 SW.build=C=>{ nmat(); lawnHole2(); const r=krng(5);
-  terrain(C,FOREST[0],FOREST[1],-176,-143.6,southH,southC,.012);
+  terrain(C,FOREST[0],FOREST[1],-176,-143.6,southH,southC,.012); pathRibbons(C,FOREST[0],FOREST[1],-176,-143.6,[[FPATH,1.15],[FPATH2,1.15],[FPATH3,1.15]],southH); C.props=[FOREST[0],FOREST[1],-176,-143.6,501,PROPOK];
   /* the footbridge over the river */ for(let k=0;k<=16;k++){ const z=-131.2-k*.8, y=.2+.55*Math.sin(Math.PI*k/16); put(C,GEO.b||(GEO.b=new T.BoxGeometry(1,1,1)),NM.wood,61.5,y,z,3.4,.1,.78); }
    for(const x of [59.9,63.1]){ for(let k=0;k<=8;k++){ const z=-131.2-k*1.6, y=.2+.55*Math.sin(Math.PI*k/8); put(C,GEO.b,NM.woodD,x,y+.45,z,.08,.85,.08); } for(let k=0;k<8;k++){ const z=-132-k*1.6, y=.2+.55*Math.sin(Math.PI*(k+.5)/8); put(C,GEO.b,NM.wood,x,y+.85,z,.08,.08,1.62,0,Math.sin(Math.PI*(k+.5)/8-Math.PI/2)*.0); } }
   
@@ -13217,7 +13253,7 @@ SW.build=C=>{ nmat(); lawnHole2(); const r=krng(5);
   meadow(C,FOREST[0],FOREST[1],-176,-143.6,1900,460,southH,(x,z)=>pathD(x,z)>1.4&&!NT.springs.some(S=>Math.hypot(x-S[0],z-S[1])<S[2]+.6)&&!TREES.some(t=>Math.hypot(x-t[0],z-t[1])<.5*t[2]),12);
   fireflies(C,60,60,-160,18,31); };
 SW.buildMt=C=>{ nmat(); const r=krng(9);
-  terrain(C,MT.cx-MT.R-3,MT.cx+MT.R+3,MT.cz-MT.R-3,-176,GBsink(southH),southC,.012);
+  terrain(C,MT.cx-MT.R-3,MT.cx+MT.R+3,MT.cz-MT.R-3,-176,GBsink(southH),southC,.012); pathRibbons(C,MT.cx-MT.R-3,MT.cx+MT.R+3,MT.cz-MT.R-3,-176,[[FPATH,1.15],[FPATH2,1.15],[FPATH3,1.15],[WP1,1.15,(x,z)=>z<-236],[SPI2,1.25,(x,z)=>Math.hypot(x-MT.cx,z-MT.cz)<MT.R+2]],(x,z)=>TW.ground(x,z)); C.props=[MT.cx-MT.R-3,MT.cx+MT.R+3,MT.cz-MT.R-3,-176,502,(x,z)=>PROPOK(x,z)&&Math.hypot(x-MT.cx,z-MT.cz)>MT.R*.55];
   meadow(C,MT.cx-MT.R,MT.cx+MT.R,MT.cz-MT.R,-171,1500,320,southH,(x,z)=>{ const d=Math.hypot(x-MT.cx,z-MT.cz); return d>MT.top+1.5&&d<MT.R-.5&&lineD(SPI2,x,z)[0]>1.7; },13); /* (11/16) */
   /* trees on the slopes, off the path */ for(let k=0;k<180;k++){ const a=r()*6.283, d=MT.top+3+r()*(MT.R-MT.top-4), x=MT.cx+Math.sin(a)*d, z=MT.cz+Math.cos(a)*d; if(z>-170.5) continue; if(lineD(SPI2,x,z)[0]<3.2) continue; const h=southH(x,z); if(r()<.65) pine(C,x,h-.1,z,1+r()*.6,r); else { softTree(C,r,x,z,1+r()*.4,""); C.g.children.slice(-5).forEach(o=>o.position.y+=h-.1); } }
   for(let k=0;k<40;k++){ const a=r()*6.283, d=MT.top+2+r()*(MT.R-MT.top-3), x=MT.cx+Math.sin(a)*d, z=MT.cz+Math.cos(a)*d; if(z>-170.5||lineD(SPI2,x,z)[0]<2.6) continue; rock(C,r,x,southH(x,z),z,.5+r()*.9); }
@@ -13246,7 +13282,7 @@ const WWT=(()=>{ const r=krng(515), out=[];
   for(let k=0;k<5000&&out.length<330;k++){ const x=-102+r()*122, z=-260+r()*115; if(x>14&&z>-176) continue; if(z>-146) continue; if(wpD(x,z)<3.2||s1D(x,z)<5) continue; const m=westMtn(x,z); if(m>14&&r()<.7) continue; if(out.some(t=>Math.hypot(t[0]-x,t[1]-z)<2.5)) continue; out.push([x,z,1.3+r()*1.1]); }
   return out; })();
 function westC(x,z,h,c){ const n=.5+.5*nz(x*1.3,z*1.3); c.copy(LAWN).multiplyScalar(.95+.1*n); c.lerp(SC.dark,.3+.2*sstep(2,14,h)); const sl=Math.hypot(westH(x+.7,z)-westH(x-.7,z),westH(x,z+.7)-westH(x,z-.7))/1.4; c.lerp(SC.rock,sstep(.9,1.7,sl)*.55);
-  c.lerp(VC.wet,sstep(-.15,-.6,h)*.8); c.lerp(SC.moss,sstep(5,3.4,s1D(x,z))*sstep(-.4,0,h)*.5); c.lerp(SC.path,sstep(1.4,.8,wpD(x,z))*.85); }
+  c.lerp(VC.wet,sstep(-.15,-.6,h)*.8); c.lerp(SC.moss,sstep(5,3.4,s1D(x,z))*sstep(-.4,0,h)*.5); }
 function streamMesh(C){ const n=SPATH.length, P=[], UV=[], I=[]; let along=0; for(let i=0;i<n;i++){ const a=SPATH[Math.max(0,i-1)], b=SPATH[Math.min(n-1,i+1)], dx=b[0]-a[0], dz=b[1]-a[1], L=Math.hypot(dx,dz)||1, nx=-dz/L, nzz=dx/L, w=3.5; if(i) along+=Math.hypot(SPATH[i][0]-SPATH[i-1][0],SPATH[i][1]-SPATH[i-1][1]);
     P.push(SPATH[i][0]+nx*w,RIVER_Y,SPATH[i][1]+nzz*w, SPATH[i][0]-nx*w,RIVER_Y,SPATH[i][1]-nzz*w); UV.push(0,along/4,1,along/4); if(i) I.push((i-1)*2,(i-1)*2+1,i*2, (i-1)*2+1,i*2+1,i*2); }
   const g=new T.BufferGeometry(); g.setAttribute("position",new T.Float32BufferAttribute(P,3)); g.setAttribute("uv",new T.Float32BufferAttribute(UV,2)); g.setIndex(I); g.computeVertexNormals();
@@ -13254,7 +13290,7 @@ function streamMesh(C){ const n=SPATH.length, P=[], UV=[], I=[]; let along=0; fo
 function footBridge(C){ const dx=WP2[1][0]-WP2[0][0], dz=WP2[1][1]-WP2[0][1], ang=Math.atan2(dx,dz); for(let k=-9;k<=9;k++){ const t=k*.5, x=FOOTB.x+Math.sin(ang)*t, z=FOOTB.z+Math.cos(ang)*t; put(C,GEO.b||(GEO.b=new T.BoxGeometry(1,1,1)),NM.wood,x,.06+.18*Math.cos(k/9*Math.PI/2),z,2.2,.07,.44,ang); }
   for(const sd of [-1.05,1.05]) for(let k=-4;k<=4;k++){ const t=k*1.1, x=FOOTB.x+Math.sin(ang)*t+Math.cos(ang)*sd, z=FOOTB.z+Math.cos(ang)*t-Math.sin(ang)*sd; put(C,GEO.b,NM.woodD,x,.5,z,.07,.75,.07,ang); }
   for(let k=-9;k<=9;k+=18){} }
-const WWD=(z0,z1)=>C=>{ nmat(); const r=krng(616+(z0|0)); if(z0>=-176) terrain(C,-104,14,z0,z1,southH,westC,.012); else if(z1<=-176) terrain(C,-104,21,z0,z1,southH,westC,.012); else { terrain(C,-104,14,-176,z1,southH,westC,.012); terrain(C,-104,21,z0,-176,southH,westC,.012); } /* (11/18 主委 (19.8, −193.3)「草皮明顯有斷層」: a block straddling −176 was laid only to x 14, leaving a 7 m hole by the mountain where the far backdrop showed through) */
+const WWD=(z0,z1)=>C=>{ nmat(); const r=krng(616+(z0|0)); if(z0>=-176) terrain(C,-104,14,z0,z1,southH,westC,.012); else if(z1<=-176) terrain(C,-104,21,z0,z1,southH,westC,.012); else { terrain(C,-104,14,-176,z1,southH,westC,.012); terrain(C,-104,21,z0,-176,southH,westC,.012); } /* (11/18 主委 (19.8, −193.3)「草皮明顯有斷層」: a block straddling −176 was laid only to x 14, leaving a 7 m hole by the mountain where the far backdrop showed through) */ pathRibbons(C,-104,z1>-176?14:21,z0,z1,WPS.map(P=>[P,1.15]),(x,z)=>TW.ground(x,z)); C.props=[-104,z1>-176?14:21,z0,z1,503+(z0|0),PROPOK];
   WWT.forEach(([x,z,s])=>{ if(z<z0||z>=z1) return; (C.lpt||(C.lpt=[])).push([x,southH(x,z)-.1,z,s*(westMtn(x,z)>4?.85:1),1,r()*6.283,r()<.22?"leaf":"deep"]); });
   for(let k=0;k<(z1-z0)*4;k++){ const x=-102+r()*122, z=z0+r()*(z1-z0); if(x>14&&z>-176) continue; if(x>21) continue; if(wpD(x,z)<1.4||s1D(x,z)<3.8) continue; const h=southH(x,z), q=r(); if(h>6) continue; if(q<.72) tuft(C,r,x,h,z,.5+r()*.6); else if(q<.88) mossRock(C,r,x,h-.15,z,.5+r()*1.1,r()<.7); else starFlower(C,r,x,h,z,.7+r()*.4); }
   for(let k=0;k<(z1-z0)*.6;k++){ const i=(r()*SPATH.length)|0, p=SPATH[i]; if(p[1]<z0||p[1]>=z1) continue; const q=SPATH[Math.min(SPATH.length-1,i+1)], dx=q[0]-p[0], dz=q[1]-p[1], L=Math.hypot(dx,dz)||1, sd=r()<.5?-1:1, d=3.6+r()*.8; const x=p[0]-dz/L*d*sd, z=p[1]+dx/L*d*sd; if(onFootB(x,z)) continue; if(r()<.6) reeds(C,r,x,z); else rock(C,r,x,-.3,z,.3+r()*.4); }
@@ -13282,9 +13318,9 @@ const NORTH=[[-104,21,-262,southH],[21,94,-257,southH],[94,148,-266,gH],[148,232
 function northH(x,z){ if(x>=148&&x<232&&z<-262) return eastH(x,z); /* (11/18 主委「河流都幫我延伸到盡頭」: the east river runs on north to the map's edge) */ for(const [x0,x1,ze,f] of NORTH){ if(x<x0||x>=x1) continue; if(z>=ze) return null; const b=f(x,ze), k=sstep(0,14,ze-z), m=.9*nz(x*.09,z*.09)+.6*nz(x*.23+1,z*.21)+sstep(-282,-300,z)*(6+4*nz(x*.04,z*.04)); return b*(1-k)+m*k; } return null; }
 TW.northH=northH; { const g1=TW.ground; TW.ground=(x,z)=>{ if(z<-255){ const h=northH(x,z); if(h!=null) return h; } return g1(x,z); }; }
 const northC=(x,z,h,c)=>{ (x>111.5?eastC:southC)(x,z,h,c); c.lerp(LAWN,sstep(-262,-272,z)*.7); };
-NORTH.forEach(([x0,x1,ze],i)=>NCH.push({id:"north"+i,c:[(x0+x1)/2,(ze+NZ0)/2],r:Math.hypot((x1-x0)/2,(ze-NZ0)/2)+6,build:C=>{ nmat(); const r=krng(881+i); terrain(C,x0,x1,NZ0,ze,(x,z)=>northH(x,Math.min(z,ze-.001)),x0>=148?eastC:northC,.012); if(x0>=148) mirrorPlane(C,141,232,NZ0,ze,RIVER_Y,[0,.3],[0,0,0,0]);
+NORTH.forEach(([x0,x1,ze],i)=>NCH.push({id:"north"+i,c:[(x0+x1)/2,(ze+NZ0)/2],r:Math.hypot((x1-x0)/2,(ze-NZ0)/2)+6,build:C=>{ nmat(); const r=krng(881+i); C.props=[x0,x1,NZ0,ze,510+i,PROPOK]; terrain(C,x0,x1,NZ0,ze,(x,z)=>northH(x,Math.min(z,ze-.001)),x0>=148?eastC:northC,.012); if(x0>=148) mirrorPlane(C,141,232,NZ0,ze,RIVER_Y,[0,.3],[0,0,0,0]);
   for(let k=0;k<Math.round((x1-x0)*(ze-NZ0)/60);k++){ const x=x0+2+r()*(x1-x0-4), z=NZ0+2+r()*(ze-NZ0-6); const h=northH(x,z); if(h==null) continue; (C.lpt||(C.lpt=[])).push([x,h-.1,z,1.2+r()*.9,1,r()*6.283,r()<.7?"leaf":r()<.5?"deep":"maple"]); } }}));
-NCH.push({id:"gspring",c:[110,-245],r:48,build:C=>{ nmat(); const r=krng(717), S=NT.springs[2]; terrain(C,GB[0],GB[1],GB[2],GB[3],gH,(x,z,h,c)=>x>111.5?eastC(x,z,h,c):southC(x,z,h,c),.012);
+NCH.push({id:"gspring",c:[110,-245],r:48,build:C=>{ nmat(); const r=krng(717), S=NT.springs[2]; terrain(C,GB[0],GB[1],GB[2],GB[3],gH,(x,z,h,c)=>x>111.5?eastC(x,z,h,c):southC(x,z,h,c),.012); C.props=[GB[0],GB[1],GB[2],GB[3],504,(x,z)=>PROPOK(x,z)&&springD(S,x,z)>S[2]+3];
   springPool(C,S,r); waterfallAt(C,WF.x,WF.z); brookMesh(C,0,BSPLIT()); /* (the brook's first stretch, from the spring to x 125) */
   for(let k=0;k<34;k++){ const a=r()*6.283, d=S[2]+.4+r()*1.4, x=WF.x+Math.cos(a)*d, z=WF.z+Math.sin(a)*d; if(lineD(BROOK,x,z)[0]<2.2||Math.hypot(x-92.3,z+246)<2.6) continue; const h=gH(x,z); if(h>1.4) continue; rock(C,r,x,h-.15,z,.45+r()*.7); } /* boulders round the pool */
   for(let k=0;k<26;k++){ const x=WFACE-.8-r()*3, z=GZ+(r()-.5)*14, h=gH(x,z); if(h>2||Math.abs(z-GZ)<2.6) continue; mossRock(C,r,x,h-.25,z,.8+r()*1.1,true); } /* mossy rocks at the foot of the cliff */
@@ -13388,7 +13424,7 @@ function zoneBack(){ for(const [o,v] of ZN.list){ o.visible=v; delete o.userData
 TW.zone=ZN; TW.zoneBack=zoneBack; TW.zoneForget=zoneForget;
 let hid=[]; function fogCull(px,pz){ try{ if(typeof MERGED==="undefined"||ZN.off) return; if(pz>-58){ if(hid.length){ hid.forEach(M=>{ M.visible=true; }); hid=[]; } return; } const far=(scene.fog&&scene.fog.far||90)+8, cx=camera.position.x, cz=camera.position.z;
     for(const M of MERGED){ const bs=M.geometry.boundingSphere; if(!bs) continue; const out=Math.hypot(bs.center.x-cx,bs.center.z-cz)-bs.radius>far; if(out&&M.visible){ M.visible=false; hid.push(M); } else if(!out&&!M.visible&&hid.includes(M)){ M.visible=true; hid.splice(hid.indexOf(M),1); } } }catch(e){} }
-let acc=0, greeted=false, wt=0; const LR0=(typeof Q!=="undefined"&&Q.phone)?[45,70]:[75,105];
+let acc=0, greeted=false, wt=0; const LR0=(typeof Q!=="undefined"&&Q.phone)?(Q.safe?[30,48]:[38,60]):[75,105]; /* (11/18 phones went black near town: fewer districts kept at once, fewer still right after a crash) */
 /* 禪房一帶卡住 (11/14): the town districts next to the 禪房 and the temple used to be built the first time you came near, and their
    materials compiled on the spot (on a phone that is seconds of frozen screen). They are built while the game is still loading now,
    and the warm-up then compiles them behind the loading screen. */
@@ -13477,7 +13513,7 @@ MD.pc=(x,z,c)=>{ if(!MD.ch.size) return; const ix=Math.floor(x), iz=Math.floor(z
 function mdGridAdd(G,x,z,r,item){ for(let gx=Math.floor((x-r)/8);gx<=Math.floor((x+r)/8);gx++) for(let gz=Math.floor((z-r)/8);gz<=Math.floor((z+r)/8);gz++){ const k=gx+","+gz; let a=G.get(k); if(!a) G.set(k,a=[]); a.push(item); } }
 function mdRegrid(){ MD.erG=new Map(); MD.er.forEach(e=>mdGridAdd(MD.erG,e[0],e[1],e[2],e)); MD.obG=new Map(); MD.objs.forEach(o=>mdGridAdd(MD.obG,o.x,o.z,2,o)); }
 MD.gone=(x,z)=>{ if(!MD.er.length) return false; const a=MD.erG.get(Math.floor(x/8)+","+Math.floor(z/8)); if(!a) return false; for(const e of a) if((x-e[0])**2+(z-e[1])**2<e[2]*e[2]) return true; return false; };
-const MDBLK={t:.45,b:.6,rock:.7,mrock:.7,lantern:.35,bench:.75,lamp:.2,shrine:1.6,flower:0,reeds:0};
+const MDBLK={t:.45,b:.6,rock:.7,mrock:.7,lantern:.35,bench:.75,lamp:.2,shrine:1.6,flower:0,reeds:0,fox:.6};
 MD.blocked=(x,z)=>{ if(!MD.objs.length) return false; const a=MD.obG.get(Math.floor(x/8)+","+Math.floor(z/8)); if(!a) return false; for(const o of a){ const k=o.k[1]==="_"?o.k[0]:o.k, r=(MDBLK[k]||0)*o.s; if(r&&(x-o.x)**2+(z-o.z)**2<r*r) return true; } return false; };
 /* the code's own things: each maker is wrapped — a thing standing in a cleared spot is taken away again right after it is made (so the
    dice for everything after it fall the same), the rest are lifted with the chair's ground and remembered, so a tap can pick them */
@@ -13514,7 +13550,7 @@ function mdOutBuild(){ const C=MD.outC||(MD.outC={g:new T.Group(),picks:[],baked
   for(const [k,c] of MD.ch){ if(!(c.h&&c.h.some(v=>v))&&!(c.p&&c.p.some(v=>v))) continue; const [cx,cz]=k.split(",").map(Number); let out=0; for(const [dx,dz] of [[2,2],[8,8],[14,14],[2,14],[14,2]]) if(MD.out(cx*16+dx,cz*16+dz)) out++; if(out>=3) S.add(k); }
   MD.outSet=S.size?S:null; for(const k of S){ const [cx,cz]=k.split(",").map(Number); try{ terrain(C,cx*16-.5,cx*16+16.5,cz*16-.5,cz*16+16.5,(x,z)=>{ const b=MD.g0(x,z); return b==null?0:b-.1; },(x,z,h,c)=>c.copy(LAWN),0); }catch(e){ console.warn("map edit outside",e); } } }
 /* the placed things */
-const MDKINDS=[["t_leaf","🌳","樹"],["t_deep","🌲","深綠樹"],["t_maple","🍁","楓樹"],["t_pink","🌸","櫻花"],["t_gold","🌟","金葉神木"],["b_leaf","🌿","樹叢"],["b_deep","🌱","深綠樹叢"],["rock","🪨","石頭"],["mrock","🗿","苔石"],["flower","🌼","花"],["reeds","🌾","蘆葦"],["lantern","🏮","石燈籠"],["bench","🪑","長椅"],["lamp","💡","路燈"],["shrine","⛩️","神社"]];
+const MDKINDS=[["t_leaf","🌳","樹"],["t_deep","🌲","深綠樹"],["t_maple","🍁","楓樹"],["t_pink","🌸","櫻花"],["t_gold","🌟","金葉神木"],["b_leaf","🌿","樹叢"],["b_deep","🌱","深綠樹叢"],["rock","🪨","石頭"],["mrock","🗿","苔石"],["flower","🌼","花"],["reeds","🌾","蘆葦"],["lantern","🏮","石燈籠"],["bench","🪑","長椅"],["lamp","💡","路燈"],["shrine","⛩️","神社"],["fox","🦊","狐狸石像"]];
 const MDNAME=Object.fromEntries(MDKINDS.map(k=>[k[0],k[2]])), MDGEN={rock:"rock",mrock:"mrock",flower:"flower",reeds:"reeds",lantern:"lantern",bench:"bench",lamp:"lamp",shrine:"shrine"};
 function mdMake(o){ const g=new T.Group(); g.userData.md=o; const C={g,picks:[],baked:[],md:1}; const r=krng(o.id*7919+3); nmat();
   try{ const k=o.k; if(k[1]==="_"){ const B=LPT.build([[0,0,0,1,o.w||1,0,k.slice(2),k==="t_gold"?320:60,k[0]==="b"?"bush":undefined]],{seed:o.id*31+7}); for(const m of [B.trunks,...B.leaves]){ m.userData.keep=1; g.add(m); }
@@ -13522,7 +13558,8 @@ function mdMake(o){ const g=new T.Group(); g.userData.md=o; const C={g,picks:[],
     else if(k==="rock") RAW.mossRock(C,r,0,0,0,1,false); else if(k==="mrock") RAW.mossRock(C,r,0,0,0,1,true);
     else if(k==="flower"){ for(let i=0;i<6;i++) RAW.starFlower(C,r,(r()-.5)*1.4,0,(r()-.5)*1.4,.8+r()*.4); }
     else if(k==="reeds") RAW.reeds(C,r,0,0); else if(k==="lantern") RAW.lantern(C,0,0,0); else if(k==="bench") RAW.nbench(C,0,0,0); else if(k==="lamp") RAW.lamp(C,0,0);
-    else if(k==="shrine") loadRaw("shrine",false,m=>{ shrineStone(m); m.traverse(q=>{ if(q.isMesh) q.raycast=T.Mesh.prototype.raycast; }); g.add(m); }); }catch(e){ console.warn("map edit object",o,e); }
+    else if(k==="shrine") loadRaw("shrine",false,m=>{ shrineStone(m); m.traverse(q=>{ if(q.isMesh) q.raycast=T.Mesh.prototype.raycast; }); g.add(m); });
+    else if(k==="fox") propGeo(P=>{ const it=P.fox0; if(!it) return; const m=new T.Mesh(it.g,it.m); m.scale.setScalar(1.25); g.add(m); }); /* 狐狸石像 (11/18 主委: from the forest props pack, placed by hand in 建築模式) */ }catch(e){ console.warn("map edit object",o,e); }
   return g; }
 function mdPlace(o){ if(o.g){ MDG.remove(o.g); } o.g=mdMake(o); mdPos(o); MDG.add(o.g); }
 function mdPos(o){ const b=TW.ground(o.x,o.z); o.g.position.set(o.x,(b==null?0:b)+(o.dy||0),o.z); o.g.rotation.y=o.r||0; o.g.scale.setScalar(o.s||1); }
