@@ -1418,3 +1418,10 @@ audio-fix（測試版）另外完成、**尚未部署**：
 ## 第 66 批（11/19 01:50，主委：相容測試開著「正常了」）
 - 相容測試改成可以一項一項切：mz.compat 存 1（全關）或 "cap,grass,tile,props,ao"；Q.cx（Set）、Q.off(k)。設定 → 畫面濾鏡 → 相容測試：「全部新效果」「全部關掉」＋五顆 ✓/✕（手機圖片縮小、新草地、磁磚反光、森林道具、樹下陰影，HANDLERS.compatOne）。
 - 閃退從第 56 批（新草地）之後開始，縮圖是第 59 批才加 → 先請主委只打開「新草地」測。
+
+## 第 67 批（11/20，主委 11/19 23:17「草地跟地板反光都會」掛）
+- 兩個會掛的共同點：大面積用 MeshPhongMaterial（草地中／高的 gMat、磁磚 tileLike）。手機（Q.phone）不再用 Phong：gMat 一律 Lambert；磁磚保留原本 MeshStandard，只把 roughness .36、bumpScale .035。
+- 手機草地・沙灘反光改在 Lambert 裡算（LGLINT，envmap_fragment 之後）：太陽方向 gSunD／顏色 gSunC（每幀從 sunLight 更新）、遮罩 smoothstep(.12,.45,normal.a)（沙 sGli）、(.35＋.65·pow(N·H,8))·N·L、亮處才有（directDiffuse 亮度）、14–45 m 淡出、顏色偏草色。強度 gGS×32。
+- 找到一個大 bug：three.js 只幫 Phong／Standard／Shader 材質填 cameraPosition，Lambert（原版、新版・低、現在的手機）收到 0 → 草地以為鏡頭在地圖中心：近處不反光、整片都被「遠處淡化」成平均色。草地 shader 裡 cameraPosition 全換成自己的 gCam（每幀 = camera.position）。
+- 手機的 normal 圖不再縮 512（alpha 是反光遮罩，縮了就沒了），各向異性手機最多 2。
+- 請主委把「相容測試」切回「全部新效果」再走一次。

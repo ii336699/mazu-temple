@@ -9193,6 +9193,7 @@ function tick(){ if(gameAsleep) return; const _ft0=performance.now(); { const no
   bellSwing*=Math.pow(.25,dt); bell.rotation.x=Math.sin(t*4)*.22*bellSwing; drumBounce*=Math.pow(.02,dt); drum.scale.setScalar(1+Math.sin(t*40)*.03*drumBounce);
   if(shakeT>0){ shakeT-=dt; lotTube.rotation.z=Math.sin(shakeT*40)*.18; lotTube.rotation.x=Math.cos(shakeT*33)*.1; } else { lotTube.rotation.z*=.8; lotTube.rotation.x*=.8; }
   perfSample(dt);
+  { const GU=window.MZ_GU; if(GU&&GU.gSunD){ GU.gSunD.value.copy(sunLight.position).sub(sunLight.target.position).normalize(); GU.gSunC.value.copy(sunLight.color).multiplyScalar(sunLight.intensity); GU.gCam.value.copy(camera.position); } }
   if(SHOPX){ try{ SHOPX.tick(dt); }catch(e){} } if(TOWNX){ try{ TOWNX.tick(dt); }catch(e){} } if(LIFE){ try{ LIFE.tick(dt); }catch(e){} } if(SHOPX&&SHOPX.on){ SHOPX.render(dt); lblClear(); } else if(window.MZ_VIEW){ renderer.render(window.MZ_VIEW.scene,window.MZ_VIEW.cam); lblClear(); } /* (inside a town shop) */ else if(!miniOpen&&!window.MZ_NO3D){ renderer.render(scene,camera); lblRender(); } else lblClear(); perfTick(performance.now()-_ft0); requestAnimationFrame(tick); }
 // auto: watch the first seconds in the hall and step down on slow devices
 const perf={t:0,n:0,done:false,warm:0};
@@ -12129,7 +12130,7 @@ const FMAT={}; const fmat=(kind,col)=>FMAT[kind+col]||(FMAT[kind+col]=new T.Mesh
 /* 磁磚 (11/18 主委「磁磚反光請參照廟裡的磁磚，全部統一用一樣反光」): every tiled floor outside — sidewalks, plazas — gets the temple
    courtyard's finish: Phong, shininess 14, specular #2e2820, the picture as a bump, and the same .16 self-light from its own picture */
 function tileLike(m){ const n=new T.MeshPhongMaterial({map:m.map,color:m.color.clone(),shininess:14,specular:new T.Color("#2e2820"),bumpMap:m.map,bumpScale:.05,emissive:new T.Color(1,1,1).multiplyScalar(.16),emissiveMap:m.map,polygonOffset:m.polygonOffset,polygonOffsetFactor:m.polygonOffsetFactor,polygonOffsetUnits:m.polygonOffsetUnits,side:m.side,transparent:m.transparent,opacity:m.opacity}); m.dispose(); return n; }
-const GMAT={}; const gmat=(kind,o)=>{ if(GMAT[kind]) return GMAT[kind]; GMAT[kind]||(GMAT[kind]=new T.MeshStandardMaterial(Object.assign({map:tex()[kind],roughness:.95,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2},kind==="asphalt"?{bumpMap:tex()[kind],bumpScale:.012,roughness:.72}:kind==="pave"||kind==="plaza"?{bumpMap:tex()[kind],bumpScale:.02,roughness:.55}:{},o||{}))); if((kind==="pave"||kind==="plaza")&&!Q.off("tile")) GMAT[kind]=tileLike(GMAT[kind]); return GMAT[kind]; }; /* (11/17 晚 主委「磁磚要有立體反光」「柏油路也是」: the picture doubles as a bump map — joints sink, grain catches the light — and a little sheen) */
+const GMAT={}; const gmat=(kind,o)=>{ if(GMAT[kind]) return GMAT[kind]; GMAT[kind]||(GMAT[kind]=new T.MeshStandardMaterial(Object.assign({map:tex()[kind],roughness:.95,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2},kind==="asphalt"?{bumpMap:tex()[kind],bumpScale:.012,roughness:.72}:kind==="pave"||kind==="plaza"?{bumpMap:tex()[kind],bumpScale:.02,roughness:.55}:{},o||{}))); if((kind==="pave"||kind==="plaza")&&!Q.off("tile")){ if(Q.phone){ GMAT[kind].roughness=.36; GMAT[kind].bumpScale=.035; } else GMAT[kind]=tileLike(GMAT[kind]); } /* (11/19: the Phong tiles took phones' 3D away — on phones the tiles stay the material they were, only shinier) */ return GMAT[kind]; }; /* (11/17 晚 主委「磁磚要有立體反光」「柏油路也是」: the picture doubles as a bump map — joints sink, grain catches the light — and a little sheen) */
 /* ---- building blocks ---- */
 /* (the temple road's asphalt and paving bricks, the same drawing: those two live inside the 商店街 code, out of reach here) */
 function twAsphaltTex(){ return cvs(256,256,(x,w,h)=>{ x.fillStyle="#46474a"; x.fillRect(0,0,w,h); for(let i=0;i<5000;i++){ const l=50+Math.random()*60|0; x.fillStyle=`rgba(${l},${l},${l+3},.5)`; x.fillRect(Math.random()*w,Math.random()*h,1.5,1.5); } /* (11/17 晚 主委「柏油路上會有一塊一塊比較深色的…好假」: no dark blotches) */ }); }
@@ -12621,17 +12622,18 @@ const SCFG={scale:5.2,normal:.04,variation:.08,dryGlint:.015,wetGlint:.06,dryRou
 let GU=null; GU=(()=>{ const one=(r,g,b,a)=>{ const t=new T.DataTexture(new Uint8Array([r,g,b,a==null?255:a]),1,1); t.needsUpdate=true; return t; }; /* (the glint mask now rides in the normal picture's alpha — two files fewer, 11/18) */
   const U={gCol:{value:one(145,206,67)},gNor:{value:one(128,128,255)},gNoi:{value:one(128,128,128)},gGli:{value:one(128,128,255,0)},GS:{value:GCFG.scale},gNS:{value:GCFG.normal},gVar:{value:GCFG.variation},gGS:{value:GCFG.glint},gTint:{value:GCFG.tint},gMid:{value:GCFG.mid},gDet:{value:GCFG.detail},gAvg:{value:new T.Vector3(.347,.706,.059)},gLum:{value:.40}};
   Object.assign(U,{sCol:{value:one(250,214,150)},sNor:{value:one(128,128,255)},sGli:{value:one(128,128,255,0)},SS:{value:SCFG.scale},sNS:{value:SCFG.normal},sVar:{value:SCFG.variation},sDG:{value:SCFG.dryGlint},sWG:{value:SCFG.wetGlint},sTint:{value:SCFG.tint},sSand:{value:new T.Color()},sWet:{value:new T.Color()}});
-  if(GRASS.q>=0){ const L=new T.TextureLoader(), an=Math.min(renderer.capabilities.getMaxAnisotropy?renderer.capabilities.getMaxAnisotropy():1,GRASS.q>1?8:4);
+  if(GRASS.q>=0){ const L=new T.TextureLoader(), an=Math.min(renderer.capabilities.getMaxAnisotropy?renderer.capabilities.getMaxAnisotropy():1,(typeof Q!=="undefined"&&Q.phone)?2:GRASS.q>1?8:4);
     const small=t=>{ /* on phones the 1024 pictures are drawn at 512: a quarter of the graphics memory (11/18 black screen near town) */ try{ const im=t.image; if(!(typeof Q!=="undefined"&&Q.phone)||!im||!(im.width>512)) return; const c=document.createElement("canvas"); c.width=c.height=512; c.getContext("2d").drawImage(im,0,0,512,512); t.image=c; }catch(e){} };
-    const get=(f,k,also)=>L.load("tex/grass/"+f,t=>{ small(t); t.wrapS=t.wrapT=T.RepeatWrapping; t.anisotropy=k==="gNoi"?1:an; t.needsUpdate=true; U[k].value=t; also&&also(t); });
+    const get=(f,k,also)=>L.load("tex/grass/"+f,t=>{ if(k!=="gNor"&&k!=="sNor") small(t); /* (not the normal pictures: their alpha is the glint mask, a few single blades that shrinking averages away) */ t.wrapS=t.wrapT=T.RepeatWrapping; t.anisotropy=k==="gNoi"?1:an; t.needsUpdate=true; U[k].value=t; also&&also(t); });
     get("color.webp","gCol"); get("noise.webp","gNoi"); if(GRASS.q>0){ get("normal.webp","gNor",t=>{ U.gGli.value=t; }); }
     get("../sand/color.webp","sCol"); if(GRASS.q>0){ get("../sand/normal.webp","sNor",t=>{ U.sGli.value=t; }); } }
+  U.gCam={value:new T.Vector3()}; U.gSunD={value:new T.Vector3(.4,.8,.4)}; U.gSunC={value:new T.Color(1,1,1)}; /* (the sun for the phone glint below, set every frame) */
   return U; })(); window.MZ_GU=GU;
 /* LAWN's brightness, for keeping the terrain's painted light and shade on the new grass */
 function grassPatch(m,force,sand){ const q=force!=null?force:GRASS.q; if(q<0) return m; const prev=m.onBeforeCompile, ref=m.color.clone(), k0=m.customProgramCacheKey;
   m.onBeforeCompile=sh=>{ prev&&prev.call(m,sh); Object.assign(sh.uniforms,GU); GU.sSand.value.copy(VC.sand); GU.sWet.value.copy(VC.wet); sh.uniforms.gRef={value:ref}; sh.uniforms.gLum.value=LAWN.r*.3+LAWN.g*.6+LAWN.b*.1;
     sh.vertexShader="varying vec3 vGW; varying vec3 vWN;\n"+sh.vertexShader.replace("#include <begin_vertex>","#include <begin_vertex>\n vGW=(modelMatrix*vec4(transformed,1.)).xyz; vWN=normalize(mat3(modelMatrix)*objectNormal);");
-    sh.fragmentShader="#define GQ "+q+"\n"+(sand?"#define SANDM\n":"")+"uniform sampler2D sCol; uniform sampler2D sNor; uniform sampler2D sGli; uniform float SS; uniform float sNS; uniform float sVar; uniform float sDG; uniform float sWG; uniform float sTint; uniform vec3 sSand; uniform vec3 sWet; float sW=0.; float sT=0.; float gP=18.;\nuniform sampler2D gCol; uniform sampler2D gNor; uniform sampler2D gNoi; uniform sampler2D gGli; uniform float GS; uniform float gNS; uniform float gVar; uniform float gGS; uniform float gTint; uniform float gMid; uniform float gDet; uniform vec3 gAvg; uniform float gLum; uniform vec3 gRef;\nvarying vec3 vGW; varying vec3 vWN; vec2 gUV; vec3 gGC; float gW; float gGlint;\n"+sh.fragmentShader
+    sh.fragmentShader="uniform vec3 gCam;\n#define GQ "+q+"\n"+(m.isMeshLambertMaterial&&q>1?"#define LGLINT\nuniform vec3 gSunD; uniform vec3 gSunC;\n":"")+(sand?"#define SANDM\n":"")+"uniform sampler2D sCol; uniform sampler2D sNor; uniform sampler2D sGli; uniform float SS; uniform float sNS; uniform float sVar; uniform float sDG; uniform float sWG; uniform float sTint; uniform vec3 sSand; uniform vec3 sWet; float sW=0.; float sT=0.; float gP=18.;\nuniform sampler2D gCol; uniform sampler2D gNor; uniform sampler2D gNoi; uniform sampler2D gGli; uniform float GS; uniform float gNS; uniform float gVar; uniform float gGS; uniform float gTint; uniform float gMid; uniform float gDet; uniform vec3 gAvg; uniform float gLum; uniform vec3 gRef;\nvarying vec3 vGW; varying vec3 vWN; vec2 gUV; vec3 gGC; float gW; float gGlint;\n"+sh.fragmentShader
       .replace("#include <color_fragment>",`{ /* 草地 V2 (11/18 主委 第二版): three scales, none of them periodic — detail from the picture, a faint mid-scale unevenness,
    and a broad world-scale drift between deeper green and yellow-green; no sine waves anywhere */
   vec2 gp=vGW.xz; float mac=texture2D(gNoi,gp/96.+vec2(.13,.71)).r-.5, mid=0.;
@@ -12680,13 +12682,28 @@ function grassPatch(m,force,sand){ const q=force!=null?force:GRASS.q; if(q<0) re
 #endif
  vec3 Nw=normalize(vWN); vec3 Tw=normalize(cross(vec3(0.,0.,1.),Nw)+vec3(1e-5)); vec3 Bw=cross(Nw,Tw); normal=normalize((viewMatrix*vec4(normalize(Tw*tn.x+Bw*tn.y+Nw*tn.z),0.)).xyz); }
 #endif`)
+      .replace("#include <envmap_fragment>",`#include <envmap_fragment>
+#ifdef LGLINT
+ { /* 手機的草地・沙灘反光 (11/19 主委「草地跟地板反光都會」掛: on phones the per-pixel Phong lighting of the big ground took the
+      iPhone's 3D away, so the ground stays Lambert there and only the picked blades and grains get a highlight worked out here
+      from the sun's direction — one picture read, no light loop) */
+   vec3 tn=texture2D(gNor,gUV).xyz*2.-1.; vec3 N=normalize(normalize(vWN)+vec3(tn.x,0.,tn.y)*.35), L=normalize(gSunD), V=normalize(cameraPosition-vGW), H=normalize(L+V);
+   float lit=clamp(dot(reflectedLight.directDiffuse,vec3(.3,.6,.1))*2.2,0.,1.), dd3=distance(vGW,cameraPosition);
+   float pg=smoothstep(.12,.45,texture2D(gGli,gUV).a)*gW;
+#ifdef SANDM
+   pg=mix(pg,smoothstep(.1,.4,texture2D(sGli,vGW.xz/SS).a)*1.3,sW);
+#endif
+   float sp=(.35+.65*pow(max(dot(N,H),0.),8.))*max(dot(N,L),0.);
+   outgoingLight+=gSunC*mix(vec3(1.,1.,.72),diffuseColor.rgb*2.2,.45)*pg*sp*lit*gGS*32.*(1.-smoothstep(14.,45.,dd3)); }
+#endif`)
       .replace("#include <lights_fragment_end>",`#include <lights_fragment_end>
 #if GQ>1 && NUM_DIR_LIGHTS>0
  { vec3 Ld=directionalLights[0].direction, Vd=normalize(-vViewPosition), Hd=normalize(Ld+Vd); float nl=max(dot(normal,Ld),0.), nv=max(dot(normal,Vd),0.); float sp=(pow(max(dot(normal,Hd),0.),gP)*.9+.3+pow(1.-nv,3.)*.3)*nl; /* (+.3: the picked blades and sand grains catch the sun from any side, not only looking into it) */ reflectedLight.directSpecular+=directionalLights[0].color*vec3(1.,1.,.72)*sp*gGlint; } /* (11/18 10:50 主委「開高畫質也沒有反光」: a half-vector highlight alone only shows looking into the sun; a soft sheen at low angles now shows it from anywhere, sparkling where the mask picks blades) */
 #endif`); };
+  { const fb=m.onBeforeCompile; m.onBeforeCompile=sh=>{ fb(sh); sh.fragmentShader=sh.fragmentShader.replace(/cameraPosition/g,"gCam"); }; } /* (11/19: three.js only fills cameraPosition for Phong / Standard / shader materials — on the Lambert ground (原版・低, and every phone now) it was 0, so the grass thought the camera was at the map's centre: no glint near you and the far-away fading everywhere) */
   m.customProgramCacheKey=()=>"grass"+q+(sand?"s":"")+(k0&&k0!==T.Material.prototype.customProgramCacheKey?k0.call(m):""); m.userData.grass=q; return m; }
 /* a ground material: Lambert (原版 / LOW) or per-pixel Phong (MEDIUM / HIGH), then the grass */
-function gMat(o,force){ const q=force!=null?force:GRASS.q; const m=q>0?new T.MeshPhongMaterial(Object.assign({specular:new T.Color(0,0,0),shininess:2},o)):new T.MeshLambertMaterial(o); return m; }
+function gMat(o,force){ const q=force!=null?force:GRASS.q; const m=(q>0&&!(typeof Q!=="undefined"&&Q.phone))?new T.MeshPhongMaterial(Object.assign({specular:new T.Color(0,0,0),shininess:2},o)):new T.MeshLambertMaterial(o); return m; }
 function terrain(C,x0,x1,z0,z1,hf,cf,y0){ const nx=Math.round(x1-x0), nzc=Math.round(z1-z0), g=new T.PlaneGeometry(x1-x0,z1-z0,nx,nzc); g.rotateX(-Math.PI/2); g.translate((x0+x1)/2,0,(z0+z1)/2);
   const P=g.attributes.position, col=new Float32Array(P.count*3), c=new T.Color(); for(let i=0;i<P.count;i++){ const x=P.getX(i), z=P.getZ(i), h=hf(x,z)+mdH(x,z); P.setY(i,h+(y0||0)); cf(x,z,h,c); mdPC(x,z,c); col[i*3]=c.r; col[i*3+1]=c.g; col[i*3+2]=c.b; }
   g.setAttribute("color",new T.BufferAttribute(col,3)); g.computeVertexNormals(); { const U=g.attributes.uv; for(let i=0;i<P.count;i++) U.setXY(i,P.getX(i)/3.4,P.getZ(i)/3.4); } const m=new T.Mesh(g,grassPatch(antiTile(gMat({vertexColors:true,map:cf===beachC?sandDetail():grassDetail(),color:new T.Color(1.22,1.22,1.22)})),null,cf===beachC)); /* (11/16: a painted grass / sand grain over the colours; 11/18 the new grass where it is grass) */ m.userData.keep=1; m.userData.floor=1; m.userData.own=1; m.userData.ter={hf,cf,y0}; C.g.add(m); pickables.push(m); C.picks.push(m); return m; }
