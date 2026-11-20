@@ -1495,3 +1495,9 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - Safari 27.3 beta（11/16）說明有「Fixed a WebGL regression with texture uploads that specify a format and type」——WebGL 2 的上傳路徑最近在改。主委的閃退從 11/17 起、正式站也掛，最可能是 iOS 27.x 的 WebKit。
 - WebGL 1 相容模式（Q.gl1，localStorage mz.gl1）：UA 有「OS 27_」預設開，自己建 canvas.getContext("webgl") 傳給 THREE.WebGLRenderer（context）。設定 → 畫面濾鏡 → 「WebGL 1 相容模式」開／關。閃退紀錄畫質欄加 GL1／GL2。
 - 模擬器（iOS 27_3 UA）：WebGL 1 下廟、小鎮、森林都正常、沒有錯誤；只有非 2 的次方的貼圖被 three 縮成 2 的次方（console 警告，招牌略糊）。
+
+## 第 83 批（11/21 01:45，主委：WebGL 1 開了「不會卡了」；其他手機都不會掛、iPhone 13 只會頓一下 → iPhone 17 Pro＋iOS 27.3 的 WebGL 2 問題。「把之前問題放回來看看 地板反光 開放世界 溪水都還原到最後版本 但用 webgl1 開」）
+- 開放世界回來（預設）：ZONES＝localStorage mz.zones==1 才分三區。沒分區時跑舊的依距離載入（LR0、手機每 0.4 秒一區）＋舊的禪房門口換區（z −52 收廟裡重的東西、5 秒讀取畫面、−49.5 回來）。設定 → 畫面濾鏡 → 「地圖載入方式」開放世界／分三區。
+- 手機的保守做法全部收起來（Q.tame，mz.tame=1 才開）：廟地板回到 Phong 反光、外面磁磚 tileLike 反光、禪院溪水／溫泉倒影（CubeCamera）、山頂全景（vf）、相容測試預設全開（新水面、樹下陰影、森林道具、手機縮圖）。草地仍是原版（mz.grass2 預設 old）。
+- 保留：WebGL 1（iOS 27 預設）、畫面外不畫（fcSplit/fcCull）、營火燈常駐、材質不 dispose、換區讀取完才進（分區模式時）、閃退紀錄。
+- 模擬器（iOS 27_3 UA）：GL1、開放世界，小鎮／森林／廟正常，無錯誤。
