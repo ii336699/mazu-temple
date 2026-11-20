@@ -1490,3 +1490,8 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - 換區釋放有效：貼圖 292→115、模型 2767→671。但小鎮蓋好後整個頁面被殺（程序記憶體，不只顯示卡）：小鎮 204 貼圖、1090 模型、77 著色程式。
 - 測試頁的特性：所有模型是 *-model.js（base64 文字，共 70 MB）、圖片在 img-pack.js（8.3 MB），解碼後會比正式站多佔記憶體；而且是在 Claude App 的內嵌瀏覽器裡跑。模型解碼後本來就把 window.GLB_x 設 null，這批再把 <script> 元素移除。
 - 請主委用 Safari（不是 Claude App 內）開測試頁對照。
+
+## 第 82 批（11/21 01:20，主委 iPhone 17 Pro 是 iOS 27.3；正式站（11/13 沒動）也開始掛；「沒有其他辦法嗎」）
+- Safari 27.3 beta（11/16）說明有「Fixed a WebGL regression with texture uploads that specify a format and type」——WebGL 2 的上傳路徑最近在改。主委的閃退從 11/17 起、正式站也掛，最可能是 iOS 27.x 的 WebKit。
+- WebGL 1 相容模式（Q.gl1，localStorage mz.gl1）：UA 有「OS 27_」預設開，自己建 canvas.getContext("webgl") 傳給 THREE.WebGLRenderer（context）。設定 → 畫面濾鏡 → 「WebGL 1 相容模式」開／關。閃退紀錄畫質欄加 GL1／GL2。
+- 模擬器（iOS 27_3 UA）：WebGL 1 下廟、小鎮、森林都正常、沒有錯誤；只有非 2 的次方的貼圖被 three 縮成 2 的次方（console 警告，招牌略糊）。
