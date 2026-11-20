@@ -1512,3 +1512,8 @@ audio-fix（測試版）另外完成、**尚未部署**：
 ## 第 86 批（11/21 02:45，主委「我就是要整座廟…原本的模型…裡面的磁磚、牆壁貼圖、神明都不用…看起來跟原本的廟外型一樣」）
 - 空殼（融化模型 shellBuild）拿掉。zoneFar 在手機上改成：用 exteriorSet() 在手機上算一次「從廟外面看得到的東西」——每個廟的 mesh 換成獨一無二的純色（MeshBasic、layer 5、暫時拿掉 instanceColor），從 34 個外面的位置（廟四周兩圈 16 個方向的眼睛高度和 16 m 高、山頂、小鎮）畫 160×160、readRenderTargetPixels 收 id；看得到的保留原模型原貼圖，看不到的才藏起來並釋放。結果（ZEXT 快取一次）。
 - 再加上原本禪房門口 zoneForget 已經收掉的廟裡重東西（神像、壁畫、商店街店內），廟從外面看完全是原樣。模擬器山頂：模型 1409、貼圖 210（全藏時 693／143）、86.5 萬三角形。
+
+## Batch 87 (11/21) — 圓圓的樹
+- 主委「把樹改成動物森友會那種」: new original style RTREE (after LPT): tapered trunk + puffy crown of 5 merged spheres (vertex gradient lighter on top), one colour per tree per kind (leaf green / pink / maple orange / gold); pines ("deep") = 3 stacked cones, narrowed .78. MeshLambert, instanced: 1 trunk draw + 1 per kind. Same lists/places/sizes.
+- Default on (`mz.tree` = "round"); LPT.build is wrapped and falls back to the leaf-card trees on error. Settings → 畫面濾鏡 → 樹的樣式 (圓圓可愛 / 原本的葉片樹), reloads.
+- Not changed: cedar/palm GLB trees, SAKURA grove, ZEN trees (separate code paths).
