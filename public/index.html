@@ -5197,7 +5197,7 @@ function openGfx(){ const opt=(v,t,d)=>`<button class="good" data-act="quality" 
 const FLT={v:load("mz.flt",null)}; function fltApply(){ let v=FLT.v; if(v==null) v=Q.lite?"off":"soft"; document.body.classList.toggle("flt-soft",v==="soft"); document.body.classList.toggle("flt-film",v==="film"); return v; }
 HANDLERS.compatOne=k=>{ const S=new Set(Q.cx); S.has(k)?S.delete(k):S.add(k); save("mz.compat",[...S].join(",")); toast("相容測試已更換，重新載入中…",1500); setTimeout(()=>location.reload(),600); };
 HANDLERS.compat=v=>{ v=v==="1"?1:0; if(v?Q.cx.size===5:!Q.compat) return; save("mz.compat",v?1:""); toast(v?"相容測試開啟，重新載入中…":"相容測試關閉，重新載入中…",1500); setTimeout(()=>location.reload(),600); };
-HANDLERS.grassQ=v=>{ if(v===(window.MZ_GRASS||{}).mode) return; try{ localStorage.setItem("mz.grass",v); }catch(e){} toast("草地設定已更換，重新載入中…",1500); setTimeout(()=>location.reload(),600); }; /* (11/18 主委 草地材質 v2: 原版／低／中／高) */
+HANDLERS.grassQ=v=>{ if(v===(window.MZ_GRASS||{}).mode) return; try{ localStorage.setItem("mz.grass2",v); }catch(e){} toast("草地設定已更換，重新載入中…",1500); setTimeout(()=>location.reload(),600); }; /* (11/18 主委 草地材質 v2: 原版／低／中／高) */
 HANDLERS.grade=v=>{ window.MZ_GRADE=v==="1"; try{ localStorage.setItem("mz.grade",window.MZ_GRADE?"1":"0"); }catch(e){} renderer.toneMapping=window.MZ_GRADE?T.CustomToneMapping:T.ACESFilmicToneMapping; openGfx(); }; /* (11/18 主委「那個濾鏡也要可以開關」) */
 HANDLERS.flt=(v)=>{ FLT.v=v; save("mz.flt",v); fltApply(); openGfx(); }; try{ fltApply(); }catch(e){}
 /* 綠點測試: switches to find which part of the lighting makes the green/dark speckles some phones show. They only change this screen. */
@@ -12613,7 +12613,7 @@ function antiTile(m,key){ const prev=m.onBeforeCompile; m.onBeforeCompile=sh=>{ 
      the sun's own colour carries it, so at dusk and night it fades with the light
    · LOW: Lambert like before, colour only.  原版: the old material, untouched.
    Settings → 畫面濾鏡 → 草地 (localStorage mz.grass: old / low / med / high; auto = med on phones, high elsewhere). Changing it reloads. */
-const GRASS=(()=>{ let v=""; try{ v=localStorage.getItem("mz.grass")||""; }catch(e){} if(!/^(old|low|med|high)$/.test(v)) v=(typeof Q!=="undefined"&&Q.phone)?"low":"high"; if(typeof Q!=="undefined"&&Q.safe&&Q.phone) v="old"; if(typeof Q!=="undefined"&&Q.off&&Q.off("grass")) v="old"; /* (11/18 主委「手機一走到靠近小鎮就會全黑」: right after the phone's 3D memory ran out, the next 20 min use the old grass — no new pictures at all) */ /* (11/18 主委「玩不到幾秒都會閃退」: phones start on LOW — Lambert, colour + broad variation only, two pictures) */ return {mode:v,q:{old:-1,low:0,med:1,high:2}[v]}; })(); window.MZ_GRASS=GRASS;
+const GRASS=(()=>{ let v=""; try{ v=localStorage.getItem("mz.grass2")||""; }catch(e){} if(!/^(old|low|med|high)$/.test(v)) v="old"; /* (11/20 08:47 主委「先把草皮恢復到以前好了」: everyone is back on the original grass and sand; the new ones stay under 設定 → 畫面濾鏡 → 草地・沙灘 (saved under a new key, so earlier choices do not carry over)) */ if(typeof Q!=="undefined"&&Q.safe&&Q.phone) v="old"; if(typeof Q!=="undefined"&&Q.off&&Q.off("grass")) v="old"; /* (11/18 主委「手機一走到靠近小鎮就會全黑」: right after the phone's 3D memory ran out, the next 20 min use the old grass — no new pictures at all) */ /* (11/18 主委「玩不到幾秒都會閃退」: phones start on LOW — Lambert, colour + broad variation only, two pictures) */ return {mode:v,q:{old:-1,low:0,med:1,high:2}[v]}; })(); window.MZ_GRASS=GRASS;
 const GCFG={scale:4.6,normal:.06,variation:.06,mid:.025,detail:.7,glint:.02,roughness:.94,tint:.6}; /* (草地 V2: macroColorVariation .06, midVariationStrength .025, normalStrength .06, glintStrength .02; baseDetail .7 — the v2 picture is already very soft, at .30 it went flat) */
 /* 沙灘 (11/18 主委's sand pack, tex/sand/): its own colour, normal and glint, the grass's noise and quality levels. Dry sand: normal .04,
    variation .08, glint .015, a wide dull highlight (roughness .96); wet sand — where the beach's own colours already turn to wet sand by
@@ -13433,17 +13433,17 @@ const ZM={cur:null,q:[],warm:0};
 const zoneOf=d=>{ const id=d.id; if(id==="front"||id==="cafe") return "t"; if(id==="riverW"||id==="riverE") return "vf"; return (d.c[1]<-140||d.c[0]>141)?"f":"v"; };
 const zoneHas=(z,d)=>{ const s=zoneOf(d); return z==="vf"?s!=="t":(s===z||(s==="vf"&&z!=="t")); };
 function zoneWant(px,pz,cur){ if(cur==="t"?pz>-52:pz>-49.5) return "t"; if(TW.high) return "vf"; const f=(cur==="f"||cur==="vf")?(pz<-138.5||px>140):(pz<-141.5||px>146); return f?"f":"v"; }
-function zoneGo(z){ const from=ZM.cur; ZN.busy=1; ZM.cur=z; ZM.warm=0;
+function zoneGo(z){ const from=ZM.cur; ZN.busy=1; ZM.cur=z; ZM.warm=0; ZM.nx=0;
   const cb=()=>{ if(z!=="t"&&!ZN.off){ try{ zoneForget(); }catch(e){ console.warn("zoneForget",e); } } if(z==="t"&&ZN.off){ try{ zoneBack(); }catch(e){ console.warn("zoneBack",e); } }
     const gone=new Set(), texOf=(o,set)=>{ const ms=Array.isArray(o.material)?o.material:[o.material]; for(const m of ms) if(m) for(const k in m){ const t=m[k]; if(t&&t.isTexture) set.add(t); } };
     for(const id of Object.keys(LIVE)){ const d=CH.find(q=>q.id===id); if(!d||!zoneHas(z,d)){ try{ LIVE[id].g.traverse(o=>texOf(o,gone)); }catch(e){} unload(id); } }
     /* (pictures the old area's districts shared — walls, signs, ground — are freed from the graphics card too unless something still shown uses them; they come back by themselves the next time they are drawn) */
     if(gone.size){ const keep=new Set(); scene.traverse(o=>{ if(o.material) texOf(o,keep); }); gone.forEach(t=>{ if(!keep.has(t)) try{ t.dispose(); }catch(e){} }); }
     ZM.q=CH.filter(d=>zoneHas(z,d)&&!LIVE[d.id]); };
-  const step=()=>{ if(ZM.q.length){ const d=ZM.q.shift(); if(!LIVE[d.id]) try{ load(d); }catch(e){ console.warn("town load",d.id,e); } return true; }
+  const step=()=>{ if(ZM.q.length){ if(typeof Q!=="undefined"&&Q.phone&&!ZM.fast){ const tn=performance.now(); if(!ZM.nx) ZM.nx=tn+700; if(tn<ZM.nx) return true; ZM.nx=tn+300; } /* (11/20 主委: 森林 → 小鎮 the phone was lost right at the river — on phones the old area gets 0.7 s to be freed, then one district every 0.3 s) */ const d=ZM.q.shift(); if(!LIVE[d.id]) try{ load(d); }catch(e){ console.warn("town load",d.id,e); } return true; }
     if(!ZM.warm){ ZM.warm=1; if(!(typeof Q!=="undefined"&&Q.phone)) try{ /* (computers only: on a phone drawing every picture of the area at once costs ~100 MB more than walking about does) */ /* draw everything once, out of view too, so every picture is sent to the graphics card now and not when you first look at it */ const fc=[]; scene.traverse(o=>{ if(o.frustumCulled){ fc.push(o); o.frustumCulled=false; } }); renderer.render(scene,camera); fc.forEach(o=>{ o.frustumCulled=true; }); }catch(e){ console.warn("zone warm",e); } } return false; };
   const ready=()=>!ZM.q.length&&ZM.warm;
-  if(from==null&&z==="t"){ try{ cb(); while(step()); }catch(e){} ZN.busy=0; return; } /* (starting in the temple: the beach is built behind the start-up picture) */
+  if(from==null&&z==="t"){ ZM.fast=1; try{ cb(); while(step()); }catch(e){} ZM.fast=0; try{ }catch(e){} ZN.busy=0; return; } /* (starting in the temple: the beach is built behind the start-up picture) */
   zoneVeil(cb,z!=="t",z,()=>{ const r=ready(); if(r) ZN.busy=0; return r; },step); }
 TW.zoneNow=()=>ZM.cur;
 /* (14:15 主委：「閃白閃這麼快太奇怪了，用遊戲開始的讀取圖，讀取五秒，從廟門口出來就讀取」) the same picture as the start of the game,
