@@ -13500,7 +13500,7 @@ const ZM={cur:null,q:[],warm:0};
 const zoneOf=d=>{ const id=d.id; if(id==="front"||id==="cafe") return "t"; if(id==="riverW"||id==="riverE") return "vf"; return (d.c[1]<-140||d.c[0]>141)?"f":"v"; };
 const zoneHas=(z,d)=>{ const s=zoneOf(d); return z==="vf"?s!=="t":(s===z||(s==="vf"&&z!=="t")); };
 function zoneWant(px,pz,cur){ if(cur==="t"?pz>-52:pz>-49.5) return "t"; if(TW.high) return "vf"; const f=(cur==="f"||cur==="vf")?(pz<-133||px>137):(pz<-144||px>149); return f?"f":"v"; } /* (11/20: the band between the two lines is 11 m now — 3 m let a walk along the river bank switch areas back and forth, a full unload and rebuild each time; all four recent phone crashes were right there) */
-function zoneGo(z){ const from=ZM.cur; ZM.n=(ZM.n||0)+1; ZM.at=Date.now(); ZN.busy=1; ZM.cur=z; ZM.warm=0; ZM.nx=0;
+function zoneGo(z){ const from=ZM.cur; ZM.n=(ZM.n||0)+1; ZM.at=Date.now(); ZM.tq=null; ZN.busy=1; ZM.cur=z; ZM.warm=0; ZM.nx=0;
   const cb=()=>{ try{ zoneFar(0); }catch(e){} if(z!=="t"&&!ZN.off){ try{ zoneForget(); }catch(e){ console.warn("zoneForget",e); } } if(z==="t"&&ZN.off){ try{ zoneBack(); }catch(e){ console.warn("zoneBack",e); } }
     const gone=new Set(), goneG=new Set(), texOf=(o,set)=>{ const ms=Array.isArray(o.material)?o.material:[o.material]; for(const m of ms) if(m){ for(const k in m){ const t=m[k]; if(t&&t.isTexture) set.add(t); } if(m.uniforms) for(const k in m.uniforms){ const v=m.uniforms[k]&&m.uniforms[k].value; if(v&&v.isTexture) set.add(v); } } };
     for(const id of Object.keys(LIVE)){ const d=CH.find(q=>q.id===id); if(!d||!zoneHas(z,d)){ try{ LIVE[id].g.traverse(o=>{ texOf(o,gone); if(o.geometry) goneG.add(o.geometry); }); }catch(e){} unload(id); } }
@@ -13512,6 +13512,12 @@ function zoneGo(z){ const from=ZM.cur; ZM.n=(ZM.n||0)+1; ZM.at=Date.now(); ZN.bu
     ZM.q=CH.filter(d=>zoneHas(z,d)&&!LIVE[d.id]);
     try{ zoneFar(z==="f"?"f":(z==="v"&&typeof Q!=="undefined"&&Q.phone)?"v":0); }catch(e){ console.warn("zoneFar",e); } };
   const step=()=>{ if(ZM.q.length){ if(typeof Q!=="undefined"&&Q.phone&&!ZM.fast){ const tn=performance.now(); if(!ZM.nx) ZM.nx=tn+700; if(tn<ZM.nx) return true; ZM.nx=tn+300; } /* (11/20 主委: 森林 → 小鎮 the phone was lost right at the river — on phones the old area gets 0.7 s to be freed, then one district every 0.3 s) */ const d=ZM.q.shift(); if(!LIVE[d.id]) try{ load(d); fcScan(); }catch(e){ console.warn("town load",d.id,e); } return true; }
+    if(typeof Q!=="undefined"&&Q.phone&&!ZM.fast){ /* (11/20 16:58 主委「出去森林再回城 一開始正常 轉角度開始卡的然後斷線」: the town's pictures were freed when leaving, and coming
+       back each one was sent to the graphics card only when it first came into view — turning the camera sent dozens at once. On phones the
+       loading picture now stays up while they are sent, three per frame.) */
+      if(!ZM.tq){ ZM.tq=[]; const seen=new Set(); const add=t=>{ if(t&&t.isTexture&&!seen.has(t)&&t.image){ seen.add(t); const pr=renderer.properties.get(t); if(!pr.__webglInit) ZM.tq.push(t); } };
+        const walk=o=>{ if(!o.visible&&!o.userData.fcOff) return; if(o.material) for(const m of (Array.isArray(o.material)?o.material:[o.material])) if(m){ for(const k in m) add(m[k]); if(m.uniforms) for(const k in m.uniforms) add(m.uniforms[k]&&m.uniforms[k].value); } for(const c of o.children) walk(c); }; walk(scene); }
+      if(ZM.tq.length){ for(let i=0;i<3&&ZM.tq.length;i++){ try{ renderer.initTexture(ZM.tq.shift()); }catch(e){} } return true; } }
     if(!ZM.warm){ ZM.warm=1; if(!(typeof Q!=="undefined"&&Q.phone)) try{ /* (computers only: on a phone drawing every picture of the area at once costs ~100 MB more than walking about does) */ /* draw everything once, out of view too, so every picture is sent to the graphics card now and not when you first look at it */ const fc=[]; scene.traverse(o=>{ if(o.frustumCulled){ fc.push(o); o.frustumCulled=false; } }); renderer.render(scene,camera); fc.forEach(o=>{ o.frustumCulled=true; }); }catch(e){ console.warn("zone warm",e); } } return false; };
   const ready=()=>!ZM.q.length&&ZM.warm;
   if(from==null&&z==="t"){ ZM.fast=1; try{ cb(); while(step()); }catch(e){} ZM.fast=0; try{ }catch(e){} ZN.busy=0; return; } /* (starting in the temple: the beach is built behind the start-up picture) */
