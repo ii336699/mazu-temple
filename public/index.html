@@ -1438,7 +1438,7 @@ function loadRaw0(name,lite,cb,fin){ const gl=new T.GLTFLoader(); if(window.Mesh
   const viaScript=()=>{ { const key0="GLB_"+name.toUpperCase().replace(/-/g,"_")+(lite?"_LITE":""); if(window[key0]){ try{ const b=atob(window[key0]); const u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); gl.parse(u.buffer,"",fix,fin); }catch(e){ fin(); } return; } } // already on the page
     const sc=document.createElement("script"); sc.src=name+(lite?"-lite":"")+"-model.js"; sc.async=true; const key="GLB_"+name.toUpperCase().replace(/-/g,"_")+(lite?"_LITE":"");
     sc.onerror=()=>{ sc.remove(); const n=(loadRaw.tries[name]=(loadRaw.tries[name]||0)+1); if(n<5) setTimeout(viaScript,1500*n); else fin(); };
-    sc.onload=()=>{ if(!window[key]){ sc.onerror(); return; } try{ const b=atob(window[key]||""); const u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); window[key]=null; gl.parse(u.buffer,"",fix,fin); }catch(e){ fin(); } }; document.head.appendChild(sc); };
+    sc.onload=()=>{ if(!window[key]){ sc.onerror(); return; } try{ const b=atob(window[key]||""); const u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); window[key]=null; try{ sc.remove(); }catch(_){ } /* (drop the script element too, so the page does not keep the model's text — 11/20) */ gl.parse(u.buffer,"",fix,fin); }catch(e){ fin(); } }; document.head.appendChild(sc); };
   if(IN_ARTIFACT) setTimeout(viaScript,300); else gl.load(name+(lite?"-lite":"")+".glb",fix,undefined,()=>setTimeout(viaScript,100)); }
 loadRaw.tries={};
 /* 神像遠近分級: statues arrive as their light copy first (quick to download, few triangles); when you come within ~15 m the full
