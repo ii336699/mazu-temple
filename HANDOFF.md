@@ -1451,3 +1451,7 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - 做法：index.html <head> 最前面的小程式看到 mz.ver 就載入 vers.js、用 <plaintext> 把本頁其餘部分吞掉，vers.js（MZ_VBOOT）把那版的 index.html 組回來（第一版全文＋之後每版的逐行差異，gzip＋base64，約 3 MB）再 document.write，頂端加「🕰 第 N 批｜換版本」。沒有 vers.js（正式站）時會清掉 mz.ver 重新整理。
 - vers.js 不在 repo：$S/vers/（mk.sh 用各 commit 的 publish_prep 產生 html、pack.py 打包、boot.js）。測試頁檔案剛好 511（上限）。
 - 舊版用的是現在的素材：第 56–58 批的 grass/sand glint.webp 已刪，那幾版反光遮罩會缺。
+
+## 第 73 批（11/20 12:20，主委「你能不能找出最有可能的原因？廟都沒事 也有地板反光 小鎮跟森林到底是什麼卡了」）
+- 整理：(1) 11/19 主委測出「新草地」「磁磚反光」各自會掛——兩者都是大面積 Phong，已拿掉（手機）。(2) 之後小鎮／森林的閃退紀錄全部在河邊（(28,−136)、(28,−144)、(60,−138)、(61,−133)），而且「最後新增的著色」都有 Shader（ShaderMaterial）——小鎮／森林會新編譯的 ShaderMaterial 就是水（河、溪、泉、瀑布，W_FS / wmat / fallMat）。廟這區沒有這些水，所以廟沒事。
+- 相容測試加第 6 項「水面特效」（water）：關掉時 waterMat / wmat / fallMat 全部換成 SIMPLEW（MeshLambert 半透明、雙面，瀑布偏白）。手機預設（mz.compat2 沒設時）六項全關。
