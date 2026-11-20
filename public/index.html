@@ -13562,7 +13562,31 @@ function zoneForget(){ if(ZN.off) return; if(hid.length){ hid.forEach(M=>{ M.vis
    from the forest 150 m away behind the fog. In the forest the whole temple side is now not drawn; in the town, on phones, its
    thousands-of-pieces parts (tiles, bricks) and the temple cats are not drawn — the walls, roofs and gates still show. Nothing is thrown
    away, they come back when you return.) */
-function zoneFar(level){ ZN.far.forEach(o=>{ o.visible=true; }); ZN.far=[]; if(!level) return; scene.updateMatrixWorld(true);
+/* 廟的空殼 (11/21 主委「不能做一個廟的空殼模型來放嗎」): when the real temple is put away on a phone, a stand-in takes its place — the same shapes
+   (walls, halls, roofs, gates, the big statue) melted down to one plain mesh: every corner snapped to a 1 m grid so small details collapse,
+   each triangle coloured with its material colour × the average colour of its picture. No pictures, one draw, a few tens of thousands of
+   triangles. Made once, the first time it is needed, from the temple that is already in memory. */
+let TSHELL=null; const TAVG=new Map();
+function texAvg(t){ const im=t&&t.image; if(!im) return [1,1,1]; if(TAVG.has(im)) return TAVG.get(im); let c=[1,1,1]; try{ const cv=document.createElement("canvas"); cv.width=cv.height=4; const x=cv.getContext("2d"); x.drawImage(im,0,0,4,4); const d=x.getImageData(0,0,4,4).data; let r=0,g=0,b=0; for(let i=0;i<64;i+=4){ r+=d[i]; g+=d[i+1]; b+=d[i+2]; } c=[r/16/255,g/16/255,b/16/255].map(v=>Math.pow(v,2.2)); }catch(e){} TAVG.set(im,c); return c; }
+function shellBuild(list){ const CELL=1.0, cells=new Map(), out=[], col=[], seen=new Set(); const v=new T.Vector3(), M=new T.Matrix4(), IM=new T.Matrix4();
+  const key=p=>{ const ix=Math.round(p.x/CELL), iy=Math.round(p.y/CELL), iz=Math.round(p.z/CELL); return ((ix+4096)*8192+(iy+4096))*8192+(iz+4096); };
+  const cellOf=p=>{ const k=key(p); let c=cells.get(k); if(!c){ c=[0,0,0,0,k]; cells.set(k,c); } c[0]+=p.x; c[1]+=p.y; c[2]+=p.z; c[3]++; return c; };
+  const tris=[];
+  for(const o of list){ if(!o.isMesh||o.isSkinnedMesh) continue; const g=o.geometry, P=g.attributes.position; if(!P) continue; const ms=Array.isArray(o.material)?o.material:[o.material];
+    const groups=Array.isArray(o.material)&&g.groups.length?g.groups:[{start:0,count:g.index?g.index.count:P.count,materialIndex:0}]; const I=g.index, C=g.attributes.color;
+    const n=o.isInstancedMesh?o.count:1;
+    for(let k=0;k<n;k++){ if(o.isInstancedMesh){ o.getMatrixAt(k,IM); M.multiplyMatrices(o.matrixWorld,IM); } else M.copy(o.matrixWorld);
+      for(const gr of groups){ const m=ms[gr.materialIndex]||ms[0]; if(!m||m.visible===false||(m.transparent&&m.opacity<.5)) continue; const mc=m.color?[m.color.r,m.color.g,m.color.b]:[1,1,1], ta=m.map?texAvg(m.map):[1,1,1];
+        const end=Math.min(gr.start+gr.count,I?I.count:P.count); for(let i=gr.start;i+2<end;i+=3){ const a=I?I.getX(i):i, b=I?I.getX(i+1):i+1, c=I?I.getX(i+2):i+2;
+          const ca=cellOf(v.fromBufferAttribute(P,a).applyMatrix4(M)), cb=cellOf(v.fromBufferAttribute(P,b).applyMatrix4(M)), cc=cellOf(v.fromBufferAttribute(P,c).applyMatrix4(M));
+          if(ca===cb||cb===cc||ca===cc) continue; const id=[ca[4],cb[4],cc[4]].sort().join(","); if(seen.has(id)) continue; seen.add(id);
+          let vr=1,vg=1,vb=1; if(C){ vr=(C.getX(a)+C.getX(b)+C.getX(c))/3; vg=(C.getY(a)+C.getY(b)+C.getY(c))/3; vb=(C.getZ(a)+C.getZ(b)+C.getZ(c))/3; }
+          tris.push(ca,cb,cc, mc[0]*ta[0]*vr, mc[1]*ta[1]*vg, mc[2]*ta[2]*vb); } } } }
+  const nT=tris.length/6, pos=new Float32Array(nT*9), cl=new Float32Array(nT*9);
+  for(let t=0;t<nT;t++){ for(let j=0;j<3;j++){ const c=tris[t*6+j]; pos[t*9+j*3]=c[0]/c[3]; pos[t*9+j*3+1]=c[1]/c[3]; pos[t*9+j*3+2]=c[2]/c[3]; cl[t*9+j*3]=tris[t*6+3]; cl[t*9+j*3+1]=tris[t*6+4]; cl[t*9+j*3+2]=tris[t*6+5]; } }
+  const g=new T.BufferGeometry(); g.setAttribute("position",new T.BufferAttribute(pos,3)); g.setAttribute("color",new T.BufferAttribute(cl,3)); g.computeVertexNormals();
+  const mesh=new T.Mesh(g,new T.MeshLambertMaterial({vertexColors:true,side:T.DoubleSide})); mesh.name="templeShell"; mesh.userData.zoneKeep=1; mesh.matrixAutoUpdate=false; mesh.visible=false; scene.add(mesh); return mesh; }
+function zoneFar(level){ ZN.far.forEach(o=>{ o.visible=true; }); ZN.far=[]; if(TSHELL) TSHELL.visible=false; if(!level) return; scene.updateMatrixWorld(true);
   const live=new Set(Object.values(LIVE).map(C=>C.g)), bb=new T.Box3();
   const stay=o=>{ for(let p=o;p&&p!==scene;p=p.parent){ const u=p.userData||{}; if(live.has(p)||u.isAvatar||u.zoneKeep||p===sky) return true; } return false; };
   const PH=typeof Q!=="undefined"&&Q.phone;
@@ -13579,7 +13603,8 @@ function zoneFar(level){ ZN.far.forEach(o=>{ o.visible=true; }); ZN.far=[]; if(!
   if(typeof Q!=="undefined"&&Q.phone&&ZN.far.length){ const keepG=new Set(), keepT=new Set(), tx=(mm,S)=>{ if(!mm) return; for(const k in mm){ const t=mm[k]; if(t&&t.isTexture) S.add(t); } };
     scene.traverse(o=>{ if(!o.visible||!o.geometry) return; let v=true; for(let p=o.parent;p;p=p.parent) if(!p.visible){ v=false; break; } if(!v) return; keepG.add(o.geometry); (Array.isArray(o.material)?o.material:[o.material]).forEach(mm=>tx(mm,keepT)); });
     const gT=new Set(); ZN.far.forEach(o=>{ if(!keepG.has(o.geometry)) try{ o.geometry.dispose(); }catch(e){} if(o.isInstancedMesh&&o.dispose) try{ o.dispose(); }catch(e){} (Array.isArray(o.material)?o.material:[o.material]).forEach(mm=>tx(mm,gT)); });
-    gT.forEach(t=>{ if(!keepT.has(t)) try{ t.dispose(); }catch(e){} }); } }
+    gT.forEach(t=>{ if(!keepT.has(t)) try{ t.dispose(); }catch(e){} }); }
+  if(typeof Q!=="undefined"&&Q.phone&&ZN.far.length){ try{ if(!TSHELL) TSHELL=shellBuild(ZN.far); TSHELL.visible=true; }catch(e){ console.warn("temple shell",e); } } }
 function zoneBack(){ for(const [o,v] of ZN.list){ o.visible=v; delete o.userData.zoneOff; } ZN.list=[]; ZN.off=false; }
 TW.zone=ZN; TW.zoneBack=zoneBack; TW.zoneForget=zoneForget;
 let hid=[]; function fogCull(px,pz){ try{ if(typeof MERGED==="undefined"||ZN.off) return; if(pz>-58){ if(hid.length){ hid.forEach(M=>{ M.visible=true; }); hid=[]; } return; } const far=(scene.fog&&scene.fog.far||90)+8, cx=camera.position.x, cz=camera.position.z;
