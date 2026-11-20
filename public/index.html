@@ -985,7 +985,7 @@ if(Q.phone&&!Q.off("cap")) try{ const cap=(P,o)=>{ const g=P.getParameter; P.get
 /* WebGL 1 相容模式 (11/21 主委 iPhone 17 Pro, iOS 27.3: from 11/17 even the untouched 正式站 crashes; Safari 27.3's notes list a fixed
    "WebGL regression with texture uploads that specify a format and type" — that is the WebGL 2 upload path. On iOS 27 the game now starts
    on WebGL 1 (an older, separate path in the phone's browser engine); 設定 → 畫面濾鏡 → WebGL 1 相容模式 switches it.) */
-Q.gl1=(()=>{ const v=load("mz.gl1",null); if(v!=null) return v===1||v==="1"; return /OS 27_/.test(navigator.userAgent); })();
+Q.gl1=(()=>{ const v=load("mz.gl1",null); if(v!=null) return v===1||v==="1"; return /iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Mac/.test(navigator.userAgent)); })(); /* (11/21 01:32 主委閃退紀錄寫 GL2: iOS no longer puts its real version in the browser's user agent, so "OS 27_" never matched — every iPhone / iPad now starts on WebGL 1) */
 const renderer=(()=>{ const o={canvas,antialias:!Q.lite,powerPreference:"high-performance"}; if(Q.gl1){ try{ const ctx=canvas.getContext("webgl",{antialias:o.antialias,powerPreference:o.powerPreference,alpha:false,depth:true,stencil:true,premultipliedAlpha:true,preserveDrawingBuffer:false}); if(ctx) o.context=ctx; else Q.gl1=false; }catch(e){ Q.gl1=false; } } return new T.WebGLRenderer(o); })();
 /* If the phone runs out of graphics memory the browser takes the 3D drawing away (it would freeze or close the page). Remember it,
    reload, and run lighter for 20 minutes instead of crashing again. */
