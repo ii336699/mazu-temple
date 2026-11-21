@@ -11599,7 +11599,7 @@ const FD="bed01|泡麵床|1.48|1.88|2.1|3900|f||0;bed02|馬桶床|1.23|1.61|2.1|
 const FURN=FD.split(";").map(r=>{ const a=r.split("|"); return {id:a[0],c:a[0].replace(/\d+$/,""),n:a[1],w:+a[2],h:+a[3],d:+a[4],p:+a[5],src:a[6],wall:a[7].includes("w"),small:a[7].includes("s"),hide:a[7].includes("x"),top:+a[8],k:parseInt(a[0].replace(/^\D+/,""),10)-1}; });
 const fPrice=F=>{ try{ return LIFE.dPrice("tw:furn",F.p); }catch(e){ return F.p; } }; /* (美雲姐 gives friends a discount, 11/16) */
 const FCAT=[["bed","床"],["chair","椅子"],["table","桌子"],["cabinet","櫃子"],["appl","家電"],["misc","克難"],["plant","盆栽"],["deco","擺飾"],["curtain","窗簾"],["wall","壁掛"],["pic","掛畫"]];
-const SRCN={b:"",c:"夾娃娃機的神秘禮物盒",q:"每日功課的寶箱",f:"節日紅包",g:"簽到第 7 天",n:"鎮上的人好感變高時送的",w:"第一次釣到稀有的魚",d:"地上的裂縫挖出來的",m:"流星掉下來的，或用星砂換"}, SRCS={c:"夾娃娃",q:"功課寶箱",f:"節日紅包",g:"簽到獎勵",n:"鎮民好感",w:"釣魚",d:"挖寶",m:"流星"}; /* (11/16 主委: about 40% sold in the shop, the rest earned) */
+const SRCN={b:"",c:"夾娃娃機的神秘禮物盒",q:"每日功課的寶箱",f:"節日紅包",g:"簽到第 7 天",n:"鎮上的人好感變高時送的",w:"第一次釣到稀有的魚",d:"地上的裂縫挖出來的",m:"流星掉下來的，或拿 8 顆星砂找收藏家小潘換"}, SRCS={c:"夾娃娃",q:"功課寶箱",f:"節日紅包",g:"簽到獎勵",n:"鎮民好感",w:"釣魚",d:"挖寶",m:"流星"}; /* (11/16 主委: about 40% sold in the shop, the rest earned) */
 const fidx=id=>FURN.findIndex(f=>f.id===id);
 const MAXIT=24, MAXOWN=3;
 /* models: fetched once per kind while you are in the room, shared by every copy, thrown away when you leave */
@@ -16276,7 +16276,9 @@ function bugFirst(){ const d=LF(); d.fb=d.fb||{}; const got=[]; let c=0, g=0;
   [...new Set(bugList())].forEach(id=>{ const b=BUG_BY[id]; if(!b||b[4]<3||d.fb[id]) return; d.fb[id]=1; const leg=b[4]>=4; c+=leg?2000:500; g+=leg?3:1; got.push(`${leg?"🌟 傳說":"✨ 稀有"}・${b[1]}：${leg?2000:500} 平安幣＋扭蛋幣 ${leg?3:1}`); });
   if(!got.length) return false; bag.coins+=c; bag.gacha=Math.min(255,(bag.gacha||0)+g); save(); try{ profSave(true); [784,988,1175,1568].forEach((f,k)=>tone(f,.18,.05,"triangle",k*.09)); }catch(e){}
   openSheet("lfBfirst","🎁 收藏家小潘",`<p class="lead">小潘：「天啊！這${got.length>1?"幾":"一"}隻我第一次看你抓到！這是謝禮，請收下！」</p><p>${got.join("<br>")}</p><div class="row"><button class="primary" data-act="lfBugCol">謝謝小潘</button></div>`); return true; }
-HANDLERS.lfBugCol=(noCheck)=>{ if(noCheck!=1&&bugFirst()) return; openSheet("lfBugCol","🔬 收藏家小潘",`<p class="lead">小潘：「昆蟲、化石、古物、寶石，每一樣都是寶貝！賣給我，我會好好收藏。」</p><h4 style="margin:10px 0 4px">昆蟲</h4>${bugSellSheet()}${(()=>{ const r=digSellRows(["fossil","old","gem","treasure"],"d"); return r?`<h4 style="margin:10px 0 4px">化石・古物・寶石</h4>`+r:""; })()}`); };
+HANDLERS.lfBugCol=(noCheck)=>{ if(noCheck!=1&&bugFirst()) return; openSheet("lfBugCol","🔬 收藏家小潘",`<p class="lead">小潘：「昆蟲、化石、古物、寶石，每一樣都是寶貝！賣給我，我會好好收藏。」</p><h4 style="margin:10px 0 4px">昆蟲</h4>${bugSellSheet()}${(()=>{ const r=digSellRows(["fossil","old","gem","treasure"],"d"); return r?`<h4 style="margin:10px 0 4px">化石・古物・寶石</h4>`+r:""; })()}<h4 style="margin:10px 0 4px">✨ 星砂</h4><p class="note">8 顆星砂可以換一件星空家具（你有 ${LF().dust|0} 顆）。</p><div class="row"><button class="secondary" data-act="lfDustP" ${(LF().dust|0)>=8?"":"disabled"}>用 8 顆星砂換星空家具</button></div>`); };
+/* (11/22 主委「八顆星砂換家具換成收藏家換」: 博士 is gone; 小潘 makes the star furniture now) */
+HANDLERS.lfDustP=()=>{ const d=LF(); if((d.dust|0)<8){ toast(`星砂要 8 顆才夠（你有 ${d.dust|0} 顆）`,2400); return; } let fu=""; try{ fu=ROOMX.grant("m"); }catch(e){} if(!fu){ toast("小潘：「星空的家具你都收齊了！太了不起了。」",2800); return; } d.dust-=8; save(); try{ profSave(true); chaChing(); }catch(e){} toast(`小潘：「8 顆星砂……完成了！這件「${fu}」送你。」`,3400); HANDLERS.lfBugCol(1); };
 L.bugs=()=>BG2; L.bugSpawn=bugSpawn;
 /* ================= ⛏️ 地上的裂縫 (11/16 主委). Now and then a glinting crack opens in the ground round the town (up to 3 at a time, a new
    one every couple of minutes). With a 鏟子 from 威利 (15 digs) you walk up, press 「⛏️ 挖」: three bouncy digs throw up dirt, then
