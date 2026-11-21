@@ -712,8 +712,8 @@ export class Lobby extends DurableObject {
       const L = (await this.ctx.storage.get("ps:meta")) || [];
       if (b.del != null) { const i = b.del | 0; const k = L.findIndex(q => q.i === i); if (k >= 0) L.splice(k, 1); await this.ctx.storage.put("ps:meta", L); await this.ctx.storage.delete("ps:img:" + i); return json({ ok: true, list: L }); }
       const img = String(b.img || ""); if (!/^data:image\/jpeg;base64,/.test(img) || img.length > 120000) return json({ ok: false, big: true });
-      let i = b.i != null ? b.i | 0 : -1; if (i < 0) { for (let k = 0; k < 50; k++) if (!L.some(q => q.i === k)) { i = k; break; } } if (i < 0 || i >= 50) return json({ ok: false, full: true });
-      const m = { i, x: +Number(b.x).toFixed(2), z: +Number(b.z).toFixed(2), yaw: +Number(b.yaw).toFixed(3), name: clean(b.name, 20) || ("第 " + (i + 1) + " 張"), area: clean(b.area, 20) || "", at: Date.now() };
+      let i = b.i != null ? b.i | 0 : -1; if (i < 0) { for (let k = 0; k < 24; k++) if (!L.some(q => q.i === k)) { i = k; break; } } if (i < 0 || i >= 24) return json({ ok: false, full: true });
+      const m = { i, x: +Number(b.x).toFixed(2), z: +Number(b.z).toFixed(2), yaw: +Number(b.yaw).toFixed(3), pitch: b.pitch == null ? null : +Number(b.pitch).toFixed(3), name: clean(b.name, 20) || ("第 " + (i + 1) + " 張"), area: clean(b.area, 20) || "", at: Date.now() };
       const k = L.findIndex(q => q.i === i); if (k >= 0) L[k] = m; else L.push(m); L.sort((a, b2) => a.i - b2.i); await this.ctx.storage.put("ps:meta", L); await this.ctx.storage.put("ps:img:" + i, img); return json({ ok: true, i, list: L }); }
     /* 小鎮遊戲每日排名 (11/14): each game keeps one table per Taiwan day, best score per player; GET reads it, POST puts a score in,
        /rankclaim tells a player once where they finished yesterday (for prizes) */
