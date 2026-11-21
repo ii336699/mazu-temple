@@ -39,6 +39,7 @@ RIDE = {"sleepbag": "tent"}  # (models that ride inside another's -model.js: the
 for p in sorted(glob.glob(os.path.join(pub, "*.glb"))):
     n = os.path.basename(p)[:-4]
     if n in RIDE: continue
+    if n.endswith("-lite") and os.path.exists(os.path.join(pub, n[:-5] + ".glb")) and open(p, "rb").read() == open(os.path.join(pub, n[:-5] + ".glb"), "rb").read(): continue  # (identical to the full model: the page loads that one — LITE_SAME)
     js = f'window.GLB_{n.upper().replace("-", "_")}="{base64.b64encode(open(p, "rb").read()).decode()}";'
     for k, host in RIDE.items():
         if host == n and os.path.exists(os.path.join(pub, k + ".glb")): js += f'window.GLB_{k.upper()}="{base64.b64encode(open(os.path.join(pub, k + ".glb"), "rb").read()).decode()}";'

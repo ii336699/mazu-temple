@@ -1598,3 +1598,8 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - 森林沒陰影：樹下接觸陰影原本在斜坡上一律不畫（森林地面起伏，幾乎全被拿掉）→ 依地面坡度傾斜貼在地上，只有懸崖（坡度＞0.8）才不畫。
 - 巨神像碰撞：walkable 先擋巨神像底座（半徑取模型寬度的 0.32，最少 1.5 m）。模擬器沒有載到巨神像模型，未實測。
 - 水顏色岸邊不要太淺：dk 最小 .3。
+
+## 第 100 批（11/22 01:40，主委）
+- 兩層樓不做二樓：房間改 10×8（小屋 6×5）。房間鏡頭依房間對角線拉遠（need 用 hypot(RW,RD)/2）。
+- 音樂：森林 forestsong.mp3（主委 Moonlit Spring Magic）、女神泉 springsong.mp3（Floating Fairy Sanctuary），由 m4a 轉 mp3 112k。musicTick：女神泉 (104,−183) 24 m 內（離開到 30 m 才換回）→ spring；小鎮開著、z<−144（回到 −140 才換回）、x>−20 → forest；其他照舊。換歌沿用原本約 2 秒的淡入淡出。
+- 測試頁檔案上限：hats-lite.glb、weiqiangfar-lite.glb 跟完整版一模一樣 → publish_prep 不再產生它們的 -model.js，頁面 LITE_SAME 直接載完整版；空出 2 個位子給兩首歌。
