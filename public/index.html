@@ -14648,7 +14648,7 @@ const NPCS=[
   L:[["你看你看，蝴蝶！","我在等我的氣球飛回來。"],["我們來玩捉迷藏好不好？","晚上公園有螢火蟲喔。"],["這是我最寶貝的東西，借你看一下下。","你是我的好朋友！"],["我長大要跟你一樣厲害！"]],tip:"games"},
  {id:"doc",n:"博士",off:1,look:[0,18,5,13,2,4,0,0,3,0,0,1,0],sh:{leg:1.2,tor:1.08,w:.86,d:.86,head:1.02,arm:1.08},home:[45,-157],rad:3,sp:.7,coat:1,likes:["goldscale","dragonbream","oarfish","sunfish"],kind:"prof",
   L:[["嗯？你對自然有興趣嗎？","這片森林的泉水，是從天后山流下來的。"],["圖鑑做得怎麼樣了？","淡水魚跟海水魚，可是完全不一樣的喔。"],["流星掉下來的石頭，叫做隕石，很珍貴的。","你的觀察力很好。"],["你是我最得意的研究夥伴。"]],tip:"meteor"},
- {id:"pan",n:"小潘",look:[1,9,3,2,6,2,4,0,1,0,0,3,2],sh:{leg:1.04,tor:1,w:.92,d:.9,head:1.04,arm:1},home:[11.7,-86.8],rad:.5,sp:.3,likes:["bug","fossil"],kind:"collector", /* (11/21 主委「小潘不是站森林 他是收藏家的店員」: he minds 收藏家小屋 in the west lane, standing at its door) */
+ {id:"pan",n:"小潘",off:1,look:[1,9,3,2,6,2,4,0,1,0,0,3,2],sh:{leg:1.04,tor:1,w:.92,d:.9,head:1.04,arm:1},home:[11.7,-86.8],rad:.5,sp:.3,likes:["bug","fossil"],kind:"collector", /* (11/21 主委「小潘不是站森林 他是收藏家的店員」: he minds 收藏家小屋 in the west lane, standing at its door) */
   L:[["你身上有昆蟲嗎？給我看看！","我是收藏家小潘，昆蟲跟化石我都收。"],["傳說中的昆蟲，我只在書上看過……","挖到化石也可以拿來給我喔。"],["我的標本室快放不下了，嘿嘿。","你抓蟲的手法越來越熟練了。"],["你是我遇過最厲害的採集家！"]],tip:"games"}, /* (added at the end: NPCS order is part of the save code) (11/21 主委「昆蟲賣給收藏家 製作收藏家npc 小潘」) */
 ];
 const NB={}; NPCS.forEach(n=>NB[n.id]=n);
@@ -14955,6 +14955,8 @@ const KEEP={
  "tw:beauty":{ppl:[{n:"設計師 Kevin",v:"man",look:[0,27,9,1,0,5,0,10,0,3,0,0,2,1],sh:{leg:1.12,tor:1.04,w:.92,d:.9,head:.98,arm:1.04}}],mode:"pose",
    lines:[[0,"您好，請問有預約、有指定設計師嗎？"]],quick:[[0,"今天想換什麼風格呢？"]]},
 };
+KEEP["tw:soon:收藏家小屋"]={ppl:[{n:"小潘",v:"man",look:[1,9,3,2,6,2,4,0,1,0,0,3,2,0],sh:{leg:1.04,tor:1,w:.92,d:.9,head:1.04,arm:1}}],mode:"idle",
+  lines:[[0,"歡迎光臨！我是收藏家小潘。"],[0,"昆蟲、化石、古物、寶石……你身上有什麼寶貝嗎？"]],quick:[[0,"又帶了什麼好東西來？"]]}; /* (11/22 主委「收藏家要像之前的店一樣 能進去 進去後才跟他對話」: 小潘 inside his shop like every other keeper; the old 小潘 at the door is off) */
 /* ---------- 鎮民的個性 (11/16 主委): what each one likes and can't stand, and what they say when you give it to them.
    Tags an item can carry: its own id, "fish", "rare" (稀有 fish), "flowers"/"veg" (garden), "dish" (一粥七天), "bug", "fossil", "junk",
    "old" (dug-up old things), "sweet". A gift that is liked +5, neutral +3, disliked −2 (they take it, with a face). ---------- */
