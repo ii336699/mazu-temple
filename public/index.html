@@ -13385,7 +13385,7 @@ SW.build=C=>{ nmat(); lawnHole2(); const r=krng(5);
   
   /* (11/17 主委「我希望森林是上面都是樹葉 下面有陽光灑落的感覺」): tall trees whose crowns close over the paths, a shade darker */
   TREES.forEach(([x,z,s,k])=>{ const sc=s*(k?1.95:1.75)*(.85+r()*.4), ry=r()*6.283, kd=r()<.12?"maple":"deep"; (C.lpt||(C.lpt=[])).push([x,0,z,sc,1,ry,kd]); twTree({C,x,z,s:sc,pine:kd==="deep"}); }); /* (also a tree for the bugs to climb: 竹節蟲, beetles …) */
-  forestShafts(C,r); 
+  forestShafts(C,r); pathLamps(C,FPATH,8.5,1.9); pathLamps(C,FPATH2,8,1.7); pathLamps(C,FPATH3,8,1.7); /* (11/22 主委「不要把我路燈拔掉啊！」: the lamps stay where the trails were) */ 
   for(let k=0;k<60;k++){ const x=FOREST[0]+r()*(FOREST[1]-FOREST[0]), z=-174+r()*29; if(!SW.walk(x,z)) continue; if(pathD(x,z)<1.6) continue; if(r()<.5) mushroom(C,x,z,r); else if(r()<.5) put(C,gsph(),NM.bush,x,.25,z,.5,.32,.5); else flowers(C,r,x,z,.8,5); }
   /* (11/17 主委「路邊的木頭就不要做了」: no more cylinder logs) */
   NT.springs.slice(0,2).forEach(S=>springPool(C,S,r)); for(const [x,z] of [[55,-155],[88,-161.5],[70,-167.5]]) lantern(C,x,z);
@@ -13431,7 +13431,7 @@ function streamMesh(C){ const n=SPATH.length, P=[], UV=[], I=[]; let along=0; fo
 function footBridge(C){ const dx=WP2[1][0]-WP2[0][0], dz=WP2[1][1]-WP2[0][1], ang=Math.atan2(dx,dz); for(let k=-9;k<=9;k++){ const t=k*.5, x=FOOTB.x+Math.sin(ang)*t, z=FOOTB.z+Math.cos(ang)*t; put(C,GEO.b||(GEO.b=new T.BoxGeometry(1,1,1)),NM.wood,x,.06+.18*Math.cos(k/9*Math.PI/2),z,2.2,.07,.44,ang); }
   for(const sd of [-1.05,1.05]) for(let k=-4;k<=4;k++){ const t=k*1.1, x=FOOTB.x+Math.sin(ang)*t+Math.cos(ang)*sd, z=FOOTB.z+Math.cos(ang)*t-Math.sin(ang)*sd; put(C,GEO.b,NM.woodD,x,.5,z,.07,.75,.07,ang); }
   for(let k=-9;k<=9;k+=18){} }
-const WWD=(z0,z1)=>C=>{ nmat(); const r=krng(616+(z0|0)); if(z0>=-176) terrain(C,-104,14,z0,z1,southH,westC,.012); else if(z1<=-176) terrain(C,-104,21,z0,z1,southH,westC,.012); else { terrain(C,-104,14,-176,z1,southH,westC,.012); terrain(C,-104,21,z0,-176,southH,westC,.012); } /* (11/18 主委 (19.8, −193.3)「草皮明顯有斷層」: a block straddling −176 was laid only to x 14, leaving a 7 m hole by the mountain where the far backdrop showed through) */ pathRibbons(C,-104,z1>-176?14:21,z0,z1,[],(x,z)=>TW.ground(x,z)); /* (11/22 主委「小路刪掉 我自己畫」: the 西山 trails are no longer drawn) */ C.props=[-104,z1>-176?14:21,z0,z1,503+(z0|0),PROPOK];
+const WWD=(z0,z1)=>C=>{ nmat(); const r=krng(616+(z0|0)); if(z0>=-176) terrain(C,-104,14,z0,z1,southH,westC,.012); else if(z1<=-176) terrain(C,-104,21,z0,z1,southH,westC,.012); else { terrain(C,-104,14,-176,z1,southH,westC,.012); terrain(C,-104,21,z0,-176,southH,westC,.012); } /* (11/18 主委 (19.8, −193.3)「草皮明顯有斷層」: a block straddling −176 was laid only to x 14, leaving a 7 m hole by the mountain where the far backdrop showed through) */ pathRibbons(C,-104,z1>-176?14:21,z0,z1,[],(x,z)=>TW.ground(x,z)); /* (11/22 主委「小路刪掉 我自己畫」: the 西山 trails are no longer drawn) */ for(const P of WPS){ const Q=P.filter(q=>q[1]>=z0-4&&q[1]<z1+4&&q[0]<22); if(Q.length>1) pathLamps(C,Q,9,1.8); } C.props=[-104,z1>-176?14:21,z0,z1,503+(z0|0),PROPOK];
   WWT.forEach(([x,z,s])=>{ if(z<z0||z>=z1) return; (C.lpt||(C.lpt=[])).push([x,southH(x,z)-.1,z,s*(westMtn(x,z)>4?.85:1),1,r()*6.283,r()<.22?"leaf":"deep"]); });
   for(let k=0;k<(z1-z0)*4;k++){ const x=-102+r()*122, z=z0+r()*(z1-z0); if(x>14&&z>-176) continue; if(x>21) continue; if(wpD(x,z)<1.4||s1D(x,z)<3.8) continue; const h=southH(x,z), q=r(); if(h>6) continue; if(q<.72) tuft(C,r,x,h,z,.5+r()*.6); else if(q<.88) mossRock(C,r,x,h-.15,z,.5+r()*1.1,r()<.7); else starFlower(C,r,x,h,z,.7+r()*.4); }
   for(let k=0;k<(z1-z0)*.6;k++){ const i=(r()*SPATH.length)|0, p=SPATH[i]; if(p[1]<z0||p[1]>=z1) continue; const q=SPATH[Math.min(SPATH.length-1,i+1)], dx=q[0]-p[0], dz=q[1]-p[1], L=Math.hypot(dx,dz)||1, sd=r()<.5?-1:1, d=3.6+r()*.8; const x=p[0]-dz/L*d*sd, z=p[1]+dx/L*d*sd; if(onFootB(x,z)) continue; if(r()<.6) reeds(C,r,x,z); else rock(C,r,x,-.3,z,.3+r()*.4); }
@@ -13472,7 +13472,7 @@ NCH.push({id:"gspring",c:[110,-245],r:48,build:C=>{ nmat(); const r=krng(717), S
   /* the chair's stone shrine, by the pool, facing it — (11/17 主委「原本擺放的神社為什麼選不了」) the map editor can pick it, move it or take it away */
   if(!MD.gone(GSHRINE[0],GSHRINE[1])){ const sr=Math.atan2(WF.x-GSHRINE[0],WF.z-GSHRINE[1]); (C.gen||(C.gen=[])).push({k:"shrine",x:GSHRINE[0],z:GSHRINE[1],s:1,r:sr});
     loadRaw("shrine",false,o=>{ if(!C.g.parent&&C.g.userData.gone) return; o.position.set(GSHRINE[0],gH(GSHRINE[0],GSHRINE[1])-.05+MD.h(GSHRINE[0],GSHRINE[1]),GSHRINE[1]); o.rotation.y=sr; shrineStone(o); o.traverse(m=>{ if(m.isMesh){ m.castShadow=false; m.userData.keep=1; } }); o.userData.noMerge=1; C.g.add(o); }); }
-  lantern(C,86.6,-253.9,gH(86.6,-253.9)); lantern(C,84.3,-246.9,gH(84.3,-246.9)); fireflies(C,40,WF.x-3,WF.z-2,10,8); }});
+  pathLamps(C,WP1.filter(q=>q[0]>18),9,1.8); lantern(C,86.6,-253.9,gH(86.6,-253.9)); lantern(C,84.3,-246.9,gH(84.3,-246.9)); fireflies(C,40,WF.x-3,WF.z-2,10,8); }});
 NCH.push({id:"forest",c:[66,-160],r:50,build:C=>SW.build(C)},{id:"mount",c:[66,-212],r:44,build:C=>SW.buildMt(C)});
 NCH.push({id:"east",c:[165,-90],r:55,build:C=>{ nmat(); const r=rng(31); eastBuild(C,-140,-40);
   }},{id:"east2",c:[165,-200],r:66,build:C=>{ nmat(); eastBuild(C,-262,-140); const r=rng(57);
@@ -14007,7 +14007,7 @@ const FISH=[
  ["sturgeon","鱘龍魚","r",3,"3","rain",[100,200],2000,6,["#5a6470","#c8ccd0","#3a4048"],"plates","下雨的夜晚，大河深處的古老大魚。"],
  ["medaka","青鱂魚","s",1,"","",[3,5],45,1,["#b8c8c0","#f0f4f0","#7ab0d0"],"plain","泉水裡一群群的小魚，眼睛亮晶晶。"],
  ["angel","七彩神仙","s",2,"","",[10,18],380,2,["#4a8ad0","#f0c060","#e8604a"],"stripe","不知道誰放的，在泉池裡活得好好的。"],
- ["springkoi","泉之錦鯉","sg",3,"12","",[50,90],6000,4,["#f2c230","#fff6d0","#ffffff"],"koi","全身金黃，只在泉池出現。"],
+ ["springkoi","泉之錦鯉","sg",3,"12","",[50,90],1800,4,["#f2c230","#fff6d0","#ffffff"],"koi","全身金黃，只在泉池出現。"],
  ["goldscale","金鱗仙魚","g",4,"3","star",[60,100],8000,5,["#ffd84a","#fff6c8","#ffffff"],"glow","流星夜，女神泉裡會游出一條會發光的魚。"],
  ["mackerel","竹筴魚","o",1,"","",[15,30],50,2,["#5a7a9a","#e8eef4","#8aa0b8"],"line","海邊最常釣到的魚。"],
  ["seabream","黑鯛","o",1,"","",[20,45],120,3,["#4a5058","#c0c4c8","#2a3038"],"bars","海邊石頭旁的老朋友。"],
