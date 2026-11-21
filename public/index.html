@@ -13596,25 +13596,35 @@ function zoneForget(){ if(ZN.off) return; if(hid.length){ hid.forEach(M=>{ M.vis
    the gods, shop rooms…) is hidden and freed. Which is which is found on the phone itself, once: every temple piece is drawn in its own flat
    colour from 34 places outside (all round at eye height and higher, from the town, the beach and the mountain top) and whatever shows up
    in any of those pictures is "outside". */
-let ZEXT=null;
-function exteriorSet(cands){ if(ZEXT) return ZEXT; const vis=new Set(); const rt=new T.WebGLRenderTarget(160,160,{depthBuffer:true}); const px=new Uint8Array(160*160*4);
-  const saved=[], mats=[]; cands.forEach((o,i)=>{ const id=i+1, c=new T.Color(((id>>16)&255)/255,((id>>8)&255)/255,(id&255)/255); const m=new T.MeshBasicMaterial({color:c,fog:false,toneMapped:false,side:T.DoubleSide}); mats.push(m); saved.push([o,o.material,o.layers.mask,o.instanceColor]); o.material=m; o.layers.set(5); if(o.instanceColor) o.instanceColor=null; });
-  const cam=new T.PerspectiveCamera(62,1,.5,700); cam.layers.set(5); const C=new T.Vector3(0,4,-12); const views=[];
-  for(let k=0;k<16;k++){ const a=k/16*Math.PI*2; for(const [r,h] of [[48,2.5],[62,16]]) views.push([C.x+Math.cos(a)*r,h,C.z+Math.sin(a)*r]); }
-  views.push([66,42,-205],[28,8,-90]); /* (the mountain top looking down, the town looking back) */
+let ZEXT=null, ZEXJ=null; window.MZ_ZEXTRUN=()=>{ let n=0; while(!exteriorJob()&&n++<99); return n; }; window.MZ_ZEXT=()=>ZEXT?[ZN.off,TW.farTown,TW.farHi,ZN.busy,ZN.far.length,ZEXT.size,ZEXT.seen?ZEXT.seen.size:0,(ZEXT.un||[]).length,(ZEXT.un||[]).slice(0,12).map(o=>(o.name||o.parent&&o.parent.name||o.type)+":"+(o.geometry.attributes.position.count)).join(",")]:ZEXJ?"job "+ZEXJ.k:null;
+/* the views: around the temple at two heights, the mountain top looking down, the town looking back */
+function extViews(){ const C=new T.Vector3(0,4,-12), views=[]; for(let k=0;k<16;k++){ const a=k/16*Math.PI*2; for(const [r,h] of [[48,2.5],[62,16]]) views.push([C.x+Math.cos(a)*r,h,C.z+Math.sin(a)*r]); } views.push([66,42,-205],[28,8,-90]); return {C,views}; }
+function extMats(cands){ return cands.map((o,i)=>{ const id=i+1; return new T.MeshBasicMaterial({color:new T.Color(((id>>16)&255)/255,((id>>8)&255)/255,(id&255)/255),fog:false,toneMapped:false,side:T.DoubleSide}); }); }
+/* draw the given views with each candidate in its own flat id colour and note which ids show up */
+function extRender(cands,mats,views,C,rt,px,vis){ const saved=[]; cands.forEach((o,i)=>{ saved.push([o,o.material,o.layers.mask,o.instanceColor]); o.material=mats[i]; o.layers.set(5); if(o.instanceColor) o.instanceColor=null; });
+  const cam=new T.PerspectiveCamera(62,1,.5,700); cam.layers.set(5);
   const r0=renderer.getRenderTarget(), bg=scene.background, oc=renderer.getClearColor(new T.Color()), oa=renderer.getClearAlpha(); scene.background=null; renderer.setClearColor(0x000000,1);
   try{ for(const v of views){ cam.position.set(v[0],v[1],v[2]); cam.lookAt(C); cam.updateMatrixWorld(); renderer.setRenderTarget(rt); renderer.clear(); renderer.render(scene,cam); renderer.readRenderTargetPixels(rt,0,0,160,160,px);
       for(let i=0;i<px.length;i+=4){ const id=(px[i]<<16)|(px[i+1]<<8)|px[i+2]; if(id) vis.add(id-1); } } }
-  finally{ renderer.setRenderTarget(r0); scene.background=bg; renderer.setClearColor(oc,oa); saved.forEach(([o,m,l,ic])=>{ o.material=m; o.layers.mask=l; if(ic) o.instanceColor=ic; }); mats.forEach(m=>m.dispose()); rt.dispose(); }
-  ZEXT=new Set(); vis.forEach(i=>{ if(cands[i]) ZEXT.add(cands[i]); }); return ZEXT; }
-function zoneFar(level){ ZN.far.forEach(o=>{ o.visible=true; }); ZN.far=[]; if(!level) return; scene.updateMatrixWorld(true);
-  const live=new Set(Object.values(LIVE).map(C=>C.g)), bb=new T.Box3();
+  finally{ renderer.setRenderTarget(r0); scene.background=bg; renderer.setClearColor(oc,oa); saved.forEach(([o,m,l,ic])=>{ o.material=m; o.layers.mask=l; if(ic) o.instanceColor=ic; }); } }
+function extDone(cands,vis){ ZEXT=new Set(); ZEXT.seen=new Set(cands); vis.forEach(i=>{ if(cands[i]) ZEXT.add(cands[i]); }); return ZEXT; }
+function exteriorSet(cands){ if(ZEXT) return ZEXT; const vis=new Set(), rt=new T.WebGLRenderTarget(160,160,{depthBuffer:true}), px=new Uint8Array(160*160*4), mats=extMats(cands), V=extViews();
+  try{ extRender(cands,mats,V.views,V.C,rt,px,vis); } finally{ mats.forEach(m=>m.dispose()); rt.dispose(); } return extDone(cands,vis); }
+/* (11/21 14:29 主委 crashed the moment the temple was trimmed walking into town: doing all 34 views in one frame — tens of thousands of draws and 34 read-backs — is too much for the phone.
+   On phones in the open world it is worked out ahead, one view every few frames while you are still in the temple, and the temple is only trimmed once it is ready) */
+function exteriorJob(){ if(ZEXT) return true; if(!ZEXJ){ scene.updateMatrixWorld(true); const cands=farCands(), V=extViews(); ZEXJ={cands,V,k:0,vis:new Set(),rt:new T.WebGLRenderTarget(160,160,{depthBuffer:true}),px:new Uint8Array(160*160*4),mats:extMats(cands)}; return false; }
+  const J=ZEXJ; extRender(J.cands,J.mats,[J.V.views[J.k]],J.V.C,J.rt,J.px,J.vis); J.k++;
+  if(J.k>=J.V.views.length){ J.mats.forEach(m=>m.dispose()); J.rt.dispose(); ZEXJ=null; extDone(J.cands,J.vis); return true; } return false; }
+function farCands(){ const live=new Set(Object.values(LIVE).map(C=>C.g)), bb=new T.Box3();
   const stay=o=>{ for(let p=o;p&&p!==scene;p=p.parent){ const u=p.userData||{}; if(live.has(p)||u.isAvatar||u.zoneKeep||p===sky) return true; } return false; };
   const PH=typeof Q!=="undefined"&&Q.phone, cands=[];
   scene.traverse(o=>{ if(!o.isMesh||!o.visible||!o.geometry||stay(o)) return; let vv=true; for(let p=o.parent;p;p=p.parent) if(!p.visible){ vv=false; break; } if(!vv) return; const m=Array.isArray(o.material)?o.material[0]:o.material; if(!m||(m.isShaderMaterial&&!PH)) return;
     const g=o.geometry; if(!g.boundingBox) g.computeBoundingBox(); if(g.boundingBox.isEmpty()) return; bb.copy(g.boundingBox).applyMatrix4(o.matrixWorld); if(bb.min.z<=-53) return; cands.push(o); });
+  return cands; }
+function zoneFar(level){ ZN.far.forEach(o=>{ o.visible=true; }); ZN.far=[]; if(!level) return; scene.updateMatrixWorld(true);
+  const PH=typeof Q!=="undefined"&&Q.phone, cands=farCands();
   let ext=null; if(PH){ try{ ext=exteriorSet(cands); }catch(e){ console.warn("exterior",e); } }
-  for(const o of cands){ const hide=PH?(ext?!ext.has(o):true):(level==="f"||(o.isInstancedMesh&&o.count>1000)||o.isSkinnedMesh); if(hide){ o.visible=false; ZN.far.push(o); } }
+  for(const o of cands){ if(PH&&ext&&ext.seen&&!ext.seen.has(o)) (ext.un||(ext.un=[])).push(o); const hide=PH?(ext?(ext.seen&&!ext.seen.has(o)?false:!ext.has(o)):true):(level==="f"||(o.isInstancedMesh&&o.count>1000)||o.isSkinnedMesh); if(hide){ o.visible=false; ZN.far.push(o); } }
   if(PH&&ZN.far.length){ const keepG=new Set(), keepT=new Set(), tx=(mm,S)=>{ if(!mm) return; for(const k in mm){ const t=mm[k]; if(t&&t.isTexture) S.add(t); } };
     scene.traverse(o=>{ if(!o.visible||!o.geometry) return; let v=true; for(let p=o.parent;p;p=p.parent) if(!p.visible){ v=false; break; } if(!v) return; keepG.add(o.geometry); (Array.isArray(o.material)?o.material:[o.material]).forEach(mm=>tx(mm,keepT)); });
     const gT=new Set(); ZN.far.forEach(o=>{ if(!keepG.has(o.geometry)) try{ o.geometry.dispose(); }catch(e){} if(o.isInstancedMesh&&o.dispose) try{ o.dispose(); }catch(e){} (Array.isArray(o.material)?o.material:[o.material]).forEach(mm=>tx(mm,gT)); });
@@ -13653,7 +13663,8 @@ TW.tick=dt=>{ if(((TW.fcN=(TW.fcN||0)+1)%4)===0) try{ fcScan(); }catch(e){} /* (
      and right after each build the page asks the graphics card whether it ran out; if so the farthest districts go and this one is
      built again. */
   if(TW.chk){ const id=TW.chk; TW.chk=null; try{ const gl=renderer.getContext(), e=gl.getError(); if(e===gl.OUT_OF_MEMORY){ TW.oom=(TW.oom||0)+1; if(TW.oom===1) try{ toast("手機的顯示記憶體不夠了，先少畫一些遠處的建築",3200); }catch(e){} (TW.loadErr||(TW.loadErr=[])).push(id+": 顯示記憶體不足"); const far=Object.keys(LIVE).filter(k=>k!==id).map(k=>{ const d=CH.find(q=>q.id===k); return [k,d?Math.hypot(px-d.c[0],pz-d.c[1])-d.r:0]; }).sort((a,b)=>b[1]-a[1]); far.slice(0,2).forEach(f=>unload(f[0])); unload(id); TW.lr=Math.max(30,(TW.lr||LR0[0])-8); } }catch(e){} }
-  if(!ZONES&&typeof Q!=="undefined"&&Q.phone&&!ZN.busy&&ZN.off){ const pz=meAv.pos.y; TW.farTown=pz<-62?1:pz>-56?0:TW.farTown; const hi=!!TW.high||!!TW.farTown; /* (11/21 14:12 主委 閃退紀錄 in town (28,−102): the whole temple still in memory — 329 textures, 2572 models, 1.55 M triangles. Out in the town too, keep only the temple pieces seen from outside) */ if(hi!==!!TW.farHi){ TW.farHi=hi; try{ zoneFar(hi?"f":0); }catch(e){} } } /* (11/21 01:41 主委 iPhone 在山頂掛（93 萬三角形、18 區）: on phones, while on the mountain top or gliding, the temple 250 m away is not drawn and is freed from the graphics card) */
+  if(!ZONES&&typeof Q!=="undefined"&&Q.phone&&!ZEXT&&!ZN.busy&&(performance.now()>25e3||meAv.pos.y<-40)){ TW.extF=(TW.extF||0)+1; if(TW.extF%6===0) try{ exteriorJob(); }catch(e){ console.warn("exterior job",e); ZEXJ=null; } }
+  if(!ZONES&&typeof Q!=="undefined"&&Q.phone&&!ZN.busy&&ZN.off){ const pz=meAv.pos.y; TW.farTown=pz<-62?1:pz>-56?0:TW.farTown; let hi=!!TW.high||!!TW.farTown; if(hi&&!ZEXT) hi=false; /* (not ready yet: keep the whole temple a moment longer) */ /* (11/21 14:12 主委 閃退紀錄 in town (28,−102): the whole temple still in memory — 329 textures, 2572 models, 1.55 M triangles. Out in the town too, keep only the temple pieces seen from outside) */ if(hi!==!!TW.farHi){ TW.farHi=hi; try{ zoneFar(hi?"f":0); }catch(e){} } } /* (11/21 01:41 主委 iPhone 在山頂掛（93 萬三角形、18 區）: on phones, while on the mountain top or gliding, the temple 250 m away is not drawn and is freed from the graphics card) */
   if(!ZONES){ const LR=TW.high?((typeof Q!=="undefined"&&Q.phone)?[150,180]:[300,360]):[TW.lr||LR0[0],LR0[1]]; /* (phones: the panorama reaches 150 m — the town and the forest, not the far west and east ends) */ for(let rep=TW.high?3:1;rep>0;rep--){ let near=null, nd=LR[0]; for(const d of CH){ const dist=Math.hypot(px-d.c[0],pz-d.c[1])-d.r; if(!LIVE[d.id]){ if(dist<nd){ nd=dist; near=d; } } else if(dist>LR[1]) unload(d.id); } if(near){ if(typeof Q!=="undefined"&&Q.phone&&!TW.high){ const tn=performance.now(); if(ZN.busy||tn<(TW.nextLd||0)) break; TW.nextLd=tn+400; } load(near); TW.chk=near.id; } else break; } } /* (11/18 phones: one district every 0.4 s, and none while the temple side is being put away at the 禪房 door — the memory peak there is what took the 3D away) */ /* (on the top of 天后山 and while gliding down: every district of the village, three at a time — 主委 11/16「在山頂要能看到村莊全景，確保全部建築都有出現」) */ /* (the nearest district first, 11/16) */
   if(TW.on&&!greeted&&pz<-56){ greeted=true; try{ toast("🏮 歡迎來到天后小鎮",2600); statInc("townIn"); }catch(e){} } if(!TW.on&&pz>-40) greeted=false; };
 /* ---- things you can walk up to ---- */
