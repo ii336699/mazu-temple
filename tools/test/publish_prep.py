@@ -35,8 +35,14 @@ for p in sorted(glob.glob(os.path.join(pub, "**", "*"), recursive=True)):
     r = os.path.relpath(p, pub)
     if r == "index.html" or r.endswith(".glb") or r.split("/")[0] in skip_dirs or r in PACK_FILES or r == "room/f/catalog.json": continue
     dst = os.path.join(T, r[:-4] + ".mp4" if r.endswith(".m4a") else r); os.makedirs(os.path.dirname(dst), exist_ok=True); shutil.copy(p, dst)
+RIDE = {"sleepbag": "tent"}  # (models that ride inside another's -model.js: the test page is at its 511-file limit; the page loads the host first)
 for p in sorted(glob.glob(os.path.join(pub, "*.glb"))):
-    n = os.path.basename(p)[:-4]; open(os.path.join(T, n + "-model.js"), "w").write(f'window.GLB_{n.upper().replace("-", "_")}="{base64.b64encode(open(p, "rb").read()).decode()}";')
+    n = os.path.basename(p)[:-4]
+    if n in RIDE: continue
+    js = f'window.GLB_{n.upper().replace("-", "_")}="{base64.b64encode(open(p, "rb").read()).decode()}";'
+    for k, host in RIDE.items():
+        if host == n and os.path.exists(os.path.join(pub, k + ".glb")): js += f'window.GLB_{k.upper()}="{base64.b64encode(open(os.path.join(pub, k + ".glb"), "rb").read()).decode()}";'
+    open(os.path.join(T, n + "-model.js"), "w").write(js)
 fd = os.path.join(pub, "room", "f")
 if os.path.isdir(fd):
     kinds = sorted({re.sub(r"\d+$", "", os.path.basename(p)[:-4]) for p in glob.glob(os.path.join(fd, "*.glb"))})

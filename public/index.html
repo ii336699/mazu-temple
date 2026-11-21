@@ -2905,7 +2905,7 @@ const SAKURA={};
        across the stream's mouth like a green bar over the water. One L-shaped hole now) */ const P=[[-149.3,-132.1],[133.75,-132.1],[133.75,-142.9],[13.3,-142.9],[13.3,-261.3],[-103.3,-261.3],[-103.3,-142.9],[-149.3,-142.9]]; const h=new T.Path(); P.slice().reverse().forEach(([x,z],i)=>h[i?"lineTo":"moveTo"](x,-z)); h.closePath(); sh.holes.push(h); }
     { const P=[[-103.3,-262.6],[134.5,-262.6],[134.5,-299.3],[-103.3,-299.3]]; const h=new T.Path(); P.slice().reverse().forEach(([x,z],i)=>h[i?"lineTo":"moveTo"](x,-z)); h.closePath(); sh.holes.push(h); } /* (the new north strip, 11/17 晚) */
     { /* (11/18 主委「女神泉旁邊河流為什麼斷掉了」: the lawn under the map still covered x 111–134.5 south of −176, and lay over the brook's
-       carved bed between 女神泉 and the river — the mountain's hole and this strip are one L-shaped hole now) */ const P=[[14.7,-176.7],[110.8,-176.7],[110.8,-216.5],[112.2,-216.5],[112.2,-176.7],[133.8,-176.7],[133.8,-261.9],[112.2,-261.9],[112.2,-225],[110.8,-225],[110.8,-256.3],[20.3,-256.3],[20.3,-261.3],[14.7,-261.3]]; /* (lawn kept under the seam at x 111.5 between 女神泉's ground and the east river's, except where the brook crosses it) */ const h=new T.Path(); P.slice().reverse().forEach(([x,z],i)=>h[i?"lineTo":"moveTo"](x,-z)); h.closePath(); sh.holes.push(h); }
+       carved bed between 女神泉 and the river — the mountain's hole and this strip are one L-shaped hole now) */ const P=[[14.7,-176.7],[110.8,-176.7],[110.8,-216.5],[112.2,-216.5],[112.2,-176.7],[135.15,-176.7],[135.15,-261.9],[112.2,-261.9],[112.2,-225],[110.8,-225],[110.8,-256.3],[20.3,-256.3],[20.3,-261.3],[14.7,-261.3]]; /* (11/21 主委 at (132.6,−198.1) 「河邊有個草皮破圖」: the hole stopped at x 133.8 and the lawn's last 1.4 m lay over the east brook's bed as a green bar — the hole now runs to 5 cm short of the lawn's edge) /* (lawn kept under the seam at x 111.5 between 女神泉's ground and the east river's, except where the brook crosses it) */ const h=new T.Path(); P.slice().reverse().forEach(([x,z],i)=>h[i?"lineTo":"moveTo"](x,-z)); h.closePath(); sh.holes.push(h); }
     for(let [x0,x1,z0,z1] of [[14,118,-176,-143.6]]){ /* (+ 女神谷, 11/17) */ z1=Math.min(z1,ZT-.1); { const e=.7; x0+=e; x1-=e; z0+=e; if(z1<ZT-1) z1-=e; } /* (the holes are a little smaller than the ground that fills them, so its edge always lies on the lawn — no dark crack) */ const h=new T.Path(); h.moveTo(x0,-z1); h.lineTo(x0,-z0); h.lineTo(x1,-z0); h.lineTo(x1,-z1); h.closePath(); sh.holes.push(h); }
     const g=mesh(new T.ShapeGeometry(sh),m); g.rotation.x=-Math.PI/2; g.position.set(0,-.06,0); g.userData.noMerge=1; g.receiveShadow=true; window.BASEG=g; window.BASESAND=[]; /* (11/16: you can walk on it now, so it stays just under the roads) */
     const sand=new T.MeshStandardMaterial({color:"#e3cf9e",roughness:.95}); for(const [z0,z1] of []){ /* (no sand strips: the sea is in front of the temple now, 11/16) */ const q=mesh(new T.PlaneGeometry(200-142,z1-z0),sand); q.rotation.x=-Math.PI/2; q.position.set((142+200)/2,-.045,(z0+z1)/2); q.userData.noMerge=1; window.BASESAND.push(q); /* (runs on under the sea: no black gap past the wall) */ }
@@ -12852,7 +12852,7 @@ const W_VS=`attribute vec3 aW; varying vec3 vW; varying vec3 vA; void main(){ vA
 const W_FS=`uniform float uT; uniform float uNight; uniform float uRain; uniform sampler2D uRip; uniform vec3 uDeep; uniform vec3 uShal; uniform vec3 uFoamC; uniform vec3 uSun; uniform vec4 uWP; uniform vec4 uWP2; uniform vec4 uRp[8];
 varying vec3 vW; varying vec3 vA;
 float h21(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
-void main(){ float D=vA.z; vec2 fl=vA.xy; float t=uT*uWP.y; vec2 p=vW.xz*uWP.z;
+void main(){ float D=vA.z; vec2 fl=vec2(.25,.08); /* (11/21 主委「所有河水都統一 不要有不同的水池貼圖 或不同流動狀態」: one gentle drift for every water, not each river's own flow) */ float t=uT*uWP.y; vec2 p=vW.xz*uWP.z;
   vec4 A=texture2D(uRip,p*.07+fl*t*.05+vec2(t*.008,t*.005));
 #if WQ>0
   vec4 B=texture2D(uRip,mat2(.8,-.6,.6,.8)*p*.11+vec2(-t*.007,t*.010)+fl*t*.03); vec2 n=A.xy+B.xy-1.; float hh=(A.a+B.a)*.5;
@@ -12869,7 +12869,7 @@ void main(){ float D=vA.z; vec2 fl=vA.xy; float t=uT*uWP.y; vec2 p=vW.xz*uWP.z;
   vec3 N=normalize(vec3(n.x*.7*uWP.x,1.,n.y*.7*uWP.x)); vec3 V=normalize(cameraPosition-vW); float ndv=clamp(dot(N,V),0.,1.);
   float fr=(.02+.98*pow(1.-ndv,5.))*uWP2.x; vec3 R=reflect(-V,N); float up=clamp(R.y,0.,1.);
   vec3 sky=mix(vec3(.80,.89,.94),vec3(.38,.62,.88),pow(up,.6)); sky=mix(sky,vec3(.6,.64,.68),uRain*.7); sky=mix(sky,vec3(.05,.08,.15),uNight);
-  float dk=.55; /* (11/18 10:50 主委「水都用一樣的顏色，不要有這種斷層」: the colour no longer looks at the depth or the bank at all — every water, everywhere, is one colour) */ /* (a bank mask, not the real depth: soft teal at the edge, lake blue from 70 cm in — so every river, stream and pond is the same colour in the middle, 11/18) */ vec3 body=mix(uShal,uDeep,dk)*(.88+.24*hh); /* (11/18 主委「河不一樣顏色是因為深度不同，我要一樣顏色，把深度挖到一樣」: every water reads as 1.2 m deep — one colour for all rivers, streams, springs and dug water; only the last 35 cm at the bank still fades out) */
+  float dk=mix(.12,.9,smoothstep(.05,1.1,D)); /* (11/21 主委「河水邊緣淡藍色 中間深藍一點 做出水池深淺顏色色差」: light at the banks, deeper blue towards the middle, the same rule for every water) */ /* (11/18 10:50 主委「水都用一樣的顏色，不要有這種斷層」: the colour no longer looks at the depth or the bank at all — every water, everywhere, is one colour) */ /* (a bank mask, not the real depth: soft teal at the edge, lake blue from 70 cm in — so every river, stream and pond is the same colour in the middle, 11/18) */ vec3 body=mix(uShal,uDeep,dk)*(.88+.24*hh); /* (11/18 主委「河不一樣顏色是因為深度不同，我要一樣顏色，把深度挖到一樣」: every water reads as 1.2 m deep — one colour for all rivers, streams, springs and dug water; only the last 35 cm at the bank still fades out) */
   vec3 c=mix(body,sky,clamp(fr,0.,.85));
   float sd=max(dot(R,uSun),0.); float sp=(pow(sd,220.)*.55+pow(sd,36.)*.07)*uWP2.y*(1.-uNight)*(1.-uRain*.8); /* (soft sun glints, no hard white sparks) */
   float mo=pow(max(dot(R,normalize(vec3(.3,.55,-.78))),0.),320.)*uNight*1.4;
@@ -13309,7 +13309,7 @@ function pathRibbons(C,x0,x1,z0,z1,lines,hf){ const P=[], UV=[], I=[]; let base=
     for(let i=0;i<S.length;i++){ const p=S[i], q=S[Math.min(i+1,S.length-1)], o=S[Math.max(i-1,0)]; let dx=q[0]-o[0], dz=q[1]-o[1]; const L=Math.hypot(dx,dz)||1; dx/=L; dz/=L; if(i>0) along+=Math.hypot(p[0]-S[i-1][0],p[1]-S[i-1][1]);
       const inside=p[0]>x0-.5&&p[0]<x1+.5&&p[1]>z0-.5&&p[1]<z1+.5&&(!keep||keep(p[0],p[1])); if(!inside){ flush(); continue; } (run||(run=[])).push({x:p[0],z:p[1],px:-dz,pz:dx,hw:hw*(1+.08*Math.sin(along*.37)),v:along/2.2}); }
     flush(); }
-  if(!I.length) return; const g=new T.BufferGeometry(); g.setAttribute("position",new T.Float32BufferAttribute(P,3)); g.setAttribute("uv",new T.Float32BufferAttribute(UV,2)); g.setIndex(I); g.computeVertexNormals();
+  if(!I.length) return; const g=new T.BufferGeometry(); g.setAttribute("position",new T.Float32BufferAttribute(P,3)); g.setAttribute("uv",new T.Float32BufferAttribute(UV,2)); for(let t=0;t<I.length;t+=3){ const a=I[t]*3, b=I[t+1]*3, c=I[t+2]*3, ux=P[b]-P[a], uz=P[b+2]-P[a+2], vx=P[c]-P[a], vz=P[c+2]-P[a+2]; if(uz*vx-ux*vz<0){ const q=I[t+1]; I[t+1]=I[t+2]; I[t+2]=q; } } g.setIndex(I); g.computeVertexNormals(); /* (11/21 主委「森林的路…原本的路怎麼不見了」: a strip laid out walking one way faced down and was culled from above — every path running east was invisible; each triangle is now turned to face up) */
   const m=new T.Mesh(g,new T.MeshLambertMaterial({map:pathTex(),transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3})); m.renderOrder=1; m.userData.keep=1; m.userData.own=1; m.userData.noMerge=1; m.raycast=()=>{}; C.g.add(m); }
 /* 森林小物 (11/18 主委's HigherPoly Forest Props pack): the pack's fallen log, mossy rocks with ferns, mushrooms (blue and red) and
    wildflowers — three variants of each, cut apart and lightened (props.glb, vertex colours) — scattered at random through the woods,
@@ -13722,6 +13722,7 @@ TW.station=k=>{ if(k.indexOf("tw:")!==0) return false; try{ if(typeof LIFE!=="un
   if(k.indexOf("tw:bed:")===0){ toast("🌱 花圃準備中：之後每個人都能在這裡種自己的花",3000); return true; }
   if(k.indexOf("tw:lot:")===0){ try{ LIFE.lot(+k.slice(7)); }catch(e){ console.warn("lot",e); } return true; }
   if(k.indexOf("tw:house:")===0){ toast("🏠 這是鄰居的家",2000); return true; }
+  if(k==="tw:soon:收藏家小屋"){ try{ HANDLERS.lfBugCol(); }catch(e){} return true; } /* (小潘's shop: bugs, fossils, old things, gems) */
   if(k.indexOf("tw:soon:")===0){ toast(`${k.slice(8)}還在準備中`,2400); return true; }
   return true; };
 HANDLERS.twBus=v=>{ closeSheet(); if(v==="inn") warp(28,INN.G); else { const c=[0,HZ+6]; warp(c[0],c[1]); } try{ toast(v==="inn"?"🚌 到禪房門口了":"🚌 回到天后宮了",2200); }catch(e){} };
@@ -14358,11 +14359,11 @@ let FSEL=new Set();
 function sellSheet(kind){ const d=LF(), sd=sellDay("fsD"), left=Math.max(0,SELL_DAY-sd.n); FSEL=new Set([...FSEL].filter(i=>i<d.inv.length)); while(FSEL.size>left) FSEL.delete([...FSEL].pop());
   if(!d.inv.length) return `<p class="note">背包裡還沒有魚。</p>`;
   const tot=[...FSEL].reduce((a,i)=>a+price(FBY[d.inv[i][0]],d.inv[i][1]),0);
-  return `<p class="note">每天最多賣 ${SELL_DAY} 條（今天還能賣 <b>${left}</b> 條）。點魚選要賣的；賣完之後，沒選的魚阿財伯會放回河裡跟海裡，從背包拿掉。要送人、做委託、煮菜的魚，先別拿來賣。</p>`+
+  return `<p class="note">每天最多賣 ${SELL_DAY} 條（今天還能賣 <b>${left}</b> 條）。點魚選要賣的。<b>賣了之後，其餘的魚都會馬上放生喔！</b>要送人、做委託、煮菜的魚，先別拿來賣。</p>`+
     d.inv.map(([id,sz],i)=>{ const f=FBY[id], on=FSEL.has(i); return `<div class="lf-row" style="${on?"background:#fff3cf;border-radius:12px":""}"><img src="${fishIcon(id)}" alt=""><div class="t"><b>${f.n}</b>　${sz|0} 公分<br><small>${RN[f.r]}・${price(f,sz)} 平安幣</small></div><button class="${on?"primary":"secondary"}" data-act="lfFsel" data-v="${i}" ${!on&&FSEL.size>=left?"disabled":""}>${on?"✓ 要賣":"選"}</button></div>`; }).join("")+
     `<div class="row" style="margin-top:8px"><button class="primary" data-act="lfFsellGo" ${FSEL.size?"":"disabled"}>賣出選的 ${FSEL.size} 條・${tot} 幣</button></div>`; }
 HANDLERS.lfFsel=v=>{ const i=+v, left=SELL_DAY-sellDay("fsD").n; if(FSEL.has(i)) FSEL.delete(i); else if(FSEL.size<left) FSEL.add(i); tackle(); };
-HANDLERS.lfFsellGo=()=>{ const d=LF(), sd=sellDay("fsD"); if(!FSEL.size) return; let got=0, n=0; const keep=[]; d.inv.forEach((e,i)=>{ if(FSEL.has(i)&&sd.n+n<SELL_DAY){ got+=price(FBY[e[0]],e[1]); n++; } else keep.push(e); });
+HANDLERS.lfFsellGo=(ok)=>{ const d=LF(), sd=sellDay("fsD"); if(!FSEL.size) return; if(ok!=="ok"&&d.inv.length>FSEL.size){ openSheet("lfFsure","🎣 釣具行",`<p class="lead">阿財伯：「賣了之後其餘的魚都會馬上放生喔，確定要賣嗎？」</p><p class="note">要賣 ${FSEL.size} 條，放生 ${d.inv.length-FSEL.size} 條。</p><div class="row"><button class="primary" data-act="lfFsellGo" data-v="ok">確定要賣</button><button class="secondary" data-act="lfTk" data-v="sell">再想想</button></div>`); return; } let got=0, n=0; const keep=[]; d.inv.forEach((e,i)=>{ if(FSEL.has(i)&&sd.n+n<SELL_DAY){ got+=price(FBY[e[0]],e[1]); n++; } else keep.push(e); });
   const rel=keep.length; d.inv=[]; FSEL=new Set(); sd.n+=n; bag.coins+=got; save(); try{ profSave(true); chaChing(); }catch(e){}
   openSheet("lfFsold","🎣 釣具行",`<p class="lead">阿財伯：「${n} 條，一共 ${got} 平安幣，收好！」</p>${rel?`<p class="lead">阿財伯：「剩下這 ${rel} 條……${ECO_LINE}」</p><p class="note">${rel} 條魚放回水裡了，已經從背包拿掉。</p>`:""}<div class="row"><button class="primary" data-act="lfTk" data-v="sell">好</button></div>`);
   try{ if(rel) tone(660,.12,.04,"sine"); }catch(e){} };
@@ -14474,19 +14475,21 @@ function tentOpen(which){ if(!SHOPX||!SHOPX.enter) return; const S=new T.Scene()
   { const sh=new T.Shape(); sh.moveTo(-W/2,0); sh.lineTo(W/2,0); sh.lineTo(0,H); sh.closePath(); add(new T.ShapeGeometry(sh),fab,0,0,-D/2); const fr=new T.Shape(); fr.moveTo(-W/2,0); fr.lineTo(-.45,0); fr.lineTo(-.18,1.2); fr.lineTo(.18,1.2); fr.lineTo(.45,0); fr.lineTo(W/2,0); fr.lineTo(0,H); fr.closePath(); add(new T.ShapeGeometry(fr),fab,0,0,D/2,0,Math.PI,0);
     const night=add(new T.PlaneGeometry(1.1,1.3),new T.MeshBasicMaterial({color:"#1a2a4a"}),0,.6,D/2+.4,0,Math.PI,0); }
   add(new T.CylinderGeometry(.025,.025,D,6),M("#8a8a8a"),0,H-.03,0,Math.PI/2,0,0);
-  const bag2=add((T.CapsuleGeometry?new T.CapsuleGeometry(.36,1.4,4,10):new T.CylinderGeometry(.36,.36,1.9,12)),M(which?"#e8a33a":"#3f8a5a",{roughness:.7}),-.35,.2,-.15,Math.PI/2,0,0); bag2.scale.set(1,1,.5);
-  add(new T.BoxGeometry(.6,.14,.36),M("#f2ede2"),-.35,.12,-1.15); add(new T.BoxGeometry(.5,.62,.3),M("#8a5a3a"),1.05,.31,-1.45); add(new T.CylinderGeometry(.06,.05,.12,12),M("#e8e2d6"),.75,.06,.4);
+  /* (11/21 主委's MidPoly_Mummy_SleepingBag_moss_sand.glb: the sleeping bag — 0.9 × 2.2 m, vertex colours — scaled to 1.9 m, hood at the back) */
+  const bag2=new T.Group(); bag2.position.set(-.35,.005,-.2); S.add(bag2);
+  const sbGo=()=>loadRaw("sleepbag",false,g=>{ g.scale.setScalar(.85); g.traverse(m=>{ if(m.isMesh){ m.castShadow=false; m.material.vertexColors=true; } }); bag2.add(g); });
+  if(IN_ARTIFACT&&!window.GLB_SLEEPBAG) loadRaw("tent",false,()=>sbGo()); else sbGo(); /* (on the test page the sleeping bag rides inside tent-model.js — the page is at its 511-file limit) */ add(new T.BoxGeometry(.5,.62,.3),M("#8a5a3a"),1.05,.31,-1.45); add(new T.CylinderGeometry(.06,.05,.12,12),M("#e8e2d6"),.75,.06,.4);
   const lan=add(new T.CylinderGeometry(.09,.09,.22,12),M("#fff2c8",{emissive:"#ffc878",emissiveIntensity:1.2}),0,1.6,-.9); add(new T.CylinderGeometry(.005,.005,.45,4),M("#333"),0,1.9,-.9);
   const av=new Avatar(me.look.slice(),{npc:true,x:.55,z:-1.05}); scene.remove(av.root); S.add(av.root); av.isMe=true; try{ av.setLook(me.look.slice()); }finally{ av.isMe=false; } av.path=[]; av.rotY=-.4; av.update(0); av.root.position.y=0; av.root.rotation.y=-.4;
   const cam=new T.PerspectiveCamera(80,innerWidth/innerHeight,.05,50); const d=LF(), slept=d.tentD===today();
-  const o={exposure:1.05}; const el=SHOPX.enter("tent",o); el.insertAdjacentHTML("beforeend",`<div class="shx-top"><span class="shx-title">⛺ 山頂帳篷</span><span class="shx-pill" id="tP"></span><button class="shx-x" id="tX">離開</button></div><div class="shx-panel" id="tPn" style="text-align:center"><p class="rm-tip" id="tTip" style="margin:6px 0 10px">帳篷裡暖暖的，外面聽得到蟲叫聲。待在帳篷裡每分鐘恢復 3 精力。</p><button class="shx-btn" id="tSl">😴 鑽進睡袋</button></div>`); /* (11/21 主委「帳篷每分鐘恢復3」: no more once-a-day +40 — every full minute in the tent gives 3 精力, inside the day's 100 cap) */
+  const o={exposure:1.05}; const el=SHOPX.enter("tent",o); el.insertAdjacentHTML("beforeend",`<div class="shx-top"><span class="shx-title">⛺ 山頂帳篷</span><span class="shx-pill" id="tP"></span><button class="shx-x" id="tX">離開</button></div><div class="shx-panel" id="tPn" style="text-align:center"><p class="rm-tip" id="tTip" style="margin:6px 0 10px">帳篷裡暖暖的，外面聽得到蟲叫聲。鑽進睡袋裡休息，每分鐘恢復 3 精力。</p><button class="shx-btn" id="tSl">😴 鑽進睡袋</button></div>`); /* (11/21 主委「帳篷每分鐘恢復3」: no more once-a-day +40 — every full minute in the tent gives 3 精力, inside the day's 100 cap) */
   let t=0, sleepT=-1; const $t=q=>el.querySelector(q); $t("#tP").textContent="精力 "+Math.round(bag.en??100);
   $t("#tX").onclick=()=>SHOPX.leave();
   let inT=0, gotT=0, sleeping=false, dim=0;
   $t("#tSl").onclick=()=>{ sleeping=!sleeping; av.root.visible=!sleeping; $t("#tSl").textContent=sleeping?"🌅 起來":"😴 鑽進睡袋"; try{ if(sleeping){ tone(392,.3,.03,"sine"); tone(330,.4,.03,"sine",.3); } else tone(523,.12,.04,"triangle"); }catch(e){} };
   o.update=dt=>{ t+=dt; av.update(dt); av.root.position.y=0; dim+=((sleeping?1:0)-dim)*Math.min(1,dt*2); lamp.intensity=1.6*(1-dim*.8); S.background.setRGB(.055*(1-dim),.08*(1-dim),.13*(1-dim));
-    inT+=dt; if(inT>=60){ inT-=60; let g=0; try{ g=SHOPX.enAdd(3); }catch(e){} gotT+=g; save(); try{ if(g>0) tone(784,.1,.04,"triangle"); }catch(e){} }
-    const left=Math.ceil(60-inT); $t("#tP").textContent="精力 "+Math.round(bag.en??100); $t("#tTip").textContent=(sleeping?"Zzz… ":"")+((SHOPX.recLeft?SHOPX.recLeft()>0:true)?`再 ${left} 秒精力 +3`:"今天的精力恢復已經到上限了")+(gotT>0?`（這次已經 +${Math.round(gotT)}）`:""); };
+    if(sleeping) inT+=dt; if(inT>=60){ inT-=60; let g=0; try{ g=SHOPX.enAdd(3); }catch(e){} gotT+=g; save(); try{ if(g>0) tone(784,.1,.04,"triangle"); }catch(e){} }
+    const left=Math.ceil(60-inT); $t("#tP").textContent="精力 "+Math.round(bag.en??100); $t("#tTip").textContent=!sleeping?"鑽進睡袋裡休息，每分鐘恢復 3 精力。"+(gotT>0?`（這次已經 +${Math.round(gotT)}）`:""):"Zzz… "+((SHOPX.recLeft?SHOPX.recLeft()>0:true)?`再 ${left} 秒精力 +3`:"今天的精力恢復已經到上限了")+(gotT>0?`（這次已經 +${Math.round(gotT)}）`:""); }; /* (11/21 主委「帳棚要鑽進去睡袋才會恢復」) */
   o.render=dt=>{ cam.aspect=innerWidth/innerHeight; cam.updateProjectionMatrix(); const sw=Math.sin(t*.4)*.05; cam.position.set(sw,1.85,1.72); cam.lookAt(0,.25,-.75); lan.rotation.z=Math.sin(t*1.3)*.08; renderer.render(S,cam); };
   o.dispose=()=>{ S.traverse(x=>{ if(x.isMesh){ x.geometry.dispose(); } }); }; }
 /* 跳傘 */
@@ -14548,7 +14551,7 @@ const NPCS=[
   L:[["喔！你好！","今天也要元氣滿滿！"],["你應該多爬爬山，練腿力！","我每天都爬天后山兩趟。"],["你知道嗎，女神泉要說實話才有好東西。","兄弟！"],["有事儘管找我！"]],tip:"goddess"},
  {id:"yu",n:"小雨",look:[0,1,6,14,7,4,13,2,0,1,1,11,8],sh:{leg:.66,tor:.76,w:.88,d:.88,head:1.16,arm:.8},home:[9,-121.5],rad:4,sp:1.2,likes:["medaka","seahorse","flowers"],kind:"girl",
   L:[["你看你看，蝴蝶！","我在等我的氣球飛回來。"],["我們來玩捉迷藏好不好？","晚上公園有螢火蟲喔。"],["這是我最寶貝的東西，借你看一下下。","你是我的好朋友！"],["我長大要跟你一樣厲害！"]],tip:"games"},
- {id:"pan",n:"小潘",look:[1,9,3,2,6,2,4,0,1,0,0,3,2],sh:{leg:1.04,tor:1,w:.92,d:.9,head:1.04,arm:1},home:[37,-149],rad:2.5,sp:.75,likes:["bug","fossil"],kind:"collector",
+ {id:"pan",n:"小潘",look:[1,9,3,2,6,2,4,0,1,0,0,3,2],sh:{leg:1.04,tor:1,w:.92,d:.9,head:1.04,arm:1},home:[11.7,-86.8],rad:.5,sp:.3,likes:["bug","fossil"],kind:"collector", /* (11/21 主委「小潘不是站森林 他是收藏家的店員」: he minds 收藏家小屋 in the west lane, standing at its door) */
   L:[["你身上有昆蟲嗎？給我看看！","我是收藏家小潘，昆蟲跟化石我都收。"],["傳說中的昆蟲，我只在書上看過……","挖到化石也可以拿來給我喔。"],["我的標本室快放不下了，嘿嘿。","你抓蟲的手法越來越熟練了。"],["你是我遇過最厲害的採集家！"]],tip:"games"}, /* (11/21 主委「昆蟲賣給收藏家 製作收藏家npc 小潘」) */
  {id:"doc",n:"博士",look:[0,18,5,13,2,4,0,0,3,0,0,1,0],sh:{leg:1.2,tor:1.08,w:.86,d:.86,head:1.02,arm:1.08},home:[45,-157],rad:3,sp:.7,coat:1,likes:["goldscale","dragonbream","oarfish","sunfish"],kind:"prof",
   L:[["嗯？你對自然有興趣嗎？","這片森林的泉水，是從天后山流下來的。"],["圖鑑做得怎麼樣了？","淡水魚跟海水魚，可是完全不一樣的喔。"],["流星掉下來的石頭，叫做隕石，很珍貴的。","你的觀察力很好。"],["你是我最得意的研究夥伴。"]],tip:"meteor"},
@@ -15388,7 +15391,7 @@ function dwGame(){ if(!SHOPX||!SHOPX.enter) return;
   const ST={ph:"in",t:DW_TIME,n:0,flip:0,flipT:0,yaw:0,pitch:0,over:false,go:false,cd:2.2,last:null,msgT:0,fpsT:0,fpsN:0,pr0:renderer.getPixelRatio(),pr:renderer.getPixelRatio()};
   const msg=(t,c)=>{ let m=$d(".dw-msg"); if(m) m.remove(); m=document.createElement("div"); m.className="dw-msg"; if(c) m.style.background=c; m.textContent=t; el.appendChild(m); ST.msgT=1.1; };
   const stars=n=>DW_STARS.filter(s=>n>=s).length;
-  const hud=()=>{ $d("#dwT").textContent="⏱ "+Math.max(0,Math.ceil(ST.t)); $d("#dwN").textContent=`🥣 ${ST.n} 個`; const k=stars(ST.n); $d("#dwS").textContent="★".repeat(k)+"☆".repeat(3-k);
+  const hud=()=>{ $d("#dwT").textContent=ST.ot?`加班中・+${ST.otC||0} 幣・⚡${Math.round(bag.en??100)}`:"⏱ "+Math.max(0,Math.ceil(ST.t)); if(ST.ot&&!$d("#dwStop")){ const b=document.createElement("button"); b.id="dwStop"; b.className="dw-btn"; b.textContent="收工"; b.style.cssText="position:absolute;right:12px;bottom:calc(16px + env(safe-area-inset-bottom));left:auto;transform:none;z-index:5"; b.onclick=()=>{ b.remove(); otEnd(); }; el.appendChild(b); } $d("#dwN").textContent=`🥣 ${ST.n} 個`; const k=stars(ST.n); $d("#dwS").textContent="★".repeat(k)+"☆".repeat(3-k);
     const p=ST.ph==="in"?cleanOf(0):ST.ph==="out"?cleanOf(1):1-(G.nf[0]+G.nf[1])/Math.max(1,G.ni[0]+G.ni[1]); $d("#dwBar").style.width=Math.round(Math.max(0,Math.min(1,p))*100)+"%";
     const lf=ST.left>0&&ST.left<=12?`（還剩 ${ST.left} 處，看黃圈）`:""; $d("#dwStep").textContent=!ST.go?"準備……":ST.ph==="in"?"① 刷乾淨碗裡面"+(lf||"・拖曳碗旁邊可以轉碗"):ST.ph==="flip"?"翻面中……":ST.ph==="out"?"② 刷乾淨碗底和外面"+(lf||"・拖曳碗旁邊可以轉碗"):ST.ph==="rinse"?"③ 拖曳轉動碗，讓水把泡泡沖乾淨":"✨ 乾乾淨淨！";
     $d("#dwFlip").hidden=!(ST.ph==="in"&&cleanOf(0)>=DW_CLEAN); };
@@ -15408,13 +15411,15 @@ function dwGame(){ if(!SHOPX||!SHOPX.enter) return;
   $d("#dwFlip").onclick=()=>{ if(ST.ph!=="in") return; ST.ph="flip"; ST.flipT=0; try{ tone(520,.08,.05,"triangle"); tone(780,.1,.05,"triangle",.08); }catch(e){} hud(); };
   $d("#dwX").onclick=()=>{ if(!ST.over&&ST.go&&ST.t>0&&!confirm("還沒洗完，現在離開就沒有獎勵喔。確定離開？")) return; SHOPX.leave(); };
   const finish=()=>{ ST.over=true; jet.visible=splash.visible=false; const k=stars(ST.n), cg=ST.n>=20?2:ST.n>=1?1:0; let pay=0; { const d=LF(), t=today(); if(!d.dwP||d.dwP.d!==t) d.dwP={d:t,e:0}; pay=me.sp?ST.n*DW_PAY:Math.max(0,Math.min(ST.n*DW_PAY,CZ_CAP-d.dwP.e)); d.dwP.e+=pay; bag.coins+=pay; if(cg) d.cg=(d.cg|0)+cg; save(); try{ profSave(true); if(pay) chaChing(); }catch(e){} }
-    el.insertAdjacentHTML("beforeend",`<div class="dw-end"><div>時間到！洗好了</div><b>${ST.n} 個碗</b><div style="font-size:30px;color:#ffd24a">${"★".repeat(k)}${"☆".repeat(3-k)}</div><div>${ST.n?`工資 <b style="font-size:22px;color:#ffd24a">${pay}</b> 平安幣${pay<ST.n*DW_PAY?"（今天的工資領滿了）":""}<br>`:""}${cg?`玲姊包了 <b style="font-size:22px">${cg}</b> 碗鹹粥給你（在背包，一碗回 100 精力）`:"洗好一個碗就有工資和鹹粥喔"}</div><div style="font-size:13px;opacity:.8">一個碗 ${DW_PAY} 平安幣・洗 1～19 個：鹹粥 1 碗・20 個以上：2 碗</div><button class="dw-btn" style="position:static;transform:none" id="dwOk">好</button></div>`);
-    $d("#dwOk").onclick=()=>SHOPX.leave(); try{ tone(660,.12,.06,"triangle"); tone(880,.16,.06,"triangle",.12); }catch(e){} };
-  const done1=()=>{ clearRT(foamRT); for(const b of SB) b.pop=b.pop||.05; U.uDone.value.set(1,1); U.uShine.value=1; sparkle(16,true); ST.n++; msg(ST.n%5===0?`洗好 ${ST.n} 個！`:"洗乾淨了！"); try{ tone(988,.08,.05,"sine"); tone(1318,.12,.05,"sine",.07); }catch(e){} ST.ph="shine"; ST.nextT=.9; };
+    el.insertAdjacentHTML("beforeend",`<div class="dw-end"><div>時間到！洗好了</div><b>${ST.n} 個碗</b><div style="font-size:30px;color:#ffd24a">${"★".repeat(k)}${"☆".repeat(3-k)}</div><div>${ST.n?`工資 <b style="font-size:22px;color:#ffd24a">${pay}</b> 平安幣${pay<ST.n*DW_PAY?"（今天的工資領滿了）":""}<br>`:""}${cg?`玲姊包了 <b style="font-size:22px">${cg}</b> 碗鹹粥給你（在背包，一碗回 100 精力）`:"洗好一個碗就有工資和鹹粥喔"}</div><div style="font-size:13px;opacity:.8">一個碗 ${DW_PAY} 平安幣・洗 1～19 個：鹹粥 1 碗・20 個以上：2 碗</div><div style="font-size:14px;margin-top:8px;line-height:1.5">玲姊：「如果你體力太旺盛，可以繼續來幫忙洗碗，每個碗給你十元，但是鹹粥不夠給你囉！」</div><div style="display:flex;gap:8px;justify-content:center;margin-top:6px"><button class="dw-btn" style="position:static;transform:none" id="dwMore">繼續洗（一個碗 1 精力・10 元）</button><button class="dw-btn" style="position:static;transform:none" id="dwOk">好</button></div></div>`);
+    $d("#dwOk").onclick=()=>SHOPX.leave(); $d("#dwMore").onclick=()=>{ const e=Math.round(bag.en??100); if(e<1&&!me.sp){ msg("精力不夠了，先休息一下吧"); return; } const x=el.querySelector(".dw-end"); if(x) x.remove(); ST.over=false; ST.ot=true; ST.otN=0; ST.otC=0; hud(); }; /* (11/21 主委「洗碗結束後可以再洗 每一個碗一個精力 一個碗給10元（沒有鹹粥囉）」) */ try{ tone(660,.12,.06,"triangle"); tone(880,.16,.06,"triangle",.12); }catch(e){} };
+  const otEnd=why=>{ ST.over=true; ST.ot=false; { const b=$d("#dwStop"); if(b) b.remove(); } el.insertAdjacentHTML("beforeend",`<div class="dw-end"><div>${why||"辛苦了！"}</div><b>加班洗了 ${ST.otN} 個碗</b><div>工資 <b style="font-size:22px;color:#ffd24a">${ST.otC}</b> 平安幣</div><button class="dw-btn" style="position:static;transform:none" id="dwOk2">好</button></div>`); $d("#dwOk2").onclick=()=>SHOPX.leave(); };
+  const done1=()=>{ if(ST.ot){ if(!enPay(1)){ otEnd("精力用完了，今天先洗到這裡！"); return; } bag.coins+=10; ST.otN++; ST.otC+=10; save(); try{ profSave(true); }catch(e){} }
+    clearRT(foamRT); for(const b of SB) b.pop=b.pop||.05; U.uDone.value.set(1,1); U.uShine.value=1; sparkle(16,true); ST.n++; msg(ST.n%5===0?`洗好 ${ST.n} 個！`:"洗乾淨了！"); try{ tone(988,.08,.05,"sine"); tone(1318,.12,.05,"sine",.07); }catch(e){} ST.ph="shine"; ST.nextT=.9; };
   const P3=new T.Vector3(), Q=new T.Quaternion(), E=new T.Euler();
   o.render=dt=>{ dt=Math.min(.05,dt||.016); U.uT.value+=dt; const asp=innerWidth/innerHeight; cam.aspect=asp; cam.fov=asp<.8?54:42; const dist=asp<.8?3.0:2.6; cam.position.set(0,dist*.92,dist*.62); cam.lookAt(0,-.12,.1); cam.updateProjectionMatrix();
     if(!ST.go){ ST.cd-=dt; if(ST.cd<=0){ ST.go=true; msg("開始！"); } }
-    else if(!ST.over){ ST.t-=dt; if(ST.t<=0){ ST.t=0; finish(); } }
+    else if(!ST.over&&!ST.ot){ ST.t-=dt; if(ST.t<=0){ ST.t=0; finish(); } }
     /* the bowl's pose */
     if(ST.ph==="flip"){ ST.flipT+=dt/.6; const k=Math.min(1,ST.flipT), e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2; pivot.rotation.set(Math.PI*e,ST.spin||0,0); pivot.position.y=-.03+.03*k+Math.sin(Math.PI*k)*.35; if(k>=1){ ST.ph="out"; ST.tilt=0; hud(); } }
     else if(ST.ph==="in"){ pivot.rotation.set(ST.tilt||0,ST.spin||0,0,"YXZ"); pivot.position.y=-.03; } /* (11/21 主委「我要玩家可以自己轉動」: the bowl no longer turns by itself — drag beside it to turn and tip it) */
@@ -16088,11 +16093,11 @@ const bugList=()=>{ const g=GI(), out=[]; Object.keys(g).filter(k=>k.startsWith(
 function bugSellSheet(){ const L2=bugList(), sd=sellDay("bsD"), left=Math.max(0,SELL_DAY-sd.n); BSEL=new Set([...BSEL].filter(i=>i<L2.length)); while(BSEL.size>left) BSEL.delete([...BSEL].pop());
   if(!L2.length) return `<p class="note">你身上沒有昆蟲。到公園、山谷、森林找找看！</p>`;
   const tot=[...BSEL].reduce((a,i)=>a+BUG_BY[L2[i]][8],0);
-  return `<p class="note">昆蟲圖鑑 ${Object.keys(BUGDEX()).length}/${BUGS.length}。每天最多賣 ${SELL_DAY} 隻（今天還能賣 <b>${left}</b> 隻）。點昆蟲選要賣的；賣完之後，沒選的小潘會放回大自然，從背包拿掉。要送人、做委託的昆蟲，先別拿來賣。</p>`+
+  return `<p class="note">昆蟲圖鑑 ${Object.keys(BUGDEX()).length}/${BUGS.length}。每天最多賣 ${SELL_DAY} 隻（今天還能賣 <b>${left}</b> 隻）。點昆蟲選要賣的。<b>賣了之後，其餘的昆蟲都會馬上放生喔！</b>要送人、做委託的昆蟲，先別拿來賣。</p>`+
     L2.map((id,i)=>{ const b=BUG_BY[id], on=BSEL.has(i); return `<div class="lf-row" style="${on?"background:#fff3cf;border-radius:12px":""}"><img src="${bugPic(b[0])}" style="width:48px;height:48px"><div class="t"><b>${b[1]}</b><br><small>${BUG_RN[b[4]]}・${b[8]} 平安幣</small></div><button class="${on?"primary":"secondary"}" data-act="bugSel" data-v="${i}" ${!on&&BSEL.size>=left?"disabled":""}>${on?"✓ 要賣":"選"}</button></div>`; }).join("")+
     `<div class="row" style="margin-top:8px"><button class="primary" data-act="bugSellGo" ${BSEL.size?"":"disabled"}>賣出選的 ${BSEL.size} 隻・${tot} 幣</button></div>`; }
 HANDLERS.bugSel=v=>{ const i=+v, left=SELL_DAY-sellDay("bsD").n; if(BSEL.has(i)) BSEL.delete(i); else if(BSEL.size<left) BSEL.add(i); HANDLERS.lfBugCol(1); };
-HANDLERS.bugSellGo=()=>{ const L2=bugList(), sd=sellDay("bsD"); if(!BSEL.size) return; let got=0, n=0, rel=0; L2.forEach((id,i)=>{ if(BSEL.has(i)&&sd.n+n<SELL_DAY){ got+=BUG_BY[id][8]; n++; } else rel++; giAdd("bug:"+id,-1); });
+HANDLERS.bugSellGo=(ok)=>{ const L2=bugList(), sd=sellDay("bsD"); if(!BSEL.size) return; if(ok!=="ok"&&L2.length>BSEL.size){ openSheet("lfBsure","🔬 收藏家小潘",`<p class="lead">小潘：「賣了之後其餘的昆蟲都會馬上放生喔，確定要賣嗎？」</p><p class="note">要賣 ${BSEL.size} 隻，放生 ${L2.length-BSEL.size} 隻。</p><div class="row"><button class="primary" data-act="bugSellGo" data-v="ok">確定要賣</button><button class="secondary" data-act="lfBugCol" data-v="1">再想想</button></div>`); return; } let got=0, n=0, rel=0; L2.forEach((id,i)=>{ if(BSEL.has(i)&&sd.n+n<SELL_DAY){ got+=BUG_BY[id][8]; n++; } else rel++; giAdd("bug:"+id,-1); });
   BSEL=new Set(); sd.n+=n; bag.coins+=got; save(); try{ profSave(true); chaChing(); }catch(e){}
   openSheet("lfBsold","🔬 收藏家小潘",`<p class="lead">小潘：「${n} 隻，一共 ${got} 平安幣！謝啦！」</p>${rel?`<p class="lead">小潘：「剩下這 ${rel} 隻……${ECO_LINE}」</p><p class="note">${rel} 隻昆蟲放回大自然了，已經從背包拿掉。</p>`:""}<div class="row"><button class="primary" data-act="lfBugCol">好</button></div>`); };
 HANDLERS.bugSell=v=>HANDLERS.lfBugCol(1);
@@ -16100,7 +16105,7 @@ function bugFirst(){ const d=LF(); d.fb=d.fb||{}; const got=[]; let c=0, g=0;
   [...new Set(bugList())].forEach(id=>{ const b=BUG_BY[id]; if(!b||b[4]<3||d.fb[id]) return; d.fb[id]=1; const leg=b[4]>=4; c+=leg?2000:500; g+=leg?3:1; got.push(`${leg?"🌟 傳說":"✨ 稀有"}・${b[1]}：${leg?2000:500} 平安幣＋扭蛋幣 ${leg?3:1}`); });
   if(!got.length) return false; bag.coins+=c; bag.gacha=Math.min(255,(bag.gacha||0)+g); save(); try{ profSave(true); [784,988,1175,1568].forEach((f,k)=>tone(f,.18,.05,"triangle",k*.09)); }catch(e){}
   openSheet("lfBfirst","🎁 收藏家小潘",`<p class="lead">小潘：「天啊！這${got.length>1?"幾":"一"}隻我第一次看你抓到！這是謝禮，請收下！」</p><p>${got.join("<br>")}</p><div class="row"><button class="primary" data-act="lfBugCol">謝謝小潘</button></div>`); return true; }
-HANDLERS.lfBugCol=(noCheck)=>{ if(noCheck!==1&&bugFirst()) return; openSheet("lfBugCol","🔬 收藏家小潘",`<p class="lead">小潘：「昆蟲、化石、古物、寶石，每一樣都是寶貝！賣給我，我會好好收藏。」</p><h4 style="margin:10px 0 4px">昆蟲</h4>${bugSellSheet()}${(()=>{ const r=digSellRows(["fossil","old","gem","treasure"],"d"); return r?`<h4 style="margin:10px 0 4px">化石・古物・寶石</h4>`+r:""; })()}`); };
+HANDLERS.lfBugCol=(noCheck)=>{ if(noCheck!=1&&bugFirst()) return; openSheet("lfBugCol","🔬 收藏家小潘",`<p class="lead">小潘：「昆蟲、化石、古物、寶石，每一樣都是寶貝！賣給我，我會好好收藏。」</p><h4 style="margin:10px 0 4px">昆蟲</h4>${bugSellSheet()}${(()=>{ const r=digSellRows(["fossil","old","gem","treasure"],"d"); return r?`<h4 style="margin:10px 0 4px">化石・古物・寶石</h4>`+r:""; })()}`); };
 L.bugs=()=>BG2; L.bugSpawn=bugSpawn;
 /* ================= ⛏️ 地上的裂縫 (11/16 主委). Now and then a glinting crack opens in the ground round the town (up to 3 at a time, a new
    one every couple of minutes). With a 鏟子 from 威利 (15 digs) you walk up, press 「⛏️ 挖」: three bouncy digs throw up dirt, then
@@ -16415,7 +16420,7 @@ const NQ={
  doc:[[15,"fossil",1,"研究需要化石樣本，任何一種都好！","了不起！這可以放進我的論文！"],[40,"dig:tooth",1,"有人說小鎮底下埋過恐龍……幫我找一顆恐龍牙齒！","果然！我的理論是對的！"],[70,"goldscale",1,"女神泉的金鱗仙魚……我研究了一輩子，卻從來沒見過。","這、這就是金鱗仙魚……我的研究終於完整了。"]],
  k_tackle_0:[[15,"tilapia",3,"老頭子考考你：先釣三條吳郭魚來。","嗯，基本功還不錯。"],[40,"hairtail",1,"白帶魚，看你的技術了。","喔！這尾漂亮！"],[70,"rare",1,"帶一條稀有的魚來，讓我看看你的本事。","少年仔，你出師了！"]],
  k_flower_0:[[15,"bug",1,"我最喜歡昆蟲了！隨便抓一隻給我看！","哇！好可愛！謝謝你！"],[40,"bug:swallowtail",1,"鳳蝶！花店最適合鳳蝶了！","牠停在花上的樣子……太美了。"],[70,"bug:pearl",1,"珠光鳳蝶……是我夢想中的蝴蝶。","你真的找到了……我會一輩子記得。"]]};
-const NQ_REW=[{c:500,g:1},{c:1200,f:1},{c:3000,f:1,g:3}];
+const NQ_REW=[{c:500,g:1,sh:10},{c:1200,f:1,sh:15},{c:3000,f:1,g:3,sh:30}] /* (11/21 主委「有些任務可以加一些挖掘道具」: every 委託 also gives 鏟子 uses — 10 / 15 / 30) */;
 const NQD=()=>{ const d=LF(); d.nq=d.nq||{}; return d.nq; };
 /* everything you carry that answers a tag: [kind, id] once per piece */
 function nqItems(tag){ const d=LF(), out=[]; d.inv.forEach(([id])=>{ if(giftTags("f",id).includes(tag)) out.push(["f",id]); }); const g=GD2().crop; for(const k in g) if(g[k]>0&&giftTags("c",k).includes(tag)) for(let i=0;i<g[k];i++) out.push(["c",k]); const G=GI(); for(const k in G) if(G[k]>0&&giftTags("g",k).includes(tag)) for(let i=0;i<G[k];i++) out.push(["g",k]); return out; }
@@ -16425,7 +16430,7 @@ L.nqBox=nid=>{ const c=nqCur(nid); if(!c||c.done) return ""; if(!c.open) return 
   return `<div style="margin:10px 0 2px;padding:10px 12px;border-radius:14px;background:#fff7e6;border:2px dashed #e2a23a;color:#3b2416"><b style="color:#8e1c14">📜 委託 ${c.i+1}／3</b><p style="margin:4px 0 6px">「${c.q[3]}」</p><small>要：${nqName(c.q[1])} ×${need}　（你有 ${Math.min(have,need)}／${need}）</small><div class="row" style="margin-top:6px"><button class="primary" data-act="lfNq" data-v="${nid}" ${have>=need?"":"disabled"}>交給${NB[nid].n}</button></div></div>`; };
 HANDLERS.lfNq=nid=>{ const c=nqCur(nid); if(!c||c.done||!c.open) return; const it=nqItems(c.q[1]); if(it.length<c.q[2]) return; const d=LF();
   for(let k=0;k<c.q[2];k++){ const [t,id]=it[k]; if(t==="f"){ const i=d.inv.findIndex(e=>e[0]===id); if(i>=0) d.inv.splice(i,1); } else if(t==="c") L.cropTake(id); else giAdd(id,-1); }
-  const R=NR(nid); R.a=Math.min(100,R.a+8); NQD()[nid]=c.i+1; const rw=NQ_REW[c.i], got=[]; bag.coins+=rw.c; got.push(`${rw.c} 平安幣`); if(rw.g){ bag.gacha=Math.min(255,(bag.gacha||0)+rw.g); got.push(`扭蛋幣 ${rw.g} 枚`); } if(rw.f){ let fu=""; try{ fu=ROOMX.grant("n"); }catch(e){} if(fu) got.push(`家具「${fu}」`); }
+  const R=NR(nid); R.a=Math.min(100,R.a+8); NQD()[nid]=c.i+1; const rw=NQ_REW[c.i], got=[]; bag.coins+=rw.c; got.push(`${rw.c} 平安幣`); if(rw.g){ bag.gacha=Math.min(255,(bag.gacha||0)+rw.g); got.push(`扭蛋幣 ${rw.g} 枚`); } if(rw.f){ let fu=""; try{ fu=ROOMX.grant("n"); }catch(e){} if(fu) got.push(`家具「${fu}」`); } if(rw.sh){ const sv=SHOVEL(); sv.u=(sv.u|0)+rw.sh; got.push(`鏟子 ${rw.sh} 次`); }
   save(); try{ profSave(true); statInc("npcQ"); [659,784,988,1319,1568].forEach((f,k)=>tone(f,.14,.05,"triangle",k*.08)); }catch(e){}
   openSheet("lfNq2","📜 "+NB[nid].n,`<p class="lead">「${c.q[4]}」</p><p class="note">委託完成！得到 ${got.join("、")}，好感 +8。</p><div class="row"><button class="secondary" data-act="lfNpcTalk" data-v="${nid}">再聊聊</button></div>`); };
 
