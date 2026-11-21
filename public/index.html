@@ -13759,6 +13759,12 @@ function zoneFar(level){ ZN.far.forEach(o=>{ o.visible=true; }); ZN.far=[]; if(!
     scene.traverse(o=>{ if(!o.visible||!o.geometry) return; let v=true; for(let p=o.parent;p;p=p.parent) if(!p.visible){ v=false; break; } if(!v) return; keepG.add(o.geometry); (Array.isArray(o.material)?o.material:[o.material]).forEach(mm=>tx(mm,keepT)); });
     const gT=new Set(); ZN.far.forEach(o=>{ if(!keepG.has(o.geometry)) try{ o.geometry.dispose(); }catch(e){} if(o.isInstancedMesh&&o.dispose) try{ o.dispose(); }catch(e){} (Array.isArray(o.material)?o.material:[o.material]).forEach(mm=>tx(mm,gT)); });
     gT.forEach(t=>{ if(!keepT.has(t)) try{ t.dispose(); }catch(e){} }); } }
+/* 海邊不畫廟裡面 (11/22 檢查: on the beach 2 094 draws a frame — the 禪院, the shops and the halls' insides all drawn behind their walls).
+   Out on the sand, the temple pieces that cannot be seen from outside (the same computed list, ZHIDE, that the town uses) are hidden —
+   just hidden, nothing thrown away — and shown again as soon as you walk back up to the temple */
+const BCH={on:false,list:[]}; setInterval(()=>{ try{ if(!ZHIDE||ZN.off||ZN.busy) return; const z=meAv.pos.y, want=z>56; if(want===BCH.on) return; BCH.on=want;
+  if(want){ scene.updateMatrixWorld(true); for(const o of farCands()){ try{ if(ZHIDE.has(extKey(o))){ o.visible=false; BCH.list.push(o); } }catch(e){} } }
+  else { BCH.list.forEach(o=>{ o.visible=true; }); BCH.list=[]; } }catch(e){ console.warn("beach cull",e); } },1000);
 function zoneBack(){ for(const [o,v] of ZN.list){ o.visible=v; delete o.userData.zoneOff; } ZN.list=[]; ZN.off=false; }
 TW.zone=ZN; TW.zoneBack=zoneBack; TW.zoneForget=zoneForget;
 let hid=[]; function fogCull(px,pz){ try{ if(typeof MERGED==="undefined"||ZN.off) return; if(pz>-58){ if(hid.length){ hid.forEach(M=>{ M.visible=true; }); hid=[]; } return; } const far=(scene.fog&&scene.fog.far||90)+8, cx=camera.position.x, cz=camera.position.z;
@@ -16060,7 +16066,7 @@ const camPitch0=()=>{ const d=new T.Vector3(); camera.getWorldDirection(d); retu
 /* the photo you are after: the one you picked in the album, or else the nearest one not taken yet */
 const phTarget=(L,P)=>{ const x=meAv.pos.x, z=meAv.pos.y, open=L.filter(s=>!P.got[s.i]); if(!open.length) return null; const near=open.map(s=>[s,Math.hypot(x-s.x,z-s.z)]).sort((a,b)=>a[1]-b[1])[0]; if(near[1]<25) return near[0]; return open.find(s=>s.i===P.sel)||near[0]; };
 /* walking near one: 「這裡……好像是……照片裡的地方？」 (once, until you walk away again) */
-const PHN={}; setInterval(async()=>{ try{ const P=PH(); if(!P.cam||!PS||!TOWNX||!TOWNX.on||document.getElementById("camOv")) return; const x=meAv.pos.x, z=meAv.pos.y;
+const PHN={}; setInterval(async()=>{ try{ const P=PH(); if(!P.cam||!PS||document.getElementById("camOv")) return; /* (11/22 檢查: the 「這裡好像是照片裡的地方？」 hint only worked in the town — 10 of the 24 spots are at the temple and the beach) */ const x=meAv.pos.x, z=meAv.pos.y;
   for(const s of PS){ if(P.got[s.i]) continue; const d=Math.hypot(x-s.x,z-s.z); if(d<7&&!PHN[s.i]){ PHN[s.i]=1; toast("📷 這裡……好像是……照片裡的地方？",3200); try{ tone(988,.08,.04,"sine"); tone(1319,.12,.04,"sine",.1); }catch(e){} const b=document.getElementById("camBtn"); if(b) b.animate([{transform:"scale(1)"},{transform:"scale(1.35)"},{transform:"scale(1)"}],{duration:500,iterations:3}); } else if(d>14) PHN[s.i]=0; } }catch(e){} },1200);
 function camOpen(){ if(document.getElementById("camOv")) return; const ov=document.createElement("div"); ov.id="camOv"; ov.style.cssText="position:fixed;inset:0;z-index:40;pointer-events:none";
   ov.innerHTML=`<div style="position:absolute;inset:12% 8% 22% 8%;border:2px solid rgba(255,255,255,.85);border-radius:6px;box-shadow:0 0 0 2000px rgba(0,0,0,.25)"></div><div style="position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 14px);text-align:center;color:#fff;font:900 16px ${UI_FONT};text-shadow:0 1px 3px #000">📷 爸爸的相機　轉動視角，對好就按快門</div>
