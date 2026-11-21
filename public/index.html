@@ -1042,6 +1042,12 @@ function applyDPR(){ const L=dprLadder(); DRES.lvl=Math.min(DRES.lvl,L.length-1)
 renderer.setPixelRatio(dprLadder()[0]);
 
 renderer.outputEncoding=T.sRGBEncoding;
+/* WebGL 1 (every iPhone since 11/21): a picture whose sides are not powers of two (most signs, posters, menus) was squeezed on the phone's
+   CPU to the nearest power of two before every upload — slow, and a 2098×511 sign came out 1024×128, blurred. On WebGL 1 such a picture,
+   when it does not repeat, now goes up as it is, without mipmaps (11/22 檢查: 86 of these in one walk round the game) */
+if(!renderer.capabilities.isWebGL2) try{ const P=T.Texture.prototype, D=Object.getOwnPropertyDescriptor(P,"needsUpdate");
+  if(D&&D.set) Object.defineProperty(P,"needsUpdate",{configurable:true,get(){ return D.get?D.get.call(this):undefined; },set(v){ if(v===true) try{ const im=this.image, w=im&&(im.videoWidth||im.naturalWidth||im.width), h=im&&(im.videoHeight||im.naturalHeight||im.height);
+      if(w&&h&&((w&(w-1))||(h&(h-1)))&&!this.isDataTexture&&!this.isCompressedTexture&&!this.isCubeTexture&&this.wrapS===T.ClampToEdgeWrapping&&this.wrapT===T.ClampToEdgeWrapping){ this.generateMipmaps=false; if(this.minFilter!==T.NearestFilter) this.minFilter=T.LinearFilter; } }catch(e){} D.set.call(this,v); }}); }catch(e){ console.warn("npot",e); }
 /* 質感濾鏡 (11/17 晚 主委「白天太亮了 有些地方都要過曝了 請幫遊戲上個有質感的濾鏡 讓顏色更有層次」): no extra pass — the tone curve every
    material already runs through is ACES with a softer shoulder (highlights roll off instead of clipping), then a gentle S-curve for depth,
    a little more saturation in the mid-tones, and a split tone: shadows a touch cool, highlights a touch warm */
@@ -3838,7 +3844,23 @@ function mergeGroup(g,keepList,head){ g.updateWorldMatrix(true,true); _mi.copy(g
       const ix=ge.index, cnt=ix?ix.count:n; for(let t=0;t<cnt;t+=3){ const a=ix?ix.getX(t):t, b=ix?ix.getX(t+1):t+1, c=ix?ix.getX(t+2):t+2; I[io+t]=vo+a; I[io+t+1]=vo+(flip?c:b); I[io+t+2]=vo+(flip?b:c); } vo+=n; io+=cnt; });
     const G2=new T.BufferGeometry(); G2.setAttribute("position",new T.BufferAttribute(P,3)); G2.setAttribute("normal",new T.BufferAttribute(N,3)); if(U) G2.setAttribute("uv",new T.BufferAttribute(U,2)); G2.setIndex(new T.BufferAttribute(I,1)); if(list.some(o=>!o.geometry.attributes.normal)) G2.computeVertexNormals();
     const m=new T.Mesh(G2,mat); m.renderOrder=list[0].renderOrder; m.castShadow=list[0].castShadow; m.receiveShadow=list[0].receiveShadow; m.name="merged"; if(head) m.userData.hatHide=list.top?1:0; /* (the answer to "does a hat hide this?", decided piece by piece before joining) */ list.forEach(o=>o.parent.remove(o)); g.add(m); keepList.push(G2); }); }
-function avMerge(av){ if(window.NO_AVMERGE) return; const gs=[]; av.parts.traverse(o=>{ if(o.isGroup&&/^(hair|hat|outfit)-/.test(o.name)) gs.push(o); }); gs.forEach(g=>{ let inner=false; for(let q=g.parent;q;q=q.parent) if(gs.includes(q)) inner=true; if(!inner) mergeGroup(g,av._mg,/^hair-/.test(g.name)?av.head:null); }); }
+function avMerge(av){ if(window.NO_AVMERGE) return; const gs=[]; av.parts.traverse(o=>{ if(o.isGroup&&/^(hair|hat|outfit)-/.test(o.name)) gs.push(o); }); gs.forEach(g=>{ let inner=false; for(let q=g.parent;q;q=q.parent) if(gs.includes(q)) inner=true; if(!inner) mergeGroup(g,av._mg,/^hair-/.test(g.name)?av.head:null); });  try{ avMerge2(av); }catch(e){ console.warn("avMerge2",e); } }
+/* 人物再合併 (11/22 檢查: in the temple yard 1 370 draws a frame, about 900 of them people — up to 178 separate little pieces each: buttons,
+   beads, flowers, eyes, the body's own spheres and tubes). Whatever is left after the hair/hat/outfit merge: under each joint, the plain pieces
+   that share one material are joined into one. Never joined: anything the avatar keeps a handle on (hands, the incense tip, eyes…), anything
+   named or marked, hidden, skinned or with its own children — so every moving joint still moves its own pieces */
+const _mA2=new T.Matrix4(), _nA2=new T.Matrix3(), _vA2=new T.Vector3();
+function avMerge2(av){ if(window.NO_AVMERGE2) return; const keep=new Set(); const addK=x=>{ if(x&&x.isObject3D) keep.add(x); }; for(const k of Object.keys(av)){ const v=av[k]; if(Array.isArray(v)) v.forEach(q=>Array.isArray(q)?q.forEach(addK):addK(q)); else addK(v); }
+  const nodes=[]; av.parts.traverse(n=>{ if(n.children&&n.children.length>=2) nodes.push(n); });
+  for(const node of nodes){ const by=new Map(); for(const o of node.children){ if(!o.isMesh||o.isSkinnedMesh||o.isInstancedMesh||o.children.length||keep.has(o)||o.name||!o.visible||Array.isArray(o.material)||!o.material) continue; if(o.userData&&Object.keys(o.userData).length) continue; if(o.morphTargetInfluences||o.onBeforeRender!==T.Object3D.prototype.onBeforeRender) continue;
+      const ge=o.geometry; if(!ge||!ge.isBufferGeometry||!ge.attributes.position||(ge.morphAttributes&&Object.keys(ge.morphAttributes).length)) continue; const k=o.material.uuid+"|"+(ge.attributes.uv?1:0)+"|"+(o.renderOrder||0)+"|"+(o.castShadow?1:0); if(!by.has(k)) by.set(k,[]); by.get(k).push(o); }
+    by.forEach(list=>{ if(list.length<2) return; let nv=0, ni=0; for(const o of list){ const ge=o.geometry; nv+=ge.attributes.position.count; ni+=ge.index?ge.index.count:ge.attributes.position.count; } if(nv>60000) return; const useUV=!!list[0].geometry.attributes.uv;
+      const P=new Float32Array(nv*3), N=new Float32Array(nv*3), U=useUV?new Float32Array(nv*2):null, I=new Uint32Array(ni); let vo=0, io=0;
+      for(const o of list){ o.updateMatrix(); const ge=o.geometry, pa=ge.attributes.position, na=ge.attributes.normal, ua=ge.attributes.uv, n=pa.count; _mA2.copy(o.matrix); _nA2.getNormalMatrix(_mA2); const flip=_mA2.determinant()<0;
+        for(let i=0;i<n;i++){ _vA2.fromBufferAttribute(pa,i).applyMatrix4(_mA2); P[(vo+i)*3]=_vA2.x; P[(vo+i)*3+1]=_vA2.y; P[(vo+i)*3+2]=_vA2.z; if(na){ _vA2.fromBufferAttribute(na,i).applyMatrix3(_nA2).normalize(); N[(vo+i)*3]=_vA2.x; N[(vo+i)*3+1]=_vA2.y; N[(vo+i)*3+2]=_vA2.z; } if(U&&ua){ U[(vo+i)*2]=ua.getX(i); U[(vo+i)*2+1]=ua.getY(i); } }
+        const ix=ge.index, cnt=ix?ix.count:n; for(let t=0;t<cnt;t+=3){ const a=ix?ix.getX(t):t, b=ix?ix.getX(t+1):t+1, c=ix?ix.getX(t+2):t+2; I[io+t]=vo+a; I[io+t+1]=vo+(flip?c:b); I[io+t+2]=vo+(flip?b:c); } vo+=n; io+=cnt; }
+      const G2=new T.BufferGeometry(); G2.setAttribute("position",new T.BufferAttribute(P,3)); G2.setAttribute("normal",new T.BufferAttribute(N,3)); if(U) G2.setAttribute("uv",new T.BufferAttribute(U,2)); G2.setIndex(new T.BufferAttribute(nv>65535?I:new Uint16Array(I),1)); if(list.some(o=>!o.geometry.attributes.normal)) G2.computeVertexNormals(); G2.computeBoundingSphere();
+      const m=new T.Mesh(G2,list[0].material); m.renderOrder=list[0].renderOrder; m.castShadow=list[0].castShadow; m.receiveShadow=list[0].receiveShadow; m.frustumCulled=list.every(o=>o.frustumCulled); list.forEach(o=>node.remove(o)); node.add(m); (av._mg||(av._mg=[])).push(G2); }); } }
 const AV_ALL=new Set(); /* (11/17 主委「NPC下雨也會撐傘」) */
 class Avatar{
   constructor(look,o={}){ this.root=new T.Group(); this.root.userData.noMerge=1; this.root.userData.isAvatar=1; scene.add(this.root); AV_ALL.add(this); /* (every avatar, so the rain finds the town's people too) */ this.isMe=!!o.isMe; this.npc=!!o.npc; this.sp=!!o.sp;
@@ -11118,7 +11140,7 @@ function workStart(){ const S=buildStore(); bag.en=Math.max(0,bag.en-EN_SHIFT); 
     const msg=W.served>=10&&W.miss===0?"店長：「你太厲害了，下次再來幫忙！」":W.served>=5?"店長：「做得不錯，辛苦了！」":"店長：「慢慢來，下次會更好。」";
     const c=card(`<h3>${early?"提早下班":"打烊了！"}</h3><p>🙂 結帳 ${W.served} 位客人${W.miss?`　😠 走掉 ${W.miss} 位`:""}</p><p>📦 補貨 ${W.rest} 次${W.err?`　❌ 找錯 ${W.err} 次`:""}</p>${bonus?`<p>🌟 全勤零失誤獎金 +${bonus}</p>`:""}<p style="font-size:17px;text-align:center;margin-top:10px">今天的薪水 <b style="color:#ffd76a;font-size:24px">${total}</b> 平安幣</p><p style="text-align:center;color:#d9c9a8">${msg}</p>
       <div class="row">${en()>=EN_SHIFT&&dayCount("wk")<WORK_MAX?`<button class="shx-btn sec" id="fAgain">再上一班（⚡−${EN_SHIFT}）</button>`:""}<button class="shx-btn" id="fOut">離開</button></div><p style="text-align:center;font-size:12px;color:#bba;margin-top:8px">⚡ 精力剩 ${en()}・今天還能打工 ${WORK_MAX-dayCount("wk")} 班</p>`);
-    try{ chaChing(); }catch(e){} const a=c.querySelector("#fAgain"); if(a) a.onclick=()=>{ leaveMode(); workStart(); }; c.querySelector("#fOut").onclick=()=>{ leaveMode(); toast(`打工賺了 ${total} 平安幣`,2600); }; };
+    try{ chaChing(); }catch(e){} const a=c.querySelector("#fAgain"); if(a) a.onclick=()=>{ leaveMode(); HANDLERS.cvsGo("work"); }; /* (11/22 檢查: 「再一班」 skipped the daily shift limit and the energy check — endless shifts at 0 精力) */ c.querySelector("#fOut").onclick=()=>{ leaveMode(); toast(`打工賺了 ${total} 平安幣`,2600); }; };
   o.update=dt=>{ o.avs.forEach(a=>{ avTick(a,dt); if(a.arrive&&atGoal(a)){ const f=a.arrive; a.arrive=null; f(); } });
     if(!W.run) return; W.t-=dt; if(W.t<=0){ W.t=0; hud(); finish(false); return; }
     W.spawnT-=dt; const inside=W.cust.filter(c=>c.st!=="gone").length, prog=1-W.t/100; if(W.spawnT<=0&&inside<5){ spawn(); W.spawnT=(6.5-prog*2.8)+Math.random()*2.5; }
@@ -13553,7 +13575,7 @@ NCH.push({id:"cafe",c:[23,86],r:14,build:C0=>{ nmat(); const C=FRONTG(C0); const
    }});
 
 /*NATURE>>*/
-CH.push(...NCH);
+CH.push(...NCH); TW.CH=CH;
 /* ---- a district is merged into a few big meshes (one per paint) once it is built, so it costs only a few draws ---- */
 function bake(C){ const g=C.g; g.updateMatrixWorld(true); const bk=new Map(), gone=[]; g.traverse(o=>{ if(!o.isMesh||o.userData.keep||o.userData.own) return; const m=o.material; if(Array.isArray(m)||m.transparent) return; const a=o.geometry.attributes; if(!a.normal||!a.uv) return; if(!bk.has(m)) bk.set(m,[]); bk.get(m).push(o); gone.push(o); });
   bk.forEach((list,m)=>{ let vc=0, ic=0; const parts=list.map(o=>{ const q=o.geometry.clone(); q.applyMatrix4(o.matrixWorld); if(!q.index){ const n=q.attributes.position.count, ix=new Uint32Array(n); for(let i=0;i<n;i++) ix[i]=i; q.setIndex(new T.BufferAttribute(ix,1)); } vc+=q.attributes.position.count; ic+=q.index.count; return q; });
@@ -13609,7 +13631,7 @@ const ZN={off:false,list:[],busy:0,far:[]}, ZTEX=["map","normalMap","emissiveMap
    the old area is put away, every district of the new one is built and drawn once (so its pictures are on the graphics card), and only
    then does the picture lift — nothing pops up while you walk. On the top of 天后山 and while gliding the town and the forest are both
    kept (vf), so the whole village shows from up there. Phones and computers alike. */
-const ZM={cur:null,q:[],warm:0}; const ZONES=load("mz.zones",0)==1; /* (分區 is off by default since 11/21 — 設定 → 畫面濾鏡 → 分區 switches it on) */
+const ZM={cur:null,q:[],warm:0}; const ZONES=(()=>{ try{ return JSON.parse(localStorage.getItem("mz.zones")||"0")==1; }catch(e){ return false; } })(); /* (11/22 檢查: this called the district builder `load` (the town module has its own) with a string — a "d.build is not a function" error every start, and 分區 could never be switched on) */ /* (分區 is off by default since 11/21 — 設定 → 畫面濾鏡 → 分區 switches it on) */
 const zoneOf=d=>{ const id=d.id; if(id==="front"||id==="cafe") return "t"; if(id==="riverW"||id==="riverE") return "vf"; return (d.c[1]<-140||d.c[0]>141)?"f":"v"; };
 const zoneHas=(z,d)=>{ const s=zoneOf(d); return z==="vf"?s!=="t":(s===z||(s==="vf"&&z!=="t")); };
 function zoneWant(px,pz,cur){ if(cur==="t"?pz>-52:pz>-49.5) return "t"; if(TW.high&&!(typeof Q!=="undefined"&&Q.tame)) return "vf"; /* (11/20 19:29 主委「到山頂有整個小鎮風景才卡」: on phones the mountain top no longer loads the whole town on top of the forest — the town view from up there will come back as a picture) */ const f=(cur==="f"||cur==="vf")?(pz<-133||px>137):(pz<-144||px>149); return f?"f":"v"; } /* (11/20: the band between the two lines is 11 m now — 3 m let a walk along the river bank switch areas back and forth, a full unload and rebuild each time; all four recent phone crashes were right there) */
@@ -14561,7 +14583,7 @@ HANDLERS.lfGodToss=()=>{ const d=LF(); if(bag.coins<100&&!me.sp){ toast("平安�
 const GQ=()=>{ const d=LF(); d.gq=d.gq||{s:0,d:-1}; return d.gq; };
 const godOpen=()=>GQ().s>=GQ_N||!!(LF().rods&32);
 const GQ_STEP=[
- {ask:"一條從水裡釣上來的魚",hint:"河邊、溪邊、海邊都可以釣。",has:()=>LF().inv.length>0,take:()=>{ const d=LF(); const i=d.inv.reduce((b,q,k)=>(FBY[q[0]].r>FBY[d.inv[b][0]].r?k:b),0); const f=FBY[d.inv[i][0]]; d.inv.splice(i,1); return f.n; },thx:"「謝謝你，水裡的孩子回到了泉水的懷抱。」"},
+ {ask:"一條從水裡釣上來的魚",hint:"河邊、溪邊、海邊都可以釣。",has:()=>LF().inv.length>0,take:()=>{ const d=LF(); const i=d.inv.reduce((b,q,k)=>(FBY[q[0]].r<FBY[d.inv[b][0]].r?k:b),0); /* (11/22 檢查: it used to take your RAREST fish — a 泉之錦鯉 worth 1800 could vanish into the spring; now the most common one) */ const f=FBY[d.inv[i][0]]; d.inv.splice(i,1); return f.n; },thx:"「謝謝你，水裡的孩子回到了泉水的懷抱。」"},
  {ask:"一個大自然的小生命——一隻昆蟲，或是一樣花草",hint:"用網子在公園、森林抓蟲；或是在地上的裂縫挖到四葉幸運草、貝殼。",has:()=>Object.keys(GI()).some(k=>k.startsWith("bug:")||(giInfo(k).tags||[]).includes("flowers")),take:()=>{ const k=Object.keys(GI()).find(k=>k.startsWith("bug:"))||Object.keys(GI()).find(k=>(giInfo(k).tags||[]).includes("flowers")); const n=giInfo(k).n; giAdd(k,-1); return n; },thx:"「好可愛……森林的聲音，我好久沒聽到了。」"},
  {ask:"一顆天上掉下來的流星石（或 3 份星砂）",hint:"流星夜的時候到外面走走，會撿到流星石或星砂。",has:()=>(LF().stone|0)>=1||(LF().dust|0)>=3,take:()=>{ const d=LF(); if((d.stone|0)>=1){ d.stone--; return "流星石"; } d.dust-=3; return "3 份星砂"; },thx:"「星星的味道……我想起來了，我是守護這座小鎮的泉之女神。」"},
  {ask:"三件不一樣的古老釣具",hint:"鎮上地上的裂縫用鏟子挖，偶爾會挖到古銅魚鉤、玉魚墜、古木魚餌、魚紋玉扳指、魚紋銅印、魚圖古卷。",has:()=>GQ_TK.filter(k=>GI()["dig:"+k]>0).length>=3,take:()=>{ const got=GQ_TK.filter(k=>GI()["dig:"+k]>0).slice(0,3); got.forEach(k=>giAdd("dig:"+k,-1)); return got.map(k=>DIG_BY[k][1]).join("、"); },thx:"「這是……很久很久以前，鎮上的漁夫獻給我的東西。」"},
@@ -16357,7 +16379,7 @@ const DIGS=[ /* id, name, picture, kind (junk/old/fossil/gem/gift/treasure/tackl
  ["key", "舊鑰匙", "dig/key.webp", "old", 180, 1.67, [], "不知道是哪扇門的。"],
  ["bell", "黃銅鈴鐺", "dig/bell.webp", "old", 220, 1.36, [], "搖一搖還會響。"],
  ["ammo", "菊石化石", "dig/ammo.webp", "fossil", 600, 0.5, [], "捲捲的殼，好幾億年前的海洋生物。"],
- ["trilo", "三葉蟲化石", "dig/trilo.webp", "fossil", 800, 0.38, [], "博士會很高興。"],
+ ["trilo", "三葉蟲化石", "dig/trilo.webp", "fossil", 800, 0.38, [], "收藏家小潘會很高興。"],
  ["tooth", "恐龍牙齒", "dig/tooth.webp", "fossil", 1200, 0.3, [], "真的是恐龍的嗎？"],
  ["amber", "琥珀", "dig/amber.webp", "fossil", 900, 0.33, [], "裡面封著一隻小蟲。"],
  ["shark", "鯊魚牙化石", "dig/shark.webp", "fossil", 500, 0.6, [], "尖尖的三角形。"],
@@ -16398,7 +16420,7 @@ const DIGS=[ /* id, name, picture, kind (junk/old/fossil/gem/gift/treasure/tackl
  ["urchin", "海膽化石", "dig/urchin.webp", "fossil", 550, 0.55, [], "以前這裡是海底？"],
  ["coral", "珊瑚化石", "dig/coral.webp", "fossil", 600, 0.5, [], "一朵一朵的小花紋。"],
  ["crab", "螃蟹化石", "dig/crab.webp", "fossil", 750, 0.4, [], "鉗子還舉得高高的。"],
- ["tusk", "猛獁象牙", "dig/tusk.webp", "fossil", 1500, 0.3, [], "好大一根，博士一定會跳起來。"],
+ ["tusk", "猛獁象牙", "dig/tusk.webp", "fossil", 1500, 0.3, [], "好大一根，收藏家小潘一定會跳起來。"],
  ["truffle", "松露", "dig/truffle.webp", "gift", 800, 0.8, ["veg"], "黑色的寶石，香味很特別。"],
  ["ginseng", "野山參", "dig/ginseng.webp", "gift", 1000, 0.8, ["veg"], "中藥行許伯看到會很開心。"],
  ["agate", "瑪瑙", "dig/agate.webp", "gem", 650, 0.46, [], "一圈一圈的條紋。"],
@@ -16687,7 +16709,7 @@ HANDLERS.lfNq=nid=>{ const c=nqCur(nid); if(!c||c.done||!c.open) return; const i
     const N=NETD(); if(N.u>0) out.push({id:"lf:t_net",ic:"lf_t_net",n:N.u,name:NETS[N.t]?NETS[N.t].n:"捕蟲網",desc:`抓蟲用。還能用 ${N.u} 次。走近飛來飛去的蟲，按「🦋 抓蟲」。`});
     if(SHOVEL().u>0) out.push({id:"lf:t_sh",ic:"lf_t_sh",n:SHOVEL().u,name:"鏟子",desc:`地上發光的裂縫可以挖開，還能用 ${SHOVEL().u} 次。`});
     if((d.stone|0)>0) out.push({id:"lf:q_stone",ic:"lf_q_stone",n:d.stone,name:"流星石",desc:"流星夜撿到的石頭。女神泉、釣具行的阿財伯都用得到。"});
-    if((d.dust|0)>0) out.push({id:"lf:q_dust",ic:"lf_q_dust",n:d.dust,name:"星砂",desc:"流星掉下來的地方撿到的。8 顆可以請博士做一件星空家具。"}); };
+    if((d.dust|0)>0) out.push({id:"lf:q_dust",ic:"lf_q_dust",n:d.dust,name:"星砂",desc:"流星掉下來的地方撿到的。8 顆可以找收藏家小潘換一件星空家具。"}); };
   L.bagActs=(k,e)=>{ if(k.startsWith("gi_ck~")) return `<button class="chip" data-act="lfCkEat" data-v="${dec(k.slice(3))}">吃掉</button>`; if(k.startsWith("gi_")||k.startsWith("in_")||k.startsWith("t_")||k.startsWith("q_")) return ""; return A0(k,e); }; }
 
 /* 威利's ingredients */
