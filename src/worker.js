@@ -718,7 +718,7 @@ export class Lobby extends DurableObject {
     /* 小鎮遊戲每日排名 (11/14): each game keeps one table per Taiwan day, best score per player; GET reads it, POST puts a score in,
        /rankclaim tells a player once where they finished yesterday (for prizes) */
     if (url.pathname === "/rank" || url.pathname === "/rankclaim") {
-      const GAMES = ["burger", "ice", "drink", "congee", "herb", "book", "flower"], TW = () => Math.floor((Date.now() + 8 * 3600e3) / 864e5);
+      const GAMES = ["burger", "ice", "drink", "congee", "herb", "book", "flower", "dish", "cook", "fish", "bug"], TW = () => Math.floor((Date.now() + 8 * 3600e3) / 864e5);
       const top = t => Object.entries(t || {}).map(([u, v]) => [u, v[0], v[1]]).sort((a, b) => b[1] - a[1]);
       if (req.method === "GET") { const g = url.searchParams.get("g"); if (!GAMES.includes(g)) return json({ ok: false }); const d = TW() - (url.searchParams.get("y") ? 1 : 0); const t = await this.ctx.storage.get("rk:" + g + ":" + d); const L = top(t); return json({ ok: true, d, n: L.length, top: L.slice(0, 20).map(r => [r[2], r[1]]) }); }
       let b = {}; try { b = await req.json(); } catch {} const g = String(b.g || ""), uid = clean(b.uid, 40) || "", name = clean(b.name, 10) || "香客"; if (!GAMES.includes(g) || !uid) return json({ ok: false });

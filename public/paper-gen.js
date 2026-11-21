@@ -171,6 +171,58 @@ const T = {
     { id: "fw3", t: "{x}登場 廟埕一片驚呼", b: "昨晚 {y}，天后宮上空開出一朵朵煙花，{x}讓不少香客拿起手機狂拍。{m}" },
     { id: "fw4", t: "夜空開花 天后宮煙火之夜", b: "昨天晚上 {y} 的{x}，從第一發到最後一發都沒冷場。{m}本報記者站在拜亭下，整個人被照得紅通通。" },
   ],
+  /* 小鎮・森林 (11/22 主委「報紙要新增主題了 整個小鎮 森林相關主題」) — from the day's numbers */
+  twFish: [
+    { id: "a1", t: "釣魚碼頭大豐收 一天上鉤 {v} 條", b: "昨天的河邊和泉水邊整天都有人甩竿，總共釣起 {v} 條魚。{y}釣具行阿財伯笑說：「魚餌都快賣到缺貨了。」" },
+    { id: "a2", t: "浮標一沉！小鎮掀起釣魚熱", b: "根據釣具行統計，昨天共有 {v} 條魚被釣上岸。{y}有香客說，坐在河邊等魚咬鉤，比拜拜還能讓人靜下心。" },
+  ],
+  koi: [
+    { id: "b1", t: "傳說現身！泉之錦鯉被釣起", b: "女神泉的泉之錦鯉昨天被 {n} 釣了上來，金紅色的魚鱗在泉水裡一閃一閃。據說這條魚一天只肯露面一次，看到的人都說會有好運。" },
+    { id: "b2", t: "女神泉驚見金色身影", b: "{n} 昨天在女神泉邊一竿釣起泉之錦鯉，圍觀的人拍手叫好。阿財伯說：「我釣了四十年，只看過三次。」" },
+  ],
+  twBug: [
+    { id: "c1", t: "森林捕蟲季 網子揮不停", b: "昨天森林裡一共抓到 {v} 隻昆蟲。{y}收藏家小潘推推眼鏡說：「每一隻我都想收，但一天只收十隻。」" },
+    { id: "c2", t: "蝴蝶、獨角仙紛紛落網", b: "森林小路昨天熱鬧非凡，香客拿著捕蟲網追來追去，共捕獲 {v} 隻。{y}記得抓完要好好放回森林喔。" },
+  ],
+  dish: [
+    { id: "d1", t: "一粥七天洗碗大作戰 洗了 {v} 個碗", b: "早餐時段一粥七天大排長龍，玲姊忙到找人支援洗碗。昨天熱心的香客一共洗了 {v} 個碗，{y}玲姊說：「有你們真好，鹹粥我請！」" },
+    { id: "d2", t: "泡泡滿天飛 粥店碗盤閃閃發亮", b: "一粥七天的水槽昨天沒停過，{v} 個碗被刷得亮晶晶。{y}據說洗得最乾淨的碗，連玲姊都捨不得拿去裝粥。" },
+  ],
+  phShot: [
+    { id: "e1", t: "照相館的相簿又多了 {v} 張", b: "阿光昨天收到 {v} 張重拍回來的老照片。{y}他說：「每一張都像爸爸媽媽回來跟我打招呼。」" },
+    { id: "e2", t: "拿著老照片尋找舊風景", b: "小鎮各處昨天出現拿著相機東張西望的人，原來是在幫照相館的阿光重拍爸爸媽媽的相簿，一天就拍回 {v} 張。{y}" },
+  ],
+  chute: [
+    { id: "g1", t: "天后山頂滑翔傘起飛 {v} 次", b: "昨天山頂風很穩，滑翔傘一共起飛了 {v} 次。{y}從天上往下看，天后宮的屋頂像一顆紅色的寶石。" },
+    { id: "g2", t: "空中散步！小鎮上空傘花朵朵", b: "抬頭就看到五顏六色的滑翔傘從天后山飄下來，昨天共有 {v} 次飛行紀錄。{y}" },
+  ],
+  cook: [
+    { id: "i1", t: "小鎮廚房飄香 做了 {v} 道菜", b: "昨天的廚房小遊戲一共端出 {v} 道菜。{y}鄰居說整條街都聞得到香味，肚子一直咕嚕咕嚕叫。" },
+  ],
+  townIn: [
+    { id: "j1", t: "天后小鎮人潮不斷 {v} 人次逛街", b: "昨天從禪房門口走進小鎮的香客有 {v} 人次，老街、美食廣場和河堤到處都是人。商店街的老闆們都說：「今天生意真好。」" },
+    { id: "j2", t: "拜完拜去小鎮走走 成新潮流", b: "昨天有 {v} 人次拜完拜就往小鎮跑，買冰、釣魚、逛書店，玩到天黑才回家。" },
+  ],
+  /* 小鎮・森林 — made-up little stories, like "fun" */
+  townFun: [
+    { id: "t1", t: "美琪冰店推出神秘口味 老闆不肯透露", b: "美琪冰店昨天的黑板上多了一行「今日限定：？？？」，吃過的香客都說好吃，但說不出是什麼味道。老闆只笑著說：「是媽祖保佑的味道。」" },
+    { id: "t2", t: "書店文雄老闆又在櫃檯睡著了", b: "下午三點的書店安安靜靜，文雄老闆抱著一本厚厚的相簿睡得很香。進門的客人都放輕腳步，自己把錢放在櫃檯上。" },
+    { id: "t3", t: "河堤夕陽美到大家忘了回家", b: "昨天傍晚河面一片金黃，河堤上坐滿了看夕陽的人。有人說，坐在長椅上吹著風，什麼煩惱都忘了。" },
+    { id: "t4", t: "早餐店阿龍秀琴又吵架了 原因是蛋要不要翻面", b: "元氣早餐店昨天早上傳出爭執，阿龍堅持荷包蛋要全熟，秀琴堅持半熟。最後兩人各煎一顆，客人吃得很開心。" },
+    { id: "t5", t: "夾娃娃機前排隊 有人一次就夾到", b: "小鎮的夾娃娃機昨天特別熱門，排隊的人說機台「今天手感很好」。店員提醒：理性夾娃娃，娃娃不會跑掉。" },
+    { id: "t6", t: "溫室裡的番茄紅了", b: "社區溫室的番茄一夜之間全紅了，種的人樂得到處分送。據說用天后宮的香灰水澆過，長得特別甜。（廟方表示並沒有這回事。）" },
+    { id: "t7", t: "公園長椅成了熱門約會地點", b: "小鎮公園的長椅昨天一整天都有人坐，聊天的、看書的、餵鴿子的都有。有香客說：「走累了坐一下，才發現這個小鎮好美。」" },
+    { id: "t8", t: "美食廣場攤位籌備中 香客引頸期盼", b: "美食廣場的四個攤位還掛著「籌備中」，但已經有人每天去看有沒有開。攤販老闆偷偷說：「快了快了，在練功。」" },
+  ],
+  forestFun: [
+    { id: "o1", t: "森林裡出現神秘狐狸 只在黃昏現身", b: "有香客在森林小路上看到一隻橘色狐狸，對著石燈籠坐了好久才離開。森林巡守員說：「牠很害羞，看到請安靜欣賞就好。」" },
+    { id: "o2", t: "女神泉的金色落葉 一年四季都在飄", b: "女神泉邊的金色神木，葉子一年到頭都在飄落，落在水面上像撒了一層金箔。來許願的人說，接到落葉的人會有好運。" },
+    { id: "o3", t: "天后山營火旁 陌生人變成朋友", b: "昨晚山頂營火燒得正旺，幾位剛認識的香客圍著火聊天，從夕陽聊到星星出來。有人說，這是他來小鎮最難忘的一晚。" },
+    { id: "o4", t: "螢火蟲季開始了", b: "入夜後的天后山步道，一閃一閃的螢火蟲沿著小路飛。森林巡守員提醒：看螢火蟲不要用手電筒照，也不要抓回家。" },
+    { id: "o5", t: "瀑布水氣滿滿 香客直呼好涼", b: "女神泉的瀑布昨天水量特別大，水花一路噴到岸邊的石頭上。站在瀑布前的人說：「什麼冷氣都比不上。」" },
+    { id: "o6", t: "望遠鏡看得到天后宮的屋脊龍", b: "山頂的望遠鏡昨天被排隊使用，有人說從望遠鏡裡看得到正殿屋脊上的兩條龍，連龍鬚都看得一清二楚。" },
+    { id: "o7", t: "森林小神社的石燈 晚上自己亮了", b: "女神泉旁的小神社，兩座石燈籠一到晚上就微微發光。附近的香客都說，看到燈亮，心裡就覺得很安心。" },
+  ],
   fun: [
     { id: "f01", t: "廟貓今天又換地方睡", b: "天后宮的橘貓昨天從香爐旁搬到功德箱上睡午覺，香客投錢都要先跟牠說借過。" },
     { id: "f02", t: "收驚阿嬤的新拖鞋", b: "收驚阿嬤昨天穿了一雙全新的紅色拖鞋，逢人就說是孫子買的，已經炫耀了 {v} 次。" },
@@ -332,7 +384,7 @@ export function buildPaper(data) {
   const pickT = kind => { const L = T[kind], key = x => kind + ":" + x.id, fresh = L.filter(x => !used.has(key(x))), pool = fresh.length ? fresh : L, x = pool[Math.floor(R() * pool.length)]; used.delete(key(x)); used.add(key(x)); return x; }; /* (ids are only unique within a kind) */
   /* a story that comes from the day's numbers (the pachinko owner, the busker, the stalls…) can be true every day; if it was in one of the last few
      papers it drops far down, so other stories take the front page and it comes back only when there is little else to say */
-  const recent = new Set(data.recent || []), FRESH = new Set(["sponsor1", "sponsorN", "fw", "record", "tudi", "heat", "stall", "storm", "rain", "windy", "buskRain", "fun", "tale", "calm", "wishes"]);
+  const recent = new Set(data.recent || []), FRESH = new Set(["sponsor1", "sponsorN", "fw", "record", "tudi", "heat", "stall", "storm", "rain", "windy", "buskRain", "fun", "tale", "calm", "wishes", "townFun", "forestFun", "koi"]);
   const stories = []; const add = (kind, pri, o, tag, art) => { if (recent.has(kind) && !FRESH.has(kind)) pri -= 50; const w = pickT(kind); stories.push({ pri: pri + R() * 5, tag, art, t: fill(w.t, o), b: fill(w.b, o), id: w.id, kind, who: o.n || "" }); };
   /* people: the paper uses what players saw on screen (real players plus the temple's regulars), so the numbers match what everyone remembers;
      visits ≈ the hourly peaks added up (people stay a while), never fewer than the real visitors, and capped so a busy day cannot run away */
@@ -385,6 +437,17 @@ export function buildPaper(data) {
     add("fw", 66, { x: fws.length > 1 ? `${fws.length} 場煙火` : SH[e.g | 0] || "煙火秀", y: hm, m: e.x ? `煙火最後打出主委的話：「${e.x}」。` : "" }, "娛樂", "🎆"); }
   /* made-up little stories of temple life, never the same one twice in a month or so */
   const vR = () => 3 + Math.floor(R() * 40);
+  /* 小鎮・森林 (11/22) */
+  { const by = (key, word) => { const w = top(key); return w && w.v >= 2 ? `${w.n} 一個人就${word} ${w.v} ${key === "dish" ? "個" : key === "lfFish" ? "條" : key === "bugCatch" ? "隻" : key === "phShot" ? "張" : "次"}。` : ""; };
+    if ((c.lfFish || 0) >= 5) add("twFish", 49, { v: c.lfFish, y: by("lfFish", "釣了") }, "小鎮", "🎣");
+    if ((c.koi || 0) >= 1) { const w = top("koi"); add("koi", 72, { n: w ? w.n : "一位幸運的香客" }, "森林", "🐟"); }
+    if ((c.bugCatch || 0) >= 5) add("twBug", 47, { v: c.bugCatch, y: by("bugCatch", "抓了") }, "森林", "🦋");
+    if ((c.dish || 0) >= 10) add("dish", 46, { v: c.dish, y: by("dish", "洗了") }, "小鎮", "🫧");
+    if ((c.phShot || 0) >= 2) add("phShot", 48, { v: c.phShot, y: by("phShot", "拍回") }, "小鎮", "📷");
+    if ((c.chute || 0) >= 3) add("chute", 44, { v: c.chute, y: by("chute", "飛了") }, "森林", "🪂");
+    if ((c.cook || 0) >= 3) add("cook", 40, { v: c.cook, y: by("cook", "做了") }, "小鎮", "🍳");
+    if ((c.townIn || 0) >= 10) add("townIn", 39, { v: c.townIn }, "小鎮", "🏘️");
+    add(R() < .5 ? "townFun" : "forestFun", 34.5, {}, R() < .5 ? "小鎮" : "森林", R() < .5 ? "🏘️" : "🌲"); }
   add("fun", 34, { v: vR() }, "趣聞", "😺"); add("fun", 33, { v: vR() }, "生活", "🏮"); if (R() < .7) add("tale", 35, { v: vR() }, R() < .5 ? "神蹟" : "社群", "✨");
   if (stories.length < 5) add("fun", 31, { v: vR() }, "趣聞", "🐦");
   if (stories.length < 2) add("calm", 20, { v: visitors }, "廟務", "🏮");
