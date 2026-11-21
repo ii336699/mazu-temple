@@ -15926,27 +15926,36 @@ const phAll=(L,P)=>L.length>=PS_MAX&&L.every(s=>P.got[s.i]);
 GL["tw:photo"]=async()=>{ if(KEEP["tw:photo"].soon&&!me.sp){ toast("照相館還在準備中",2400); return; } const P=PH();
   if(!P.cam){ let i=0; const step=()=>{ openSheet("lfPhStory","📷 照相館・阿光",`<p class="lead" style="line-height:1.9">${i?"「":""}${STORY[i]}${i?"」":""}</p><div class="row"><button class="primary" data-act="lfPhNext">${i===0?"（趕快去扶他）":i===1?"（蹲下來幫忙撿）":i===6?"好啊，交給我！":i<STORY.length-1?"……":"收下相機"}</button></div>`); try{ window.MZ_BABBLE&&window.MZ_BABBLE(Math.min(1.8,STORY[i].length*.06),1.1); const S=KS["tw:photo"]; if(S) keepSay(S.avs[0],STORY[i].slice(0,18)+(STORY[i].length>18?"……":"")); }catch(e){} };
     HANDLERS.lfPhNext=()=>{ i++; if(i<STORY.length) step(); else { P.cam=1; save(); camBtn(); try{ [523,659,784,1047].forEach((f,k)=>tone(f,.12,.05,"triangle",k*.08)); }catch(e){} toast("📷 拿到爸爸媽媽的相機！右下角多了相機按鈕",3600); album(); } }; step(); return; }
-  const L=await psList(true); if(phAll(L,P)&&!P.end){ phFinal(); return; } album(); };
+  const L=await psList(true); if(phAll(L,P)&&!P.end){ phFinal(); return; }
+  /* (11/22 主委: on later visits 阿光 says a line first — still collecting: 「你都拍完了嗎？還沒啊？再繼續加油喔！」; after the ending:
+     「謝謝你的幫忙，下次需要幫忙再跟你說」 — then the album is one tap away) */
+  const line=P.end?"謝謝你的幫忙，下次需要幫忙再跟你說！":"你都拍完了嗎？還沒啊？再繼續加油喔！";
+  openSheet("lfPhHi","📷 照相館・阿光",`<p class="lead" style="line-height:1.9">「${line}」</p><div class="row"><button class="secondary" data-act="lfPhAlbum">📔 看相簿</button><button class="primary" data-act="lfPhBye">${P.end?"不客氣！":"好，我會加油！"}</button></div>`);
+  try{ window.MZ_BABBLE&&window.MZ_BABBLE(Math.min(1.8,line.length*.06),1.1); const S=KS["tw:photo"]; if(S) keepSay(S.avs[0],line.slice(0,18)+(line.length>18?"……":"")); }catch(e){} };
+HANDLERS.lfPhBye=()=>closeSheet();
 /* the last visit: 阿光 holds the full album */
 function phFinal(){ const lines=["……","（阿光一頁一頁翻著相簿，很久很久都沒有說話）","……謝謝你，沒想到你竟然真的收集完成了……"]; let i=0;
   const step=()=>{ openSheet("lfPhFin","📷 照相館・阿光",`<p class="lead" style="line-height:1.9;text-align:center">${lines[i]}</p><div class="row"><button class="primary" data-act="lfPhFinN">${i<lines.length-1?"……":"……"}</button></div>`); try{ if(i===2) window.MZ_BABBLE&&window.MZ_BABBLE(1.6,.95); }catch(e){} };
   HANDLERS.lfPhFinN=()=>{ i++; if(i<lines.length) step(); else { const P=PH(); P.end=1; save(); try{ profSave(true); }catch(e){} closeSheet(); phEnding(); } }; step(); }
 const PH_END=["有時候我會想，爸爸媽媽年輕的時候，是不是也曾經走過我現在走的路，看過我眼前的風景。","也許我們來到這裡的時間不同，身邊的人不同，連歲月都已經悄悄改變了模樣。","可是當我站在他們曾經站過的地方，呼吸著一樣的空氣，吹著一樣的風，看著夕陽慢慢落下，心裡總會有一種說不出來的感動。","我會忍不住想，當年的他們，是帶著什麼樣的心情看著這片天空？那時候的他們，有沒有想過，多年以後，他們的孩子也會來到這裡？","原來時間真的很奇妙，它讓我們錯過了彼此年輕的模樣，卻又讓我們在不同的歲月裡，遇見同一片風景。","就好像那些來不及一起走過的路，終於用另一種方式，讓我們走在了一起。","想到這裡，突然覺得好溫暖。","原來有些陪伴，不一定要肩並著肩。","只要風還在吹，夕陽還會落下，我們就能在這個世界的某個角落，溫柔地重逢。"];
 /* the ending: dark, the words rolling up slowly, your photos fading in one by one behind them, then the last picture */
-async function phEnding(){ if(document.getElementById("phEnd")) return; const L=await psList(), shots=(await Promise.all(L.map(s=>psImg(s.i)))).filter(Boolean); /* (11/22 主委「完成動畫 照片用我設定的有爺爺奶奶的照片」: the album's own photos, the old couple in them) */
+async function phEnding(){ if(document.getElementById("phEnd")) return; const L=await psList(), shots=(await Promise.all(L.map(s=>psImg(s.i)))).filter(Boolean);
+  /* (11/22 主委「照片銜接請不要跳黑框…很穩很順暢很柔和的轉場」): every photo is decoded before the ending starts (a picture still loading showed as black); the new photo fades in fully on top of the old one and the old one is only taken away once it is covered; the darkening is one steady layer above both, so brightness never dips; the last picture fades in over the photos */
+  await Promise.all(shots.map(src=>new Promise(res=>{ const im=new Image(); im.onload=im.onerror=()=>{ (im.decode?im.decode().catch(()=>{}):Promise.resolve()).then(res); }; im.src=src; setTimeout(res,4000); }))); /* (11/22 主委「完成動畫 照片用我設定的有爺爺奶奶的照片」: the album's own photos, the old couple in them) */
   /* (11/22 主委「字幕一段一段上 不要用捲動的 後面的照片 漸入 微微放大 漸入下一張」): one paragraph at a time in the middle, fading in and
      out; behind it the album's photos, each fading in, slowly growing, and fading into the next; then the last picture */
   const el=document.createElement("div"); el.id="phEnd"; el.innerHTML=`<style>
 #phEnd{position:fixed;inset:0;z-index:130;background:#000;opacity:0;transition:opacity 3s;overflow:hidden;color:#fff;font:500 18px/2.1 ${UI_FONT};user-select:none;-webkit-user-select:none}
-#phEnd .bg{position:absolute;inset:0;background:center/cover no-repeat;opacity:0;transition:opacity 2.6s ease-in-out;transform:scale(1)}
-#phEnd .bg.on{opacity:.55}
+#phEnd .bg{position:absolute;inset:0;background:center/cover no-repeat;opacity:0;transition:opacity 2.6s ease-in-out;transform:scale(1);will-change:opacity,transform;backface-visibility:hidden}
+#phEnd .bg.on{opacity:1}
+#phEnd .dim{position:absolute;inset:0;background:#000;opacity:.45;pointer-events:none}
 #phEnd .bg.zoom{transition:opacity 2.6s ease-in-out,transform 11s linear;transform:scale(1.09)}
 #phEnd .sh{position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(0,0,0,.2),rgba(0,0,0,.78))}
 #phEnd .cap{position:absolute;left:50%;top:50%;width:min(84vw,560px);transform:translate(-50%,-50%);text-align:center;text-shadow:0 2px 8px #000,0 0 2px #000;letter-spacing:.06em;opacity:0;transition:opacity 1.8s ease-in-out}
 #phEnd .cap.on{opacity:1} #phEnd .cap h3{font:700 15px ${UI_FONT};letter-spacing:.45em;opacity:.8;margin:0}
 #phEnd .last{position:absolute;inset:0;background:#000 url(${MZIMG("photo/ending.webp")}) center/contain no-repeat;opacity:0;transition:opacity 4s}
 #phEnd .tap{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);text-align:center;font-size:13px;opacity:0;transition:opacity 2s;color:#fff8}
-</style><div class="bg"></div><div class="bg"></div><div class="sh"></div><div class="cap"></div><div class="last"></div><div class="tap">點一下畫面回到小鎮</div>`;
+</style><div class="bg"></div><div class="bg"></div><div class="dim"></div><div class="sh"></div><div class="cap"></div><div class="last"></div><div class="tap">點一下畫面回到小鎮</div>`;
   document.body.appendChild(el); document.body.classList.add("hideui"); requestAnimationFrame(()=>el.style.opacity=1); window.MUS_OV="journey";
   const bgs=el.querySelectorAll(".bg"), cap=el.querySelector(".cap"); let alive=true, fin=false; const T=[];
   const later=(f,ms)=>{ const t=setTimeout(()=>{ if(alive) f(); },ms); T.push(t); };
@@ -15954,9 +15963,9 @@ async function phEnding(){ if(document.getElementById("phEnd")) return; const L=
      the same stretch of time, and only when both are done does the last picture come */
   const LINES=["<h3>爸爸媽媽的相簿</h3>",...PH_END], nat=LINES.map(t=>{ const n=t.replace(/<[^>]+>/g,"").length; return Math.max(4200,2600+n*170)+2000; }), natSum=nat.reduce((a,b)=>a+b,0);
   const N=shots.length, D=Math.max(natSum,N*7000), per=N?D/N:0, kx=D/natSum, t0=3000;
-  shots.forEach((src,k)=>later(()=>{ const b=bgs[k%2], o=bgs[(k+1)%2]; b.classList.remove("on","zoom"); b.style.transition="none"; b.style.transform="scale(1)"; b.style.backgroundImage=`url(${src})`; void b.offsetWidth; b.style.transition=`opacity 2.6s ease-in-out,transform ${Math.round(per/1000)+3}s linear`; b.style.transform=""; b.style.zIndex=1; o.style.zIndex=0; b.classList.add("on","zoom"); later(()=>o.classList.remove("on"),2600); },t0+k*per));
+  shots.forEach((src,k)=>later(()=>{ const b=bgs[k%2], o=bgs[(k+1)%2]; b.classList.remove("on","zoom"); b.style.transition="none"; b.style.transform="scale(1)"; b.style.backgroundImage=`url(${src})`; void b.offsetWidth; b.style.transition=`opacity 2.6s ease-in-out,transform ${Math.round(per/1000)+3}s linear`; b.style.transform=""; b.style.zIndex=1; o.style.zIndex=0; b.classList.add("on","zoom"); later(()=>{ o.style.transition="none"; o.classList.remove("on"); },2900); },t0+k*per));
   let at=t0+800; LINES.forEach((ln,li)=>{ const slot=nat[li]*kx, hold=slot-2000; later(()=>{ cap.innerHTML=ln.startsWith("<")?ln:`<p style="margin:0">${ln}</p>`; cap.classList.add("on"); },at); later(()=>cap.classList.remove("on"),at+hold); at+=slot; });
-  const finish=()=>{ if(fin) return; fin=true; T.forEach(clearTimeout); T.length=0; cap.classList.remove("on"); bgs.forEach(b=>b.classList.remove("on")); el.querySelector(".last").style.opacity=1; later(()=>{ el.querySelector(".tap").style.opacity=1; },5000); };
+  const finish=()=>{ if(fin) return; fin=true; T.forEach(clearTimeout); T.length=0; cap.classList.remove("on"); el.querySelector(".last").style.opacity=1; later(()=>bgs.forEach(b=>{ b.style.transition="none"; b.classList.remove("on"); }),4100); later(()=>{ el.querySelector(".tap").style.opacity=1; },5000); };
   later(finish,Math.max(at,t0+D)+600);
   el.onclick=()=>{ if(!fin){ finish(); return; } /* (a tap skips to the last picture; another goes back to the town) */ alive=false; T.forEach(clearTimeout); el.style.opacity=0; setTimeout(()=>{ el.remove(); document.body.classList.remove("hideui"); window.MUS_OV=null; },2600); }; }
 async function album(){ const L=await psList(true), P=PH(), got=L.filter(s=>P.got[s.i]).length, done=phAll(L,P);
