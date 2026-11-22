@@ -4626,7 +4626,7 @@ let HALL_CAP=20; const HALL_NAMES=["正殿","二殿","三殿","四殿","五殿",
 let SEND_GAP=400;
 function startSupabase(){
   SEND_GAP=350; updateCount();
-  probeCF().then(j=>{ if(j){ USE_CF=true; try{ initCF(j); }catch(e){ USE_CF=false; } } else watchDailyReset();
+  probeCF().then(j=>{ if(j){ USE_CF=true; try{ renderer.debug.checkShaderErrors=false; }catch(e){} /* (11/23: on the real site the shader checks are off — asking the graphics card whether each program built makes the page wait for it; the test page keeps them for finding mistakes) */ try{ initCF(j); }catch(e){ USE_CF=false; } } else watchDailyReset();
     const sc=document.createElement("script"); sc.src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js";
     sc.onload=()=>{ try{ initSupabase(); }catch(e){ if(!USE_CF){ room=null; updateCount(); } } }; sc.onerror=()=>updateCount(); document.head.appendChild(sc); }); }
 // When the free daily quota runs out the game falls back to 20-per-hall mode. The quota resets at 00:00 UTC (08:00 Taiwan),
@@ -13653,7 +13653,11 @@ function fcScan(){ const todo=[]; for(const C of Object.values(LIVE)) C.g.traver
 TW.fcInfo=()=>[FCL.length,FCL.filter(e=>e[0].userData.fcOff).length];
 TW.fcCull=cam=>{ if(!FCL.length) return; fcM.multiplyMatrices(cam.projectionMatrix,cam.matrixWorldInverse); fcF.setFromProjectionMatrix(fcM);
   for(let i=FCL.length-1;i>=0;i--){ const [o,sp,C]=FCL[i]; if(LIVE[C.id]!==C){ FCL.splice(i,1); if(o.userData.fcOff){ o.userData.fcOff=false; o.visible=true; } continue; } let v=fcF.intersectsSphere(sp); if(v&&scene.fog&&scene.fog.far<400&&cam.position.distanceTo(sp.center)-sp.radius>scene.fog.far+2) v=false; if(v!==!o.userData.fcOff){ o.userData.fcOff=!v; o.visible=v; } } };
-function load(d){ const C={g:new T.Group(),picks:[],baked:[],id:d.id}; C.g.userData.noMerge=1; const t0=performance.now(); try{ d.build(C); try{ wFix(C); }catch(e){ console.warn("water depth",e); } }catch(e){ console.warn("town district "+d.id,e); (TW.loadErr||(TW.loadErr=[])).push(d.id+": "+e.message); } const t1=performance.now(); try{ bake(C); }catch(e){ console.warn("town bake "+d.id,e); (TW.loadErr||(TW.loadErr=[])).push(d.id+" 合併: "+e.message); } scene.add(C.g); try{ treesFlush(C); }catch(e){ console.warn("trees",e); } (TW.loadLog||(TW.loadLog=[])).push([d.id,Math.round(t1-t0),Math.round(performance.now()-t1)]); LIVE[d.id]=C; try{ if(typeof WORLD!=="undefined") WORLD.warm=2; }catch(e){} }
+function load(d){ const C={g:new T.Group(),picks:[],baked:[],id:d.id}; C.g.userData.noMerge=1; const t0=performance.now(); try{ d.build(C); try{ wFix(C); }catch(e){ console.warn("water depth",e); } }catch(e){ console.warn("town district "+d.id,e); (TW.loadErr||(TW.loadErr=[])).push(d.id+": "+e.message); } const t1=performance.now(); try{ bake(C); }catch(e){ console.warn("town bake "+d.id,e); (TW.loadErr||(TW.loadErr=[])).push(d.id+" 合併: "+e.message); } scene.add(C.g); try{ treesFlush(C); }catch(e){ console.warn("trees",e); } (TW.loadLog||(TW.loadLog=[])).push([d.id,Math.round(t1-t0),Math.round(performance.now()-t1)]); LIVE[d.id]=C; try{ if(typeof WORLD!=="undefined") WORLD.warm=2; }catch(e){}
+  /* (11/23 主委 閃退紀錄: on computers a whole frame stopped 9–59 s in 「畫」 with a dozen or more new shader programs — the graphics card
+     preparing how to draw things the first time they show. The new district's programs are handed to the card now, while it is still
+     hidden, and it is shown a moment later — the card prepares them in the background instead of making the frame wait) */
+  if(!(typeof ZN!=="undefined"&&ZN.busy)&&!document.getElementById("zonePack")?.offsetParent) try{ renderer.compile(scene,camera); C.g.visible=false; C.preHid=1; setTimeout(()=>{ if(C.preHid){ C.preHid=0; if(!C.panoHid) C.g.visible=true; } },450); }catch(e){ C.g.visible=true; } }
 /* 路和店不見的真正原因 (11/16): some signs carry a list of paints (one per face), and throwing such a district away used to stop on
    them with an error — and since that error broke the town's step, no district was ever built again after it: walk away from the old
    street and back and it stayed empty grass. (On phones districts are thrown away sooner, so it happened there all the time.) Each
