@@ -9209,7 +9209,9 @@ const SLOW={tex:0,prog:0,sent:0,n:0};
    picture waiting on the graphics card) — and whether the page was out of sight in between) */
 const FTM={last:null,worst:null}, LT={max:0,n:0}; try{ new PerformanceObserver(l=>{ for(const e of l.getEntries()){ LT.n++; if(e.duration>LT.max) LT.max=e.duration; } }).observe({entryTypes:["longtask"]}); }catch(e){}
 let VISGAP=0; document.addEventListener("visibilitychange",()=>{ if(document.hidden) VISGAP=1; });
-const ftTxt=a=>a?`${Math.round(a[0])}ms（前段${Math.round(a[1])} 商店${Math.round(a[2])} 小鎮${Math.round(a[3])} 生活${Math.round(a[4])} 畫${Math.round(a[5])}）`:"?";
+const ftTxt=a=>a?`${Math.round(a[0])}ms（前段${Math.round(a[1])} 商店${Math.round(a[2])} 小鎮${Math.round(a[3])} 生活${Math.round(a[4])} 畫${Math.round(a[5])}${(a[6]||[]).filter(q=>q[1]>=50).sort((x,y)=>y[1]-x[1]).slice(0,3).map(q=>` ${q[0]}${Math.round(q[1])}`).join("")}）`:"?";
+/* (11/23 主委 閃退紀錄: 「生活」2–3 秒、「前段」7.5 秒 — the parts are marked inside too, so the slowest three are named) */
+const FMK={t:0,a:[],mk(n){ const t=performance.now(); this.a.push([n,t-this.t]); this.t=t; }}, LPF={a:[],w(n,f){ return function(){ const t0=performance.now(); try{ return f.apply(this,arguments); } finally{ LPF.a.push([n,performance.now()-t0]); } }; }};
 function slowCheck(gap){ try{ const r=renderer.info, tex=r.memory.textures, prog=(r.programs||[]).length; if(gap>2&&!document.hidden&&!VISGAP&&LQ.ready&&SLOW.n<6&&Date.now()-SLOW.sent>60e3){ SLOW.sent=Date.now(); SLOW.n++; crSend("slow",Object.assign(crInfo(),{msg:`卡住 ${gap.toFixed(1)} 秒・新貼圖 ${tex-SLOW.tex}・新著色程式 ${prog-SLOW.prog}・上一格 ${ftTxt(FTM.last)}・最久一格 ${ftTxt(FTM.worst)}・長任務 ${Math.round(LT.max)}ms×${LT.n}`})); FTM.worst=null; } VISGAP=0; LT.max=0; LT.n=0; SLOW.tex=tex; SLOW.prog=prog; }catch(e){} }
 function dresTick(){ const now=performance.now(), dt=DRES.last?(now-DRES.last)/1000:0; DRES.last=now; slowCheck(dt); if(document.hidden||!dt||dt>1.5||DRES.fw) return;
   const cap=frameCap(), r=dt*cap; DRES.ema+=(r-DRES.ema)*.05; DRES.cool-=dt; const L=dprLadder();
@@ -9234,17 +9236,17 @@ function frameCap(){ if(PACE.smooth||(!perf.done&&Q.mode==="auto")) return 60; c
    error) and the chair sees it on screen. */
 const TICKERR={n:0,seen:new Set()};
 function tick(){ try{ tick0(); }catch(e){ TICKERR.n++; const m=String(e&&(e.stack||e.message)||e).slice(0,400); try{ console.error("frame",e); }catch(_){} if(!TICKERR.seen.has(m.slice(0,120))&&TICKERR.seen.size<5){ TICKERR.seen.add(m.slice(0,120)); try{ crSend("tick",Object.assign(load("mz.alive",{})||{},{msg:"畫面錯誤 "+m})); }catch(_){} try{ if(me.sp) toast("⚠️ 畫面錯誤（已記錄）："+m.slice(0,80),5000); }catch(_){} } requestAnimationFrame(tick); } }
-function tick0(){ if(gameAsleep) return; const _ft0=performance.now(); { const now=performance.now(), cap=frameCap(); if(cap<60&&now-PACE.last<1000/cap-4){ requestAnimationFrame(tick); return; } PACE.last=now; } dresTick();
+function tick0(){ if(gameAsleep) return; const _ft0=performance.now(); FMK.t=_ft0; FMK.a=[]; { const now=performance.now(), cap=frameCap(); if(cap<60&&now-PACE.last<1000/cap-4){ requestAnimationFrame(tick); return; } PACE.last=now; } dresTick();
   const dt=Math.min(.07,clock.getDelta()); const t=clock.elapsedTime;
   { const nowP=performance.now(); if(AUQ.frame&&nowP-AUQ.frame>800){ AUQ.until=nowP+1500; remotes.forEach(av=>{ if(av.goalX!=null){ av.pos.set(av.goalX,av.goalZ); av.target.set(av.goalX,av.goalZ); av.path=[]; } }); } AUQ.frame=nowP; }
-  meAv.update(dt); accTick(meAv,dt); arrivedCheck(); { const fb=document.getElementById("frogBtn"), on=!!(meAv.eq&&meAv.eq[0]==="h_frog")&&!miniOpen; if(fb&&fb.hidden===on) fb.hidden=!on; }
+  FMK.mk("開頭"); meAv.update(dt); accTick(meAv,dt); arrivedCheck(); FMK.mk("自己"); { const fb=document.getElementById("frogBtn"), on=!!(meAv.eq&&meAv.eq[0]==="h_frog")&&!miniOpen; if(fb&&fb.hidden===on) fb.hidden=!on; }
   if(tapMark.visible){ tapT+=dt; const arrived=!(meAv.path&&meAv.path.length)&&meAv.pos.distanceTo(meAv.target)<.06; const k=1+Math.sin(tapT*6)*.12; const [r1,r2,dot]=tapMark.userData.parts;
     r1.scale.setScalar(k); r2.scale.setScalar(1+((tapT*1.2)%1)*.8); r2.material.opacity=.7*(1-((tapT*1.2)%1));
     if(arrived||tapT>12){ const f=Math.max(0,r1.material.opacity-dt*3); r1.material.opacity=f; dot.material.opacity=f; if(f<=0){ tapMark.visible=false; r1.material.opacity=.9; dot.material.opacity=.9; } } }
-  botTick(dt);
-  lodPrep(); remotes.forEach(r=>{ lodUpdate(r,dt); if((r.eq&&(r.eq[0]||r.eq[1]||r.eq[2]||r.eq[3]))||r.flies||r.hasThread) accTick(r,dt); }); /* r.flies: keep ticking once more so flies go away after the sausage is put down */ sjUpdate(dt); fwUpdate(dt); updateSkyLanterns(dt); renderSLBtn(); opTick(dt); ptTick(dt); REAR_TICK.forEach(f=>f(dt)); csTick(dt); hbTick(dt); flyCtlTick(dt); slodTick(dt); poolTick(dt); rearVis(); buildTick(); ftTick(dt); mkTick(dt);
+  botTick(dt); FMK.mk("機器人");
+  FMK.mk("點地"); lodPrep(); remotes.forEach(r=>{ lodUpdate(r,dt); if((r.eq&&(r.eq[0]||r.eq[1]||r.eq[2]||r.eq[3]))||r.flies||r.hasThread) accTick(r,dt); }); /* r.flies: keep ticking once more so flies go away after the sausage is put down */ sjUpdate(dt); fwUpdate(dt); updateSkyLanterns(dt); renderSLBtn(); opTick(dt); ptTick(dt); REAR_TICK.forEach(f=>f(dt)); csTick(dt); hbTick(dt); flyCtlTick(dt); slodTick(dt); poolTick(dt); rearVis(); buildTick(); ftTick(dt); mkTick(dt);
   if(room&&dirty&&performance.now()-lastSend>((keys.size||joy.on)?800:SEND_GAP)) sendPresence();
-  updateFlyers(dt); updateFu(dt); updateCats(dt); try{ catTick(dt); }catch(e){} try{ gpuTrim(); }catch(e){} updateWater(dt);
+  FMK.mk("其他玩家"); updateFlyers(dt); updateFu(dt); updateCats(dt); try{ catTick(dt); }catch(e){} FMK.mk("飛/貓"); try{ gpuTrim(); }catch(e){} FMK.mk("整理記憶體"); updateWater(dt); FMK.mk("水");
   { let best=null, bd=2.6; if(!sheetKind&&!customizing&&!pendingStation&&meAv.seat<0&&!(meAv.danceT>0)) for(const k in stations){ if(k==="cats"){ if(CATS.off) continue; const dc=Math.hypot(meAv.pos.x-CATS.c.x,meAv.pos.y-CATS.c.z); if(dc<3.6){ best=k; bd=0; } continue; } const d=meAv.pos.distanceTo(stations[k].approach); if(d<bd){ bd=d; best=k; } }
     const nc=$("#nearChip"); if(best!==nearKey){ nearKey=best; if(best){ nc.textContent=best==="cats"?"🐾 一起祈求":"點我："+(STATION_LABEL[best]||STATION_HINT[best]||best).replace(/^走(向|去)/,""); nc.hidden=false; } else nc.hidden=true; } }
   // camera
@@ -9311,7 +9313,7 @@ function tick0(){ if(gameAsleep) return; const _ft0=performance.now(); { const n
     { const k=camNear*(1-camSeatK); camera.lookAt(camFocus.x-Math.sin(yaw)*3.5*k,camFocus.y+.15+.75*k,camFocus.z-Math.cos(yaw)*3.5*k); if(tiltUp>0&&camSeatK<.5) camera.rotateX(tiltUp*1.35); } /* (seated or lying you stay in the middle of the screen) */ // close up: look at yourself, not past you
     dirArrowTick(1-camNear);
   }
-  if(window.__mzCam){ camera.clearViewOffset(); camera.position.fromArray(window.__mzCam.p); camera.lookAt(...window.__mzCam.l); }
+  FMK.mk("鏡頭"); if(window.__mzCam){ camera.clearViewOffset(); camera.position.fromArray(window.__mzCam.p); camera.lookAt(...window.__mzCam.l); }
   skyMat.uniforms.time.value=t;
   // ambience
   flames.forEach((f,i)=>{ const k=1+Math.sin(t*13+i*2)*.08+Math.sin(t*29+i)*.05; f.scale.set(.3*k,.45*k,1); });
@@ -9323,10 +9325,10 @@ function tick0(){ if(gameAsleep) return; const _ft0=performance.now(); { const n
   for(let i=parts.length-1;i>=0;i--){ const p=parts[i]; p.life+=dt; const k=p.life/p.max; if(k>=1){ scene.remove(p.s); if(p.s.material!==emberMat&&p.s.material!==smokeMat) p.s.material.dispose(); parts.splice(i,1); continue; }
     if(p.g) p.vy-=p.g*dt; p.s.position.x+=(p.vx+(p.still?0:Math.sin(t*1.3+i)*.04))*dt; p.s.position.y+=p.vy*dt; p.s.position.z+=p.vz*dt; const sc=p.s.scale.x+p.grow*dt; p.s.scale.set(Math.max(.02,sc),Math.max(.02,sc),1);
     p.s.material.opacity=p.op*Math.sin(Math.min(1,k)*Math.PI); }
-  footTick(dt);
+  FMK.mk("香煙火光"); footTick(dt);
   const dp=dustGeo.attributes.position.array; for(let i=0;i<dustN;i++){ dp[i*3+1]+=Math.sin(t*.5+i)*.0015; dp[i*3]+=Math.cos(t*.3+i*.7)*.001; } dustGeo.attributes.position.needsUpdate=true;
   if(duckT>0){ duckT-=dt; }
-  try{ musicTick(dt); }catch(e){} try{ crowdTick(dt); }catch(e){}
+  FMK.mk("腳印灰塵"); try{ musicTick(dt); }catch(e){} FMK.mk("音樂"); try{ crowdTick(dt); }catch(e){} FMK.mk("人群");
   { const dc=CATS.off?99:Math.hypot(meAv.pos.x-CATS.c.x,meAv.pos.y-CATS.c.z); const want=catMode?dc<4.2:dc<3.2;
     if(want!==catMode){ catMode=want; } }
   bellSwing*=Math.pow(.25,dt); bell.rotation.x=Math.sin(t*4)*.22*bellSwing; drumBounce*=Math.pow(.02,dt); drum.scale.setScalar(1+Math.sin(t*40)*.03*drumBounce);
@@ -9335,7 +9337,7 @@ function tick0(){ if(gameAsleep) return; const _ft0=performance.now(); { const n
   { const GU=window.MZ_GU; if(GU&&GU.gSunD){ GU.gSunD.value.copy(sunLight.position).sub(sunLight.target.position).normalize(); GU.gSunC.value.copy(sunLight.color).multiplyScalar(sunLight.intensity); GU.gCam.value.copy(camera.position); } }
   try{ if(TOWNX&&TOWNX.fcCull){ camera.updateMatrixWorld(); TOWNX.fcCull(camera); } }catch(e){}
   if(CURVE.on){ const zf=(typeof TOWNX!=="undefined"&&TOWNX&&TOWNX.zoneNow&&TOWNX.zoneNow()==="vf")?200:90; if(camera.far!==zf){ camera.far=zf; camera.updateProjectionMatrix(); } } /* (滾筒世界: past ~90 m everything has rolled under the horizon, so it is not drawn at all) */
-  const _f1=performance.now(); if(SHOPX){ try{ SHOPX.tick(dt); }catch(e){} } const _f2=performance.now(); if(TOWNX){ try{ TOWNX.tick(dt); }catch(e){} } const _f3=performance.now(); if(LIFE){ try{ LIFE.tick(dt); }catch(e){} } const _f4=performance.now(); if(SHOPX&&SHOPX.on){ SHOPX.render(dt); lblClear(); } else if(window.MZ_VIEW){ renderer.render(window.MZ_VIEW.scene,window.MZ_VIEW.cam); lblClear(); } /* (inside a town shop) */ else if(!miniOpen&&!window.MZ_NO3D){ renderer.render(scene,camera); lblRender(); } else lblClear(); const _f5=performance.now(); FTM.last=[_f5-_ft0,_f1-_ft0,_f2-_f1,_f3-_f2,_f4-_f3,_f5-_f4]; if(_f5-_ft0>(FTM.worst?FTM.worst[0]:0)) FTM.worst=FTM.last; perfTick(_f5-_ft0); requestAnimationFrame(tick); }
+  FMK.mk("前段其他"); const _f1=performance.now(); if(SHOPX){ try{ SHOPX.tick(dt); }catch(e){} } const _f2=performance.now(); if(TOWNX){ try{ TOWNX.tick(dt); }catch(e){} } const _f3=performance.now(); if(LIFE){ try{ LIFE.tick(dt); }catch(e){} } const _f4=performance.now(); if(SHOPX&&SHOPX.on){ SHOPX.render(dt); lblClear(); } else if(window.MZ_VIEW){ renderer.render(window.MZ_VIEW.scene,window.MZ_VIEW.cam); lblClear(); } /* (inside a town shop) */ else if(!miniOpen&&!window.MZ_NO3D){ renderer.render(scene,camera); lblRender(); } else lblClear(); const _f5=performance.now(); FTM.last=[_f5-_ft0,_f1-_ft0,_f2-_f1,_f3-_f2,_f4-_f3,_f5-_f4,FMK.a.concat(LPF.a)]; LPF.a=[]; if(_f5-_ft0>(FTM.worst?FTM.worst[0]:0)) FTM.worst=FTM.last; perfTick(_f5-_ft0); requestAnimationFrame(tick); }
 // auto: watch the first seconds in the hall and step down on slow devices
 const perf={t:0,n:0,done:false,warm:0};
 function perfSample(dt){ if(perf.done||Q.mode!=="auto"||customizing||document.hidden) return; perf.warm+=dt; if(perf.warm<3) return; perf.t+=dt; perf.n++;
@@ -16840,6 +16842,7 @@ HANDLERS.lfIng=v=>{ const q=IB[v]; if(!q) return; const pr=dPrice("tw:grocer",q[
 
 
 L.dbg=()=>({F,near,LF:LF(),pool,FGLB,HELD}); L.press=()=>press(); L.start=()=>startFish(); L.hold=(id,ln)=>{ ln=ln||.8; fishLoad(); let tries=0; const go=()=>{ if((!FGLB||!FGLB[id])&&tries++<200){ setTimeout(go,300); return; } if(HELD&&HELD.g&&HELD.g.parent) HELD.g.parent.remove(HELD.g); const f=FBY[id], g=fishMesh(f); g.scale.setScalar(ln); scene.add(g); HELD={g,t:.6,from:meAv.root.position.clone().add(new T.Vector3(Math.sin(meAv.rotY)*3,0,Math.cos(meAv.rotY)*3)),len:ln}; L.heldFreeze=1; }; go(); };
+/* (11/23: each part of the town life is timed for the 卡住 notes) */ try{ chuteTick=LPF.w("滑翔",chuteTick); }catch(e){} try{ fishTick=LPF.w("釣魚",fishTick); }catch(e){} try{ fshTick=LPF.w("魚影",fshTick); }catch(e){} try{ heldTick=LPF.w("釣到",heldTick); }catch(e){} try{ goddessTick=LPF.w("女神",goddessTick); }catch(e){} try{ mmTick=LPF.w("流星",mmTick); }catch(e){} try{ npcTick=LPF.w("NPC",npcTick); }catch(e){} try{ iceTick=LPF.w("冰淇淋",iceTick); }catch(e){} try{ herbTick=LPF.w("中藥",herbTick); }catch(e){} try{ meteorTick=LPF.w("流星石",meteorTick); }catch(e){} try{ keepTick=LPF.w("店員",keepTick); }catch(e){} try{ bugTick=LPF.w("昆蟲",bugTick); }catch(e){} try{ digTick=LPF.w("挖掘",digTick); }catch(e){} try{ ckTick=LPF.w("廚房",ckTick); }catch(e){} try{ if(L.tick9){ const t9=L.tick9; L.tick9=LPF.w("房屋",t9); } }catch(e){}
 return L; })();
 /*LIFE>>*/
 window.__mz={FT,sideMuralMat,CATS,fuAnims,passFu,walkTo,tapMark,camLimit,HZ,renderer,scene,stations,jiaoCam,flyers,sheet,meAv,openPoem,openLot,openStation,goStation,trySit,bag,camera,setYaw:v=>camYaw=v,setPitch:v=>camPitch=v,setDist:v=>camDist=v};
