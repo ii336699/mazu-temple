@@ -12204,7 +12204,7 @@ TW.walk=(x,z)=>{ if(solHit(x,z)) return false; for(const b of BLOCK) if(inR(b,x,
   if(z<-143.6&&x>=FOREST[0]&&x<=FOREST[1]) return SW.walkOpen(x,z);
   if(z<-143.6&&x<21&&(x<14||z<-176)){ if(onFootB(x,z)) return true; if(s1D(x,z)<3.4) return false; if(westMtn(x,z)*sstep(2.5,8,wpD(x,z))>1.4) return false; for(const t of WWT) if(Math.hypot(x-t[0],z-t[1])<.45*t[2]) return false;
     const g=southH, a=g(x+.5,z), b=g(x-.5,z), c=g(x,z+.5), d=g(x,z-.5); if(Math.hypot(a-b,c-d)>TW.maxSlope) return false; return true; } /* 西山: the trails and the gentle ground; not the stream (but its footbridge), not the mountains */
-  if(z<-176&&x>84&&x<=111.5){ const S=NT.springs[2]; if(springD(S,x,z)<S[2]+.35) return false; if(Math.hypot(x-GTREE[0],z-GTREE[1])<2.6||(Math.hypot(x-GSHRINE[0],z-GSHRINE[1])<1.8&&!MD.gone(GSHRINE[0],GSHRINE[1]))) return false; const b=brookD(x,z); if(b[0]<brookW(b[1],b[2])+.4) return false; if(wfMount(x,z)>1) return false; } /* 女神泉: the pool, the 神木, the shrine, the brook, the mountain */
+  if(z<-176&&x>84&&x<=111.5){ const S=NT.springs[2]; if(springD(S,x,z)<S[2]+.35) return false; if(Math.hypot(x-GTREE[0],z-GTREE[1])<2.6||(Math.hypot(x-GSHRINE[0],z-GSHRINE[1])<1.8&&!MD.gone(GSHRINE[0],GSHRINE[1]))) return false; const onP=lineD(SPI2,x,z)[0]<1.7; const b=brookD(x,z); if(!onP&&b[0]<brookW(b[1],b[2])+.4) return false; if(!onP&&wfMount(x,z)>1) return false; } /* 女神泉: the pool, the 神木, the shrine, the brook, the mountain */
   if(x>111.5&&z<-176){ if(inRect(MOUTHB,x,z)) return true; if(springD(BHEAD,x,z)<BHEAD[2]+.35) return false; const b=brookD(x,z); if(b[0]<brookW(b[1],b[2])+.4) return false; if(x<WM.x+WM.rx+1){ if(wfMount(x,z)>1) return false; const a=eastH(x+.5,z), c=eastH(x-.5,z), d=eastH(x,z+.5), e=eastH(x,z-.5); if(Math.hypot(a-c,d-e)>TW.maxSlope) return false; } } /* the falls: the pool, the brook, the mountain (not climbable at all) */
   if(x>134.5&&eastH(x,z)<-.12) return false; /* the east river */
   if(x>B.x1-.6) return false;
@@ -13342,16 +13342,17 @@ const TREES=(()=>{ const r=krng(77), out=[]; for(let k=0;k<150;k++){ const x=FOR
   /* (the wood round the goddess's spring grows in 女神谷 now, 11/17) */
   return out; })();
 function southH(x,z){ if(z>-143.6) return 0; const r=Math.hypot(x-MT.cx,z-MT.cz); let h=x<21&&(x<14||z<-176)?westH(x,z):r<MT.R+2?mtProf(r)+(sstep(MT.R,MT.R-12,r)*sstep(MT.top+2,MT.top+8,r))*1.1*nz(x*.6,z*.6):0;
-  if(r<MT.R+3){ const L=lineD(SPI2,x,z); if(L[0]<4){ const i=L[1], t=L[2], rr=SPIRAL[i][2]+(SPIRAL[Math.min(SPIRAL.length-1,i+1)][2]-SPIRAL[i][2])*t, th=mtProf(rr), k=sstep(1.5,3.6,L[0]); h=th*(1-k)+h*k; } }
+  let PTH=null; if(r<MT.R+3){ const L=lineD(SPI2,x,z); if(L[0]<4){ const i=L[1], t=L[2], rr=SPIRAL[i][2]+(SPIRAL[Math.min(SPIRAL.length-1,i+1)][2]-SPIRAL[i][2])*t, th=mtProf(rr), k=sstep(1.5,3.6,L[0]); h=th*(1-k)+h*k; if(L[0]<3.2) PTH=[th,sstep(1.7,3.2,L[0])]; } }
   if(z<-176&&x>WM.x-WM.rx-1) h+=wfMount(x,z); { const b=brookD(x,z); if(b[0]<6){ const bw=brookW(b[1],b[2]), k=sstep(bw-.3,bw+1.3,b[0]), by=brookY((b[1]+b[2])/BN)-.75; h=Math.min(h,by*(1-k)+h*k); } } /* (the falls' mountain and its brook reach into this ground now) */
   for(const S of NT.springs){ if(S===BHEAD){ h=gBowl(x,z,h); continue; } const d=springD(S,x,z); if(d<S[2]+1.2) h=Math.min(h,-.55*sstep(S[2]+1.2,S[2]-.6,d)); }
+  if(PTH) h=PTH[0]*(1-PTH[1])+h*PTH[1]; /* (11/22 晚 主委「山路…過不去」: the brook and the falls' mountain cut the mountain path in two near (88,−238) — a ditch you could not climb out of. The path keeps its own level now; the brook runs under it) */
   return h; }
 SW.walk=(x,z)=>{ if(x<FOREST[0]||x>FOREST[1]||z>-143.6||z<-256) return false; for(const S of NT.springs) if(Math.hypot(x-S[0],z-S[1])<S[2]+.35) return false;
   const r=Math.hypot(x-MT.cx,z-MT.cz); if(r<MT.top+.2) return !CAMPB.some(b=>Math.hypot(x-b[0],z-b[1])<b[2]);
   if(r<MT.R-1.2) return lineD(SPI2,x,z)[0]<1.35;
   if(z<FOREST[2]&&r>MT.R+.5) return false;
   for(const t of TREES) if(Math.hypot(x-t[0],z-t[1])<.55*t[2]) return false; return true; };
-SW.walkOpen=(x,z)=>{ for(const S of NT.springs) if(springD(S,x,z)<S[2]+.35) return false; if(CAMPB.some(b=>Math.hypot(x-b[0],z-b[1])<b[2])) return false; for(const t of TREES) if(Math.hypot(x-t[0],z-t[1])<.45*t[2]) return false; return true; }; /* (11/16: the whole forest floor and the mountain, not only the paths) */
+SW.walkOpen=(x,z)=>{ const onP=Math.hypot(x-MT.cx,z-MT.cz)<MT.R+3&&lineD(SPI2,x,z)[0]<1.7; /* (the mountain path runs along the rim of 女神谷's pool near (88,−239): on the path you may pass) */ for(const S of NT.springs) if(!onP&&springD(S,x,z)<S[2]+.35) return false; if(CAMPB.some(b=>Math.hypot(x-b[0],z-b[1])<b[2])) return false; for(const t of TREES) if(Math.hypot(x-t[0],z-t[1])<.45*t[2]) return false; return true; }; /* (11/16: the whole forest floor and the mountain, not only the paths) */
 const CAMPB=[[MT.cx,MT.cz,.9],[MT.cx-3.2,MT.cz-2.4,1.3],[MT.cx+3.3,MT.cz-1.8,1.3],[MT.cx+2.4,MT.cz+3.1,.9]]; /* fire, two tents, the table */
 const VS=s=>new T.Color(s).convertSRGBToLinear();
 const SC={g1:VS("#7cc46a"),g2:VS("#5aa45c"),dark:VS("#3f8a5a"),rock:VS("#9a9a8e"),path:VS("#d8c49a"),moss:VS("#6aa880"),top:VS("#a8d07a")};
