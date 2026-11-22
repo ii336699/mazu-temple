@@ -15985,7 +15985,7 @@ let PSB=null; const psBaked=async()=>{ if(PSB) return PSB; try{ const r=await fe
 let PS=null, PS_FROM=""; async function psList(force){ if(PS&&!force) return PS; let L=null; try{ const r=await fetch("/photospots",{cache:"no-store"}); const j=await r.json(); L=(j&&j.list)||[]; }catch(e){ L=PS&&PS_FROM==="srv"?PS:null; }
   const B=await psBaked(), M=new Map(B.map(q=>[q.i,Object.assign({},q,{src:"b"})])); if(L) for(const q of L) M.set(q.i,Object.assign({},q,{src:"s"})); PS=[...M.values()].sort((a,b)=>a.i-b.i); PS_FROM=L&&L.length?"srv":"baked"; return PS; } /* (a spot the chair saves on the server replaces the shipped one with the same number; the rest stay) */
 const PSI={}; async function psImg(i){ if(PSI[i]) return PSI[i]; const sp=(PS||[]).find(q=>q.i===i); if(!sp||sp.src==="s"){ try{ const r=await fetch("/photospot?i="+i); const j=await r.json(); if(j&&j.img) PSI[i]=j.img; }catch(e){} }
-  if(!PSI[i]){ const b=(await psBaked()).find(q=>q.i===i); if(b&&b.f) PSI[i]=b.f; } return PSI[i]||""; }
+  if(!PSI[i]){ const b=(await psBaked()).find(q=>q.i===i); if(b&&(b.img||b.f)) PSI[i]=b.img||b.f; } return PSI[i]||""; }
 const myPhoto=i=>{ try{ return localStorage.getItem("mz.ph."+i)||""; }catch(e){ return ""; } };
 /* (11/22 主委「相館任務…一開始很有趣 後面很感人」: 阿光 is a clumsy, cheerful grandson at first; 24 photos; the album shows each old photo,
    the camera shows the one you are hunting, near a spot you hear 「這裡……好像是……照片裡的地方？」, a good shot gets a green tick, and the
