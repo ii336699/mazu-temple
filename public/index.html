@@ -14592,7 +14592,7 @@ HANDLERS.lfGodToss=()=>{ const d=LF(); if(bag.coins<100&&!me.sp){ toast("平安�
 const GQ=()=>{ const d=LF(); d.gq=d.gq||{s:0,d:-1}; return d.gq; };
 const godOpen=()=>GQ().s>=GQ_N||!!(LF().rods&32);
 const GQ_STEP=[
- {ask:"一條櫻花鉤吻鮭",hint:"山裡清澈的溪流才有，清晨比較容易上鉤，用川蟲或毛鉤當餌。",has:()=>LF().inv.some(q=>q[0]==="masu"),take:()=>{ const d=LF(), i=d.inv.findIndex(q=>q[0]==="masu"); d.inv.splice(i,1); return "櫻花鉤吻鮭"; },thx:"「是櫻花鉤吻鮭……好久沒在溪裡看到你們了。謝謝你，水裡的孩子回到了泉水的懷抱。」"},
+ {ask:"一條香魚",hint:"山裡清澈的溪流，白天比較容易釣到，用川蟲或毛鉤當餌。",has:()=>LF().inv.some(q=>q[0]==="ayu"),take:()=>{ const d=LF(), i=d.inv.findIndex(q=>q[0]==="ayu"); d.inv.splice(i,1); return "香魚"; },thx:"「是香魚……還帶著西瓜的香味呢。謝謝你，水裡的孩子回到了泉水的懷抱。」"},
  {ask:"一個大自然的小生命——一隻昆蟲，或是一樣花草",hint:"用網子在公園、森林抓蟲；或是在地上的裂縫挖到四葉幸運草、貝殼。",has:()=>Object.keys(GI()).some(k=>k.startsWith("bug:")||(giInfo(k).tags||[]).includes("flowers")),take:()=>{ const k=Object.keys(GI()).find(k=>k.startsWith("bug:"))||Object.keys(GI()).find(k=>(giInfo(k).tags||[]).includes("flowers")); const n=giInfo(k).n; giAdd(k,-1); return n; },thx:"「好可愛……森林的聲音，我好久沒聽到了。」"},
  {ask:"一顆天上掉下來的流星石（或 3 份星砂）",hint:"流星夜的時候到外面走走，會撿到流星石或星砂。",has:()=>(LF().stone|0)>=1||(LF().dust|0)>=3,take:()=>{ const d=LF(); if((d.stone|0)>=1){ d.stone--; return "流星石"; } d.dust-=3; return "3 份星砂"; },thx:"「星星的味道……我想起來了，我是守護這座小鎮的泉之女神。」"},
  {ask:"三件不一樣的古老釣具",hint:"鎮上地上的裂縫用鏟子挖，偶爾會挖到古銅魚鉤、玉魚墜、古木魚餌、魚紋玉扳指、魚紋銅印、魚圖古卷。",has:()=>GQ_TK.filter(k=>GI()["dig:"+k]>0).length>=3,take:()=>{ const got=GQ_TK.filter(k=>GI()["dig:"+k]>0).slice(0,3); got.forEach(k=>giAdd("dig:"+k,-1)); return got.map(k=>DIG_BY[k][1]).join("、"); },thx:"「這是……很久很久以前，鎮上的漁夫獻給我的東西。」"},
