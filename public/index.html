@@ -12472,7 +12472,7 @@ function shrine(g,x,z,ry){ const s=new T.Group(); s.position.set(x,0,z); s.rotat
    three lanes off the avenue, which runs from the temple's back down to the river. The same 40 houses, each with its own number, size,
    price and colours as before; only where they stand changed) */
 const VIL={x0:-98,x1:-26,z0:-114,z1:-54, av:[-26,-20], lanes:[-64,-84,-104]};
-const LOT_SZ={S:{n:"小屋",w:7,d:6,fl:1,room:[6,5],p:14000},M:{n:"兩層樓",w:9,d:7,fl:2,room:[10,8],p:30000}}; /* (11/22 主委「不要做二樓 空間大一點就好」: one big floor, 10 × 8) */ /* (11/16 主委: half the price, no big houses, more small ones — 30 小屋 + 10 兩層樓) */
+const LOT_SZ={S:{n:"小屋",w:7,d:6,fl:1,room:[6,5],p:14000},M:{n:"大間",w:9,d:7,fl:2,room:[10,8],p:30000}}; /* (11/22 主委「不要做二樓 空間大一點就好」: one big floor, 10 × 8) */ /* (11/16 主委: half the price, no big houses, more small ones — 30 小屋 + 10 兩層樓) */
 const LOTS=(()=>{ const out=[], pats=[["S","M","S","S","S"],["S","S","M","S","S"],["M","S","S","S","M"],["S","S","S","M","S"]], r=krng(4242); let n=0;
   /* each house's number, size, price and colours come out exactly as they always did (same order, same dice) */
   for(let li=0;li<4;li++) for(let si=0;si<2;si++) pats[(li*2+si)%4].forEach((k,j)=>{ const S=LOT_SZ[k]; const near=1+(3-li)*.04+(j>=3?.03:0);
@@ -15978,8 +15978,14 @@ function iceGame(){ /* 11/14 (the chair's recording of the softserve game): the 
 KEEP["tw:photo"]={ppl:[{n:"阿光",v:"man",look:[0,13,1,13,2,2,0,1,0,1,0,1,0,1],sh:{leg:1.08,tor:1.02,w:.94,d:.92,head:1,arm:1.04}}],mode:"idle",
   lines:[[0,"歡迎光臨……啊，你是第一次來吧？"]],quick:[[0,"相簿的照片，有找到新的地方嗎？"]]};
 const PH=()=>{ const d=LF(); d.ph=d.ph||{cam:0,got:{}}; d.ph.got=d.ph.got||{}; return d.ph; };
-let PS=null; async function psList(force){ if(PS&&!force) return PS; try{ const r=await fetch("/photospots",{cache:"no-store"}); const j=await r.json(); PS=(j&&j.list)||[]; }catch(e){ PS=PS||[]; } return PS; }
-const PSI={}; async function psImg(i){ if(PSI[i]) return PSI[i]; try{ const r=await fetch("/photospot?i="+i); const j=await r.json(); if(j&&j.img) PSI[i]=j.img; }catch(e){} return PSI[i]||""; }
+/* (11/22 主委「電腦裡面沒看到任務目標照片 結尾動畫也沒照片」): the chair's 24 spots (exported 11/21) ship with the game in ps/ — used
+   whenever the server (or this device's test store) has none, so every device and the test page start with them. Spots the chair saves
+   on the server later take over */
+let PSB=null; const psBaked=async()=>{ if(PSB) return PSB; try{ const r=await fetch("ps/spots.json"); const j=await r.json(); PSB=(j&&j.list)||[]; }catch(e){ PSB=[]; } return PSB; };
+let PS=null, PS_FROM=""; async function psList(force){ if(PS&&!force) return PS; let L=null; try{ const r=await fetch("/photospots",{cache:"no-store"}); const j=await r.json(); L=(j&&j.list)||[]; }catch(e){ L=PS&&PS_FROM==="srv"?PS:null; }
+  const B=await psBaked(), M=new Map(B.map(q=>[q.i,Object.assign({},q,{src:"b"})])); if(L) for(const q of L) M.set(q.i,Object.assign({},q,{src:"s"})); PS=[...M.values()].sort((a,b)=>a.i-b.i); PS_FROM=L&&L.length?"srv":"baked"; return PS; } /* (a spot the chair saves on the server replaces the shipped one with the same number; the rest stay) */
+const PSI={}; async function psImg(i){ if(PSI[i]) return PSI[i]; const sp=(PS||[]).find(q=>q.i===i); if(!sp||sp.src==="s"){ try{ const r=await fetch("/photospot?i="+i); const j=await r.json(); if(j&&j.img) PSI[i]=j.img; }catch(e){} }
+  if(!PSI[i]){ const b=(await psBaked()).find(q=>q.i===i); if(b&&b.f) PSI[i]=b.f; } return PSI[i]||""; }
 const myPhoto=i=>{ try{ return localStorage.getItem("mz.ph."+i)||""; }catch(e){ return ""; } };
 /* (11/22 主委「相館任務…一開始很有趣 後面很感人」: 阿光 is a clumsy, cheerful grandson at first; 24 photos; the album shows each old photo,
    the camera shows the one you are hunting, near a spot you hear 「這裡……好像是……照片裡的地方？」, a good shot gets a green tick, and the
@@ -16560,7 +16566,8 @@ L.lot=async i=>{ const Lt=LOTS_()[i]; if(!Lt) return; await hsFetch(true); const
      <div class="lf-row"><div class="t"><b>賣掉房子</b><br><small>退回一半的錢（${Math.round(Lt.p/2).toLocaleString("en-US")} 平安幣），家具會留在住宅巷的小家。</small></div><button class="secondary" data-act="lfLotSell">賣掉</button></div>`); return; }
   if(o){ openSheet("lfLot","🏡 "+o.n+"的家",`<p class="lead">門牌：天后新村 ${i+1} 號・<b>${o.n}</b>的家（${S.n}）。</p>${who}${o.pub?`<div class="row"><button class="primary" data-act="lfLotVisit" data-v="${i}">進去參觀</button></div><p class="note">主人開放大家參觀。進去以後可以坐坐椅子、躺躺床，但不能動主人的家具。</p>`:`<p class="note">🔒 主人沒有開放參觀。</p>`}`); return; }
   const mine=h.cur>=0?h.cur:-1;
-  openSheet("lfLot","🏡 天后新村 "+(i+1)+" 號",`<p class="lead">門口的牌子：<b>售</b>。</p><div class="lf-row"><span style="font-size:40px;width:60px;text-align:center">${Lt.k==="S"?"🏠":"🏡"}</span><div class="t"><b>${S.n}</b>　${pr.toLocaleString("en-US")} 平安幣${pr<Lt.p?`<s style="opacity:.5;margin-left:4px">${Lt.p.toLocaleString("en-US")}</s>`:""}<br><small>${S.fl} 層樓，房間 ${rm[0]}×${rm[1]} 公尺（住宅巷的小家是 6×5）。每間都有廚房。</small></div></div>
+  openSheet("lfLot","🏡 天后新村 "+(i+1)+" 號",`<p class="lead">門口的牌子：<b>售</b>。</p><div class="lf-row"><span style="font-size:40px;width:60px;text-align:center">${Lt.k==="S"?"🏠":"🏡"}</span><div class="t"><b>${S.n}</b>　${pr.toLocaleString("en-US")} 平安幣${pr<Lt.p?`<s style="opacity:.5;margin-left:4px">${Lt.p.toLocaleString("en-US")}</s>`:""}<br><small>屋內 ${rm[0]}×${rm[1]} 公尺，${Math.round(rm[0]*rm[1]*0.3025)} 坪，一層。每間都有廚房。</small></div></div>
+   <p class="note">天后新村有兩種：🏠 小屋 6×5 公尺（約 9 坪）約 14,000 平安幣起；🏡 大間 10×8 公尺（約 24 坪，地板大一倍多）約 30,000 平安幣起（每一間位置不同，價錢會差一點）。外觀上大間比較高、比較寬。</p><div class="row"><button class="secondary" data-act="lfLotPeek" data-v="${i}">👀 進去看看（空屋）</button></div>
    ${mine>=0?`<p class="note">一個人只能有一間房子。你已經有天后新村 ${mine+1} 號了；要換的話，先回你家把它賣掉。</p>`:`<div class="row"><button class="primary" data-act="lfLotBuy" data-v="${i}">買下來</button></div><p class="note">一間房子只有一個主人，買了就是你的。家具會跟著你搬進來。${shopDisc("tw:furn")?"（家具行美雲幫你跟屋主談了折扣）":""}</p>`}`); };
 HANDLERS.lfLotBuy=async v=>{ const i=+v, Lt=LOTS_()[i], h=HMD(); if(!Lt||h.cur>=0) return; const pr=dPrice("tw:furn",Lt.p); if(!me.sp&&bag.coins<pr){ try{ buzz(); }catch(e){} toast(`平安幣不夠（還差 ${(pr-bag.coins).toLocaleString("en-US")}）`,2600); return; }
   if(HSV.on){ const j=await hsPost({op:"buy",l:i,n:me.name||"",pub:h.pub}); if(!j||!j.ok){ toast(j&&j.taken?`晚了一步，${j.n||"別人"}已經買下這一間了`:j&&j.have>=0?"你已經有一間房子了":"現在買不了，等一下再試",2800); hsFetch(true); return; } }
@@ -16571,6 +16578,8 @@ HANDLERS.lfLotSell=()=>{ const h=HMD(), Lt=LOTS_()[h.cur]; if(!Lt) return; openS
 HANDLERS.lfLotNo=()=>closeSheet();
 HANDLERS.lfLotSellOk=async()=>{ const h=HMD(), i=h.cur, Lt=LOTS_()[i]; if(!Lt) return; if(HSV.on){ const j=await hsPost({op:"sell"}); if(!j||!j.ok){ toast("現在賣不了，等一下再試",2400); return; } delete HSV.list[i]; } bag.coins+=Math.round(Lt.p/2); h.own=[]; h.cur=-1; save(); try{ profSave(true); chaChing(); }catch(e){} lotRefreshAll(); closeSheet(); toast(`賣掉了，拿回 ${Math.round(Lt.p/2).toLocaleString("en-US")} 平安幣。你的家回到住宅巷的小家。`,3200); };
 HANDLERS.lfLotIn=v=>{ const i=+v, Lt=LOTS_()[i]; if(!Lt||!(HMD().cur===i||me.sp)) return; closeSheet(); const r=TOWNX.LOT_SZ[Lt.k].room; try{ ROOMX.lot=i; ROOMX.size(r[0],r[1]); ROOMX.open(); }catch(e){ console.warn(e); } };
+/* (11/22 主委「我要怎麼看房子大小間差別」: any house for sale can be walked into empty before buying) */
+HANDLERS.lfLotPeek=v=>{ const i=+v, Lt=LOTS_()[i]; if(!Lt||lotOwner(i)) return; closeSheet(); const r=TOWNX.LOT_SZ[Lt.k].room; try{ ROOMX.lot=i; ROOMX.size(r[0],r[1]); ROOMX.open({n:"樣品屋",room:{}}); }catch(e){ console.warn(e); } };
 HANDLERS.lfLotVisit=async v=>{ const i=+v, Lt=LOTS_()[i]; if(!Lt) return; let room=null, n=(lotOwner(i)||{}).n||"鄰居";
   try{ const r=await fetch("/house?l="+i,{cache:"no-store"}); const j=await r.json(); if(!j.ok){ toast(j.closed?"🔒 主人沒有開放參觀":"這間現在進不去",2400); return; } n=j.n||n; try{ room=j.room?JSON.parse(j.room):null; }catch(e){} }catch(e){ toast("這間現在進不去",2200); return; }
   closeSheet(); const r=TOWNX.LOT_SZ[Lt.k].room; try{ ROOMX.lot=i; ROOMX.size(r[0],r[1]); ROOMX.open({n,room:room||{}}); }catch(e){ console.warn(e); } };
