@@ -9223,7 +9223,12 @@ function perfTick(ms){ if(!PERF.on) return; PERF.fr++; PERF.ms+=ms; const now=pe
 function frameCap(){ if(PACE.smooth||(!perf.done&&Q.mode==="auto")) return 60; const now=performance.now();
   const busy=now-PACE.touch<2500||(SHOPX&&SHOPX.busy)||joy.on||keys.size||rotAnim||FW.on||fwView||(meAv.path&&meAv.path.length)||meAv.pos.distanceTo(meAv.target)>.05;
   if(busy) return 60; return now-PACE.touch>30000?20:30; }
-function tick(){ if(gameAsleep) return; const _ft0=performance.now(); { const now=performance.now(), cap=frameCap(); if(cap<60&&now-PACE.last<1000/cap-4){ requestAnimationFrame(tick); return; } PACE.last=now; } dresTick();
+/* (11/22 晚 主委「電腦跟手機 都會出現畫面定住卡死」): one error anywhere in a frame used to stop the frame loop for good — the picture froze
+   with no way back but a reload. Now the frame is caught: the next one still comes, the error goes into the crash log (once per kind of
+   error) and the chair sees it on screen. */
+const TICKERR={n:0,seen:new Set()};
+function tick(){ try{ tick0(); }catch(e){ TICKERR.n++; const m=String(e&&(e.stack||e.message)||e).slice(0,400); try{ console.error("frame",e); }catch(_){} if(!TICKERR.seen.has(m.slice(0,120))&&TICKERR.seen.size<5){ TICKERR.seen.add(m.slice(0,120)); try{ crSend("tick",Object.assign(load("mz.alive",{})||{},{msg:"畫面錯誤 "+m})); }catch(_){} try{ if(me.sp) toast("⚠️ 畫面錯誤（已記錄）："+m.slice(0,80),5000); }catch(_){} } requestAnimationFrame(tick); } }
+function tick0(){ if(gameAsleep) return; const _ft0=performance.now(); { const now=performance.now(), cap=frameCap(); if(cap<60&&now-PACE.last<1000/cap-4){ requestAnimationFrame(tick); return; } PACE.last=now; } dresTick();
   const dt=Math.min(.07,clock.getDelta()); const t=clock.elapsedTime;
   { const nowP=performance.now(); if(AUQ.frame&&nowP-AUQ.frame>800){ AUQ.until=nowP+1500; remotes.forEach(av=>{ if(av.goalX!=null){ av.pos.set(av.goalX,av.goalZ); av.target.set(av.goalX,av.goalZ); av.path=[]; } }); } AUQ.frame=nowP; }
   meAv.update(dt); accTick(meAv,dt); arrivedCheck(); { const fb=document.getElementById("frogBtn"), on=!!(meAv.eq&&meAv.eq[0]==="h_frog")&&!miniOpen; if(fb&&fb.hidden===on) fb.hidden=!on; }
