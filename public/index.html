@@ -9204,7 +9204,13 @@ const PACE={last:0, touch:performance.now(), smooth:load("mz.fps60",false)};
 /* 卡住紀錄 (11/14): a frame that took more than 2 s while the game was on screen is sent to the 閃退紀錄 as "slow", with where you
    were, what you were doing and how many new pictures / shader programs the moment brought — so a stall the chair hears about can be found */
 const SLOW={tex:0,prog:0,sent:0,n:0};
-function slowCheck(gap){ try{ const r=renderer.info, tex=r.memory.textures, prog=(r.programs||[]).length; if(gap>2&&!document.hidden&&LQ.ready&&SLOW.n<6&&Date.now()-SLOW.sent>60e3){ SLOW.sent=Date.now(); SLOW.n++; crSend("slow",Object.assign(crInfo(),{msg:`卡住 ${gap.toFixed(1)} 秒・新貼圖 ${tex-SLOW.tex}・新著色程式 ${prog-SLOW.prog}`})); } SLOW.tex=tex; SLOW.prog=prog; }catch(e){} }
+/* (11/22 晚 主委「電腦跟手機 都會出現畫面定住卡死」: the 卡住 note now says where the time went — the frame itself (and which part:
+   前段 walking/people/effects, 商店, 小鎮 districts, 生活 fishing/bugs/NPC, 畫 drawing) or outside it (a long task between frames, or the
+   picture waiting on the graphics card) — and whether the page was out of sight in between) */
+const FTM={last:null,worst:null}, LT={max:0,n:0}; try{ new PerformanceObserver(l=>{ for(const e of l.getEntries()){ LT.n++; if(e.duration>LT.max) LT.max=e.duration; } }).observe({entryTypes:["longtask"]}); }catch(e){}
+let VISGAP=0; document.addEventListener("visibilitychange",()=>{ if(document.hidden) VISGAP=1; });
+const ftTxt=a=>a?`${Math.round(a[0])}ms（前段${Math.round(a[1])} 商店${Math.round(a[2])} 小鎮${Math.round(a[3])} 生活${Math.round(a[4])} 畫${Math.round(a[5])}）`:"?";
+function slowCheck(gap){ try{ const r=renderer.info, tex=r.memory.textures, prog=(r.programs||[]).length; if(gap>2&&!document.hidden&&!VISGAP&&LQ.ready&&SLOW.n<6&&Date.now()-SLOW.sent>60e3){ SLOW.sent=Date.now(); SLOW.n++; crSend("slow",Object.assign(crInfo(),{msg:`卡住 ${gap.toFixed(1)} 秒・新貼圖 ${tex-SLOW.tex}・新著色程式 ${prog-SLOW.prog}・上一格 ${ftTxt(FTM.last)}・最久一格 ${ftTxt(FTM.worst)}・長任務 ${Math.round(LT.max)}ms×${LT.n}`})); FTM.worst=null; } VISGAP=0; LT.max=0; LT.n=0; SLOW.tex=tex; SLOW.prog=prog; }catch(e){} }
 function dresTick(){ const now=performance.now(), dt=DRES.last?(now-DRES.last)/1000:0; DRES.last=now; slowCheck(dt); if(document.hidden||!dt||dt>1.5||DRES.fw) return;
   const cap=frameCap(), r=dt*cap; DRES.ema+=(r-DRES.ema)*.05; DRES.cool-=dt; const L=dprLadder();
   if(DRES.ema>1.3){ DRES.slow+=dt; DRES.fast=0; if(DRES.slow>4&&DRES.cool<=0&&DRES.lvl<L.length-1){ DRES.lvl++; DRES.slow=0; DRES.cool=5; applyDPR(); } }
@@ -9329,7 +9335,7 @@ function tick0(){ if(gameAsleep) return; const _ft0=performance.now(); { const n
   { const GU=window.MZ_GU; if(GU&&GU.gSunD){ GU.gSunD.value.copy(sunLight.position).sub(sunLight.target.position).normalize(); GU.gSunC.value.copy(sunLight.color).multiplyScalar(sunLight.intensity); GU.gCam.value.copy(camera.position); } }
   try{ if(TOWNX&&TOWNX.fcCull){ camera.updateMatrixWorld(); TOWNX.fcCull(camera); } }catch(e){}
   if(CURVE.on){ const zf=(typeof TOWNX!=="undefined"&&TOWNX&&TOWNX.zoneNow&&TOWNX.zoneNow()==="vf")?200:90; if(camera.far!==zf){ camera.far=zf; camera.updateProjectionMatrix(); } } /* (滾筒世界: past ~90 m everything has rolled under the horizon, so it is not drawn at all) */
-  if(SHOPX){ try{ SHOPX.tick(dt); }catch(e){} } if(TOWNX){ try{ TOWNX.tick(dt); }catch(e){} } if(LIFE){ try{ LIFE.tick(dt); }catch(e){} } if(SHOPX&&SHOPX.on){ SHOPX.render(dt); lblClear(); } else if(window.MZ_VIEW){ renderer.render(window.MZ_VIEW.scene,window.MZ_VIEW.cam); lblClear(); } /* (inside a town shop) */ else if(!miniOpen&&!window.MZ_NO3D){ renderer.render(scene,camera); lblRender(); } else lblClear(); perfTick(performance.now()-_ft0); requestAnimationFrame(tick); }
+  const _f1=performance.now(); if(SHOPX){ try{ SHOPX.tick(dt); }catch(e){} } const _f2=performance.now(); if(TOWNX){ try{ TOWNX.tick(dt); }catch(e){} } const _f3=performance.now(); if(LIFE){ try{ LIFE.tick(dt); }catch(e){} } const _f4=performance.now(); if(SHOPX&&SHOPX.on){ SHOPX.render(dt); lblClear(); } else if(window.MZ_VIEW){ renderer.render(window.MZ_VIEW.scene,window.MZ_VIEW.cam); lblClear(); } /* (inside a town shop) */ else if(!miniOpen&&!window.MZ_NO3D){ renderer.render(scene,camera); lblRender(); } else lblClear(); const _f5=performance.now(); FTM.last=[_f5-_ft0,_f1-_ft0,_f2-_f1,_f3-_f2,_f4-_f3,_f5-_f4]; if(_f5-_ft0>(FTM.worst?FTM.worst[0]:0)) FTM.worst=FTM.last; perfTick(_f5-_ft0); requestAnimationFrame(tick); }
 // auto: watch the first seconds in the hall and step down on slow devices
 const perf={t:0,n:0,done:false,warm:0};
 function perfSample(dt){ if(perf.done||Q.mode!=="auto"||customizing||document.hidden) return; perf.warm+=dt; if(perf.warm<3) return; perf.t+=dt; perf.n++;
