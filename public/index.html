@@ -4570,7 +4570,25 @@ function cleanName(n){ const t=String(n||"").replace(/[\u0000-\u001f​-‏‪-�
 const FIG={phoneReal:20,phoneAll:32};
 function figCap(nReal){ if(CUT.lv>=2) return 0; if(Q.phone) return CUT.lv===1?FIG.phoneReal/2:FIG.phoneReal; return CUT.lv===1?Math.ceil(nReal/2):1e9; }
 var ROOM_PEERS=new Map(); /* (11/16) people inside a house in 天后新村: their presence says which house (hm) and where in the room (hx, hz, hr) */
-function syncPeers(peers){ ROOM_PEERS.clear(); for(const p of peers){ const pr=p.presence; if(!p.sameTab&&pr&&pr.v===1&&Number.isInteger(pr.hm)&&pr.hm>=0&&pr.hm<40) ROOM_PEERS.set(p.peer,pr); } const seen=new Set(); const valid=peers.filter(p=>!p.sameTab&&p.kind==="viewer"&&p.presence&&p.presence.v===1&&p.presence.u!==0), nReal=PEERS.n=valid.length, cap=figCap(nReal);
+/* 線上玩家 (11/23 主委「我能看到線上玩家 並且一鍵瞬移到他身邊」「並且可以知道該玩家多久沒動作」): everyone in this 殿 from the
+   presence list (also those inside a house or far away with no figure drawn), where they are, and how long since they last moved,
+   turned, sat, spoke or did anything */
+const ONLINE=new Map();
+function onlineNote(peers){ const now=Date.now(), seen=new Set(); for(const p of peers){ if(p.sameTab||p.kind!=="viewer") continue; const pr=p.presence; if(!pr||pr.v!==1) continue; seen.add(p.peer);
+    const sig=[Math.round(+pr.x||0),Math.round(+pr.z||0),pr.r,pr.s,pr.hm,pr.hx,pr.hz,JSON.stringify(pr.c||""),JSON.stringify(pr.m||""),JSON.stringify(pr.j||""),pr.b,pr.f,pr.ac?JSON.stringify(pr.ac):""].join("|");
+    const o=ONLINE.get(p.peer); if(!o||o.sig!==sig) ONLINE.set(p.peer,{sig,t:o&&o.sig===sig?o.t:now,pr}); else o.pr=pr; }
+  for(const k of [...ONLINE.keys()]) if(!seen.has(k)) ONLINE.delete(k); }
+const placeOf=(x,z,hm)=>hm>=0?`天后新村 ${hm+1} 號家裡`:z>45?"廟前・海邊":(Math.abs(x)<=26&&z>-47)?"天后宮":z<-143.6?(Math.hypot(x-66,z+212)<44?"天后山":x<21?"西山":"森林・女神谷"):x<-17&&z>-116?"天后新村":x>86?"河谷・海灘":"天后小鎮";
+const agoTxt=ms=>{ const s=Math.round(ms/1000); return s<60?`${s} 秒`:s<3600?`${Math.floor(s/60)} 分 ${s%60} 秒`:`${Math.floor(s/3600)} 小時 ${Math.floor(s%3600/60)} 分`; };
+setTimeout(()=>{ /* (HANDLERS is made further down the page) */
+HANDLERS.onlineOpen=()=>{ if(!me.sp) return; const now=Date.now(), L=[...ONLINE.entries()].map(([id,o])=>{ const pr=o.pr, x=+pr.x||0, z=+pr.z||0, hm=Number.isInteger(pr.hm)?pr.hm:-1; return {id,n:String(pr.n||"（沒名字）").slice(0,12),x,z,hm,idle:now-o.t,d:Math.hypot(x-meAv.pos.x,z-meAv.pos.y),sp:pr.q===1}; }).sort((a,b)=>a.idle-b.idle);
+  openSheet("chair","👥 線上玩家",`<div class="row" style="justify-content:space-between;margin:0 0 6px"><button class="secondary" data-act="chairBack">← 主委工具</button><button class="secondary" data-act="onlineOpen">重新整理</button></div><p class="lead">這一殿現在 ${L.length} 人（不含你）。「沒動作」是位置、轉身、坐下、說話、擲筊等都沒變的時間（從你這次進遊戲後開始算）。</p>`
+    +(L.length?L.map(q=>`<div class="lf-row"><div class="t"><b>${esc(q.n)}</b>${q.sp?"（主委）":""}<br><small>${placeOf(q.x,q.z,q.hm)}・距離 ${Math.round(q.d)} m・<span style="color:${q.idle>300e3?"#e8a050":"inherit"}">沒動作 ${agoTxt(q.idle)}</span></small></div><button class="primary" data-act="onlineGo" data-v="${esc(q.id)}">瞬移</button></div>`).join(""):`<p class="note">現在這一殿沒有其他玩家。</p>`)); };
+HANDLERS.onlineGo=v=>{ if(!me.sp) return; const o=ONLINE.get(v); if(!o){ toast("這位玩家已經離開了",2000); return; } const pr=o.pr, hm=Number.isInteger(pr.hm)?pr.hm:-1; let x=+pr.x||0, z=+pr.z||0;
+  if(hm>=0){ try{ const Lt=TOWNX.LOTS[hm]; if(Lt){ x=Lt.x; z=Lt.f+(Lt.ry?-1.6:1.6); } }catch(e){} }
+  closeSheet(); if(meAv.seat>=0) try{ standUp(); }catch(e){} const a=Math.random()*6.283; x+=Math.sin(a)*1.4; z+=Math.cos(a)*1.4; meAv.pos.set(x,z); meAv.target.set(x,z); meAv.path=[]; toast(`🫥 瞬移到 ${String(pr.n||"玩家").slice(0,10)} 身邊${hm>=0?"（他在家裡，你在他家門口）":""}`,2400); };
+},0);
+function syncPeers(peers){ try{ onlineNote(peers); }catch(e){} ROOM_PEERS.clear(); for(const p of peers){ const pr=p.presence; if(!p.sameTab&&pr&&pr.v===1&&Number.isInteger(pr.hm)&&pr.hm>=0&&pr.hm<40) ROOM_PEERS.set(p.peer,pr); } const seen=new Set(); const valid=peers.filter(p=>!p.sameTab&&p.kind==="viewer"&&p.presence&&p.presence.v===1&&p.presence.u!==0), nReal=PEERS.n=valid.length, cap=figCap(nReal);
   const rank=new Map(); if(nReal>cap){ const mx=meAv.pos.x, mz=meAv.pos.y; valid.map(p=>{ const pr=p.presence; return [p.peer,pr.q===1?-1:Math.hypot(num(pr.x,-110,160,0)-mx,num(pr.z,-300,125,HZ+12)-mz)]; }).sort((a,b)=>a[1]-b[1]).forEach(([id],i)=>rank.set(id,i)); }
   let made=0;
   for(const p of peers){ if(p.sameTab||p.kind!=="viewer") continue; const pr=p.presence||{}; if(pr.v!==1||pr.u===0) continue;
@@ -4956,7 +4974,7 @@ const ctTile=(act,icon,name,note="")=>`<button class="ct" data-act="${act}"><b>$
 function openChair(){ if(!me.sp) return;
   openSheet("chair","主委工具",`<div class="ck-row"><input class="mail-box ck" id="readKey" type="password" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="留言讀取密碼（輸入一次就會記住）" value="${esc(load("mz.rk",""))}"><button class="chip ck-eye" type="button" onclick="const i=document.getElementById('readKey'); i.type=i.type==='password'?'text':'password'; this.textContent=i.type==='password'?'👁':'🙈';">👁</button></div>
   <div class="ct-group"><span class="group-label">訊息</span><div class="ct-grid">${ctTile("msgsOpen","📬","香客留言")}${ctTile("annOpen","📢","全服公告","跑馬燈")}${ctTile("boardOpen","📋","公告欄",board.text?"有公告":"空白")}</div></div>
-  <div class="ct-group"><span class="group-label">玩家</span><div class="ct-grid">${ctTile("rcFind","🔑","查取回碼","幫玩家找回角色")}</div></div>
+  <div class="ct-group"><span class="group-label">玩家</span><div class="ct-grid">${ctTile("onlineOpen","👥","線上玩家","看誰在哪、瞬移過去")}${ctTile("rcFind","🔑","查取回碼","幫玩家找回角色")}</div></div>
   <div class="ct-group"><span class="group-label">頭飾</span><div class="ct-grid">${ctTile("hatFitOpen","🎩","頭飾定位","調整每頂帽子戴的位置")}${ctTile("faceFitOpen","💇","造型定位","髮型、眼睛、鼻子、嘴巴的位置與大小")}</div></div>
   <div class="ct-group"><span class="group-label">報紙與統計</span><div class="ct-grid">${ctTile("sponsorOpen","🧧","贊助登報","登上報紙頭版")}${ctTile("paperReroll","🔄","換報紙內容","今天的報紙換別的新聞")}${ctTile("honorEdit","🪨","榮譽功德榜","新增・修改・刪除")}${ctTile("paperTest","📰","報紙測試","開場・範例・預覽")}${ctTile("statOpen","📊","每日統計","今天・近 14 天")}</div></div>
   <div class="ct-group"><span class="group-label">表演與活動</span><div class="ct-grid">${ctTile("askFw","🎆","全服煙火","4 場可選")}${ctTile("fwedOpen","🎼","煙火編排器","自己排")}${ctTile("schedOpen","⏰","定時活動","煙火・夜市")}${ctTile("askSL","🏮","50 盞天燈")}${ctTile("stageChair","🎭","歌仔戲台",OP.on?"演出中":"")}${ctTile("puppetChair","🎎","布袋戲台",PT.on?"演出中":"")}${ctTile("marketOpen","🏮","夜市",Object.keys(MK.open).length?`${Object.keys(MK.open).length} 攤營業中`:"")}</div></div>
