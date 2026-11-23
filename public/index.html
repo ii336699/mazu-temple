@@ -4583,7 +4583,8 @@ const agoTxt=ms=>{ const s=Math.round(ms/1000); return s<60?`${s} 秒`:s<3600?`$
 setTimeout(()=>{ /* (HANDLERS is made further down the page) */
 HANDLERS.onlineOpen=()=>{ if(!me.sp) return; const now=Date.now(), L=[...ONLINE.entries()].map(([id,o])=>{ const pr=o.pr, x=+pr.x||0, z=+pr.z||0, hm=Number.isInteger(pr.hm)?pr.hm:-1; return {id,n:String(pr.n||"（沒名字）").slice(0,12),x,z,hm,idle:now-o.t,d:Math.hypot(x-meAv.pos.x,z-meAv.pos.y),sp:pr.q===1}; }).sort((a,b)=>a.idle-b.idle);
   openSheet("chair","👥 線上玩家",`<div class="row" style="justify-content:space-between;margin:0 0 6px"><button class="secondary" data-act="chairBack">← 主委工具</button><button class="secondary" data-act="onlineOpen">重新整理</button></div><p class="lead">這一殿現在 ${L.length} 人（不含你）。「沒動作」是位置、轉身、坐下、說話、擲筊等都沒變的時間（從你這次進遊戲後開始算）。</p>`
-    +(L.length?L.map(q=>`<div class="lf-row"><div class="t"><b>${esc(q.n)}</b>${q.sp?"（主委）":""}<br><small>${placeOf(q.x,q.z,q.hm)}・距離 ${Math.round(q.d)} m・<span style="color:${q.idle>300e3?"#e8a050":"inherit"}">沒動作 ${agoTxt(q.idle)}</span></small></div><button class="primary" data-act="onlineGo" data-v="${esc(q.id)}">瞬移</button></div>`).join(""):`<p class="note">現在這一殿沒有其他玩家。</p>`)); };
+    +(L.length?L.map(q=>`<div class="lf-row"><div class="t"><b>${esc(q.n)}</b>${q.sp?"（主委）":""}<br><small>${placeOf(q.x,q.z,q.hm)}・距離 ${Math.round(q.d)} m・<span style="color:${q.idle>300e3?"#e8a050":"inherit"}">沒動作 ${agoTxt(q.idle)}</span></small></div><div style="display:flex;gap:6px"><button class="secondary" data-act="onlineGift" data-v="${esc(q.id)}" data-n="${esc(q.n)}">🎁 送禮</button><button class="primary" data-act="onlineGo" data-v="${esc(q.id)}">瞬移</button></div></div>`).join(""):`<p class="note">現在這一殿沒有其他玩家。</p>`)); };
+HANDLERS.onlineGift=(v,b)=>{ if(!me.sp) return; try{ openGift(v,(b&&b.dataset.n)||"玩家"); }catch(e){} }; /* (11/23 主委「我能幫他們恢復最高的扭蛋幣 平安幣那個數值嗎」: send 平安幣 / 扭蛋幣 straight from the list) */
 HANDLERS.onlineGo=v=>{ if(!me.sp) return; const o=ONLINE.get(v); if(!o){ toast("這位玩家已經離開了",2000); return; } const pr=o.pr, hm=Number.isInteger(pr.hm)?pr.hm:-1; let x=+pr.x||0, z=+pr.z||0;
   if(hm>=0){ try{ const Lt=TOWNX.LOTS[hm]; if(Lt){ x=Lt.x; z=Lt.f+(Lt.ry?-1.6:1.6); } }catch(e){} }
   closeSheet(); if(meAv.seat>=0) try{ standUp(); }catch(e){} const a=Math.random()*6.283; x+=Math.sin(a)*1.4; z+=Math.cos(a)*1.4; meAv.pos.set(x,z); meAv.target.set(x,z); meAv.path=[]; toast(`🫥 瞬移到 ${String(pr.n||"玩家").slice(0,10)} 身邊${hm>=0?"（他在家裡，你在他家門口）":""}`,2400); };
@@ -5179,16 +5180,17 @@ async function profRestore(){ try{ const ctl=new AbortController(); const t=setT
    back to it after a while, the progress on the server is looked at: if another device saved since this one last did, and nothing new
    happened here in the meantime, this device takes it over. (If both changed, this device keeps its own and saves it.) */
 async function profSync(why){ if(me.sp||!NET_ME()||PROF.busy||PROF.hold||customizing) return false; try{ const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),4000); const r=await fetch("/me",{cache:"no-store",signal:ctl.signal}); clearTimeout(t); const j=await r.json();
-  const srv=j&&j.ok&&j.p&&j.p.snap; if(!srv) return false; const local=lookCode(); if(srv===local){ PROF.last=srv; save("mz.profLast",srv); return false; }
+  const srv=j&&j.ok&&j.p&&j.p.snap; if(!srv) return false; const first=!load("mz.sync1",0); save("mz.sync1",1); const local=lookCode(); if(srv===local){ PROF.last=srv; save("mz.profLast",srv); return false; }
   const myDev=load("mz.id",""), dev=j.p.dev||""; if(!dev||dev===myDev||srv===load("mz.profLast","")) return false; /* the last save was this device's own (or nothing new since): this device carries on and saves */
   /* (11/23 主委「角色代碼沒有更新最新進度…會不會被他們今天玩的進度覆蓋掉」): another device saved after this one — never overwrite either side
      on a guess: hold saving and let the player choose which progress to keep */
-  const A=readCode(local), B=readCode(srv); if(!A||!B) return false; PROF.hold=true;
-  const sum=d=>`名字 ${esc(d.name||"")}・平安幣 <b>${(d.coins|0).toLocaleString("en-US")}</b>・扭蛋幣 ${d.gacha|0}・配件 ${d.acc?Object.values(d.acc).filter(Boolean).length:0} 件`;
-  const box=document.createElement("div"); box.className="gift-card code-card"; box.innerHTML=`<div class="gc-in"><b>☁️ 你的角色在另一台裝置上也有進度</b><p>兩邊的進度不一樣，要用哪一邊？選了以後另一邊會被換掉。</p><p style="text-align:left;margin:8px 0">📱 <b>這台裝置</b><br>${sum(A)}</p><p style="text-align:left;margin:8px 0">☁️ <b>另一台裝置（雲端）</b><br>${sum(B)}</p><div class="row"><button class="secondary" data-x="here">用這台的</button><button class="primary" data-x="cloud">用另一台的</button></div></div>`;
-  document.body.appendChild(box);
-  box.querySelector('[data-x="cloud"]').onclick=()=>{ box.remove(); PROF.hold=false; if(applySnap(B)){ PROF.last=srv; save("mz.profLast",srv); toast("已換成另一台裝置的進度 ✓",3000); } };
-  box.querySelector('[data-x="here"]').onclick=()=>{ box.remove(); PROF.hold=false; profSave(true); toast("已用這台裝置的進度，雲端也更新了 ✓",3000); };
+  const A=readCode(local), B=readCode(srv); if(!A||!B) return false;
+  /* (11/23 主委「你能自動同步成最高平安幣扭蛋幣的那個存檔嗎」): no question — the one with more 平安幣 wins (if equal, more 扭蛋幣; if still equal, the other device's, the newer save) */
+  /* (11/23 主委「只針對這次改版的第一次同步 之後恢復最新存檔來同步」): that rule is for each device's first sync after this update only;
+     from then on the newest save — the other device's, since it saved after this one — wins */
+  const sc=d=>[(d.coins|0),(d.gacha|0)], a=sc(A), b=sc(B), cloud=!first||b[0]>a[0]||(b[0]===a[0]&&b[1]>=a[1]);
+  if(cloud){ if(applySnap(B)){ PROF.last=srv; save("mz.profLast",srv); toast(`已同步另一台裝置的進度 ✓（平安幣 ${b[0].toLocaleString("en-US")}）`,3200); } }
+  else { profSave(true); }
   return true; }catch(e){} return false; }
 setTimeout(()=>profSync("open"),2500); { let hidAt=0; document.addEventListener("visibilitychange",()=>{ if(document.hidden) hidAt=Date.now(); else if(hidAt&&Date.now()-hidAt>60e3) setTimeout(()=>profSync("back"),800); }); }
 // the 取回碼 card: shown once, the first time a code exists; it asks for a screenshot
