@@ -3,7 +3,7 @@
 import { DurableObject } from "cloudflare:workers";
 import { buildPaper } from "../public/paper-gen.js";
 
-const histOf = P => (Array.isArray(P.hist) ? P.hist : []).map(h => ({ at: h.at, coins: snapInfo(h.snap).coins })).reverse();
+const histOf = P => (Array.isArray(P.fh) ? P.fh : []).map(h => ({ at: h.at, coins: h.c, k: h.k })).reverse();
 // the name and coins inside a saved character code (same layout as lookCode() in the page)
 function snapInfo(str) { try { const raw = atob(String(str).slice(3).replace(/-/g, "+").replace(/_/g, "/")); const bits = []; for (const ch of raw) { const b = ch.charCodeAt(0); for (let i = 7; i >= 0; i--) bits.push((b >> i) & 1); } let p = 0; const get = n => { let v = 0; for (let i = 0; i < n; i++) v = v * 2 + (bits[p++] || 0); return v; };
   if (get(4) !== 1) return {}; get(65); const coins = get(16); get(30); get(1); const pn = get(3); get(pn * 6); get(24); const nl = get(4); let name = ""; for (let i = 0; i < nl; i++) name += String.fromCharCode(get(16)); return { name, coins }; } catch { return {}; } }
@@ -25,7 +25,7 @@ export default {
 
 // 角色存檔 and 主委送禮. A long-lived cookie (set by this server, so Safari keeps it) names each player's saved character;
 // the lobby keeps the save, a short 取回碼 for moving to another app or phone, and any gifts waiting to be opened.
-const PROFILE_PATHS = ["/me", "/me/claim", "/gift", "/gifts", "/houses", "/house"];
+const PROFILE_PATHS = ["/me", "/me/claim", "/gift", "/gifts", "/houses", "/house", "/save", "/save/migrate"];
 async function profile(req, env, url) {
   const m = (req.headers.get("cookie") || "").match(/(?:^|;\s*)mzu=([a-f0-9]{24,40})/); let uid = m ? m[1] : "";
   if (!uid) uid = crypto.randomUUID().replace(/-/g, "");
@@ -353,15 +353,19 @@ export class Lobby extends DurableObject {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
       const q = String(url.searchParams.get("q") || "").normalize("NFKC").trim().toLowerCase().slice(0, 16), qc = q.toUpperCase().replace(/[^0-9A-Z]/g, "");
       if (!q) return json({ ok: false, why: "q" }); const out = []; let seen = 0;
-      if (qc.length === 7) { const owner = await this.ctx.storage.get("C:" + qc); const P = owner && await this.ctx.storage.get("P:" + owner); if (P) { const d = snapInfo(P.snap); out.push({ n: d.name, code: P.code, at: P.at || 0, coins: d.coins, id: P.id || "", hist: histOf(P) }); } }
-      for (const [, P] of await this.ctx.storage.list({ prefix: "P:", limit: 20000 })) { seen++; if (!P || !P.snap || !P.code) continue; const d = snapInfo(P.snap); if (!d.name || !d.name.normalize("NFKC").toLowerCase().includes(q)) continue; if (out.some(o => o.code === P.code)) continue; out.push({ n: d.name, code: P.code, at: P.at || 0, coins: d.coins, id: P.id || "", hist: histOf(P) }); }
-      out.sort((a, b) => b.at - a.at); return json({ ok: true, seen, list: out.slice(0, 40) });
+      if (qc.length === 7) { const owner = await this.ctx.storage.get("C:" + qc); const P = owner && await this.ctx.storage.get("P:" + owner); if (P) { const d = snapInfo(P.snap); out.push({ n: d.name, code: P.code, at: P.at || 0, coins: d.coins, id: P.id || "", hist: histOf(P), u: owner }); } }
+      for (const [pk, P] of await this.ctx.storage.list({ prefix: "P:", limit: 20000 })) { seen++; if (!P || !P.snap || !P.code) continue; const d = snapInfo(P.snap); if (!d.name || !d.name.normalize("NFKC").toLowerCase().includes(q)) continue; if (out.some(o => o.code === P.code)) continue; out.push({ n: d.name, code: P.code, at: P.at || 0, coins: d.coins, id: P.id || "", hist: histOf(P), u: pk.slice(2) }); }
+      out.sort((a, b) => b.at - a.at); const top = out.slice(0, 40);
+      for (const o of top) { try { const F = o.u && await this.ctx.storage.get("F:" + o.u); if (F && F.full && F.full.bag) { o.coins = Math.floor(Number(F.full.bag.coins) || 0); o.at = Math.max(o.at, F.at || 0); o.one = 1; } } catch {} delete o.u; } /* (the one save, when there is one: its 平安幣 are exact) */
+      return json({ ok: true, seen, list: top });
     }
-    if (url.pathname === "/lookup/restore" && req.method === "POST") { /* the chair brings an earlier save back: it becomes the character's current save; the player gets it by entering the 取回碼 */
+    if (url.pathname === "/lookup/restore" && req.method === "POST") { /* the chair brings an earlier save back: it becomes the character's one save (the current one is kept among the old ones); a device that is open is stopped and reloads it */
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth); let b = {}; try { b = await req.json(); } catch {}
-      const code = String(b.code || "").toUpperCase().replace(/[^0-9A-Z]/g, "").slice(0, 7), at = Number(b.at) || 0; const owner = code.length === 7 ? await this.ctx.storage.get("C:" + code) : null; const P = owner ? await this.ctx.storage.get("P:" + owner) : null;
-      if (!P || !Array.isArray(P.hist)) return json({ ok: false }); const h = P.hist.find(x => x.at === at); if (!h) return json({ ok: false });
-      P.hist.push({ at: P.at || 0, snap: P.snap }); while (P.hist.length > 12) P.hist.shift(); P.snap = h.snap; P.at = Date.now(); P.id = "chair"; await this.ctx.storage.put("P:" + owner, P); return json({ ok: true });
+      const code = String(b.code || "").toUpperCase().replace(/[^0-9A-Z]/g, "").slice(0, 7), k = Math.floor(Number(b.k)); const owner = code.length === 7 ? await this.ctx.storage.get("C:" + code) : null; const P = owner ? await this.ctx.storage.get("P:" + owner) : null;
+      if (!P || !(k >= 0 && k < 12)) return json({ ok: false }); const H = await this.ctx.storage.get("FH:" + owner + ":" + k); if (!H || !H.full) return json({ ok: false });
+      const F = await this.ctx.storage.get("F:" + owner); const now = Date.now();
+      if (F && F.full) { const kk = (P.fk | 0) % 12; await this.ctx.storage.put("FH:" + owner + ":" + kk, F); P.fh = (Array.isArray(P.fh) ? P.fh : []).filter(h => h.k !== kk).concat([{ at: F.at || 0, c: Math.floor(Number(F.full.bag && F.full.bag.coins) || 0), k: kk, saved: now, why: "restore" }]).slice(-12); P.fk = kk + 1; }
+      await this.ctx.storage.put("F:" + owner, { full: H.full, at: now }); P.sid = "restored"; await this.ctx.storage.put("P:" + owner, P); return json({ ok: true });
     }
     if (url.pathname === "/hatfit") return json((await this.ctx.storage.get("hatfit")) || { fit: {}, at: 0 });
     if (url.pathname === "/sponsor") {
@@ -667,6 +671,26 @@ export class Lobby extends DurableObject {
       if (op === "room") { const r = String(b.room || ""); if (r.length > 24000) return json({ ok: false, big: true }); await this.ctx.storage.put("HR:" + have, r); return json({ ok: true }); }
       return json({ ok: false });
     }
+    if (url.pathname === "/save" || url.pathname === "/save/migrate") { /* (11/23 主委「只能有一個檔案」): the whole progress (bag + me) lives here, one copy per character.
+        GET /save?s=1 — the page opening: a new session id (an older device's saves are refused from now on) and the save.
+        POST /save — saving: only from the current session. POST /save/migrate — a device's own progress from before this, offered once. */
+      const uid = String(req.headers.get("x-uid") || "").replace(/[^a-f0-9]/g, "").slice(0, 40); if (!uid) return json({ ok: false });
+      const P = (await this.ctx.storage.get("P:" + uid)) || {}; const now = Date.now();
+      const coinsOf = f => { try { return Math.max(0, Math.floor(Number(f && f.bag && f.bag.coins) || 0)); } catch { return 0; } };
+      const keepOld = async (F, why) => { if (!F || !F.full) return; const H = Array.isArray(P.fh) ? P.fh : []; const last = H[H.length - 1]; if (why !== "force" && last && now - last.saved < 30 * 60e3) return;
+        const k = (P.fk | 0) % 12; await this.ctx.storage.put("FH:" + uid + ":" + k, F); P.fh = H.filter(h => h.k !== k).concat([{ at: F.at || 0, c: coinsOf(F.full), k, saved: now, why: why || "" }]).slice(-12); P.fk = k + 1; };
+      if (req.method === "GET") { const sid = crypto.randomUUID().slice(0, 12); P.sid = sid; await this.ctx.storage.put("P:" + uid, P); const F = await this.ctx.storage.get("F:" + uid); return json({ ok: true, sid, full: F ? F.full : null, at: F ? F.at : 0 }); }
+      let b = {}; let raw = ""; try { raw = await req.text(); if (raw.length > 120000) return json({ ok: false, big: true }); b = JSON.parse(raw); } catch { return json({ ok: false }); }
+      if (!b.sid || b.sid !== P.sid) return json({ ok: false, other: true });
+      const full = b.full; if (!full || typeof full !== "object" || !full.bag || !full.me) return json({ ok: false });
+      const F = await this.ctx.storage.get("F:" + uid);
+      if (url.pathname === "/save/migrate") {
+        if (!F) { await this.ctx.storage.put("F:" + uid, { full, at: now }); await this.ctx.storage.put("P:" + uid, P); return json({ ok: true, used: "mine" }); }
+        if (coinsOf(full) > coinsOf(F.full)) { await keepOld(F, "force"); await this.ctx.storage.put("F:" + uid, { full, at: now }); await this.ctx.storage.put("P:" + uid, P); return json({ ok: true, used: "mine" }); }
+        await keepOld({ full, at: now }, "force"); await this.ctx.storage.put("P:" + uid, P); return json({ ok: true, used: "server", full: F.full, at: F.at });
+      }
+      await keepOld(F); await this.ctx.storage.put("F:" + uid, { full, at: now }); await this.ctx.storage.put("P:" + uid, P); return json({ ok: true, at: now });
+    }
     if (url.pathname === "/me" || url.pathname === "/me/claim" || url.pathname === "/gift" || url.pathname === "/gifts") {
       const uid = String(req.headers.get("x-uid") || "").replace(/[^a-f0-9]/g, "").slice(0, 40); if (!uid) return json({ ok: false });
       if (url.pathname === "/me" && req.method === "GET") { const P = await this.ctx.storage.get("P:" + uid); return json({ ok: true, p: P ? { code: P.code, snap: P.snap, at: P.at || 0, dev: P.id || "" } : null }); }
@@ -675,8 +699,6 @@ export class Lobby extends DurableObject {
         let b = {}; try { b = await req.json(); } catch {} const snap = String(b.snap || ""); if (!/^MZ-[A-Za-z0-9_-]{10,900}$/.test(snap)) return json({ ok: false });
         const P = (await this.ctx.storage.get("P:" + uid)) || {};
         if (!P.code) { const AB = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"; for (let k = 0; k < 12 && !P.code; k++) { let c = ""; for (let i = 0; i < 7; i++) c += AB[(Math.random() * AB.length) | 0]; if (!(await this.ctx.storage.get("C:" + c))) P.code = c; } if (!P.code) return json({ ok: false }); await this.ctx.storage.put("C:" + P.code, uid); }
-        if (P.snap && P.snap !== snap) { /* (11/23 主委「查玩家名字 看他之前檔案紀錄有多少錢」): earlier saves are kept — one per half hour, the last 12 — so the chair can see and bring one back */
-          const H = Array.isArray(P.hist) ? P.hist : []; const last = H[H.length - 1]; if (last && (P.at || 0) - last.at < 30 * 60e3) H[H.length - 1] = { at: P.at || 0, snap: P.snap }; else H.push({ at: P.at || 0, snap: P.snap }); while (H.length > 12) H.shift(); P.hist = H; }
         P.snap = snap; P.at = now; const id = clean(b.id, 16).replace(/[^a-z0-9]/g, ""); if (id && P.id !== id) { P.id = id; await this.ctx.storage.put("I:" + id, uid); }
         await this.ctx.storage.put("P:" + uid, P); return json({ ok: true, code: P.code, at: now });
       }

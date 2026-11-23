@@ -940,6 +940,22 @@ function load(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v)
 function save(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
 /* (11/17 玩家說精力沒恢復、財神爺說今天玩過了: "today" was the UTC date taken once when the page opened — in Taiwan a new day began at 8 a.m., and a page left open stayed on the old day for good. Now it is Taiwan's date and follows the clock) */
 let today = new Date(Date.now()+288e5).toISOString().slice(0,10); setInterval(()=>{ today=new Date(Date.now()+288e5).toISOString().slice(0,10); },30000);
+/* ================= 單一存檔 (11/23 主委「只能有一個檔案」「沒網路就不能讀」): the progress (bag + me) lives on the server, one copy per
+   character. Opening the game reads it first — this browser's storage is only where the page keeps it while it runs. No server, no
+   game: it says so and stops. Another device opening the same character takes over; this one stops saving. ================= */
+const SAVE={on:false,sid:"",at:0,dead:false,migrate:false,last:""};
+function saveBlock(title,text,btn){ try{ const d=document.createElement("div"); d.id="saveBlock"; d.style.cssText="position:fixed;inset:0;z-index:2147483000;background:#1a0f0b;color:#f5e6c8;display:flex;align-items:center;justify-content:center;padding:24px;font:16px/1.6 system-ui;text-align:center";
+  d.innerHTML=`<div style="max-width:340px"><div style="font-size:42px;margin-bottom:6px">🏮</div><div style="font-weight:800;font-size:19px;margin-bottom:8px">${title}</div><div style="opacity:.9;margin-bottom:18px">${text}</div><button style="border:0;border-radius:999px;padding:12px 26px;font:800 16px system-ui;background:linear-gradient(#f2a64a,#d9782a);color:#fff">${btn}</button></div>`;
+  d.querySelector("button").onclick=()=>location.reload(); (document.body||document.documentElement).appendChild(d); }catch(e){} }
+(function(){ try{ if(location.protocol==="file:") return; let lm=null; try{ lm=JSON.parse(localStorage.getItem("mz.me")||"null"); }catch(e){} if(lm&&lm.sp) return; /* (主委's own device keeps its own) */
+  const x=new XMLHttpRequest(); x.open("GET","/save?s=1",false); try{ x.send(); }catch(e){}
+  if(x.status===0){ saveBlock("連不上伺服器","角色的進度存在伺服器上，要連上網路才能進遊戲。請檢查網路後再試一次。","重新連線"); throw new Error("offline"); }
+  if(x.status!==200) return; let j=null; try{ j=JSON.parse(x.responseText); }catch(e){ return; } if(!j||!j.ok||!j.sid) return; /* (the test page has no server) */
+  SAVE.on=true; SAVE.sid=j.sid; const fresh=!localStorage.getItem("mz.one");
+  if(fresh&&lm) SAVE.migrate=true; /* this device's first time with the one save, and it has a character from before: its progress is offered to the server once (see below) */
+  else if(j.full&&j.full.bag&&j.full.me){ localStorage.setItem("mz.bag",JSON.stringify(j.full.bag)); localStorage.setItem("mz.me",JSON.stringify(j.full.me)); SAVE.at=j.at||0; localStorage.setItem("mz.one","1"); }
+  else localStorage.setItem("mz.one","1");
+}catch(e){ if(String(e&&e.message)==="offline") throw e; } })();
 let me = load("mz.me", null);
 const firstVisit = !me;
 /* ---- random names: a cheerful or silly adjective, a fruit and an animal. Only kind words; animals that double as insults are left out. ---- */
@@ -5180,6 +5196,16 @@ async function profRestore(){ try{ const ctl=new AbortController(); const t=setT
    after that each device kept its own progress and the last one to save overwrote the other. Now, on opening the game and on coming
    back to it after a while, the progress on the server is looked at: if another device saved since this one last did, and nothing new
    happened here in the meantime, this device takes it over. (If both changed, this device keeps its own and saves it.) */
+/* 單一存檔: saving the whole progress — every 10 s when something changed, and when the page is hidden or closed */
+function saveDead(){ if(SAVE.dead) return; SAVE.dead=true; saveBlock("角色在另一台裝置開啟了","同一個角色一次只能在一台裝置上玩。這台已經停止存檔，另一台的進度不會被蓋掉。","在這台繼續玩"); }
+async function fullSave(beacon){ if(!SAVE.on||SAVE.dead||SAVE.migrate||!me||me.sp) return; let body=""; try{ body=JSON.stringify({sid:SAVE.sid,full:{bag,me}}); }catch(e){ return; } if(body.length>118000) return; const key=body.slice(body.indexOf('"full"')); if(key===SAVE.last) return;
+  if(beacon){ try{ fetch("/save",{method:"POST",headers:{"content-type":"application/json"},body,keepalive:body.length<60000}); SAVE.last=key; }catch(e){} return; }
+  if(SAVE.busy) return; SAVE.busy=true; try{ const r=await fetch("/save",{method:"POST",headers:{"content-type":"application/json"},body}); const j=await r.json(); if(j&&j.ok) SAVE.last=key; else if(j&&j.other) saveDead(); }catch(e){} SAVE.busy=false; }
+setInterval(()=>fullSave(false),10000); document.addEventListener("visibilitychange",()=>{ if(document.hidden) fullSave(true); }); addEventListener("pagehide",()=>fullSave(true));
+/* a device that had a character before the one save existed offers it once; if the server's has more 平安幣, the server's wins and this
+   device loads it (the other one is kept among the old saves, so 主委 can bring it back) */
+setTimeout(async()=>{ if(!SAVE.on||!SAVE.migrate||!me||me.sp) return; try{ const r=await fetch("/save/migrate",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({sid:SAVE.sid,full:{bag,me}})}); const j=await r.json();
+  if(j&&j.ok){ localStorage.setItem("mz.one","1"); if(j.used==="server"&&j.full&&j.full.bag&&j.full.me){ SAVE.dead=true; localStorage.setItem("mz.bag",JSON.stringify(j.full.bag)); localStorage.setItem("mz.me",JSON.stringify(j.full.me)); saveBlock("找到你在另一台裝置的進度","正在載入…","好"); setTimeout(()=>location.reload(),1200); } else SAVE.migrate=false; } else if(j&&j.other) saveDead(); }catch(e){} },1500);
 async function profSync(why){ if(!window.MZ_SYNC_ON) return false; /* (11/23 10:20 主委「同步這個先不要上 我等玩家自己跟我說我幫他們手動恢復」: automatic syncing is off — each device saves its own progress, as before 11/23; the code stays for later) */ if(me.sp||!NET_ME()||PROF.busy||PROF.hold||customizing) return false; try{ const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),4000); const r=await fetch("/me",{cache:"no-store",signal:ctl.signal}); clearTimeout(t); const j=await r.json();
   const srv=j&&j.ok&&j.p&&j.p.snap; if(!srv) return false; const first=!load("mz.sync1",0); save("mz.sync1",1); const local=lookCode(); if(srv===local){ PROF.last=srv; save("mz.profLast",srv); return false; }
   const myDev=load("mz.id",""), dev=j.p.dev||""; if(!dev||dev===myDev||srv===load("mz.profLast","")) return false; /* the last save was this device's own (or nothing new since): this device carries on and saves */
@@ -5203,7 +5229,7 @@ HANDLERS.copyRc=async()=>{ let ok=false; try{ await navigator.clipboard.writeTex
 HANDLERS.claimRc=async()=>{ const v=(($("#rcIn")||{}).value||"").trim(); if(!v){ toast("請輸入取回碼"); return; }
   if(!NET_ME()){ toast("單機測試版沒有連伺服器，取回碼要在正式版才能用",3200); return; }
   try{ const r=await fetch("/me/claim",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({code:v})}); const j=await r.json();
-    if(j.ok&&j.p&&applySnap(readCode(j.p.snap))){ PROF.code=j.p.code; save("mz.rc",PROF.code); PROF.last=j.p.snap; save("mz.profLast",j.p.snap); PROF.shown=true; save("mz.rcShown",true); renderLook(firstVisitPending); toast("✨ 已找回你的角色、平安幣和背包",3200); }
+    if(j.ok&&j.p&&applySnap(readCode(j.p.snap))){ PROF.code=j.p.code; save("mz.rc",PROF.code); PROF.last=j.p.snap; save("mz.profLast",j.p.snap); PROF.shown=true; save("mz.rcShown",true); renderLook(firstVisitPending); toast("✨ 已找回你的角色、平安幣和背包",3200); if(SAVE.on){ SAVE.dead=true; setTimeout(()=>location.reload(),1500); } }
     else toast(j.locked?"今天試太多次了，明天再試":"找不到這組取回碼，請確認有沒有打錯",3200); }catch(e){ toast("連不上伺服器，請稍後再試"); } };
 /* ---- 主委送禮: the 主委 picks a player (tap them, or from the list in 主委工具) and sends 平安幣 or an item; it lands in their bag with a card ---- */
 const GIFT_ITEMS=GOODS.map(g=>[g.k,g.name]);
@@ -10284,14 +10310,16 @@ Object.assign(HANDLERS,{
   catTRain:()=>{ const on=window.MZ_WX!=="rain"; window.MZ_WX=on?"rain":"clear"; toast(on?"下雨了（只有你的畫面），看貓去躲雨":"放晴了",2000); HANDLERS.catTest(); } });
 /* 主委工具 → 查取回碼: search the saved characters by name (or a code) and read the player their 取回碼; they type it in 設定 → 取回碼 */
 HANDLERS.rcFind=()=>{ openSheet("contact","查取回碼",`${backBtn}<p class="lead">打玩家的名字（打一部分也可以），找到後把取回碼告訴他。他到「設定 → 取回碼」輸入，就會拿回角色（名字、造型、平安幣、背包、頭飾）。</p>
-  <div class="mail-row"><input class="mail-box" id="rcQ" maxlength="16" placeholder="玩家名字" autocomplete="off"><button class="good mail-copy" data-act="rcFindGo"><span class="name">🔍 查詢</span></button></div><div id="rcRes"></div>`); setTimeout(()=>{ const i=$("#rcQ"); if(i){ i.focus(); i.addEventListener("keydown",e=>{ if(e.key==="Enter") HANDLERS.rcFindGo(); }); } },50); };
-HANDLERS.rcRestore=async v=>{ const [code,at]=String(v||"").split("|"); const key=ck(); if(!key||!code) return; if(!confirm("把這位玩家的角色換回這份舊存檔？（現在的存檔也會留在「以前的存檔」裡）")) return;
-  try{ const r=await fetch("/lookup/restore",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({code,at:+at})}); const j=await r.json().catch(()=>null); if(j&&j.ok){ toast(`已還原。請玩家到「造型 → 取回碼」輸入 ${fmtCode(code)}，就會拿到這份存檔`,6000); HANDLERS.rcFindGo(); } else toast("還原失敗，請再試一次",2600); }catch(e){ toast("還原失敗，請再試一次",2600); } }; /* (11/23 主委「查玩家名字 用查角色碼功能看他之前檔案紀錄有多少錢」) */
+  <div class="mail-row"><input class="mail-box" id="rcQ" maxlength="16" placeholder="玩家名字" autocomplete="off"><button class="good mail-copy" data-act="rcFindGo"><span class="name">🔍 查詢</span></button></div><div id="rcRes"></div><h4 style="margin:14px 0 4px">看玩家舊的造型代碼</h4><div class="mail-row"><input class="mail-box" id="lcIn" placeholder="貼上 MZ- 開頭的造型代碼" autocomplete="off" spellcheck="false"><button class="good mail-copy" data-act="lcPeek"><span class="name">看內容</span></button></div><div id="lcRes"></div>`); setTimeout(()=>{ const i=$("#rcQ"); if(i){ i.focus(); i.addEventListener("keydown",e=>{ if(e.key==="Enter") HANDLERS.rcFindGo(); }); } },50); };
+HANDLERS.rcRestore=async v=>{ const [code,k]=String(v||"").split("|"); const key=ck(); if(!key||!code) return; if(!confirm("把這位玩家的角色換回這份舊存檔？（現在的存檔也會留在「以前的存檔」裡；他開著的遊戲會停下來重新載入）")) return;
+  try{ const r=await fetch("/lookup/restore",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({code,k:+k})}); const j=await r.json().catch(()=>null); if(j&&j.ok){ toast("已還原。玩家重新打開遊戲（或按畫面上的按鈕）就會是這份存檔",6000); HANDLERS.rcFindGo(); } else toast("還原失敗，請再試一次",2600); }catch(e){ toast("還原失敗，請再試一次",2600); } }; /* (11/23 主委「查玩家名字 用查角色碼功能看他之前檔案紀錄有多少錢」) */
+HANDLERS.lcPeek=()=>{ const d=readCode(($("#lcIn")||{}).value), box=$("#lcRes"); if(!box) return; if(!d){ box.innerHTML=`<p class="note">代碼不正確，請確認有完整貼上（MZ- 開頭的一長串）</p>`; return; }
+  box.innerHTML=`<p class="lead" style="text-align:left">名字 <b>${esc(d.name||"")}</b><br>平安幣 <b>${(d.coins|0).toLocaleString("en-US")}</b>・扭蛋幣 <b>${d.gacha|0}</b>・配件 ${d.acc?d.acc.filter(Boolean).length:0} 件</p><p class="note">這是玩家複製代碼那一刻的存檔。要補給他的話，到「線上玩家」或用玩家 ID 送禮。</p>`; }; /* (11/23 主委「之前造型代碼還有用嗎」: a code a player kept from before can still be read here) */
 HANDLERS.rcFindGo=async()=>{ const q=(($("#rcQ")||{}).value||"").trim(), box=$("#rcRes"); if(!q){ toast("請打名字"); return; } if(!USE_CF){ toast("測試頁沒有伺服器，要在正式站查",2600); return; }
   const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return; } box.innerHTML=`<p class="note">查詢中…</p>`;
   try{ const r=await fetch("/lookup?q="+encodeURIComponent(q),{headers:{"x-key":key},cache:"no-store"}); const j=await r.json().catch(()=>null); if(!j||j.error){ box.innerHTML=`<p class="note">伺服器忙，請再按一次</p>`; return; } forgetKey(r,j); if(!j.ok){ box.innerHTML=`<p class="note">查不到（密碼？）</p>`; return; }
     const when=t=>{ if(!t) return "—"; const d=new Date(t+8*3600e3); return `${d.getUTCMonth()+1}/${d.getUTCDate()} ${String(d.getUTCHours()).padStart(2,"0")}:${String(d.getUTCMinutes()).padStart(2,"0")}`; };
-    box.innerHTML=j.list.length?`<p class="note">找到 ${j.list.length} 個（最近存檔的在上面；同名的可以看平安幣和時間分辨）</p><ul class="sp-list">${j.list.map(e=>`<li><span><b>${esc(e.n)}</b><br><small>最後存檔 ${when(e.at)}・平安幣 ${e.coins|0}</small></span><span style="flex:0 0 auto;display:flex;gap:6px;align-items:center"><b style="font:700 16px monospace;letter-spacing:1px">${fmtCode(e.code)}</b><button class="chip" data-act="rcCopy" data-v="${esc(fmtCode(e.code))}">複製</button></span></li>${(e.hist||[]).length?`<li style="display:block;padding-top:0"><details><summary style="cursor:pointer;font-size:13px;color:#e9d9b8">以前的存檔（${e.hist.length} 份）</summary>${e.hist.map(h=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:4px 0"><small>${when(h.at)}・平安幣 ${h.coins|0}</small><button class="chip" data-act="rcRestore" data-v="${esc(e.code)}|${h.at}">還原這份</button></div>`).join("")}</details></li>`:""}`).join("")}</ul>`:`<p class="note">找不到名字有「${esc(q)}」的角色（共查了 ${j.seen} 個存檔）。玩家可能還沒存過檔，或改過名字。</p>`; }
+    box.innerHTML=j.list.length?`<p class="note">找到 ${j.list.length} 個（最近存檔的在上面；同名的可以看平安幣和時間分辨）</p><ul class="sp-list">${j.list.map(e=>`<li><span><b>${esc(e.n)}</b><br><small>最後存檔 ${when(e.at)}・平安幣 ${e.coins|0}</small></span><span style="flex:0 0 auto;display:flex;gap:6px;align-items:center"><b style="font:700 16px monospace;letter-spacing:1px">${fmtCode(e.code)}</b><button class="chip" data-act="rcCopy" data-v="${esc(fmtCode(e.code))}">複製</button></span></li>${(e.hist||[]).length?`<li style="display:block;padding-top:0"><details><summary style="cursor:pointer;font-size:13px;color:#e9d9b8">以前的存檔（${e.hist.length} 份）</summary>${e.hist.map(h=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:4px 0"><small>${when(h.at)}・平安幣 ${h.coins|0}</small><button class="chip" data-act="rcRestore" data-v="${esc(e.code)}|${h.k}">還原這份</button></div>`).join("")}</details></li>`:""}`).join("")}</ul>`:`<p class="note">找不到名字有「${esc(q)}」的角色（共查了 ${j.seen} 個存檔）。玩家可能還沒存過檔，或改過名字。</p>`; }
   catch(e){ box.innerHTML=`<p class="note">網路不穩，請再按一次</p>`; } };
 HANDLERS.rcCopy=async v=>{ let ok=false; try{ await navigator.clipboard.writeText(v); ok=true; }catch(e){} toast(ok?`已複製 ${v}`:"請長按自行複製",2200); };
 /* 主委工具 → 閃退紀錄: the pages' own reports (see CRB): a summary of where and on which phones, then the latest ones */
@@ -10759,7 +10787,7 @@ const PATHR=[34.45,36.65,-26.5,-13.3], PLAZA=[25.5,57.5,-13.95,-8.7];
 const inR=(r,x,z,m=0)=>x>r[0]+m&&x<r[1]-m&&z>r[2]+m&&z<r[3]-m;
 SX.walk=()=>false; SX.inP=()=>false; /* (the street is part of the 禪房 grounds now: innWalkableL) */
 if(typeof bag.en!=="number") bag.en=100; bag.snk=bag.snk&&typeof bag.snk==="object"?bag.snk:{}; bag.clo=bag.clo|0;
-const EN_SHIFT=33, CLAW_COST=50, EN_REC_MAX=100; /* (11/16 主委: up to 100 won back a day — 200 in all with food, the hot spring, sitting) */ /* 精力: 100 each day; a shift costs 33 (three a day); up to 66 can be won back per day */
+const EN_SHIFT=20 /* (11/23 主委「超商打工變為20」) */, CLAW_COST=50, EN_REC_MAX=100; /* (11/16 主委: up to 100 won back a day — 200 in all with food, the hot spring, sitting) */ /* 精力: 100 each day; a shift costs 33 (three a day); up to 66 can be won back per day */
 /* daily limits: 打工 five shifts a day, 夾娃娃 five wins a day */
 const WORK_MAX=5, CLAW_WIN_MAX=5; /* 打工: 100 精力 is three shifts; with the day's 66 won back, five */
 function dayCount(k){ if(bag[k+"Day"]!==today){ bag[k+"Day"]=today; bag[k]=0; } return bag[k]|0; }
@@ -14723,7 +14751,7 @@ const GI=()=>{ const d=LF(); d.gi=d.gi||{}; return d.gi; }; function giAdd(id,n)
 const GINFO={}; /* id → {n:name, ic:picture url or emoji, cat:"dish"|"bug"|"dig"|…, d:line} — filled by each system */
 function giInfo(id){ if(GINFO[id]) return GINFO[id]; if(id.startsWith("cz:")){ const q=typeof CZB!=="undefined"&&CZB[id.slice(3)]; if(q) return GINFO[id]={n:q[1],ic:MZIMG("congee/"+q[0]+".webp"),cat:"dish",d:"一粥七天的菜，可以送給鎮上的人。"}; } return {n:id,ic:"🎁",cat:"misc",d:""}; }
 const giIc=(id,w)=>{ const i=giInfo(id).ic; return /\.(webp|png|jpg)$|^data:/.test(i)?`<img src="${i}" alt="" style="width:${w||48}px;height:${w||48}px;object-fit:contain">`:`<span style="font-size:${(w||48)*.66}px;width:${w||48}px;text-align:center;display:inline-block">${i}</span>`; };
-const EN_SHOP=5; function enPay(n){ if(me.sp&&!window.MZ_ENTEST) return true; /* (主委 spends none — unless the ⚡ test switch is on) */ const e=Math.round(bag.en??100); if(e<n){ try{ buzz(); }catch(_){} toast(`精力不夠（要 ${n}，現在 ${e}）。吃點東西、泡溫泉或明天再來`,2800); return false; } bag.en=Math.max(0,(bag.en??100)-n); save(); try{ SHOPX&&SHOPX.wallet&&SHOPX.wallet(); }catch(_){} return true; }
+const EN_SHOP=0; /* (11/23 主委「商店遊戲不消耗精力」: they keep their 3-a-day limits) */ function enPay(n){ if(!(n>0)) return true; if(me.sp&&!window.MZ_ENTEST) return true; /* (主委 spends none — unless the ⚡ test switch is on) */ const e=Math.round(bag.en??100); if(e<n){ try{ buzz(); }catch(_){} toast(`精力不夠（要 ${n}，現在 ${e}）。吃點東西、泡溫泉或明天再來`,2800); return false; } bag.en=Math.max(0,(bag.en??100)-n); save(); try{ SHOPX&&SHOPX.wallet&&SHOPX.wallet(); }catch(_){} return true; }
 /* ---------- 山頂 (11/16 主委): 帳篷 — go in, a little tent room with a sleeping bag you can sleep in; 望遠鏡 — in the daytime look out over
    the whole place (the chair's picture), from late afternoon 「天色暗了，看不到東西」; 跳傘 — from the deck on the town side, glide down a
    fixed line over the forest and the river and land on the road into town. ---------- */
@@ -16484,9 +16512,12 @@ const wlHave=n=>{ const [k,id]=n; try{ if(k==="crop") return (GD2().crop[id]|0)>
 const wlTake=n=>{ const [k,id]=n; if(k==="crop") GD2().crop[id]--; else if(k==="fish"){ const d=LF(), i=d.inv.findIndex(q=>q[0]===id); if(i>=0) d.inv.splice(i,1); } else giAdd(k+":"+id,-1); };
 function wlQuest(){ const d=LF(); if(d.wl===2) return `<p class="note">威利：「上次多虧你幫忙，店裡的貨都補齊了！彩虹傘撐起來好看吧？」</p>`;
   if(!d.wl) return `<h4 style="margin:10px 0 4px">威利的委託</h4><p class="lead">威利：「店裡缺貨缺得厲害……你能幫我找齊十樣東西嗎？我送你 3000 平安幣，還有一把只有我這裡才有的彩虹傘！」</p><div class="row"><button class="primary" data-act="wlQ" data-v="go">好，交給我</button></div>`;
-  const n=WL_NEED.filter(wlHave).length; return `<h4 style="margin:10px 0 4px">威利的委託（${n} / 10）</h4><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;margin:4px 0 8px">${WL_NEED.map(q=>`<div style="${wlHave(q)?"color:#7fd08a":"opacity:.75"}">${wlHave(q)?"✓ ":"・"}${q[2]}<small style="opacity:.7">　${q[3]}</small></div>`).join("")}</div><div class="row"><button class="primary" data-act="wlQ" data-v="give" ${n===10?"":"disabled"}>交給威利</button></div>`; }
-HANDLERS.wlQ=v=>{ const d=LF(); if(v==="go"){ if(!d.wl){ d.wl=1; save(); } grocer(); return; } if(v!=="give"||d.wl!==1||!WL_NEED.every(wlHave)) return;
-  WL_NEED.forEach(wlTake); d.wl=2; bag.coins+=3000; d.umb=d.umb||{}; d.umb.r=1; d.umb.c=8; save(); markDirty(); try{ profSave(true); [784,988,1175,1568].forEach((f,k)=>tone(f,.14,.05,"triangle",k*.08)); }catch(e){}
+  const got=d.wlGot||{}, done=WL_NEED.filter(q=>got[q[1]]).length, can=WL_NEED.filter(q=>!got[q[1]]&&wlHave(q)).length;
+  return `<h4 style="margin:10px 0 4px">威利的委託（已交 ${done} / 10）</h4><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;margin:4px 0 8px">${WL_NEED.map(q=>`<div style="${got[q[1]]?"color:#7fd08a":wlHave(q)?"color:#f2c060":"opacity:.75"}">${got[q[1]]?"✓ ":wlHave(q)?"● ":"・"}${q[2]}<small style="opacity:.7">　${got[q[1]]?"已交":wlHave(q)?"可以交":q[3]}</small></div>`).join("")}</div><div class="row"><button class="primary" data-act="wlQ" data-v="give" ${can?"":"disabled"}>${can?`把手上有的 ${can} 樣交給威利`:"還沒有可以交的"}</button></div><p class="note">有什麼就可以先交什麼，交過的會記住。</p>`; }
+HANDLERS.wlQ=v=>{ const d=LF(); if(v==="go"){ if(!d.wl){ d.wl=1; save(); } grocer(); return; } if(v!=="give"||d.wl!==1) return;
+  /* (11/23 主委「雜貨店任務 有什麼就可以先交什麼 不用十個都有 不然魚跟昆蟲會被放生」) */ const got=d.wlGot=d.wlGot||{}; let n=0; WL_NEED.forEach(q=>{ if(!got[q[1]]&&wlHave(q)){ wlTake(q); got[q[1]]=1; n++; } }); if(!n) return;
+  if(!WL_NEED.every(q=>got[q[1]])){ save(); markDirty(); try{ tone(784,.12,.05,"triangle"); }catch(e){} toast(`威利：「謝啦！收到 ${n} 樣，還差 ${WL_NEED.filter(q=>!got[q[1]]).length} 樣。」`,2800); grocer(); return; }
+  d.wl=2; bag.coins+=3000; d.umb=d.umb||{}; d.umb.r=1; d.umb.c=8; save(); markDirty(); try{ profSave(true); [784,988,1175,1568].forEach((f,k)=>tone(f,.14,.05,"triangle",k*.08)); }catch(e){}
   openSheet("lfWl","🧺 雜貨店・威利",`<p class="lead">威利：「哇，全部都齊了！太感謝你了！這是說好的謝禮，還有這把彩虹傘，下雨天撐出去，整條街最亮的就是你！」</p><p class="note">得到 3000 平安幣和彩虹傘（已經換上了，可以在雜貨店換回其他顏色）。</p><div class="row"><button class="primary" data-act="lfWlOk">好</button></div>`); };
 HANDLERS.lfWlOk=()=>grocer();
 /* 雜貨店・威利: nets, and (later) seasonings */
