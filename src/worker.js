@@ -662,7 +662,7 @@ export class Lobby extends DurableObject {
     }
     if (url.pathname === "/me" || url.pathname === "/me/claim" || url.pathname === "/gift" || url.pathname === "/gifts") {
       const uid = String(req.headers.get("x-uid") || "").replace(/[^a-f0-9]/g, "").slice(0, 40); if (!uid) return json({ ok: false });
-      if (url.pathname === "/me" && req.method === "GET") { const P = await this.ctx.storage.get("P:" + uid); return json({ ok: true, p: P ? { code: P.code, snap: P.snap, at: P.at || 0 } : null }); }
+      if (url.pathname === "/me" && req.method === "GET") { const P = await this.ctx.storage.get("P:" + uid); return json({ ok: true, p: P ? { code: P.code, snap: P.snap, at: P.at || 0, dev: P.id || "" } : null }); }
       if (url.pathname === "/me" && req.method === "POST") {
         this.lastSave = this.lastSave || new Map(); const now = Date.now(); if (now - (this.lastSave.get(uid) || 0) < 8000) return json({ ok: false, slow: true }); this.lastSave.set(uid, now);
         let b = {}; try { b = await req.json(); } catch {} const snap = String(b.snap || ""); if (!/^MZ-[A-Za-z0-9_-]{10,900}$/.test(snap)) return json({ ok: false });

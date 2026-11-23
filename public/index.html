@@ -5165,7 +5165,7 @@ function applySnap(d){ if(!d) return false; me.look=sanitizeLook(d.look,!!me.sp)
   bag.coins=d.coins; bag.items={...bag.items,...d.items}; bag.redThread=!!d.red; if(d.poems.length){ const keep=new Map((bag.poems||[]).map((n,i)=>[n,(bag.poemT||[])[i]||0])); bag.poems=[...new Set([...(bag.poems||[]),...d.poems])].slice(-30); bag.poemT=bag.poems.map(n=>keep.get(n)||0); } (d.acc||[]).forEach(id=>{ accState().owned[id]=1; }); if(d.gacha) bag.gacha=Math.max(bag.gacha||0,d.gacha); try{ catRestore(d); }catch(e){} if(d.shop){ bag.clo=(bag.clo||0)|d.shop.clo; bag.en=Math.min(100,d.shop.en); bag.snk={...d.shop.snk}; } try{ if(d.daily) DQ.restore(d.daily); }catch(e){} try{ if(d.room) ROOMX.restore(d.room); }catch(e){} try{ if(d.life&&LIFE) LIFE.restore(d.life); }catch(e){} saveBag();
   draftLook=me.look.slice(); meAv.setLook(draftLook); meAv.setName(myLabel()); meAv.setAmulet(!!bag.items.fu); meAv.setThread(threadOn()); markDirty(); return true; }
 const fmtCode=c=>c?c.slice(0,3)+"-"+c.slice(3):"";
-async function profSave(force,beacon){ if(me.sp||PROF.busy) return; const snap=lookCode(); if(!force&&snap===PROF.last) return;
+async function profSave(force,beacon){ if(me.sp||PROF.busy||PROF.hold) return; const snap=lookCode(); if(!force&&snap===PROF.last) return;
   const body=JSON.stringify({snap,id:load("mz.id","")});
   if(beacon){ try{ fetch("/me",{method:"POST",headers:{"content-type":"application/json"},body,keepalive:true}); PROF.last=snap; save("mz.profLast",snap); }catch(e){} return; }
   PROF.busy=true; try{ const r=await fetch("/me",{method:"POST",headers:{"content-type":"application/json"},body}); const j=await r.json(); if(j.ok){ PROF.last=snap; save("mz.profLast",snap); if(j.at) save("mz.profAt",j.at); if(j.code&&j.code!==PROF.code){ PROF.code=j.code; save("mz.rc",j.code); } if(!PROF.shown&&PROF.code) setTimeout(showCodeCard,1500); } }catch(e){} PROF.busy=false; }
@@ -5178,9 +5178,18 @@ async function profRestore(){ try{ const ctl=new AbortController(); const t=setT
    after that each device kept its own progress and the last one to save overwrote the other. Now, on opening the game and on coming
    back to it after a while, the progress on the server is looked at: if another device saved since this one last did, and nothing new
    happened here in the meantime, this device takes it over. (If both changed, this device keeps its own and saves it.) */
-async function profSync(why){ if(me.sp||!NET_ME()||PROF.busy||customizing) return false; try{ const last=load("mz.profLast",""); if(!last) return false; const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),4000); const r=await fetch("/me",{cache:"no-store",signal:ctl.signal}); clearTimeout(t); const j=await r.json();
-  const srv=j&&j.ok&&j.p&&j.p.snap; if(!srv||srv===last) return false; const at=+(j.p.at||0), mine=+load("mz.profAt",0)||0; if(!(at&&mine&&at>mine+3000)&&lookCode()!==last) return false; /* (another device saved after this one did — its progress wins, even if this one has since redone the day's 精力 etc.) */
-  if(applySnap(readCode(srv))){ PROF.last=srv; save("mz.profLast",srv); if(at) save("mz.profAt",at); try{ toast("已同步你在其他裝置的進度 ✓",3000); }catch(e){} return true; } }catch(e){} return false; }
+async function profSync(why){ if(me.sp||!NET_ME()||PROF.busy||PROF.hold||customizing) return false; try{ const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),4000); const r=await fetch("/me",{cache:"no-store",signal:ctl.signal}); clearTimeout(t); const j=await r.json();
+  const srv=j&&j.ok&&j.p&&j.p.snap; if(!srv) return false; const local=lookCode(); if(srv===local){ PROF.last=srv; save("mz.profLast",srv); return false; }
+  const myDev=load("mz.id",""), dev=j.p.dev||""; if(!dev||dev===myDev||srv===load("mz.profLast","")) return false; /* the last save was this device's own (or nothing new since): this device carries on and saves */
+  /* (11/23 主委「角色代碼沒有更新最新進度…會不會被他們今天玩的進度覆蓋掉」): another device saved after this one — never overwrite either side
+     on a guess: hold saving and let the player choose which progress to keep */
+  const A=readCode(local), B=readCode(srv); if(!A||!B) return false; PROF.hold=true;
+  const sum=d=>`名字 ${esc(d.name||"")}・平安幣 <b>${(d.coins|0).toLocaleString("en-US")}</b>・扭蛋幣 ${d.gacha|0}・配件 ${d.acc?Object.values(d.acc).filter(Boolean).length:0} 件`;
+  const box=document.createElement("div"); box.className="gift-card code-card"; box.innerHTML=`<div class="gc-in"><b>☁️ 你的角色在另一台裝置上也有進度</b><p>兩邊的進度不一樣，要用哪一邊？選了以後另一邊會被換掉。</p><p style="text-align:left;margin:8px 0">📱 <b>這台裝置</b><br>${sum(A)}</p><p style="text-align:left;margin:8px 0">☁️ <b>另一台裝置（雲端）</b><br>${sum(B)}</p><div class="row"><button class="secondary" data-x="here">用這台的</button><button class="primary" data-x="cloud">用另一台的</button></div></div>`;
+  document.body.appendChild(box);
+  box.querySelector('[data-x="cloud"]').onclick=()=>{ box.remove(); PROF.hold=false; if(applySnap(B)){ PROF.last=srv; save("mz.profLast",srv); toast("已換成另一台裝置的進度 ✓",3000); } };
+  box.querySelector('[data-x="here"]').onclick=()=>{ box.remove(); PROF.hold=false; profSave(true); toast("已用這台裝置的進度，雲端也更新了 ✓",3000); };
+  return true; }catch(e){} return false; }
 setTimeout(()=>profSync("open"),2500); { let hidAt=0; document.addEventListener("visibilitychange",()=>{ if(document.hidden) hidAt=Date.now(); else if(hidAt&&Date.now()-hidAt>60e3) setTimeout(()=>profSync("back"),800); }); }
 // the 取回碼 card: shown once, the first time a code exists; it asks for a screenshot
 function showCodeCard(){ if(PROF.shown||!PROF.code||me.sp) return; if(sheetKind||customizing){ setTimeout(showCodeCard,4000); return; } PROF.shown=true; save("mz.rcShown",true);
