@@ -662,14 +662,14 @@ export class Lobby extends DurableObject {
     }
     if (url.pathname === "/me" || url.pathname === "/me/claim" || url.pathname === "/gift" || url.pathname === "/gifts") {
       const uid = String(req.headers.get("x-uid") || "").replace(/[^a-f0-9]/g, "").slice(0, 40); if (!uid) return json({ ok: false });
-      if (url.pathname === "/me" && req.method === "GET") { const P = await this.ctx.storage.get("P:" + uid); return json({ ok: true, p: P ? { code: P.code, snap: P.snap } : null }); }
+      if (url.pathname === "/me" && req.method === "GET") { const P = await this.ctx.storage.get("P:" + uid); return json({ ok: true, p: P ? { code: P.code, snap: P.snap, at: P.at || 0 } : null }); }
       if (url.pathname === "/me" && req.method === "POST") {
         this.lastSave = this.lastSave || new Map(); const now = Date.now(); if (now - (this.lastSave.get(uid) || 0) < 8000) return json({ ok: false, slow: true }); this.lastSave.set(uid, now);
         let b = {}; try { b = await req.json(); } catch {} const snap = String(b.snap || ""); if (!/^MZ-[A-Za-z0-9_-]{10,900}$/.test(snap)) return json({ ok: false });
         const P = (await this.ctx.storage.get("P:" + uid)) || {};
         if (!P.code) { const AB = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"; for (let k = 0; k < 12 && !P.code; k++) { let c = ""; for (let i = 0; i < 7; i++) c += AB[(Math.random() * AB.length) | 0]; if (!(await this.ctx.storage.get("C:" + c))) P.code = c; } if (!P.code) return json({ ok: false }); await this.ctx.storage.put("C:" + P.code, uid); }
         P.snap = snap; P.at = now; const id = clean(b.id, 16).replace(/[^a-z0-9]/g, ""); if (id && P.id !== id) { P.id = id; await this.ctx.storage.put("I:" + id, uid); }
-        await this.ctx.storage.put("P:" + uid, P); return json({ ok: true, code: P.code });
+        await this.ctx.storage.put("P:" + uid, P); return json({ ok: true, code: P.code, at: now });
       }
       if (url.pathname === "/me/claim" && req.method === "POST") {
         const ip = clean(req.headers.get("x-ip"), 64) || "?", day = new Date().toISOString().slice(0, 10), tk = "CL:" + ip + ":" + day, tries = (await this.ctx.storage.get(tk)) || 0;

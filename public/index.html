@@ -5166,13 +5166,21 @@ function applySnap(d){ if(!d) return false; me.look=sanitizeLook(d.look,!!me.sp)
 const fmtCode=c=>c?c.slice(0,3)+"-"+c.slice(3):"";
 async function profSave(force,beacon){ if(me.sp||PROF.busy) return; const snap=lookCode(); if(!force&&snap===PROF.last) return;
   const body=JSON.stringify({snap,id:load("mz.id","")});
-  if(beacon){ try{ fetch("/me",{method:"POST",headers:{"content-type":"application/json"},body,keepalive:true}); PROF.last=snap; }catch(e){} return; }
-  PROF.busy=true; try{ const r=await fetch("/me",{method:"POST",headers:{"content-type":"application/json"},body}); const j=await r.json(); if(j.ok){ PROF.last=snap; if(j.code&&j.code!==PROF.code){ PROF.code=j.code; save("mz.rc",j.code); } if(!PROF.shown&&PROF.code) setTimeout(showCodeCard,1500); } }catch(e){} PROF.busy=false; }
+  if(beacon){ try{ fetch("/me",{method:"POST",headers:{"content-type":"application/json"},body,keepalive:true}); PROF.last=snap; save("mz.profLast",snap); }catch(e){} return; }
+  PROF.busy=true; try{ const r=await fetch("/me",{method:"POST",headers:{"content-type":"application/json"},body}); const j=await r.json(); if(j.ok){ PROF.last=snap; save("mz.profLast",snap); if(j.at) save("mz.profAt",j.at); if(j.code&&j.code!==PROF.code){ PROF.code=j.code; save("mz.rc",j.code); } if(!PROF.shown&&PROF.code) setTimeout(showCodeCard,1500); } }catch(e){} PROF.busy=false; }
 setInterval(()=>{ if(NET_ME()) profSave(false); },45000); if(window.MZ_SIM) setTimeout(()=>{ profSave(false); giftFetch(); },3000);
 document.addEventListener("visibilitychange",()=>{ if(document.hidden&&NET_ME()) profSave(false,true); });
 // first visit on this browser: ask the server whether this browser already has a character (cookie) before showing the 捏角色 screen
 async function profRestore(){ try{ const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),2500); const r=await fetch("/me",{cache:"no-store",signal:ctl.signal}); clearTimeout(t); const j=await r.json();
-    if(j&&j.ok&&j.p&&j.p.snap&&applySnap(readCode(j.p.snap))){ PROF.code=j.p.code||""; save("mz.rc",PROF.code); PROF.last=j.p.snap; PROF.shown=true; save("mz.rcShown",true); return true; } }catch(e){} return false; }
+    if(j&&j.ok&&j.p&&j.p.snap&&applySnap(readCode(j.p.snap))){ PROF.code=j.p.code||""; save("mz.rc",PROF.code); PROF.last=j.p.snap; save("mz.profLast",j.p.snap); PROF.shown=true; save("mz.rcShown",true); return true; } }catch(e){} return false; }
+/* (11/23 主委「角色代碼不是應該會儲存角色所有進度…怎麼有人好像有手機電腦不同步的問題」): the code only brought a character over once —
+   after that each device kept its own progress and the last one to save overwrote the other. Now, on opening the game and on coming
+   back to it after a while, the progress on the server is looked at: if another device saved since this one last did, and nothing new
+   happened here in the meantime, this device takes it over. (If both changed, this device keeps its own and saves it.) */
+async function profSync(why){ if(me.sp||!NET_ME()||PROF.busy||customizing) return false; try{ const last=load("mz.profLast",""); if(!last) return false; const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),4000); const r=await fetch("/me",{cache:"no-store",signal:ctl.signal}); clearTimeout(t); const j=await r.json();
+  const srv=j&&j.ok&&j.p&&j.p.snap; if(!srv||srv===last) return false; const at=+(j.p.at||0), mine=+load("mz.profAt",0)||0; if(!(at&&mine&&at>mine+3000)&&lookCode()!==last) return false; /* (another device saved after this one did — its progress wins, even if this one has since redone the day's 精力 etc.) */
+  if(applySnap(readCode(srv))){ PROF.last=srv; save("mz.profLast",srv); if(at) save("mz.profAt",at); try{ toast("已同步你在其他裝置的進度 ✓",3000); }catch(e){} return true; } }catch(e){} return false; }
+setTimeout(()=>profSync("open"),2500); { let hidAt=0; document.addEventListener("visibilitychange",()=>{ if(document.hidden) hidAt=Date.now(); else if(hidAt&&Date.now()-hidAt>60e3) setTimeout(()=>profSync("back"),800); }); }
 // the 取回碼 card: shown once, the first time a code exists; it asks for a screenshot
 function showCodeCard(){ if(PROF.shown||!PROF.code||me.sp) return; if(sheetKind||customizing){ setTimeout(showCodeCard,4000); return; } PROF.shown=true; save("mz.rcShown",true);
   const d=document.createElement("div"); d.className="gift-card code-card"; d.innerHTML=`<div class="gc-in"><b>📸 請截圖保存你的取回碼</b><div class="gc-big">${fmtCode(PROF.code)}</div><p>換手機、或從 LINE／IG 換到瀏覽器打開時，在「造型」裡輸入這組碼，你的角色、名字、平安幣和背包都會回來。</p><p class="gc-sub">角色名字：${esc(me.name||"")}</p><div class="row"><button class="secondary" data-x="copy">複製取回碼</button><button class="primary" data-x="ok">我截好了</button></div></div>`;
@@ -5181,7 +5189,7 @@ HANDLERS.copyRc=async()=>{ let ok=false; try{ await navigator.clipboard.writeTex
 HANDLERS.claimRc=async()=>{ const v=(($("#rcIn")||{}).value||"").trim(); if(!v){ toast("請輸入取回碼"); return; }
   if(!NET_ME()){ toast("單機測試版沒有連伺服器，取回碼要在正式版才能用",3200); return; }
   try{ const r=await fetch("/me/claim",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({code:v})}); const j=await r.json();
-    if(j.ok&&j.p&&applySnap(readCode(j.p.snap))){ PROF.code=j.p.code; save("mz.rc",PROF.code); PROF.last=j.p.snap; PROF.shown=true; save("mz.rcShown",true); renderLook(firstVisitPending); toast("✨ 已找回你的角色、平安幣和背包",3200); }
+    if(j.ok&&j.p&&applySnap(readCode(j.p.snap))){ PROF.code=j.p.code; save("mz.rc",PROF.code); PROF.last=j.p.snap; save("mz.profLast",j.p.snap); PROF.shown=true; save("mz.rcShown",true); renderLook(firstVisitPending); toast("✨ 已找回你的角色、平安幣和背包",3200); }
     else toast(j.locked?"今天試太多次了，明天再試":"找不到這組取回碼，請確認有沒有打錯",3200); }catch(e){ toast("連不上伺服器，請稍後再試"); } };
 /* ---- 主委送禮: the 主委 picks a player (tap them, or from the list in 主委工具) and sends 平安幣 or an item; it lands in their bag with a card ---- */
 const GIFT_ITEMS=GOODS.map(g=>[g.k,g.name]);
@@ -11409,6 +11417,7 @@ const MMAP=(()=>{
   rowEl.innerHTML=`<button id="mmBox" class="glass" aria-label="地圖"><canvas id="mmCv"></canvas><span>地圖・導航</span></button><div id="enPill" class="glass" role="button" aria-label="精力"><span class="ic">⚡</span><span class="bar"><i></i></span><b id="enNum">100</b><small>精力</small></div>`;
   if(hall) hall.prepend(rowEl);
   const cv=rowEl.querySelector("#mmCv"), cx=cv.getContext("2d"); const DPR=Math.min(2,devicePixelRatio||1); cv.width=cv.height=Math.round(92*DPR);
+  const enMax=()=>{ try{ return SHOPX.enMax(); }catch(e){ return 100; } }; /* (11/23 玩家「上面精力條一直顯示一百不會變 要開包包才看得到正確數字」: enMax lives inside the shops module and was not reachable here — every update failed silently and the pill kept its first 100) */
   const enUpd=()=>{ try{ const v=Math.max(0,Math.min(enMax(),Math.round(bag.en))), pc=v/enMax()*100; const el=document.querySelector("#enNum"); if(!el) return; if(el.textContent!==String(v)) el.textContent=v; const i=document.querySelector("#enPill .bar i"); i.style.width=pc+"%"; i.style.background=pc>50?"#4cd964":pc>20?"#ffcc00":"#ff3b30"; }catch(e){} };
   rowEl.querySelector("#enPill").onclick=()=>{ try{ toast(`精力 ${Math.round(bag.en)} / ${enMax()}・今天還能恢復 ${Math.round(SHOPX&&SHOPX.recLeft?SHOPX.recLeft():0)}（泡溫泉、靜坐、吃東西）`,3200); }catch(e){} };
   const arrow=(g,x,y,a,s,c)=>{ g.save(); g.translate(x,y); g.rotate(a); g.fillStyle=c; g.strokeStyle="#000"; g.lineWidth=1.5*DPR; g.beginPath(); g.moveTo(0,-s); g.lineTo(s*.7,s*.75); g.lineTo(0,s*.35); g.lineTo(-s*.7,s*.75); g.closePath(); g.fill(); g.stroke(); g.restore(); };
