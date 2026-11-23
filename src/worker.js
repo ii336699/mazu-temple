@@ -107,7 +107,7 @@ export class Hall extends DurableObject {
     }
     if (url.pathname === "/stage") { // from the lobby: the chair put the opera stage out or packed it away
       let b = {}; try { b = await req.json(); } catch {}
-      const st = { t: "stage", on: !!b.on, at: Number(b.at) || Date.now(), name: String(b.name || "").slice(0, 20), cats: b.cats !== false }; await this.ctx.storage.put("stage", st);
+      const st = { t: "stage", on: !!b.on, at: Number(b.at) || Date.now(), name: String(b.name || "").slice(0, 40), cats: b.cats !== false }; await this.ctx.storage.put("stage", st);
       const out = JSON.stringify(st); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
     }
     const h = Math.max(0, Math.min(HALLS - 1, parseInt(url.searchParams.get("hall") || "0", 10) || 0));

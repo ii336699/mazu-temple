@@ -7215,7 +7215,7 @@ function opBuild(){ if(OP.built) return; OP.built=true;
   OP_ROLES.forEach(r=>{ const [x,z]=opW(r.side*.3,-.11); const av=new Avatar(r.look,{npc:true,x,z}); av.moveSpeed=0; av.sjBusy=1; av.root.scale.setScalar(1.35); /* a touch larger than life so they read on the big stage */ opDress(av,r); OP.actors.push({av,role:r}); }); }
 
 function catsShow(v){ CATS.off=!v; CATS.list.forEach(c=>{ c.g.visible=!!v; }); }
-function opSet(on,at,name,cats){ if(cats!==undefined) catsShow(cats!==false); const was=OP.on; OP.on=!!on; OP.at=at||Date.now(); if(name!==undefined){ OP.name=String(name||"").slice(0,20); setNameCloth(OP.nameCloth,OP.name); } if(OP.on) opBuild(); if(OP.root) OP.root.visible=OP.on; if(!OP.on){ OP.actors.forEach(a=>a.av.root.visible=false); if(OP.aud){ OP.aud.pause(); } }
+function opSet(on,at,name,cats){ if(cats!==undefined) catsShow(cats!==false); const was=OP.on; OP.on=!!on; OP.at=at||Date.now(); if(name!==undefined){ OP.name=String(name||"").slice(0,40); setNameCloth(OP.nameCloth,OP.name); } if(OP.on) opBuild(); if(OP.root) OP.root.visible=OP.on; if(!OP.on){ OP.actors.forEach(a=>a.av.root.visible=false); if(OP.aud){ OP.aud.pause(); } }
   if(OP.on&&!was&&Date.now()-OP.at<60000) toast("🎭 主委擺出歌仔戲台了！到廟埕看戲",4200); if(sheetKind==="chair"&&me.sp) openChair(); }
 async function opFetch(){ try{ const r=await fetch("/stage",{cache:"no-store"}); if(!r.ok) return; const j=await r.json(); if(j&&(!!j.on!==OP.on||(j.on&&j.at!==OP.at)||(j.name||"")!==OP.name||(j.cats===false)!==CATS.off)) opSet(j.on,+j.at||0,j.name||"",j.cats); }catch(e){} }
 HANDLERS.toggleCats=async(v,b)=>{ if(!me.sp) return; const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return; } const cats=CATS.off;
@@ -7223,9 +7223,9 @@ HANDLERS.toggleCats=async(v,b)=>{ if(!me.sp) return; const key=ck(); if(!key){ t
     if(j.ok){ save("mz.rk",key); opSet(j.on,j.at,j.name||"",j.cats); toast(cats?"🐱 跳舞貓咪放出來了":"跳舞貓咪收起來了",2600); if(sheetKind==="chair") openChair(); }
     else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":j.unset?"伺服器讀不到密碼設定（不是你打錯）":"密碼不對，沒有變更",3200); }catch(e){ toast("沒有變更，請稍後再試"); } if(b) b.disabled=false; };
 HANDLERS.stageChair=()=>{ if(!me.sp) return; openSheet("stageChair","歌仔戲台",`${backBtn}<p class="lead">${OP.on?"歌仔戲台演出中。可以改團名，或收回戲台。":"擺出歌仔戲台，戲班就會開演。"}</p>
-  <div class="field"><label class="group-label" for="opName">團名（20 字內，字多會自動縮小；會用紅布蓋在戲台上方原本的團名；留空就維持原樣）</label><input id="opName" maxlength="20" placeholder="例如：雲端歌劇團" value="${esc(OP.name||"")}"></div>
+  <div class="field"><label class="group-label" for="opName">團名（40 字內，字多會自動縮小、太長分兩行；會用紅布蓋在戲台上方原本的團名；留空就維持原樣）</label><input id="opName" maxlength="40" placeholder="例如：雲端歌劇團" value="${esc(OP.name||"")}"></div>
   <div class="row"><button class="good wide" data-act="toggleStage" data-v="1"><span class="name">${OP.on?"更新團名":"🎭 擺出歌仔戲台"}</span></button>${OP.on?`<button class="secondary" data-act="toggleStage" data-v="0">收回戲台</button>`:""}</div>`); };
-HANDLERS.toggleStage=async(v,b)=>{ if(!me.sp) return; const key=ck(); if(!key){ toast("請先輸入留言讀取密碼"); return; } const on=v==="1", name=(($("#opName")||{}).value||"").trim().slice(0,20), cats=!CATS.off;
+HANDLERS.toggleStage=async(v,b)=>{ if(!me.sp) return; const key=ck(); if(!key){ toast("請先輸入留言讀取密碼"); return; } const on=v==="1", name=(($("#opName")||{}).value||"").trim().slice(0,40), cats=!CATS.off;
   if(name&&chatCheck(name)){ toast("團名有不適合的內容"); return; }
   if(b) b.disabled=true; try{ const r=await fetch("/stage",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({on,name,cats})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
     if(j.ok){ save("mz.rk",key); const was=OP.on; opSet(j.on,j.at,j.name||"",j.cats); toast(j.on?(was?"團名已更新":"歌仔戲台已擺出，戲班開演"):"歌仔戲台已收回",3000); if(sheetKind==="stageChair") HANDLERS.stageChair(); }
@@ -7351,8 +7351,12 @@ function setNameCloth(m,name){ if(!m) return; const t=String(name||"").trim(); i
 function ptBannerTex(text){ return cvs(1024,220,(x,w,h)=>{ const g=x.createLinearGradient(0,0,0,h); g.addColorStop(0,"#b3121a"); g.addColorStop(.5,"#d42027"); g.addColorStop(1,"#9a0e15"); x.fillStyle=g; x.fillRect(0,0,w,h);
   x.strokeStyle="#f5c84a"; x.lineWidth=8; x.strokeRect(12,12,w-24,h-24); x.lineWidth=2; x.strokeRect(24,24,w-48,h-48);
   for(let i=0;i<w;i+=34){ x.fillStyle="rgba(0,0,0,.08)"; x.fillRect(i,0,12,h); } // cloth folds
-  const t=(text||"").trim(); if(!t) return; let fs=150; x.font=`900 ${fs}px "Noto Serif TC","Songti TC","PMingLiU",${UI_FONT}`; while(x.measureText(t).width>w-110&&fs>30){ fs-=6; x.font=`900 ${fs}px "Noto Serif TC","Songti TC","PMingLiU",${UI_FONT}`; }
-  x.textAlign="center"; x.textBaseline="middle"; x.lineJoin="round"; x.lineWidth=fs*.12; x.strokeStyle="#5a0608"; x.strokeText(t,w/2,h/2+4); const gg=x.createLinearGradient(0,h/2-fs/2,0,h/2+fs/2); gg.addColorStop(0,"#fff3b0"); gg.addColorStop(.5,"#ffd34a"); gg.addColorStop(1,"#e09a1c"); x.fillStyle=gg; x.fillText(t,w/2,h/2+4); }); }
+  const t=(text||"").trim(); if(!t) return; const FT=f=>`900 ${f}px "Noto Serif TC","Songti TC","PMingLiU",${UI_FONT}`, room=w-110;
+  /* (11/24 主委「歌仔戲的布條 要把所有字放進去 自動縮放字體大小」: one line while it reads well, else two lines, shrinking until every character fits) */
+  const fit=(str,maxF)=>{ let f=maxF; x.font=FT(f); while(x.measureText(str).width>room&&f>8){ f-=2; x.font=FT(f); } return f; };
+  let lines=[t], fs=fit(t,150); if(fs<70&&t.length>3){ const hf=Math.ceil(t.length/2); lines=[t.slice(0,hf),t.slice(hf)]; fs=Math.min(fit(lines[0],84),fit(lines[1],84)); }
+  x.font=FT(fs); x.textAlign="center"; x.textBaseline="middle"; x.lineJoin="round"; x.lineWidth=fs*.12; x.strokeStyle="#5a0608";
+  lines.forEach((ln,i)=>{ const y=h/2+4+(lines.length>1?(i?1:-1)*fs*.56:0); x.strokeText(ln,w/2,y); const gg=x.createLinearGradient(0,y-fs/2,0,y+fs/2); gg.addColorStop(0,"#fff3b0"); gg.addColorStop(.5,"#ffd34a"); gg.addColorStop(1,"#e09a1c"); x.fillStyle=gg; x.fillText(ln,w/2,y); }); }); }
 function ptSetBanner(){ if(!PT.banner) return; const m=PT.banner.material; if(m.map) m.map.dispose(); m.map=ptBannerTex(PT.text); m.emissiveMap=m.map; m.emissive.set("#ffffff"); m.emissiveIntensity=.35; m.color.set("#d8d8d8"); m.needsUpdate=true; PT.banner.visible=!!(PT.text||"").trim(); }
 function ptBuild(){ if(PT.built) return; PT.built=true; const k=PT.k;
   const root=new T.Group(); root.userData.noMerge=1; root.position.set(PT.x,0,PT.z); root.rotation.y=PT.rot; root.visible=false; scene.add(root); PT.root=root;
