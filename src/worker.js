@@ -365,7 +365,7 @@ export class Lobby extends DurableObject {
       if (!P || !(k >= 0 && k < 12)) return json({ ok: false }); const H = await this.ctx.storage.get("FH:" + owner + ":" + k); if (!H || !H.full) return json({ ok: false });
       const F = await this.ctx.storage.get("F:" + owner); const now = Date.now();
       if (F && F.full) { const kk = (P.fk | 0) % 12; await this.ctx.storage.put("FH:" + owner + ":" + kk, F); P.fh = (Array.isArray(P.fh) ? P.fh : []).filter(h => h.k !== kk).concat([{ at: F.at || 0, c: Math.floor(Number(F.full.bag && F.full.bag.coins) || 0), k: kk, saved: now, why: "restore" }]).slice(-12); P.fk = kk + 1; }
-      await this.ctx.storage.put("F:" + owner, { full: H.full, at: now }); P.sid = "restored"; await this.ctx.storage.put("P:" + owner, P); return json({ ok: true });
+      await this.ctx.storage.put("F:" + owner, { full: H.full, at: now, play: now }); P.sid = "restored"; await this.ctx.storage.put("P:" + owner, P); return json({ ok: true });
     }
     if (url.pathname === "/hatfit") return json((await this.ctx.storage.get("hatfit")) || { fit: {}, at: 0 });
     if (url.pathname === "/sponsor") {
@@ -685,11 +685,12 @@ export class Lobby extends DurableObject {
       const full = b.full; if (!full || typeof full !== "object" || !full.bag || !full.me) return json({ ok: false });
       const F = await this.ctx.storage.get("F:" + uid);
       if (url.pathname === "/save/migrate") {
-        if (!F) { await this.ctx.storage.put("F:" + uid, { full, at: now }); await this.ctx.storage.put("P:" + uid, P); return json({ ok: true, used: "mine" }); }
-        if (coinsOf(full) > coinsOf(F.full)) { await keepOld(F, "force"); await this.ctx.storage.put("F:" + uid, { full, at: now }); await this.ctx.storage.put("P:" + uid, P); return json({ ok: true, used: "mine" }); }
+        const t = Math.min(now, Math.max(0, Number(b.t) || 0)); /* when the offering device was last played */
+        if (!F) { await this.ctx.storage.put("F:" + uid, { full, at: now, play: t }); await this.ctx.storage.put("P:" + uid, P); return json({ ok: true, used: "mine" }); }
+        if (t > (F.play || F.at || 0)) { /* (11/23 主委「不要因為錢比較多變新存檔」: the one played most recently wins, not the richer one) */ await keepOld(F, "force"); await this.ctx.storage.put("F:" + uid, { full, at: now, play: t }); await this.ctx.storage.put("P:" + uid, P); return json({ ok: true, used: "mine" }); }
         await keepOld({ full, at: now }, "force"); await this.ctx.storage.put("P:" + uid, P); return json({ ok: true, used: "server", full: F.full, at: F.at });
       }
-      await keepOld(F); await this.ctx.storage.put("F:" + uid, { full, at: now }); await this.ctx.storage.put("P:" + uid, P); return json({ ok: true, at: now });
+      await keepOld(F); await this.ctx.storage.put("F:" + uid, { full, at: now, play: now }); await this.ctx.storage.put("P:" + uid, P); return json({ ok: true, at: now });
     }
     if (url.pathname === "/me" || url.pathname === "/me/claim" || url.pathname === "/gift" || url.pathname === "/gifts") {
       const uid = String(req.headers.get("x-uid") || "").replace(/[^a-f0-9]/g, "").slice(0, 40); if (!uid) return json({ ok: false });
