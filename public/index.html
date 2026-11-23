@@ -3160,7 +3160,7 @@ setTimeout(wxPoll,4000); setInterval(wxPoll,120000);
 const _zv=new T.Vector3(), _zc=new T.Color();
 /* 雨傘: out in the rain everyone holds an umbrella (shared shapes, a few colours) */
 const UMB={geo:null,stick:null,mats:[]};
-function umbTick(av,wet){ if(!av||!av.root) return; const need=wet&&av.root.visible&&av.seat<0&&!((av.flyCur||0)>.3)&&wxOutdoor(av.pos.x,av.pos.y);
+function umbTick(av,wet){ if(!av||!av.root) return; const need=!av.noUmb&&wet&&av.root.visible&&av.seat<0&&!((av.flyCur||0)>.3)&&wxOutdoor(av.pos.x,av.pos.y);
   if(!need){ if(av.umb) av.umb.visible=false; return; }
   if(!av.umb){ if(!UMB.geo){ UMB.geo=new T.SphereGeometry(.62,8,4,Math.PI/8,Math.PI*2,0,Math.PI/2.6); UMB.stick=new T.CylinderGeometry(.013,.013,1.45,6); /* eight flat panels, like a real umbrella */
       UMB.mats=["#c8263a","#2a5aa8","#e8b830","#3a3a44","#7a3ab0","#e87aa0","#2a8a8a","#f2eee6"].map(c=>new T.MeshStandardMaterial({color:c,roughness:.55,flatShading:true,side:T.DoubleSide,map:cvs(64,32,(x,w,h)=>{ x.fillStyle="#ffffff"; x.fillRect(0,0,w,h); x.fillStyle="rgba(0,0,0,.18)"; for(let k=0;k<8;k++) x.fillRect(Math.round(k*w/8),0,1,h); x.fillStyle="rgba(0,0,0,.22)"; x.fillRect(0,h-2,w,2); })})); }
@@ -7212,7 +7212,7 @@ function opBuild(){ if(OP.built) return; OP.built=true;
     if(sl){ sl.position.copy(from); sl.target=tgt; root.add(sl); }
     const bm=new T.MeshBasicMaterial({color:new T.Color(),transparent:true,opacity:.11,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide,toneMapped:false}); const beam=new T.Mesh(beamGeo,bm); beam.position.copy(from); root.add(beam);
     OP.spots.push({sl,tgt,beam,bm,from,i}); }
-  OP_ROLES.forEach(r=>{ const [x,z]=opW(r.side*.3,-.11); const av=new Avatar(r.look,{npc:true,x,z}); av.moveSpeed=0; av.sjBusy=1; av.root.scale.setScalar(1.35); /* a touch larger than life so they read on the big stage */ opDress(av,r); OP.actors.push({av,role:r}); }); }
+  OP_ROLES.forEach(r=>{ const [x,z]=opW(r.side*.3,-.11); const av=new Avatar(r.look,{npc:true,x,z}); av.moveSpeed=0; av.sjBusy=1; av.noUmb=1; av.root.scale.setScalar(1.35); /* a touch larger than life so they read on the big stage */ opDress(av,r); OP.actors.push({av,role:r}); }); }
 
 function catsShow(v){ CATS.off=!v; CATS.list.forEach(c=>{ c.g.visible=!!v; }); }
 function opSet(on,at,name,cats){ if(cats!==undefined) catsShow(cats!==false); const was=OP.on; OP.on=!!on; OP.at=at||Date.now(); if(name!==undefined){ OP.name=String(name||"").slice(0,40); setNameCloth(OP.nameCloth,OP.name); } if(OP.on) opBuild(); if(OP.root) OP.root.visible=OP.on; if(!OP.on){ OP.actors.forEach(a=>a.av.root.visible=false); if(OP.aud){ OP.aud.pause(); } }
@@ -7383,7 +7383,7 @@ function ptBuild(){ if(PT.built) return; PT.built=true; const k=PT.k;
   // sparks for every clash, and one big flash
   for(let i=0;i<60;i++){ const sp=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color(),transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false})); sp.visible=false; sp.userData.noMerge=1; scene.add(sp); PT.sparks.push({sp,life:9,v:new T.Vector3()}); }
   PT.flash=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#fff3c4"),transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false})); PT.flash.userData.noMerge=1; PT.flash.visible=false; scene.add(PT.flash); PT.flashT=9;
-  PT_ROLES.forEach((r,i)=>{ const p=ptW(0,PT_FLOOR,PT_DEPTH); const av=new Avatar(r.look,{npc:true,x:p.x,z:p.z}); av.moveSpeed=0; av.sjBusy=1; ptDress(av,r); PT.actors.push({av,role:r,i,cur:null}); });
+  PT_ROLES.forEach((r,i)=>{ const p=ptW(0,PT_FLOOR,PT_DEPTH); const av=new Avatar(r.look,{npc:true,x:p.x,z:p.z}); av.moveSpeed=0; av.sjBusy=1; av.noUmb=1; ptDress(av,r); PT.actors.push({av,role:r,i,cur:null}); });
   station("puppet",[PT.x,PT.z-.15*k-1.6],0); STATION_LABEL.puppet="布袋戲台"; STATION_HINT.puppet="走向布袋戲台"; }
 function ptSet(s){ const was=PT.on; PT.on=!!s.on; PT.at=+s.at||Date.now(); PT.text=String(s.text||"").slice(0,24); PT.name=String(s.name||"").slice(0,8); setNameCloth(PT.nameCloth,PT.name);
   if(PT.on) ptBuild(); if(PT.root){ PT.root.visible=PT.on; ptSetBanner(); }
