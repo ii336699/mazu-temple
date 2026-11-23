@@ -3,12 +3,13 @@
 import { DurableObject } from "cloudflare:workers";
 import { buildPaper } from "../public/paper-gen.js";
 
+const histOf = P => (Array.isArray(P.hist) ? P.hist : []).map(h => ({ at: h.at, coins: snapInfo(h.snap).coins })).reverse();
 // the name and coins inside a saved character code (same layout as lookCode() in the page)
 function snapInfo(str) { try { const raw = atob(String(str).slice(3).replace(/-/g, "+").replace(/_/g, "/")); const bits = []; for (const ch of raw) { const b = ch.charCodeAt(0); for (let i = 7; i >= 0; i--) bits.push((b >> i) & 1); } let p = 0; const get = n => { let v = 0; for (let i = 0; i < n; i++) v = v * 2 + (bits[p++] || 0); return v; };
   if (get(4) !== 1) return {}; get(65); const coins = get(16); get(30); get(1); const pn = get(3); get(pn * 6); get(24); const nl = get(4); let name = ""; for (let i = 0; i < nl; i++) name += String.fromCharCode(get(16)); return { name, coins }; } catch { return {}; } }
 const HALLS = 10, CAP = 100, MAX_MSG = 4000;
 const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000, "/puppet": 5000, "/crowd": 5000, "/market": 5000, "/layout": 5000, "/mapedit": 5000 };
-const LOBBY_PATHS = ["/mapedit", "/photospots", "/photospot", "/rank", "/rankclaim", "/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather", "/stat", "/nev", "/paper", "/sponsor", "/hatfit", "/honor", "/lookup", "/crash", "/meteor"];
+const LOBBY_PATHS = ["/lookup/restore", "/mapedit", "/photospots", "/photospot", "/rank", "/rankclaim", "/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather", "/stat", "/nev", "/paper", "/sponsor", "/hatfit", "/honor", "/lookup", "/crash", "/meteor"];
 const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage", "/puppet": "/puppet", "/crowd": "/crowd", "/market": "/market", "/layout": "/layout", "/mapedit": "/mapedit" }; // a POST here makes that cached list stale
 
 export default {
@@ -352,9 +353,15 @@ export class Lobby extends DurableObject {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
       const q = String(url.searchParams.get("q") || "").normalize("NFKC").trim().toLowerCase().slice(0, 16), qc = q.toUpperCase().replace(/[^0-9A-Z]/g, "");
       if (!q) return json({ ok: false, why: "q" }); const out = []; let seen = 0;
-      if (qc.length === 7) { const owner = await this.ctx.storage.get("C:" + qc); const P = owner && await this.ctx.storage.get("P:" + owner); if (P) { const d = snapInfo(P.snap); out.push({ n: d.name, code: P.code, at: P.at || 0, coins: d.coins, id: P.id || "" }); } }
-      for (const [, P] of await this.ctx.storage.list({ prefix: "P:", limit: 20000 })) { seen++; if (!P || !P.snap || !P.code) continue; const d = snapInfo(P.snap); if (!d.name || !d.name.normalize("NFKC").toLowerCase().includes(q)) continue; if (out.some(o => o.code === P.code)) continue; out.push({ n: d.name, code: P.code, at: P.at || 0, coins: d.coins, id: P.id || "" }); }
+      if (qc.length === 7) { const owner = await this.ctx.storage.get("C:" + qc); const P = owner && await this.ctx.storage.get("P:" + owner); if (P) { const d = snapInfo(P.snap); out.push({ n: d.name, code: P.code, at: P.at || 0, coins: d.coins, id: P.id || "", hist: histOf(P) }); } }
+      for (const [, P] of await this.ctx.storage.list({ prefix: "P:", limit: 20000 })) { seen++; if (!P || !P.snap || !P.code) continue; const d = snapInfo(P.snap); if (!d.name || !d.name.normalize("NFKC").toLowerCase().includes(q)) continue; if (out.some(o => o.code === P.code)) continue; out.push({ n: d.name, code: P.code, at: P.at || 0, coins: d.coins, id: P.id || "", hist: histOf(P) }); }
       out.sort((a, b) => b.at - a.at); return json({ ok: true, seen, list: out.slice(0, 40) });
+    }
+    if (url.pathname === "/lookup/restore" && req.method === "POST") { /* the chair brings an earlier save back: it becomes the character's current save; the player gets it by entering the 取回碼 */
+      const auth = await this.checkKey(req); if (!auth.ok) return json(auth); let b = {}; try { b = await req.json(); } catch {}
+      const code = String(b.code || "").toUpperCase().replace(/[^0-9A-Z]/g, "").slice(0, 7), at = Number(b.at) || 0; const owner = code.length === 7 ? await this.ctx.storage.get("C:" + code) : null; const P = owner ? await this.ctx.storage.get("P:" + owner) : null;
+      if (!P || !Array.isArray(P.hist)) return json({ ok: false }); const h = P.hist.find(x => x.at === at); if (!h) return json({ ok: false });
+      P.hist.push({ at: P.at || 0, snap: P.snap }); while (P.hist.length > 12) P.hist.shift(); P.snap = h.snap; P.at = Date.now(); P.id = "chair"; await this.ctx.storage.put("P:" + owner, P); return json({ ok: true });
     }
     if (url.pathname === "/hatfit") return json((await this.ctx.storage.get("hatfit")) || { fit: {}, at: 0 });
     if (url.pathname === "/sponsor") {
@@ -668,6 +675,8 @@ export class Lobby extends DurableObject {
         let b = {}; try { b = await req.json(); } catch {} const snap = String(b.snap || ""); if (!/^MZ-[A-Za-z0-9_-]{10,900}$/.test(snap)) return json({ ok: false });
         const P = (await this.ctx.storage.get("P:" + uid)) || {};
         if (!P.code) { const AB = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"; for (let k = 0; k < 12 && !P.code; k++) { let c = ""; for (let i = 0; i < 7; i++) c += AB[(Math.random() * AB.length) | 0]; if (!(await this.ctx.storage.get("C:" + c))) P.code = c; } if (!P.code) return json({ ok: false }); await this.ctx.storage.put("C:" + P.code, uid); }
+        if (P.snap && P.snap !== snap) { /* (11/23 主委「查玩家名字 看他之前檔案紀錄有多少錢」): earlier saves are kept — one per half hour, the last 12 — so the chair can see and bring one back */
+          const H = Array.isArray(P.hist) ? P.hist : []; const last = H[H.length - 1]; if (last && (P.at || 0) - last.at < 30 * 60e3) H[H.length - 1] = { at: P.at || 0, snap: P.snap }; else H.push({ at: P.at || 0, snap: P.snap }); while (H.length > 12) H.shift(); P.hist = H; }
         P.snap = snap; P.at = now; const id = clean(b.id, 16).replace(/[^a-z0-9]/g, ""); if (id && P.id !== id) { P.id = id; await this.ctx.storage.put("I:" + id, uid); }
         await this.ctx.storage.put("P:" + uid, P); return json({ ok: true, code: P.code, at: now });
       }
