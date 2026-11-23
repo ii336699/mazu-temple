@@ -3,7 +3,7 @@
 import { DurableObject } from "cloudflare:workers";
 import { buildPaper } from "../public/paper-gen.js";
 
-const histOf = P => (Array.isArray(P.fh) ? P.fh : []).map(h => ({ at: h.at, coins: h.c, k: h.k })).reverse();
+const histOf = P => (Array.isArray(P.fh) ? P.fh : []).map(h => ({ at: h.at, coins: h.c, k: h.k })).reverse().concat(P.f0 ? [{ at: P.f0.at, coins: P.f0.c, k: 99, first: 1 }] : []);
 // the name and coins inside a saved character code (same layout as lookCode() in the page)
 function snapInfo(str) { try { const raw = atob(String(str).slice(3).replace(/-/g, "+").replace(/_/g, "/")); const bits = []; for (const ch of raw) { const b = ch.charCodeAt(0); for (let i = 7; i >= 0; i--) bits.push((b >> i) & 1); } let p = 0; const get = n => { let v = 0; for (let i = 0; i < n; i++) v = v * 2 + (bits[p++] || 0); return v; };
   if (get(4) !== 1) return {}; get(65); const coins = get(16); get(30); get(1); const pn = get(3); get(pn * 6); get(24); const nl = get(4); let name = ""; for (let i = 0; i < nl; i++) name += String.fromCharCode(get(16)); return { name, coins }; } catch { return {}; } }
@@ -377,7 +377,8 @@ export class Lobby extends DurableObject {
     if (url.pathname === "/lookup/restore" && req.method === "POST") { /* the chair brings an earlier save back: it becomes the character's one save (the current one is kept among the old ones); a device that is open is stopped and reloads it */
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth); let b = {}; try { b = await req.json(); } catch {}
       const code = String(b.code || "").toUpperCase().replace(/[^0-9A-Z]/g, "").slice(0, 7), k = Math.floor(Number(b.k)); const owner = code.length === 7 ? await this.ctx.storage.get("C:" + code) : null; const P = owner ? await this.ctx.storage.get("P:" + owner) : null;
-      if (!P || !(k >= 0 && k < 12)) return json({ ok: false }); const H = await this.ctx.storage.get("FH:" + owner + ":" + k); if (!H || !H.full) return json({ ok: false });
+      if (!P || !(k >= 0 && k < 12 || k === 99)) return json({ ok: false }); const H = await this.ctx.storage.get(k === 99 ? "F0:" + owner : "FH:" + owner + ":" + k); if (!H || !H.full) return json({ ok: false });
+      if (b.peek) { const bg = H.full.bag || {}; return json({ ok: true, name: (H.full.me && H.full.me.name) || "", coins: Math.floor(Number(bg.coins) || 0), gacha: bg.gacha | 0, acc: Object.keys((bg.acc && bg.acc.owned) || {}), items: bg.items || {} }); } /* (the chair looks inside an earlier save first) */
       const F = await this.ctx.storage.get("F:" + owner); const now = Date.now();
       if (F && F.full) { const kk = (P.fk | 0) % 12; await this.ctx.storage.put("FH:" + owner + ":" + kk, F); P.fh = (Array.isArray(P.fh) ? P.fh : []).filter(h => h.k !== kk).concat([{ at: F.at || 0, c: Math.floor(Number(F.full.bag && F.full.bag.coins) || 0), k: kk, saved: now, why: "restore" }]).slice(-12); P.fk = kk + 1; }
       await this.ctx.storage.put("F:" + owner, { full: H.full, at: now, play: now }); P.sid = "restored"; await this.ctx.storage.put("P:" + owner, P); return json({ ok: true });
@@ -692,7 +693,10 @@ export class Lobby extends DurableObject {
       const uid = String(req.headers.get("x-uid") || "").replace(/[^a-f0-9]/g, "").slice(0, 40); if (!uid) return json({ ok: false });
       const P = (await this.ctx.storage.get("P:" + uid)) || {}; const now = Date.now();
       const coinsOf = f => { try { return Math.max(0, Math.floor(Number(f && f.bag && f.bag.coins) || 0)); } catch { return 0; } };
-      const keepOld = async (F, why) => { if (!F || !F.full) return; const H = Array.isArray(P.fh) ? P.fh : []; const last = H[H.length - 1]; if (why !== "force" && last && now - last.saved < 30 * 60e3) return;
+      const keepOld = async (F, why) => { if (!F || !F.full) return; const H = Array.isArray(P.fh) ? P.fh : [];
+        if (!P.f0) { /* (11/23 主委「看不看得到改版前的」: the oldest save there is — the progress each device brought when the one save began — is kept for good, outside the 12 that rotate) */
+          let first = F; const old = H.slice().sort((a, b) => (a.saved || 0) - (b.saved || 0))[0]; if (old) { const O = await this.ctx.storage.get("FH:" + uid + ":" + old.k); if (O && O.full) first = O; }
+          await this.ctx.storage.put("F0:" + uid, first); P.f0 = { at: first.at || 0, c: coinsOf(first.full) }; } const last = H[H.length - 1]; if (why !== "force" && last && now - last.saved < 30 * 60e3) return;
         const k = (P.fk | 0) % 12; await this.ctx.storage.put("FH:" + uid + ":" + k, F); P.fh = H.filter(h => h.k !== k).concat([{ at: F.at || 0, c: coinsOf(F.full), k, saved: now, why: why || "" }]).slice(-12); P.fk = k + 1; };
       if (req.method === "GET") { const sid = crypto.randomUUID().slice(0, 12); P.sid = sid; await this.ctx.storage.put("P:" + uid, P); const F = await this.ctx.storage.get("F:" + uid); return json({ ok: true, sid, full: F ? F.full : null, at: F ? F.at : 0, pend: F && F.pend || "" }); }
       let b = {}; let raw = ""; try { raw = await req.text(); if (raw.length > 120000) return json({ ok: false, big: true }); b = JSON.parse(raw); } catch { return json({ ok: false }); }
