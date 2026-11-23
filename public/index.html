@@ -77,6 +77,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-o
 .toast[data-hide]{opacity:0}
 /* 11/14 (the chair): no turn-left/right buttons; a slimmer 精力 bar; 參拜指引, 一鍵參拜 and 拜筊籤香 only inside the temple */
 .rot{display:none!important}
+body.rotOn .rot{display:grid!important} /* (11/23 主委「左下右下轉方向的按鈕 放進設定裡 玩家可以選擇開啟」) */
 #enPill{padding:4px 8px 4px 6px!important;gap:4px!important;font-size:13px!important;border-radius:11px!important}#enPill .bar{width:38px!important;height:7px!important}#enPill .ic{font-size:14px!important}#enPill small{font-size:10px!important}
 body.out-temple #autoBtn,body.out-temple #guideBtn,body.out-temple .actions,body.out-temple #actOpen{display:none!important}
 .act-fold{flex:0 0 auto}
@@ -5367,7 +5368,7 @@ function openGfx(){ const opt=(v,t,d)=>`<button class="good" data-act="quality" 
   /* order: what players change most (畫質) first, then smoothness, then saving the temple to the phone; the testing tools only for the chair */
   openSheet("gfx","設定",`<div class="group"><span class="group-label">伺服器與人數</span><div class="chips"><button class="chip" data-act="hallsOpen">${esc(($(".hall-name")||{}).textContent||"")}・${esc(($("#countText")||{}).textContent||"")}　切換 ▾</button></div></div><div class="group"><span class="group-label">畫質</span><p class="lead">畫面卡頓或手機發燙時，可以改用省電畫質。</p></div><div class="goods">${opt("auto","自動","進場後自動偵測，太卡會切到省電")}${opt("high","高畫質","光束、灰塵、全部燈光，最漂亮")}${opt("low","省電","降低解析度與特效，舊手機也順")}${opt("lite","低配","最省：模型減面、小貼圖、關閉抗鋸齒，給比較舊的手機（會重新載入）")}</div><p class="note">目前：${Q.lite?"低配":Q.low?"省電畫質":"高畫質"}</p>`
     +`<div class="group"><span class="group-label">畫面上的人物</span><div class="chips">${[[0,"全部"],[1,"減少一半"],[2,"全部關掉"]].map(([v,t])=>`<button class="chip" data-act="cutSet" data-v="${v}" aria-pressed="${CUT.lv===v}">${t}</button>`).join("")}</div><p class="note">手機常被關掉（閃退）時，少畫一點人會比較穩。遊戲被關掉時會自動幫你調低，並先跟你說。</p></div>`
-    +`<div class="group"><span class="group-label">視野範圍</span><div class="chips">${[[0,"正常"],[1,"近"],[2,"很近"]].map(([v,t])=>`<button class="chip" data-act="viewSet" data-v="${v}" aria-pressed="${VIEW.k===v}">${t}</button>`).join("")}</div><p class="note">太卡或常閃退時選「近」或「很近」：只蓋你附近的東西，遠的地方變成霧。會重新載入。</p></div>`
+    +`<div class="group"><span class="group-label">視野範圍</span><div class="chips">${[[0,"正常"],[1,"近"],[2,"很近"]].map(([v,t])=>`<button class="chip" data-act="viewSet" data-v="${v}" aria-pressed="${VIEW.k===v}">${t}</button>`).join("")}</div><p class="note">太卡或常閃退時選「近」或「很近」：只蓋你附近的東西，遠的地方變成霧。會重新載入。</p></div><div class="group"><span class="group-label">轉視角按鈕</span><div class="chips">${[[1,"顯示"],[0,"不顯示"]].map(([v,t])=>`<button class="chip" data-act="rotSet" data-v="${v}" aria-pressed="${(load("mz.rotBtn",0)?1:0)===v}">${t}</button>`).join("")}</div><p class="note">畫面左下、右下各一顆，按一下視角轉 45 度。</p></div>`
     +(()=>{ try{ const h=LIFE&&LIFE.homeInfo&&LIFE.homeInfo(); if(!h||h.cur<0) return ""; return `<div class="group"><span class="group-label">我的家（${lotNm(h.cur)}）</span><div class="chips"><button class="chip" data-act="homePub" data-v="1" aria-pressed="${!!h.pub}">開放參觀</button><button class="chip" data-act="homePub" data-v="0" aria-pressed="${!h.pub}">不公開</button></div><p class="note">開放時鎮上的人可以進來看你的家；不公開時只有你進得去。要進家裡請走到自己家門口。</p></div>`; }catch(e){ return ""; } })() /* (11/23 主委「增加設定開不開放給人家參觀的功能」) */
     +`<div class="group"><span class="group-label">流暢度</span><div class="chips"><button class="chip" data-act="fps60" aria-pressed="${PACE.smooth}">流暢模式（一直 60 格，較耗電）</button></div><p class="note">關閉時：操作和走路時 60 格，站著看時 30 格，半分鐘沒碰螢幕 20 格，比較省電。</p></div>`
     +(()=>{ const f=fltApply(); const c=(v,t)=>`<button class="chip" data-act="flt" data-v="${v}" aria-pressed="${f===v}">${t}</button>`; return `<div class="group"><span class="group-label">畫面濾鏡</span><div class="chips">${c("off","關閉")}${c("soft","柔和")}${c("film","電影感")}</div><p class="note">讓顏色更有層次、四周微微變暗。</p><div class="chips" style="margin-top:6px"><button class="chip" data-act="grade" data-v="1" aria-pressed="${!!window.MZ_GRADE}">質感調色：開</button><button class="chip" data-act="grade" data-v="0" aria-pressed="${!window.MZ_GRADE}">質感調色：關</button></div><p class="note">質感調色：白天亮處不過曝、暗部偏冷亮部偏暖，不耗電。</p></div>`+(()=>{ const g=(v,t)=>`<button class="chip" data-act="grassQ" data-v="${v}" aria-pressed="${(window.MZ_GRASS||{}).mode===v}">${t}</button>`; return `<div class="group"><span class="group-label">草地・沙灘</span><div class="chips">${g("old","原版")}${g("low","新版・低")}${g("med","新版・中")}${g("high","新版・高")}</div><p class="note" style="display:none"></p><span class="group-label" style="margin-top:10px;display:block">WebGL 1 相容模式</span><div class="chips"><button class="chip" data-act="gl1" data-v="1" aria-pressed="${!!Q.gl1}">開</button><button class="chip" data-act="gl1" data-v="0" aria-pressed="${!Q.gl1}">關</button></div><p class="note">iPhone（iOS 27）預設開：用比較舊、比較穩的 3D 方式畫。切換後會重新載入。</p><span class="group-label" style="margin-top:10px;display:block">🕰 歷代版本</span><div class="chips"><button class="chip" data-act="verPick">選一個舊版本來試</button></div><p class="note">草地和沙灘一起切換。低：新的草色、沙色＋大範圍色彩變化。中：再加中尺度變化和草絲／細沙的立體感。高：再加陽光照在草絲、細沙上的細微反光（水邊的濕沙反光較亮）和防重複。切換後會重新載入畫面。</p></div>`; })(); })()
@@ -5375,6 +5376,8 @@ function openGfx(){ const opt=(v,t,d)=>`<button class="good" data-act="quality" 
     +(me.sp?`<div class="group"><span class="group-label">主委測試工具</span><div class="chips"><button class="chip" data-act="perfPanel" aria-pressed="${PERF.on}">效能面板</button></div></div>${dbgHTML()}`:"")); }
 /* 畫面濾鏡: a light colour grade (contrast, saturation) on the canvas plus a soft vignette — done by the browser, no extra 3D pass */
 const FLT={v:load("mz.flt",null)}; function fltApply(){ let v=FLT.v; if(v==null) v=Q.lite?"off":"soft"; document.body.classList.toggle("flt-soft",v==="soft"); document.body.classList.toggle("flt-film",v==="film"); return v; }
+HANDLERS.rotSet=v=>{ v=+v?1:0; save("mz.rotBtn",v); document.body.classList.toggle("rotOn",!!v); document.querySelectorAll('[data-act="rotSet"]').forEach(b=>b.setAttribute("aria-pressed",String(+b.dataset.v===v))); };
+try{ if(load("mz.rotBtn",0)) document.body.classList.add("rotOn"); }catch(e){}
 HANDLERS.viewSet=v=>{ v=+v||0; if(v===VIEW.k) return; save("mz.view",v); toast("視野範圍已更換，重新載入中…",1500); setTimeout(()=>location.reload(),600); };
 HANDLERS.zones=v=>{ v=v==="1"?1:0; if(v==(load("mz.zones",0)==1?1:0)) return; save("mz.zones",v); toast("地圖載入方式已更換，重新載入中…",1500); setTimeout(()=>location.reload(),600); };
 HANDLERS.gl1=v=>{ v=v==="1"; if(v===!!Q.gl1) return; save("mz.gl1",v?1:0); toast(v?"WebGL 1 相容模式開啟，重新載入中…":"WebGL 1 相容模式關閉，重新載入中…",1500); setTimeout(()=>location.reload(),600); };
@@ -5707,14 +5710,14 @@ function peerFlood(av,text){ const k=floodKey(text); av.fl=av.fl||{last:""}; if(
 function sendChat(text){ text=cleanChat(text); if(!text) return false; const now=performance.now(); if(now-lastChatAt<800) return false; /* only stops an accidental double tap */
   const bad=chatCheck(text); if(bad){ toast(`沒有送出：${CHAT_REASON[bad]}`,2800); return false; }
   const fl=floodCheck(text); if(fl){ toast(fl,2800); return false; } floodNote(text);
-  lastChatAt=now; myChat=[text,Math.random().toString(36).slice(2,8)]; markDirty(); meAv.say(text,"#f7ecd6",5); logChat(me.name||"你",text,true); botHear(meAv,text); return true; }
+  lastChatAt=now; myChat=[text,Math.random().toString(36).slice(2,8)]; markDirty(); meAv.say(text,"#f7ecd6",5); try{ if(ROOMX&&ROOMX.av) ROOMX.av.say(text,"#f7ecd6",5); }catch(e){} logChat(me.name||"你",text,true); botHear(meAv,text); return true; }
 /* ---- greetings ---- */
 function openSay(){ openSheet("say","聊天",`<div class="chat-log" id="chatLog" aria-live="polite"></div>
   <form class="chat-row" id="chatForm"><input id="chatInput" maxlength="40" autocomplete="off" placeholder="說點什麼，會顯示在你頭上" aria-label="聊天訊息"><button class="primary" type="submit">送出</button></form>
   <div class="chips">${PHRASES.map((p,i)=>`<button class="chip" data-act="say" data-v="${i}">${p}</button>`).join("")}</div>`);
   renderChatLog(); $("#chatForm").addEventListener("submit",e=>{ e.preventDefault(); const inp=$("#chatInput"); if(sendChat(inp.value)) inp.value=""; });
   if(matchMedia("(pointer:fine)").matches) setTimeout(()=>{ const i=$("#chatInput"); if(i) i.focus(); },320); }
-HANDLERS.say=v=>{ const i=+v; { const fl=floodCheck(PHRASES[i]); if(fl){ toast(fl,2800); return; } floodNote(PHRASES[i]); } myMsg=[i,Math.random().toString(36).slice(2,8)]; markDirty(); meAv.say(PHRASES[i],"#f7ecd6"); logChat(me.name||"你",PHRASES[i],true); };
+HANDLERS.say=v=>{ const i=+v; { const fl=floodCheck(PHRASES[i]); if(fl){ toast(fl,2800); return; } floodNote(PHRASES[i]); } myMsg=[i,Math.random().toString(36).slice(2,8)]; markDirty(); meAv.say(PHRASES[i],"#f7ecd6"); try{ if(ROOMX&&ROOMX.av) ROOMX.av.say(PHRASES[i],"#f7ecd6"); }catch(e){} logChat(me.name||"你",PHRASES[i],true); };
 
 /* ---- halls ---- */
 // Only halls with people (plus yours) are listed; the next empty hall appears once every listed hall is nearly full, so players gather instead of spreading out.
@@ -6041,7 +6044,7 @@ HANDLERS.doAct=v=>{ const i=+v; closeSheet(); const n=Math.random().toString(36)
   if(i<0||!ACTS[i]){ stopAct(meAv); myAct=[-1,n]; markDirty(); return; }
   if(meAv.seat>=0){ meAv.seat=-1; updateStandBtn(); } meAv.target.set(meAv.pos.x,meAv.pos.y); meAv.path=[]; pendingStation=null; meAv.bowT=-1;
   startAct(meAv,i); myAct=[i,n]; markDirty(); if(ACTS[i].loop) toast(`${ACTS[i].i} ${ACTS[i].n}中，走動就會停`,2400); };
-HANDLERS.emo=v=>{ const i=+v; const now=performance.now(); if(now-(HANDLERS.emo.last||0)<1200){ toast("慢一點點～"); return; } HANDLERS.emo.last=now; closeSheet(); myEmo=[i,Math.random().toString(36).slice(2,8)]; markDirty(); showEmo(meAv,i); };
+HANDLERS.emo=v=>{ const i=+v; const now=performance.now(); if(now-(HANDLERS.emo.last||0)<1200){ toast("慢一點點～"); return; } HANDLERS.emo.last=now; closeSheet(); myEmo=[i,Math.random().toString(36).slice(2,8)]; markDirty(); showEmo(meAv,i); try{ if(ROOMX&&ROOMX.av) showEmo(ROOMX.av,i); }catch(e){} };
 $("#emoBtn").onclick=()=>{ ensureAudio(); if(sheetKind==="emo") closeSheet(); else openEmo(); };
 /* ================= 全服煙火 (3-minute show over the courtyard, same seeded program on every screen) + 仙女棒 ================= */
 const FWN=Q.low?16000:36000; /* the weeping willows need many trail segments */ // particle pool
@@ -11926,6 +11929,7 @@ function rugApply(){ const D=R; if(V.r<0){ D.rug.visible=false; return; } const 
 /* t[4] = size (1 = as made; 擺飾・盆栽・壁掛・掛畫 grow or shrink, a curtain only gets wider or narrower), t[5] = a fine turn in degrees
    (-45..45: on the floor it turns the piece, on a wall it tilts it, so a model that came a little crooked can be set straight), t[6] = a lamp is on */
 const SCL=c=>c==="deco"||c==="plant"||c==="wall"||c==="pic"?"u":c==="curtain"?"x":"";
+const tdir=t=>((((t[3]|0)*90-ian(t))%360)+360)%360;
 const isc=t=>{ const v=+t[4]; return v>0?Math.max(.5,Math.min(2.5,v)):1; }, ian=t=>Math.max(-45,Math.min(45,Math.round(+t[5]||0)));
 const kOf=t=>SCL(FURN[t[0]].c)?isc(t):1, hgt=t=>FURN[t[0]].h*(SCL(FURN[t[0]].c)==="u"?isc(t):1);
 const foot=t=>{ const F=FURN[t[0]], k=SCL(F.c)==="u"?isc(t):1; let w=F.w*k, d=F.d*k; if(t[3]%2){ const q=w; w=d; d=q; } const a=Math.abs(ian(t))*Math.PI/180, c=Math.cos(a), s=Math.sin(a); return [(c*w+s*d)/2,(s*w+c*d)/2]; };
@@ -12095,9 +12099,10 @@ RM.dbg=()=>R; RM.tint=m=>daylight(m); RM.blk=t=>blocked(t); RM.fs=t=>freeSpot(t)
 RM.open=vis=>{ if(!SHOPX||!SHOPX.enter){ toast("房間還沒準備好，請稍等一下",2200); return; } RM.visit=null; if(vis&&vis.room){ const r=vis.room; for(const k in DEF) if(typeof r[k]!=="number") r[k]=DEF[k]; if(!Array.isArray(r.it)) r.it=[]; r.it=r.it.filter(t=>Array.isArray(t)&&FURN[t[0]]); r.inv={}; r.v=2; RM.visit={n:String(vis.n||"鄰居").slice(0,10),room:r}; } if(!vis&&!(RM.lot>=0)) RM.lot=-1; const D=build(), s=ST(); css(); V={...s}; const o={exposure:1.0}; const el=SHOPX.enter("room",o); try{ statInc("roomOpen"); }catch(e){}
   daylight();
   apply(); furnDraw(-1);
-  const av=new Avatar(me.look.slice(),{npc:true,x:1.9,z:-RD/2+.3}); scene.remove(av.root); D.S.add(av.root); av.isMe=true; try{ av.setLook(me.look.slice()); }finally{ av.isMe=false; } av.moveSpeed=1.7; av.path=[]; av.update(0); av.root.position.y=0; av.root.visible=false; let tIn=0, went=false;
+  const av=new Avatar(me.look.slice(),{npc:true,x:1.9,z:-RD/2+.3}); scene.remove(av.root); D.S.add(av.root); av.isMe=true; try{ av.setLook(me.look.slice()); }finally{ av.isMe=false; } av.moveSpeed=1.7; av.path=[]; try{ av.setAcc(myEq()); }catch(e){} /* (11/23 主委「家裡為什麼沒有頭飾裝飾了」: what you wear outside, you wear at home) */ RM.av=av; av.update(0); av.root.position.y=0; av.root.visible=false; let tIn=0, went=false;
   let tab="l", yaw=-.38, drag=null;
-  el.insertAdjacentHTML("beforeend",`<div class="shx-top"><span class="shx-title">${RM.visit?`🏠 ${RM.visit.n.replace(/[<>&"]/g,"")}的家`:"🏠 我的房間"}</span>${RM.cookBtn&&!RM.visit?`<button class="shx-x" id="rCook" style="margin-left:auto;margin-right:6px;background:#e2a23a">🍳 廚房</button>`:""}<span class="shx-pill" id="rC"></span><button class="shx-x" id="rX">離開</button></div><div class="shx-panel" id="rP"></div>`);
+  el.insertAdjacentHTML("beforeend",`<div class="shx-top"><span class="shx-title">${RM.visit?`🏠 ${RM.visit.n.replace(/[<>&"]/g,"")}的家`:"🏠 我的房間"}</span>${RM.cookBtn&&!RM.visit?`<button class="shx-x" id="rCook" style="margin-left:auto;margin-right:6px;background:#e2a23a">🍳 廚房</button>`:""}<span class="shx-pill" id="rC"></span><button class="shx-x" id="rX">離開</button></div><div style="position:absolute;right:max(10px,env(safe-area-inset-right,0px));top:calc(env(safe-area-inset-top,0px) + 64px);display:flex;flex-direction:column;gap:8px;z-index:3"><button id="rSay" aria-label="聊天" style="width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(40,60,100,.75);font-size:21px;color:#fff">💬</button><button id="rEmo" aria-label="表情" style="width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(110,60,30,.75);font-size:21px">😊</button></div><div class="shx-panel" id="rP"></div>`);
+  { const b1=el.querySelector("#rSay"), b2=el.querySelector("#rEmo"); if(b1) b1.onclick=()=>{ try{ openSay(); }catch(e){} }; if(b2) b2.onclick=()=>{ try{ openEmo(); }catch(e){} }; } /* (11/23 主委「家裡也要能用表情符號還有講話」) */
   const $r=q=>el.querySelector(q);
   const cur=()=>tab==="r"?V.r:V[tab];
   const tabsH=k=>`<div class="rm-tabs">${[["l","生活"],["f","地板"],["w","壁紙"],["r","地毯"],["u","家具"]].map(([t,n])=>`<button data-t="${t}" class="${k===t?"on":""}">${n}</button>`).join("")}</div>`;
@@ -12112,8 +12117,8 @@ RM.open=vis=>{ if(!SHOPX||!SHOPX.enter){ toast("房間還沒準備好，請稍�
     const canBuy=!!(F&&F.src==="b"&&(()=>{ try{ return LIFE.npcA("k_furn_0")>=30; }catch(e){ return false; } })()), full=have>=MAXOWN; /* (11/14: furniture is bought at 家具行 in town; 11/16: once 美雲姐 likes you (好感 30) she takes orders by phone — buy right here) */
     $r("#rP").innerHTML=`${tabsH("u")}<div class="rm-chips" id="rK">${chips}</div><div class="rm-list" id="rL">${items}</div>
       ${F&&!F.hide?`<div class="rm-row">${have>used?`<button class="shx-btn" id="uPut">擺出「${F.n}」</button>`:""}${canBuy&&!full?`<button class="shx-btn${have>used?" alt":""}" id="uBuy">📞 跟美雲姐訂一件${have>used?"":"「"+F.n+"」"}${me.sp?"":"・"+fPrice(F)+" 幣"}</button>`:""}</div>${!have?`<p class="rm-tip">${F.src==="b"?`「${F.n}」要到天后小鎮的「家具行」買，買了回家就能擺。`:`「${F.n}」不能用買的，要從${SRCN[F.src]}拿到。`}</p>`:""}`:""}
-      ${t?`<div class="rm-row">${FURN[t[0]].wall?"":`<button class="shx-btn alt" id="uRot">↻ 轉 90 度</button>`}<button class="shx-btn alt" id="uOff">收起「${FURN[t[0]].n}」</button></div>
-      <div class="rm-sl"><span>${FURN[t[0]].wall?"傾斜":"角度"}</span><input type="range" id="uAng" min="-45" max="45" step="1" value="${ian(t)}"><b id="uAngV">${ian(t)}°</b><button class="rm-s0" id="uAng0">擺正</button></div>
+      ${t?`<div class="rm-row">${FURN[t[0]].wall?"":`<button class="shx-btn alt" id="uRotL">↺ 15 度</button><button class="shx-btn alt" id="uRot">↻ 15 度</button>`}<button class="shx-btn alt" id="uOff">收起「${FURN[t[0]].n}」</button></div>
+      ${FURN[t[0]].wall?`<div class="rm-sl"><span>傾斜</span><input type="range" id="uAng" min="-45" max="45" step="1" value="${ian(t)}"><b id="uAngV">${ian(t)}°</b><button class="rm-s0" id="uAng0">擺正</button></div>`:`<div class="rm-sl"><span>方向</span><input type="range" id="uDir" min="0" max="359" step="1" value="${tdir(t)}"><b id="uDirV">${tdir(t)}°</b><button class="rm-s0" id="uDir0">擺正</button></div>`}
       ${SCL(FURN[t[0]].c)?`<div class="rm-sl"><span>${SCL(FURN[t[0]].c)==="x"?"寬度":"大小"}</span><input type="range" id="uSz" min="${SCL(FURN[t[0]].c)==="x"?60:50}" max="${SCL(FURN[t[0]].c)==="x"?160:250}" step="5" value="${Math.round(isc(t)*100)}"><b id="uSzV">${Math.round(isc(t)*100)}%</b><button class="rm-s0" id="uSz0">原本</button></div>`:""}`:""}
       <div class="rm-row"><button class="shx-btn alt" id="uRnd">🎲 隨機擺放</button>${Array.isArray(s.prev)?`<button class="shx-btn alt" id="uUndo">↩️ 回到上一個擺法</button>`:""}</div>
       <p class="rm-tip">${t?(FURN[t[0]].wall?"按住它可以在牆上拖動，也能拖到另一面牆。":"按住它可以拖動。小東西拖到桌子、櫃子上會自己放上去。")+"家具不能重疊。":"點房間裡的家具可以選它，再拖動、旋轉或收起來。"}最多擺 ${MAXIT} 件（現在 ${s.it.length} 件），同一種最多 ${MAXOWN} 件。</p>`;
@@ -12125,7 +12130,12 @@ RM.open=vis=>{ if(!SHOPX||!SHOPX.enter){ toast("房間還沒準備好，請稍�
     const by=$r("#uBuy"); if(by) by.onclick=()=>keepSl(()=>{ if(invN(pick)>=MAXOWN){ toast(`同一種家具最多 ${MAXOWN} 件`,2200); return; } const pr=fPrice(F); if(!me.sp){ if(bag.coins<pr){ try{ buzz(); }catch(e){} toast(`平安幣不夠（還差 ${pr-bag.coins}）`,2600); return; } bag.coins-=pr; } s.inv[pick]=invN(pick)+1; saveBag(); markDirty(); try{ profSave(true); }catch(e){} try{ statInc("roomBuy"); }catch(e){} try{ chaChing(); }catch(e){} toast(`${me.sp?"拿到":"買下"}「${F.n}」，按「擺出」放進房間`,2600); });
     $r("#uRnd").onclick=()=>keepSl(()=>{ sel=-1; const n=shuffleRoom(); furnDraw(-1); try{ [523,659,784].forEach((f,k)=>tone(f,.1,.05,"triangle",k*.07)); }catch(e){} toast(`🎲 幫你把擁有的家具重新擺了 ${n} 件。不喜歡可以再按一次，或按「回到上一個擺法」`,3600); });
     const ud=$r("#uUndo"); if(ud) ud.onclick=()=>keepSl(()=>{ const p=s.prev; s.prev=s.it; s.it=p.filter(t=>FURN[t[0]]); sel=-1; save("mz.bag",bag); furnDraw(-1); });
-    const rt=$r("#uRot"); if(rt) rt.onclick=()=>{ const old=t.slice(); t[3]=(t[3]+1)%4; clampIt(t); if(blocked(t)){ t.splice(0,t.length,...old); selFlash(); toast("旁邊有東西，轉不過去",1800); } save("mz.bag",bag); furnSel(sel); };
+    /* (11/23 主委「讓家具可以旋轉 不要只能九十度」: any direction 0–359° — kept as quarter turns t[3] plus the fine angle t[5], so saves and codes stay as they were) */
+    const setDir=a=>{ const old=t.slice(); a=((Math.round(a)%360)+360)%360; const q=Math.round(a/90); t[3]=q%4; t[5]=q*90-a; clampIt(t); if(blocked(t)){ t.splice(0,t.length,...old); selFlash(); toast("旁邊有東西，轉不過去",1800); return false; } furnSel(sel); return true; };
+    const dirShow=()=>{ const el=$r("#uDir"); if(el){ el.value=tdir(t); $r("#uDirV").textContent=tdir(t)+"°"; } };
+    const rt=$r("#uRot"); if(rt) rt.onclick=()=>{ setDir(tdir(t)+15); save("mz.bag",bag); dirShow(); };
+    const rtl=$r("#uRotL"); if(rtl) rtl.onclick=()=>{ setDir(tdir(t)-15); save("mz.bag",bag); dirShow(); };
+    { const el=$r("#uDir"); if(el){ el.oninput=()=>{ setDir(+el.value); dirShow(); }; el.onchange=()=>save("mz.bag",bag); const z=$r("#uDir0"); if(z) z.onclick=()=>{ setDir(0); dirShow(); save("mz.bag",bag); }; } }
     /* fine turn and size: a change that would make it overlap something is refused */
     const adj=(k,v)=>{ const old=t.slice(); if(k===5) t[5]=v; else t[4]=v; clampIt(t); if(blocked(t)){ t.splice(0,t.length,...old); selFlash(); return false; } furnSel(sel); return true; };
     const sl=(id,k,get,fmt,dflt)=>{ const el=$r("#"+id); if(!el) return; const show=()=>{ el.value=get(); $r("#"+id+"V").textContent=fmt(); }; el.oninput=()=>{ adj(k,k===5?+el.value:+el.value/100); show(); }; el.onchange=()=>save("mz.bag",bag); const z=$r("#"+id+"0"); if(z) z.onclick=()=>{ adj(k,dflt); show(); save("mz.bag",bag); }; };
@@ -12237,7 +12247,7 @@ RM.open=vis=>{ if(!SHOPX||!SHOPX.enter){ toast("房間還沒準備好，請稍�
   tl.addEventListener("pointerup",up); tl.addEventListener("pointercancel",()=>{ if(drag&&drag.rug) commit(); drag=null; });
   draw();
   /* coming in: the door swings open, you step through it and walk to the middle, the door closes behind you, and the view pulls back */
-  o.update=dt=>{ tIn+=dt; const op=tIn<2.3?Math.min(1,tIn/.45):Math.max(0,1-(tIn-2.3)/.5); D.door.rotation.y=-1.45*op*op*(3-2*op); if(!went&&tIn>.4){ went=true; av.root.visible=true; av.moveSpeed=1.7; goTo(RM.visit?-.3+Math.random()*.6:.9,RM.visit?.9:.5,-1); try{ tone(180,.12,.05,"sine"); }catch(e){} } if(tIn>3.2) av.moveSpeed=2.2; av.update(dt); av.root.position.y=0; actTick(dt); fxTick(dt); hopTick(dt); RM.pos={x:av.root.position.x,z:av.root.position.z,r:av.rotY}; try{ peerTick(D,dt); }catch(e){} try{ homeCat(D,dt,av); }catch(e){ console.warn("home cat",e); } };
+  o.update=dt=>{ tIn+=dt; const op=tIn<2.3?Math.min(1,tIn/.45):Math.max(0,1-(tIn-2.3)/.5); D.door.rotation.y=-1.45*op*op*(3-2*op); if(!went&&tIn>.4){ went=true; av.root.visible=true; av.moveSpeed=1.7; goTo(RM.visit?-.3+Math.random()*.6:.9,RM.visit?.9:.5,-1); try{ tone(180,.12,.05,"sine"); }catch(e){} } if(tIn>3.2) av.moveSpeed=2.2; av.update(dt); try{ accTick(av,dt); }catch(e){} rmLbl(av); RPA.forEach(rmLbl); av.root.position.y=0; actTick(dt); fxTick(dt); hopTick(dt); RM.pos={x:av.root.position.x,z:av.root.position.z,r:av.rotY}; try{ peerTick(D,dt); }catch(e){} try{ homeCat(D,dt,av); }catch(e){ console.warn("home cat",e); } };
   o.render=dt=>{ const c=D.cam, asp=innerWidth/innerHeight; c.aspect=asp; const ph=Math.min(.6,(($r("#rP").offsetHeight||220))/innerHeight); const vt=Math.tan(c.fov*Math.PI/360), ht=vt*asp;
     const need=Math.max((Math.max(RW/2+.5,Math.hypot(RW,RD)/2+.3))/ht,(RH+2.2)/(2*vt*Math.max(.3,1-ph))); const d0=Math.min(40,need), pit=.5; let k=Math.min(1,Math.max(0,(tIn-.5)/2.2)); k=k*k*(3-2*k);
     /* while you sleep, sit or change, the view moves in on you */ FOC.k+=((ACT.k&&ACT.ph!=="go"?1:0)-FOC.k)*Math.min(1,(dt||.016)*2.2); const fk=FOC.k*k*FOC.k*(3-2*FOC.k);
@@ -12249,17 +12259,23 @@ RM.open=vis=>{ if(!SHOPX||!SHOPX.enter){ toast("房間還沒準備好，請稍�
       if(x1>x0+2&&y1>y0+2){ C2.aspect=(x1-x0)/(y1-y0); C2.fov=48; C2.position.set(0,1.5,1); C2.rotation.set(-.03,yaw*.45,0,"YXZ"); C2.updateProjectionMatrix();
         const vp=V.vp||(V.vp=new T.Vector4()); renderer.getViewport(vp); const ac=renderer.autoClear; renderer.autoClear=false; renderer.setViewport(x0,y0,x1-x0,y1-y0);
         try{ renderer.render(V.O,C2); } finally{ renderer.autoClear=ac; renderer.setViewport(vp.x,vp.y,vp.z,vp.w); } } } };
-  o.dispose=()=>{ RM.pos=null;
+  o.dispose=()=>{ RM.pos=null; RM.av=null;
     /* (11/17 主委「房間離開後請從門口出來」: leaving a room you step out of that house's front door, facing the street) */
     try{ const lot=RM.lot, B=(typeof TOWNX!=="undefined"&&TOWNX&&TOWNX.B)||[], b=lot>=0?B.find(q=>q.lot===lot):B.find(q=>q.key==="tw:home"); if(b&&meAv){ const fx=Math.sin(b.ry), fz=Math.cos(b.ry), x=b.x+fx*1.6, z=b.z+fz*1.6; if(meAv.seat>=0) try{ standUp(); }catch(_){} meAv.pos.set(x,z); meAv.target.set(x,z); meAv.path=[]; meAv.rotY=Math.atan2(fx,fz); } }catch(e){} try{ peerClear(D); }catch(e){} const wasVisit=!!RM.visit; if(!wasVisit){ try{ RM.onLeave&&RM.onLeave(); }catch(e){} } try{ sendPresence(true); }catch(e){} try{ commit(); }catch(e){} try{ quiltFree(ACT.q); }catch(e){} fxClear(); D.glows.forEach(sp=>sp.visible=false); D.pl.forEach(l=>{ l.intensity=0; }); PIX.clear(); if(D.base){ D.hemi.intensity=D.base.hemi; D.sun.intensity=D.base.sun; } while(D.fg.children.length) D.fg.remove(D.fg.children[0]); D.sel.visible=false; modelsFree(); D.S.remove(av.root); try{ av.dispose(); }catch(e){} saveBag(); markDirty(); try{ profSave(true); }catch(e){} V=null; RM.visit=null; RM.lot=-1; }; };
 HANDLERS.roomOpen=()=>{ const c=(typeof LIFE!=="undefined"&&LIFE&&LIFE.homeLot)?LIFE.homeLot():-1; if(c<0){ toast("你還沒有自己的家，到天后新村挑一間買下來，就能佈置房間了",3200); return; } closeSheet(); HANDLERS.lfLotIn(String(c)); }; /* (11/23 主委「我是要大家自己去買家」: no free room any more — only the house you bought) */
 /* 天后新村 (11/16): the owner's room as others see it, and the people in the same house */
 RM.snap=()=>{ const r=bag.room||{}; const o={}; for(const k in r) if(k!=="inv"&&k!=="prev") o[k]=r[k]; return JSON.stringify(o); };
 const RPA=new Map(); let rpSend=0;
+const rmLbl=a=>{ for(const sp of [a.bubble,a.label]) if(sp&&!sp.userData.rm0){ sp.layers.set(0); sp.userData.rm0=1; const y0=sp.scale.y; sp.scale.multiplyScalar(2.4); sp.position.y+=(sp.scale.y-y0)/2+(sp===a.bubble?.35:0); } }; /* (speech bubbles and names are normally painted by the outdoor label pass; in a room they are drawn with the room) */
 function peerTick(D,dt){ if(!(RM.lot>=0)){ return; } rpSend-=dt; if(rpSend<=0){ rpSend=.35; try{ sendPresence(); }catch(e){} }
   const seen=new Set(); ROOM_PEERS.forEach((pr,id)=>{ if(pr.hm!==RM.lot) return; seen.add(id); let a=RPA.get(id); const x=Math.max(-RW/2+.3,Math.min(RW/2-.3,+pr.hx||0)), z=Math.max(-RD/2+.3,Math.min(RD/2-.3,+pr.hz||0));
     if(!a){ a=new Avatar(sanitizeLook(pr.l,pr.q===1),{npc:true,x,z}); scene.remove(a.root); D.S.add(a.root); a.moveSpeed=2; a.path=[]; try{ a.setName(cleanName(pr.n)||"香客"); }catch(e){} RPA.set(id,a); }
-    if(Math.hypot(a.target.x-x,a.target.y-z)>.05) a.moveTo(x,z); a.update(dt); a.root.position.y=0; });
+    { const eq=Array.isArray(pr.eq)?[pr.eq[0],pr.eq[1],pr.eq[2],pr.eq[3]].map(v=>typeof v==="string"&&ACC[v]?v:0):[0,0,0,0]; if(String(eq)!==String(a.eq||[0,0,0,0])) try{ a.setAcc(eq); }catch(e){} }
+    if(a.lastC===undefined){ a.lastC=Array.isArray(pr.c)?pr.c[1]:""; a.lastM=Array.isArray(pr.m)?pr.m[1]:""; a.lastE=Array.isArray(pr.e)?pr.e[1]:""; } /* (11/23: people in the house talk and show emotes there too — not what they said before you came in) */
+    if(Array.isArray(pr.c)&&typeof pr.c[0]==="string"&&pr.c[1]&&pr.c[1]!==a.lastC){ a.lastC=pr.c[1]; const txt=cleanChat(pr.c[0]); if(txt&&!chatCheck0(txt)) a.say(txt,"#f7ecd6",5); }
+    if(Array.isArray(pr.m)&&pr.m[1]&&pr.m[1]!==a.lastM){ a.lastM=pr.m[1]; const ph=PHRASES[pr.m[0]|0]; if(ph) a.say(ph,"#f7ecd6"); }
+    if(Array.isArray(pr.e)&&pr.e[1]&&pr.e[1]!==a.lastE){ a.lastE=pr.e[1]; showEmo(a,pr.e[0]|0); }
+    if(Math.hypot(a.target.x-x,a.target.y-z)>.05) a.moveTo(x,z); a.update(dt); try{ accTick(a,dt); }catch(e){} a.root.position.y=0; });
   RPA.forEach((a,id)=>{ if(!seen.has(id)){ D.S.remove(a.root); try{ a.dispose(); }catch(e){} RPA.delete(id); } }); }
 function peerClear(D){ RPA.forEach(a=>{ D.S.remove(a.root); try{ a.dispose(); }catch(e){} }); RPA.clear(); }
 /* 取回碼 */
@@ -16305,10 +16321,10 @@ async function chairSetSpot(close,say,pose){ pose=pose||"front"; const key=ck()|
 /* ---------- 營業時間與鎮民生活 (11/14): each shop keeps (Taiwan) hours. Outside them the shop shows its hours and its people are out
    walking up and down their street; the chair can always go in. Every day you visit a shop its people like you a little more
    (+1, up to 100); at 10, 30 and 60 they start telling you things — gossip about the others, a secret, a request. ---------- */
-const HOURS={"tw:bfast":[6,13],"tw:congee":[18,26],"tw:drink":[10,22],"tw:ice":[11,21],"tw:herb":[9,20],"tw:book":[10,21],"tw:flower":[9,19],"tw:beauty":[10,20],"tw:photo":[10,19],"tw:tackle":[5,20],"tw:furn":[10,21]};
+const HOURS={"tw:bfast":[6,26.5],"tw:congee":[18,26.5],"tw:drink":[10,26.5],"tw:ice":[11,26.5],"tw:herb":[9,26.5],"tw:book":[10,26.5],"tw:flower":[9,26.5],"tw:beauty":[10,26.5],"tw:photo":[10,26.5],"tw:tackle":[5,26.5],"tw:furn":[10,26.5]}; /* (11/23 主委「所有店面營業時間都延長到02:30」) */
 const twHour=()=>{ if(typeof TM.hour==="number") return TM.hour; const d=new Date(Date.now()+8*3600e3); return d.getUTCHours()+d.getUTCMinutes()/60; }; /* (主委測試模式 can set the clock) */
 const isOpen=k=>{ const h=HOURS[k]; if(!h) return true; const t=twHour(); return h[1]>24?(t>=h[0]||t<h[1]-24):(t>=h[0]&&t<h[1]); };
-const hrs=k=>{ const h=HOURS[k], f=v=>String(v%24).padStart(2,"0")+":00"; return `${f(h[0])}–${f(h[1])}`; };
+const hrs=k=>{ const h=HOURS[k], f=v=>String(Math.floor(v)%24).padStart(2,"0")+":"+String(Math.round((v%1)*60)).padStart(2,"0"); return `${f(h[0])}–${f(h[1])}`; };
 const GOSSIP={
  "tw:bfast":[["阿龍：「其實……我們每天吵，是因為她記性比我好，我不想輸啦。」"],["秀琴：「偷偷跟你說，阿龍年輕時追我，每天送我一份蘿蔔糕。」"],["兩個人一起：「你可以幫我們找一張『結婚那天』的照片嗎？聽說照相館阿光的爸爸有拍……」（隱藏任務）"]],
  "tw:herb":[["許伯：「冰淇淋奶奶年輕的時候，可是鎮上最漂亮的姑娘。」"],["許伯：「我年輕時常常去她的攤子買冰……一買就是五十年。」"],["許伯：「我想送她一包桂圓，可是……你能幫我拿過去嗎？」（隱藏任務）"]],
