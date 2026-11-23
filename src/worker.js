@@ -9,7 +9,7 @@ function snapInfo(str) { try { const raw = atob(String(str).slice(3).replace(/-/
   if (get(4) !== 1) return {}; get(65); const coins = get(16); get(30); get(1); const pn = get(3); get(pn * 6); get(24); const nl = get(4); let name = ""; for (let i = 0; i < nl; i++) name += String.fromCharCode(get(16)); return { name, coins }; } catch { return {}; } }
 const HALLS = 10, CAP = 100, MAX_MSG = 4000;
 const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000, "/puppet": 5000, "/crowd": 5000, "/market": 5000, "/layout": 5000, "/mapedit": 5000 };
-const LOBBY_PATHS = ["/lookup/restore", "/mapedit", "/photospots", "/photospot", "/rank", "/rankclaim", "/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather", "/stat", "/nev", "/paper", "/sponsor", "/hatfit", "/honor", "/lookup", "/crash", "/meteor"];
+const LOBBY_PATHS = ["/lookup/restore", "/lookup/codes", "/lookup/restorecode", "/mapedit", "/photospots", "/photospot", "/rank", "/rankclaim", "/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather", "/stat", "/nev", "/paper", "/sponsor", "/hatfit", "/honor", "/lookup", "/crash", "/meteor"];
 const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage", "/puppet": "/puppet", "/crowd": "/crowd", "/market": "/market", "/layout": "/layout", "/mapedit": "/mapedit" }; // a POST here makes that cached list stale
 
 export default {
@@ -359,6 +359,21 @@ export class Lobby extends DurableObject {
       for (const o of top) { try { const F = o.u && await this.ctx.storage.get("F:" + o.u); if (F && F.full && F.full.bag) { o.coins = Math.floor(Number(F.full.bag.coins) || 0); o.at = Math.max(o.at, F.at || 0); o.one = 1; } } catch {} delete o.u; } /* (the one save, when there is one: its 平安幣 are exact) */
       return json({ ok: true, seen, list: top });
     }
+    if (url.pathname === "/lookup/codes") { /* every code kept for one character, newest first */
+      const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
+      const code = String(url.searchParams.get("code") || "").toUpperCase().replace(/[^0-9A-Z]/g, "").slice(0, 7); const owner = code.length === 7 ? await this.ctx.storage.get("C:" + code) : null; const P = owner ? await this.ctx.storage.get("P:" + owner) : null;
+      if (!P) return json({ ok: false }); const SH = (await this.ctx.storage.get("SH:" + owner)) || [];
+      return json({ ok: true, list: [{ at: P.at || 0, snap: P.snap, now: 1 }].concat(SH.slice().reverse().map(h => ({ at: h.at, snap: h.snap }))) });
+    }
+    if (url.pathname === "/lookup/restorecode" && req.method === "POST") { /* the chair gives a character back what one of its kept codes holds: the device applies it on its next start */
+      const auth = await this.checkKey(req); if (!auth.ok) return json(auth); let b = {}; try { b = await req.json(); } catch {}
+      const code = String(b.code || "").toUpperCase().replace(/[^0-9A-Z]/g, "").slice(0, 7), snap = String(b.snap || ""); const owner = code.length === 7 ? await this.ctx.storage.get("C:" + code) : null; const P = owner ? await this.ctx.storage.get("P:" + owner) : null;
+      if (!P || !/^MZ-[A-Za-z0-9_-]{10,900}$/.test(snap)) return json({ ok: false }); const SH = (await this.ctx.storage.get("SH:" + owner)) || [];
+      if (snap !== P.snap && !SH.some(h => h.snap === snap)) return json({ ok: false, why: "not kept" });
+      const F = await this.ctx.storage.get("F:" + owner); const now = Date.now();
+      if (F && F.full) { const kk = (P.fk | 0) % 12; await this.ctx.storage.put("FH:" + owner + ":" + kk, F); P.fh = (Array.isArray(P.fh) ? P.fh : []).filter(h => h.k !== kk).concat([{ at: F.at || 0, c: Math.floor(Number(F.full.bag && F.full.bag.coins) || 0), k: kk, saved: now, why: "restore" }]).slice(-12); P.fk = kk + 1; }
+      await this.ctx.storage.put("F:" + owner, { full: F ? F.full : null, at: now, play: now, pend: snap }); P.sid = "restored"; await this.ctx.storage.put("P:" + owner, P); return json({ ok: true });
+    }
     if (url.pathname === "/lookup/restore" && req.method === "POST") { /* the chair brings an earlier save back: it becomes the character's one save (the current one is kept among the old ones); a device that is open is stopped and reloads it */
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth); let b = {}; try { b = await req.json(); } catch {}
       const code = String(b.code || "").toUpperCase().replace(/[^0-9A-Z]/g, "").slice(0, 7), k = Math.floor(Number(b.k)); const owner = code.length === 7 ? await this.ctx.storage.get("C:" + code) : null; const P = owner ? await this.ctx.storage.get("P:" + owner) : null;
@@ -679,7 +694,7 @@ export class Lobby extends DurableObject {
       const coinsOf = f => { try { return Math.max(0, Math.floor(Number(f && f.bag && f.bag.coins) || 0)); } catch { return 0; } };
       const keepOld = async (F, why) => { if (!F || !F.full) return; const H = Array.isArray(P.fh) ? P.fh : []; const last = H[H.length - 1]; if (why !== "force" && last && now - last.saved < 30 * 60e3) return;
         const k = (P.fk | 0) % 12; await this.ctx.storage.put("FH:" + uid + ":" + k, F); P.fh = H.filter(h => h.k !== k).concat([{ at: F.at || 0, c: coinsOf(F.full), k, saved: now, why: why || "" }]).slice(-12); P.fk = k + 1; };
-      if (req.method === "GET") { const sid = crypto.randomUUID().slice(0, 12); P.sid = sid; await this.ctx.storage.put("P:" + uid, P); const F = await this.ctx.storage.get("F:" + uid); return json({ ok: true, sid, full: F ? F.full : null, at: F ? F.at : 0 }); }
+      if (req.method === "GET") { const sid = crypto.randomUUID().slice(0, 12); P.sid = sid; await this.ctx.storage.put("P:" + uid, P); const F = await this.ctx.storage.get("F:" + uid); return json({ ok: true, sid, full: F ? F.full : null, at: F ? F.at : 0, pend: F && F.pend || "" }); }
       let b = {}; let raw = ""; try { raw = await req.text(); if (raw.length > 120000) return json({ ok: false, big: true }); b = JSON.parse(raw); } catch { return json({ ok: false }); }
       if (!b.sid || b.sid !== P.sid) return json({ ok: false, other: true });
       const full = b.full; if (!full || typeof full !== "object" || !full.bag || !full.me) return json({ ok: false });
@@ -700,6 +715,11 @@ export class Lobby extends DurableObject {
         let b = {}; try { b = await req.json(); } catch {} const snap = String(b.snap || ""); if (!/^MZ-[A-Za-z0-9_-]{10,900}$/.test(snap)) return json({ ok: false });
         const P = (await this.ctx.storage.get("P:" + uid)) || {};
         if (!P.code) { const AB = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"; for (let k = 0; k < 12 && !P.code; k++) { let c = ""; for (let i = 0; i < 7; i++) c += AB[(Math.random() * AB.length) | 0]; if (!(await this.ctx.storage.get("C:" + c))) P.code = c; } if (!P.code) return json({ ok: false }); await this.ctx.storage.put("C:" + P.code, uid); }
+        if (P.snap && P.snap !== snap) { /* (11/23 主委「我要能查詢玩家之前造型代碼」: the code being replaced is kept — one every 30 minutes, the last 2 days whole, before that one a day, up to 80) */
+          const SH = (await this.ctx.storage.get("SH:" + uid)) || []; const last = SH[SH.length - 1];
+          if (!last || now - last.saved > 30 * 60e3) { SH.push({ at: P.at || now, snap: P.snap, saved: now }); const day = t => new Date(t + 8 * 3600e3).toISOString().slice(0, 10), seenD = new Set();
+            const keep = SH.slice().reverse().filter(h => { if (now - h.at < 2 * 864e5) return true; const d = day(h.at); if (seenD.has(d)) return false; seenD.add(d); return true; }).reverse().slice(-80);
+            await this.ctx.storage.put("SH:" + uid, keep); } }
         P.snap = snap; P.at = now; const id = clean(b.id, 16).replace(/[^a-z0-9]/g, ""); if (id && P.id !== id) { P.id = id; await this.ctx.storage.put("I:" + id, uid); }
         await this.ctx.storage.put("P:" + uid, P); return json({ ok: true, code: P.code, at: now });
       }
