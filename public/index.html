@@ -7217,7 +7217,7 @@ function opBuild(){ if(OP.built) return; OP.built=true;
 function catsShow(v){ CATS.off=!v; CATS.list.forEach(c=>{ c.g.visible=!!v; }); }
 function opSet(on,at,name,cats){ if(cats!==undefined) catsShow(cats!==false); const was=OP.on; OP.on=!!on; OP.at=at||Date.now(); if(name!==undefined){ OP.name=String(name||"").slice(0,40); setNameCloth(OP.nameCloth,OP.name); } if(OP.on) opBuild(); if(OP.root) OP.root.visible=OP.on; if(!OP.on){ OP.actors.forEach(a=>a.av.root.visible=false); if(OP.aud){ OP.aud.pause(); } }
   if(OP.on&&!was&&Date.now()-OP.at<60000) toast("🎭 主委擺出歌仔戲台了！到廟埕看戲",4200); if(sheetKind==="chair"&&me.sp) openChair(); }
-async function opFetch(){ try{ const r=await fetch("/stage",{cache:"no-store"}); if(!r.ok) return; const j=await r.json(); if(j&&(!!j.on!==OP.on||(j.on&&j.at!==OP.at)||(j.name||"")!==OP.name||(j.cats===false)!==CATS.off)) opSet(j.on,+j.at||0,j.name||"",j.cats); }catch(e){} }
+async function opFetch(){ try{ const r=await fetch("/stage",{cache:"no-store"}); if(!r.ok) return; const j=await r.json(); if(Date.now()<(OP.setT||0)) return; /* (11/24 主委「按更新了會跳回原本的團名」: a copy cached a few seconds on the way can still be the old one — what the chair just set wins for 20 s) */ if(j&&(!!j.on!==OP.on||(j.on&&j.at!==OP.at)||(j.name||"")!==OP.name||(j.cats===false)!==CATS.off)) opSet(j.on,+j.at||0,j.name||"",j.cats); }catch(e){} }
 HANDLERS.toggleCats=async(v,b)=>{ if(!me.sp) return; const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return; } const cats=CATS.off;
   if(b) b.disabled=true; try{ const r=await fetch("/stage",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({on:OP.on,name:OP.name,cats})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
     if(j.ok){ save("mz.rk",key); opSet(j.on,j.at,j.name||"",j.cats); toast(cats?"🐱 跳舞貓咪放出來了":"跳舞貓咪收起來了",2600); if(sheetKind==="chair") openChair(); }
@@ -7228,7 +7228,7 @@ HANDLERS.stageChair=()=>{ if(!me.sp) return; openSheet("stageChair","歌仔戲�
 HANDLERS.toggleStage=async(v,b)=>{ if(!me.sp) return; const key=ck(); if(!key){ toast("請先輸入留言讀取密碼"); return; } const on=v==="1", name=(($("#opName")||{}).value||"").trim().slice(0,40), cats=!CATS.off;
   if(name&&chatCheck(name)){ toast("團名有不適合的內容"); return; }
   if(b) b.disabled=true; try{ const r=await fetch("/stage",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({on,name,cats})}); const j=await r.json().catch(()=>({})); forgetKey(r,j);
-    if(j.ok){ save("mz.rk",key); const was=OP.on; opSet(j.on,j.at,j.name||"",j.cats); toast(j.on?(was?"團名已更新":"歌仔戲台已擺出，戲班開演"):"歌仔戲台已收回",3000); if(sheetKind==="stageChair") HANDLERS.stageChair(); }
+    if(j.ok){ save("mz.rk",key); const was=OP.on; OP.setT=Date.now()+20000; opSet(j.on,j.at,j.name||"",j.cats); toast(j.on?(was?"團名已更新":"歌仔戲台已擺出，戲班開演"):"歌仔戲台已收回",3000); if(sheetKind==="stageChair") HANDLERS.stageChair(); }
     else toast(r.status===503?"伺服器今天額度用完了，晚點再試":j.locked?"嘗試次數過多，今天先鎖住了":j.unset?"伺服器讀不到密碼設定（不是你打錯）":"密碼不對，沒有變更",3200); }catch(e){ toast("沒有變更，請稍後再試"); } if(b) b.disabled=false; };
 
 /* ---- sound: the three tracks in turn, plus synthesized Taiwanese-style singing, both fading with distance ---- */

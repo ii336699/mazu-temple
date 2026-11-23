@@ -541,7 +541,7 @@ export class Lobby extends DurableObject {
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
       let b = {}; try { b = await req.json(); } catch {}
       const prev = (await this.ctx.storage.get("stage")) || { on: false, at: 0 }; /* changing only the troupe name keeps the show running */
-      const st = { on: !!b.on, at: b.on && prev.on ? prev.at : Date.now(), name: clean(b.name, 8), cats: b.cats !== false }; await this.ctx.storage.put("stage", st); /* cats: the chair can put the dancing cats away */
+      const st = { on: !!b.on, at: b.on && prev.on ? prev.at : Date.now(), name: clean(b.name, 40), cats: b.cats !== false }; /* (11/24 主委「團名為什麼更新不了」: this was still cut at 8) */ await this.ctx.storage.put("stage", st); /* cats: the chair can put the dancing cats away */
       await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/stage", { method: "POST", body: JSON.stringify(st) }).catch(() => {})));
       return json({ ok: true, ...st });
     }
