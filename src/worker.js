@@ -9,7 +9,7 @@ function snapInfo(str) { try { const raw = atob(String(str).slice(3).replace(/-/
   if (get(4) !== 1) return {}; get(65); const coins = get(16); get(30); get(1); const pn = get(3); get(pn * 6); get(24); const nl = get(4); let name = ""; for (let i = 0; i < nl; i++) name += String.fromCharCode(get(16)); return { name, coins }; } catch { return {}; } }
 const HALLS = 10, CAP = 100, MAX_MSG = 4000;
 const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000, "/puppet": 5000, "/crowd": 5000, "/market": 5000, "/layout": 5000, "/mapedit": 5000 };
-const LOBBY_PATHS = ["/lookup/restore", "/lookup/codes", "/lookup/restorecode", "/mapedit", "/photospots", "/photospot", "/rank", "/rankclaim", "/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather", "/stat", "/nev", "/paper", "/sponsor", "/hatfit", "/honor", "/lookup", "/crash", "/meteor"];
+const LOBBY_PATHS = ["/lookup/givecat", "/lookup/restore", "/lookup/codes", "/lookup/restorecode", "/mapedit", "/photospots", "/photospot", "/rank", "/rankclaim", "/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather", "/stat", "/nev", "/paper", "/sponsor", "/hatfit", "/honor", "/lookup", "/crash", "/meteor"];
 const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage", "/puppet": "/puppet", "/crowd": "/crowd", "/market": "/market", "/layout": "/layout", "/mapedit": "/mapedit" }; // a POST here makes that cached list stale
 
 export default {
@@ -28,10 +28,11 @@ export default {
 const PROFILE_PATHS = ["/me", "/me/claim", "/gift", "/gifts", "/houses", "/house", "/save", "/save/migrate"];
 async function profile(req, env, url) {
   const m = (req.headers.get("cookie") || "").match(/(?:^|;\s*)mzu=([a-f0-9]{24,40})/); let uid = m ? m[1] : "";
+  if (!uid) { const h = String(req.headers.get("x-mzu") || ""); if (/^[a-f0-9]{24,40}$/.test(h)) uid = h; } /* (11/23 玩家「手機跟電腦紀錄還是分開的」: a browser that dropped its cookie comes back as the same character — the page keeps a copy) */
   if (!uid) uid = crypto.randomUUID().replace(/-/g, "");
   const lobby = env.LOBBY.get(env.LOBBY.idFromName("lobby"));
   const r = await lobby.fetch(new Request("https://lobby" + url.pathname + url.search, { method: req.method, headers: { "content-type": "application/json", "x-uid": uid, "x-key": req.headers.get("x-key") || "", "x-ip": req.headers.get("cf-connecting-ip") || "" }, body: req.method === "POST" ? await req.text() : undefined }));
-  let body = await r.text(); try { const j = JSON.parse(body); if (j && j.switchTo) { uid = j.switchTo; delete j.switchTo; body = JSON.stringify(j); } } catch {}
+  let body = await r.text(); try { const j = JSON.parse(body); if (j && j.switchTo) { uid = j.switchTo; delete j.switchTo; } if (j && typeof j === "object") { j.u = uid; body = JSON.stringify(j); } } catch {}
   return new Response(body, { status: r.status, headers: { "content-type": "application/json", "cache-control": "no-store", "set-cookie": `mzu=${uid}; Max-Age=34560000; Path=/; HttpOnly; Secure; SameSite=Lax` } });
 }
 
@@ -373,6 +374,14 @@ export class Lobby extends DurableObject {
       const F = await this.ctx.storage.get("F:" + owner); const now = Date.now();
       if (F && F.full) { const kk = (P.fk | 0) % 12; await this.ctx.storage.put("FH:" + owner + ":" + kk, F); P.fh = (Array.isArray(P.fh) ? P.fh : []).filter(h => h.k !== kk).concat([{ at: F.at || 0, c: Math.floor(Number(F.full.bag && F.full.bag.coins) || 0), k: kk, saved: now, why: "restore" }]).slice(-12); P.fk = kk + 1; }
       await this.ctx.storage.put("F:" + owner, { full: F ? F.full : null, at: now, play: now, pend: snap }); P.sid = "restored"; await this.ctx.storage.put("P:" + owner, P); return json({ ok: true });
+    }
+    if (url.pathname === "/lookup/givecat" && req.method === "POST") { /* (11/23 玩家的貓「五花肉」不見了): the cat from an earlier save is put back into the save in use, nothing else changes */
+      const auth = await this.checkKey(req); if (!auth.ok) return json(auth); let b = {}; try { b = await req.json(); } catch {}
+      const code = String(b.code || "").toUpperCase().replace(/[^0-9A-Z]/g, "").slice(0, 7), k = Math.floor(Number(b.k)); const owner = code.length === 7 ? await this.ctx.storage.get("C:" + code) : null; const P = owner ? await this.ctx.storage.get("P:" + owner) : null;
+      if (!P || !(k >= 0 && k < 12 || k === 99)) return json({ ok: false }); const H = await this.ctx.storage.get(k === 99 ? "F0:" + owner : "FH:" + owner + ":" + k); const pet = H && H.full && H.full.bag && H.full.bag.cat && H.full.bag.cat.pet; if (!pet) return json({ ok: false, why: "no cat" });
+      const F = await this.ctx.storage.get("F:" + owner); if (!F || !F.full || !F.full.bag) return json({ ok: false, why: "no save" });
+      const bg = F.full.bag; if (!bg.cat || typeof bg.cat !== "object") bg.cat = { s: [], pet: null }; bg.cat.pet = { ...pet, home: false }; if (Array.isArray(bg.cat.s)) bg.cat.s = bg.cat.s.filter(s => s && s.sd !== pet.sd);
+      await this.ctx.storage.put("F:" + owner, F); P.sid = "restored"; await this.ctx.storage.put("P:" + owner, P); return json({ ok: true, nm: pet.nm || "" });
     }
     if (url.pathname === "/lookup/restore" && req.method === "POST") { /* the chair brings an earlier save back: it becomes the character's one save (the current one is kept among the old ones); a device that is open is stopped and reloads it */
       const auth = await this.checkKey(req); if (!auth.ok) return json(auth); let b = {}; try { b = await req.json(); } catch {}
