@@ -12035,7 +12035,7 @@ function texel(h){ const c=new T.Color(1,1,1), mt=h.object.material, m=mt&&mt.ma
 function bedInfo(n){ const t=ST().it[n], F=FURN[t[0]], g=R.fg.children[n]; if(!g||!g.userData.ready) return null; g.updateMatrixWorld(true); const ms=meshesOf(g), L=F.d, top=F.h+.6;
   const hs0=[];
   const P=(x,z,hs)=>probe(g,ms,hs>0?-x:x,hs>0?-z:z,top);
-  const mid=[]; for(let z=-L*.28;z<=L*.28;z+=.07){ const y=P(0,z,-1); if(y!=null) mid.push(y); } if(!mid.length) return null; mid.sort((a,b)=>a-b); const M=mid[mid.length>>1];
+  const mid=[]; for(let z=-L*.28;z<=L*.28;z+=.07){ const y=P(0,z,-1); if(y!=null) mid.push(y); } if(!mid.length) return null; mid.sort((a,b)=>a-b); let M=mid[mid.length>>1];
   const endH=sg=>{ let m=-1; for(const x of [-.25,0,.25]){ const y=P(x,sg*(L/2-.1),-1); if(y!=null) m=Math.max(m,y); } return m; }; const eA=endH(-1), eB=endH(1); const hs=eB>eA+.05?1:-1;
   let hw=F.w/2-.02; for(const sg of [-1,1]){ let x=0; for(;x<F.w/2;x+=.02){ const y=P(sg*x,0,hs); if(y==null||Math.abs(y-M)>.07) break; } hw=Math.min(hw,x-.02); } hw=Math.max(.3,hw);
   let zf=0, board=false; for(;zf<L/2;zf+=.02){ const y=P(0,zf,hs); if(y==null) break; if(Math.abs(y-M)>.07){ board=y>M; break; } } zf=Math.max(.3,zf-.02);
@@ -12045,7 +12045,9 @@ function bedInfo(n){ const t=ST().it[n], F=FURN[t[0]], g=R.fg.children[n]; if(!g
   if(!hits.length) for(const z of [-.4,0,.4]) look(F.w/2+.3,Math.max(.06,M-.1),z,-1,0);
   let col=new T.Color("#d9c4a4"); if(hits.length){ col=new T.Color(0,0,0); hits.forEach(c=>col.add(c)); col.multiplyScalar(1/hits.length); }
   const hsl={}; col.getHSL(hsl); if(hsl.s<.08) hsl.s*=1.0; col.setHSL(hsl.h,Math.min(.85,hsl.s*1.05),Math.max(.32,Math.min(.72,hsl.l)));
+  const fx=BEDFIX[F.id]; if(fx){ M=fx.M; hw=fx.hw; zf=fx.zf; } /* (11/23 主委「泡麵床人物會睡到蓋子上」: the lid curls over the noodles, so from above the rays find the lid — this bed's mattress is set by hand) */
   return {M,hs,L,hw,zf,board,col,g,zr:-L/2+.73}; }
+const BEDFIX={bed01:{M:.76,hw:.55,zf:.8}};
 /* the quilt: a sheet laid over the sleeper. The body under it is felt with rays (so it follows the real shape: chest, arms, legs, feet),
    the cloth is then smoothed so it drapes instead of clinging, falls over both sides of the mattress (and the foot end when there is
    no footboard), and has a turned-down fold at the top. Coloured like the bed frame. */
@@ -12095,7 +12097,7 @@ function css(){ if($("#rmCss")) return; const st=document.createElement("style")
 .rm-sl{display:flex;align-items:center;gap:8px;margin:7px 2px 2px;color:#f3e7d0;font-size:13px}.rm-sl span{flex:none;width:34px;font-weight:800}.rm-sl input{flex:1;min-width:0;accent-color:#d9aa3d;height:26px}.rm-sl b{flex:none;width:44px;text-align:right;font-size:12.5px;color:#ffd76a}
 .rm-s0{flex:none;border:1px solid rgba(255,220,150,.35);border-radius:8px;background:rgba(255,255,255,.08);color:#f3e7d0;font-size:12px;padding:5px 7px;font-family:inherit}
 .rm-lab{font-size:12px;color:#cbb;margin:2px 2px 4px;font-weight:700}.rm-ttl{font-weight:900;font-size:16px;color:#ffe2a0;margin:0 2px 6px}`; document.head.appendChild(st); }
-RM.dbg=()=>R; RM.tint=m=>daylight(m); RM.blk=t=>blocked(t); RM.fs=t=>freeSpot(t); /* (for tests) */
+RM.dbg=()=>R; RM.bi=n=>bedInfo(n); RM.hmap=n=>{ const g=R.fg.children[n], t=ST().it[n], F=FURN[t[0]]; g.updateMatrixWorld(true); const ms=meshesOf(g), o=[]; for(let z=-F.d/2;z<=F.d/2+.001;z+=F.d/10){ const row=[]; for(let x=-F.w/2;x<=F.w/2+.001;x+=F.w/6){ const y=probe(g,ms,x,z,F.h+.6); row.push(y==null?"-":y.toFixed(2)); } o.push(z.toFixed(2)+": "+row.join(" ")); } return o.join("\n"); }; RM.tint=m=>daylight(m); RM.blk=t=>blocked(t); RM.fs=t=>freeSpot(t); /* (for tests) */
 RM.open=vis=>{ if(!SHOPX||!SHOPX.enter){ toast("房間還沒準備好，請稍等一下",2200); return; } RM.visit=null; if(vis&&vis.room){ const r=vis.room; for(const k in DEF) if(typeof r[k]!=="number") r[k]=DEF[k]; if(!Array.isArray(r.it)) r.it=[]; r.it=r.it.filter(t=>Array.isArray(t)&&FURN[t[0]]); r.inv={}; r.v=2; RM.visit={n:String(vis.n||"鄰居").slice(0,10),room:r}; } if(!vis&&!(RM.lot>=0)) RM.lot=-1; const D=build(), s=ST(); css(); V={...s}; const o={exposure:1.0}; const el=SHOPX.enter("room",o); try{ statInc("roomOpen"); }catch(e){}
   daylight();
   apply(); furnDraw(-1);
