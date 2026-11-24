@@ -975,7 +975,7 @@ const NM_EN=["傑克","艾咪","莉莉","湯姆","安娜","麥克","露西","凱
 function randomName(){ const p=a=>a[(Math.random()*a.length)|0], who=()=>Math.random()<.6?p(NM_ANIMAL):p(NM_BEING);
   for(let k=0;k<30;k++){ const r=Math.random(); const n=r<.28?p(NM_GOOD)+p(NM_FRUIT)+who():r<.44?p(NM_FUNNY)+who():r<.6?p(NM_FUNNY)+p(NM_FRUIT)+who():r<.72?p(NM_GOOD)+"的"+who():r<.84?p(NM_GOOD)+p(NM_EN):r<.94?p(NM_FUNNY)+p(NM_EN):p(NM_FRUIT)+p(NM_EN);
     if([...n].length<=10) return n; } return "快樂鳳梨貓"; }
-if(!me) me = {name:"", look:[0,1,0,0,2,0,0,0,1,0,1,0,0]};
+if(!me){ me = {name:"", look:[0,1,0,0,2,0,0,0,1,0,1,0,0]}; me.fresh=1; } /* (11/24: fresh — dressed at random just before your avatar is made, below) */
 if(!me.sp&&!me.name){ me.name=randomName(); save("mz.me",me); } // everyone gets a random name on arrival; they can change it
 if(me.sp&&me.name===SP_OLD) me.name=SP_NAME;
 if(me.sp&&me.name!==SP_NAME) me.sp=0;
@@ -4124,6 +4124,9 @@ function updateFlyers(dt){ for(let i=flyers.length-1;i>=0;i--){ const f=flyers[i
 if(me.sp&&me.name!==SP_NAME) me.sp=0;
 function myLabel(){ const tl=DQ&&DQ.ttl()?DQ.ttl()+"・":""; return tl+(me.name?me.name+"（你）":(me.no?`香客${me.no}（你）`:"你")); }
 if(me.look&&me.look[6]){ me.look[6]=0; try{ save("mz.me",me); }catch(e){} } /* (頭飾 is gone from 換裝, 11/15) */
+/* (11/24 主委「玩家創角色時 會自動隨機造型 不要每個都長一樣」: a brand-new player starts in a random outfit — only things everyone owns,
+   the same rules as the 隨機一套 button: no hat, hair 1–24, no shop styles — instead of everyone in the same one) */
+if(me.fresh){ try{ const l=randomLook(false); l[6]=0; l[1]=1+Math.floor(Math.random()*24); l[7]=Math.floor(Math.random()*15); l[9]=Math.floor(Math.random()*4); l[13]=0; if(isStyleX(l[3])||l[3]>=16) l[3]=Math.floor(Math.random()*16); me.look=sanitizeLook(l); }catch(e){ console.warn("fresh look",e); } delete me.fresh; try{ save("mz.me",me); }catch(e){} }
 const meAv=new Avatar(me.look,{isMe:true,sp:!!me.sp,x:(Math.random()<.5?-1:1)*rand(2.4,8),z:HZ+rand(3.4,6.5),r:Math.PI});
 meAv.setName(myLabel());
 let camYaw=0, camPitch=.3, camDist=4.6, camTarget=new T.Vector3(); let customizing=false; let pvYaw=0, pvMode="full", pvSpin=0, rotAnim=null;
