@@ -3647,8 +3647,10 @@ function buildStyleX(t,v){ const g=new T.Group(); g.name='outfit-'+v; t.add(g); 
     mk(g,gx('trav-capelet-hem',()=>new T.TorusGeometry(.249,.0065,6,LOWPOLY?20:40)),GOLD(),0,.297,0,Math.PI/2,0,0,1,.86,1);
     ribbon(g,red,0,.405,frontZ(0,.405,.045),.75); plush(g,red,0,.41,frontZ(0,.41,.05),.022,.018,.012);
     waist(g,brown,.015,false,.03); plush(g,gold,0,.015,frontZ(0,.015,.04),.026,.02,.008);
-    seam(g,brown,[[-.15,.43,.03],[-.1,.36,frontZ(-.1,.36,.04)],[0,.22,frontZ(0,.22,.045)],[.1,.09,frontZ(.1,.09,.045)],[.165,.0,frontZ(.165,0,.04)]],.011);
-    plush(g,brown,.17,-.05,frontZ(.17,-.05,.06),.055,.05,.026); plush(g,'#57351c',.17,-.025,frontZ(.17,-.025,.083),.056,.024,.008); plush(g,red,.17,-.045,frontZ(.17,-.045,.09),.014,.014,.005); }
+    /* (21:42 主委「背包沒有背在肩膀上 包包也太低」: the strap now starts on top of the left shoulder, over the capelet, and the pouch sits at the hip) */
+    seam(g,brown,[[-.115,.472,-.04],[-.11,.468,.06],[-.095,.445,.145],[-.075,.385,.19],[-.045,.32,.218],[-.01,.27,.215],[.06,.19,frontZ(.06,.19,.05)],[.13,.13,frontZ(.13,.13,.05)]],.0105);
+    seam(g,brown,[[-.115,.472,-.04],[-.1,.45,-.13],[-.06,.39,-.19],[0,.32,-.215]],.0105);
+    plush(g,brown,.165,.085,frontZ(.165,.085,.06),.055,.05,.026); plush(g,'#57351c',.165,.11,frontZ(.165,.11,.083),.056,.024,.008); plush(g,red,.165,.09,frontZ(.165,.09,.09),.014,.014,.005); }
   return g; }
 function buildSleeveX(arm,v){ const k=v-STYLEX0, gold='#d9aa3d';
   if(k===0){ bellSleeve(arm,styxMat("hanfu",{roughness:.8,side:T.DoubleSide}),'#a8323a',.15,.3); return; }
