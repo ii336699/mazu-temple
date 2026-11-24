@@ -4723,6 +4723,7 @@ function initCF(first){
     ws.onopen=()=>{ retry=0; roomConnected=true; updateCount(); dirty=true; lastSend=0; lastSent=""; setTimeout(()=>{ profSave(false); giftFetch(); },3000); };
     ws.onmessage=ev=>{ let m; try{ m=JSON.parse(ev.data); }catch(e){ return; }
       if(m.t==="full"){ closedByUs=true; if(hall<HALL_NAMES.length-1){ toast(`${HALL_NAMES[hall]}人滿了，帶你到${HALL_NAMES[hall+1]}`,3200); connect(hall+1); } return; }
+      if(m.t==="chatlog"&&Array.isArray(m.list)){ try{ chatHist(m.list); }catch(e){} return; }
       if(m.t==="hello"&&Array.isArray(m.peers)){ m.peers.forEach(x=>{ if(okId(x.id)&&x.p&&typeof x.p==="object") peerState.set(x.id,{p:x.p,t:Date.now()}); }); rebuild(); return; }
       if(m.t==="ann"&&typeof m.text==="string"){ if(m.text===CS_TEXT) csGoOffer(Number.isInteger(m.h)?m.h:-1,+m.at||Date.now()); if(seenOnce("a"+(m.at||m.text))) return; showMarquee(m.text); return; }
       if(m.t==="stage"){ opSet(!!m.on,+m.at||0,m.name||"",m.cats); return; }
@@ -5775,8 +5776,13 @@ function chatCheck0(raw){ const nf=String(raw||"").normalize("NFKC"); const lowe
 const CHAT_REASON={line:"不能寫加賴",politics:"殿內不聊政治",profanity:"請注意言詞",phone:"不能留電話號碼",ads:"不能發廣告或聯絡方式"};
 function cleanChat(t){ return String(t||"").replace(/[\u0000-\u001f\u007f​-‏‪-‮⁠-⁤﻿]/g,"").replace(/\s+/g," ").trim().slice(0,40); }
 const chatLog=[]; let lastChatAt=0;
-function logChat(name,text,mine){ chatLog.push({name,text,mine}); if(chatLog.length>30) chatLog.shift(); if(sheetKind==="say") renderChatLog(); }
-function renderChatLog(){ const el=$("#chatLog"); if(!el) return; el.innerHTML=chatLog.length?chatLog.slice(-20).map(m=>`<div class="msg${m.mine?" mine":""}"><b>${esc(m.name)}</b><span>${esc(m.text)}</span></div>`).join(""):`<p class="note">還沒有人說話。打個招呼吧。</p>`; el.scrollTop=el.scrollHeight; }
+function logChat(name,text,mine){ chatLog.push({name,text,mine,at:Date.now()}); while(chatLog.length>90) chatLog.shift(); if(sheetKind==="say") renderChatLog(); }
+/* the hall's last hour of chat, sent by the server when you come in (one hour, this hall only): shown above the live lines, greyed, with how long ago */
+function chatHist(list){ const now=Date.now(); for(let i=chatLog.length-1;i>=0;i--) if(chatLog[i].old) chatLog.splice(i,1); const seen=new Set(chatLog.map(c=>c.name+"|"+c.text));
+  const old=list.filter(e=>e&&typeof e.x==="string"&&now-(+e.at||0)<3600e3).map(e=>{ const txt=cleanChat(e.x); if(!txt||(!e.sp&&chatCheck0(txt))) return null; const nm=e.sp?"主委":(e.n||"香客"); return {name:nm,text:txt,mine:false,old:1,at:+e.at}; }).filter(c=>c&&!seen.has(c.name+"|"+c.text));
+  chatLog.unshift(...old.slice(-60)); while(chatLog.length>90) chatLog.shift(); if(sheetKind==="say") renderChatLog(); }
+const chatAgo=t=>{ const m=Math.max(0,Math.round((Date.now()-t)/60000)); return m<1?"剛剛":m+" 分鐘前"; };
+function renderChatLog(){ const el=$("#chatLog"); if(!el) return; const L=chatLog.slice(-80), nOld=L.filter(m=>m.old).length; el.innerHTML=L.length?L.map((m,i)=>`${m.old&&i===0?`<p class="note" style="text-align:center;margin:2px 0 6px">— 你進來之前（最近一小時）—</p>`:""}<div class="msg${m.mine?" mine":""}"${m.old?' style="opacity:.6"':""}><b>${esc(m.name)}</b><span>${esc(m.text)}</span>${m.old?`<small style="margin-left:6px;opacity:.8">${chatAgo(m.at)}</small>`:""}</div>${m.old&&nOld&&i===nOld-1&&i<L.length-1?`<p class="note" style="text-align:center;margin:6px 0 2px">— 現在 —</p>`:""}`).join(""):`<p class="note">還沒有人說話。打個招呼吧。</p>`; el.scrollTop=el.scrollHeight; }
 // 洗頻: the same sentence twice in a row is refused (no limit on how many different lines, so quick talkers aren't muted)
 const FLOOD={last:"",times:[],muteUntil:0};
 const floodKey=t=>String(t||"").normalize("NFKC").toLowerCase().replace(/[\s\p{P}\p{S}]/gu,"");
@@ -5789,11 +5795,25 @@ function sendChat(text){ text=cleanChat(text); if(!text) return false; const now
   const fl=floodCheck(text); if(fl){ toast(fl,2800); return false; } floodNote(text);
   lastChatAt=now; myChat=[text,Math.random().toString(36).slice(2,8)]; markDirty(); meAv.say(text,"#f7ecd6",5); try{ if(ROOMX&&ROOMX.av) ROOMX.av.say(text,"#f7ecd6",5); }catch(e){} logChat(me.name||"你",text,true); botHear(meAv,text); return true; }
 /* ---- greetings ---- */
-function openSay(){ openSheet("say","聊天",`<div class="chat-log" id="chatLog" aria-live="polite"></div>
+function openSay(){ openSheet("say","聊天",`<div class="chips" style="margin:0 0 6px"><button class="chip" aria-pressed="true">💬 聊天</button><button class="chip" data-act="whoOpen">👥 線上名單（${whoList().length} 人）</button></div><div class="chat-log" id="chatLog" aria-live="polite"></div>
   <form class="chat-row" id="chatForm"><input id="chatInput" maxlength="40" autocomplete="off" placeholder="說點什麼，會顯示在你頭上" aria-label="聊天訊息"><button class="primary" type="submit">送出</button></form>
   <div class="chips">${PHRASES.map((p,i)=>`<button class="chip" data-act="say" data-v="${i}">${p}</button>`).join("")}</div>`);
   renderChatLog(); $("#chatForm").addEventListener("submit",e=>{ e.preventDefault(); const inp=$("#chatInput"); if(sendChat(inp.value)) inp.value=""; });
   if(matchMedia("(pointer:fine)").matches) setTimeout(()=>{ const i=$("#chatInput"); if(i) i.focus(); },320); }
+/* ---- 👥 線上名單 (11/25 主委「新增玩家可以看線上玩家名單及位置 假人也要放進去」): everyone in this hall — real players (not hidden ones) and
+   the named townsfolk-pilgrims (the bots) mixed together, each with where they are and how far; tap 走過去 to walk to someone nearby ---- */
+const whoPlace=(x,z,hm)=>{ const P=placeOf(x,z,hm); if(P!=="天后宮") return P; let k=""; try{ k=zoneOf(x,z); }catch(e){} return "天后宮・"+({M:"正殿",C:"廟埕",H:"後殿",B:"後埕",Z:"禪院"}[k]||(k[0]==="K"?"偏殿":k[0]==="Q"?"後殿兩側":"廟裡")); };
+function whoList(){ const L=[], mx=meAv.pos.x, mz=meAv.pos.y;
+  try{ ONLINE.forEach((o,id)=>{ const pr=o.pr||{}; if(pr.u===0) return; const x=+pr.x||0, z=+pr.z||0, hm=Number.isInteger(pr.hm)?pr.hm:-1; L.push({k:"p:"+id,n:pr.q===1?"主委":(cleanName(String(pr.n||""))||"香客"),x,z,hm,d:hm>=0?1e9:Math.hypot(x-mx,z-mz)}); }); }catch(e){}
+  try{ npcs.forEach((a,i)=>{ if(!a.isBot||!a.name||!a.root) return; const x=a.pos.x, z=a.pos.y; L.push({k:"b:"+i,n:a.name,x,z,hm:-1,d:Math.hypot(x-mx,z-mz)}); }); }catch(e){}
+  return L.sort((a,b)=>a.d-b.d); }
+HANDLERS.whoOpen=()=>{ const L=whoList(), me0=myLabel();
+  HANDLERS.whoGo=v=>{ const q=whoList().find(r=>r.k===v); if(!q){ toast("對方已經走開了",1800); return; } if(q.hm>=0){ toast(`${q.n} 在${whoPlace(q.x,q.z,q.hm)}`,2200); return; } closeSheet(); walkTo(q.x+.8,q.z+.8); toast(`走向 ${q.n}……`,1600); };
+  openSheet("say","👥 線上名單",`<div class="chips" style="margin:0 0 6px"><button class="chip" data-act="whoBack">💬 聊天</button><button class="chip" aria-pressed="true">👥 線上名單（${L.length} 人）</button></div>
+    <p class="note">這一殿現在的香客，離你近的排前面。</p><div class="lf-row"><div class="t"><b>${esc(me0)}</b><br><small>${whoPlace(meAv.pos.x,meAv.pos.y,-1)}（你）</small></div></div>
+    ${L.length?L.map(q=>`<div class="lf-row"><div class="t"><b>${esc(q.n)}</b><br><small>${whoPlace(q.x,q.z,q.hm)}${q.hm>=0?"":`・距離 ${Math.round(q.d)} m`}</small></div>${q.hm<0&&q.d<120?`<button class="secondary" data-act="whoGo" data-v="${q.k}">📍 走過去</button>`:""}</div>`).join(""):`<p class="note">這一殿現在只有你。</p>`}
+    <div class="row" style="margin-top:8px"><button class="secondary" data-act="whoOpen">重新整理</button></div>`); };
+HANDLERS.whoBack=()=>openSay();
 HANDLERS.say=v=>{ const i=+v; { const fl=floodCheck(PHRASES[i]); if(fl){ toast(fl,2800); return; } floodNote(PHRASES[i]); } myMsg=[i,Math.random().toString(36).slice(2,8)]; markDirty(); meAv.say(PHRASES[i],"#f7ecd6"); try{ if(ROOMX&&ROOMX.av) ROOMX.av.say(PHRASES[i],"#f7ecd6"); }catch(e){} logChat(me.name||"你",PHRASES[i],true); };
 
 /* ---- halls ---- */

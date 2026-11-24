@@ -123,6 +123,8 @@ export class Hall extends DurableObject {
     const peers = [];
     for (const w of this.ctx.getWebSockets()) { if (w === server) continue; const a = w.deserializeAttachment() || {}; if (a.p && !a.gone) peers.push({ id: a.id, p: a.p }); }
     server.send(JSON.stringify({ t: "hello", peers }));
+    // (11/25 主委「聊天功能有辦法上線還能看到沒上線時的留言嗎 往前一小時的留言」): the last hour of chat in this hall goes to the newcomer
+    { const cl = await this.chatLog(); if (cl.length) server.send(JSON.stringify({ t: "chatlog", list: cl })); }
     const ann = await this.ctx.storage.get("ann"); if (ann && Date.now() - ann.at < 5 * 60 * 1000) server.send(JSON.stringify(ann));
     const stage = await this.ctx.storage.get("stage"); if (stage && stage.on) server.send(JSON.stringify(stage));
     const puppet = await this.ctx.storage.get("puppet"); if (puppet && puppet.on) server.send(JSON.stringify(puppet));
@@ -138,11 +140,17 @@ export class Hall extends DurableObject {
     const p = m.p; const u = p.u === 0 ? 0 : 1; const was = a.u;
     const s = JSON.stringify(p);
     if (a.gone) return;
-    a.p = s.length < 1900 ? p : null; a.u = u; a.at = Date.now(); ws.serializeAttachment(a);
+    a.p = s.length < 1900 ? p : null; a.u = u; a.at = Date.now();
+    // chat rides in the presence as c = [text, id]; a new id is a new line. The first presence of a connection only sets the id (a reconnect re-sends the old line)
+    if (Array.isArray(p.c) && typeof p.c[0] === "string" && typeof p.c[1] === "string" && p.c[1]) { if (a.lc === undefined) a.lc = p.c[1]; else if (p.c[1] !== a.lc) { a.lc = p.c[1]; this.chatAdd({ at: Date.now(), n: String(p.n || "").slice(0, 12), sp: p.q === 1 ? 1 : 0, x: String(p.c[0]).slice(0, 120) }).catch(() => {}); } }
+    else if (a.lc === undefined) a.lc = "";
+    ws.serializeAttachment(a);
     const out = JSON.stringify({ t: "st", id: a.id, p });
     for (const w of this.ctx.getWebSockets()) { if (w !== ws) { try { w.send(out); } catch {} } }
     if (was !== u || Date.now() - (this.swept || 0) > 30000) this.report(a.h);
   }
+  async chatLog() { const hr = Date.now() - 3600 * 1000; const l = (await this.ctx.storage.get("chat")) || []; return l.filter(e => e && e.at > hr); }
+  async chatAdd(e) { const l = await this.chatLog(); l.push(e); while (l.length > 150) l.shift(); await this.ctx.storage.put("chat", l); }
   async webSocketClose(ws) { this.leave(ws); }
   async webSocketError(ws) { this.leave(ws); }
   leave(ws) {
