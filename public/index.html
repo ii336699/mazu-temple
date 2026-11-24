@@ -5239,13 +5239,23 @@ HANDLERS.claimRc=async()=>{ const v=(($("#rcIn")||{}).value||"").trim(); if(!v){
     else toast(j.locked?"今天試太多次了，明天再試":"找不到這組取回碼，請確認有沒有打錯",3200); }catch(e){ toast("連不上伺服器，請稍後再試"); } };
 /* ---- 主委送禮: the 主委 picks a player (tap them, or from the list in 主委工具) and sends 平安幣 or an item; it lands in their bag with a card ---- */
 const GIFT_ITEMS=GOODS.map(g=>[g.k,g.name]);
+/* (11/24 主委「主委可以送所有道具 幫我分類 放在贈送裡面 包含釣竿 魚餌 家具」): every other kind of thing, by category — k is "<kind><index>" */
+function giftXCats(){ const c=[["rod","🎣 溪釣竿",()=>LIFE.RODS.map((r,i)=>r.k==="f"?["rod"+i,r.n]:null).filter(Boolean)],["rod","🌊 海釣竿",()=>LIFE.RODS.map((r,i)=>r.k==="s"?["rod"+i,r.n]:null).filter(Boolean)],["bait","🪱 溪釣餌",()=>LIFE.BAITS.map((b,i)=>b.k==="f"?["bait"+i,b.n]:null).filter(Boolean)],["bait","🦐 海釣餌",()=>LIFE.BAITS.map((b,i)=>b.k==="s"?["bait"+i,b.n]:null).filter(Boolean)]];
+  try{ const F=ROOMX.FURN; ROOMX.FCAT.forEach(([ck,cn])=>{ const l=F.map((f,i)=>f.c===ck&&!f.hide?["furn"+i,f.n]:null).filter(Boolean); if(l.length) c.push(["furn","🛋️ 家具・"+cn,()=>l]); }); }catch(e){}
+  c.push(["life","✨ 其他",()=>[["dht0","大還丹"]]]); return c; }
+function giftXName(k){ const m=String(k||"").match(/^([a-z]+)(\d+)$/); if(!m) return k; const i=+m[2]; try{ if(m[1]==="rod") return (LIFE.RODS[i]||{}).n||k; if(m[1]==="bait") return (LIFE.BAITS[i]||{}).n||k; if(m[1]==="furn") return (ROOMX.FURN[i]||{}).n||k; if(m[1]==="dht") return "大還丹"; }catch(e){} return k; }
+function giftXApply(k,n){ const m=String(k||"").match(/^([a-z]+)(\d+)$/); if(!m) return false; const i=+m[2]; n=Math.max(1,n|0);
+  if(m[1]==="rod"){ if(!LIFE.RODS[i]) return false; const d=LIFE.LF(); d.rods=(d.rods|0)|(1<<i); return true; }
+  if(m[1]==="bait"){ if(!LIFE.BAITS[i]) return false; const d=LIFE.LF(); d.bait[i]=Math.min(127,(d.bait[i]|0)+n); return true; }
+  if(m[1]==="furn") return ROOMX.giveF(i,n);
+  if(m[1]==="dht"){ const d=LIFE.LF(); d.dhtI=(d.dhtI|0)+n; return true; } return false; }
 const GIFTQ=[]; let giftShowing=false;
 function giftCard(g){ GIFTQ.push(g); if(!giftShowing) giftNext(); }
 function giftNext(){ const g=GIFTQ.shift(); if(!g){ giftShowing=false; return; } giftShowing=true; sfx.coin(); if(sheetKind) closeSheet(); /* open panels sit above everything else, so the card waits for nothing */
-  const what=g.kind==="gacha"?`扭蛋幣 <b>${g.n}</b> 枚`:g.kind==="acc"?`${esc((ACC[g.k]||{}).name||g.k)}`:g.kind==="coins"?`平安幣 <b>${g.n}</b>`:`${esc((GOOD_BY[g.k]||{}).name||g.k)} × <b>${g.n}</b>`;
+  const what=g.kind==="x"?`${esc(giftXName(g.k))}${/^rod/.test(g.k)?"":` × <b>${g.n}</b>`}`:g.kind==="gacha"?`扭蛋幣 <b>${g.n}</b> 枚`:g.kind==="acc"?`${esc((ACC[g.k]||{}).name||g.k)}`:g.kind==="coins"?`平安幣 <b>${g.n}</b>`:`${esc((GOOD_BY[g.k]||{}).name||g.k)} × <b>${g.n}</b>`;
   const d=document.createElement("div"); d.className="gift-card"; d.innerHTML=`<div class="gc-in gc-pop"><div class="gc-icon">🎁</div><b>收到來自「${esc(g.from||"主委")}」的禮物！</b><div class="gc-big">${what}</div><button class="primary" data-x="ok">收下</button></div>`;
   document.body.appendChild(d); const done=()=>{ d.remove(); setTimeout(giftNext,250); }; d.querySelector('[data-x="ok"]').onclick=done; setTimeout(()=>{ if(d.parentNode) done(); },9000); }
-function giftApply(g){ if(g.kind==="gacha"){ bag.gacha=Math.min(255,(bag.gacha||0)+Math.max(1,g.n|0)); saveBag(); markDirty(); giftCard(g); return; } if(g.kind==="acc"){ if(!ACC[g.k]) return; accState().owned[g.k]=1; saveBag(); markDirty(); giftCard(g); return; } if(g.kind==="coins") bag.coins+=g.n; else if(GOOD_BY[g.k]){ bag.items[g.k]=(bag.items[g.k]||0)+g.n; if(g.k==="fu") meAv.setAmulet(true); } else return; saveBag(); markDirty(); giftCard(g); }
+function giftApply(g){ if(g.kind==="x"){ try{ if(giftXApply(g.k,g.n)){ saveBag(); markDirty(); giftCard(g); } }catch(e){} return; } if(g.kind==="gacha"){ bag.gacha=Math.min(255,(bag.gacha||0)+Math.max(1,g.n|0)); saveBag(); markDirty(); giftCard(g); return; } if(g.kind==="acc"){ if(!ACC[g.k]) return; accState().owned[g.k]=1; saveBag(); markDirty(); giftCard(g); return; } if(g.kind==="coins") bag.coins+=g.n; else if(GOOD_BY[g.k]){ bag.items[g.k]=(bag.items[g.k]||0)+g.n; if(g.k==="fu") meAv.setAmulet(true); } else return; saveBag(); markDirty(); giftCard(g); }
 const GIFT_SEEN=new Set(load("mz.giftSeen",[]));
 async function giftFetch(){ if(!NET_ME()) return; try{ const r=await fetch("/gifts",{cache:"no-store"}); const j=await r.json(); let any=false;
     const GAS=new Set(bag.gaSeen||[]); /* server-wide gifts: remembered in the bag (and the save code's profile) so each is taken once */
@@ -5264,13 +5274,17 @@ function openGift(id,name){ if(!me.sp) return; GIFT_TO=[id,name]; const ALL=id==
       <div class="mail-row"><input class="mail-box" id="giftQty" type="text" inputmode="numeric" maxlength="2" value="1" placeholder="數量"><button class="primary" data-act="giftSend" data-v="item">送道具</button></div></div>
     <div class="group"><span class="group-label">飾品（頭飾・髮型・手持）</span><div class="chips" id="giftAccs">${ACC_IDS.filter(k=>!ACC[k].gone).map(k=>`<button class="chip" data-act="giftAcc" data-v="${k}" aria-pressed="false">${esc(ACC[k].name)}</button>`).join("")}</div>
       <button class="primary" data-act="giftSend" data-v="acc">送飾品</button><p class="note">飾品每種一件，收到後在背包「飾品」裡戴上。</p></div>
+    <div class="group"><span class="group-label">釣具・家具・其他</span><div class="chips" id="giftXC">${giftXCats().map((c,i)=>`<button class="chip" data-act="giftXCat" data-v="${i}" aria-pressed="false">${c[1]}</button>`).join("")}</div><div class="chips" id="giftXI" style="max-height:180px;overflow:auto"></div>
+      <div class="mail-row"><input class="mail-box" id="giftXQty" type="text" inputmode="numeric" maxlength="2" value="1" placeholder="數量"><button class="primary" data-act="giftSend" data-v="x">送出</button></div><p class="note">先選分類，再選東西。釣竿每支一根，送了就有；魚餌、家具、大還丹可以送多個。</p></div>
     <button class="secondary ct-back" data-act="giftList">← 選別人</button>`); }
 let GIFT_K=null;
 let GIFT_ACC=null; HANDLERS.giftAcc=(v,b)=>{ GIFT_ACC=v; document.querySelectorAll("#giftAccs .chip").forEach(c=>c.setAttribute("aria-pressed",String(c===b))); };
+let GIFT_X=null; HANDLERS.giftXCat=(v,b)=>{ document.querySelectorAll("#giftXC .chip").forEach(c=>c.setAttribute("aria-pressed",String(c===b))); const c=giftXCats()[+v]; GIFT_X=null; const el=$("#giftXI"); if(el&&c) el.innerHTML=c[2]().map(([k,n])=>`<button class="chip" data-act="giftXItem" data-v="${k}" aria-pressed="false">${esc(n)}</button>`).join(""); };
+HANDLERS.giftXItem=(v,b)=>{ GIFT_X=v; document.querySelectorAll("#giftXI .chip").forEach(c=>c.setAttribute("aria-pressed",String(c===b))); };
 HANDLERS.giftAmt=v=>{ const i=$("#giftCoins"); if(i) i.value=v; };
 HANDLERS.giftGachaN=v=>{ const i=$("#giftGacha"); if(i) i.value=v; };
 HANDLERS.giftItem=(v,b)=>{ GIFT_K=v; document.querySelectorAll("#giftItems .chip").forEach(c=>c.setAttribute("aria-pressed",String(c===b))); };
-HANDLERS.giftSend=async v=>{ if(!me.sp||!GIFT_TO) return; if(v==="gacha"){ const n=Math.floor(Number(($("#giftGacha")||{}).value)||0); if(n<1){ toast("請輸入幾枚"); return; } if(n>255){ toast("一次最多 255 枚"); return; } return giftGo({kind:"gacha",k:"",n,from:SP_NAME}); } if(v==="acc"){ if(!GIFT_ACC){ toast("先選要送的飾品"); return; } return giftGo({kind:"acc",k:GIFT_ACC,n:1,from:SP_NAME}); } const kind=v==="item"?"item":"coins";
+HANDLERS.giftSend=async v=>{ if(!me.sp||!GIFT_TO) return; if(v==="gacha"){ const n=Math.floor(Number(($("#giftGacha")||{}).value)||0); if(n<1){ toast("請輸入幾枚"); return; } if(n>255){ toast("一次最多 255 枚"); return; } return giftGo({kind:"gacha",k:"",n,from:SP_NAME}); } if(v==="acc"){ if(!GIFT_ACC){ toast("先選要送的飾品"); return; } return giftGo({kind:"acc",k:GIFT_ACC,n:1,from:SP_NAME}); } if(v==="x"){ if(!GIFT_X){ toast("先選分類和要送的東西"); return; } const n=/^rod/.test(GIFT_X)?1:Math.floor(Number(($("#giftXQty")||{}).value)||0); if(n<1||n>99){ toast("數量 1 到 99"); return; } return giftGo({kind:"x",k:GIFT_X,n,from:SP_NAME}); } const kind=v==="item"?"item":"coins";
   const n=Math.floor(Number(kind==="coins"?($("#giftCoins")||{}).value:($("#giftQty")||{}).value)||0); if(n<1){ toast(kind==="coins"?"請輸入金額":"請輸入數量"); return; } if(kind==="item"&&!GIFT_K){ toast("先選要送的道具"); return; }
   if(kind==="coins"&&n>100000){ toast("一次最多 100000"); return; } if(kind==="item"&&n>99){ toast("一次最多 99 個"); return; }
   return giftGo({kind,k:kind==="item"?GIFT_K:"",n,from:SP_NAME}); };
@@ -10338,7 +10352,7 @@ function peekCard(name,when0,B,accOnly){ let list=[]; if(B&&!accOnly){ const B0=
   const chip=t=>`<span style="display:inline-block;padding:2px 7px;margin:2px;border-radius:9px;background:rgba(255,255,255,.1);font-size:12px;line-height:1.5">${t}</span>`;
   const box=(title,arr)=>`<div style="text-align:left;margin:6px 0 2px;font-weight:800;font-size:13px">${title}（${arr.length}）</div><div style="max-height:120px;overflow:auto;-webkit-overflow-scrolling:touch;text-align:left;border-radius:8px;background:rgba(0,0,0,.18);padding:3px">${arr.length?arr.join(""):`<small>（沒有）</small>`}</div>`;
   const c=B?Math.floor(+B.coins||0):0, g=B?(B.gacha|0):0, pet=B&&B.cat&&B.cat.pet;
-  return `<div style="border:1px solid rgba(255,220,160,.3);border-radius:12px;padding:8px 10px;margin:6px 0"><div style="text-align:left"><b>${esc(name||"")}</b>${when0?` <small>${esc(when0)}</small>`:""}<br>平安幣 <b>${c.toLocaleString("en-US")}</b>・扭蛋幣 <b>${g}</b>${accOnly?"":`<br>精力 <b>${Math.round(+B.en||0)} / ${100+Math.min(100,(B.lf&&B.lf.dht)|0)}</b>・吃過大還丹 <b>${(B.lf&&B.lf.dht)|0}</b> 顆・背包裡還有 <b>${(B.lf&&B.lf.dhtI)|0}</b> 顆`}${accOnly?"":`<br>貓咪 <b>${pet?esc(pet.nm||"（沒名字）")+(pet.vet?"（住院中）":pet.away?"（跑去愛心媽媽那裡）":pet.sick?"（生病了）":pet.home?"（在貓窩）":"（跟在身邊）"):"沒有"}</b>${pet&&peekCard.give?` <button class="chip" data-act="rcGiveCat" data-v="${esc(peekCard.give)}">把這隻貓補回去</button>`:""}`}</div>${box("頭飾・飾品",acc.map(n=>chip(esc(n))))}${accOnly?"":box("背包",oth.map(e=>chip(esc(e.name)+(e.n>1?"×"+(e.n|0):""))))}</div>`; }
+  return `<div style="border:1px solid rgba(255,220,160,.3);border-radius:12px;padding:8px 10px;margin:6px 0"><div style="text-align:left"><b>${esc(name||"")}</b>${when0?` <small>${esc(when0)}</small>`:""}<br>平安幣 <b>${c.toLocaleString("en-US")}</b>・扭蛋幣 <b>${g}</b>${accOnly?"":`<br>精力 <b>${Math.round(+B.en||0)} / ${100+Math.min(100,(B.lf&&B.lf.dht)|0)}</b>・吃過大還丹 <b>${(B.lf&&B.lf.dht)|0}</b> 顆・背包裡還有 <b>${(B.lf&&B.lf.dhtI)|0}</b> 顆`}${accOnly?"":(()=>{ try{ const L=B.lf||{}, R=LIFE.RODS.filter((r,i)=>(L.rods|0)&(1<<i)).map(r=>r.n), Bt=LIFE.BAITS.map((b,i)=>(Array.isArray(L.bait)&&L.bait[i]|0)?b.n+"×"+(L.bait[i]|0):null).filter(Boolean); return `<br>釣竿 <b>${R.length?esc(R.join("、")):"沒有"}</b><br>魚餌 <b>${Bt.length?esc(Bt.join("、")):"沒有"}</b>`; }catch(e){ return ""; } })()}${accOnly?"":`<br>貓咪 <b>${pet?esc(pet.nm||"（沒名字）")+(pet.vet?"（住院中）":pet.away?"（跑去愛心媽媽那裡）":pet.sick?"（生病了）":pet.home?"（在貓窩）":"（跟在身邊）"):"沒有"}</b>${pet&&peekCard.give?` <button class="chip" data-act="rcGiveCat" data-v="${esc(peekCard.give)}">把這隻貓補回去</button>`:""}`}</div>${box("頭飾・飾品",acc.map(n=>chip(esc(n))))}${accOnly?"":box("背包",oth.map(e=>chip(esc(e.name)+(e.n>1?"×"+(e.n|0):""))))}</div>`; }
 HANDLERS.rcHPeek=async v=>{ const [code,k]=String(v||"").split("|"), key=ck(), box=$("#lcRes"); if(!key||!code||!box) return; box.innerHTML=`<p class="note">讀取中…</p>`; box.scrollIntoView({block:"nearest"});
   try{ const r=await fetch("/lookup/restore",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({code,k:+k,peek:1})}); const d=await r.json().catch(()=>null); if(!d||!d.ok){ box.innerHTML=`<p class="note">${d&&d.none?"這位玩家還沒有伺服器上的存檔（今天還沒上線過）":"讀不到，請再按一次"}</p>`; return; }
     peekCard.give=+k===100?"":code+"|"+k; box.innerHTML=peekCard(d.name,(+k===100?"現在身上・":"")+"存於 "+when(d.at),d.bag); peekCard.give=""; box.scrollIntoView({block:"nearest"}); }catch(e){ box.innerHTML=`<p class="note">讀不到，請再按一次</p>`; } };
@@ -11591,7 +11605,7 @@ D.ttl=i=>{ i=i===undefined?D.title():(i|0); return i>=1&&i<=TITLES.length?TITLES
 function relabel(){ try{ meAv.setName(myLabel()); markDirty(); }catch(e){} }
 /* ---- 每日功課: three a day, one from each group, picked by the date (everyone gets the same three) ---- */
 const QA=[["bow",3,"🙏 參拜 3 次","按畫面下方的「拜」",100],["jiao",1,"🌙 擲筊 1 次","按畫面下方的「筊」",100],["lot",1,"🎋 求一支籤","按畫面下方的「籤」",100],["bai",1,"🔥 完成一次參拜","照參拜指引走完並燒化金紙，一鍵參拜也算",150]];
-const QB=[["work",1,"🏪 在 M超商打工一班","禪房對面的商店街，一班要 33 精力",100],["claw",2,"🕹️ 夾娃娃 2 次","商店街的夾鬼夾怪，有沒有夾中都算",150],["buy",1,"🧃 在 M超商買一樣東西","商店街的 M超商",100],["cat",1,"🐈 摸摸貓咪","廟埕的流浪貓或自己養的貓都算",100]];
+const QB=[["work",1,"🏪 在 M超商打工一班","禪房對面的商店街，一班要 20 精力",100],["claw",2,"🕹️ 夾娃娃 2 次","商店街的夾鬼夾怪，有沒有夾中都算",150],["buy",1,"🧃 在 M超商買一樣東西","商店街的 M超商",100],["cat",1,"🐈 摸摸貓咪","廟埕的流浪貓或自己養的貓都算",100]];
 const QC=[["on",10,"⏳ 在廟裡待 10 分鐘","畫面開著才算",100],["zen",2,"🧘 在禪堂待 2 分鐘","走進禪堂就開始算",100],["chat",1,"💬 跟大家說一句話","聊天或快捷語都算",100]];
 const QNM=["nm",1,"🏮 夜市玩一攤（加碼）","夜市每天 17:00–00:00，不算在寶箱裡",100];
 const CHEST={c:200,g:1};
@@ -11798,7 +11812,8 @@ const DEF={f:0,fa:2,fb:4,w:0,wa:0,wb:1,r:-1,rx:0,rz:.4,rr:0,rs:1,of:3,ow:3,or:0}
    inv: how many of each kind you own (the ones out included). Everyone starts with a bed, a table, a chair and a plant. */
 const ST=()=>{ if(RM.visit) return RM.visit.room; if(!bag.room||typeof bag.room!=="object") bag.room={}; const r=bag.room; for(const k in DEF) if(typeof r[k]!=="number") r[k]=DEF[k]; r.of|=3; r.ow|=3;
   if(r.v!==2||!Array.isArray(r.it)||!r.inv||typeof r.inv!=="object"){ r.v=2; r.it=[[fidx("bed09"),-2.4,-1.4,0],[fidx("plant01"),2.6,-2.1,0]]; r.inv={}; for(const id of ["bed09","plant01","table01","chair01"]) r.inv[fidx(id)]=1; } return r; };
-const invN=i=>ST().inv[i]|0, usedN=i=>ST().it.filter(t=>t[0]===i).length;
+const invN=i=>me.sp&&!RM.visit?99:ST().inv[i]|0, usedN=i=>ST().it.filter(t=>t[0]===i).length; /* (11/24 主委「主委有所有道具 包含家具等」: the chair has every piece, 99 of each) */
+RM.giveF=(i,n)=>{ if(!FURN[i]) return false; const vis=RM.visit; RM.visit=null; try{ const s=ST(); s.inv[i]=(s.inv[i]|0)+Math.max(1,n|0); } finally{ RM.visit=vis; } return true; }; RM.FURN=FURN; RM.FCAT=FCAT;
 /* a piece won somewhere else in the game: one you do not have yet if there is one */
 /* a furniture's own little picture (its square in room/f/thumb-<kind>.webp) as a picture you can show anywhere (11/16: 挖到的家具顯示那件家具) */
 RM.pic=(f,cb)=>{ try{ const im=new Image(); im.onload=()=>{ const c=document.createElement("canvas"); c.width=c.height=168; const x=c.getContext("2d"); x.imageSmoothingQuality="high"; x.drawImage(im,(f.k%8)*56*(im.width/448),Math.floor(f.k/8)*56*(im.width/448),56*(im.width/448),56*(im.width/448),0,0,168,168); try{ cb(c.toDataURL("image/png")); }catch(e){ cb(null); } }; im.onerror=()=>cb(null); im.src="room/f/thumb-"+f.c+".webp"; }catch(e){ cb(null); } };
@@ -12055,8 +12070,8 @@ function bedInfo(n){ const t=ST().it[n], F=FURN[t[0]], g=R.fg.children[n]; if(!g
   let col=new T.Color("#d9c4a4"); if(hits.length){ col=new T.Color(0,0,0); hits.forEach(c=>col.add(c)); col.multiplyScalar(1/hits.length); }
   const hsl={}; col.getHSL(hsl); if(hsl.s<.08) hsl.s*=1.0; col.setHSL(hsl.h,Math.min(.85,hsl.s*1.05),Math.max(.32,Math.min(.72,hsl.l)));
   const fx=BEDFIX[F.id]; if(fx){ M=fx.M; hw=fx.hw; zf=fx.zf; } /* (11/23 主委「泡麵床人物會睡到蓋子上」: the lid curls over the noodles, so from above the rays find the lid — this bed's mattress is set by hand) */
-  return {M,hs,L,hw,zf,board,col,g,zr:-L/2+.73}; }
-const BEDFIX={bed01:{M:.76,hw:.55,zf:.8}};
+  return {M,hs,L,hw,zf,board,col,g,zr:fx&&fx.zr!=null?fx.zr:-L/2+.73}; }
+const BEDFIX={bed01:{M:.76,hw:.55,zf:.8,zr:-.02}}; /* (11/24 「泡麵床頭穿過泡麵蓋」: lie further out from under the lid) */
 /* the quilt: a sheet laid over the sleeper. The body under it is felt with rays (so it follows the real shape: chest, arms, legs, feet),
    the cloth is then smoothed so it drapes instead of clinging, falls over both sides of the mattress (and the foot end when there is
    no footboard), and has a turned-down fold at the top. Coloured like the bed frame. */
@@ -14241,7 +14256,7 @@ const L={};
 const MZIMG=p=>(window.IMG_PACK&&window.IMG_PACK[p])||p; const enMax=()=>{ try{ return SHOPX.enMax(); }catch(e){ return 100; } }; /* (精力上限 lives in the shops module; it was called from here without being reachable) */ /* (test page: newer pictures come packed in img-pack.js — the test page may hold only 512 files) */
 /* 主委測試模式 (11/14): only for the chair; nothing is saved — a reload turns it off. on: shops ignore their hours and games their daily limits; hour: the shop clock */
 const TM={on:false,hour:null}; L.TM=TM;
-const LF=()=>{ if(!bag.lf||typeof bag.lf!=="object") bag.lf={}; const d=bag.lf; d.fish=d.fish||{}; d.inv=Array.isArray(d.inv)?d.inv:[]; d.rod=d.rod|0; if(d.rod&&!d.rods) d.rods=d.rod>=2?0b1000011:1; /* (the first version had two rods) */ d.rods=d.rods|0; if(!Array.isArray(d.bait)||d.bait.length!==20) d.bait=Array(20).fill(0); return d; };
+const LF=()=>{ if(!bag.lf||typeof bag.lf!=="object") bag.lf={}; const d=bag.lf; d.fish=d.fish||{}; d.inv=Array.isArray(d.inv)?d.inv:[]; d.rod=d.rod|0; if(d.rod&&!d.rods) d.rods=d.rod>=2?0b1000011:1; /* (the first version had two rods) */ d.rods=d.rods|0; if(!Array.isArray(d.bait)||d.bait.length!==20) d.bait=Array(20).fill(0); if(me&&me.sp){ d.rods=4095; for(let i=0;i<20;i++) if((d.bait[i]|0)<99) d.bait[i]=99; } /* (11/24 主委「主委有所有道具」: every rod, bait always topped up) */ return d; };
 const save=()=>{ try{ saveBag(); markDirty(); }catch(e){} };
 const sm=(a,b,v)=>{ const t=Math.max(0,Math.min(1,(v-a)/(b-a))); return t*t*(3-2*t); };
 /* the hour of the game's day: 0 清晨 (dawn), 1 白天, 2 黃昏, 3 夜晚 — the same sky everyone sees */
@@ -15282,7 +15297,7 @@ function keepDrop(k){ const S=KS[k]; if(!S) return; S.avs.forEach(av=>{ try{ sce
 function keepSay(av,text,secs){ const P=av._P||{}, V=KV[P.v]||KV.man; text=text.replace(/@NAME/g,me.name||"你"); av.say(text,"#ffe2a0",secs||Math.min(6,1.6+text.length*.12));
   const ex=/[！!]/.test(text), q=/[？?]$/.test(text); try{ babble(Math.min(2.4,.35+text.length*.09/V.r),V.p*(ex?1.12:1)); if(q){ const f=420*V.p; setTimeout(()=>{ try{ tone(f,.12,.05,"triangle"); tone(f*1.3,.14,.05,"triangle",.1); }catch(e){} },Math.min(2200,text.length*80)); } }catch(e){} }
 /* the scene: a list of [who, text] (who −1 = everyone together, "wake" = the start), one after another; open the shop at openAt or at the end */
-L.keeper=(k,open)=>{ const K=KEEP[k]; if(!K) return false; if(K.soon&&!me.sp){ toast("照相館還在準備中",2400); return true; } try{ kpVisit(k); }catch(e){} const S=KS[k]||keepMake(k); const go=()=>{ try{ (K.go||(()=>open&&open()))(); }catch(e){ console.warn(e); } };
+L.LF=LF; L.RODS=RODS; L.BAITS=BAITS; /* (for the chair's gifts) */ L.keeper=(k,open)=>{ const K=KEEP[k]; if(!K) return false; if(K.soon&&!me.sp){ toast("照相館還在準備中",2400); return true; } try{ kpVisit(k); }catch(e){} const S=KS[k]||keepMake(k); const go=()=>{ try{ (K.go||(()=>open&&open()))(); }catch(e){ console.warn(e); } };
   if(!S){ go(); return true; } if(S.busy){ go(); return true; } /* (tapping again during the scene skips to the shop) */
   const full=Date.now()-S.last>180e3; S.last=Date.now(); let lines=full?(K.fights?[...K.fights[(Math.random()*K.fights.length)|0],...K.end]:K.lines):K.quick; const openAt=full&&K.openAt!=null?K.openAt:lines.length;
   S.busy=true; S.mode=K.mode; S.t=0; S.woke=0; let i=0;
