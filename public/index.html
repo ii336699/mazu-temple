@@ -4982,7 +4982,7 @@ sheetBody.addEventListener("click",e=>{ const b=e.target.closest("[data-act]"); 
    to the server every 5 minutes and when the page is hidden. The server adds them into one counter set per Taiwan day — later the NPCs
    can talk about it ("今天已經有 300 人擲筊了"). Only counts, never names or text. ---- */
 const STATQ={q:{},id:Math.random().toString(36).slice(2,12)};
-function statInc(k,n){ k=String(k).replace(/[^a-zA-Z0-9_]/g,"").slice(0,24); if(!k) return; if(!/^[a-z]/.test(k)) k=("x"+k).slice(0,24); STATQ.q[k]=(STATQ.q[k]||0)+(n||1); try{ if(DQ) DQ.stat(k,n||1); }catch(e){} }
+function statInc(k,n){ k=String(k).replace(/[^a-zA-Z0-9_]/g,"").slice(0,24); if(!k) return; if(!/^[a-z]/.test(k)) k=("x"+k).slice(0,24); STATQ.q[k]=(STATQ.q[k]||0)+(n||1); try{ if(DQ) DQ.stat(k,n||1); }catch(e){} try{ if(DYK[k]) window.MZ_DY(k,n||1); }catch(e){} }
 function statFlush(beacon){ const ks=Object.keys(STATQ.q); if(!ks.length||!USE_CF) return; const c={}; ks.slice(0,40).forEach(k=>{ c[k]=STATQ.q[k]; delete STATQ.q[k]; }); const mx=STATQ.m||{}; STATQ.m={}; const body=JSON.stringify({id:load("mz.id","")||STATQ.id,name:(typeof me!=="undefined"&&me.name||"").slice(0,10),c,m:mx});
   try{ if(beacon&&navigator.sendBeacon) navigator.sendBeacon("/stat",new Blob([body],{type:"application/json"})); else fetch("/stat",{method:"POST",headers:{"content-type":"application/json"},body,keepalive:true}).catch(()=>{}); }catch(e){} }
 setInterval(()=>statFlush(),300000); document.addEventListener("visibilitychange",()=>{ if(document.hidden) statFlush(true); });
@@ -5494,6 +5494,7 @@ function openAltar(){ const foods=["hua","guo","bing"].filter(k=>bag.items[k]>0)
   const bw=bowedAt("mazu");
   html+=`<button class="good" data-act="bowAt" data-v="mazu" ${hasX?"":"disabled"}><span class="name">① 持香參拜</span><span class="meta">${bw?"已向媽祖拜過":"雙手持香拜三拜"}</span></button>`;
   html+=`<button class="good" data-act="plant" ${hasX&&bw&&!stuckIn("mazu")?"":"disabled"}><span class="name">② ${stuckIn("mazu")?"已插香":"插香"}</span><span class="meta">${stuckIn("mazu")?"一爐一支":bw?"插入媽祖香爐":"先持香參拜"}</span><span class="own">持有 ${bag.items.xiang||0}</span></button></div>`;
+  html+=bw?`<button class="primary wide" data-act="mzTalk">🙏 跟媽祖說說話</button>`:"";
   html+=guoluHTML("mazu");
   html+=`<button class="secondary" data-act="getLantern">🏮 ${myLantern?"重寫天燈（已有一盞）":"領取天燈"}</button>`;
   const fl=flow(), planted=Array.isArray(bag.planted)?bag.planted:[], allPlanted=CENSER_ORDER.every(k=>planted.includes(k));
@@ -5502,6 +5503,32 @@ function openAltar(){ const foods=["hua","guo","bing"].filter(k=>bag.items[k]>0)
   if(!foods.length&&!hasX&&!myOffers.length) html+=`<p class="note">背包裡沒有供品。服務處在大殿入口右手邊。</p><button class="secondary" data-act="goShop">走去服務處</button>`;
   openSheet("altar","供桌",html); }
 HANDLERS.goShop=()=>goStation("shop");
+/* ---- 跟媽祖說心事 (11/24 主委「媽祖心事可以先」): after bowing to 媽祖 with incense, pick one of eight topics (nothing typed, nothing
+   stored) and the incense smoke carries back one line. Night and rain have their own line; the 3rd talk of a day, a faithful visitor
+   (30 talks) and 初一/十五 have special lines. Lines by the 劇本 team (r4/mazu_lines.json). ---- */
+const MZT=[["今天好累",["累了就歇一下，海會等你，我也會。","今天做得夠多了，剩下的交給明天。","你不用一直很厲害，平安就好。","坐一下吧，這裡的風不趕人。","辛苦了。今天的你，我都看見了。","把肩膀放下來，深深吸一口氣。","累的時候，連走來這裡都不容易。","休息不是偷懶，是讓明天走得更遠。","今天就到這裡，好嗎？","你肯停下來，就是對自己好。"],"天都黑了還記得來。回去早點睡。","雨天的路特別長吧？等雨小一點再走。"],["想念一個人",["想念的人，不會因為見不到就走遠。","想說的話說給我聽，我幫你記著。","那個人若知道你這麼想他，會很開心。","想念是因為曾經很好，對吧？","慢慢說，我在聽。","把他的名字在心裡念一遍吧。","有些人不在身邊，還在心裡。","想念的時候，就來這裡坐坐。","你的想念，香煙會替你帶上去。","哭一下也沒關係，這裡沒有人笑你。"],"晚上最容易想起一個人。星星也在想誰。","雨聲很適合想念，慢慢想沒關係。"],["工作和課業",["盡力了就好，結果不是全部。","一次做一件事，慢慢來。","今天卡住的地方，明天再看看。","你比自己以為的更努力。","別跟別人比，跟昨天的自己比就好。","做不完的，先放著，人比較重要。","累了就喝口水，事情跑不掉的。","被罵了也不代表你不好。","有人等你的成果，也有人只等你平安。","再難的路，也是一步一步走的。"],"這麼晚還在想功課？先放下，去睡。","下雨天，心也會悶，先別逼自己。"],["家裡的事",["家裡的事最難說，你願意說就很好。","吵架是因為在乎，不是不愛。","先照顧好自己，才有力氣照顧家。","有些話，換個時候說會比較好聽。","你不用一個人扛全部。","家人也在學怎麼當家人。","今天回家，可以先說一聲「我回來了」。","有些結，要慢慢解。","心裡委屈，就在這裡放一放。","你為家裡做的，我都知道。"],"晚了，家裡的燈還亮著嗎？早點回去。","雨天記得帶傘，也幫家人帶一把。"],["身體健康",["身體不舒服，要記得去看醫生喔。","好好吃飯，好好睡覺。","不舒服就別硬撐，休息很重要。","你的身體陪你很久了，對它好一點。","擔心的話，說出來會輕一點。","陪著生病的人，你也辛苦了。","今天有沒有喝水？","慢慢走，別趕。","照顧自己，也是一件很勇敢的事。","我在這裡，陪你等消息。"],"夜深了，身體需要休息，早點睡。","天氣濕冷，多穿一件，別著涼。"],["睡不著",["睡不著的話，就聽聽廟埕的風聲。","煩惱不會因為醒著就變少，先閉上眼。","明天的事，明天的你會處理。","數數海浪吧，一下、兩下……","不用急著睡著，躺著也是休息。","把今天的煩惱，先寄放在我這裡。","睡不著的夜，也會過去的。","深呼吸，慢慢吐氣。","想太多的時候，就想想海。","燈我替你留著，你安心休息。"],"這麼晚了。燈我留著，你回去躺一下。","聽雨也是一種休息，讓雨聲陪你睡。"],["有一句話說不出口",["說不出口的話，可以先跟我說。","不急，等你準備好再說。","有時候，寫下來比說出口容易。","那句話放在心裡很久了吧？","說出口不一定要很完美。","對方也許也在等你開口。","不說也沒關係，我懂。","把話放在心裡，也是一種溫柔。","先說給自己聽一次看看。","勇氣不用很多，一點點就夠。"],"晚上的話比較好說，可是先睡一覺再決定。","雨停了，也許就是開口的時候。"],["沒什麼事，只是想來坐坐",["好啊，坐吧，不用說什麼。","有你來坐坐，廟裡就熱鬧一點。","什麼都不做，也是很好的時光。","想來就來，這裡一直都在。","聽，外面有鳥在叫。","坐累了再走，不趕。","你來了，我很高興。","今天的香，聞起來很安靜。","一個人坐坐，心就清了。","下次也來坐坐吧。"],"晚上的廟最安靜，陪我坐一下。","下雨天來坐坐，最舒服了。"]], MZT_SP={"third":"今天來了好幾次了呢。有什麼放不下？慢慢說。","faithful":"你常常來，我都記得你的腳步聲。","newmoon":"今天香客多，大家的心事我都聽著，你的也是。"};
+function mzTD(){ const t=load("mz.mzt",{}); if(t.d!==twDay()){ t.d=twDay(); t.c=0; } t.n=t.n||0; t.r=t.r||{}; return t; }
+HANDLERS.mzTalk=()=>{ if(!bowedAt("mazu")){ toast("先持香向媽祖拜三拜，再跟媽祖說說話",2600); return; }
+  openSheet("mzTalk","🙏 跟媽祖說說話",`<p class="lead">想跟媽祖說什麼呢？選一個就好，不用打字，也不會被記下來。</p><div class="goods">${MZT.map((t,i)=>`<button class="good" data-act="mzSay" data-v="${i}"><span class="name">${t[0]}</span></button>`).join("")}</div>
+  <button class="secondary wide" data-act="mzBack">← 回供桌</button>`); };
+HANDLERS.mzBack=()=>openAltar();
+function mzPick(i){ const T=MZT[i], S=mzTD(); S.c++; S.n++; const r=Math.random(); let line=null;
+  const night=(()=>{ const h=new Date().getHours(); return h>=21||h<5||(typeof _dn!=="undefined"&&_dn.night>.55); })(), wet=/^(rain|storm)$/.test(wxNow()), f=window.MZ_FEST?window.MZ_FEST():null;
+  if(S.c===3) line=MZT_SP.third; else if(S.c===1&&f&&f.big===0&&r<.6) line=MZT_SP.newmoon; else if(S.n>=30&&r<.12) line=MZT_SP.faithful;
+  if(!line&&wet&&Math.random()<.45) line=T[3]; if(!line&&night&&Math.random()<.45) line=T[2];
+  if(!line){ const used=S.r[i]||[]; const pool=T[1].map((_,k)=>k).filter(k=>!used.includes(k)); const k=pool[Math.floor(Math.random()*pool.length)]; used.push(k); while(used.length>5) used.shift(); S.r[i]=used; line=T[1][k]; }
+  save("mz.mzt",S); return line; }
+HANDLERS.mzSay=v=>{ const i=+v; if(!MZT[i]) return; closeSheet(); const line=mzPick(i); try{ statInc("mzTalk"); if(window.MZ_DY) window.MZ_DY("mzTalk",1); }catch(e){}
+  let ov=document.getElementById("mzOv"); if(ov) ov.remove(); ov=document.createElement("div"); ov.id="mzOv";
+  ov.innerHTML=`<style>#mzOv{position:fixed;inset:0;z-index:9000;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 55%,rgba(34,18,6,.86),rgba(6,3,1,.95));opacity:0;transition:opacity 1.2s;font-family:${UI_FONT};padding:24px;text-align:center}
+  #mzOv.on{opacity:1}#mzOv .smk{position:relative;width:120px;height:150px;margin-bottom:8px}#mzOv .smk i{position:absolute;left:50%;bottom:0;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:rgba(235,225,210,.5);filter:blur(5px);animation:mzSmk 4.2s linear infinite}
+  #mzOv .smk i:nth-child(2){animation-delay:1.4s}#mzOv .smk i:nth-child(3){animation-delay:2.8s}#mzOv .stk{position:absolute;left:50%;bottom:-36px;width:3px;height:40px;margin-left:-1.5px;background:linear-gradient(#ff7a2a 0 4px,#7a3a1a 4px)}
+  @keyframes mzSmk{0%{transform:translate(0,0) scale(.6);opacity:0}15%{opacity:.8}50%{transform:translate(-14px,-70px) scale(2.2)}100%{transform:translate(12px,-150px) scale(3.6);opacity:0}}
+  #mzOv .a{color:#e8d8b8;font-size:15px;opacity:0;transition:opacity 1.4s 1.2s;margin:26px 0 14px}#mzOv .b{color:#fff3d6;font-size:21px;font-weight:900;line-height:1.6;max-width:340px;opacity:0;transition:opacity 1.6s 2.8s;text-shadow:0 0 18px rgba(255,190,90,.45)}
+  #mzOv .c{color:#bfae8c;font-size:13px;margin-top:28px;opacity:0;transition:opacity 1s 4.6s}#mzOv.on .a,#mzOv.on .b,#mzOv.on .c{opacity:1}</style>
+  <div class="smk"><i></i><i></i><i></i><div class="stk"></div></div><div class="a">香煙輕輕晃了一下，你心裡好像聽到……</div><div class="b"></div><div class="c">點一下回到廟裡</div>`;
+  ov.querySelector(".b").textContent="「"+line+"」"; document.body.appendChild(ov); requestAnimationFrame(()=>requestAnimationFrame(()=>ov.classList.add("on")));
+  const t0=performance.now(); ov.onclick=()=>{ if(performance.now()-t0<2500) return; ov.style.opacity="0"; setTimeout(()=>ov.remove(),900); }; try{ sfx.bell(); }catch(e){} };
 HANDLERS.offer=k=>{ if(!(bag.items[k]>0)) return; bag.items[k]--; saveBag(); const used=new Set(myOffers.map(o=>o[1])); let slot=Math.floor(Math.random()*12); for(let i=0;i<12&&used.has(slot);i++) slot=(slot+1)%12;
   myOffers.push([k,slot]); if(myOffers.length>4){ myOffers.shift(); } rebuildMyOffers(); markDirty(); meAv.burnT=0; flow().offered=1; flow().bought=1; saveBag(); toast(`${GOOD_BY[k].name}已擺上供桌`); openAltar(); };
 HANDLERS.clearOffer=()=>{ myOffers=[]; rebuildMyOffers(); markDirty(); meAv.burnT=0; flow().cleared=1; saveBag(); renderWallet(); toast("供品收好了，最後一步：到廟埕金爐燒化金紙",3200); openAltar(); };
@@ -6926,7 +6953,7 @@ function openLot(step,msg){ if(step==="ask"&&!msg&&(jiaoBusy||jiaoCam.on)){ toas
 HANDLERS.lotAsk=()=>{ jiaoGod="媽祖"; doThrow(res=>{ if(sheetKind!=="lot") return; if(res==="sheng") openLot("draw"); else openLot("ask",`<div class="result"><span class="big" style="color:${RESULT[res].c}">${RESULT[res].t}</span><p>${RESULT[res].d.replace("媽祖",jiaoGod)}。重新稟報後再請示一次。</p></div>`); },true); };
 HANDLERS.lotDraw=()=>{ if(jiaoBusy) return; jiaoBusy=true; sfx.rattle(); shakeT=1.1; setTimeout(()=>{ jiaoBusy=false; lotN=1+Math.floor(Math.random()*60); popStick(); toast(`抽到第${CN_NUM(lotN)}籤`); if(sheetKind==="lot") openLot("confirm"); },1150); };
 HANDLERS.lotConfirm=()=>{ jiaoGod="媽祖"; doThrow(res=>{ if(sheetKind!=="lot") return; if(res==="sheng"){ openPoem(lotN,false); } else openLot("draw"); if(res!=="sheng") toast(`${RESULT[res].t}，不是這支籤，請重新抽`,3000); },true); };
-function openPoem(n,fromBag){ const p=POEMS[n-1]; openSheet("poem",`第${CN_NUM(n)}籤`,`${fromBag?"":stepsBar(3)}<div class="poem" role="img" aria-label="第${CN_NUM(n)}籤 ${p.gz}：${p.lines.join("，")}"><div class="no">${vcol("六十甲子籤　第"+CN_NUM(n)+"籤　"+p.gz)}</div><div class="lines">${p.lines.map(l=>`<div class="col">${vcol(l)}</div>`).join("")}</div></div>
+function openPoem(n,fromBag){ if(!fromBag) try{ window.MZ_DY("lot",1,CN_NUM(n)); }catch(e){} const p=POEMS[n-1]; openSheet("poem",`第${CN_NUM(n)}籤`,`${fromBag?"":stepsBar(3)}<div class="poem" role="img" aria-label="第${CN_NUM(n)}籤 ${p.gz}：${p.lines.join("，")}"><div class="no">${vcol("六十甲子籤　第"+CN_NUM(n)+"籤　"+p.gz)}</div><div class="lines">${p.lines.map(l=>`<div class="col">${vcol(l)}</div>`).join("")}</div></div>
   <p class="note">${fromBag?"":"籤詩已自動收進背包。"}想知道白話意思和功名、婚姻、求財等籤解，請到解籤處。結果僅供參考，請以自身判斷為準。</p><button class="primary" data-act="goJq" data-v="${n}">去解籤</button>`);
   if(!fromBag){ poemAlign(); bag.poems.push(n); bag.poemT.push(Date.now()); try{ DQ.ev("lot"); }catch(e){} if(bag.poems.length>30){ bag.poems.shift(); bag.poemT.shift(); } saveBag(); toast("籤詩已自動收進背包",2600); } }
 let pendingJq=0;
@@ -9957,7 +9984,7 @@ function innTick(dt){ const me=meAv; if(!me) return; INN.t=(INN.t||0)+dt;
   { bag.gd=bag.gd||{}; const si0=(me.gy||0)>2.3?innSuiteAt(me.pos.x,me.pos.y):-1, inRoom=si0>=0&&me.pos.x-INN.DX>INN.suites[si0].xa+.3;
     if(inRoom&&!bag.gd.roomKey&&!me.sp&&!INN.kicked){ INN.kicked=1; const S=INN.suites[si0]; me.pos.set(INN.DX+(S.e?42.8:29.8),S.dz); me.target.copy(me.pos); me.path=[]; toast("要先到一樓櫃台買房卡（一次 100 平安幣）才能進套房喔",3200); setTimeout(()=>{ INN.kicked=0; },1500); }
     if(inRoom) INN.wasIn=1; else if(INN.wasIn){ INN.wasIn=0; if(bag.gd.roomKey&&!me.sp){ bag.gd.roomKey=0; saveBag(); toast("退房了，歡迎再來",1800); } }
-    const onFuton=me.seat>=0&&SEATS[me.seat]&&SEATS[me.seat].kind==="futon"; if(onFuton) INN.slept=1; else if(INN.slept){ INN.slept=0; if(bag.gd.bedding&&!me.sp){ bag.gd.bedding=0; saveBag(); toast("床具還給櫃台了",1600); } } }
+    const onFuton=me.seat>=0&&SEATS[me.seat]&&SEATS[me.seat].kind==="futon"; if(onFuton&&(me.kneel||0)>.6){ const nw=performance.now(); if(!INN.sl0) INN.sl0=nw; else if(!INN.slDy&&nw-INN.sl0>10000){ INN.slDy=1; try{ dyShow(); }catch(e){ console.warn("dream",e); } } } else { INN.sl0=0; INN.slDy=0; } if(onFuton) INN.slept=1; else if(INN.slept){ INN.slept=0; if(bag.gd.bedding&&!me.sp){ bag.gd.bedding=0; saveBag(); toast("床具還給櫃台了",1600); } } }
   const si=(me.gy||0)>2.3?innSuiteAt(me.pos.x,me.pos.y):-1; if(INN.lock&&si!==INN.lock-1){ INN.lock=0; markDirty(); } if(INN.lockBtn){ const show=si>=0&&me.pos.x-INN.DX>INN.suites[si].xa+.3; INN.lockBtn.hidden=!show; if(show) INN.lockBtn.textContent=INN.lock===si+1?"🔓 開門":"🔒 鎖門"; }
   { const ppl=[me]; if(typeof remotes!=="undefined") remotes.forEach(a=>ppl.push(a)); npcs.forEach(a=>{ if((a.gy||0)>2.3) ppl.push(a); }); /* doors are shut; one slides open as someone comes up to it (never while it is locked) */
     for(const S of INN.suites){ const lk=!!innLockedBy(S.i), dx=INN.DX+S.xa, near=!lk&&ppl.some(a=>a&&a.root&&a.root.visible&&(a.gy||0)>2.3&&Math.abs(a.pos.x-dx)<1.7&&Math.abs(a.pos.y-S.dz)<1.3); const goal=near?S.dz+1.1:S.dz; S.door.position.z+=(goal-S.door.position.z)*Math.min(1,dt*7); } }
@@ -10065,6 +10092,54 @@ function innCutTick(){ const me=meAv; if(!me) return; const x=me.pos.x-INN.DX, z
     let best=-1, bd=1e9; for(const o of INN.futon){ const S=SEATS[o.i]; if(seatTakenByPeer(o.i)||npcs.some(n=>n.seat===o.i)) continue; const d=Math.hypot(S.x-meAv.pos.x,S.y-meAv.pos.y); if(d<bd){ bd=d; best=o.i; } }
     if(best<0){ toast("通鋪睡滿了",2000); return; } trySit(best); };
   document.body.appendChild(b); INN.sleepBtn=b; }
+/* ---- 通鋪的夢＋今天的日記 (11/24 主委「做夢日記也可以先」): sleeping on a futon gives no 精力, so lying there 10 s ends the day
+   instead: the screen dims to a dream (picked from what you did today), a tap turns it into a page of today's diary written from a small
+   day log (mz.dy), ending 「今天也辛苦了。」. Nothing is given. The dream comes once a day; after that sleeping just shows the diary. ---- */
+const DYK={cvsWork:"work",bugCatch:"bug",digN:"dig",cook:"cook",catDig:"cat",chute:"chute",npcGift:"gift",b_bowBtn:"bow",clawWin:"claw",phShot:"photo",bk:"bike",dish:"dish"};
+function dyGet(){ let o=load("mz.dy",null); if(!o||o.d!==twDay()) o={d:twDay(),c:{}}; o.c=o.c||{}; return o; }
+window.MZ_DY=(k,n,x)=>{ try{ const o=dyGet(); k=DYK[k]||k; o.c[k]=(o.c[k]||0)+(n||1);
+  if(x){ if(k==="fish"){ if(!o.fish||x.r>=o.fish.r) o.fish=x; } else if(k==="er") o.er=x; else if(k==="lot") o.lot=x; else if(k==="npc") o.npc=x; }
+  save("mz.dy",o); }catch(e){} };
+const DREAMS={
+  fish:["你夢到自己是一條吳郭魚，在大河裡游。浮標在上面晃啊晃，晃得很好看。你決定今天不咬。","你夢到釣竿一甩，拉上來的是一整串星星，亮晶晶地掛在魚鉤上。"],
+  bug:["你夢到一隻好大的獨角仙停在你肩膀上，跟你說：「明天換我抓你。」"],
+  dig:["你夢到一鏟挖下去，挖出一個會唱歌的陶甕，唱的是廟口那首老歌。"],
+  work:["你夢到超商的自動門一直開開關關，每次都有人說「歡迎光臨」——仔細一聽，原來是你自己。"],
+  chute:["你夢到不用滑翔傘也能飛，從天后山一路飛過整個小鎮，屋頂上的貓都抬頭看你。"],
+  bike:["你夢到腳踏車自己騎上了天后山，一次都沒有停下來喘氣。"],
+  cook:["你夢到鍋子裡的菜自己翻面，還小聲跟你說：「火小一點啦。」"],
+  cat:["你夢到小鎮的貓咪排成一排，一隻一隻跟你點頭，好像在開會。"],
+  bow:["你夢到廟埕的燈籠全部飛起來，排成一條路通到海上。路的盡頭，有人在跟你招手。","你夢到香煙飄得好高好高，變成一朵雲，雲上有人對你笑了一下。"],
+  any:["你夢到冰店出了新口味，叫做「今天也很好」，吃起來甜甜的，又有一點點鹹。","你夢到下了一場好溫柔的雨，每一滴落下來，都是一聲小小的鈴響。","你夢到自己坐在海邊數浪，一下、兩下……數到一百的時候，天就亮了。","你夢到一艘小舢舨靠在碼頭，船上沒有人，只放著一盞還亮著的燈。"]};
+function dyDream(o){ const c=o.c, tags=Object.keys(DREAMS).filter(k=>k!=="any"&&(c[k]||(k==="bow"&&(c.mzTalk||c.lot))||(k==="fish"&&o.fish)));
+  const k=tags.length&&Math.random()<.75?tags[Math.floor(Math.random()*tags.length)]:"any", L=DREAMS[k]; return L[Math.floor(Math.random()*L.length)]; }
+function dyLines(o){ const c=o.c, L=[], N=n=>n>1?`${n} `:"", now=new Date();
+  const wx={clear:"晴",cloudy:"陰",windy:"風很大",rain:"下雨",storm:"雷雨"}[wxNow()]||"晴";
+  const head=`${now.getMonth()+1} 月 ${now.getDate()} 日，${wx}。`;
+  if(c.work) L.push(`去超商打工了 ${c.work} 次。`);
+  if(o.fish) L.push(c.fish>1?`釣到 ${c.fish} 條魚，最得意的是一條${o.fish.n}。`:`釣到一條${o.fish.n}。`);
+  if(c.bug) L.push(`抓到 ${c.bug} 隻蟲。`); if(c.dig) L.push(`挖寶挖了 ${c.dig} 次。`); if(c.cat) L.push(`貓咪幫忙挖了 ${c.cat} 次寶。`);
+  if(c.cook) L.push(`回家煮了 ${c.cook} 道菜。`); if(c.er) L.push(o.er?`${o.er}。`:"幫鎮上的店跑了腿。");
+  if(c.gift) L.push(`送了 ${c.gift} 份禮物給鎮上的人。`); if(c.chute) L.push("從天后山坐滑翔傘飛下來。"); if(c.bike) L.push("騎了腳踏車。");
+  if(c.claw) L.push(`夾娃娃夾中了 ${c.claw} 次。`); if(c.photo) L.push("去照相館拍了照。");
+  if(o.lot) L.push(`去廟裡拜拜，抽到第${o.lot}籤。`); else if(c.bow) L.push("去廟裡拜拜。"); if(c.mzTalk) L.push("跟媽祖說了一點心事。");
+  if(!L.length) L.push("今天沒做什麼，只是來走走。這樣也很好。");
+  if(o.npc) L.push(`${o.npc[0]}說：「${o.npc[1]}」`);
+  return [head,...L,"今天也辛苦了。"]; }
+function dyShow(){ const o=dyGet(), first=!o.dr; let ov=document.getElementById("dyOv"); if(ov) ov.remove(); ov=document.createElement("div"); ov.id="dyOv";
+  ov.innerHTML=`<style>#dyOv{position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(8,10,24,.95);opacity:0;transition:opacity 1.6s;font-family:${UI_FONT};padding:22px}#dyOv.on{opacity:1}
+  #dyOv .dm{color:#dfe4ff;text-align:center;max-width:340px}#dyOv .dm .z{font-size:15px;color:#9aa6d8;margin-bottom:16px}#dyOv .dm .t{font-size:19px;font-weight:800;line-height:1.75;opacity:0;transition:opacity 1.6s 1.4s}#dyOv.on .dm .t{opacity:1}
+  #dyOv .pg{display:none;background:#f7efdc;color:#4a3a24;border-radius:6px;padding:22px 22px 16px;max-width:340px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.5);background-image:repeating-linear-gradient(transparent 0 29px,rgba(150,120,80,.18) 29px 30px);line-height:30px;font-size:16px}
+  #dyOv .pg h3{margin:0 0 4px;font-size:15px;color:#8a6a3a}#dyOv .pg p{margin:0}#dyOv .pg .end{font-weight:900;color:#a0522d}#dyOv .pg .nt{font-size:12px;color:#8a7a5a;margin-top:10px;line-height:1.5}#dyOv .tap{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 26px);left:0;right:0;text-align:center;color:#8a90b8;font-size:13px}
+  #dyOv.pgOn{background:rgba(20,14,6,.82)}#dyOv.pgOn .dm{display:none}#dyOv.pgOn .pg{display:block}</style>
+  <div class="dm"><div class="z">💤 你做了一個夢……</div><div class="t"></div></div><div class="pg"><h3>📖 今天的日記</h3></div><div class="tap">點一下繼續</div>`;
+  if(first){ ov.querySelector(".dm .t").textContent=dyDream(o); o.dr=1; save("mz.dy",o); } else ov.classList.add("pgOn");
+  const pg=ov.querySelector(".pg"), ls=dyLines(o); ls.forEach((t,i)=>{ const e=document.createElement("p"); e.textContent=t; if(i===ls.length-1) e.className="end"; pg.appendChild(e); });
+  const nt=document.createElement("div"); nt.className="nt"; nt.textContent="睡覺不會恢復精力，明天 0:00 就會補滿。"; pg.appendChild(nt);
+  document.body.appendChild(ov); requestAnimationFrame(()=>requestAnimationFrame(()=>ov.classList.add("on"))); let t0=performance.now();
+  ov.onclick=()=>{ if(performance.now()-t0<1800) return; if(!ov.classList.contains("pgOn")){ ov.classList.add("pgOn"); t0=performance.now(); return; } ov.style.opacity="0"; setTimeout(()=>ov.remove(),900); };
+  try{ statInc("dream"); }catch(e){} }
+HANDLERS.dyShow=dyShow;
 function innSleepBtnTick(){ const me=meAv, b=INN.sleepBtn; if(!b) return; const lx=me.pos.x-INN.DX, show=(me.gy||0)<1&&me.seat<0&&lx>41.3&&lx<INN.X1&&me.pos.y>-27.3&&me.pos.y<INN.Z1; if(b.hidden===show) b.hidden=!show; }
 
 
@@ -11610,7 +11685,7 @@ const FEST=[[1,1,"春節","新年第一天，到廟裡走春"],[1,9,"天公生",
 const festOf=dn=>{ const l=dn===dayN()&&D.fake?D.fake:lunarOf(dn); if(!l) return null; const f=!l.leap&&FEST.find(x=>x[0]===l.m&&x[1]===l.d);
   if(f) return {n:f[2],d:f[3],big:f[2]==="媽祖誕辰"?2:1}; if(!l.leap&&l.m===12){ const t=lunarOf(dn+1); if(t&&t.m===1&&t.d===1) return {n:"除夕",d:"圍爐守歲，來跟媽祖說聲謝謝",big:1}; }
   if(l.d===1) return {n:"初一",d:"每月初一，到廟裡上香",big:0}; if(l.d===15) return {n:"十五",d:"每月十五，到廟裡上香",big:0}; return null; };
-const fest=()=>festOf(dayN());
+const fest=()=>festOf(dayN()); window.MZ_FEST=fest;
 const mult=()=>fest()?2:1;
 const FREW=[{c:300,g:1},{c:888,g:2},{c:2323,g:3}];
 const QF=["bai",1,"🧧 節日紅包","今天完成一次參拜（燒化金紙圓滿，一鍵參拜也算）就能領",0];
@@ -14612,7 +14687,7 @@ function startFight(){ const f=F.fish, R=F.R; F.tn=.35; F.prog=F.good?.25:.12; F
 function fightOff(){ F.ov.querySelectorAll(".lf-prog,.lf-bar").forEach(e=>e.remove()); F.ov.querySelector("#lfB").textContent="拉竿！"; }
 function endFish(){ if(!F) return; const o=F; F=null; [o.bob,o.sh,o.ring,o.line].forEach(m=>{ scene.remove(m); m.traverse(q=>{ if(q.isMesh){ q.geometry.dispose(); q.material.dispose(); } }); }); if(o.rod.parent) o.rod.parent.remove(o.rod); rodDispose(o.rod); o.ov.remove(); meAv.faceGoal=null; }
 function caught(){ try{ if(F.fish&&F.fish.id==="springkoi"){ LF().koiD=today(); statInc("koi"); } }catch(e){} try{ spotUse(F.w.w.k,F.w.x,F.w.z); catchFx(F.bob.position.clone(),F.fish); }catch(e){ console.warn("fx",e); } const f=F.fish, d=LF(), kz=1.6/(1+((F.R?F.R.pow:1)-1)*1.6+(F.bm?.25:0)), size=Math.round((f.sz[0]+(f.sz[1]-f.sz[0])*Math.pow(Math.random(),kz))*10)/10; /* (a strong rod / the right bait: bigger fish, worth more) */ const e=d.fish[f.id]||(d.fish[f.id]=[0,0,Date.now()]); const first=!e[0]; e[0]++; e[1]=Math.max(e[1],size);
-  d.inv.push([f.id,size]); fishDay().n++; save(); try{ rankPost("fish",fishDay().n); }catch(e){} /* (11/21: the first-time present for a rare or legendary fish now comes from 阿財伯 when you show it to him — fishFirst) */ try{ statInc("lfFish"); statInc("lfR"+f.r); }catch(e2){}
+  d.inv.push([f.id,size]); fishDay().n++; save(); try{ rankPost("fish",fishDay().n); }catch(e){} /* (11/21: the first-time present for a rare or legendary fish now comes from 阿財伯 when you show it to him — fishFirst) */ try{ statInc("lfFish"); statInc("lfR"+f.r); window.MZ_DY("fish",1,{n:f.n,r:f.r}); }catch(e2){}
   /* the fish leaps out of the water to your hand and hangs there, thrashing */
   const hold=fishMesh(f), len=Math.max(.08,size/100) /* (11/21 主委「魚也是 鯊魚應該要很大」: the fish in your hand is its real length — a 3 m shark is 3 m; only the tiniest are shown at 8 cm) */, from=F.bob.position.clone(); hold.scale.setScalar(len); scene.add(hold); HELD={g:hold,t:0,from,len};
   try{ /* a little fanfare, two seconds: a run up, three bright notes, a held chord */ [[392,0,.12],[523,.11,.12],[659,.22,.12],[784,.33,.2],[784,.6,.1],[880,.72,.1],[1047,.86,.9]].forEach(([q,at,du])=>tone(q,du,.06,"triangle",at)); [[523,.86],[659,.86],[1319,1.1]].forEach(([q,at])=>tone(q,.85,.03,"sine",at)); [[196,0],[262,.33],[262,.86]].forEach(([q,at])=>tone(q,.3,.045,"sine",at)); if(f.r>=3) [1568,2093].forEach((q,k)=>tone(q,.5,.03,"sine",1.2+k*.15)); }catch(e2){}
@@ -14970,7 +15045,7 @@ function tipFor(n){ const r=FISH.filter(f=>f.r>=2); const f=r[(Math.random()*r.l
   if(n.tip==="salon") return "西側巷弄的理髮廳有新的精緻髮型，美容院可以換眼睛、鼻子、嘴巴。";
   if(n.tip==="games") return "小吃廣場有擠冰淇淋跟中藥對對碰，玩得好會有平安幣喔。"; return fishTip; }
 const GIFTS={10:[300,0,"n"],30:[0,1,"n"],60:[1000,2,"n"]}, GF={10:1,30:2,60:4}; /* (which return gifts were given: one bit each) */
-function npcSheet(n,line){ const R=NR(n.id), t=tier(R.a); openSheet("lfNpc","💬 "+n.n,`<p class="note" style="margin:0 0 6px">${hearts(R.a)}　好感 ${R.a}</p><p class="lead">「${line}」</p>
+function npcSheet(n,line){ try{ if(line&&String(line).length<=40) window.MZ_DY("npc",1,[n.n,String(line)]); }catch(e){} const R=NR(n.id), t=tier(R.a); openSheet("lfNpc","💬 "+n.n,`<p class="note" style="margin:0 0 6px">${hearts(R.a)}　好感 ${R.a}</p><p class="lead">「${line}」</p>
    <div class="row"><button class="primary" data-act="lfNpcTalk" data-v="${n.id}">聊聊天</button><button class="secondary" data-act="lfNpcGift" data-v="${n.id}">送禮物</button>${t>=2?`<button class="secondary" data-act="lfNpcTip" data-v="${n.id}">打聽消息</button>`:""}${n.id==="doc"?`<button class="secondary" data-act="lfDust">✨ 用星砂換星空家具</button>`:""}${n.id==="pan"?`<button class="secondary" data-act="lfBugCol">🔬 賣昆蟲・化石</button>`:""}</div>${L.nqBox?L.nqBox(n.id):""}`); }
 /* 廟裡的對話 (11/22 主委「NPC 來廟裡為什麼不能對話 他們來廟裡要能對話 而且要說廟裡相關的話題」) */
 const TEMPLE_L={tu:["我每個月初一十五都來跟媽祖說說話，種田的事都靠她保佑。","拜完記得去金爐燒金紙，年輕人常常忘記。","以前這座廟比現在小多了，是大家一磚一瓦蓋起來的。"],
@@ -15387,7 +15462,7 @@ L.testPanel=()=>{ if(!me.sp) return; const b=(act,v,t,cls)=>`<button class="${cl
    ${sec("小遊戲（直接玩）",[["tw:bfast","🍔 疊漢堡"],["tw:ice","🍦 冰淇淋"],["tw:herb","🌿 中藥對對碰"],["tw:congee","🥣 深夜出餐"],["tw:drink","🧋 調飲料"],["tw:book","📚 推書櫃"],["tw:flower","💐 插花"]].map(([k,n])=>b("tmGame",k,n)).join("")+b("tmDish",1,"🫧 洗碗")+b("tmCook",1,"🍳 廚房切菜")+b("tmBq",1,"💐 花束打工")+b("tmIceDrink",1,"🧋 飲料（一定加冰）"))}
    ${sec("釣魚・溫室",b("tmRods",1,"🎣 全部釣竿")+b("tmBait",1,"🪱 釣餌各 10 份")+b("tmBait",0,"🪱 清空釣餌")+b("tmFish",1,"🐟 看下一隻魚模型")+b("tmDexAll",1,"📖 圖鑑全部點亮")+b("tmGarden",1,"🌱 花圃放滿作物"))}
    ${sec("任務",b("tmRst","god","↩️ 重置女神泉")+b("tmRst","ph","↩️ 重置照相館")+b("tmRst","gh","↩️ 重置溫室格數")+b("tmFin","god","⛲ 女神泉完成")+b("tmFin","ph","📷 照相館完成＋片尾")+b("tmCzEnd",8,"🥣 一粥七天直接結算")+b("tmStp","fill","📮 集章冊蓋到剩一格")+b("tmStp","rst","↩️ 重置集章冊"))}
-   ${sec("腳踏車",b("tmBike","on","🚲 給我腳踏車並騎上")+b("tmBike","hill","🏔️ 到山腳騎上天后山")+b("tmBike","quest","📦 試小潘的請託")+b("tmBike","off","↩️ 收回腳踏車"))}    ${sec("精力",b("tmEnLow",40,"⚡ 精力設成 40")+b("tmEnLow",0,"⚡ 精力設成 0")+b("tmEnLow",100,"⚡ 精力補滿"))}
+   ${sec("做夢＋日記・媽祖心事",b("tmDy","dream","💤 現在做夢＋看日記")+b("tmDy","diary","📖 只看今天的日記")+b("tmDy","mz","🙏 跟媽祖說說話（免參拜）"))}${sec("腳踏車",b("tmBike","on","🚲 給我腳踏車並騎上")+b("tmBike","hill","🏔️ 到山腳騎上天后山")+b("tmBike","quest","📦 試小潘的請託")+b("tmBike","off","↩️ 收回腳踏車"))}    ${sec("精力",b("tmEnLow",40,"⚡ 精力設成 40")+b("tmEnLow",0,"⚡ 精力設成 0")+b("tmEnLow",100,"⚡ 精力補滿"))}
    ${sec("造型・美容院",b("tmLookOpen",1,"🪞 換造型")+b("tmSalon","h","💇 美容院：髮型")+b("tmSalon","e","👁 美容院：眼睛")+b("tmSalon","m","👄 美容院：嘴巴")+b("tmFaceFit","f_eyes","📐 造型定位"))}
    ${sec("活動・特效",b("tmRain",1,"🧧 撒紅包")+b("tmMet",1,"🌠 流星")+b("lfChuteGo",1,"🪂 跳傘"))}
    ${sec("編輯工具",b("mapEdT",1,"🗺️ 地圖編輯","primary")+b("wTune",1,"💧 水面調整")+b("posOpen",1,"📍 座標定位"))}
@@ -15447,6 +15522,7 @@ HANDLERS.tmFin=v=>{ closeSheet(); if(v==="god"){ const q=GQ(); q.s=GQ_N-1; q.d=-
   else if(v==="ph"){ const P=PH(); P.cam=1; P.end=0; save(); try{ camBtn(); }catch(e){} phFinal(); } }; /* (11/22 主委「新增任務完成測試 女神泉跟相機都要」) */
 /* (11/24 主委「幫我增加主委腳踏車測試模式」) */
 HANDLERS.tmStp=v=>{ closeSheet(); const S=STP(); if(v==="rst"){ S.m=0; S.done=0; bag.clo=(bag.clo||0)&~(1<<(27-STYLEX0)); if(bag.ttlX===50) bag.ttlX=0; save(); try{ DQ.relabel(); }catch(e){} toast("↩️ 集章冊清空了",2000); return; } S.m=(1<<MSPOT.length)-1-(1<<5); S.done=0; save(); meAv.pos.set(MSPOT[5][0]+10,MSPOT[5][1]); meAv.target.set(MSPOT[5][0]+10,MSPOT[5][1]); meAv.path=[]; toast("📮 蓋好 11 格了，往前走到女神泉蓋最後一格",3200); };
+HANDLERS.tmDy=v=>{ closeSheet(); if(v==="mz"){ bag.bowed=bag.bowed||{}; bag.bowed.mazu=1; HANDLERS.mzTalk(); return; } const o=load("mz.dy",{}); if(o.d===twDay()){ o.dr=v==="diary"?1:0; save("mz.dy",o); } else if(v==="diary"){ save("mz.dy",{d:twDay(),c:{},dr:1}); } dyShow(); };
 HANDLERS.tmBike=v=>{ closeSheet(); const d=LF();
   if(v==="off"){ try{ bikeSet(false); }catch(e){} d.bike=0; save(); bikeChip(); toast("↩️ 腳踏車收回了（可以再試小潘的請託）",2600); return; }
   if(v==="quest"){ try{ bikeSet(false); }catch(e){} d.bike=0; BUGS.slice(0,5).forEach(q=>giAdd("bug:"+q[0],1)); giAdd("dig:ammo",1); save(); const go=()=>{ try{ HANDLERS.lfBugCol(1); }catch(e){ console.warn(e); } }; if(TOWNX&&TOWNX.on) go(); else { meAv.pos.set(28,-62); meAv.target.set(28,-62); meAv.path=[]; setTimeout(go,1500); } toast("📦 給了 5 種昆蟲＋1 件化石，收藏家的單子最下面有「小潘的請託」",3200); return; }
@@ -16444,7 +16520,7 @@ function erSheet(er,cont){ const [kind,e]=er, L2=kind==="from"?e.ask:e.thx; let 
   HANDLERS.lfErrNext=()=>{ i++; step(); };
   HANDLERS.lfErrNo=()=>{ closeSheet(); cont(); };
   HANDLERS.lfErrYes=()=>{ ERD()[e.id]=1; save(); toast(`📦 拿到${e.it}，送去${erNm(e.to)}吧`,3000); closeSheet(); cont(); };
-  HANDLERS.lfErrDone=()=>{ ERD()[e.id]=2; bag.coins+=e.pay; [e.from,e.to].forEach(k=>{ try{ const A=KA(k); A.a=Math.min(100,A.a+5); const R=NR("k_"+k.slice(3)+"_0"); R.a=Math.min(100,R.a+5); }catch(_){ } }); save(); try{ profSave(true); chaChing(); }catch(_){ } toast(`✅ 跑腿完成！平安幣 +${e.pay}・兩家店的好感 +5`,3200); closeSheet(); cont(); };
+  HANDLERS.lfErrDone=()=>{ ERD()[e.id]=2; try{ window.MZ_DY("er",1,`幫${erNm(e.from)}把${e.it}送到${erNm(e.to)}`); }catch(_){ } bag.coins+=e.pay; [e.from,e.to].forEach(k=>{ try{ const A=KA(k); A.a=Math.min(100,A.a+5); const R=NR("k_"+k.slice(3)+"_0"); R.a=Math.min(100,R.a+5); }catch(_){ } }); save(); try{ profSave(true); chaChing(); }catch(_){ } toast(`✅ 跑腿完成！平安幣 +${e.pay}・兩家店的好感 +5`,3200); closeSheet(); cont(); };
   step(); }
 L.er=()=>JSON.stringify(ERD());
 
