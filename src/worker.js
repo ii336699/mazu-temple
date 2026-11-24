@@ -708,7 +708,7 @@ export class Lobby extends DurableObject {
           await this.ctx.storage.put("F0:" + uid, first); P.f0 = { at: first.at || 0, c: coinsOf(first.full) }; } const last = H[H.length - 1]; if (why !== "force" && last && now - last.saved < 30 * 60e3) return;
         const k = (P.fk | 0) % 12; await this.ctx.storage.put("FH:" + uid + ":" + k, F); P.fh = H.filter(h => h.k !== k).concat([{ at: F.at || 0, c: coinsOf(F.full), k, saved: now, why: why || "" }]).slice(-12); P.fk = k + 1; };
       if (req.method === "GET") { const sid = crypto.randomUUID().slice(0, 12); P.sid = sid; await this.ctx.storage.put("P:" + uid, P); const F = await this.ctx.storage.get("F:" + uid); return json({ ok: true, sid, full: F ? F.full : null, at: F ? F.at : 0, pend: F && F.pend || "" }); }
-      let b = {}; let raw = ""; try { raw = await req.text(); if (raw.length > 120000) return json({ ok: false, big: true }); b = JSON.parse(raw); } catch { return json({ ok: false }); }
+      let b = {}; let raw = ""; try { raw = await req.text(); if (raw.length > 1600000) return json({ ok: false, big: true }); /* (11/24: was 120 KB — a full bag stopped saving; this store holds up to 2 MB a value) */ b = JSON.parse(raw); } catch { return json({ ok: false }); }
       if (!b.sid || b.sid !== P.sid) return json({ ok: false, other: true });
       const full = b.full; if (!full || typeof full !== "object" || !full.bag || !full.me) return json({ ok: false });
       const F = await this.ctx.storage.get("F:" + uid);
