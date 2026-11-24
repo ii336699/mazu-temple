@@ -838,7 +838,7 @@ const SKIN=["#f4d4b6","#e3b18c","#c68c63","#8e5b3c"];
 const HAIRS=["光頭", "01 粉色捲雙馬尾", "02 金色編髮丸子", "03 藍色雙丸子", "04 紫色花飾高髻", "05 橘色貓耳短鮑伯", "06 綠色精靈短髮", "07 紅色長波浪", "08 彩虹漸層高馬尾", "09 棕色雙麻花辮", "10 灰金半束編髮", "11 黑色長馬尾", "12 薄荷綠半束丸子", "13 灰金層次刺髮", "14 栗棕波浪鮑伯", "15 深藍凌亂馬尾", "16 薰衣草側削髮", "17 橘色凌亂高髻", "18 銀色中分瀏海", "19 紅色螺旋捲", "20 綠色飛鷹頭", "21 金色編辮莫霍克", "22 棕色後梳丸子", "23 黑色層次長髮", "24 薄荷綠短飛機頭","✂️ 凌亂刺蝟頭","✂️ 中分捲翹","✂️ 狂野碎髮","✂️ 層次亂翹","✂️ 斜瀏海刺髮","✂️ 鍋蓋頭","✂️ 旁分油頭","✂️ 清爽短刺","✂️ 中分小馬尾","✂️ 飛揚刺髮","✂️ 齊瀏海鮑伯","✂️ 外翹短髮","✂️ 中分內彎","✂️ 雙丸子捲","✂️ 旁分鮑伯","✂️ 空氣瀏海短髮","✂️ 齊肩直髮","✂️ 俏麗短髮","✂️ 側馬尾","✂️ 雙麻花辮","✂️ 中分波浪"]; /* (11/15: 25–45 are the chair's hair models — public/hair2.glb, 男 25–34, 女 35–45; any hair colour) */ const HAIR2_AT=25, HAIR2_M=10, HAIR2_N=21;
 const HAIRC=["#1c1512", "#4b2d1d", "#8d8882", "#6e2b2b", "#d9b45a", "#e8e4dc", "#e89ab4", "#3f6fb5", "#4c9a6a", "#7b56b3", "#e8c68d", "#ef9a54", "#bd4f49", "#8bd0bb", "#aaa297", "#465779", "#bca9ce", "#dad9e3", "#78503e", "#916b53"];
 const HAIR_PRESET_COLOR=[0,6,10,7,9,11,8,12,13,1,14,0,13,10,18,15,16,11,17,12,8,10,19,0,13,1,0,19,18,0,4,10,6,11,16,1,0,18,0,19,0,1,18,0,4, 0,1,18,6,1,19,0,18,11,1,10];
-const STYLES=["唐衫","潮流帽T寬褲","陣頭背心","T恤","西裝","運動外套","道袍","旗袍","吊帶褲","夏日短褲T恤","披風","圍裙","盔甲","學院開襟衫","花瓣洋裝","軟萌連帽衫","主委背心","公主蓬裙","宮廷漢服","夏日浴衣","海軍水手服","星空魔法袍","醒獅舞衣","西部牛仔","太空人裝","紳士燕尾服","偶像打歌服"];
+const STYLES=["唐衫","潮流帽T寬褲","陣頭背心","T恤","西裝","運動外套","道袍","旗袍","吊帶褲","夏日短褲T恤","披風","圍裙","盔甲","學院開襟衫","花瓣洋裝","軟萌連帽衫","主委背心","公主蓬裙","宮廷漢服","夏日浴衣","海軍水手服","星空魔法袍","醒獅舞衣","西部牛仔","太空人裝","紳士燕尾服","偶像打歌服","小鎮旅人裝"]; /* (27 小鎮旅人裝: the 集章冊 reward, 11/24 — not sold) */
 const ROBE_STYLES=new Set([6,7,14]);
 const OUTFIT=["#2b2521","#6c4b2f","#ebe1ce","#a8261d","#2f507b","#3f6c50","#d9aa3d","#d990a2","#4f86c9"];
 const ACCENT=["#d9aa3d","#a8261d","#f2ece0","#3f6c50","#2f507b","#1c1512"];
@@ -3553,7 +3553,9 @@ const STYLEX=[
   {n:"太空人裝",price:15000,d:"白色太空衣，胸前控制面板、任務臂章、維生背包和頸環。"},
   {n:"紳士燕尾服",price:12000,d:"黑色燕尾服配緞面翻領、銀灰背心、白領結和長燕尾。"},
   {n:"偶像打歌服",price:14000,d:"亮片外套配金色流蘇肩章、斜背綬帶和白色長褲。"},
+  {n:"小鎮旅人裝",price:0,reward:1,d:"墨綠短斗篷鑲金邊、敞襟背心配紅領巾，斜背皮帶上掛著蓋滿章的小鎮章本。集章冊蓋滿的紀念，買不到。"},
 ];
+const STYLEX_SHOP=STYLEX.filter(S=>!S.reward).length; /* (the 服飾店 shows only these — the rest are rewards) */
 const STYLEX0=18; /* STYLES index of the first one */
 const isStyleX=v=>v>=STYLEX0&&v<STYLEX0+STYLEX.length;
 const STYX_TEX={};
@@ -3568,8 +3570,9 @@ function styxTex(k){ if(STYX_TEX[k]) return STYX_TEX[k]; const R=(a,b)=>a+Math.r
   else if(k==="cloud") t=cvs(256,256,(x,w,h)=>{ x.fillStyle="#c42a1f"; x.fillRect(0,0,w,h); x.strokeStyle="rgba(255,205,90,.75)"; x.lineWidth=3; for(let i=0;i<7;i++){ const cx=(i*83)%w+20, cy=(i*57)%h+20; for(const dx of [-w,0,w]) for(const dy of [-h,0,h]){ x.beginPath(); x.arc(cx+dx,cy+dy,10,Math.PI*.2,Math.PI*1.9); x.stroke(); x.beginPath(); x.arc(cx+dx+15,cy+dy+4,7,Math.PI,Math.PI*2.6); x.stroke(); x.beginPath(); x.moveTo(cx+dx-14,cy+dy+12); x.quadraticCurveTo(cx+dx+6,cy+dy+20,cx+dx+28,cy+dy+10); x.stroke(); } } });
   else if(k==="hanfu") t=cvs(256,256,(x,w,h)=>{ x.fillStyle="#f3c9d0"; x.fillRect(0,0,w,h); for(let i=0;i<16;i++){ const cx=(i*67)%w+R(-6,6), cy=(i*41)%h+R(-6,6); x.fillStyle="rgba(255,255,255,.45)"; for(let p=0;p<5;p++){ const a=p/5*6.283; x.beginPath(); x.arc(cx+Math.cos(a)*5,cy+Math.sin(a)*5,4,0,7); x.fill(); } x.fillStyle="rgba(230,150,165,.6)"; x.beginPath(); x.arc(cx,cy,2.2,0,7); x.fill(); } });
   else if(k==="space") t=cvs(256,256,(x,w,h)=>{ x.fillStyle="#eef0f3"; x.fillRect(0,0,w,h); x.strokeStyle="rgba(120,130,145,.35)"; x.lineWidth=2; for(let i=0;i<w;i+=32){ x.beginPath(); x.moveTo(i,0); x.lineTo(i,h); x.stroke(); } for(let i=0;i<h;i+=48){ x.beginPath(); x.moveTo(0,i); x.lineTo(w,i); x.stroke(); } for(let i=0;i<900;i++){ x.fillStyle=`rgba(0,0,0,${R(.01,.04)})`; x.fillRect(R(0,w),R(0,h),2,2); } });
+  else if(k==="travel") t=cvs(128,128,(x,w,h)=>{ x.fillStyle="#efe3c8"; x.fillRect(0,0,w,h); x.strokeStyle="rgba(140,105,60,.16)"; x.lineWidth=1; for(let i=0;i<w;i+=8){ x.beginPath(); x.moveTo(i+.5,0); x.lineTo(i+.5,h); x.stroke(); x.beginPath(); x.moveTo(0,i+.5); x.lineTo(w,i+.5); x.stroke(); } for(let i=0;i<500;i++){ x.fillStyle=`rgba(110,80,40,${R(.02,.07)})`; x.fillRect(R(0,w),R(0,h),1,1); } });
   else if(k==="patch") t=cvs(128,128,(x,w,h)=>{ x.clearRect(0,0,w,h); x.fillStyle="#1d2f6b"; x.beginPath(); x.arc(64,64,60,0,7); x.fill(); x.lineWidth=7; x.strokeStyle="#e9e3d0"; x.stroke(); for(let i=0;i<20;i++){ x.fillStyle="#fff"; x.fillRect(20+Math.random()*88,20+Math.random()*88,2,2); } x.fillStyle="#f08a3a"; x.beginPath(); x.arc(64,72,24,0,7); x.fill(); x.strokeStyle="#ffd5a0"; x.lineWidth=4; x.beginPath(); x.ellipse(64,72,38,10,-.3,0,7); x.stroke(); x.fillStyle="#fff"; x.beginPath(); x.moveTo(84,30); x.lineTo(96,44); x.lineTo(80,42); x.fill(); });
-  STYX_TEX[k]=t; if(t&&k!=="patch"){ t.wrapS=t.wrapT=T.RepeatWrapping; const r={yukata:[3,2],wizard:[3,2],plaid:[5,4],sequin:[5,3],cloud:[3,2],hanfu:[4,3],space:[4,2]}[k]||[1,1]; t.repeat.set(r[0],r[1]); } return t; }
+  STYX_TEX[k]=t; if(t&&k!=="patch"){ t.wrapS=t.wrapT=T.RepeatWrapping; const r={travel:[4,3],yukata:[3,2],wizard:[3,2],plaid:[5,4],sequin:[5,3],cloud:[3,2],hanfu:[4,3],space:[4,2]}[k]||[1,1]; t.repeat.set(r[0],r[1]); } return t; }
 const styxMat=(k,o={})=>{ const key="styx:"+k+JSON.stringify(o); if(matCache.has(key)) return matCache.get(key); const t=styxTex(k); const m=new T.MeshStandardMaterial(Object.assign({map:t,roughness:.75},o)); matCache.set(key,m); return m; };
 /* pleated skirt: an open cone whose radius ripples (pleats), from the waist (y0) down to y1 */
 function pleatGeo(r0,r1,y0,y1,n){ return gx('pleat:'+[r0,r1,y0,y1,n].join(),()=>{ const S=LOWPOLY?48:96, pos=[], ix=[]; for(let j=0;j<=1;j++){ const y=j?y1:y0, r=j?r1:r0; for(let i=0;i<=S;i++){ const a=i/S*Math.PI*2, k=j?Math.abs(Math.cos(a*n/2)):.2*Math.abs(Math.cos(a*n/2)); const rr=r+.014*k; pos.push(Math.sin(a)*rr,y,Math.cos(a)*rr); } } for(let i=0;i<S;i++){ ix.push(i,i+S+1,i+1,i+1,i+S+1,i+S+2); } const q=new T.BufferGeometry(); q.setAttribute('position',new T.Float32BufferAttribute(pos,3)); q.setIndex(ix); q.computeVertexNormals(); return q; }); }
@@ -3635,6 +3638,17 @@ function buildStyleX(t,v){ const g=new T.Group(); g.name='outfit-'+v; t.add(g); 
     seam(g,gold,[[-.1,.33,frontZ(-.1,.33,.035)],[0,.3,frontZ(0,.3,.045)],[.1,.33,frontZ(.1,.33,.035)]],.0035); waist(g,'#fbfbfb',.03,false,.03); plush(g,gold,0,.03,frontZ(0,.03,.036),.024,.017,.008);
     const fg=gx('fringe',()=>{ const c=new T.CylinderGeometry(.004,.004,.07,4); c.translate(0,-.035,0); return c; }), nf=LOWPOLY?4:7;
     for(const s of [-1,1]){ plush(g,gold,s*.17,.398,0,.075,.022,.07); for(let i=0;i<nf;i++){ const a=(i/(nf-1)-.5)*2.6; mk(g,fg,GOLD(),s*(.17+.068*Math.cos(a)),.39,.064*Math.sin(a)); } } }
+  if(k===9){ /* 小鎮旅人裝 (11/24 主委「蓋滿給稱號+精緻特色服裝（你直接設計）」): a cream linen shirt, an open dark-teal vest edged in gold,
+       a short teal capelet with a gold hem, a red neckerchief, a brown belt with a brass buckle, and a leather strap across the chest
+       to a little stamp-book pouch on the hip with a red seal on its flap. */
+    base(styxMat("travel",{roughness:.85})); const teal='#1d5e5c', brown='#6b4426', red='#c0392f';
+    for(const s of [-1,1]){ panel(g,teal,[[s*.035,.415],[s*.15,.395],[s*.16,-.01],[s*.05,-.01]],false,.026); trim(g,gold,[[s*.035,.415],[s*.05,-.01]],.0045,false,.034); trim(g,gold,[[s*.05,-.005],[s*.16,-.005]],.004,false,.034); button(g,gold,s*.06,.25,false,.006); button(g,gold,s*.062,.15,false,.006); }
+    mk(g,gx('trav-capelet',()=>new T.LatheGeometry([[0,.468],[.1,.462],[.175,.43],[.222,.375],[.245,.31],[.25,.295]].map(([x,y])=>new T.Vector2(x,y)),LOWPOLY?16:32)),mat(teal,{roughness:.78,side:T.DoubleSide}),0,0,0,0,0,0,1,1,.86);
+    mk(g,gx('trav-capelet-hem',()=>new T.TorusGeometry(.249,.0065,6,LOWPOLY?20:40)),GOLD(),0,.297,0,Math.PI/2,0,0,1,.86,1);
+    ribbon(g,red,0,.405,frontZ(0,.405,.045),.75); plush(g,red,0,.41,frontZ(0,.41,.05),.022,.018,.012);
+    waist(g,brown,.015,false,.03); plush(g,gold,0,.015,frontZ(0,.015,.04),.026,.02,.008);
+    seam(g,brown,[[-.15,.43,.03],[-.1,.36,frontZ(-.1,.36,.04)],[0,.22,frontZ(0,.22,.045)],[.1,.09,frontZ(.1,.09,.045)],[.165,.0,frontZ(.165,0,.04)]],.011);
+    plush(g,brown,.17,-.05,frontZ(.17,-.05,.06),.055,.05,.026); plush(g,'#57351c',.17,-.025,frontZ(.17,-.025,.083),.056,.024,.008); plush(g,red,.17,-.045,frontZ(.17,-.045,.09),.014,.014,.005); }
   return g; }
 function buildSleeveX(arm,v){ const k=v-STYLEX0, gold='#d9aa3d';
   if(k===0){ bellSleeve(arm,styxMat("hanfu",{roughness:.8,side:T.DoubleSide}),'#a8323a',.15,.3); return; }
@@ -3645,7 +3659,8 @@ function buildSleeveX(arm,v){ const k=v-STYLEX0, gold='#d9aa3d';
   if(k===5){ straightSleeve(arm,styxMat("plaid",{roughness:.85}),.17); cuffRing(arm,'#a92a24',-.165,.068,.014); return; }
   if(k===6){ straightSleeve(arm,styxMat("space",{roughness:.55}),.225,.078); cuffRing(arm,'#f07a2a',-.08,.079,.008); cuffRing(arm,'#aab3be',-.22,.07,.016); return; }
   if(k===7){ straightSleeve(arm,mat('#1b1b22',{roughness:.55})); cuffRing(arm,'#fbfbfb',-.224,.058,.01); return; }
-  if(k===8){ straightSleeve(arm,styxMat("sequin",{roughness:.32,metalness:.45})); cuffRing(arm,gold,-.216,.066,.009); return; } }
+  if(k===8){ straightSleeve(arm,styxMat("sequin",{roughness:.32,metalness:.45})); cuffRing(arm,gold,-.216,.066,.009); return; }
+  if(k===9){ straightSleeve(arm,styxMat("travel",{roughness:.85}),.205); cuffRing(arm,'#1d5e5c',-.19,.07,.017); cuffRing(arm,gold,-.172,.072,.003); return; } }
 /* legs under each outfit: trouser colour, bare legs, or hidden under a long robe; plus socks, boots, fur cuffs */
 function legX(lg,v,skinM){ const k=v-STYLEX0; const S=STYLEX[k];
   if(S.robe) return {m:mat('#2a2a2a'),hide:true};
@@ -3655,6 +3670,7 @@ function legX(lg,v,skinM){ const k=v-STYLEX0; const S=STYLEX[k];
   if(k===6){ mk(lg,gx('moonboot',()=>{ const c=new T.CylinderGeometry(.085,.085,.1,12); c.translate(0,-.25,0); return c; }),mat('#c9ced6',{roughness:.5})); return {m:mat('#eef0f3',{roughness:.55}),wide:1.25}; }
   if(k===7){ mk(lg,gx('satin-stripe',()=>{ const c=new T.BoxGeometry(.01,.27,.02); c.translate(0,-.14,0); return c; }),mat('#0b0b10',{roughness:.25}),lg.position.x>0?.066:-.066,0,0); return {m:mat('#1b1b22',{roughness:.55})}; }
   if(k===8){ mk(lg,gx('gold-stripe',()=>{ const c=new T.BoxGeometry(.008,.27,.02); c.translate(0,-.14,0); return c; }),GOLD(),lg.position.x>0?.067:-.067,0,0); return {m:mat('#f4f2f7',{roughness:.6})}; }
+  if(k===9){ mk(lg,gx('trav-boot',()=>{ const c=new T.CylinderGeometry(.075,.07,.14,12); c.translate(0,-.23,0); return c; }),mat('#5a3820',{roughness:.6})); mk(lg,gx('trav-roll',()=>new T.TorusGeometry(.072,.014,6,14)),mat('#7a6a48',{roughness:.9}),0,-.16,0,Math.PI/2); return {m:mat('#8a7a55',{roughness:.9})}; }
   return {m:mat('#333')}; }
 function starGeo(){return gx('star-shape',()=>{const s=new T.Shape();for(let i=0;i<10;i++){const a=i*Math.PI/5+Math.PI/2,r=i%2?.013:.03;const x=Math.cos(a)*r,y=Math.sin(a)*r;i?s.lineTo(x,y):s.moveTo(x,y);}s.closePath();return new T.ExtrudeGeometry(s,{depth:.008,bevelEnabled:true,bevelSegments:2,bevelThickness:.002,bevelSize:.002,steps:1});});}
 function buildHat(h,v,out,acc){const g=new T.Group();g.name='hat-'+v;h.add(g);const am=mat(acc),gold=GOLD(),ivory='#fff5e7';
@@ -9902,8 +9918,8 @@ INN.shower.forEach(s=>addHit("innShower:"+s.i,s.x,s.y,s.z,.45,2.2));
 const INN_SAY=["歡迎光臨禪房！今天住宿嗎？","通鋪的床具在這邊領喔，枕頭被子都洗好了。","溫泉在左手邊，進去記得先沖洗身體。","套房在二樓，從外面的坡道上去。","晚安，祝您好眠。","有需要再叫我喔！","退房時間是中午十二點喔。","泡完溫泉記得多喝水。"];
 HANDLERS.innDeskOpen=()=>{ const has=!!bag.gd&&bag.gd.bedding; INN.aunt.say(INN_SAY[(Math.random()*INN_SAY.length)|0],"#ffe2a0",3);
   openSheet("contact","禪房櫃台",`<p class="lead">「歡迎光臨禪房！一樓有通鋪和溫泉，二樓是套房。」</p><div class="goods">
-    <button class="good" data-act="innBedding"><span class="name">${has?"✓ 已經領了床具":"🛏️ 通鋪床具"}</span><span class="meta">${has?"到通鋪按「睡在這裡」就能鋪床睡覺":"一次 50 平安幣，睡一覺就收回"}</span></button>
-    <button class="good" data-act="innRooms"><span class="name">${bag.gd&&bag.gd.roomKey?"✓ 已有房卡":"🔑 套房房卡"}</span><span class="meta">${bag.gd&&bag.gd.roomKey?"上二樓進任何一間空房；離開房間就退房":"一次 100 平安幣・"+INN.suites.map(S=>`20${S.i+1}${innLockedBy(S.i)?" 有人":" 空房"}`).join("・")}</span></button>
+    <button class="good" data-act="innBedding"><span class="name">${has?"✓ 已經領了床具":"🛏️ 通鋪床具"}</span><span class="meta">${has?"到通鋪按「睡在這裡」就能鋪床睡覺（睡覺不回精力）":"一次 50 平安幣，睡一覺就收回（睡覺不回精力；回精力請泡溫泉或禪堂靜坐）"}</span></button>
+    <button class="good" data-act="innRooms"><span class="name">${bag.gd&&bag.gd.roomKey?"✓ 已有房卡":"🔑 套房房卡"}</span><span class="meta">${bag.gd&&bag.gd.roomKey?"上二樓進任何一間空房；離開房間就退房（睡覺不回精力）":"一次 100 平安幣（睡覺不回精力）・"+INN.suites.map(S=>`20${S.i+1}${innLockedBy(S.i)?" 有人":" 空房"}`).join("・")}</span></button>
     <button class="good" data-act="innOnsen"><span class="name">♨️ 溫泉須知</span><span class="meta">泡湯前先沖洗、毛巾放頭上</span></button></div>`); };
 HANDLERS.innBedding=()=>{ bag.gd=bag.gd||{}; if(bag.gd.bedding){ toast("你已經有床具了，到通鋪按「睡在這裡」",2400); return; } if(!me.sp){ if(bag.coins<50){ toast("平安幣不夠（通鋪一次 50）",2400); return; } bag.coins-=50; } bag.gd.bedding=1; saveBag(); statInc("innBedding"); INN.aunt.say("來，床具給您，晚安喔～","#ffe2a0",2.6); toast("領到床具了！到通鋪點一個位子就能鋪床睡覺",3000); HANDLERS.innDeskOpen(); };
 HANDLERS.innRooms=()=>{ bag.gd=bag.gd||{}; if(!bag.gd.roomKey){ if(!me.sp){ if(bag.coins<100){ toast("平安幣不夠（套房一次 100）",2400); return; } bag.coins-=100; } bag.gd.roomKey=1; saveBag(); statInc("innRoom"); INN.aunt.say("房卡給您，套房在二樓，從外面樓梯上去喔～","#ffe2a0",3); }
@@ -11093,7 +11109,7 @@ function clawCabinet(x,z,col){ const g=new T.Group(); g.position.set(x,0,z); con
 function worldTick(dt){ if(WORLD.neon){ const t=WORLD.t||0; WORLD.neon.opacity=(.55+.25*Math.sin(t*1.9)+.08*Math.sin(t*5.3))*(.75+.5*(WORLD.nt>0?WORLD.nt:0)); } if(WORLD.warm){ WORLD.wt=(WORLD.wt||0)+dt; if(WORLD.wt>.6){ WORLD.wt=0; WORLD.warm=0; warmUp(); } } const ph=todPhase(), n=Math.max(0,Math.min(1,ph.night||0)); WORLD.t=(WORLD.t||0)+dt;
   if(WORLD.flag) WORLD.flag.rotation.y=Math.PI+Math.sin(WORLD.t*1.7)*.12;
   if(Math.abs(n-WORLD.nt)>.02){ WORLD.nt=n; WORLD.glow.forEach(m=>{ m.emissiveIntensity=.06+n*.75; }); WORLD.upper.forEach(m=>{ m.emissiveIntensity=n*.9; }); (WORLD.rooms||[]).forEach(m=>{ m.emissiveIntensity=.35+n*.55; }); (WORLD.inside||[]).forEach(m=>{ m.emissiveIntensity=.45+n*.4; }); WORLD.lamps.forEach(s=>{ s.material.opacity=n*.85; }); (WORLD.lampHeads||[]).forEach(m=>m.color.set(n>.3?"#fff0c4":"#bdb6a6")); }
-  if(WORLD.mann.length&&(WORLD.mt=(WORLD.mt||0)+dt)>40){ WORLD.mt=0; const a=WORLD.mann[Math.random()<.5?0:1]; const l=a.look.slice(); let v; do{ v=STYLEX0+Math.floor(Math.random()*STYLEX.length); }while(WORLD.mann.some(m=>m.look[3]===v)); l[3]=v; a.setLook(l); } }
+  if(WORLD.mann.length&&(WORLD.mt=(WORLD.mt||0)+dt)>40){ WORLD.mt=0; const a=WORLD.mann[Math.random()<.5?0:1]; const l=a.look.slice(); let v; do{ v=STYLEX0+Math.floor(Math.random()*STYLEX_SHOP); }while(WORLD.mann.some(m=>m.look[3]===v)); l[3]=v; a.setLook(l); } }
 /* ---------- shop screens: a layer over the game with its own little 3D scene ---------- */
 function shxCSS(){ if(document.getElementById("shxCss")) return; const st=document.createElement("style"); st.id="shxCss"; st.textContent=`
 body.shopmode #c{position:fixed;z-index:71!important}body.shopmode .toast{z-index:90!important}
@@ -11459,7 +11475,7 @@ function clothStart(){ const D=buildCloth(); const o={exposure:1.0}; const el=en
   const $c=s=>el.querySelector(s);
   const draw=()=>{ const v=STYLEX0+i, S=STYLEX[i], own=styleOwned(v), on=me.look[3]===v; $c("#cC").textContent=`💰 ${bag.coins}`;
     $c("#cP").innerHTML=`<div style="display:flex;align-items:baseline;gap:8px"><b style="font-size:20px;color:#ffe2a0">${S.n}</b><span style="margin-left:auto;font-weight:900;color:${own?"#9fe3a8":"#ffd76a"}">${S.price.toLocaleString()} 平安幣${own?(me.sp&&!((bag.clo|0)&(1<<i))?"・主委免費":"・已擁有"):""}</span></div>
-      <p style="margin:6px 0 10px;font-size:14px;line-height:1.5;color:#f3e7d0">${S.d}</p><div style="display:flex;gap:6px;justify-content:center;margin-bottom:10px">${STYLEX.map((_,k)=>`<i data-d="${k}" style="width:${k===i?18:8}px;height:8px;border-radius:4px;background:${k===i?"#d9aa3d":styleOwned(STYLEX0+k)?"#9fe3a8":"rgba(255,255,255,.3)"};display:inline-block;cursor:pointer"></i>`).join("")}</div>
+      <p style="margin:6px 0 10px;font-size:14px;line-height:1.5;color:#f3e7d0">${S.d}</p><div style="display:flex;gap:6px;justify-content:center;margin-bottom:10px">${STYLEX.slice(0,STYLEX_SHOP).map((_,k)=>`<i data-d="${k}" style="width:${k===i?18:8}px;height:8px;border-radius:4px;background:${k===i?"#d9aa3d":styleOwned(STYLEX0+k)?"#9fe3a8":"rgba(255,255,255,.3)"};display:inline-block;cursor:pointer"></i>`).join("")}</div>
       <div style="display:flex;gap:8px">${own?`<button class="shx-btn" style="flex:1" id="cW" ${on?"disabled":""}>${on?"穿著中":"穿上"}</button>`:`<button class="shx-btn" style="flex:1" id="cB">購買・${S.price} 幣</button>`}</div>
       <p style="margin:8px 0 0;font-size:12px;color:#bba">服飾店的衣服有自己的配色。買了以後隨時可以在「換裝」裡換穿。</p>`;
     const b=$c("#cB"); if(b) b.onclick=buy; const w=$c("#cW"); if(w) w.onclick=wear; $c("#cP").querySelectorAll("[data-d]").forEach(d=>d.onclick=()=>{ i=+d.dataset.d; show(); }); };
@@ -11467,7 +11483,7 @@ function clothStart(){ const D=buildCloth(); const o={exposure:1.0}; const el=en
   const buy=()=>{ const v=STYLEX0+i, S=STYLEX[i]; if(styleOwned(v)) return; if(bag.coins<S.price){ buzz(); toast(`平安幣不夠（還差 ${S.price-bag.coins}），可以去便利商店打工`,3000); return; }
     bag.coins-=S.price; bag.clo=(bag.clo|0)|(1<<i); saveBag(); markDirty(); try{ profSave(true); }catch(e){} statInc("clothBuy"); chaChing(); toast(`買下「${S.n}」！`,2200); wear(); };
   const wear=()=>{ const v=STYLEX0+i; if(!styleOwned(v)) return; me.look[3]=v; save("mz.me",me); try{ draftLook=me.look.slice(); }catch(e){} meAv.setLook(me.look); markDirty(); try{ profSave(true); }catch(e){} try{ [659,880,1175].forEach((f,k)=>tone(f,.15,.07,"triangle",k*.08)); }catch(e){} draw(); };
-  $c("#cL").onclick=()=>{ i=(i+STYLEX.length-1)%STYLEX.length; show(); }; $c("#cR").onclick=()=>{ i=(i+1)%STYLEX.length; show(); }; $c("#cX").onclick=()=>leaveMode();
+  $c("#cL").onclick=()=>{ i=(i+STYLEX_SHOP-1)%STYLEX_SHOP; show(); }; $c("#cR").onclick=()=>{ i=(i+1)%STYLEX_SHOP; show(); }; $c("#cX").onclick=()=>leaveMode();
   const tl=el.querySelector(".shx-touch"); tl.addEventListener("pointerdown",e=>{ drag={x:e.clientX,r:rot}; spin=0; }); tl.addEventListener("pointermove",e=>{ if(drag) rot=drag.r+(e.clientX-drag.x)*.012; }); const up=()=>{ if(drag){ drag=null; setTimeout(()=>{ if(!drag) spin=.25; },1500); } }; tl.addEventListener("pointerup",up); tl.addEventListener("pointercancel",up);
   draw(); o.update=dt=>{ rot+=spin*dt; av.root.rotation.y=rot; av.t+=dt; try{ av.hips.position.y=.3+Math.sin(av.t*1.6)*.004; }catch(e){} };
   o.render=dt=>{ const c=D.cam, asp=innerWidth/innerHeight; c.aspect=asp; const ph=(($c("#cP").offsetHeight||200)+60)/innerHeight; const vt=Math.tan(c.fov*Math.PI/360), ht=vt*asp; const d=Math.min(10,Math.max(1.75/(2*vt*Math.max(.3,1-ph)),.75/ht)); const ly=.86-ph*d*vt; c.position.set(0,ly+.3,d); c.lookAt(0,ly,0); c.updateProjectionMatrix(); renderer.render(D.R,c); };
@@ -11607,9 +11623,10 @@ const signBonus=st=>20*Math.min(10,Math.max(0,st-1));
 /* ---- 香火位階: from the number of days signed in; shown before your name (you can hide it) ---- */
 const TITLES=[[3,"善信"],[7,"信眾"],[14,"虔信"],[30,"居士"],[60,"護持"],[100,"護法"],[200,"大護法"],[365,"長老"]];
 const rankOf=n=>{ let r=0; TITLES.forEach((t,i)=>{ if(n>=t[0]) r=i+1; }); return r; };
-D.title=()=>bag.ttlOff?0:rankOf(SG().n);
-D.ttl=i=>{ i=i===undefined?D.title():(i|0); return i>=1&&i<=TITLES.length?TITLES[i-1][1]:""; };
-function relabel(){ try{ meAv.setName(myLabel()); markDirty(); }catch(e){} }
+const XTITLES={50:"小鎮旅人"}; /* (11/24: titles you earn, not 位階 — numbered from 50 so the 位階 1–8 keep their numbers; bag.ttlX = the one shown) */
+D.title=()=>bag.ttlOff?0:(bag.ttlX&&XTITLES[bag.ttlX]?bag.ttlX:rankOf(SG().n));
+D.ttl=i=>{ i=i===undefined?D.title():(i|0); if(XTITLES[i]) return XTITLES[i]; return i>=1&&i<=TITLES.length?TITLES[i-1][1]:""; };
+function relabel(){ try{ meAv.setName(myLabel()); markDirty(); }catch(e){} } D.relabel=()=>relabel();
 /* ---- 每日功課: three a day, one from each group, picked by the date (everyone gets the same three) ---- */
 const QA=[["bow",3,"🙏 參拜 3 次","按畫面下方的「拜」",100],["jiao",1,"🌙 擲筊 1 次","按畫面下方的「筊」",100],["lot",1,"🎋 求一支籤","按畫面下方的「籤」",100],["bai",1,"🔥 完成一次參拜","照參拜指引走完並燒化金紙，一鍵參拜也算",150]];
 const QB=[["work",1,"🏪 在 M超商打工一班","禪房對面的商店街，一班要 20 精力",100],["claw",2,"🕹️ 夾娃娃 2 次","商店街的夾鬼夾怪，有沒有夾中都算",150],["buy",1,"🧃 在 M超商買一樣東西","商店街的 M超商",100],["cat",1,"🐈 摸摸貓咪","廟埕的流浪貓或自己養的貓都算",100],["fish",1,"🎣 在小鎮釣到一條魚","河邊、海邊、女神泉都可以，要有釣竿和魚餌",100],["dig",1,"⛏️ 在小鎮挖一次寶","地上的裂縫，鏟子在雜貨店買",100]]; /* (11/24 主委「把原本只有廟裡混合一些小鎮」: two town ones here and two below) */
@@ -14538,7 +14555,7 @@ function fishWait(){ const w=F.w, b=baitFor(w.w.k); F.fish=roll(w.w.k,F.R,b); F.
 /* ---------- fishing ---------- */
 let F=null;
 const busy=()=>{ try{ return !!(sheetKind||customizing||(SHOPX&&SHOPX.on)||miniOpen||meAv.seat>=0||(typeof pendingStation!=="undefined"&&pendingStation)); }catch(e){ return false; } };
-function startFish(pw=.35,dry){ if(F) return; const d=LF(); let w=near||findWater(); if(!w){ toast("離水邊再近一點",1800); return; } if(fishLeft()<=0){ toast("今天釣夠多了，魚也要休息，明天再來吧",2600); return; } if(w.w.k==="g"&&!godOpen()){ toast("泉水灰灰濁濁的，什麼也釣不到。泉邊的石碑好像寫著什麼……",3000); return; } const rodS=rodFor(w.w.k); if(!rodS){ toast(w.w.k==="o"?"🎣 海邊要用海釣竿，老街的釣具行有賣":"🎣 要先到老街的釣具行買一支溪釣竿",3000); return; }
+function startFish(pw=.35,dry){ if(F) return; if(!dry&&!enHas(1)) return; /* (11/24 QA: 精力 first — at 0 you were sent to buy a rod and bait, then stopped) */ const d=LF(); let w=near||findWater(); if(!w){ toast("離水邊再近一點",1800); return; } if(fishLeft()<=0){ toast("今天釣夠多了，魚也要休息，明天再來吧",2600); return; } if(w.w.k==="g"&&!godOpen()){ toast("泉水灰灰濁濁的，什麼也釣不到。泉邊的石碑好像寫著什麼……",3000); return; } const rodS=rodFor(w.w.k); if(!rodS){ toast(w.w.k==="o"?"🎣 海邊要用海釣竿，老街的釣具行有賣":"🎣 要先到老街的釣具行買一支溪釣竿",3000); return; }
   if(d.inv.length>=40){ toast("背包裡的魚滿了（40 條），先到釣具行或雜貨店賣掉一些",3000); return; }
   if(dry){ const bk0=w.w.k==="o"?"s":"f"; if(!baitFor(w.w.k)&&!BAITS.some((b,j)=>b.k===bk0&&d.bait[j]>0)){ toast(w.w.k==="o"?"🪱 沒有海釣餌不能拋竿，老街的釣具行有賣":"🪱 沒有溪釣餌不能拋竿，老街的釣具行有賣",3200); return; } return true; }
   /* no bait, no cast (主委 11/14): use the chosen bait, or the first one you have for this water */ { const bk0=w.w.k==="o"?"s":"f"; if(!baitFor(w.w.k)){ const i=BAITS.findIndex((b,j)=>b.k===bk0&&d.bait[j]>0); if(i<0){ toast(w.w.k==="o"?"🪱 沒有海釣餌不能拋竿，老街的釣具行有賣":"🪱 沒有溪釣餌不能拋竿，老街的釣具行有賣",3200); return; } if(bk0==="f") d.bF=i+1; else d.bS=i+1; save(); } }
@@ -14662,12 +14679,12 @@ let dexTab="r";
 const BUG_WHERE={park:"河濱公園",valley:"溪谷",forest:"森林",mount:"山上",beach:"海邊"};
 const bugIc=(b,no,w)=>`<img src="${bugPic(b[0])}" alt="" style="width:${w}px;height:${w}px;object-fit:contain;${no?"filter:brightness(0) opacity(.4)":""}">`;
 function bugDex(){ const dx=BUGDEX(), got=BUGS.filter(b=>dx[b[0]]&&dx[b[0]][0]).length;
-  openSheet("lfDex","📖 圖鑑・昆蟲",`<p class="lead">抓到 ${got} / ${BUGS.length} 種。沒抓過的只看得到黑影。</p><div class="row">${[["r","淡水"],["o","海水"],["b","昆蟲"]].map(t=>`<button class="${dexTab===t[0]?"primary":"secondary"}" data-act="lfDexTab" data-v="${t[0]}">${t[1]}</button>`).join("")}</div>
+  openSheet("lfDex","📖 圖鑑・昆蟲",`<p class="lead">抓到 ${got} / ${BUGS.length} 種。沒抓過的只看得到黑影。</p><div class="row">${[["r","淡水"],["o","海水"],["b","昆蟲"],["s","📮 集章"]].map(t=>`<button class="${dexTab===t[0]?"primary":"secondary"}" data-act="lfDexTab" data-v="${t[0]}">${t[1]}</button>`).join("")}</div>
    <div class="lf-dex">${BUGS.map(b=>{ const e=dx[b[0]]&&dx[b[0]][0]; return `<button data-act="lfBugOne" data-v="${b[0]}" class="${e?"":"no"}">${bugIc(b,!e,64)}<b>${e?b[1]:"？？？"}</b><small>${e?`${e} 隻`:"★".repeat(b[4])}</small></button>`; }).join("")}</div>`); }
 HANDLERS.lfBugOne=v=>{ const b=BUG_BY[v], e=BUGDEX()[v]&&BUGDEX()[v][0]; if(!b) return;
   openSheet("lfDexOne","📖 "+(e?b[1]:"？？？"),`<div class="lf-card"><div style="text-align:center">${bugIc(b,!e,120)}</div><div class="nm">${e?b[1]:"還沒抓到"}</div><div class="st">${"★".repeat(b[4])}${"☆".repeat(4-b[4])}　${BUG_RN[b[4]]}</div>
    <p>${e?b[9]:"還不知道是什麼樣的蟲。"}</p><p class="note">出沒：${b[5].split(" ").map(w=>BUG_WHERE[w]||w).join("、")}・${b[6]==="d"?"白天":b[6]==="n"?"晚上":"整天"}${b[7]?"・會飛":""}${e?`<br>抓過 ${e} 隻・小潘收購 ${b[8]} 幣`:""}</p></div><div class="row"><button class="secondary" data-act="lfDexTab" data-v="b">回圖鑑</button></div>`); };
-function dex(){ if(dexTab==="b") return bugDex(); const d=LF(), got=FISH.filter(f=>d.fish[f.id]).length; const tabs=[["r","淡水"],["o","海水"],["b","昆蟲"]];
+function dex(){ if(dexTab==="b") return bugDex(); if(dexTab==="s") return stpBook(); const d=LF(), got=FISH.filter(f=>d.fish[f.id]).length; const tabs=[["r","淡水"],["o","海水"],["b","昆蟲"],["s","📮 集章"]];
   const list=FISH.filter(f=>dexTab==="o"?f.w.includes("o"):!f.w.includes("o"));
   openSheet("lfDex","📖 圖鑑・魚",`<p class="lead">釣到 ${got} / ${FISH.length} 種。沒釣過的只看得到黑影。</p><div class="row">${tabs.map(t=>`<button class="${dexTab===t[0]?"primary":"secondary"}" data-act="lfDexTab" data-v="${t[0]}">${t[1]}</button>`).join("")}</div>
    <div class="lf-dex">${list.map(f=>{ const e=d.fish[f.id]; return `<button data-act="lfDexOne" data-v="${f.id}" class="${e?"":"no"}"><img src="${fishIcon(f.id,!e)}" alt=""><b>${e?f.n:"？？？"}</b>${e?`<small>${e[0]} 條</small>`:`<small>${"★".repeat(f.r)}</small>`}</button>`; }).join("")}</div>`); }
@@ -14833,7 +14850,7 @@ const GI=()=>{ const d=LF(); d.gi=d.gi||{}; return d.gi; }; function giAdd(id,n)
 const GINFO={}; /* id → {n:name, ic:picture url or emoji, cat:"dish"|"bug"|"dig"|…, d:line} — filled by each system */
 function giInfo(id){ if(GINFO[id]) return GINFO[id]; if(id.startsWith("cz:")){ const q=typeof CZB!=="undefined"&&CZB[id.slice(3)]; if(q) return GINFO[id]={n:q[1],ic:MZIMG("congee/"+q[0]+".webp"),cat:"dish",d:"一粥七天的菜，可以送給鎮上的人。"}; } return {n:id,ic:"🎁",cat:"misc",d:""}; }
 const giIc=(id,w)=>{ const i=giInfo(id).ic; return /\.(webp|png|jpg)$|^data:/.test(i)?`<img src="${i}" alt="" style="width:${w||48}px;height:${w||48}px;object-fit:contain">`:`<span style="font-size:${(w||48)*.66}px;width:${w||48}px;text-align:center;display:inline-block">${i}</span>`; };
-const EN_SHOP=0; /* (11/23 主委「商店遊戲不消耗精力」: they keep their 3-a-day limits) */ function enPay(n){ if(!(n>0)) return true; if(me.sp&&!window.MZ_ENTEST) return true; /* (主委 spends none — unless the ⚡ test switch is on) */ const e=Math.round(bag.en??100); if(e<n){ try{ buzz(); }catch(_){} toast(`精力不夠（要 ${n}，現在 ${e}）。吃點東西、泡溫泉或明天再來`,2800); return false; } bag.en=Math.max(0,(bag.en??100)-n); save(); try{ SHOPX&&SHOPX.wallet&&SHOPX.wallet(); }catch(_){} return true; }
+const EN_SHOP=0; /* (11/23 主委「商店遊戲不消耗精力」: they keep their 3-a-day limits) */ function enPay(n){ if(!(n>0)) return true; if(me.sp&&!window.MZ_ENTEST) return true; /* (主委 spends none — unless the ⚡ test switch is on) */ const e=Math.round(bag.en??100); if(e<n){ try{ buzz(); }catch(_){} enCard(n); return false; } bag.en=Math.max(0,(bag.en??100)-n); save(); try{ SHOPX&&SHOPX.wallet&&SHOPX.wallet(); }catch(_){} return true; }
 /* ---------- 山頂 (11/16 主委): 帳篷 — go in, a little tent room with a sleeping bag you can sleep in; 望遠鏡 — in the daytime look out over
    the whole place (the chair's picture), from late afternoon 「天色暗了，看不到東西」; 跳傘 — from the deck on the town side, glide down a
    fixed line over the forest and the river and land on the road into town. ---------- */
@@ -15360,7 +15377,7 @@ L.testPanel=()=>{ if(!me.sp) return; const b=(act,v,t,cls)=>`<button class="${cl
    ${sec("進店",TP_SHOPS.map(([k,n])=>b("tmShop",k,n)).join(""))}
    ${sec("小遊戲（直接玩）",[["tw:bfast","🍔 疊漢堡"],["tw:ice","🍦 冰淇淋"],["tw:herb","🌿 中藥對對碰"],["tw:congee","🥣 深夜出餐"],["tw:drink","🧋 調飲料"],["tw:book","📚 推書櫃"],["tw:flower","💐 插花"]].map(([k,n])=>b("tmGame",k,n)).join("")+b("tmDish",1,"🫧 洗碗")+b("tmCook",1,"🍳 廚房切菜")+b("tmBq",1,"💐 花束打工")+b("tmIceDrink",1,"🧋 飲料（一定加冰）"))}
    ${sec("釣魚・溫室",b("tmRods",1,"🎣 全部釣竿")+b("tmBait",1,"🪱 釣餌各 10 份")+b("tmBait",0,"🪱 清空釣餌")+b("tmFish",1,"🐟 看下一隻魚模型")+b("tmDexAll",1,"📖 圖鑑全部點亮")+b("tmGarden",1,"🌱 花圃放滿作物"))}
-   ${sec("任務",b("tmRst","god","↩️ 重置女神泉")+b("tmRst","ph","↩️ 重置照相館")+b("tmRst","gh","↩️ 重置溫室格數")+b("tmFin","god","⛲ 女神泉完成")+b("tmFin","ph","📷 照相館完成＋片尾")+b("tmCzEnd",8,"🥣 一粥七天直接結算"))}
+   ${sec("任務",b("tmRst","god","↩️ 重置女神泉")+b("tmRst","ph","↩️ 重置照相館")+b("tmRst","gh","↩️ 重置溫室格數")+b("tmFin","god","⛲ 女神泉完成")+b("tmFin","ph","📷 照相館完成＋片尾")+b("tmCzEnd",8,"🥣 一粥七天直接結算")+b("tmStp","fill","📮 集章冊蓋到剩一格")+b("tmStp","rst","↩️ 重置集章冊"))}
    ${sec("腳踏車",b("tmBike","on","🚲 給我腳踏車並騎上")+b("tmBike","hill","🏔️ 到山腳騎上天后山")+b("tmBike","quest","📦 試小潘的請託")+b("tmBike","off","↩️ 收回腳踏車"))}    ${sec("精力",b("tmEnLow",40,"⚡ 精力設成 40")+b("tmEnLow",0,"⚡ 精力設成 0")+b("tmEnLow",100,"⚡ 精力補滿"))}
    ${sec("造型・美容院",b("tmLookOpen",1,"🪞 換造型")+b("tmSalon","h","💇 美容院：髮型")+b("tmSalon","e","👁 美容院：眼睛")+b("tmSalon","m","👄 美容院：嘴巴")+b("tmFaceFit","f_eyes","📐 造型定位"))}
    ${sec("活動・特效",b("tmRain",1,"🧧 撒紅包")+b("tmMet",1,"🌠 流星")+b("lfChuteGo",1,"🪂 跳傘"))}
@@ -15420,6 +15437,7 @@ HANDLERS.tmRain=()=>{ closeSheet(); try{ hbStart({id:"test"+Date.now(),seed:(Mat
 HANDLERS.tmFin=v=>{ closeSheet(); if(v==="god"){ const q=GQ(); q.s=GQ_N-1; q.d=-1; const d=LF(); d.rods=(d.rods|0)&~32; meAv.pos.set(85.4,-250.2); meAv.target.set(85.4,-250.2); meAv.path=[]; toast("⛲ 傳送到女神泉，馬上完成最後一步……",2600); setTimeout(()=>{ try{ HANDLERS.lfGq(); }catch(e){ console.warn(e); } },4000); }
   else if(v==="ph"){ const P=PH(); P.cam=1; P.end=0; save(); try{ camBtn(); }catch(e){} phFinal(); } }; /* (11/22 主委「新增任務完成測試 女神泉跟相機都要」) */
 /* (11/24 主委「幫我增加主委腳踏車測試模式」) */
+HANDLERS.tmStp=v=>{ closeSheet(); const S=STP(); if(v==="rst"){ S.m=0; S.done=0; bag.clo=(bag.clo||0)&~(1<<(27-STYLEX0)); if(bag.ttlX===50) bag.ttlX=0; save(); try{ DQ.relabel(); }catch(e){} toast("↩️ 集章冊清空了",2000); return; } S.m=(1<<MSPOT.length)-1-(1<<5); S.done=0; save(); meAv.pos.set(MSPOT[5][0]+10,MSPOT[5][1]); meAv.target.set(MSPOT[5][0]+10,MSPOT[5][1]); meAv.path=[]; toast("📮 蓋好 11 格了，往前走到女神泉蓋最後一格",3200); };
 HANDLERS.tmBike=v=>{ closeSheet(); const d=LF();
   if(v==="off"){ try{ bikeSet(false); }catch(e){} d.bike=0; save(); bikeChip(); toast("↩️ 腳踏車收回了（可以再試小潘的請託）",2600); return; }
   if(v==="quest"){ try{ bikeSet(false); }catch(e){} d.bike=0; BUGS.slice(0,5).forEach(q=>giAdd("bug:"+q[0],1)); giAdd("dig:ammo",1); save(); const go=()=>{ try{ HANDLERS.lfBugCol(1); }catch(e){ console.warn(e); } }; if(TOWNX&&TOWNX.on) go(); else { meAv.pos.set(28,-62); meAv.target.set(28,-62); meAv.path=[]; setTimeout(go,1500); } toast("📦 給了 5 種昆蟲＋1 件化石，收藏家的單子最下面有「小潘的請託」",3200); return; }
@@ -16589,7 +16607,7 @@ function cvs0(w,h,f){ const c=document.createElement("canvas"); c.width=w; c.hei
   const bag=new T.Mesh(new T.LatheGeometry(pts,18),M("#f4f4f0",{map:mesh,transparent:true,opacity:.9,alphaTest:.05,side:T.DoubleSide,depthWrite:false})); bag.rotation.x=Math.PI/2; bag.position.set(0,1.28,0); g.add(bag); return g; }
 function bugChip(){ if(BG2.chip) return BG2.chip; const c=document.createElement("button"); c.id="bugChip"; c.style.cssText=`position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 128px);z-index:9;border:0;border-radius:999px;padding:11px 20px;font:900 16px ${UI_FONT};color:#fff;background:linear-gradient(#9be04f,#3c9a22);outline:2px solid #e2ffc4;box-shadow:0 4px 14px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.4)`; c.hidden=true; c.textContent="🦋 抓蟲"; c.onclick=()=>bugSwing(); document.body.appendChild(c); return BG2.chip=c; }
 let bugNear=null;
-function bugSwing(){ const o=bugNear; if(!o||BG2.swing) return; const N=NETD(); if(!N.t||N.u<=0){ toast(N.t?"捕蟲網破了……到雜貨店找威利":"要先有捕蟲網：小鎮主街的雜貨店（威利）有賣",2800); return; }
+function bugSwing(){ const o=bugNear; if(!o||BG2.swing) return; if(!enHas(1)) return; /* (11/24 QA: 精力 before the net) */ const N=NETD(); if(!N.t||N.u<=0){ toast(N.t?"捕蟲網破了……到雜貨店找威利":"要先有捕蟲網：小鎮主街的雜貨店（威利）有賣",2800); return; }
   meAv.path=[]; meAv.target.copy(meAv.pos); meAv.faceGoal=Math.atan2(o.sp.position.x-meAv.pos.x,o.sp.position.z-meAv.pos.y);
   const net=netMesh(N.t); const hand=meAv.hands&&meAv.hands[0]; (hand||meAv.root).add(net); net.position.set(0,-.05,0); net.rotation.set(-2.2,0,0);
   BG2.swing={o,net,t:0,done:0}; try{ tone(320,.16,.05,"sawtooth"); tone(520,.12,.04,"triangle",.08); }catch(e){} }
@@ -16816,7 +16834,7 @@ function shovelMesh(){ /* (11/22 晚 主委「鏟子很怪」: a plain garden sp
   const sh=new T.Shape(); sh.moveTo(-.1,0); sh.lineTo(.1,0); sh.lineTo(.1,-.17); sh.quadraticCurveTo(.09,-.25,0,-.3); sh.quadraticCurveTo(-.09,-.25,-.1,-.17); sh.lineTo(-.1,0);
   const bl=new T.Mesh(new T.ExtrudeGeometry(sh,{depth:.008,bevelEnabled:false}),steel); bl.position.set(0,-.02,-.004); g.add(bl);
   /* (11/22 晚 主委「鏟子上下拿反了」: the hand holds it near the grip and the blade goes to the far end — the whole spade turned end over end) */ const o=new T.Group(); g.rotation.x=Math.PI; g.position.y=.72; o.add(g); return o; }
-function digStart(){ const o=digNear; if(!o||DG.act) return; const S=SHOVEL(); if(S.u<=0){ toast("要先有鏟子：小鎮主街的雜貨店（威利）有賣",2600); return; } const dd=LF(); if(dd.dgD!==today()){ dd.dgD=today(); dd.dgN=0; } if((dd.dgN|0)>=DIG_DAY&&!me.sp){ toast(`今天挖了 ${DIG_DAY} 次，手好痠……明天再挖吧`,2600); return; } if(!enPay(3)) return;
+function digStart(){ const o=digNear; if(!o||DG.act) return; if(!enHas(3)) return; /* (11/24 QA: 精力 before the shovel) */ const S=SHOVEL(); if(S.u<=0){ toast("要先有鏟子：小鎮主街的雜貨店（威利）有賣",2600); return; } const dd=LF(); if(dd.dgD!==today()){ dd.dgD=today(); dd.dgN=0; } if((dd.dgN|0)>=DIG_DAY&&!me.sp){ toast(`今天挖了 ${DIG_DAY} 次，手好痠……明天再挖吧`,2600); return; } if(!enPay(3)) return;
   meAv.path=[]; meAv.target.copy(meAv.pos); meAv.faceGoal=Math.atan2(o.x-meAv.pos.x,o.z-meAv.pos.y); const sv=shovelMesh(); const hand=meAv.hands&&meAv.hands[0]; (hand||meAv.root).add(sv); sv.position.set(0,-.1,.05); sv.rotation.set(2.6,0,0);
   DG.act={o,sv,t:0,hits:0}; }
 function digReward(o){ const S=SHOVEL(); S.u--; { const dd=LF(); dd.dgN=(dd.dgN|0)+1; } let tot=0; DIGS.forEach(q=>tot+=q[5]); let r=Math.random()*tot, q=DIGS[0]; for(const c of DIGS){ r-=c[5]; if(r<=0){ q=c; break; } }
@@ -17018,6 +17036,46 @@ function tgTick(){ try{ if(TOWNX&&TOWNX.on&&!tgDone(3)&&Math.hypot(meAv.pos.x-85
 HANDLERS.tgOpen=()=>openSheet("tgGuide","🗺️ 小鎮指引",`<p class="lead">參拜完，來小鎮走走吧！每完成一項送 ${TG_PAY} 平安幣，順序不限。</p>${TG.map((q,i)=>`<div class="lf-row" style="${tgDone(i)?"opacity:.55":""}"><span style="font-size:26px;width:44px;text-align:center">${tgDone(i)?"✅":q[1].split(" ")[0]}</span><div class="t"><b>${q[1].replace(/^\S+\s/,"")}</b><br><small>${q[2]}</small></div><small>${tgDone(i)?"完成":"+"+TG_PAY}</small></div>`).join("")}<p class="note">找不到地方的話，左上的「地圖・導航」可以帶你去。</p>`);
 { const b=document.getElementById("tgBtn"); if(b) b.onclick=()=>{ try{ ensureAudio(); }catch(e){} HANDLERS.tgOpen(); }; }
 L.tg=()=>({m:TGD().m,all:tgAll()});
+/* ===== 📮 小鎮巡禮集章冊 (11/24 主委「小鎮巡禮集章冊 蓋滿給稱號+精緻特色服裝（你直接設計）」): the 12 places of MSPOT; walk, ride or glide
+   within 7 m of one and its stamp is pressed (a red seal pops up with a line from someone who lives there). No 平安幣 — all 12 gives the
+   title 「小鎮旅人」 (XTITLES 50) and the 小鎮旅人裝 (style 27, bag.clo bit 9). Seen in 圖鑑 → 📮 集章. LF().stp.m = the bits. ===== */
+const STP_LINE=["阿凱：「南岸的樹，比我阿公還老。」","山頂的風：「爬上來的人，都值得一個好天氣。」","沙灘的貝殼：「浪每天都來，每天都不一樣。」","公園的阿伯：「坐一下吧，河又不會跑掉。」","噴水池邊的小孩：「丟一枚硬幣，許一個不能說的願。」","女神泉：「說實話的人，泉水會記得。」","西山的小路：「慢慢走，路會自己變短。」","燈塔：「海那邊的人，也看得到這盞燈。」","巷子裡的貓：「喵。」（牠看起來很滿意你來了）","河堤上釣魚的人：「今天沒釣到，可是浮標很好看。」","天后新村的門牌：「歡迎回家。」","溪邊的石頭：「水會繞過去的，你也可以。」"];
+const STP=()=>{ const d=LF(); if(!d.stp||typeof d.stp!=="object") d.stp={m:0}; return d.stp; }, stpN=()=>MSPOT.filter((q,i)=>STP().m&(1<<i)).length;
+function stpPop(i){ let el=document.getElementById("stpPop"); if(!el){ el=document.createElement("div"); el.id="stpPop"; el.style.cssText="position:fixed;left:50%;top:38%;z-index:60;transform:translate(-50%,-50%);pointer-events:none;text-align:center;transition:opacity .5s"; document.body.appendChild(el); }
+  const n=stpN(); el.innerHTML=`<div style="width:150px;height:150px;margin:0 auto;border-radius:50%;border:6px double #c0392f;color:#c0392f;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,248,235,.92);font-weight:900;box-shadow:0 6px 24px rgba(0,0,0,.35);animation:stpIn .45s cubic-bezier(.2,1.6,.4,1) forwards;transform:rotate(-8deg)"><div style="font-size:13px;letter-spacing:2px">小鎮巡禮</div><div style="font-size:24px;margin:4px 0">${MSPOT[i][2]}</div><div style="font-size:13px">${n} / ${MSPOT.length}</div></div><div style="margin-top:10px;background:rgba(30,20,10,.78);color:#fff6e0;padding:8px 14px;border-radius:12px;font-size:15px;max-width:300px">${esc(STP_LINE[i]||"")}</div>`;
+  if(!document.getElementById("stpCss")){ const st=document.createElement("style"); st.id="stpCss"; st.textContent="@keyframes stpIn{0%{transform:scale(2.2) rotate(-25deg);opacity:0}100%{transform:scale(1) rotate(-8deg);opacity:1}}"; document.head.appendChild(st); }
+  el.style.opacity="1"; clearTimeout(el._t); el._t=setTimeout(()=>{ el.style.opacity="0"; },3400); try{ noiseBurst(.1,.09,260); tone(523,.1,.05,"triangle",.12); tone(784,.14,.05,"triangle",.22); }catch(e){} }
+function stpMark(i){ const S=STP(); if(S.m&(1<<i)) return; S.m|=1<<i; save(); try{ profSave(true); }catch(e){} stpPop(i);
+  if(stpN()>=MSPOT.length&&!S.done){ S.done=1; bag.clo=(bag.clo||0)|(1<<(27-STYLEX0)); bag.ttlX=50; save(); try{ profSave(true); DQ&&DQ.relabel&&DQ.relabel(); }catch(e){} setTimeout(stpDone,3800); } }
+function stpDone(){ openSheet("stpDone","📮 集章冊蓋滿了！",`<p class="lead">整個小鎮都走過一遍了。今天的腳，辛苦了。</p><div class="lf-card"><div class="nm">得到稱號「小鎮旅人」</div><div class="st">名字前面會顯示「小鎮旅人・」</div></div><div class="lf-card"><div class="nm">得到「小鎮旅人裝」</div><div class="st">墨綠短斗篷鑲金邊、敞襟背心配紅領巾，斜背皮帶上掛著蓋滿章的小鎮章本。只有走完小鎮的人才有。</div></div><div class="row"><button class="primary" data-act="stpWear">馬上穿上</button><button class="secondary" data-act="stpClose">先不要</button></div>`); }
+HANDLERS.stpClose=()=>closeSheet();
+HANDLERS.stpWear=()=>{ closeSheet(); try{ me.look[3]=27; meAv.setLook(me.look); save("mz.me",me); profSave(true); markDirty(); }catch(e){ console.warn(e); } toast("👘 換上小鎮旅人裝了",2200); };
+function stpTick(){ if(!document.body.classList.contains("out-temple")) return; const x=meAv.pos.x, z=meAv.pos.y, S=STP(); for(let i=0;i<MSPOT.length;i++){ if(S.m&(1<<i)) continue; const q=MSPOT[i]; if(Math.hypot(x-q[0],z-q[1])<7){ stpMark(i); break; } } }
+function stpBook(){ const S=STP(), n=stpN(); openSheet("lfDex","📮 小鎮巡禮集章冊",`<p class="lead">蓋了 ${n} / ${MSPOT.length} 個章。走路、騎腳踏車、飛滑翔傘經過都算；蓋滿得到稱號「小鎮旅人」和「小鎮旅人裝」。</p><div class="row">${[["r","淡水"],["o","海水"],["b","昆蟲"],["s","📮 集章"]].map(t=>`<button class="${dexTab===t[0]?"primary":"secondary"}" data-act="lfDexTab" data-v="${t[0]}">${t[1]}</button>`).join("")}</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px">${MSPOT.map((q,i)=>{ const on=S.m&(1<<i); return `<div style="aspect-ratio:1;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;${on?"border:4px double #c0392f;color:#c0392f;background:#fff6e6;transform:rotate(-8deg)":"border:3px dashed rgba(255,255,255,.3);color:rgba(255,255,255,.45)"}"><span style="font-size:15px">${on?q[2]:"？"}</span>${on?"":`<small style="font-size:11px">${q[2]}</small>`}</div>`; }).join("")}</div>${S.done?`<div class="row"><button class="primary" data-act="stpWear">穿上小鎮旅人裝</button></div>`:""}`); }
+L.stp=()=>({m:STP().m,n:stpN(),done:!!STP().done}); L.stpMark=stpMark;
+/* ===== ⚡ 精力不夠的提示卡 (11/24 團隊企劃・主委「修正精力提示卡 修QA」): instead of always 「吃點東西、泡溫泉」 — which sent people who had
+   already used today's 100 of recovery off to do nothing — a card that looks at where you are today: a bowl of 鹹粥 in the bag (it does not count
+   toward the 100), recovery still left (溫泉 / 禪堂, with 帶我去), or today done (what is free: 店家小遊戲, 拜拜, 滑翔傘, 騎腳踏車, 集章).
+   Once in 45 s; in between a short toast. enHas(n) is the same check done first, before the tool checks — so nobody buys a rod at 0. ===== */
+let ENC_T=-1e9; L.encR=()=>{ ENC_T=-1e9; };
+function enHas(n){ if(me.sp&&!window.MZ_ENTEST) return true; if(Math.round(bag.en??100)>=n) return true; try{ buzz(); }catch(_){} enCard(n); return false; }
+function enCard(n){ const e=Math.round(bag.en??100), rl=Math.round(SHOPX&&SHOPX.recLeft?SHOPX.recLeft():0), d=LF(), cg=d.cg|0, cgT=d.cgD===today();
+  if(performance.now()-ENC_T<45000||document.querySelector(".sheet.open,#sheet.open")){ toast(rl>0?`精力不夠（要 ${n}，現在 ${e}）。今天還能補 ${rl} 點`:`精力不夠（要 ${n}，現在 ${e}）。明天 0:00 補滿`,2400); return; } ENC_T=performance.now();
+  const B=(act,v,ic,t,sub)=>`<button class="good" data-act="${act}" data-v="${v}"><span class="name">${ic} ${t}</span><span class="meta">${sub}</span></button>`;
+  let lead, rows="";
+  if(cg>0){ lead=`精力不夠了（要 ${n}，現在 ${e}）。背包裡還有 <b>${cg}</b> 碗鹹粥，一碗回 100！`; rows+=B("lfEatCongee","", "🥣","喝一碗鹹粥","馬上回 100 精力"); }
+  else if(rl>0){ lead=`⚡ 精力用完了，今天還能補 <b>${rl}</b> 點。去泡個溫泉，或到禪堂坐一下吧。`; rows+=B("enGo","onsen","♨️","帶我去泡溫泉","禪房一樓，每分鐘回 2 點")+B("enGo","zen","🧘","帶我去禪堂靜坐","每分鐘回 1 點"); }
+  else lead=`⚡ 今天辛苦了。精力明天 0:00 就補滿。<br>現在不用精力，也可以做這些：`;
+  if(!cg&&!cgT) rows+=B("enGo","congee","🫧","到一粥七天洗碗","每天第一次洗好碗送一碗鹹粥（回 100，不算在每天的恢復裡）");
+  if(rl<=0||cg>0){ rows+=B("enGo","town","🎮","店家小遊戲","疊漢堡、冰淇淋、插花……不用精力")+B("enGo","temple","🙏","回廟裡拜拜、求籤","擲筊、抽籤、點燈都不用精力")+B("enGo","mtop","🪂","天后山頂飛滑翔傘","從山頂飄過整個小鎮"); if(d.bike) rows+=B("enGo","bike","🚲","騎腳踏車兜風","廟外面都能騎"); }
+  openSheet("enCard","⚡ 精力不夠了",`<p class="lead">${lead}</p><div class="goods">${rows}</div>`); }
+HANDLERS.enGo=v=>{ closeSheet(); const go=(x,z)=>{ meAv.pos.set(x,z); meAv.target.set(x,z); meAv.path=[]; };
+  if(v==="onsen"){ go(INN.DX+48.5,-34.25); toast("♨️ 到溫泉了，泡著就會慢慢回精力",2600); }
+  else if(v==="zen"){ try{ go((ZEN.hall.x0+ZEN.hall.x1)/2,ZEN.GZ); }catch(e){ go(-30,-28); } toast("🧘 到禪堂了，找一個蒲團坐下（按「禪坐」）",3000); }
+  else if(v==="congee"||v==="town"){ const b=v==="congee"&&TOWNX&&TOWNX.bOf&&TOWNX.bOf("tw:congee"); if(b) go(b.x+Math.sin(b.ry)*2.2,b.z+Math.cos(b.ry)*2.2); else go(28,-62); toast(v==="congee"?"🫧 這裡是一粥七天，進去找玲姊洗碗":"🎮 小鎮到了，店家的小遊戲都不用精力",2600); }
+  else if(v==="temple"){ go(0,12); toast("🙏 回到廟裡了",2000); }
+  else if(v==="mtop"){ go(66,-209); toast("🪂 天后山頂到了，跳傘台在往小鎮那一側",2600); }
+  else if(v==="bike"){ try{ if(!document.body.classList.contains("out-temple")) go(28,-62); setTimeout(()=>{ try{ bikeSet(true); }catch(e){} },1500); }catch(e){} } };
 /* ===== 🚲 腳踏車 (11/24 主委「你做一台 上山騎腳踏車可以 但騎一段會停下來喘氣三秒再繼續 收藏家任務取得」「廟裡不能騎」).
    小潘 gives his old bike for 5 different insects and 1 fossil (LF().bike=1). 🚲 in the action column gets on / off — only outside the
    temple walls (body.out-temple). Riding: twice the walking speed; uphill the climb adds up, and after BK_CLIMB metres of going up you
@@ -17059,7 +17117,7 @@ L.bike=()=>({own:!!LF().bike,on:BK.on,climb:BK.climb,pant:BK.pant}); L.bikeSet=b
 const bikeNeed=()=>{ const g=GI(), bugs=Object.keys(g).filter(k=>k.startsWith("bug:")&&g[k]>0), fos=Object.keys(g).filter(k=>g[k]>0&&!k.startsWith("bug:")&&giInfo(k).cat==="fossil"); return {bugs,fos,ok:bugs.length>=5&&fos.length>=1}; };
 L.bikeBox=()=>{ if(LF().bike) return ""; const N=bikeNeed(); return `<h4 style="margin:10px 0 4px">🚲 小潘的請託</h4><p class="note" style="margin:0 0 6px">小潘：「我想把收藏櫃再補齊一點……給我 <b>5 種不一樣的昆蟲</b>和 <b>1 件化石</b>，我就把以前騎的腳踏車送你！它跑得很快喔，就是上坡會有點喘。」<br>你現在有：昆蟲 ${Math.min(5,N.bugs.length)}/5 種・化石 ${Math.min(1,N.fos.length)}/1 件</p><div class="row"><button class="primary" data-act="lfBikeGet" ${N.ok?"":"disabled"}>交給小潘</button></div>`; };
 HANDLERS.lfBikeGet=()=>{ const N=bikeNeed(); if(!N.ok||LF().bike) return; N.bugs.slice(0,5).forEach(k=>giAdd(k,-1)); giAdd(N.fos[0],-1); LF().bike=1; save(); try{ profSave(true); [784,988,1175,1568].forEach((f,k)=>tone(f,.12,.05,"triangle",k*.09)); }catch(e){} closeSheet(); openSheet("lfBikeGot","🚲 拿到腳踏車了！",`<p class="lead">小潘：「這台腳踏車陪我抓了好多年的蟲，現在交給你了！」</p><p class="note">在廟外面，按下面的「🚲 騎腳踏車」就能騎，速度是走路的兩倍。上坡騎一段會停下來喘口氣。</p>`); bikeChip(); };
-let actT=0; L.tick10=dt=>{ try{ ckTick(dt); }catch(e){} try{ bikeTick(dt); }catch(e){ console.warn("bike",e); } if((actT-=dt)<0){ actT=1; try{ tgTick(); }catch(e){} try{ bikeChip(); }catch(e){} try{ actStack(); }catch(e){} } };
+let actT=0; L.tick10=dt=>{ try{ ckTick(dt); }catch(e){} try{ bikeTick(dt); }catch(e){ console.warn("bike",e); } if((actT-=dt)<0){ actT=1; try{ tgTick(); }catch(e){} try{ stpTick(); }catch(e){} try{ bikeChip(); }catch(e){} try{ actStack(); }catch(e){} } };
 try{ ROOMX.cookBtn=()=>kitchen(); }catch(e){} L.cookTest=i=>cookGame(i); /* (test hook) */
 /* 📜 好感委託 (11/16 主委): every townsperson has three little requests, opened as you get to know them (好感 15 / 40 / 70).
    They ask for things the town already has — a fish, an insect, something from your garden, something dug up, a dish you cooked.
