@@ -80,6 +80,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-o
 .msg-item,.msg-item *{-webkit-user-select:text;user-select:text}
 body.rotOn .rot{display:grid!important} /* (11/23 主委「左下右下轉方向的按鈕 放進設定裡 玩家可以選擇開啟」) */
 #enPill{padding:4px 8px 4px 6px!important;gap:4px!important;font-size:13px!important;border-radius:11px!important}#enPill .bar{width:38px!important;height:7px!important}#enPill .ic{font-size:14px!important}#enPill small{font-size:10px!important}
+body:not(.out-temple) #tgBtn{display:none!important}
 body.out-temple #autoBtn,body.out-temple #guideBtn,body.out-temple .actions,body.out-temple #actOpen{display:none!important}
 .act-fold{flex:0 0 auto}
 .act-fold{align-self:center;width:30px;height:30px;border-radius:50%;border:1px solid var(--gold-soft);background:rgba(30,12,8,.6);color:#ffe2a0;font-size:15px;line-height:1;padding:0;margin-left:-4px}
@@ -551,6 +552,7 @@ body.mapedit>*:not(#c):not(#edOv):not(#edPanel):not(#edX):not(#toast):not(script
     <button class="pill glass hall-btn" id="hallBtn" aria-label="切換殿別"><span class="seal">媽</span><span class="hall-name">天后宮 正殿</span><span class="count hall-count"><span class="dot off" id="dot"></span><span id="countText">連線中…</span></span><span class="hall-more">切換 ▾</span></button>
     <button class="pill glass auto-btn" id="autoBtn" aria-label="一鍵參拜">⚡ 一鍵參拜</button>
     <button class="guide glass" id="guideBtn" aria-label="參拜指引"><span><b id="guideStep">參拜指引</b><span id="guideText">到服務處請香</span></span><span class="go">前往</span></button>
+    <button class="guide glass" id="tgBtn" hidden aria-label="小鎮指引"><span><b id="tgStep">小鎮指引</b><span id="tgText"></span></span><span class="go">看看</span></button>
     <button class="pill glass contact-btn" id="contactBtn" aria-label="聯絡作者" hidden style="display:none">✉️ 聯絡作者</button>
     <button class="pill glass letter-btn" id="letterBtn" hidden style="display:none">💌 主委回信了</button>
     <button class="pill glass chair-btn" id="chairBtn" hidden>🛠️ 主委工具</button>
@@ -10602,7 +10604,7 @@ function catMoveP(e,sp,dt){ if(!e.path||!e.path.length) e.path=[[e.tx,e.tz]]; co
 
 /* ---- 挖寶: now and then (once a game day — 24 min — while you play, only when it has eaten and is happy) your cat runs off a few steps, digs with its front
    paws and brings you 平安幣 or 扭蛋幣. Decided and paid on this phone like the 土地公 treasure. ---- */
-const CAT_DIG=[["c",50,.40],["c",100,.24],["c",500,.07],["c",1000,.02],["g",1,.18],["g",5,.07],["g",10,.02]];
+const CAT_DIG=[["c",50,.50],["c",100,.24],["c",500,.04],["c",1000,.005],["g",1,.18],["g",5,.03],["g",10,.005]]; /* (11/24 主委「貓挖寶一樣會挖很多次 只是最好獎項機率調低」: 1000 and 10 扭蛋幣 2%→0.5%, 500 7%→4%, 5 扭蛋幣 7%→3%) */
 /* (掛網: no tap or key for 3 minutes. Then it still digs, but only once an hour — counted from your last touch or its last
    掛網 dig — and these don't use up the one a day you get while playing.) */
 CAT.inT=Date.now(); ["pointerdown","keydown","touchstart","wheel"].forEach(ev=>addEventListener(ev,()=>{ CAT.inT=Date.now(); },{passive:true,capture:true}));
@@ -11395,7 +11397,7 @@ function clawStart(){ const C=buildClaw(); const o={exposure:1.05}; const el=ent
     if(t==="cat"){ bag.coins+=30; what="平安幣 +30"; ic="🐱"; } if(t==="cap"){ if(p.gold){ bag.gacha=Math.min(255,(bag.gacha||0)+1); what="扭蛋幣 +1 枚"; ic="🪙"; } else { const r=Math.random();
       if(r<.55){ bag.coins+=100; what="平安幣 +100"; ic="💰"; } else if(r<.67){ bag.coins+=500; what="平安幣 +500"; ic="💰"; } else if(r<.70){ bag.coins+=1000; what="平安幣 +1000！"; ic="🤑"; }
       else { /* (11/20 主委「頭飾只有3%」「現在還沒有家具」: the remaining 30% — one in ten of it (3% of all capsule wins) is a head ornament, the 夾娃娃夾子 first if you don't have it; otherwise a snack. No furniture.) */
-        let L=[]; try{ L=gachaLeft(); }catch(e){} const hk=!me.sp&&Math.random()<.03?(!accState().owned.h_claw?"h_claw":(L.length?L[(Math.random()*L.length)|0]:"")):"";
+        let L=[]; try{ L=gachaLeft(); }catch(e){} const hk=!me.sp&&Math.random()<.1? /* (11/24 團隊總檢查: this is inside the 30% branch — .1 of it is 3% of all capsule wins; .03 here was 0.9%) */ (!accState().owned.h_claw?"h_claw":(L.length?L[(Math.random()*L.length)|0]:"")):"";
         if(hk){ accState().owned[hk]=1; what=`頭飾「${ACC[hk].name}」！（放進背包的飾品）`; ic=""; G.hat=hk; } else { const s=SNACKS[(Math.random()*SNACKS.length)|0]; bag.snk[s.k]=(bag.snk[s.k]||0)+1; what=`${s.n} ×1（放進背包）`; ic="🎁"; } } } } if(t==="can"){ bag.snk.drink=(bag.snk.drink||0)+1; what="草莓汽水 ×1（放進背包）"; ic="🥤"; } if(t==="cup"){ bag.snk.noodle=(bag.snk.noodle||0)+1; what="洋芋片 ×1（放進背包）"; ic="🍟"; }
     if(t==="gift"){ /* (11/20 主委: head ornament 3%; 11/22 主委「可以夾娃娃拿家具了 一樣3%」: and a furniture piece 3% — otherwise 平安幣 or a snack) */ let L=[], fu=""; try{ L=gachaLeft(); }catch(e){} if(L.length&&!me.sp&&Math.random()<.03){ const k=L[(Math.random()*L.length)|0]; accState().owned[k]=1; what=`頭飾「${ACC[k].name}」！（放進背包的飾品）`; ic=""; G.hat=k; } else if(Math.random()<.03&&(()=>{ try{ fu=ROOMX?ROOMX.grant("c"):""; }catch(e){ fu=""; } return !!fu; })()){ what=`家具「${fu}」！（放進我的房間的家具）`; ic="🛋️"; } else if(Math.random()<.5){ bag.coins+=60; what="平安幣 +60"; ic="💰"; } else { const s=SNACKS[(Math.random()*SNACKS.length)|0]; bag.snk[s.k]=(bag.snk[s.k]||0)+1; what=`${s.n} ×1（放進背包）`; ic="🎁"; } }
     saveBag(); markDirty(); try{ profSave(true); }catch(e){} statInc("clawWin"); coins();
@@ -11607,8 +11609,8 @@ D.ttl=i=>{ i=i===undefined?D.title():(i|0); return i>=1&&i<=TITLES.length?TITLES
 function relabel(){ try{ meAv.setName(myLabel()); markDirty(); }catch(e){} }
 /* ---- 每日功課: three a day, one from each group, picked by the date (everyone gets the same three) ---- */
 const QA=[["bow",3,"🙏 參拜 3 次","按畫面下方的「拜」",100],["jiao",1,"🌙 擲筊 1 次","按畫面下方的「筊」",100],["lot",1,"🎋 求一支籤","按畫面下方的「籤」",100],["bai",1,"🔥 完成一次參拜","照參拜指引走完並燒化金紙，一鍵參拜也算",150]];
-const QB=[["work",1,"🏪 在 M超商打工一班","禪房對面的商店街，一班要 20 精力",100],["claw",2,"🕹️ 夾娃娃 2 次","商店街的夾鬼夾怪，有沒有夾中都算",150],["buy",1,"🧃 在 M超商買一樣東西","商店街的 M超商",100],["cat",1,"🐈 摸摸貓咪","廟埕的流浪貓或自己養的貓都算",100]];
-const QC=[["on",10,"⏳ 在廟裡待 10 分鐘","畫面開著才算",100],["zen",2,"🧘 在禪堂待 2 分鐘","走進禪堂就開始算",100],["chat",1,"💬 跟大家說一句話","聊天或快捷語都算",100]];
+const QB=[["work",1,"🏪 在 M超商打工一班","禪房對面的商店街，一班要 20 精力",100],["claw",2,"🕹️ 夾娃娃 2 次","商店街的夾鬼夾怪，有沒有夾中都算",150],["buy",1,"🧃 在 M超商買一樣東西","商店街的 M超商",100],["cat",1,"🐈 摸摸貓咪","廟埕的流浪貓或自己養的貓都算",100],["fish",1,"🎣 在小鎮釣到一條魚","河邊、海邊、女神泉都可以，要有釣竿和魚餌",100],["dig",1,"⛏️ 在小鎮挖一次寶","地上的裂縫，鏟子在雜貨店買",100]]; /* (11/24 主委「把原本只有廟裡混合一些小鎮」: two town ones here and two below) */
+const QC=[["on",10,"⏳ 在廟裡待 10 分鐘","畫面開著才算",100],["zen",2,"🧘 在禪堂待 2 分鐘","走進禪堂就開始算",100],["chat",1,"💬 跟大家說一句話","聊天或快捷語都算",100],["gift",1,"🎁 送鎮民一樣禮物","小鎮的鎮民，送什麼都可以",100],["dish",3,"🫧 到一粥七天洗 3 個碗","小鎮的一粥七天",100]];
 const QNM=["nm",1,"🏮 夜市玩一攤（加碼）","夜市每天 17:00–00:00，不算在寶箱裡",100];
 const CHEST={c:200,g:1};
 const hsh=(d,k)=>(Math.imul(d,2654435761|0)^Math.imul(k+1,40503))>>>0;
@@ -11638,10 +11640,10 @@ const aval=a=>a[4]?a[4]():(LT()[a[0]]||0);
 const atier=a=>Math.min(a[2].length,AC()[a[0]]|0);
 const acan=a=>{ const t=atier(a); return t<a[2].length&&aval(a)>=a[2][t]; };
 /* ---- what happened: called from statInc and from a few places directly ---- */
-const STATMAP={b_bowBtn:"bow",cvsWork:"work",clawPlay:"claw",clawWin:"clawWin",cvsBuy:"buy",minOnline:"on",minZen:"zen",gachaSpin:"gacha"};
-D.stat=(k,n)=>{ const e=STATMAP[k]||(k.indexOf("nmP_")===0?"nm":k.indexOf("nmW_")===0?"nmW":""); if(e) D.ev(e,n); };
+const STATMAP={lfFish:"fish",digN:"dig",npcGift:"gift",dish:"dish",b_bowBtn:"bow",cvsWork:"work",clawPlay:"claw",clawWin:"clawWin",cvsBuy:"buy",minOnline:"on",minZen:"zen",gachaSpin:"gacha"};
+D.stat=(k,n)=>{ try{ if(window.MZ_TGEV) window.MZ_TGEV(k); }catch(_){ } const e=STATMAP[k]||(k.indexOf("nmP_")===0?"nm":k.indexOf("nmW_")===0?"nmW":""); if(e) D.ev(e,n); };
 D.ev=(k,n)=>{ n=n||1; let ch=false; if(LTK.includes(k)){ const lt=LT(); lt[k]=Math.min(4095,(lt[k]||0)+n); ch=true; }
-  const qs=todayQ().concat(fest()?[QNM,QF]:[QNM]), q=qs.find(x=>x[0]===k); if(q){ const d=QD(), b=d.p[k]||0; if(b<q[1]){ d.p[k]=b+n; ch=true; if(b+n>=q[1]) toast(q===QF?"🧧 參拜圓滿！到左上的按鈕領節日紅包":`✅ 每日功課完成：${q[2].replace(/^\S+\s/,"")}　到左上「📅 今日」領獎`,3600); } }
+  const qs=todayQ().concat(fest()?[QNM,QF]:[QNM]), q=qs.find(x=>x[0]===k); if(q){ const d=QD(), b=d.p[k]||0; if(b<q[1]){ d.p[k]=b+n; ch=true; if(b+n>=q[1]) toast(q===QF?"🧧 參拜圓滿！到右上「📅 今日」領節日紅包":`✅ 每日功課完成：${q[2].replace(/^\S+\s/,"")}　到右上「📅 今日」領獎`,3600); } }
   if(ch){ keep(); dot(); if(sheetKind==="daily") try{ D.redraw(); }catch(e){} } };
 /* ---- the button (beside 一鍵參拜) and its red dot ---- */
 function css(){ if($("#dqCss")) return; const st=document.createElement("style"); st.id="dqCss"; st.textContent=`
@@ -14966,7 +14968,7 @@ HANDLERS.lfNpcGive=v=>{ const [nid,k,...rest]=v.split(":"), id=rest.join(":"), n
   if(k==="f"){ const i=d.inv.findIndex(e=>e[0]===id); if(i>=0){ d.inv.splice(i,1); ok=true; } } else if(k==="g"){ const g=GI(); if(g[id]>0){ giAdd(id,-1); ok=true; } } else if(L.cropTake&&L.cropTake(id)){ ok=true; }
   if(!ok) return; const tg=giftTags(k,id), P=NPC_P[nid]||{like:n.likes||[],hate:[]}, hated=(P.hate||[]).some(t=>tg.includes(t))&&!(P.like||[]).includes(id); liked=!hated&&((P.like||[]).some(t=>tg.includes(t))||(n.likes||[]).includes(id));
   R.g=today(); R.a=Math.max(0,Math.min(100,R.a+(hated?-2:liked?5:3))); save(); try{ (hated?[392,330]:[659,784,988]).forEach((f,q)=>tone(f,.1,.05,"triangle",q*.07)); }catch(e){}
-  try{ L.onGift&&L.onGift(nid,k,id,tg); }catch(e){} npcSheet(n,hated?(P.hy||"呃……謝謝……"):liked?(P.ly||"哇！這是我最喜歡的！太謝謝你了！"):NPC_NEUTRAL[(Math.random()*NPC_NEUTRAL.length)|0]); };
+  try{ L.onGift&&L.onGift(nid,k,id,tg); }catch(e){} try{ statInc("npcGift"); }catch(e){} npcSheet(n,hated?(P.hy||"呃……謝謝……"):liked?(P.ly||"哇！這是我最喜歡的！太謝謝你了！"):NPC_NEUTRAL[(Math.random()*NPC_NEUTRAL.length)|0]); };
 function giftTags(k,id){ if(k==="f"){ const f=FBY[id]; return [id,"fish"].concat(f&&f.r>=3?["rare"]:[]); } if(k==="c") return [id,["sun","tulip","rose"].includes(id)?"flowers":"veg"].concat(id==="straw"?["sweet"]:[]); const I=giInfo(id); return [id,I.cat].concat(I.tags||[]); }
 /* bodies */
 const NL={}; let talkChip=null, talkN=null;
@@ -15166,7 +15168,7 @@ L.tick5=dt=>{ try{ meteorTick(dt); }catch(e){ console.warn("meteor",e); }  };
    from the 花店. A plant grows in three steps (sprout, young plant, flowers or fruit) on real time, but only while it has been
    watered: water it, and again after each step. Forgetting does not kill it, it just waits. Sell the harvest at the 花店 or the
    雜貨店, or give it to someone. ---------- */
-const SEEDS=[["sun","向日葵",60,20,450,"🌻","#f2c230"],["tulip","鬱金香",80,30,600,"🌷","#e8607a"],["tomato","番茄",70,25,190,"🍅","#e8402e"],["straw","草莓",100,40,280,"🍓","#d8303e"],["cabbage","高麗菜",150,60,1000,"🥬","#8fd06a"],["rose","玫瑰",200,90,1400,"🌹","#c8203e"],["pumpkin","南瓜",300,120,2000,"🎃","#f08a2a"]]; /* (11/16: three waterings cost 30 精力, so a crop pays well: the longer it takes, the more; 番茄、草莓 give 3) */
+const SEEDS=[["sun","向日葵",60,20,150,"🌻","#f2c230"],["tulip","鬱金香",80,30,200,"🌷","#e8607a"],["tomato","番茄",70,25,65,"🍅","#e8402e"],["straw","草莓",100,40,95,"🍓","#d8303e"],["cabbage","高麗菜",150,60,335,"🥬","#8fd06a"],["rose","玫瑰",200,90,470,"🌹","#c8203e"],["pumpkin","南瓜",300,120,670,"🎃","#f08a2a"]]; /* (11/24 主委 依團隊建議: sale prices a third of before; the 花店 buys at most CROP_CAP a day) */ const CROP_CAP=1500; /* (11/16: three waterings cost 30 精力, so a crop pays well: the longer it takes, the more; 番茄、草莓 give 3) */
 const SB={}; SEEDS.forEach(q=>SB[q[0]]=q);
 const GD2=()=>{ const d=LF(); d.gd=d.gd||{beds:Array(12).fill(null),seed:{},crop:{}}; for(const k of ["beds","beds2","beds3"]) if(!Array.isArray(d.gd[k])||d.gd[k].length!==12) d.gd[k]=Array(12).fill(null); d.gd.hv=d.gd.hv|0; return d.gd; };
 /* (11/22 主委「農作物收成120格 可以開啟第二間溫室 種滿600格可以開啟第三間」: every bed harvested counts once; at 120 溫室二號 opens, at 600 溫室三號 — each its own 12 beds) */
@@ -15176,8 +15178,11 @@ function grow(b,now){ if(!b) return; const S=SB[b.s]; if(!S){ return; } if(b.w&&
 const stage=b=>!b?-1:b.p>=3?3:Math.floor(b.p);
 L.cropList=()=>{ const c=GD2().crop; return Object.keys(c).filter(k=>c[k]>0).map(k=>({id:k,n:SB[k][1],k:c[k],ic:SB[k][5]})); };
 L.cropTake=id=>{ const c=GD2().crop; if(!(c[id]>0)) return false; c[id]--; save(); return true; };
-L.cropSell=()=>{ const L2=L.cropList(); if(!L2.length) return ""; const tot=L2.reduce((a,c)=>a+SB[c.id][4]*c.k,0); return `<h4 style="margin:12px 0 4px">收購花和菜</h4>${L2.map(c=>`<div class="lf-row"><span style="font-size:30px;width:64px;text-align:center">${c.ic}</span><div class="t"><b>${c.n}</b> ×${c.k}<br><small>一個 ${SB[c.id][4]} 幣</small></div></div>`).join("")}<div class="row" style="margin-top:8px"><button class="primary" data-act="lfCropSell">全部賣掉・${tot} 幣</button></div>`; };
-HANDLERS.lfCropSell=()=>{ const g=GD2(); let tot=0, n=0; for(const k in g.crop){ tot+=SB[k][4]*g.crop[k]; n+=g.crop[k]; g.crop[k]=0; } if(!n) return; bag.coins+=tot; save(); try{ profSave(true); chaChing(); }catch(e){} toast(`賣了 ${n} 個，拿到 ${tot} 平安幣`,2400); closeSheet(); };
+/* (11/24: the 花店 and the 雜貨店 together buy at most CROP_CAP a day — the dearest first; what doesn't fit stays in the bag for tomorrow) */
+const cropDay=()=>{ const d=LF(), t=today(); if(!d.crS||d.crS.d!==t) d.crS={d:t,e:0}; return d.crS; };
+const cropPlan=()=>{ const left=me.sp?1e9:Math.max(0,CROP_CAP-cropDay().e), L2=L.cropList().sort((a,b)=>SB[b.id][4]-SB[a.id][4]); let tot=0, n=0, room=left; const take={}; L2.forEach(c=>{ const pr=SB[c.id][4], k=Math.min(c.k,Math.floor(room/pr)); if(k>0){ take[c.id]=k; tot+=k*pr; n+=k; room-=k*pr; } }); return {tot,n,take,left,all:L2.reduce((a,c)=>a+c.k,0)}; };
+L.cropSell=()=>{ const L2=L.cropList(); if(!L2.length) return ""; const P=cropPlan(); return `<h4 style="margin:12px 0 4px">收購花和菜</h4>${L2.map(c=>`<div class="lf-row"><span style="font-size:30px;width:64px;text-align:center">${c.ic}</span><div class="t"><b>${c.n}</b> ×${c.k}<br><small>一個 ${SB[c.id][4]} 幣</small></div></div>`).join("")}<p class="note" style="margin:6px 0 0">花和菜每天最多收 ${CROP_CAP} 幣（花店、雜貨店合計），今天還可以收 ${me.sp?"不限":P.left+" 幣"}。</p><div class="row" style="margin-top:8px">${P.n?`<button class="primary" data-act="lfCropSell">${P.n<P.all?`先賣 ${P.n} 個`:"全部賣掉"}・${P.tot} 幣</button>`:`<button class="secondary" disabled>今天收滿了，明天再來</button>`}</div>`; };
+HANDLERS.lfCropSell=()=>{ const g=GD2(), P=cropPlan(); if(!P.n){ toast("今天的花和菜收滿了，明天再來",2400); return; } for(const k in P.take) g.crop[k]-=P.take[k]; cropDay().e+=P.tot; bag.coins+=P.tot; save(); try{ profSave(true); chaChing(); }catch(e){} toast(`賣了 ${P.n} 個，拿到 ${P.tot} 平安幣${P.n<P.all?"（剩下的明天再賣）":""}`,2600); closeSheet(); };
 function flower(){ const g=GD2(); openSheet("lfFlower","🌷 花店",`<p class="lead">「種子在這裡買，到河濱公園的『我的花圃』種。記得澆水喔！」</p>${SEEDS.map(q=>`<div class="lf-row"><span style="font-size:30px;width:56px;text-align:center">${q[5]}</span><div class="t"><b>${q[1]}種子</b>　${dPrice("tw:flower",q[2])} 幣<br><small>約 ${q[3]} 分鐘長大（要澆 3 次水），收成賣 ${q[4]} 幣${g.seed[q[0]]?`｜有 ${g.seed[q[0]]} 包`:""}</small></div><button class="primary" data-act="lfSeed" data-v="${q[0]}">買</button></div>`).join("")}${L.cropSell()}`); }
 HANDLERS.lfSeed=v=>{ const q=SB[v], g=GD2(), pr=dPrice("tw:flower",q[2]); if(!me.sp){ if(bag.coins<pr){ try{ buzz(); }catch(e){} toast("平安幣不夠",2000); return; } bag.coins-=pr; } g.seed[v]=(g.seed[v]|0)+1; save(); try{ chaChing(); }catch(e){} flower(); };
 let GS=null;
@@ -15681,7 +15686,7 @@ const czOwe=(done,paid)=>done<10?(paid?0:done>=5?300:done>=1?200:0):0; /* (leavi
 const CZ_CAP=2000; /* 平安幣 a day from 一粥七天 at most (the chair, 11/15); 鹹粥 is still given */
 function czLeft(){ const d=LF(), td=today(); if(d.czD!==td){ d.czD=td; d.czE=0; } return Math.max(0,CZ_CAP-(d.czE|0)); }
 function czPay(S,coins,cg){ const d=LF(), c=Math.min(coins,czLeft()); d.czE=(d.czE|0)+c; bag.coins+=c; if(cg) d.cg=(d.cg|0)+cg; S.coins+=c; S.cg+=cg; if(c<coins) S.capped=1; save(); try{ profSave(true); }catch(e){} return c; }
-GL["tw:congee"]=()=>{ /* (11/21 主委「一粥七天出菜遊戲先取消 只留洗碗」: the serving game (czGame) stays in the code but is no longer offered) */ openSheet("lfCongee","🥣 一粥七天",`<p class="lead">玲姊：「來不及了！你能不能來支援洗碗呢，我們能給你薪水跟鹹粥打包回去吃！」</p><h4 style="margin:12px 0 4px">🫧 洗碗泡泡大戰</h4><p class="note">2 分鐘內能洗幾個碗？刷乾淨碗裡 → 翻面刷乾淨碗底 → 拿到水龍頭下沖乾淨。污漬要全部刷掉才能翻面、才能沖水；拖曳碗旁邊的空白處可以自己轉碗。<br>一個碗 50 平安幣（一天最多 2000）・洗 1～19 個：鹹粥 1 碗・20 個以上：2 碗（一碗回 100 精力）</p><div class="row"><button class="primary" data-act="lfDishGo">開始洗碗</button><button class="secondary" data-act="lfRank" data-v="dish">今日排名</button></div>`); };
+GL["tw:congee"]=()=>{ /* (11/21 主委「一粥七天出菜遊戲先取消 只留洗碗」: the serving game (czGame) stays in the code but is no longer offered) */ openSheet("lfCongee","🥣 一粥七天",`<p class="lead">玲姊：「來不及了！你能不能來支援洗碗呢，我們能給你薪水跟鹹粥打包回去吃！」</p><h4 style="margin:12px 0 4px">🫧 洗碗泡泡大戰</h4><p class="note">2 分鐘內能洗幾個碗？刷乾淨碗裡 → 翻面刷乾淨碗底 → 拿到水龍頭下沖乾淨。污漬要全部刷掉才能翻面、才能沖水；拖曳碗旁邊的空白處可以自己轉碗。<br>一個碗 50 平安幣（一天最多 2000）・每天第一次洗好碗送鹹粥 1 碗（一碗回 100 精力）</p><div class="row"><button class="primary" data-act="lfDishGo">開始洗碗</button><button class="secondary" data-act="lfRank" data-v="dish">今日排名</button></div>`); };
 HANDLERS.lfCgGo=()=>{ closeSheet(); if(!enPay(EN_SHOP)) return; czGame(); };
 /* ================= 一粥七天・洗碗泡泡大戰 (11/17, the chair's spec): a real 3D bowl in a steel sink.
    1 刷碗內 → 翻面 → 2 刷碗底 → 3 沖水 (turn the bowl under the tap) → the next dirty bowl, for 60 seconds.
@@ -15825,8 +15830,8 @@ function dwGame(){ if(!SHOPX||!SHOPX.enter) return;
   const up=e=>{ if(drag&&drag.id===e.pointerId) drag=null; ST.last=null; }; tl.addEventListener("pointerup",up); tl.addEventListener("pointercancel",up);
   $d("#dwFlip").onclick=()=>{ if(ST.ph!=="in") return; ST.ph="flip"; ST.flipT=0; try{ tone(520,.08,.05,"triangle"); tone(780,.1,.05,"triangle",.08); }catch(e){} hud(); };
   $d("#dwX").onclick=()=>{ if(!ST.over&&ST.go&&ST.t>0&&!confirm("還沒洗完，現在離開就沒有獎勵喔。確定離開？")) return; SHOPX.leave(); };
-  const finish=()=>{ ST.over=true; jet.visible=splash.visible=false; const k=stars(ST.n), cg=ST.n>=20?2:ST.n>=1?1:0; let pay=0; { const d=LF(), t=today(); if(!d.dwP||d.dwP.d!==t) d.dwP={d:t,e:0}; pay=me.sp?ST.n*DW_PAY:Math.max(0,Math.min(ST.n*DW_PAY,CZ_CAP-d.dwP.e)); d.dwP.e+=pay; bag.coins+=pay; if(cg) d.cg=(d.cg|0)+cg; save(); try{ profSave(true); if(pay) chaChing(); }catch(e){} }
-    try{ if(ST.n>0){ statInc("dish",ST.n); rankPost("dish",ST.n); } }catch(e){} el.insertAdjacentHTML("beforeend",`<div class="dw-end"><div>時間到！洗好了</div><b>${ST.n} 個碗</b><div style="font-size:30px;color:#ffd24a">${"★".repeat(k)}${"☆".repeat(3-k)}</div><div>${ST.n?`工資 <b style="font-size:22px;color:#ffd24a">${pay}</b> 平安幣${pay<ST.n*DW_PAY?"（今天的工資領滿了）":""}<br>`:""}${cg?`玲姊包了 <b style="font-size:22px">${cg}</b> 碗鹹粥給你（在背包，一碗回 100 精力）`:"洗好一個碗就有工資和鹹粥喔"}</div><div style="font-size:13px;opacity:.8">一個碗 ${DW_PAY} 平安幣・洗 1～19 個：鹹粥 1 碗・20 個以上：2 碗</div><div style="font-size:14px;margin-top:8px;line-height:1.5">玲姊：「如果你體力太旺盛，可以繼續來幫忙洗碗，每個碗給你十元，但是鹹粥不夠給你囉！」</div><div style="display:flex;gap:8px;justify-content:center;margin-top:6px"><button class="dw-btn" style="position:static;transform:none" id="dwMore">繼續洗（一個碗 1 精力・10 元）</button><button class="dw-btn" style="position:static;transform:none" id="dwOk">好</button></div></div>`);
+  const finish=()=>{ ST.over=true; jet.visible=splash.visible=false; const k=stars(ST.n), cg0=ST.n>=1?1:0, cg=cg0&&(me.sp||LF().cgD!==today())?1:0; /* (11/24 主委「鹹粥每天只有一碗 一樣一百精力」: one bowl a day, the first time you wash) */ let pay=0; { const d=LF(), t=today(); if(cg) d.cgD=t; if(!d.dwP||d.dwP.d!==t) d.dwP={d:t,e:0}; pay=me.sp?ST.n*DW_PAY:Math.max(0,Math.min(ST.n*DW_PAY,CZ_CAP-d.dwP.e)); d.dwP.e+=pay; bag.coins+=pay; if(cg) d.cg=(d.cg|0)+cg; save(); try{ profSave(true); if(pay) chaChing(); }catch(e){} }
+    try{ if(ST.n>0){ statInc("dish",ST.n); rankPost("dish",ST.n); } }catch(e){} el.insertAdjacentHTML("beforeend",`<div class="dw-end"><div>時間到！洗好了</div><b>${ST.n} 個碗</b><div style="font-size:30px;color:#ffd24a">${"★".repeat(k)}${"☆".repeat(3-k)}</div><div>${ST.n?`工資 <b style="font-size:22px;color:#ffd24a">${pay}</b> 平安幣${pay<ST.n*DW_PAY?"（今天的工資領滿了）":""}<br>`:""}${cg?`玲姊包了 <b style="font-size:22px">${cg}</b> 碗鹹粥給你（在背包，一碗回 100 精力）`:cg0?"今天的鹹粥已經包給你了，明天再來拿喔":"洗好一個碗就有工資和鹹粥喔"}</div><div style="font-size:13px;opacity:.8">一個碗 ${DW_PAY} 平安幣・每天第一次洗好碗：鹹粥 1 碗</div><div style="font-size:14px;margin-top:8px;line-height:1.5">玲姊：「如果你體力太旺盛，可以繼續來幫忙洗碗，每個碗給你十元，但是鹹粥不夠給你囉！」</div><div style="display:flex;gap:8px;justify-content:center;margin-top:6px"><button class="dw-btn" style="position:static;transform:none" id="dwMore">繼續洗（一個碗 1 精力・10 元）</button><button class="dw-btn" style="position:static;transform:none" id="dwOk">好</button></div></div>`);
     $d("#dwOk").onclick=()=>SHOPX.leave(); $d("#dwMore").onclick=()=>{ const e=Math.round(bag.en??100); if(e<1&&!me.sp){ msg("精力不夠了，先休息一下吧"); return; } const x=el.querySelector(".dw-end"); if(x) x.remove(); ST.over=false; ST.ot=true; ST.otN=0; ST.otC=0; hud(); }; /* (11/21 主委「洗碗結束後可以再洗 每一個碗一個精力 一個碗給10元（沒有鹹粥囉）」) */ try{ tone(660,.12,.06,"triangle"); tone(880,.16,.06,"triangle",.12); }catch(e){} };
   const otEnd=why=>{ ST.over=true; ST.ot=false; { const b=$d("#dwStop"); if(b) b.remove(); } el.insertAdjacentHTML("beforeend",`<div class="dw-end"><div>${why||"辛苦了！"}</div><b>加班洗了 ${ST.otN} 個碗</b><div>工資 <b style="font-size:22px;color:#ffd24a">${ST.otC}</b> 平安幣</div><button class="dw-btn" style="position:static;transform:none" id="dwOk2">好</button></div>`); $d("#dwOk2").onclick=()=>SHOPX.leave(); };
   const done1=()=>{ if(ST.ot){ if(!enPay(1)){ otEnd("精力用完了，今天先洗到這裡！"); return; } bag.coins+=10; ST.otN++; ST.otC+=10; save(); try{ profSave(true); }catch(e){} }
@@ -16960,7 +16965,19 @@ function ckTick(dt){ if(!CK) return; CK.pos+=CK.dir*dt*(.9+CK.hits.length*.35); 
    stack in one column above the joystick line, the nearest thing first, never overlapping (phone or computer) */
 let ACTS=null; function actStack(){ if(!ACTS){ ACTS=document.createElement("div"); ACTS.id="actStack"; document.body.appendChild(ACTS); const st=document.createElement("style"); st.textContent=`#actStack .near-chip{position:static!important;transform:none!important;pointer-events:auto} #actStack{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 100px);z-index:9;display:flex;flex-direction:column-reverse;align-items:center;gap:8px;pointer-events:none}#actStack>*{position:static!important;transform:none!important;left:auto!important;bottom:auto!important;pointer-events:auto;white-space:nowrap}#actStack>[hidden]{display:none!important}`; document.head.appendChild(st); }
   for(const id of ["nearChip","lfChip","bugChip","digChip","lfTalk"]){ const c=document.getElementById(id); if(c&&c.parentNode!==ACTS) ACTS.appendChild(c); } } /* (11/16: the 「點我：…」 chip for shops and spots joins the column too — it sat under 「跟…說話」) */
-let actT=0; L.tick10=dt=>{ try{ ckTick(dt); }catch(e){} if((actT-=dt)<0){ actT=1; try{ actStack(); }catch(e){} } };
+/* ===== 小鎮指引 (11/24 主委 依團隊建議): after the 參拜指引, four things to try in town, 200 平安幣 each (800 in all), once per character.
+   Any order; the pill (in town only) shows the first one not done; tapping it lists all four. ===== */
+const TG=[["dig","⛏️ 挖一次寶","到雜貨店找威利買鏟子，走到地上的裂縫按「挖」"],["fish","🎣 釣一條魚","到釣具行買釣竿和魚餌，在河邊、海邊拋竿"],["gift","🎁 送鎮民一樣禮物","跟鎮上的人說話，按「送禮」，挖到、釣到、種的都可以送"],["spring","⛲ 找到女神泉","森林深處有一座泉水，聽說住著一位女神"]];
+const TG_PAY=200, TGD=()=>{ const d=LF(); if(!d.tg||typeof d.tg!=="object") d.tg={m:0}; return d.tg; };
+const tgDone=i=>!!(TGD().m&(1<<i)), tgAll=()=>TG.every((q,i)=>tgDone(i));
+function tgMark(k){ const i=TG.findIndex(q=>q[0]===k); if(i<0||tgDone(i)) return; const t=TGD(); t.m|=1<<i; bag.coins+=TG_PAY; save(); try{ profSave(true); chaChing(); }catch(e){} toast(`✅ 小鎮指引：${TG[i][1].replace(/^\S+\s/,"")}　平安幣 +${TG_PAY}${tgAll()?"　小鎮指引全部完成！":""}`,3600); tgDraw(); }
+window.MZ_TGEV=k=>{ if(k==="digN") tgMark("dig"); else if(k==="lfFish") tgMark("fish"); else if(k==="npcGift") tgMark("gift"); };
+function tgDraw(){ const b=document.getElementById("tgBtn"); if(!b) return; const on=!!(TOWNX&&TOWNX.on)&&!tgAll()&&!me.sp; b.hidden=!on; if(!on) return; const i=TG.findIndex((q,j)=>!tgDone(j)), n=TG.filter((q,j)=>tgDone(j)).length; document.getElementById("tgStep").textContent=`小鎮指引 ${n}/${TG.length}`; document.getElementById("tgText").textContent=TG[i][1].replace(/^\S+\s/,""); }
+function tgTick(){ try{ if(TOWNX&&TOWNX.on&&!tgDone(3)&&Math.hypot(meAv.pos.x-85.4,meAv.pos.y-250.2*-1)<16) tgMark("spring"); }catch(e){} tgDraw(); }
+HANDLERS.tgOpen=()=>openSheet("tgGuide","🗺️ 小鎮指引",`<p class="lead">參拜完，來小鎮走走吧！每完成一項送 ${TG_PAY} 平安幣，順序不限。</p>${TG.map((q,i)=>`<div class="lf-row" style="${tgDone(i)?"opacity:.55":""}"><span style="font-size:26px;width:44px;text-align:center">${tgDone(i)?"✅":q[1].split(" ")[0]}</span><div class="t"><b>${q[1].replace(/^\S+\s/,"")}</b><br><small>${q[2]}</small></div><small>${tgDone(i)?"完成":"+"+TG_PAY}</small></div>`).join("")}<p class="note">找不到地方的話，左上的「地圖・導航」可以帶你去。</p>`);
+{ const b=document.getElementById("tgBtn"); if(b) b.onclick=()=>{ try{ ensureAudio(); }catch(e){} HANDLERS.tgOpen(); }; }
+L.tg=()=>({m:TGD().m,all:tgAll()});
+let actT=0; L.tick10=dt=>{ try{ ckTick(dt); }catch(e){} if((actT-=dt)<0){ actT=1; try{ tgTick(); }catch(e){} try{ actStack(); }catch(e){} } };
 try{ ROOMX.cookBtn=()=>kitchen(); }catch(e){} L.cookTest=i=>cookGame(i); /* (test hook) */
 /* 📜 好感委託 (11/16 主委): every townsperson has three little requests, opened as you get to know them (好感 15 / 40 / 70).
    They ask for things the town already has — a fish, an insect, something from your garden, something dug up, a dish you cooked.
