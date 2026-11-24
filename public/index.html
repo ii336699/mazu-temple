@@ -14877,7 +14877,7 @@ HANDLERS.lfChuteGo=()=>{ closeSheet(); if(CHUTE) return; if(F) endFish(); const 
      legs out in front, hands up on the brake toggles */
   const cv=new T.CatmullRomCurve3(P,false,"centripetal"), g=new T.Group(); g.userData.wait=1;
   loadShared("glider",m=>{ if(g.userData.gone) return; const o=m.clone(); o.scale.setScalar(GLIDE_S); o.position.set(0,GLIDE_Y-.29*GLIDE_S,-.02); o.traverse(q=>{ if(q.isMesh){ q.userData.shared=1; q.frustumCulled=false; } }); g.add(o); g.userData.wait=0; });
-  scene.add(g); const cam=new T.PerspectiveCamera(62,innerWidth/innerHeight,.3,900); CHUTE={t:0,dur:42,cv,g,cam,cp:null}; window.MZ_HOLD=true; window.MZ_VIEW={scene,cam};
+  scene.add(g); const cam=new T.PerspectiveCamera(62,innerWidth/innerHeight,.3,900); CHUTE={t:0,dur:28,cv,g,cam,cp:null}; /* (11/24 主委「滑翔傘速度加５０％」: same route, 42 s → 28 s) */ window.MZ_HOLD=true; window.MZ_VIEW={scene,cam};
   meAv.custPose=glidePose; meAv.gliding=1;
   try{ meAv.seat=-1; inputReset(); tone(523,.1,.05,"triangle"); tone(784,.14,.05,"triangle",.1); statInc("chute"); }catch(e){} toast("🪂 起飛！順著風滑下山～",2400); };
 function chuteTick(dt){ const C=CHUTE; if(!C) return; C.t+=dt; const u=Math.min(1,C.t/C.dur), p=C.cv.getPointAt(u), q=C.cv.getPointAt(Math.min(1,u+.01));
@@ -15456,7 +15456,7 @@ L.keeper=(k,open)=>{ const K=KEEP[k]; if(!K) return false; if(K.soon&&!me.sp){ t
     const nm=(TP_SHOPS.find(q=>q[0]===k)||[0,""])[1]||"這間店", h=HOURS[k], now=twHour(), wait=((h[0]-now)%24+24)%24, wh=Math.floor(wait), wm=Math.round((wait-wh)*60), nowS=String(Math.floor(now)).padStart(2,"0")+":"+String(Math.floor((now%1)*60)).padStart(2,"0");
     try{ openSheet("shut",`🕒 ${nm}休息中`,`<p class="lead" style="text-align:center;font-size:20px;margin:6px 0">營業時間<br><b style="font-size:26px;color:#ffd76a">${hrs(k)}</b></p><p class="note" style="text-align:center">現在 ${nowS}・${K.ppl.map(p=>esc(p.n)).join("和")}不在店裡<br>${wh?wh+" 小時 ":""}${wm?wm+" 分鐘":""}後開門</p>`); }catch(e){ toast(`🕒 ${nm}休息中（營業時間 ${hrs(k)}）`,3600); } return true; }
   try{ if(typeof KA==="function"){ const A=KA(k); if(A.d!==today()){ A.d=today(); A.a=Math.min(100,A.a+1); save(); } } }catch(e){}
-  ivOpen(k,open); const go=()=>{ if(IV.opened) return; IV.opened=true; try{ (K.go||(()=>open&&open()))(); }catch(e){ console.warn(e); } };
+  ivOpen(k,open); const go=()=>{ if(IV.opened) return; IV.opened=true; const run=()=>{ try{ (K.go||(()=>open&&open()))(); }catch(e){ console.warn(e); } }; try{ const er=erAt(k); if(er){ erSheet(er,run); return; } }catch(e){ console.warn("errand",e); } run(); };
   const S=KS[k]; const full=Date.now()-(K._last||0)>180e3; K._last=Date.now(); let lines=full?(K.fights?[...K.fights[(Math.random()*K.fights.length)|0],...K.end]:K.lines):K.quick; const openAt=full&&K.openAt!=null?K.openAt:lines.length;
   try{ const A=KA(k), t=A.a>=60?3:A.a>=30?2:A.a>=10?1:0; if(t&&GOSSIP[k]&&Math.random()<.45) lines=lines.concat([[0,GOSSIP[k][t-1][0].replace(/^[^：]+：「?/,"").replace(/」?（.*）$|」$/,"")]]); }catch(e){}
   let i=0; const next=()=>{ if(!IV.scene||IV.k!==k) return; if(i===openAt) go(); if(i>=lines.length){ S.busy=false; S.mode=(K.mode==="doze"||S.inv)?"idle":K.mode; go(); return; } const [w,text]=lines[i++];
@@ -16380,6 +16380,34 @@ const GOSSIP={
  "tw:congee":[["玲姊：「家具行的美雲每天半夜一點來，一碗鹹粥不加芹菜。」"],["阿秀：「早餐店的阿龍和秀琴，其實是我介紹認識的。」"],["阿秀：「我的鹹粥秘方，是用許伯的陳皮熬的高湯。」"]]};
 const KA=k=>{ const d=LF(); d.ka=d.ka||{}; return d.ka[k]=d.ka[k]||{a:0,d:0}; };
 /* (11/14: the hours and the gossip are handled when you walk into the shop — see 走進店裡) */
+/* ===== 跑腿 (11/24 主委「跑腿可以做」): the shopkeepers' 「隱藏任務」 gossip, made real — small deliveries between shops, nothing to do
+   with the 照相館 album. After visiting the shop on 3 different days, its keeper asks once as you walk in; take it to the other shop
+   (open hours) and hand it over. 250–300 平安幣, and both keepers like you a little more (+5). LF().er[id]: 1 carrying, 2 done. ===== */
+const ERR=[
+ {id:"lg",from:"tw:herb",to:"tw:ice",it:"🍂 一包桂圓",pay:250,
+  ask:["許伯：「少年仔，你要去冰店嗎？」","許伯：「這包桂圓是今年最好的，幫我拿給冰淇淋奶奶……就說是藥行多出來的，不要說是我特別挑的。」"],
+  thx:["奶奶：「桂圓？……又說是多出來的吧。」","奶奶：「五十年了，每次都多出來。」（奶奶笑著把桂圓收進櫃子最裡面）","奶奶：「這個給你，辛苦你跑一趟。明天幫我跟他說，香草的我會擠大支一點。」"]},
+ {id:"tea",from:"tw:drink",to:"tw:book",it:"🧋 一杯烏龍奶茶",pay:250,
+  ask:["小安：「欸欸，可以幫我一個忙嗎？」","小安：「幫我把這杯烏龍奶茶送去書店給文雄老闆……不要說是我送的喔！就說……就說是路上撿到的！」"],
+  thx:["文雄：「路上撿到的烏龍奶茶，還是溫的，少糖去冰……」","文雄：「剛好是我喝的那種。」（文雄老闆推了推眼鏡，耳朵有點紅）","文雄：「謝謝你。也幫我謝謝……路上。」"]},
+ {id:"card",from:"tw:beauty",to:"tw:flower",it:"✉️ 一張手寫卡片",pay:300,
+  ask:["Kevin：「我想了很久，還是用寫的比較好。」","Kevin：「這張卡片幫我交給花店的雅琪老師。她不用回我，我只是想跟她說……謝謝她當年那句話。」"],
+  thx:["雅琪：「Kevin 寫的？」（雅琪安靜地看了很久）","雅琪：「『你剪頭髮很有天分』……我隨口說的，他記了十幾年。」","雅琪：「這束白色桔梗，下次他來的時候，換我送他。謝謝你。」"]},
+ {id:"chair",from:"tw:furn",to:"tw:congee",it:"🪑 一張小木椅",pay:300,
+  ask:["美雲：「呼……你來得剛好。」（美雲揉了揉眼睛）","美雲：「這張小木椅是我昨天半夜做好的，玲姊的店裡那張舊椅子快壞了。幫我搬過去好不好？她每次都說不用，所以你直接放下就跑！」"],
+  thx:["玲姊：「這椅子……又是美雲做的吧。」","玲姊：「從小學就這樣，說了不用還是做。」（玲姊坐上去試了試，很穩）","玲姊：「跟她說，今天半夜的鹹粥，我請。也謝謝你啦。」"]}];
+const ERD=()=>{ const d=LF(); if(!d.er||typeof d.er!=="object") d.er={}; return d.er; };
+function erAt(k){ const E=ERD(); const dl=ERR.find(e=>E[e.id]===1&&e.to===k); if(dl) return ["to",dl]; const of=ERR.find(e=>!E[e.id]&&e.from===k&&(KA(k).a>=3||me.sp)); if(of&&!ERR.some(e=>E[e.id]===1)) return ["from",of]; return null; }
+const erNm=k=>k==="tw:ice"?"美琪冰店":(TP_SHOPS.find(q=>q[0]===k)||[0,"那間店"])[1];
+function erSheet(er,cont){ const [kind,e]=er, L2=kind==="from"?e.ask:e.thx; let i=0;
+  const step=()=>{ const last=i>=L2.length-1, t=L2[i];
+    openSheet("lfErrand",kind==="from"?"📦 跑腿":"📦 送到了",`<p class="lead" style="line-height:1.9">${esc(t)}</p><div class="row">${!last?`<button class="primary" data-act="lfErrNext">……</button>`:kind==="from"?`<button class="secondary" data-act="lfErrNo">下次吧</button><button class="primary" data-act="lfErrYes">好，我幫你送</button>`:`<button class="primary" data-act="lfErrDone">收下（+${e.pay} 平安幣）</button>`}</div>${kind==="from"&&last?`<p class="note">把${e.it.replace(/^\S+\s/,"")}送到${erNm(e.to)}（營業時間內）。</p>`:""}`); };
+  HANDLERS.lfErrNext=()=>{ i++; step(); };
+  HANDLERS.lfErrNo=()=>{ closeSheet(); cont(); };
+  HANDLERS.lfErrYes=()=>{ ERD()[e.id]=1; save(); toast(`📦 拿到${e.it}，送去${erNm(e.to)}吧`,3000); closeSheet(); cont(); };
+  HANDLERS.lfErrDone=()=>{ ERD()[e.id]=2; bag.coins+=e.pay; [e.from,e.to].forEach(k=>{ try{ const A=KA(k); A.a=Math.min(100,A.a+5); const R=NR("k_"+k.slice(3)+"_0"); R.a=Math.min(100,R.a+5); }catch(_){ } }); save(); try{ profSave(true); chaChing(); }catch(_){ } toast(`✅ 跑腿完成！平安幣 +${e.pay}・兩家店的好感 +5`,3200); closeSheet(); cont(); };
+  step(); }
+L.er=()=>JSON.stringify(ERD());
 
 L.flowerShop=()=>flower();
 const SOON={};
