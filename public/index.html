@@ -15358,7 +15358,7 @@ L.testPanel=()=>{ if(!me.sp) return; const b=(act,v,t,cls)=>`<button class="${cl
    ${sec("小遊戲（直接玩）",[["tw:bfast","🍔 疊漢堡"],["tw:ice","🍦 冰淇淋"],["tw:herb","🌿 中藥對對碰"],["tw:congee","🥣 深夜出餐"],["tw:drink","🧋 調飲料"],["tw:book","📚 推書櫃"],["tw:flower","💐 插花"]].map(([k,n])=>b("tmGame",k,n)).join("")+b("tmDish",1,"🫧 洗碗")+b("tmCook",1,"🍳 廚房切菜")+b("tmBq",1,"💐 花束打工")+b("tmIceDrink",1,"🧋 飲料（一定加冰）"))}
    ${sec("釣魚・溫室",b("tmRods",1,"🎣 全部釣竿")+b("tmBait",1,"🪱 釣餌各 10 份")+b("tmBait",0,"🪱 清空釣餌")+b("tmFish",1,"🐟 看下一隻魚模型")+b("tmDexAll",1,"📖 圖鑑全部點亮")+b("tmGarden",1,"🌱 花圃放滿作物"))}
    ${sec("任務",b("tmRst","god","↩️ 重置女神泉")+b("tmRst","ph","↩️ 重置照相館")+b("tmRst","gh","↩️ 重置溫室格數")+b("tmFin","god","⛲ 女神泉完成")+b("tmFin","ph","📷 照相館完成＋片尾")+b("tmCzEnd",8,"🥣 一粥七天直接結算"))}
-   ${sec("精力",b("tmEnLow",40,"⚡ 精力設成 40")+b("tmEnLow",0,"⚡ 精力設成 0")+b("tmEnLow",100,"⚡ 精力補滿"))}
+   ${sec("腳踏車",b("tmBike","on","🚲 給我腳踏車並騎上")+b("tmBike","hill","🏔️ 到山腳騎上天后山")+b("tmBike","quest","📦 試小潘的請託")+b("tmBike","off","↩️ 收回腳踏車"))}    ${sec("精力",b("tmEnLow",40,"⚡ 精力設成 40")+b("tmEnLow",0,"⚡ 精力設成 0")+b("tmEnLow",100,"⚡ 精力補滿"))}
    ${sec("造型・美容院",b("tmLookOpen",1,"🪞 換造型")+b("tmSalon","h","💇 美容院：髮型")+b("tmSalon","e","👁 美容院：眼睛")+b("tmSalon","m","👄 美容院：嘴巴")+b("tmFaceFit","f_eyes","📐 造型定位"))}
    ${sec("活動・特效",b("tmRain",1,"🧧 撒紅包")+b("tmMet",1,"🌠 流星")+b("lfChuteGo",1,"🪂 跳傘"))}
    ${sec("編輯工具",b("mapEdT",1,"🗺️ 地圖編輯","primary")+b("wTune",1,"💧 水面調整")+b("posOpen",1,"📍 座標定位"))}
@@ -15416,6 +15416,14 @@ HANDLERS.tmGame=v=>{ closeSheet(); try{ GL[v](); }catch(e){ console.warn(e); toa
 HANDLERS.tmRain=()=>{ closeSheet(); try{ hbStart({id:"test"+Date.now(),seed:(Math.random()*1e9)|0,n:24,x:meAv.pos.x,z:meAv.pos.y,at:Date.now()}); }catch(e){ console.warn(e); } };
 HANDLERS.tmFin=v=>{ closeSheet(); if(v==="god"){ const q=GQ(); q.s=GQ_N-1; q.d=-1; const d=LF(); d.rods=(d.rods|0)&~32; meAv.pos.set(85.4,-250.2); meAv.target.set(85.4,-250.2); meAv.path=[]; toast("⛲ 傳送到女神泉，馬上完成最後一步……",2600); setTimeout(()=>{ try{ HANDLERS.lfGq(); }catch(e){ console.warn(e); } },4000); }
   else if(v==="ph"){ const P=PH(); P.cam=1; P.end=0; save(); try{ camBtn(); }catch(e){} phFinal(); } }; /* (11/22 主委「新增任務完成測試 女神泉跟相機都要」) */
+/* (11/24 主委「幫我增加主委腳踏車測試模式」) */
+HANDLERS.tmBike=v=>{ closeSheet(); const d=LF();
+  if(v==="off"){ try{ bikeSet(false); }catch(e){} d.bike=0; save(); bikeChip(); toast("↩️ 腳踏車收回了（可以再試小潘的請託）",2600); return; }
+  if(v==="quest"){ try{ bikeSet(false); }catch(e){} d.bike=0; BUGS.slice(0,5).forEach(q=>giAdd("bug:"+q[0],1)); giAdd("dig:ammo",1); save(); const go=()=>{ try{ HANDLERS.lfBugCol(1); }catch(e){ console.warn(e); } }; if(TOWNX&&TOWNX.on) go(); else { meAv.pos.set(28,-62); meAv.target.set(28,-62); meAv.path=[]; setTimeout(go,1500); } toast("📦 給了 5 種昆蟲＋1 件化石，收藏家的單子最下面有「小潘的請託」",3200); return; }
+  d.bike=1; save();
+  if(v==="hill"){ BK.climb=0; meAv.pos.set(60,-178); meAv.target.set(60,-178); meAv.path=[]; meAv.rotY=Math.PI; toast("🏔️ 到天后山山腳了，騎上山大約會停下來喘三次",3000); setTimeout(()=>{ try{ bikeSet(true); meAv.target.set(60,-212); meAv.path=[]; }catch(e){ console.warn(e); } },1600); return; }
+  if(!document.body.classList.contains("out-temple")){ meAv.pos.set(28,-62); meAv.target.set(28,-62); meAv.path=[]; toast("🚲 廟裡不能騎，先送你到小鎮",2400); setTimeout(()=>{ try{ bikeSet(true); }catch(e){} },1600); return; }
+  bikeSet(true); };
 HANDLERS.tmRst=v=>{ const d=LF(); if(v==="god"){ d.gq={s:0,d:-1}; d.rods=(d.rods|0)&~32; if(d.eqF===6) d.eqF=0; d.god=-1; toast("⛲ 女神泉任務重置了：泉水又變濁，從第 1 步開始（主委不用等隔天）",3400); }
   else if(v==="ph"){ d.ph={cam:0,got:{},end:0}; document.getElementById("camBtn")?.remove(); try{ for(let i=0;i<50;i++) localStorage.removeItem("mz.ph."+i); }catch(e){} toast("📷 照相館重置了：相機收回、拍過的照片清掉（委託地點還在）",3400); }
   else if(v==="gh"){ const g=GD2(); g.hv=0; toast("🌱 收成格數歸零（溫室二號、三號又鎖上）",2600); } save(); try{ profSave(true); }catch(e){} }; /* (11/22 主委「新增任務重製功能 女神泉可以再接一次測試」) */
