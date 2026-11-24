@@ -4609,7 +4609,7 @@ let chairHidden=false;
 /* where others should see you heading: walking with the stick or keys, a point about 3 m ahead on your line (so between two updates — one every 0.8 s while walking — they keep walking smoothly instead of stepping half a metre and waiting); otherwise where you are going */
 function presenceGoal(){ const T=meAv.target, P=meAv.pos; if(!((joy.on||keys.size)&&!myFly&&!(meAv.path&&meAv.path.length))) return [T.x,T.y]; const dx=T.x-P.x, dz=T.y-P.y, L=Math.hypot(dx,dz); if(L<.05) return [T.x,T.y];
   let k=3; while(k>.5&&!(walkable(P.x+dx/L*k,P.y+dz/L*k)&&walkable(P.x+dx/L*k*.5,P.y+dz/L*k*.5))) k-=.4; return k>.5?[P.x+dx/L*k,P.y+dz/L*k]:[T.x,T.y]; }
-function presencePayload(){ const PG=presenceGoal(); const RP=(()=>{ try{ return ROOMX&&ROOMX.pos&&ROOMX.lot>=0?ROOMX.pos:null; }catch(e){ return null; } })(); return {hm:RP?ROOMX.lot:-1,hx:RP?+RP.x.toFixed(2):0,hz:RP?+RP.z.toFixed(2):0,hr:RP?+RP.r.toFixed(1):0,v:1,u:(customizing||chairHidden||RP)?0:1,n:(me.name||"").slice(0,10),k:me.no||0,l:me.look,x:+PG[0].toFixed(2),z:+PG[1].toFixed(2),r:+meAv.rotY.toFixed(1),s:meAv.seat,b:myBow,h:meAv.hold?1:0,j:myJiao,f:myBurn,o:myOffers,a:bag.items.fu?1:0,g:me.lamp??-1,m:myMsg,c:myChat,p:myPlant,gf:myGF,fx:myFx,t:threadOn()?1:0,q:me.sp?1:0,eq:myEq(),um:umbMine(),w:myWish,y:+meAv.headGoal.toFixed(1),sq:mySj?[mySj.g+1,mySj.at]:0,sk:mySparkler?1:0,fs:myFwShow||0,e:myEmo,ac:myAct,sl:mySL,sm:myMassSL||0,fl:myFly?+(meAv.flyGoal||FLY_H).toFixed(1):0,cs:myCs,iy:(meAv.gy||0)>2.3?1:0,lk:INN.lock||0,tl:DQ?DQ.title():0,bk:(typeof LIFE!=="undefined"&&LIFE&&LIFE.bikeOn&&LIFE.bikeOn())?1:0,pc:(()=>{ try{ const p=bag.cat&&bag.cat.pet; return p&&!p.home&&!p.vet&&!p.away?(p.t|0)+1:0; }catch(e){ return 0; } })()}; } /* pc: the coat of the cat following you (others see it too) */
+function presencePayload(){ const PG=presenceGoal(); const RP=(()=>{ try{ return ROOMX&&ROOMX.pos&&ROOMX.lot>=0?ROOMX.pos:null; }catch(e){ return null; } })(); return {hm:RP?ROOMX.lot:-1,hx:RP?+RP.x.toFixed(2):0,hz:RP?+RP.z.toFixed(2):0,hr:RP?+RP.r.toFixed(1):0,v:1,u:(customizing||chairHidden||RP)?0:1,n:(me.name||"").slice(0,10),k:me.no||0,l:me.look,x:+PG[0].toFixed(2),z:+PG[1].toFixed(2),r:+meAv.rotY.toFixed(1),s:meAv.seat,b:myBow,h:meAv.hold?1:0,j:myJiao,f:myBurn,o:myOffers,a:bag.items.fu?1:0,g:me.lamp??-1,m:myMsg,c:myChat,p:myPlant,gf:myGF,fx:myFx,t:threadOn()?1:0,q:me.sp?1:0,eq:myEq(),um:umbMine(),w:myWish,y:+meAv.headGoal.toFixed(1),sq:mySj?[mySj.g+1,mySj.at]:0,sk:mySparkler?1:0,fs:myFwShow||0,e:myEmo,ac:myAct,sl:mySL,sm:myMassSL||0,fl:myFly?+(meAv.flyGoal||FLY_H).toFixed(1):0,cs:myCs,iy:(meAv.gy||0)>2.3?1:0,lk:INN.lock||0,tl:DQ?DQ.title():0,bk:(typeof LIFE!=="undefined"&&LIFE&&LIFE.bikeOn&&LIFE.bikeOn())?1:0,pc:(()=>{ try{ const p=bag.cat&&(Array.isArray(bag.cat.pets)?bag.cat.pets.find(q=>q&&!q.home&&!q.vet&&!q.away):bag.cat.pet); return p&&!p.home&&!p.vet&&!p.away?(p.t|0)+1:0; }catch(e){ return 0; } })()}; } /* pc: the coat of the cat following you (others see it too) */
 let lastSent="", lastBeat=0;
 setInterval(()=>{ if(room) sendPresence(true); },50000); // heartbeat while idle
 function sendPresence(force){ if(!room) return; dirty=false; const p=presencePayload(), str=JSON.stringify(p), now=performance.now(); lastSend=now; if(str===lastSent&&force!==true&&now-lastBeat<60000) return; lastSent=str; lastBeat=now; room.presence(p).catch(()=>{}); }
@@ -5153,7 +5153,7 @@ const CODE_ITEMS=["xiang","hua","guo","bing","jin","fu"];
 function lookCode(){ const bits=[]; const put=(v,n)=>{ v=Math.max(0,Math.min((2**n)-1,v|0)); for(let i=n-1;i>=0;i--) bits.push((v/2**i|0)&1); };
   put(1,4); for(let i=0;i<13;i++) put((me.look[i]||0)&31,5); /* (the low 5 bits; hair, eyes and mouth have a 6th bit further on) */ put(bag.coins,16); CODE_ITEMS.forEach(k=>put(bag.items[k]||0,5)); put(bag.redThread?1:0,1);
   const ps=(bag.poems||[]).slice(-5); put(ps.length,3); ps.forEach(n=>put(n,6)); put(me.no||0,24);
-  const nm=[...String(me.sp?"":(me.name||""))].slice(0,10).join(""); const cu=[]; for(let i=0;i<nm.length;i++) cu.push(nm.charCodeAt(i)); put(Math.min(15,cu.length),4); cu.slice(0,15).forEach(c=>put(c,16)); { const a=accState(); put(Math.min(15,ACC_IDS.length),4); ACC_IDS.slice(0,15).forEach(id=>put(a.owned[id]?1:0,1)); } put(Math.min(255,bag.gacha||0),8); { const a=accState(), more=ACC_IDS.slice(15); put(more.length,6); more.forEach(id=>put(a.owned[id]?1:0,1)); } { const c=bag.cat&&bag.cat.pet; put(1,1); put(Math.min(255,bag.items.can||0),8); put(Math.min(255,bag.items.treat||0),8); put(c?1:0,1); if(c){ put(c.t,4); put(c.sd,16); const cn=[...String(c.nm||"")].slice(0,6); put(cn.length,3); cn.forEach(ch=>put(ch.charCodeAt(0),16)); TRICKS.forEach(([k])=>put(Math.min(7,c.tr&&c.tr[k]||0),3)); } } /* 貓: cans and your cat (older codes read as none) */ put(1,1); put(bag.clo||0,16); put(Math.max(0,Math.min(100,Math.round(bag.en??100))),7); SNACK_KEYS.forEach(k=>put(Math.min(63,(bag.snk||{})[k]||0),6)); put(Math.max(0,(bag.coins|0)-65535),24); { const z=DQ?DQ.pack():null; put(z?1:0,1); if(z) z.forEach(v=>put(v[0],v[1])); } /* 今日功課: sign-in, claims, 功德簿 */ { const z=ROOMX?ROOMX.pack():null; put(z?1:0,1); if(z) z.forEach(v=>put(v[0],v[1])); } /* 我的房間 */ put(1,1); put(((me.look[1]|0)>>5)&1,1); put(me.look[13]|0,4); /* 理髮廳・美容院: the hair's 6th bit and the nose */ if(LIFE&&LIFE.pack){ put(1,1); LIFE.pack(put); } else put(0,1); put(((me.look[7]|0)>>5)&3,2); put(((me.look[9]|0)>>5)&3,2); /* (11/15: 73 eyes, 78 mouths) */ /* 小鎮生活: fish, garden, townsfolk */ /* (coins above the old 16-bit field) */ /* 商店街: outfits bought, 精力, snacks (older codes read as none) */ /* 扭蛋幣 (codes made before it was added simply read as 0) */
+  const nm=[...String(me.sp?"":(me.name||""))].slice(0,10).join(""); const cu=[]; for(let i=0;i<nm.length;i++) cu.push(nm.charCodeAt(i)); put(Math.min(15,cu.length),4); cu.slice(0,15).forEach(c=>put(c,16)); { const a=accState(); put(Math.min(15,ACC_IDS.length),4); ACC_IDS.slice(0,15).forEach(id=>put(a.owned[id]?1:0,1)); } put(Math.min(255,bag.gacha||0),8); { const a=accState(), more=ACC_IDS.slice(15); put(more.length,6); more.forEach(id=>put(a.owned[id]?1:0,1)); } { const c=bag.cat&&(Array.isArray(bag.cat.pets)?bag.cat.pets[0]:bag.cat.pet); put(1,1); put(Math.min(255,bag.items.can||0),8); put(Math.min(255,bag.items.treat||0),8); put(c?1:0,1); if(c){ put(c.t,4); put(c.sd,16); const cn=[...String(c.nm||"")].slice(0,6); put(cn.length,3); cn.forEach(ch=>put(ch.charCodeAt(0),16)); TRICKS.forEach(([k])=>put(Math.min(7,c.tr&&c.tr[k]||0),3)); } } /* 貓: cans and your cat (older codes read as none) */ put(1,1); put(bag.clo||0,16); put(Math.max(0,Math.min(100,Math.round(bag.en??100))),7); SNACK_KEYS.forEach(k=>put(Math.min(63,(bag.snk||{})[k]||0),6)); put(Math.max(0,(bag.coins|0)-65535),24); { const z=DQ?DQ.pack():null; put(z?1:0,1); if(z) z.forEach(v=>put(v[0],v[1])); } /* 今日功課: sign-in, claims, 功德簿 */ { const z=ROOMX?ROOMX.pack():null; put(z?1:0,1); if(z) z.forEach(v=>put(v[0],v[1])); } /* 我的房間 */ put(1,1); put(((me.look[1]|0)>>5)&1,1); put(me.look[13]|0,4); /* 理髮廳・美容院: the hair's 6th bit and the nose */ if(LIFE&&LIFE.pack){ put(1,1); LIFE.pack(put); } else put(0,1); put(((me.look[7]|0)>>5)&3,2); put(((me.look[9]|0)>>5)&3,2); { const ps=bag.cat&&Array.isArray(bag.cat.pets)?bag.cat.pets.slice(1,3):[]; put(ps.length?1:0,1); if(ps.length){ put(ps.length,2); ps.forEach(c=>{ put(c.t,4); put(c.sd,16); const cn=[...String(c.nm||"")].slice(0,6); put(cn.length,3); cn.forEach(ch=>put(ch.charCodeAt(0),16)); TRICKS.forEach(([k])=>put(Math.min(7,c.tr&&c.tr[k]||0),3)); }); } } /* (11/24: the 2nd and 3rd cat) */ /* (11/15: 73 eyes, 78 mouths) */ /* 小鎮生活: fish, garden, townsfolk */ /* (coins above the old 16-bit field) */ /* 商店街: outfits bought, 精力, snacks (older codes read as none) */ /* 扭蛋幣 (codes made before it was added simply read as 0) */
   while(bits.length%8) bits.push(0); const bytes=[]; for(let i=0;i<bits.length;i+=8){ let b=0; for(let j=0;j<8;j++) b=b*2+bits[i+j]; bytes.push(b); } bytes.push(bytes.reduce((a,b)=>(a+b)&255,0x5a));
   return "MZ-"+btoa(String.fromCharCode(...bytes)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }
 function readCode(str){ try{ str=String(str||"").trim().replace(/\s+/g,""); if(!/^MZ-[A-Za-z0-9_-]{10,}$/.test(str)) return null; const raw=atob(str.slice(3).replace(/-/g,"+").replace(/_/g,"/")); const bytes=[...raw].map(c=>c.charCodeAt(0));
@@ -5161,8 +5161,8 @@ function readCode(str){ try{ str=String(str||"").trim().replace(/\s+/g,""); if(!
   if(get(4)!==1) return null; const look=[]; for(let i=0;i<13;i++) look.push(get(5)); const coins=get(16); const items={}; CODE_ITEMS.forEach(k=>{ const v=get(5); if(v) items[k]=v; }); const red=get(1);
   const pn=get(3), poems=[]; for(let i=0;i<pn;i++){ const n=get(6); if(n>=1&&n<=60) poems.push(n); } const no=get(24); const nl=get(4); let name=""; for(let i=0;i<nl;i++) name+=String.fromCharCode(get(16));
   const an=get(4), acc=[]; for(let i=0;i<an;i++) if(get(1)&&ACC_IDS[i]) acc.push(ACC_IDS[i]); const gacha=get(8); { const an2=get(6); for(let i=0;i<an2;i++) if(get(1)&&ACC_IDS[15+i]) acc.push(ACC_IDS[15+i]); } let cans=0, treat=0, cat=null; if(get(1)){ cans=get(8); treat=get(8); if(get(1)){ cat={t:get(4)%11,sd:get(16)}; const l=get(3); let nm=""; for(let i=0;i<l;i++) nm+=String.fromCharCode(get(16)); cat.nm=nm||"咪咪"; cat.tr={}; TRICKS.forEach(([k])=>{ const v=get(3); if(v) cat.tr[k]=v; }); } }
-  let shop=null; if(get(1)){ shop={clo:get(16),en:get(7),snk:{}}; SNACK_KEYS.forEach(k=>{ const v=get(6); if(v) shop.snk[k]=v; }); shop.xc=get(24); } let daily=null; if(shop&&get(1)&&DQ) daily=DQ.unpack(get); let room=null; if(daily&&get(1)&&ROOMX) room=ROOMX.unpack(get); let life=null; if(get(1)){ look[1]|=get(1)<<5; look[13]=get(4); if(get(1)&&LIFE&&LIFE.unpack){ const p0=p, fits=()=>{ const q=p; get(4); const r=bits.length-p; p=q; return r>=0&&r<8; }; life=LIFE.unpack(get); if(life&&life.v===7&&!fits()){ const pa=p; p=p0; const l2=LIFE.unpack(get,11); if(fits()) life=l2; else p=pa; } } look[7]|=get(2)<<5; look[9]|=get(2)<<5; }
-  return {look,coins:coins+(shop&&shop.xc||0),items,red,poems,no,name,acc,gacha,cans,treat,cat,shop,daily,room,life}; }catch(e){ return null; } }
+  let shop=null; if(get(1)){ shop={clo:get(16),en:get(7),snk:{}}; SNACK_KEYS.forEach(k=>{ const v=get(6); if(v) shop.snk[k]=v; }); shop.xc=get(24); } let daily=null; if(shop&&get(1)&&DQ) daily=DQ.unpack(get); let room=null; if(daily&&get(1)&&ROOMX) room=ROOMX.unpack(get); let life=null; if(get(1)){ look[1]|=get(1)<<5; look[13]=get(4); if(get(1)&&LIFE&&LIFE.unpack){ const p0=p, fits=()=>{ const q=p; get(4); const r=bits.length-p; p=q; return r>=0&&r<8; }; life=LIFE.unpack(get); if(life&&life.v===7&&!fits()){ const pa=p; p=p0; const l2=LIFE.unpack(get,11); if(fits()) life=l2; else p=pa; } } look[7]|=get(2)<<5; look[9]|=get(2)<<5; } let cats2=[]; if(p<bits.length&&get(1)){ const n=get(2); for(let i=0;i<n&&i<2;i++){ const c={t:get(4)%11,sd:get(16)}; const l=get(3); let nm=""; for(let j=0;j<l;j++) nm+=String.fromCharCode(get(16)); c.nm=nm||"咪咪"; c.tr={}; TRICKS.forEach(([k])=>{ const v=get(3); if(v) c.tr[k]=v; }); cats2.push(c); } }
+  return {look,coins:coins+(shop&&shop.xc||0),items,red,poems,no,name,acc,gacha,cans,treat,cat,cats2,shop,daily,room,life}; }catch(e){ return null; } }
 /* 除霧 (chair only, this screen only): the haze is lifted so the far scenery and the whole sky show reads clearly; press again to bring it back */
 const NOFOG={on:false,near:0,far:0};
 HANDLERS.noFog=()=>{ NOFOG.on=!NOFOG.on; if(NOFOG.on){ NOFOG.near=scene.fog.near; NOFOG.far=scene.fog.far; scene.fog.near=1e4; scene.fog.far=2e4; } else { scene.fog.near=NOFOG.near; scene.fog.far=NOFOG.far; } toast(NOFOG.on?"已除霧（只有你的畫面）":"霧氣已恢復",2200); openChair(); };
@@ -6649,7 +6649,7 @@ function sparkTick(av,dt){ if(!av.sparkler||av.hold||!av.root.visible){ if(av.sp
 HANDLERS.chairHide=()=>{ if(!me.sp) return; chairHidden=!chairHidden; meAv.root.traverse(o=>{ if(o.material&&!o.isSprite){ o.material=o.material.clone(); o.material.transparent=true; o.material.opacity=chairHidden?.35:1; } }); lastSent=""; markDirty(); sendPresence(true); openChair(); toast(chairHidden?"已隱形：其他香客看不到你":"已解除隱形",2600); };
 HANDLERS.chairReset=()=>{ if(!me.sp) return; delete bag.gd; /* god games: 扭蛋幣 again today */ delete bag.nm; delete bag.stuck; /* 夜市: 撈金魚 again today, pachinko exchange back to 0 */ delete bag.fcDay; delete bag.fcTry; delete bag.rxDay; delete bag.rxTry; bag.redThread=0; bag.planted=[]; bag.bowed={}; bag.flow={}; delete bag.zhanDay;
   /* everything else that is counted per day: 打工 shifts and 夾娃娃 wins, 精力 (full again, the day's recovery from 0), the cat's digs, today's tasks and sign-in */
-  delete bag.wkDay; delete bag.wk; delete bag.clwDay; delete bag.clw; bag.en=100; bag.enRec=0; try{ const p=bag.cat&&bag.cat.pet; if(p) p.dg=null; }catch(e){}
+  delete bag.wkDay; delete bag.wk; delete bag.clwDay; delete bag.clw; bag.en=100; bag.enRec=0; try{ if(bag.cat){ bag.cat.dg=null; (bag.cat.pets||[]).forEach(p=>{ if(p) p.dg=null; }); } }catch(e){}
   delete bag.dq; try{ if(typeof dayN==="function"&&bag.sg&&bag.sg.last>=dayN()) bag.sg.last=dayN()-1; }catch(e){}
   bag.coins=Math.max(bag.coins,300); saveBag(); meAv.setThread(false); myOffers=[]; try{ rebuildMyOffers(); }catch(e){} markDirty(); renderWallet(); openChair(); toast("今日紀錄已重置（每天限定的次數全部歸零、精力補滿），可以重新測試",2800); try{ SHOPX.wallet&&SHOPX.wallet(); }catch(e){} };
 let fwKeyHold="";
@@ -10426,19 +10426,19 @@ HANDLERS.honorDel=async v=>{ const e=(HONOR.ed||[])[+v]; if(!e) return; if(!conf
 HANDLERS.cutSet=v=>{ v=+v|0; if(v===CUT.lv) return; CUT.lv=v; CUT.man=true; CUT.at=Date.now(); cutSave(); toast(v===0?"人物全部顯示，重新整理中…":v===1?"人物減少一半，重新整理中…":"其他人物全部關掉，重新整理中…",2000); setTimeout(()=>location.reload(),1500); };
 /* 主委工具 → 貓咪測試: adopt any coat at once and try each situation without waiting days */
 HANDLERS.catTest=()=>{ const C=catData(), p=C.pet; const t=(a,n,m)=>`<button class="good" data-act="${a}"${m!=null?` data-v="${m}"`:""}><span class="name">${n}</span></button>`;
-  openSheet("contact","🐈 貓咪測試",`${backBtn}<p class="lead">${p?`現在養的是 ${esc(p.nm)}（${CAT_COATS[p.t][0]}）${p.vet?"・住院中":p.sick?"・生病中":p.away?"・在愛心媽媽那裡":""}`:"還沒有養貓"}。選一種花色直接領養（會換掉現在的）：</p>
+  openSheet("contact","🐈 貓咪測試",`${backBtn}<p class="lead">${p?`現在養的是 ${esc(p.nm)}（${CAT_COATS[p.t][0]}）${p.vet?"・住院中":p.sick?"・生病中":p.away?"・在愛心媽媽那裡":""}`:"還沒有養貓"}。選一種花色直接領養（滿 ${CAT_MAX} 隻會換掉第一隻）。現在養 ${C.pets.length} 隻${C.pets.length?"："+C.pets.map(q=>esc(q.nm)).join("、"):""}：</p>
     <div class="chips">${CAT_COATS.map((c,i)=>`<button class="chip" data-act="catTAdopt" data-v="${i}">${c[0]}</button>`).join("")}</div>
     <div class="goods">${t("catTGive","🥫 給 10 罐頭＋10 肉泥")}${p?t("catTDig","⛏️ 馬上去挖寶")+t("catTSick","🤒 讓牠生病")+t("catTVetBack","🏥 住院的馬上回來")+t("catTLearn","🎓 全部動作學會")+t("catTReset","🔄 今天的照顧／訓練／挖寶次數重來")+t("catTAway","😿 讓牠跑去愛心媽媽那裡")+t("catTRel","👋 不養了（放回去）"):""}${t("catTStray","🐾 換一批流浪貓（好感 90）")}${t("catTRain","🌧️ 下雨／放晴")}</div>`); };
 Object.assign(HANDLERS,{
-  catTAdopt:v=>{ const C=catData(), d=catDay(), i=+v; const old=CAT.ents.find(x=>x.kind==="pet"); if(old) catDrop(old); C.pet={t:i,sd:(Math.random()*65535)|0,nm:CAT_NAMES[(Math.random()*CAT_NAMES.length)|0],born:d-1,lf:d,ll:d,lp:d,tr:{},tt:{},home:false}; catSync(); const e=CAT.ents.find(x=>x.kind==="pet"); if(e){ e.g.position.set(meAv.pos.x+.8,0,meAv.pos.y+.8); catHearts(e,8); } saveBag(); toast(`養了一隻${CAT_COATS[i][0]}：${C.pet.nm}`,2200); HANDLERS.catTest(); },
+  catTAdopt:v=>{ const C=catData(), d=catDay(), i=+v; if(C.pets.length>=CAT_MAX) C.pets.shift(); const np={t:i,sd:(Math.random()*65535)|0,nm:CAT_NAMES[(Math.random()*CAT_NAMES.length)|0],born:d-1,lf:d,ll:d,lp:d,tr:{},tt:{},home:false}; C.pets.push(np); catSync(); const e=catEntOf(np); if(e){ e.g.position.set(meAv.pos.x+.8,0,meAv.pos.y+.8); catHearts(e,8); } saveBag(); toast(`養了一隻${CAT_COATS[i][0]}：${np.nm}（共 ${C.pets.length} 隻）`,2200); HANDLERS.catTest(); },
   catTGive:()=>{ bag.items.can=(bag.items.can||0)+10; bag.items.treat=(bag.items.treat||0)+10; saveBag(); toast("給了 10 罐頭、10 肉泥",1600); HANDLERS.catTest(); },
-  catTDig:()=>{ const e=CAT.ents.find(x=>x.kind==="pet"); const p=catData().pet; if(!e||!p){ toast("貓不在身邊",1600); return; } p.lf=catDay(); p.ll=catDay(); p.lp=catDay(); p.home=false; p.dg={g:catGDay(),n:0}; e.digIn=.01; closeSheet(); toast("看牠去挖寶……",1600); },
+  catTDig:()=>{ const e=CAT.ents.find(x=>x.kind==="pet"); const p=catData().pet; if(!e||!p){ toast("貓不在身邊",1600); return; } p.lf=catDay(); p.ll=catDay(); p.lp=catDay(); p.home=false; p.dg=null; bag.cat.dg={g:catGDay(),n:0}; e.digIn=.01; closeSheet(); toast("看牠去挖寶……",1600); },
   catTSick:()=>{ const p=catData().pet; if(!p) return; p.vet=null; delete p.vet; p.sick={d:catDay(),cost:500+((Math.random()*11)|0)*50}; catSync(); saveBag(); toast(`${p.nm} 生病了，點牠看看`,2000); closeSheet(); },
   catTVetBack:()=>{ const p=catData().pet; if(!p||!p.vet){ toast("沒有在住院",1500); return; } p.vet.back=p.vet.g?catGDay():catDay(); catData(); catSync(); saveBag(); HANDLERS.catTest(); },
   catTLearn:()=>{ const p=catData().pet; if(!p) return; TRICKS.forEach(([k,,n])=>p.tr[k]=n); saveBag(); toast("全部動作都學會了，到貓咪面板按「動一動」",2200); HANDLERS.catTest(); },
-  catTReset:()=>{ const p=catData().pet; if(!p) return; p.tt={}; p.dg=null; p.lf=catDay()-1; p.ll=catDay()-1; p.lp=catDay()-1; saveBag(); toast("今天的餵食、貓砂、摸摸、訓練、挖寶都可以再做一次",2400); HANDLERS.catTest(); },
+  catTReset:()=>{ const C=catData(); if(!C.pets.length) return; C.dg=null; C.pets.forEach(p=>{ p.tt={}; p.dg=null; p.lf=catDay()-1; p.ll=catDay()-1; p.lp=catDay()-1; }); saveBag(); toast("今天的餵食、貓砂、摸摸、訓練、挖寶都可以再做一次",2400); HANDLERS.catTest(); },
   catTAway:()=>{ const p=catData().pet; if(!p) return; p.away=true; p.home=false; catSync(); saveBag(); toast(`${p.nm} 跑去愛心媽媽那裡了`,2000); HANDLERS.catTest(); },
-  catTRel:()=>{ const C=catData(); C.pet=null; catSync(); saveBag(); toast("放回去了",1500); HANDLERS.catTest(); },
+  catTRel:()=>{ const C=catData(); const q=C.pets.pop(); catSync(); saveBag(); toast(q?`${q.nm} 放回去了（剩 ${C.pets.length} 隻）`:"沒有貓",1500); HANDLERS.catTest(); },
   catTStray:()=>{ const C=catData(); C.s=[catNewStray(),catNewStray(),catNewStray()]; C.s.forEach(x=>x.a=90); C.next=0; catSync(); saveBag(); toast("換了一批流浪貓，好感都是 90",2000); HANDLERS.catTest(); },
   catTRain:()=>{ const on=window.MZ_WX!=="rain"; window.MZ_WX=on?"rain":"clear"; toast(on?"下雨了（只有你的畫面），看貓去躲雨":"放晴了",2000); HANDLERS.catTest(); } });
 /* 主委工具 → 查取回碼: search the saved characters by name (or a code) and read the player their 取回碼; they type it in 設定 → 取回碼 */
@@ -10518,16 +10518,22 @@ const catGDay=()=>Math.floor(Date.now()/1000/TOD_LEN);
 const catVetLeft=v=>v.g?Math.max(0,v.back-catGDay()):Math.max(0,v.back-catDay());
 /* ---- the saved state (bag.cat): s = the strays (id, t coat, sd seed, nm name, a 好感度, fd day last fed, pd/pn petted today), pet = your cat ---- */
 function catNewStray(){ return {id:Math.random().toString(36).slice(2,8),t:(Math.random()*CAT_COATS.length)|0,sd:(Math.random()*65535)|0,nm:CAT_NAMES[(Math.random()*CAT_NAMES.length)|0],a:0,fd:0,pd:0,pn:0}; }
-function catData(){ const d=catDay(); if(!bag.cat||typeof bag.cat!=="object") bag.cat={s:[],pet:null}; const C=bag.cat; C.s=Array.isArray(C.s)?C.s:[];
+/* (11/24 主委「貓咪我想要能一次領養三隻 但挖東西只有一隻 不會因為三隻就增加挖掘次數」): bag.cat.pets holds up to CAT_MAX cats; C.pet
+   (not saved) is the first one, for the places that only need "a cat" (presence, 取回碼, the house). Digging is shared: C.dg / C.ak. */
+const CAT_MAX=3;
+function catData(){ const d=catDay(); if(!bag.cat||typeof bag.cat!=="object") bag.cat={s:[],pets:[]}; const C=bag.cat; C.s=Array.isArray(C.s)?C.s:[];
+  if(!Array.isArray(C.pets)){ const old=Object.getOwnPropertyDescriptor(C,"pet"); const p0=old&&"value" in old?old.value:null; C.pets=p0?[p0]:[]; }
+  { const ds=Object.getOwnPropertyDescriptor(C,"pet"); if(!ds||"value" in ds){ if(ds) delete C.pet; Object.defineProperty(C,"pet",{enumerable:false,configurable:true,get(){ return this.pets[0]||null; },set(v){ if(v) this.pets[0]=v; else this.pets.shift(); }}); } }
+  C.pets=C.pets.filter(Boolean).slice(0,CAT_MAX);
   /* 認定主人: a stray you feed takes you as its person (s.own) and runs from anyone else who comes close. Each one that has
      picked you brings another stray along, up to 5 at once. Two whole days without you petting or feeding it and it forgets you. */
   C.s.forEach(s=>{ if(s.pd!==d){ s.pd=d; s.pn=0; } if(s.own&&d-(s.lv||0)>2){ s.own=0; s.a=0; } });
   const want=Math.min(5,3+C.s.filter(s=>s.own).length);
   if(C.s.length<want&&(!C.next||d>=C.next)){ while(C.s.length<want) C.s.push(catNewStray()); C.next=0; }
   while(C.s.length>want){ let k=-1; C.s.forEach((s,i)=>{ if(!s.own&&(k<0||s.a<C.s[k].a)) k=i; }); if(k<0) break; C.s.splice(k,1); }
-  { const P=C.pet; if(P&&P.vet&&catVetLeft(P.vet)<=0){ const nm=P.nm; delete P.vet; P.sick=null; P.lf=d; P.ll=d; P.lp=d; setTimeout(()=>toast(`${nm} 病好了，從獸醫那裡回來了！`,4000),3500); }
+  for(const P of C.pets){ if(P&&P.vet&&catVetLeft(P.vet)<=0){ const nm=P.nm; delete P.vet; P.sick=null; P.lf=d; P.ll=d; P.lp=d; setTimeout(()=>toast(`${nm} 病好了，從獸醫那裡回來了！`,4000),3500); }
     if(P&&!P.away&&!P.vet&&!P.sick&&P.sk!==d&&d>P.born){ P.sk=d; const m=catMood(P); if(Math.random()<(m<50?.12:.04)){ P.sick={d,cost:500+((Math.random()*11)|0)*50}; setTimeout(()=>toast(`${P.nm} 好像生病了，懶洋洋的……點牠看看`,4500),5000); } } } /* 生病: 4% a day (12% if it is unhappy); 獸醫 500–1000 平安幣, away 1–3 days */
-  if(C.pet&&!C.pet.away&&!C.pet.vet&&catDays(C.pet,"lf")>=4){ C.pet.away=true; C.pet.home=false; setTimeout(()=>toast(`${C.pet.nm} 好幾天沒吃東西，跑去愛心媽媽那裡了。去找愛心媽媽帶牠回來吧`,5000),4000); }
+  for(const P of C.pets) if(!P.away&&!P.vet&&catDays(P,"lf")>=4){ P.away=true; P.home=false; setTimeout(()=>toast(`${P.nm} 好幾天沒吃東西，跑去愛心媽媽那裡了。去找愛心媽媽帶牠回來吧`,5000),4000); }
   return C; }
 const catCans=()=>bag.items.can||0;
 function catStranger(x,z,r){ for(const a of remotes.values()){ if(a&&a.pos&&Math.hypot(a.pos.x-x,a.pos.y-z)<r) return a.pos; } for(const a of npcs){ if(a&&a.pos&&!a.classic&&!a.afk&&Math.hypot(a.pos.x-x,a.pos.y-z)<r) return a.pos; } return null; }
@@ -10535,6 +10541,9 @@ function catDays(p,k){ return p&&p[k]?catDay()-p[k]:99; }
 function catMood(p){ if(!p) return 0; if(p.sick) return Math.min(30,catMood0(p)); return catMood0(p); }
 function catMood0(p){ const f=catDays(p,"lf"), l=catDays(p,"ll"), t=catDays(p,"lp"); return Math.max(0,Math.min(100,100-30*Math.max(0,f-1)-15*Math.max(0,l-1)-10*Math.max(0,t-1)-(f>=1?10:0)-(l>=1?5:0))); }
 function catLearned(p){ return TRICKS.filter(([k,,n])=>(p.tr&&p.tr[k]||0)>=n); }
+/* which of your cats a sheet is about: the one you tapped, else the one picked in the sheet, else the first */
+function catCurP(){ const C=catData(), e=CAT.cur; if(e&&e.kind==="pet"&&C.pets.includes(e.ref)) return e.ref; if(CAT.curP&&C.pets.includes(CAT.curP)) return CAT.curP; return C.pets[0]||null; }
+function catEntOf(p){ return p?CAT.ents.find(x=>x.kind==="pet"&&x.ref===p):null; }
 
 /* ---- the figures ---- */
 /* ---- 貓咪骨架: one rigged model (the chair's), a coat picture per cat, and all the moves made in code by turning the bones ----
@@ -10597,7 +10606,7 @@ const CAT_FACES=[{},{},{eL:"#3d7fc8",eR:"#e2a41c"},{},{},{wh:"#e9dccb"},{},{},{w
 function catTex(t){ CAT.tex=CAT.tex||{}; if(!CAT.tex[t]){ const tx=new T.TextureLoader().load("catcoat/cat-"+t+".webp"); tx.flipY=false; tx.encoding=T.sRGBEncoding; tx.anisotropy=2; CAT.tex[t]=tx; } return CAT.tex[t]; }
 function catEnt(kind,ref){ if(!CAT.src) return null; const rig=catRigMake(CAT.src,catTex(ref.t),CAT_FACES[ref.t]||{}), g=rig.root; g.scale.setScalar(.5); g.userData.noMerge=1; scene.add(g);
   const sp=catPlace(); g.position.set(sp[0],0,sp[1]); const e={kind,ref,g,rig,st:"sit",tt:rand(2,6),tx:sp[0],tz:sp[1],ph:Math.random()*9,trick:null,z:null,path:null,sl:"loaf"};
-  e.hit=addHit("cat:"+(kind==="pet"?"pet":ref.id),sp[0],0,sp[1],.32,.5); CAT.ents.push(e); return e; }
+  e.hit=addHit("cat:"+(kind==="pet"?"pet:"+ref.sd:ref.id),sp[0],0,sp[1],.32,.5); CAT.ents.push(e); return e; }
 function catDrop(e){ scene.remove(e.g); try{ e.rig.mesh.material.dispose(); }catch(_){} if(e.z){ scene.remove(e.z); } if(e.sick){ scene.remove(e.sick); } scene.remove(e.hit); const i=pickables.indexOf(e.hit); if(i>=0) pickables.splice(i,1); CAT.ents.splice(CAT.ents.indexOf(e),1); }
 const CAT_NAP=[[7.6,32.6],[12.4,24.8],[-7.6,29.4],[-5.2,17.6],[5.4,17.8],[13.4,36.4],[-12.6,35.6]];
 const catRain=()=>typeof WX!=="undefined"&&WX.r>.45;
@@ -10607,9 +10616,10 @@ function catPlace(near,yard){ for(let k=0;k<30;k++){ let x,z; if(near){ x=near[0
 function catSync(){ if(!CAT.ready) return; const C=catData(); const want=new Set(C.s.map(s=>s.id));
   for(const e of CAT.ents.slice()){ if(e.kind==="stray"&&!want.has(e.ref.id)) catDrop(e); }
   C.s.forEach(s=>{ const e=CAT.ents.find(x=>x.kind==="stray"&&x.ref.id===s.id); if(e) e.ref=s; else catEnt("stray",s); });
-  const pe=CAT.ents.find(x=>x.kind==="pet"); const p=C.pet&&!C.pet.away&&!C.pet.vet?C.pet:null;
-  if(pe&&(!p||pe.ref.sd!==p.sd)) catDrop(pe); if(p){ const e2=CAT.ents.find(x=>x.kind==="pet"); if(e2) e2.ref=p; else { const e=catEnt("pet",p); if(e&&!p.home){ e.g.position.set(meAv.pos.x+.8,0,meAv.pos.y+.8); } } } }
-function catRestore(d){ if(d.cans) bag.items.can=Math.max(bag.items.can||0,d.cans); if(d.treat) bag.items.treat=Math.max(bag.items.treat||0,d.treat); if(d.cat){ const C=catData(); if(!C.pet){ const day=catDay(); C.pet={...d.cat,born:day,lf:day,ll:day,lp:day,tt:{},home:false}; C.s=C.s.filter(x=>x.sd!==d.cat.sd); catSync(); } } }
+  const out=C.pets.filter(p=>!p.away&&!p.vet);
+  for(const pe of CAT.ents.slice()){ if(pe.kind==="pet"&&!out.some(p=>p.sd===pe.ref.sd)) catDrop(pe); }
+  out.forEach((p,i)=>{ const e2=CAT.ents.find(x=>x.kind==="pet"&&x.ref.sd===p.sd); if(e2) e2.ref=p; else { const e=catEnt("pet",p); if(e&&!p.home){ e.g.position.set(meAv.pos.x+.8+i*.5,0,meAv.pos.y+.8); } } }); }
+function catRestore(d){ if(d.cans) bag.items.can=Math.max(bag.items.can||0,d.cans); if(d.treat) bag.items.treat=Math.max(bag.items.treat||0,d.treat); if(d.cat){ const C=catData(); const day=catDay(); [d.cat,...(d.cats2||[])].forEach(c=>{ if(!c||C.pets.length>=CAT_MAX||C.pets.some(x=>x.sd===c.sd)) return; C.pets.push({...c,born:day,lf:day,ll:day,lp:day,tt:{},home:false}); C.s=C.s.filter(x=>x.sd!==c.sd); }); catSync(); } }
 function catLoad(){ loadModel("cat",m=>{ let ok=false; m.traverse(o=>{ if(o.isSkinnedMesh) ok=true; }); if(!ok) return; CAT.src=m; CAT.ready=true; catSync(); }); catBuildHome(); setInterval(()=>{ try{ catSync(); }catch(e){} },60000); /* (a new day: a new stray, a cat home from the vet) */ }
 
 /* ---- 愛心媽媽, the cat bed and the litter box ---- */
@@ -10642,8 +10652,8 @@ function rcatTick(dt){ if(!CAT.src) return; let n=0;
     { const h=groundAt(c.cg,g.position.x,g.position.z); g.position.y=h<0?0:h; }
     catRigPose(c.rig,c.st==="walk"?(spd>1.5?"run":"walk"):"sit",c.ph,Math.min(1,dt*8)); } }
 function catTick(dt){ CAT.t+=dt; try{ rcatTick(dt); }catch(err){} if(CAT.resc){ try{ catRescueTick(dt); }catch(err){ CAT.resc=null; } } if(CAT.momAv){ CAT.momAv.update(dt); if((CAT.momAv.talkIn-=dt)<0){ CAT.momAv.talkIn=rand(14,30); if(Math.hypot(meAv.pos.x-CAT.mom.x,meAv.pos.y-CAT.mom.z)<9) CAT.momAv.say(["小貓咪要吃飯囉～","罐頭一罐 10 塊，貓咪一天吃一罐","摸摸牠們，牠們就會記得你","領養之前要想清楚喔","貓砂每天都要清一次","貓咪不舒服要趕快帶去看醫生","訓練的時候給一條肉泥，牠會學得很快"][(Math.random()*7)|0],"#f7ecd6",3); } }
-  if(CAT.dirt){ const p=bag.cat&&bag.cat.pet; CAT.dirt.visible=!!(p&&!p.vet&&catDays(p,"ll")>=1); }
-  if(!CAT.ents.length) return; const me2=meAv.pos, rain=catRain();
+  if(CAT.dirt){ const ps=bag.cat&&Array.isArray(bag.cat.pets)?bag.cat.pets:[]; CAT.dirt.visible=ps.some(p=>p&&!p.vet&&catDays(p,"ll")>=1); }
+  if(!CAT.ents.length) return; const me2=meAv.pos, rain=catRain(); { let fi=0; for(const e of CAT.ents) if(e.kind==="pet") e.fi=e.ref.home?0:fi++; } /* (several cats: each walks a little further back, in a line) */
   for(const e of CAT.ents){ const g=e.g; e.ph+=dt; let anim="idle", spd=0; const sick=e.kind==="pet"&&!!e.ref.sick;
     if(e.trick){ catTrickPose(e,dt); }
     else if(e.dig){ catDigStep(e,dt); }
@@ -10656,7 +10666,7 @@ function catTick(dt){ CAT.t+=dt; try{ rcatTick(dt); }catch(err){} if(CAT.resc){ 
       if(!sick) catDigMaybe(e,dt);
       if(e.st==="walk"){ e.stk=(e.stk||0)+dt; const m=e.mk||(e.mk=[g.position.x,g.position.z]); if(Math.hypot(g.position.x-m[0],g.position.z-m[1])>.3||rem<1.2){ e.stk=0; e.mk=[g.position.x,g.position.z]; } } else e.stk=0;
       if(d>22||rem>45||e.stk>4){ /* left far behind, or not getting anywhere: it simply turns up next to you */ catBeside(e); e.st="sit"; e.stk=0; }
-      else if(rem>(e.st==="sleep"?2.6:1.1)){ spd=Math.min(sick?1.4:3.6,.9+rem*1.3); catMove(e,T[0][0],T[0][1],spd,dt); e.st="walk"; e.idle=0; }
+      else if(rem>(e.st==="sleep"?2.6:1.1)+(e.fi||0)*.8){ spd=Math.min(sick?1.4:3.6,.9+rem*1.3); catMove(e,T[0][0],T[0][1],spd,dt); e.st="walk"; e.idle=0; }
       else { e.idle=(e.idle||0)+dt; if(e.st==="walk") e.st="sit"; if(e.st!=="sleep"&&(e.idle>30||sick)){ e.st="sleep"; e.sl=Math.random()<.5?"loaf":"side"; } if(e.st!=="sleep") g.rotation.y=lerpAngle(g.rotation.y,meAv.rotY,dt*2); } }
     else { /* wandering, sitting, napping; out of the rain when it pours */
       e.tt-=dt; const out=zoneOf(g.position.x,g.position.z)==="C";
@@ -10683,12 +10693,12 @@ function catTick(dt){ CAT.t+=dt; try{ rcatTick(dt); }catch(err){} if(CAT.resc){ 
   if(CAT.litterGo&&Math.hypot(me2.x-CAT.bed.x-.95,me2.y-CAT.bed.z)<2){ CAT.litterGo=false; catLitter(); }
   for(let i=CAT.hearts.length-1;i>=0;i--){ const h=CAT.hearts[i]; h.t+=dt; if(h.dirt){ const v=h.s.userData.v; v[1]-=9*dt; h.s.position.x+=v[0]*dt; h.s.position.y=Math.max(0,h.s.position.y+v[1]*dt); h.s.position.z+=v[2]*dt; if(h.t>.9){ scene.remove(h.s); h.s.material.dispose(); CAT.hearts.splice(i,1); } continue; } h.s.position.y+=dt*.5; h.s.material.opacity=Math.max(0,1-h.t/1.4); if(h.t>1.4){ scene.remove(h.s); h.s.material.dispose(); CAT.hearts.splice(i,1); } } }
 /* 貓咪救援: your cat got stuck somewhere — two helpers carry it back and set it down beside you */
-function catBeside(e){ const g=e.g, fx=Math.sin(meAv.rotY), fz=Math.cos(meAv.rotY); let x=meAv.pos.x-fx*.9, z=meAv.pos.y-fz*.9; if(!walkable(x,z)){ x=meAv.pos.x; z=meAv.pos.y; } g.position.set(x,0,z); e.trail=[[x,z]]; e.cg={gy:meAv.gy||0}; e.path=null; }
-function catRescue(){ let e=CAT.ents.find(x=>x.kind==="pet"); const p=bag.cat&&bag.cat.pet;
+function catBeside(e){ const g=e.g, fx=Math.sin(meAv.rotY), fz=Math.cos(meAv.rotY), k=.9+(e.fi||0)*.6, sd=((e.fi||0)%2?.35:-.35)*((e.fi||0)?1:0); let x=meAv.pos.x-fx*k+fz*sd, z=meAv.pos.y-fz*k-fx*sd; if(!walkable(x,z)){ x=meAv.pos.x; z=meAv.pos.y; } g.position.set(x,0,z); e.trail=[[x,z]]; e.cg={gy:meAv.gy||0}; e.path=null; }
+function catRescue(){ let p=catCurP(); if(!p||p.home||p.vet||p.away){ const q=catData().pets.find(x=>!x.home&&!x.vet&&!x.away); if(q) p=q; } let e=catEntOf(p);
   if(p&&!e){ /* (11/23 玩家的貓「五花肉」: the save had the cat but it was not out — the old message said there was no cat at all) */
     if(p.vet){ toast(`${p.nm} 在獸醫那裡住院，還要遊戲裡 ${Math.max(1,catVetLeft(p.vet))} 天才回來`,3200); return; }
     if(p.away){ toast(`${p.nm} 跑去愛心媽媽那裡了，去找愛心媽媽餵牠一罐就會跟你回家`,3600); return; }
-    try{ catSync(); }catch(_){} e=CAT.ents.find(x=>x.kind==="pet");
+    try{ catSync(); }catch(_){} e=catEntOf(p);
     if(!e){ toast(CAT.src?`${p.nm} 等一下就到`:`${p.nm} 還在路上，等畫面載完再按一次`,2600); return; } }
   if(!e||!p){ toast("你現在沒有帶貓咪出門",2200); return; } if(p.home){ toast(`${p.nm} 在貓窩休息，先帶牠出門`,2400); return; } if(CAT.resc) return; closeSheet();
   const px=meAv.pos.x, pz=meAv.pos.y; let sp=null; for(let k=0;k<30&&!sp;k++){ const a=Math.random()*6.283, r=3+Math.random()*1.8, x=px+Math.sin(a)*r, z=pz+Math.cos(a)*r; if(walkable(x,z)&&(typeof colClear!=="function"||colClear(px,pz,x,z))) sp=[x,z]; } if(!sp) sp=[px,pz+.01];
@@ -10711,11 +10721,11 @@ const CAT_DIG=[["c",50,.50],["c",100,.24],["c",500,.04],["c",1000,.005],["g",1,.
 /* (掛網: no tap or key for 3 minutes. Then it still digs, but only once an hour — counted from your last touch or its last
    掛網 dig — and these don't use up the one a day you get while playing.) */
 CAT.inT=Date.now(); ["pointerdown","keydown","touchstart","wheel"].forEach(ev=>addEventListener(ev,()=>{ CAT.inT=Date.now(); },{passive:true,capture:true}));
-function catDigMaybe(e,dt){ const p=e.ref, d=catDay(), gd=catGDay(); if(p.lf!==d||catMood(p)<50||miniOpen) return; p.dg=p.dg&&p.dg.g===gd?p.dg:{g:gd,n:0};
-  const now=Date.now(); if(now-CAT.inT>180e3){ if(now-Math.max(p.ak||0,CAT.inT)<3600e3) return; if(catDigGo(e)){ p.ak=now; saveBag(); } return; }
-  if(p.dg.n>=1) return; /* once a day while you play */
+function catDigMaybe(e,dt){ const p=e.ref, d=catDay(), gd=catGDay(), C=bag.cat; if(p.lf!==d||catMood(p)<50||miniOpen||!C) return; if(CAT.ents.some(x=>x.dig)) return; /* (one cat digs at a time; the count is shared by all your cats) */ C.dg=C.dg&&C.dg.g===gd?C.dg:{g:gd,n:(p.dg&&p.dg.g===gd?p.dg.n:0)};
+  const now=Date.now(); if(now-CAT.inT>180e3){ if(now-Math.max(C.ak||0,p.ak||0,CAT.inT)<3600e3) return; if(catDigGo(e)){ C.ak=now; saveBag(); } return; }
+  if(C.dg.n>=1) return; /* once a game day while you play — for all your cats together */
   if(e.digIn==null) e.digIn=rand(150,360); if((e.digIn-=dt)>0) return; e.digIn=rand(240,600);
-  if(catDigGo(e)){ p.dg.n++; saveBag(); } }
+  if(catDigGo(e)){ C.dg.n++; saveBag(); } }
 function catDigGo(e){ let to=null; for(let k=0;k<12&&!to;k++){ const a=Math.random()*6.283, r=rand(2.2,3.6), x=meAv.pos.x+Math.cos(a)*r, z=meAv.pos.y+Math.sin(a)*r; if(walkable(x,z)) to=[x,z]; } if(!to) return false;
   let r=Math.random(), pick=CAT_DIG[0]; for(const L of CAT_DIG){ if(r<L[2]){ pick=L; break; } r-=L[2]; } e.dig={ph:"go",x:to[0],z:to[1],t:0,prize:pick}; e.st="walk"; catMeow(true); return true; }
 let CAT_DIRT=null;
@@ -10753,9 +10763,9 @@ function catTrickPose(e,dt){ const k=e.trick.k, D=TRICK_T[k]||1.2, t=(e.trick.t+
   catRigApply(c); if(u>=1){ const w=Math.PI*2, wr=v=>((v+Math.PI)%w+w)%w-Math.PI; P.ry=0; P.rx=wr(P.rx); P.rz=wr(P.rz); c.body.rotation.y=0; e.trick=null; } }
 
 /* ---- tapping a cat ---- */
-function catTap(id){ const e=id==="pet"?CAT.ents.find(x=>x.kind==="pet"):CAT.ents.find(x=>x.kind==="stray"&&x.ref.id===id); if(!e) return;
+function catTap(id){ const e=id==="pet"?CAT.ents.find(x=>x.kind==="pet"):id.indexOf("pet:")===0?CAT.ents.find(x=>x.kind==="pet"&&String(x.ref.sd)===id.slice(4)):CAT.ents.find(x=>x.kind==="stray"&&x.ref.id===id); if(!e) return;
   const d=Math.hypot(meAv.pos.x-e.g.position.x,meAv.pos.y-e.g.position.z); if(d<2.4){ catOpen(e); return; } CAT.pend=e; walkTo(e.g.position.x,e.g.position.z); }
-function catOpen(e){ catMeow(e.ref.a>60||e.kind==="pet"); if(e.st==="sleep"){ e.st="sit"; e.idle=0; } if(e.st==="walk"){ e.st="sit"; e.tt=rand(6,12); } e.g.rotation.y=Math.atan2(meAv.pos.x-e.g.position.x,meAv.pos.y-e.g.position.z); CAT.cur=e; if(e.kind==="pet") catPetSheet(); else catStraySheet(); }
+function catOpen(e){ catMeow(e.ref.a>60||e.kind==="pet"); if(e.st==="sleep"){ e.st="sit"; e.idle=0; } if(e.st==="walk"){ e.st="sit"; e.tt=rand(6,12); } e.g.rotation.y=Math.atan2(meAv.pos.x-e.g.position.x,meAv.pos.y-e.g.position.z); CAT.cur=e; if(e.kind==="pet"){ CAT.curP=e.ref; catPetSheet(); } else catStraySheet(); }
 const catBar=(v,col)=>`<div style="height:12px;border-radius:8px;background:rgba(255,255,255,.12);overflow:hidden;margin:6px 0"><i style="display:block;height:100%;width:${Math.max(0,Math.min(100,v))}%;background:${col||"linear-gradient(90deg,#ff8fb0,#ff5c8a)"}"></i></div>`;
 function catStraySheet(){ const e=CAT.cur; if(!e||e.kind!=="stray") return; const s=e.ref, C=catData(), d=catDay(), coat=CAT_COATS[s.t][0];
   HANDLERS.catPet=catPet; HANDLERS.catFeed=catFeed; HANDLERS.catAdopt=catAdopt; HANDLERS.goCatMom=()=>{ closeSheet(); goStation("catMom"); };
@@ -10763,27 +10773,29 @@ function catStraySheet(){ const e=CAT.cur; if(!e||e.kind!=="stray") return; cons
     <p class="note">好感度 ${s.a}/100</p>${catBar(s.a)}
     <div class="goods"><button class="good" data-act="catPet"><span class="name">🤚 摸摸牠</span><span class="meta">今天 ${s.pn}/3 次・好感 +5</span></button>
     <button class="good" data-act="catFeed" ${s.fd===d?"disabled":""}><span class="name">🥫 餵罐頭</span><span class="meta">${s.fd===d?"今天吃飽了":`好感 +20・你有 ${catCans()} 罐`}</span></button>
-    ${s.a>=100?`<button class="good" data-act="catAdopt"><span class="name">🏠 領養牠</span><span class="meta">${C.pet?"你已經有一隻貓了（一次只能養一隻）":"帶牠回家，每天照顧牠"}</span></button>`:""}</div>
-    <p class="note">罐頭可以跟廟埕的愛心媽媽買（一罐 10 平安幣），土地公尋寶也挖得到。好感度滿 100 就可以領養。</p><div class="chips"><button class="chip" data-act="goCatMom">去找愛心媽媽</button></div>`); }
-function catPet(){ const e=CAT.cur; if(!e) return; try{ DQ.ev("cat"); }catch(_){} if(e.kind==="pet"){ const p=e.ref; const first=p.lp!==catDay(); p.lp=catDay(); catHearts(e,first?6:3); catPurr(); catTrick(e,"sit"); saveBag(); markDirty(); toast(first?`${p.nm} 舒服得呼嚕呼嚕叫`:`${p.nm} 蹭了蹭你的手`,1800); catPetSheet(); return; }
+    ${s.a>=100?`<button class="good" data-act="catAdopt"><span class="name">🏠 領養牠</span><span class="meta">${C.pets.length>=CAT_MAX?`你已經養了 ${CAT_MAX} 隻貓（最多 ${CAT_MAX} 隻）`:C.pets.length?`帶牠回家（你現在養 ${C.pets.length} 隻，最多 ${CAT_MAX} 隻）`:"帶牠回家，每天照顧牠"}</span></button>`:""}</div>
+    <p class="note">罐頭可以跟廟埕的愛心媽媽買（一罐 10 平安幣），土地公尋寶也挖得到。好感度滿 100 就可以領養，最多養 ${CAT_MAX} 隻。</p><div class="chips"><button class="chip" data-act="goCatMom">去找愛心媽媽</button></div>`); }
+function catPet(){ let e=CAT.cur; if(e&&e.kind==="pet"&&!CAT.ents.includes(e)) e=catEntOf(e.ref); if(!e) return; try{ DQ.ev("cat"); }catch(_){} if(e.kind==="pet"){ const p=e.ref; const first=p.lp!==catDay(); p.lp=catDay(); catHearts(e,first?6:3); catPurr(); catTrick(e,"sit"); saveBag(); markDirty(); toast(first?`${p.nm} 舒服得呼嚕呼嚕叫`:`${p.nm} 蹭了蹭你的手`,1800); catPetSheet(); return; }
   const s=e.ref; if(s.pn>=3){ toast(`${s.nm} 今天被摸夠了，明天再來吧`,2000); return; } s.pn++; s.a=Math.min(100,s.a+5); s.lv=catDay(); catHearts(e,3); catPurr(); saveBag(); markDirty(); toast(s.a>=100?`${s.nm} 好感度滿了！可以領養牠了`:`${s.nm} 瞇起眼睛，好感 +5`,2000); catStraySheet(); }
-function catFeed(){ const e=CAT.cur; if(!e) return; if(catCans()<1){ toast("沒有罐頭了，到愛心媽媽那裡買",2400); return; } const d=catDay();
+function catFeed(){ let e=CAT.cur; if(e&&e.kind==="pet"&&!CAT.ents.includes(e)) e=catEntOf(e.ref); if(!e) return; if(catCans()<1){ toast("沒有罐頭了，到愛心媽媽那裡買",2400); return; } const d=catDay();
   if(e.kind==="pet"){ const p=e.ref; if(p.lf===d){ toast(`${p.nm} 今天吃飽了，一天一罐就好`,2200); return; } bag.items.can--; p.lf=d; catHearts(e,5); catMeow(true); saveBag(); markDirty(); toast(`${p.nm} 吃得好開心！`,1800); catPetSheet(); return; }
   const s=e.ref; if(s.fd===d){ toast(`${s.nm} 今天吃飽了`,1800); return; } bag.items.can--; s.fd=d; s.a=Math.min(100,s.a+20); s.lv=d; const first=!s.own; s.own=1; catHearts(e,6); catMeow(true); saveBag(); markDirty(); toast(s.a>=100?`${s.nm} 好感度滿了！可以領養牠了`:first?`${s.nm} 吃得津津有味，牠有點喜歡你・好感 +20`:`${s.nm} 吃得津津有味，好感 +20`,2200); if(first) catSync(); catStraySheet(); }
-function catAdopt(){ const e=CAT.cur, C=catData(); if(!e||e.kind!=="stray") return; if(C.pet){ toast("一次只能養一隻貓，先好好照顧你家的貓吧",2600); return; } if(e.ref.a<100) return; const s=e.ref, d=catDay();
-  C.pet={t:s.t,sd:s.sd,nm:s.nm,born:d,lf:s.fd===d?d:d-1,ll:d,lp:d,tr:{},tt:{},home:false}; C.s=C.s.filter(x=>x!==s); C.next=d+1; const pos=[e.g.position.x,e.g.position.z]; catDrop(e); catSync();
-  const pe=CAT.ents.find(x=>x.kind==="pet"); if(pe){ pe.g.position.set(pos[0],0,pos[1]); catHearts(pe,10); } catMeow(true); saveBag(); markDirty(); profSave(true); statInc("catAdopt");
+function catAdopt(){ const e=CAT.cur, C=catData(); if(!e||e.kind!=="stray") return; if(C.pets.length>=CAT_MAX){ toast(`最多養 ${CAT_MAX} 隻貓，先好好照顧你家的貓吧`,2600); return; } if(e.ref.a<100) return; const s=e.ref, d=catDay();
+  let sd=s.sd; while(C.pets.some(x=>x.sd===sd)) sd=(sd+1)&65535; const np={t:s.t,sd,nm:s.nm,born:d,lf:s.fd===d?d:d-1,ll:d,lp:d,tr:{},tt:{},home:false}; C.pets.push(np); C.s=C.s.filter(x=>x!==s); C.next=d+1; const pos=[e.g.position.x,e.g.position.z]; catDrop(e); catSync();
+  const pe=catEntOf(np); CAT.curP=np; if(pe){ pe.g.position.set(pos[0],0,pos[1]); catHearts(pe,10); } catMeow(true); saveBag(); markDirty(); profSave(true); statInc("catAdopt");
   closeSheet(); toast(`你領養了 ${s.nm}！記得每天餵一罐、清貓砂、摸摸牠`,4000); setTimeout(()=>{ CAT.cur=pe; catPetSheet(); },900); }
 
 /* ---- your cat ---- */
-function catPetSheet(){ const e=CAT.ents.find(x=>x.kind==="pet"); const C=catData(), p=C.pet; if(!p||p.vet){ closeSheet(); return; } CAT.cur=e; const d=catDay(), mood=catMood(p), coat=CAT_COATS[p.t][0];
+function catPetSheet(){ const C=catData(), p=catCurP(); if(!p||p.vet||p.away){ closeSheet(); if(p&&(p.vet||p.away)) toast(p.vet?`${p.nm} 在獸醫那裡住院`:`${p.nm} 在愛心媽媽那裡`,2200); return; } const e=catEntOf(p); CAT.cur=e||{kind:"pet",ref:p}; CAT.curP=p;
+  HANDLERS.catSel=v=>{ const q=C.pets.find(x=>String(x.sd)===String(v)); if(!q) return; if(q.vet||q.away){ toast(q.vet?`${q.nm} 在獸醫那裡住院，遊戲裡 ${Math.max(1,catVetLeft(q.vet))} 天後回來`:`${q.nm} 跑去愛心媽媽那裡了，去找愛心媽媽帶牠回來`,2800); return; } CAT.curP=q; CAT.cur=catEntOf(q)||{kind:"pet",ref:q}; catPetSheet(); };
+  const tabs=C.pets.length>1?`<div class="chips" style="margin-bottom:6px">${C.pets.map(q=>`<button class="chip" data-act="catSel" data-v="${q.sd}" aria-pressed="${q===p}">${q===p?"🐈 ":""}${esc(q.nm)}${q.vet?"🏥":q.away?"💤":q.sick?"🤒":""}</button>`).join("")}</div>`:""; const d=catDay(), mood=catMood(p), coat=CAT_COATS[p.t][0];
   Object.assign(HANDLERS,{catPet,catFeed,catLitter,catTrainOpen,catShowOpen,catRename,catHome,catRescue});
   const fed=p.lf===d, clean=p.ll===d, pet=p.lp===d, learned=catLearned(p);
   HANDLERS.catVet=catVet;
-  if(p.sick){ openSheet("cat",`🐈 ${esc(p.nm)}（${coat}）🤒`,`<p class="lead">${esc(p.nm)} 生病了，趴著不太想動，也不想吃東西。要帶去給獸醫看。</p>
+  if(p.sick){ openSheet("cat",`🐈 ${esc(p.nm)}（${coat}）🤒`,`${tabs}<p class="lead">${esc(p.nm)} 生病了，趴著不太想動，也不想吃東西。要帶去給獸醫看。</p>
     <div class="goods"><button class="good" data-act="catVet"><span class="name">🏥 帶去看獸醫</span><span class="meta">醫藥費 ${p.sick.cost} 平安幣・住院遊戲裡 1～3 天（你有 ${bag.coins}）</span></button>
     <button class="good" data-act="catPet"><span class="name">🤚 摸摸牠</span><span class="meta">陪陪牠</span></button></div><p class="note">住院期間牠不會在廟裡，治好了會自己回來。生病時心情最多 30。</p>`); return; }
-  openSheet("cat",`🐈 ${esc(p.nm)}（${coat}）`,`<p class="lead">${mood>=80?"心情很好，一直蹭你":mood>=50?"還不錯，想要你多陪陪牠":mood>=25?"有點不開心……":"很難過，好像快要離家出走了"}</p>
+  openSheet("cat",`🐈 ${esc(p.nm)}（${coat}）`,`${tabs}<p class="lead">${mood>=80?"心情很好，一直蹭你":mood>=50?"還不錯，想要你多陪陪牠":mood>=25?"有點不開心……":"很難過，好像快要離家出走了"}</p>
     <p class="note">心情 ${mood}/100</p>${catBar(mood,mood>=50?"linear-gradient(90deg,#9be38a,#4cc36a)":"linear-gradient(90deg,#ffcf6a,#ff8a4c)")}
     <div class="goods"><button class="good" data-act="catFeed" ${fed?"disabled":""}><span class="name">🥫 ${fed?"今天吃過了":"肚子餓了，餵一罐"}</span><span class="meta">一天一罐・你有 ${catCans()} 罐</span></button>
     <button class="good" data-act="catLitter" ${clean?"disabled":""}><span class="name">🧹 ${clean?"貓砂很乾淨":"清貓砂"}</span><span class="meta">${clean?"今天清過了":"貓砂盆在愛心媽媽旁邊，每天清一次"}</span></button>
@@ -10791,37 +10803,37 @@ function catPetSheet(){ const e=CAT.ents.find(x=>x.kind==="pet"); const C=catDat
     <button class="good" data-act="catTrainOpen"><span class="name">🎓 訓練</span><span class="meta">學會 ${learned.length}/${TRICKS.length} 個動作</span></button>
     ${learned.length?`<button class="good" data-act="catShowOpen"><span class="name">🎪 動一動</span><span class="meta">讓牠做學會的動作</span></button>`:""}</div>
     <div class="chips">${p.home?"":`<button class="chip" data-act="catRescue">🆘 貓咪救援</button>`}<button class="chip" data-act="catHome">${p.home?"🐾 帶牠出門（跟著我）":"🏠 讓牠回貓窩休息"}</button><button class="chip" data-act="catRename">✏️ 改名字</button></div>
-    <p class="note">每天要餵一罐、清貓砂、摸摸牠，心情才會好。三天以上沒吃東西，牠會跑去愛心媽媽那裡。養了 ${d-p.born+1} 天。</p>`); }
-function catLitter(){ const p=catData().pet; if(!p) return; const B=CAT.bed; if(Math.hypot(meAv.pos.x-B.x-.95,meAv.pos.y-B.z)>3.2){ CAT.litterGo=true; walkTo(B.x+.2,B.z+1.1); toast("走去貓砂盆……",1500); return; }
-  if(p.ll===catDay()){ toast("貓砂今天清過了",1500); return; } p.ll=catDay(); try{ [300,260,320].forEach((f,i)=>tone(f,.08,.05,"square",i*.12)); }catch(_){} saveBag(); markDirty(); toast("貓砂清好了，乾乾淨淨！",1800); const e=CAT.ents.find(x=>x.kind==="pet"); if(e) catHearts(e,2); }
-function catVet(){ const C=catData(), p=C.pet; if(!p||!p.sick) return; const cost=p.sick.cost; if(bag.coins<cost){ toast(`平安幣不夠，醫藥費要 ${cost}`,2400); return; } bag.coins-=cost; const days=1+((Math.random()*3)|0); p.vet={back:catGDay()+days,days,g:1}; p.sick=null; saveBag(); markDirty(); profSave(true); statInc("catVet");
-  const e=CAT.ents.find(x=>x.kind==="pet"); if(e) catDrop(e); closeSheet(); toast(`${p.nm} 住院了，要遊戲裡 ${days} 天（約 ${days*TOD_LEN/60|0} 分鐘）才會好。治好會自己回來`,4200); }
-function catTrainOpen(){ const p=catData().pet; if(!p) return; const d=catDay(); p.tt=p.tt&&p.tt.d===d?p.tt:{d,n:0}; const mood=catMood(p), learned=catLearned(p).length; HANDLERS.catTrain=catTrain;
+    <p class="note">每天要餵一罐、清貓砂、摸摸牠，心情才會好。三天以上沒吃東西，牠會跑去愛心媽媽那裡。養了 ${d-p.born+1} 天。${C.pets.length>1?`貓砂盆大家共用，清一次就好；挖寶不管養幾隻，一天一次。`:""}</p>`); }
+function catLitter(){ const C=catData(), p=catCurP(); if(!p) return; const B=CAT.bed; if(Math.hypot(meAv.pos.x-B.x-.95,meAv.pos.y-B.z)>3.2){ CAT.litterGo=true; walkTo(B.x+.2,B.z+1.1); toast("走去貓砂盆……",1500); return; }
+  if(C.pets.every(q=>q.ll===catDay())){ toast("貓砂今天清過了",1500); return; } C.pets.forEach(q=>{ q.ll=catDay(); }); try{ [300,260,320].forEach((f,i)=>tone(f,.08,.05,"square",i*.12)); }catch(_){} saveBag(); markDirty(); toast("貓砂清好了，乾乾淨淨！",1800); CAT.ents.forEach(e=>{ if(e.kind==="pet") catHearts(e,2); }); }
+function catVet(){ const C=catData(), p=catCurP(); if(!p||!p.sick) return; const cost=p.sick.cost; if(bag.coins<cost){ toast(`平安幣不夠，醫藥費要 ${cost}`,2400); return; } bag.coins-=cost; const days=1+((Math.random()*3)|0); p.vet={back:catGDay()+days,days,g:1}; p.sick=null; saveBag(); markDirty(); profSave(true); statInc("catVet");
+  const e=catEntOf(p); if(e) catDrop(e); CAT.cur=null; closeSheet(); toast(`${p.nm} 住院了，要遊戲裡 ${days} 天（約 ${days*TOD_LEN/60|0} 分鐘）才會好。治好會自己回來`,4200); }
+function catTrainOpen(){ const p=catCurP(); if(!p) return; const d=catDay(); p.tt=p.tt&&p.tt.d===d?p.tt:{d,n:0}; const mood=catMood(p), learned=catLearned(p).length; HANDLERS.catTrain=catTrain;
   openSheet("cat",`🎓 訓練 ${esc(p.nm)}`,`${backBtnCat()}<p class="lead">每練一次要給一條肉泥（愛心媽媽一條 5 平安幣）。每個動作每天練一次，一天最多練 3 次。心情要 40 以上才肯練。</p><div class="inv-top"><span class="inv-coin">🍡<b>${bag.items.treat||0}</b>條肉泥</span></div>
     <div class="goods">${TRICKS.map(([k,n,need])=>{ const v=Math.min(need,p.tr[k]||0), done=v>=need, lock=k==="flip"&&learned<3&&!done, today=p.tt[k];
       return `<button class="good" data-act="catTrain" data-v="${k}" ${done||lock||today?"disabled":""}><span class="name">${done?"✅":lock?"🔒":"🐾"} ${n}</span><span class="meta">${done?"學會了":lock?"先學會 3 個動作才能練":today?"今天練過了":`進度 ${v}/${need}`}</span></button>`; }).join("")}</div>
     <p class="note">今天練了 ${p.tt.n}/3 次・心情 ${mood}</p>`); }
 const backBtnCat=()=>`<button class="chip" data-act="catBack" style="margin-bottom:8px">← 回到貓咪</button>`;
 HANDLERS.catBack=()=>catPetSheet();
-function catTrain(k){ const p=catData().pet, e=CAT.ents.find(x=>x.kind==="pet"); if(!p||!e) return; const d=catDay(), T0=TRICKS.find(x=>x[0]===k); if(!T0) return;
+function catTrain(k){ const p=catCurP(), e=catEntOf(p); if(!p||!e) return; const d=catDay(), T0=TRICKS.find(x=>x[0]===k); if(!T0) return;
   if(!(bag.items.treat>0)){ toast("沒有肉泥了，到愛心媽媽那裡買（一條 5 平安幣）",2600); return; } if(catMood(p)<40){ toast(`${p.nm} 心情不好，先摸摸牠吧`,2200); return; } if(p.tt.n>=3){ toast("今天練夠了，明天再來",2000); return; } if(p.tt[k]) return;
   bag.items.treat--; p.tt[k]=1; p.tt.n++; p.tr[k]=Math.min(T0[2],(p.tr[k]||0)+1); const done=p.tr[k]>=T0[2]; closeSheet(); catTrick(e,k,!done); saveBag(); markDirty(); if(done) profSave(true);
   setTimeout(()=>{ if(done){ catHearts(e,10); catMeow(true); toast(`🎉 ${p.nm} 學會「${T0[1]}」了！`,3200); statInc("catTrick"); } else toast(`${p.nm} 試著${T0[1]}……還不太會（${p.tr[k]}/${T0[2]}）`,2400); },TRICK_T[k]*1000); }
-function catShowOpen(){ const p=catData().pet; if(!p) return; HANDLERS.catShow=k=>{ const e=CAT.ents.find(x=>x.kind==="pet"); closeSheet(); if(e){ catTrick(e,k); setTimeout(()=>catHearts(e,3),TRICK_T[k]*900); } };
+function catShowOpen(){ const p=catCurP(); if(!p) return; HANDLERS.catShow=k=>{ const e=catEntOf(p); closeSheet(); if(e){ catTrick(e,k); setTimeout(()=>catHearts(e,3),TRICK_T[k]*900); } };
   openSheet("cat",`🎪 ${esc(p.nm)} 動一動`,`${backBtnCat()}<div class="goods">${catLearned(p).map(([k,n])=>`<button class="good" data-act="catShow" data-v="${k}"><span class="name">${n}</span></button>`).join("")}</div>`); }
-function catRename(){ const p=catData().pet; if(!p) return; HANDLERS.catNameSave=()=>{ const v=cleanName((($("#catNm")||{}).value||"").trim()).slice(0,6); if(!v){ toast("請輸入名字"); return; } if(chatCheck&&chatCheck(v)){ toast("換一個名字吧",1800); return; } p.nm=v; saveBag(); markDirty(); profSave(true); toast(`牠現在叫 ${v} 了`,1800); catPetSheet(); };
+function catRename(){ const p=catCurP(); if(!p) return; HANDLERS.catNameSave=()=>{ const v=cleanName((($("#catNm")||{}).value||"").trim()).slice(0,6); if(!v){ toast("請輸入名字"); return; } if(chatCheck&&chatCheck(v)){ toast("換一個名字吧",1800); return; } p.nm=v; saveBag(); markDirty(); profSave(true); toast(`牠現在叫 ${v} 了`,1800); catPetSheet(); };
   openSheet("cat","✏️ 幫貓咪取名字",`${backBtnCat()}<div class="mail-row"><input class="mail-box" id="catNm" maxlength="6" value="${esc(p.nm)}" autocomplete="off"><button class="good mail-copy" data-act="catNameSave"><span class="name">好了</span></button></div><p class="note">最多 6 個字。</p>`); }
-function catHome(){ const p=catData().pet; if(!p) return; p.home=!p.home; const e=CAT.ents.find(x=>x.kind==="pet"); if(e){ e.st="walk"; const sp=p.home?catPlace([CAT.bed.x,CAT.bed.z]):[meAv.pos.x,meAv.pos.y]; e.tx=sp[0]; e.tz=sp[1]; e.path=planPath(e.g.position.x,e.g.position.z,sp[0],sp[1],0,0); } saveBag(); markDirty(); toast(p.home?`${p.nm} 回貓窩休息了`:`${p.nm} 跟著你出門了`,1800); catPetSheet(); }
+function catHome(){ const p=catCurP(); if(!p) return; p.home=!p.home; const e=catEntOf(p); if(e){ e.st="walk"; const sp=p.home?catPlace([CAT.bed.x,CAT.bed.z]):[meAv.pos.x,meAv.pos.y]; e.tx=sp[0]; e.tz=sp[1]; e.path=planPath(e.g.position.x,e.g.position.z,sp[0],sp[1],0,0); } saveBag(); markDirty(); toast(p.home?`${p.nm} 回貓窩休息了`:`${p.nm} 跟著你出門了`,1800); catPetSheet(); }
 
 /* ---- 愛心媽媽 ---- */
-function catMomOpen(){ const C=catData(), p=C.pet; HANDLERS.catBuyT=n=>{ n=+n; const cost=n*5; if(bag.coins<cost){ toast("平安幣不夠",1800); return; } bag.coins-=cost; bag.items.treat=Math.min(99,(bag.items.treat||0)+n); saveBag(); markDirty(); try{ sfx.coin(); }catch(_){} toast(`買了 ${n} 條肉泥（共 ${bag.items.treat} 條）`,1800); catMomOpen(); };
+function catMomOpen(){ const C=catData(), aw=C.pets.filter(q=>q.away), vt=C.pets.filter(q=>q.vet); HANDLERS.catBuyT=n=>{ n=+n; const cost=n*5; if(bag.coins<cost){ toast("平安幣不夠",1800); return; } bag.coins-=cost; bag.items.treat=Math.min(99,(bag.items.treat||0)+n); saveBag(); markDirty(); try{ sfx.coin(); }catch(_){} toast(`買了 ${n} 條肉泥（共 ${bag.items.treat} 條）`,1800); catMomOpen(); };
   HANDLERS.catBuy=n=>{ n=+n; const cost=n*10; if(bag.coins<cost){ toast("平安幣不夠",1800); return; } bag.coins-=cost; bag.items.can=Math.min(99,(bag.items.can||0)+n); saveBag(); markDirty(); try{ sfx.coin(); }catch(_){} toast(`買了 ${n} 罐貓罐頭（共 ${catCans()} 罐）`,1800); catMomOpen(); };
-  HANDLERS.catBack2=()=>{ if(!p||!p.away) return; if(catCans()<1){ toast("要先有 1 個罐頭餵牠，跟我買一罐吧",2400); return; } bag.items.can--; p.away=false; p.lf=catDay(); p.ll=catDay(); p.lp=catDay(); p.home=false; saveBag(); markDirty(); catSync(); toast(`${p.nm} 吃了罐頭，開心地跟你回家了。以後要每天照顧牠喔`,3600); closeSheet(); };
+  HANDLERS.catBack2=v=>{ const p=C.pets.find(q=>String(q.sd)===String(v))||aw[0]; if(!p||!p.away) return; if(catCans()<1){ toast("要先有 1 個罐頭餵牠，跟我買一罐吧",2400); return; } bag.items.can--; p.away=false; p.lf=catDay(); p.ll=catDay(); p.lp=catDay(); p.home=false; saveBag(); markDirty(); catSync(); toast(`${p.nm} 吃了罐頭，開心地跟你回家了。以後要每天照顧牠喔`,3600); if(C.pets.some(q=>q.away)) catMomOpen(); else closeSheet(); };
   openSheet("contact","👵 愛心媽媽",`<p class="lead">「廟裡的貓都是我在餵的。你喜歡貓的話，買幾個罐頭去餵牠們吧！牠們吃飽了、被摸舒服了，就會把你當家人。」</p>
-    ${p&&p.vet?`<p class="note">🏥 ${esc(p.nm)} 在獸醫那裡住院，遊戲裡 ${Math.max(1,catVetLeft(p.vet))} 天後回來（遊戲的一天約 ${TOD_LEN/60|0} 分鐘）。</p>`:""}${p&&p.away?`<div class="group"><span class="group-label">你的貓在這裡</span><p class="lead">「${esc(p.nm)} 好幾天沒吃東西，跑來我這裡。餵牠一罐，牠就跟你回去。」</p><div class="goods"><button class="good" data-act="catBack2"><span class="name">🥫 餵牠，帶牠回家</span><span class="meta">用掉 1 罐</span></button></div></div>`:""}
+    ${vt.map(p=>`<p class="note">🏥 ${esc(p.nm)} 在獸醫那裡住院，遊戲裡 ${Math.max(1,catVetLeft(p.vet))} 天後回來（遊戲的一天約 ${TOD_LEN/60|0} 分鐘）。</p>`).join("")}${aw.length?`<div class="group"><span class="group-label">你的貓在這裡</span>${aw.map(p=>`<p class="lead">「${esc(p.nm)} 好幾天沒吃東西，跑來我這裡。餵牠一罐，牠就跟你回去。」</p><div class="goods"><button class="good" data-act="catBack2" data-v="${p.sd}"><span class="name">🥫 餵 ${esc(p.nm)}，帶牠回家</span><span class="meta">用掉 1 罐</span></button></div>`).join("")}</div>`:""}
     <div class="inv-top"><span class="inv-coin">${bic("coin")}<b>${bag.coins}</b>平安幣</span><span class="inv-note">🥫 ${catCans()} 罐・🍡 ${bag.items.treat||0} 條</span></div>
     <div class="goods">${[1,5,10].map(n=>`<button class="good" data-act="catBuy" data-v="${n}"><span class="name">🥫 貓罐頭 ×${n}</span><span class="meta">${n*10} 平安幣</span></button>`).join("")}${[1,3,10].map(n=>`<button class="good" data-act="catBuyT" data-v="${n}"><span class="name">🍡 肉泥 ×${n}</span><span class="meta">${n*5} 平安幣・訓練用</span></button>`).join("")}</div>
-    <p class="note">貓咪一天吃一罐。摸摸 +5、餵罐頭 +20 好感，好感滿 100 就能領養（一次一隻）。領養後要每天餵食、清貓砂（就在我旁邊）、摸摸牠；訓練一次給一條肉泥，最厲害的是後空翻！貓咪生病了要帶去看獸醫。</p>`); }
+    <p class="note">貓咪一天吃一罐。摸摸 +5、餵罐頭 +20 好感，好感滿 100 就能領養（最多養 ${CAT_MAX} 隻）。領養後要每天餵食、清貓砂（就在我旁邊）、摸摸牠；訓練一次給一條肉泥，最厲害的是後空翻！貓咪生病了要帶去看獸醫。</p>`); }
 
 catLoad();
 /* 主委工具 → 頭飾定位 */
@@ -11635,7 +11647,7 @@ const MMAP=(()=>{
   /* the big map */
   let cat="god";
   const open=()=>{ try{ ensureAudio(); }catch(e){} try{ closeSheet(); }catch(e){} let o=document.querySelector("#mmBig"); if(o) o.remove(); o=document.createElement("div"); o.id="mmBig";
-    o.innerHTML=`<div class="hd"><b>🗺️ 地圖・點一下就走過去</b>${(bag.cat&&bag.cat.pet&&!bag.cat.pet.home&&!bag.cat.pet.vet&&typeof catRescue==="function")?`<button class="x" id="mmCat">🆘 貓咪救援</button>`:""}<button class="x" id="mmX">關閉</button></div><div class="cats">${CAT.map(c=>`<button data-c="${c[0]}" style="--c:${c[2]}" aria-pressed="${c[0]===cat}">${c[1]}</button>`).join("")}</div><div class="map"><canvas></canvas></div><div class="list"></div>`;
+    o.innerHTML=`<div class="hd"><b>🗺️ 地圖・點一下就走過去</b>${(bag.cat&&(bag.cat.pets||[bag.cat.pet]).some(q=>q&&!q.home&&!q.vet&&!q.away)&&typeof catRescue==="function")?`<button class="x" id="mmCat">🆘 貓咪救援</button>`:""}<button class="x" id="mmX">關閉</button></div><div class="cats">${CAT.map(c=>`<button data-c="${c[0]}" style="--c:${c[2]}" aria-pressed="${c[0]===cat}">${c[1]}</button>`).join("")}</div><div class="map"><canvas></canvas></div><div class="list"></div>`;
     document.body.appendChild(o); const mc=o.querySelector(".map canvas"), box=o.querySelector(".map"); let fit=null;
     const go=k=>{ o.remove(); if(stations[k]) goStation(k); else toast("那裡現在去不了",2000); };
     const draw=()=>{ const r=box.getBoundingClientRect(), d=Math.min(2,devicePixelRatio||1); mc.width=Math.round(r.width*d); mc.height=Math.round(r.height*d); const g=mc.getContext("2d");
