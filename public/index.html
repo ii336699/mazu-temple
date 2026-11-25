@@ -3854,10 +3854,14 @@ function lblRender(){ lblInit(); if(!LBL.r) return; const X=LBL.x, W=LBL.r.width
   L.sort((a,b)=>b.dz-a.dz||a.s.renderOrder-b.s.renderOrder); X.imageSmoothingEnabled=true; X.imageSmoothingQuality="high";
   for(const o of L){ X.globalAlpha=Math.min(1,o.s.material.opacity)*o.a; try{ X.drawImage(o.s.material.map.image,o.x0,o.y0,o.pw,o.ph); }catch(e){} } X.globalAlpha=1; }
 function lblClear(){ if(LBL.x&&LBL.drew){ LBL.x.setTransform(1,0,0,1,0,0); LBL.x.clearRect(0,0,LBL.r.width,LBL.r.height); LBL.drew=0; } }
+const TTL_COL={"善信":"#e4e4e4","信眾":"#cdeec0","虔信":"#86e07f","居士":"#7fd6ff","護持":"#6ea6ff","護法":"#c49bff","大護法":"#ff8ed2","長老":"#ffd040","小鎮旅人":"#ff7a68"}; /* (11/25 主委「玩家稱號可以有不同顏色」: the higher the brighter; earned titles in 媽祖紅) */
+function ttlPre(n){ const i=n.indexOf("・"); if(i<1) return null; const dot=n[0]==="．"?1:0, t=n.slice(dot,i); return TTL_COL[t]?{pre:n.slice(0,i+1),col:TTL_COL[t]}:null; }
 function textSprite(text,o={}){ const c=document.createElement("canvas"); const fs=o.fs||34, pad=o.pad??14, S=LBL_RES; const x=c.getContext("2d"); x.font=`${o.weight||600} ${fs}px ${o.font||UI_FONT}`;
   const tw=Math.ceil(x.measureText(text).width), W=tw+pad*2, H=Math.round(fs+pad*1.3); c.width=W*S; c.height=H*S; x.scale(S,S); x.font=`${o.weight||600} ${fs}px ${o.font||UI_FONT}`; /* (drawn at twice the size so the words stay sharp up close) */
   if(o.bg){ x.fillStyle=o.bg; const r=H/2; x.beginPath(); x.moveTo(r,0); x.lineTo(W-r,0); x.arc(W-r,r,r,-Math.PI/2,Math.PI/2); x.lineTo(r,H); x.arc(r,r,r,Math.PI/2,Math.PI*1.5); x.fill(); if(o.border){ x.strokeStyle=o.border; x.lineWidth=3; x.stroke(); } }
-  x.fillStyle=o.color||"#fff"; x.textAlign="center"; x.textBaseline="middle"; if(!o.bg){ x.shadowColor="rgba(0,0,0,.85)"; x.shadowBlur=6*S; } x.fillText(text,W/2,H/2+2);
+  x.fillStyle=o.color||"#fff"; x.textAlign="center"; x.textBaseline="middle"; if(!o.bg){ x.shadowColor="rgba(0,0,0,.85)"; x.shadowBlur=6*S; }
+  if(o.pre&&text.startsWith(o.pre)){ const rest=text.slice(o.pre.length), pw=x.measureText(o.pre).width; x.textAlign="left"; x.fillStyle=o.preColor||x.fillStyle; x.fillText(o.pre,pad,H/2+2); x.fillStyle=o.color||"#fff"; x.fillText(rest,pad+pw,H/2+2); } /* (11/25: the 稱號 in front of a name has its own colour) */
+  else x.fillText(text,W/2,H/2+2);
   const t=new T.CanvasTexture(c); t.encoding=T.sRGBEncoding; const s=new T.Sprite(new T.SpriteMaterial({map:t,transparent:true,depthWrite:false}));
   const hgt=o.h||.2; s.scale.set(hgt*c.width/c.height,hgt,1); s.userData.txt=text; return lblReg(s); }
 const shadowMat=new T.MeshBasicMaterial({map:cvs(64,64,(x,w,h)=>{ const g=x.createRadialGradient(32,32,0,32,32,32); g.addColorStop(0,"rgba(0,0,0,.72)"); g.addColorStop(.55,"rgba(0,0,0,.5)"); g.addColorStop(1,"rgba(0,0,0,0)"); x.fillStyle=g; x.fillRect(0,0,w,h); }),transparent:true,depthWrite:false}); /* a firmer core than shadowTex, so a long evening shadow still reads */
@@ -3982,7 +3986,7 @@ class Avatar{
   setSp(v){ v=!!v; if(v===!!this.sp) return; this.sp=v; this.setLook(this.look); this.setName(this.lastNameArg); }
   setName(n){ this.lastNameArg=n; if(this.label){ this.root.remove(this.label); relSprite(this.label); } if(this.glow){ this.root.remove(this.glow); this.glow=null; }
     if(this.sp){ this.label=spLabel(); this.label.position.y=1.46+(this.accLift||0); this.root.add(this.label); this.glow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffd27a"),transparent:true,blending:T.AdditiveBlending,depthWrite:false})); this.glow.scale.set(1.1,.45,1); this.glow.position.y=1.46; this.root.add(this.glow); return; }
-    if(!n){ this.label=null; return; } this.label=this.story?textSprite(n,{fs:28,h:.19,color:"#ffe9b0",bg:"rgba(90,20,14,.88)",border:"#d9aa3d",pad:16}):textSprite((this.real&&me&&me.sp?"．":"")+n,{fs:30,h:.17,color:this.isMe?"#ffe2a0":"#fff"}); /* (the chair alone sees a dot before every real player's name) */ /* story characters: a dark-red pill with a gold edge, so nobody takes them for players */ this.label.position.y=1.42+(this.accLift||0); this.root.add(this.label); }
+    if(!n){ this.label=null; return; } this.label=this.story?textSprite(n,{fs:28,h:.19,color:"#ffe9b0",bg:"rgba(90,20,14,.88)",border:"#d9aa3d",pad:16}):((t,tp)=>textSprite(t,{fs:30,h:.17,color:this.isMe?"#ffe2a0":"#fff",pre:tp&&tp.pre,preColor:tp&&tp.col}))((this.real&&me&&me.sp?"．":"")+n,this.npc?null:ttlPre((this.real&&me&&me.sp?"．":"")+n)); /* (the chair alone sees a dot before every real player's name) */ /* story characters: a dark-red pill with a gold edge, so nobody takes them for players */ this.label.position.y=1.42+(this.accLift||0); this.root.add(this.label); }
   say(text,color,secs){ if(this.bubble){ this.root.remove(this.bubble); relSprite(this.bubble); } this.bubble=bubbleSprite(text,color||"#ffe2a0"); if(this.sp) this.bubble.scale.multiplyScalar(2); /* (11/22 主委「主委說話氣泡跟字要大一倍」) */ this.bubble.position.y=1.62+(this.accLift||0)+this.bubble.scale.y/2; this.root.add(this.bubble); this.bubbleT=secs||3.2; }
   sitAt(i){ this.seat=i; const s=SEATS[i]; this.target.copy(s); this.goalSeat=true; }
   moveTo(x,z){ this.seat=-1; this.goalSeat=false; this.target.set(x,z); this.path=[]; }
@@ -11775,7 +11779,8 @@ const signBonus=st=>20*Math.min(10,Math.max(0,st-1));
 const TITLES=[[3,"善信"],[7,"信眾"],[14,"虔信"],[30,"居士"],[60,"護持"],[100,"護法"],[200,"大護法"],[365,"長老"]];
 const rankOf=n=>{ let r=0; TITLES.forEach((t,i)=>{ if(n>=t[0]) r=i+1; }); return r; };
 const XTITLES={50:"小鎮旅人"}; /* (11/24: titles you earn, not 位階 — numbered from 50 so the 位階 1–8 keep their numbers; bag.ttlX = the one shown) */
-D.title=()=>bag.ttlOff?0:(bag.ttlX&&XTITLES[bag.ttlX]?bag.ttlX:rankOf(SG().n));
+const ttlOwn=i=>i===50?!!(((bag.clo||0)>>(27-STYLEX0))&1):(i>=1&&i<=rankOf(SG().n)); /* (11/25 主委: players pick which earned title shows; bag.ttlX = the pick, 0 = the highest 位階, which still climbs on its own) */
+D.title=()=>bag.ttlOff?0:(bag.ttlX&&ttlOwn(bag.ttlX)&&(XTITLES[bag.ttlX]||TITLES[bag.ttlX-1])?bag.ttlX:rankOf(SG().n));
 D.ttl=i=>{ i=i===undefined?D.title():(i|0); if(XTITLES[i]) return XTITLES[i]; return i>=1&&i<=TITLES.length?TITLES[i-1][1]:""; };
 function relabel(){ try{ meAv.setName(myLabel()); markDirty(); }catch(e){} } D.relabel=()=>relabel();
 /* ---- 每日功課: three a day, one from each group, picked by the date (everyone gets the same three) ---- */
@@ -11861,6 +11866,10 @@ D.open=()=>{ D.page="day"; css(); const s=SG(), can=signCan(), qs=todayQ(), st=s
     <button class="secondary dq-wide" data-act="dqAch">📖 功德簿・香火位階${nAch?`（${nAch} 個可領）`:""}</button>
     ${me.sp?`<div class="dq-sec">主委測試<small>只有主委看得到</small></div><div class="row"><button class="secondary" data-act="dqTNext">⏭ 跳到明天</button><button class="secondary" data-act="dqTSkip">⏭ 跳過 4 天（回鍋禮）</button><button class="secondary" data-act="dqTDone">✅ 今天功課全部做完</button><button class="secondary" data-act="dqTF" data-v="1">🏮 把今天當十五</button><button class="secondary" data-act="dqTF" data-v="2">🏮 把今天當媽祖誕辰</button><button class="secondary" data-act="dqTF" data-v="0">↩️ 還原成真正的日期</button></div><button class="secondary dq-wide" data-act="dqFwSched">🎆 節慶煙火：${load("mz.festFw",0)?"已開（按一下關掉）":"自動排進定時活動（按一下打開）"}</button><p class="note">打開後，接下來 30 天內的初一、十五和節日，晚上 8 點會自動放一場煙火（排在「定時活動」裡，可以個別刪掉）。伺服器一次只能排 30 天，所以主委每次進遊戲時會自動補排。</p>`:""}`); dot(); };
 const cbRew=g=>({c:300+100*Math.min(7,g),g:1,s:2});
+function ttlPick(){ const cur=D.title(), all=[...TITLES.map((t,i)=>[i+1,t[1],`簽到 ${t[0]} 天`]),[50,"小鎮旅人","蓋滿小鎮巡禮集章冊"]];
+  const chip=(id,nm,how)=>{ const own=id===0||ttlOwn(id), on=id===cur, col=id?TTL_COL[nm]:"#bbb";
+    return `<button data-act="dqTtlPick" data-v="${id}" ${own?"":"disabled"} style="margin:3px;padding:6px 10px;border-radius:14px;background:${on?"rgba(255,215,106,.22)":"rgba(0,0,0,.25)"};border:2px solid ${on?"#ffd76a":own?"rgba(255,255,255,.25)":"transparent"};color:${own?col:"#777"};font-weight:700;${own?"":"opacity:.6"}">${on?"✓ ":""}${nm}${own?"":`<small style="display:block;font-weight:400;font-size:11px;color:#999">${how}</small>`}</button>`; };
+  return `<div class="dq-sec">名字前的稱號<small>點一個換上，其他玩家也看得到顏色</small></div><div style="display:flex;flex-wrap:wrap;margin:0 -3px 8px">${all.map(a=>chip(...a)).join("")}${chip(0,"不顯示","")}</div>`; }
 function achDraw(){ D.page="ach"; css(); const s=SG(), rk=rankOf(s.n), nxt=TITLES[rk];
   const rows=ACH.map(a=>{ const t=atier(a), v=aval(a), full=t>=a[2].length, tg=full?a[2][t-1]:a[2][t], can=!full&&v>=tg, r=arew(t);
     return `<div class="dq-q${full?" done":""}"><div class="tx"><b>${a[1]}</b><small>${full?`全部達成（${v} ${a[3]}）`:`第 ${t+1}/${a[2].length} 階：${Math.min(v,tg)}/${tg} ${a[3]}`}</small><div class="dq-bar"><i style="width:${full?100:Math.round(Math.min(1,v/tg)*100)}%"></i></div></div>
@@ -11869,7 +11878,7 @@ function achDraw(){ D.page="ach"; css(); const s=SG(), rk=rankOf(s.n), nxt=TITLE
     <div class="dq-sec">香火位階<small>累計簽到天數越多越高，會顯示在名字前面</small></div>
     <div class="dq-hd">${TITLES.map((t,i)=>`<span style="${i<rk?"border-color:#ffd76a":"opacity:.55"}">${i<rk?"✓ ":""}<b>${t[1]}</b> ${t[0]} 天</span>`).join("")}</div>
     <p class="note" style="margin:0 0 8px">${rk?`現在是「${TITLES[rk-1][1]}」。`:"簽到滿 3 天就有第一個位階。"}${nxt?`再簽到 ${nxt[0]-s.n} 天升「${nxt[1]}」。`:""}</p>
-    ${rk?`<button class="secondary dq-wide" data-act="dqTtl" style="margin-top:0">${bag.ttlOff?"名字前面顯示位階":"名字前面不要顯示位階"}</button>`:""}
+    ${ttlPick()}
     <div class="dq-sec">功德簿<small>每一階只能領一次</small></div>${rows}`); dot(); }
 Object.assign(HANDLERS,{
   dqOpen:()=>D.open(), dqAch:()=>achDraw(),
@@ -11880,6 +11889,7 @@ Object.assign(HANDLERS,{
   dqCb:()=>{ if(!bag.cb) return; const r=cbRew(bag.cb); delete bag.cb; const fu=(()=>{ try{ return ROOMX?ROOMX.grant("q"):""; }catch(e){ return ""; } })(); const t=give(r)+(fu?`、家具「${fu}」`:""); try{ statInc("dqBack"); }catch(e){} toast(`🎁 歡迎回來！${t}`,3600); D.open(); },
   dqAchGet:v=>{ const a=ACH.find(x=>x[0]===v); if(!a||!acan(a)) return; const t=atier(a); AC()[a[0]]=t+1; const tx=give(arew(t)); toast(`📖 ${a[1].replace(/^\S+\s/,"")} 第 ${t+1} 階：${tx}`,3200); achDraw(); },
   dqTtl:()=>{ bag.ttlOff=bag.ttlOff?0:1; saveBag(); relabel(); achDraw(); },
+  dqTtlPick:v=>{ v=v|0; if(v===0){ bag.ttlOff=1; } else { if(!ttlOwn(v)) return; bag.ttlOff=0; bag.ttlX=v<=TITLES.length&&v===rankOf(SG().n)?0:v; } saveBag(); relabel(); achDraw(); toast(v?`名字前面換成「${D.ttl(v)}」`:"名字前面不顯示稱號",2000); },
   dqTNext:()=>{ if(!me.sp) return; D.off++; toast("（測試）現在是明天",1800); D.open(); },
   dqTSkip:()=>{ if(!me.sp) return; D.off+=4; bag.cb=4; keep(); toast("（測試）過了 4 天",1800); D.open(); },
   dqFest:()=>{ const F=fest(); if(!F||got(5)||!isDone(QF)) return; QD().c|=32; const fu=(()=>{ try{ return ROOMX?ROOMX.grant("f"):""; }catch(e){ return ""; } })(); const t=give(FREW[F.big])+(fu?`、家具「${fu}」`:""); try{ statInc("dqFest"); }catch(e){} toast(`🧧 ${F.n}紅包：${t}`,3600); D.open(); },
