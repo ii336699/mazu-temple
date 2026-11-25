@@ -1984,3 +1984,8 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - push f879d3e、再重跑 fb1afb0，兩次 Workers Builds 都是 failure（GitHub 看不到原因，Chrome 沒登入 Cloudflare）。
 - 實測正式站：index.html 是新的（禮物修正、活動條都在），但 GET /evt 回 {cap,counts}＝Lobby 還是舊程式。本機 wrangler 4.40 dry-run、wrangler dev 都正常（/evt 回 {fish,bug,dig,drops}）。
 - 等主委看 Cloudflare 建置紀錄的錯誤訊息。活動控制台要等 worker 上去才能全服生效。
+
+## 11/25 22:20 房間內聊天、表情不能用（未部署）
+- 原因：房間右上 💬 😊 開的聊天／表情面板 z-index 8，被房間畫面（shx）蓋住，看不到也點不到（訊息其實送得出去）。
+- 修正：按 💬 😊 時加 body.sheet-top（面板 z-index 80，跟廚房同一招），離開房間時本來就會拿掉。自己房間、參觀別人家都一樣。模擬器截圖確認面板在房間上面、說話氣泡和表情出現在房間裡的人物頭上。
+- 全服送家具：部署前就開著的玩家還跑舊程式（沒有自動換新版），「只有線上的人」仍變平安幣。已請主委改用「所有玩家」補送＋公告請大家重新整理。
