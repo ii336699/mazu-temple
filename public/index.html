@@ -1273,7 +1273,7 @@ const spot=new T.SpotLight("#ffd7a0",1.5,22,.36,.7,1.5); spot.position.set(0,8.5
 const HX=12, HZ=15, HH=10, YX=8; // YX: extra depth of the 廟埕, so the opera stage fits between the 天公爐 and the Guanyin fountain
 const floor=mesh(new T.PlaneGeometry(HX*2,HZ*2),new T.MeshStandardMaterial({map:floorTex,roughness:.3,metalness:0,envMapIntensity:.8}));
 floor.rotation.x=-Math.PI/2; floor.userData.floor=true;
-const WORLD_BOX={x0:-105,x1:158,z0:-300,z1:122}; /* (north to −300: 11/17 晚) */ /* the whole game (11/16); east: the river; front: the sea */
+const WORLD_BOX={x0:-105,x1:158,z0:-300,z1:122}; const ISL={cx:0,cz:-1700,on:false,solo:false,seaY:-.12,land:[0,-1640]}; function islIn(x,z){ return Math.abs(x-ISL.cx)<300&&Math.abs(z-ISL.cz)<300; } /* 夢見島 (11/25): far north of the map, see IS below */ /* (north to −300: 11/17 晚) */ /* the whole game (11/16); east: the river; front: the sea */
 /* 廟前 (11/16 主委): the gate hall in front of the courtyard is the temple's main gate now; the red brick wall joins it; out of the gate a
    road runs east–west, a white railing along its far side with one gap and steps down to the beach, and the sea beyond. */
 const FRONT={wallZ:53.5,gateX:8.1,apron0:57.2,road0:58.4,road1:62.8,walk1:63.8,gap:2.3,stairs1:67.6,beachY:-1.2,seaY:-1.62,xMax:118};
@@ -4617,7 +4617,7 @@ let chairHidden=false;
 /* where others should see you heading: walking with the stick or keys, a point about 3 m ahead on your line (so between two updates — one every 0.8 s while walking — they keep walking smoothly instead of stepping half a metre and waiting); otherwise where you are going */
 function presenceGoal(){ const T=meAv.target, P=meAv.pos; if(!((joy.on||keys.size)&&!myFly&&!(meAv.path&&meAv.path.length))) return [T.x,T.y]; const dx=T.x-P.x, dz=T.y-P.y, L=Math.hypot(dx,dz); if(L<.05) return [T.x,T.y];
   let k=3; while(k>.5&&!(walkable(P.x+dx/L*k,P.y+dz/L*k)&&walkable(P.x+dx/L*k*.5,P.y+dz/L*k*.5))) k-=.4; return k>.5?[P.x+dx/L*k,P.y+dz/L*k]:[T.x,T.y]; }
-function presencePayload(){ const PG=presenceGoal(); const RP=(()=>{ try{ return ROOMX&&ROOMX.pos&&ROOMX.lot>=0?ROOMX.pos:null; }catch(e){ return null; } })(); return {hm:RP?ROOMX.lot:-1,hx:RP?+RP.x.toFixed(2):0,hz:RP?+RP.z.toFixed(2):0,hr:RP?+RP.r.toFixed(1):0,v:1,u:(customizing||chairHidden||RP)?0:1,n:(me.name||"").slice(0,10),k:me.no||0,l:me.look,x:+PG[0].toFixed(2),z:+PG[1].toFixed(2),r:+meAv.rotY.toFixed(1),s:meAv.seat,b:myBow,h:meAv.hold?1:0,j:myJiao,f:myBurn,o:myOffers,a:bag.items.fu?1:0,g:me.lamp??-1,m:myMsg,c:myChat,p:myPlant,gf:myGF,fx:myFx,t:threadOn()?1:0,q:me.sp?1:0,eq:myEq(),um:umbMine(),w:myWish,y:+meAv.headGoal.toFixed(1),sq:mySj?[mySj.g+1,mySj.at]:0,sk:mySparkler?1:0,fs:myFwShow||0,e:myEmo,ac:myAct,sl:mySL,sm:myMassSL||0,fl:myFly?+(meAv.flyGoal||FLY_H).toFixed(1):0,cs:myCs,iy:(meAv.gy||0)>2.3?1:0,lk:INN.lock||0,tl:DQ?DQ.title():0,bk:(typeof LIFE!=="undefined"&&LIFE&&LIFE.bikeOn&&LIFE.bikeOn())?1:0,pc:(()=>{ try{ const p=bag.cat&&(Array.isArray(bag.cat.pets)?bag.cat.pets.find(q=>q&&!q.home&&!q.vet&&!q.away):bag.cat.pet); return p&&!p.home&&!p.vet&&!p.away?(p.t|0)+1:0; }catch(e){ return 0; } })(),pc3:(()=>{ try{ return (bag.cat&&Array.isArray(bag.cat.pets)?bag.cat.pets:[]).filter(q=>q&&!q.home&&!q.vet&&!q.away).slice(0,3).map(q=>(q.t|0)+1); }catch(e){ return []; } })()}; } /* pc: the coat of the cat following you (others see it too) */
+function presencePayload(){ const PG=presenceGoal(); const RP=(()=>{ try{ return ROOMX&&ROOMX.pos&&ROOMX.lot>=0?ROOMX.pos:null; }catch(e){ return null; } })(); return {hm:RP?ROOMX.lot:-1,hx:RP?+RP.x.toFixed(2):0,hz:RP?+RP.z.toFixed(2):0,hr:RP?+RP.r.toFixed(1):0,v:1,u:(customizing||chairHidden||RP||ISL.on)?0:1,n:(me.name||"").slice(0,10),k:me.no||0,l:me.look,x:+PG[0].toFixed(2),z:+PG[1].toFixed(2),r:+meAv.rotY.toFixed(1),s:meAv.seat,b:myBow,h:meAv.hold?1:0,j:myJiao,f:myBurn,o:myOffers,a:bag.items.fu?1:0,g:me.lamp??-1,m:myMsg,c:myChat,p:myPlant,gf:myGF,fx:myFx,t:threadOn()?1:0,q:me.sp?1:0,eq:myEq(),um:umbMine(),w:myWish,y:+meAv.headGoal.toFixed(1),sq:mySj?[mySj.g+1,mySj.at]:0,sk:mySparkler?1:0,fs:myFwShow||0,e:myEmo,ac:myAct,sl:mySL,sm:myMassSL||0,fl:myFly?+(meAv.flyGoal||FLY_H).toFixed(1):0,cs:myCs,iy:(meAv.gy||0)>2.3?1:0,lk:INN.lock||0,tl:DQ?DQ.title():0,bk:(typeof LIFE!=="undefined"&&LIFE&&LIFE.bikeOn&&LIFE.bikeOn())?1:0,pc:(()=>{ try{ const p=bag.cat&&(Array.isArray(bag.cat.pets)?bag.cat.pets.find(q=>q&&!q.home&&!q.vet&&!q.away):bag.cat.pet); return p&&!p.home&&!p.vet&&!p.away?(p.t|0)+1:0; }catch(e){ return 0; } })(),pc3:(()=>{ try{ return (bag.cat&&Array.isArray(bag.cat.pets)?bag.cat.pets:[]).filter(q=>q&&!q.home&&!q.vet&&!q.away).slice(0,3).map(q=>(q.t|0)+1); }catch(e){ return []; } })()}; } /* pc: the coat of the cat following you (others see it too) */
 let lastSent="", lastBeat=0;
 setInterval(()=>{ if(room) sendPresence(true); },50000); // heartbeat while idle
 function sendPresence(force){ if(!room) return; dirty=false; const p=presencePayload(), str=JSON.stringify(p), now=performance.now(); lastSend=now; if(str===lastSent&&force!==true&&now-lastBeat<60000) return; lastSent=str; lastBeat=now; room.presence(p).catch(()=>{}); }
@@ -4653,7 +4653,7 @@ HANDLERS.onlineGo=v=>{ if(!me.sp) return; const o=ONLINE.get(v); if(!o){ toast("
 function syncPeers(peers){ try{ onlineNote(peers); }catch(e){} ROOM_PEERS.clear(); for(const p of peers){ const pr=p.presence; if(!p.sameTab&&pr&&pr.v===1&&Number.isInteger(pr.hm)&&pr.hm>=0&&pr.hm<80) ROOM_PEERS.set(p.peer,pr); } const seen=new Set(); const valid=peers.filter(p=>!p.sameTab&&p.kind==="viewer"&&p.presence&&p.presence.v===1&&p.presence.u!==0), nReal=PEERS.n=valid.length, cap=figCap(nReal);
   const rank=new Map(); if(nReal>cap){ const mx=meAv.pos.x, mz=meAv.pos.y; valid.map(p=>{ const pr=p.presence; return [p.peer,pr.q===1?-1:Math.hypot(num(pr.x,-110,160,0)-mx,num(pr.z,-300,125,HZ+12)-mz)]; }).sort((a,b)=>a[1]-b[1]).forEach(([id],i)=>rank.set(id,i)); }
   let made=0;
-  for(const p of peers){ if(p.sameTab||p.kind!=="viewer") continue; const pr=p.presence||{}; if(pr.v!==1||pr.u===0) continue;
+  for(const p of peers){ if(p.sameTab||p.kind!=="viewer") continue; const pr=p.presence||{}; if(pr.v!==1||pr.u===0||ISL.on) continue; /* (夢見島: nobody else on your island) */
     if(pr.q!==1&&nReal>cap){ const rk=rank.get(p.peer); if(rk>=(remotes.has(p.peer)?cap+6:cap)) continue; } /* too far down the list: no figure (one already drawn keeps it until 6 places further, so people near the edge do not flicker) */
     if(!remotes.has(p.peer)&&pr.q!==1&&made>=4) continue; /* the rest next time (presence comes round again within a moment) */
     seen.add(p.peer);
@@ -14054,7 +14054,7 @@ TW.zoneNow=()=>ZM.cur; TW.zoneStat=()=>[ZM.n||0,ZM.at?Math.round((Date.now()-ZM.
 /* (14:15 主委：「閃白閃這麼快太奇怪了，用遊戲開始的讀取圖，讀取五秒，從廟門口出來就讀取」) the same picture as the start of the game,
    five seconds, a running figure and a bar; the work is done right after it covers the screen, and the town's districts load behind it */
 function zoneVeil(cb,toTown,zk,ready,step){ const el=document.getElementById("zonePack"); if(!el){ try{ cb(); }catch(e){} try{ while(step&&step()); }catch(e){} try{ ready&&ready(); }catch(e){} return; } const D=window.MZ_VEILD||5000; let stop=null, done=false, el0=0, last=performance.now(); /* (time counted per frame, at most 50 ms a frame: a phone busy putting things away still shows the whole five seconds) */
-  const ZTXT={t:["⛩️ 天后宮","正在回到天后宮<br>廟裡的建築、神尊和海邊準備中，請稍等一下。"],v:["🏮 天后小鎮","正在前往天后小鎮<br>小鎮的街道和店家準備中，請稍等一下。"],f:["🌲 森林・天后山","正在前往森林<br>森林、天后山和女神泉準備中，請稍等一下。"],vf:["⛰️ 天后山","正在展開整片風景<br>小鎮和森林準備中，請稍等一下。"]}, zt=ZTXT[zk||(toTown?"v":"t")]||ZTXT.v;
+  const ZTXT={t:["⛩️ 天后宮","正在回到天后宮<br>廟裡的建築、神尊和海邊準備中，請稍等一下。"],v:["🏮 天后小鎮","正在前往天后小鎮<br>小鎮的街道和店家準備中，請稍等一下。"],f:["🌲 森林・天后山","正在前往森林<br>森林、天后山和女神泉準備中，請稍等一下。"],vf:["⛰️ 天后山","正在展開整片風景<br>小鎮和森林準備中，請稍等一下。"]}, zt=ISL.on?["🏝️ 夢見島","霧慢慢散了……<br>島上的沙灘和樹林準備中，請稍等一下。"]:(ZTXT[zk||(toTown?"v":"t")]||ZTXT.v);
   document.getElementById("zpTxt").innerHTML=zt[1]; document.getElementById("zpWhat").textContent=zt[0]; el.removeAttribute("data-done"); el.hidden=false; try{ stop=dlRunner("#zpRun"); }catch(e){}
   try{ meAv.path=[]; meAv.target.copy(meAv.pos); }catch(e){} try{ inputReset(); }catch(e){}
   let cbDone=false; const bar=()=>{ if(done) return; const nw=performance.now(); el0+=Math.min(50,nw-last); last=nw; if(cbDone&&step){ try{ step(); }catch(e){ console.warn("zone step",e); } } const rd=!ready||(cbDone&&ready()); if(!rd&&el0>=D-200) el0=D-200; /* (the bar waits at 96% until everything of the new area is built and drawn once) */ const k=Math.min(1,el0/D), p=Math.round((1-Math.pow(1-k,1.6))*100); document.getElementById("zpFill").style.width=p+"%"; document.getElementById("zpRun").style.left=p+"%"; document.getElementById("zpPct").textContent=p+"%"; try{ meAv.target.copy(meAv.pos); }catch(e){} if(k<1) requestAnimationFrame(bar); else { done=true; el.setAttribute("data-done",""); setTimeout(()=>{ el.hidden=true; if(stop) stop(); const r=document.getElementById("zpRun"); if(r) r.innerHTML=""; },800); } };
@@ -14178,7 +14178,7 @@ function backdrop(){ if(TW.bd) return; TW.bd=1; try{ const X0=-330, X1=360, Z0=-
   /* trees out past the edge */ const L=[]; for(let k=0;k<4000&&L.length<700;k++){ const x=X0+r()*(X1-X0), z=Z0+r()*(Z1-Z0), ox=Math.max(B.x0-x,0,x-B.x1), oz=Math.max(B.z0-z,0,z-B.z1), od=Math.hypot(ox,oz); if(od<4) continue; const i=Math.round((x-X0)/S), j=Math.round((z-Z0)/S); L.push([x,H[j*(nx+1)+i]-.3,z,2.2+r()*2.2]); }
   const im=new T.InstancedMesh(new T.IcosahedronGeometry(1,0),new T.MeshLambertMaterial({color:"#3f7a42",flatShading:true}),L.length), M=new T.Matrix4(), Q=new T.Quaternion(), E=new T.Euler(); L.forEach((t,i)=>{ E.set(0,r()*6,0); Q.setFromEuler(E); M.compose(new T.Vector3(t[0],t[1]+t[3]*.9,t[2]),Q,new T.Vector3(t[3],t[3]*1.25,t[3])); im.setMatrixAt(i,M); im.setColorAt(i,c.copy(CL("#4f8a4a")).multiplyScalar(.75+r()*.4)); });
   im.instanceMatrix.needsUpdate=true; if(im.instanceColor) im.instanceColor.needsUpdate=true; im.userData.noMerge=1; im.userData.noBuild=1; im.raycast=()=>{}; scene.add(im); TW.bdT=im; }catch(e){ TW.bdErr=String(e&&e.stack||e).slice(0,300); console.warn("backdrop",e); } }
-TW.tick=dt=>{ if(((TW.fcN=(TW.fcN||0)+1)%4)===0) try{ fcScan(); }catch(e){} /* (11/18 主委「把遠景那次改動刪除，我的海被草皮覆蓋了」: the far backdrop ground is no longer laid) */ farMtTick(); const nowS=performance.now(); if(nowS>(TW.slT||0)&&TW.SL&&typeof LIFE!=="undefined"&&LIFE&&LIFE.openNow){ TW.slT=nowS+1000; const nN=Math.round(((NT.U&&NT.U.uNight.value)||0)*20)/20; for(const e of TW.SL){ const o=LIFE.openNow(e.k)?1:0; if(e.o===o&&e.n===nN) continue; e.o=o; e.n=nN; if(e.U) e.U.lit.value=o; if(e.M){ if(e.M.ei0==null){ e.M.ei0=e.M.emissiveIntensity; e.M.emissive.setRGB(1,1,1); } if(!e.M.emissiveMap&&e.M.map){ e.M.emissiveMap=e.M.map; e.M.needsUpdate=true; } if(!e.M.emissiveMap){ e.n=-1; continue; } e.M.emissiveIntensity=o?Math.max(e.M.ei0*(1-nN),.08)+nN*.85:0; e.M.color.setScalar(o?1-nN*.25:.55); } } /* (11/22 主委「晚上店家除了店面會亮 招牌也會發亮」: an open shop's signs light up as night falls) */ } /* 沒開的店：招牌不亮、櫥窗變暗 (checked once a second) */ try{ NT.tick(dt,LIVE); }catch(e){} try{ const bz=typeof meAv!=="undefined"&&meAv?meAv.pos.y:0, hi=TW.high=typeof meAv!=="undefined"&&meAv&&(Math.hypot(meAv.pos.x-66,bz+212)<16||!!(typeof LIFE!=="undefined"&&LIFE&&LIFE.chute&&LIFE.chute())), bx=hi?160:bz>58?128+(bz-58)*.7:0, onB=(bz>58||hi)&&!(typeof NOFOG!=="undefined"&&NOFOG.on); /* (the haze opens up over the sea, and on the top of 天后山 and in the air, so the whole village shows — 11/16) */ if(onB&&!TW.fogB){ TW.fogB=[scene.fog.near,scene.fog.far]; } if(TW.fogB){ const k=Math.max(0,Math.min(1,(bx-128)/14)); scene.fog.near=TW.fogB[0]+(160-TW.fogB[0])*k; scene.fog.far=TW.fogB[1]+(420-TW.fogB[1])*k; if(!onB&&k<=0){ scene.fog.near=TW.fogB[0]; scene.fog.far=TW.fogB[1]; TW.fogB=null; } } if(TW.sunS) TW.sunS.material.opacity=1-(typeof _dn!=="undefined"?_dn.night:0); }catch(e){} /* (no haze over the sea: it clears as you walk onto the beach) */ if(TW.cart&&(TW._ct=(TW._ct||0)+dt)>1){ TW._ct=0; try{ const o=!!(LIFE&&LIFE.isOpen&&LIFE.isOpen("tw:congee")); TW.cart.visible=o; if(TW.cartHit) TW.cartHit.userData.act=o?"tw:congee":null; }catch(e){} } /* in the town the camera never comes closer than ~1 m to anything, so the near plane can move out: the depth test gets ~2.7× finer and close-together surfaces (signs, windows, doors on walls) stop flickering on phones */ { const nn=camera.position.z<-50.5?.4:.15; if(camera.near!==nn){ camera.near=nn; camera.updateProjectionMatrix(); } } wt+=dt; for(const id in LIVE){ const w=LIVE[id].water; if(w){ w.material.map.offset.x=wt*.02; } } acc+=dt; if(acc<.4) return; acc=0; if(typeof meAv==="undefined"||!meAv) return; const px=meAv.pos.x, pz=meAv.pos.y; TW.on=TW.in(px,pz); fogCull(px,pz); { /* 地圖邊界 (11/16 主委：「不要做圍牆，走過去角色會說：先別過去不認識的地方吧！等等迷路了！然後往回走」) */ const B=WORLD_BOX, m=3.2; if(((TW.on&&(px<B.x0+m||pz<B.z0+m))||(pz>58&&Math.abs(px)>FRONT.xMax-1.5))&&!(TW.edgeT>nowS)){ TW.edgeT=nowS+6000; try{ meAv.say("先別過去不認識的地方吧！等等迷路了！","#ffe9b0",3.4); }catch(e){} try{ const tx=pz>58?Math.sign(px)*(FRONT.xMax-7):Math.max(B.x0+7,Math.min(px,B.x1-7)), tz=pz>58?pz:Math.max(B.z0+7,pz); if(typeof inputReset==="function") inputReset(); meAv.path=[]; meAv.target.set(tx,tz); }catch(e){} } } if(!ZONES){ /* 開放世界 (11/21 主委「開放世界…還原到最後版本 但用 webgl1 開」): districts load by distance again; only the temple's heavy inside is put away behind the 5-second loading picture at the 禪房 door, as before 分區 */
+TW.tick=dt=>{ if(((TW.fcN=(TW.fcN||0)+1)%4)===0) try{ fcScan(); }catch(e){} /* (11/18 主委「把遠景那次改動刪除，我的海被草皮覆蓋了」: the far backdrop ground is no longer laid) */ farMtTick(); const nowS=performance.now(); if(nowS>(TW.slT||0)&&TW.SL&&typeof LIFE!=="undefined"&&LIFE&&LIFE.openNow){ TW.slT=nowS+1000; const nN=Math.round(((NT.U&&NT.U.uNight.value)||0)*20)/20; for(const e of TW.SL){ const o=LIFE.openNow(e.k)?1:0; if(e.o===o&&e.n===nN) continue; e.o=o; e.n=nN; if(e.U) e.U.lit.value=o; if(e.M){ if(e.M.ei0==null){ e.M.ei0=e.M.emissiveIntensity; e.M.emissive.setRGB(1,1,1); } if(!e.M.emissiveMap&&e.M.map){ e.M.emissiveMap=e.M.map; e.M.needsUpdate=true; } if(!e.M.emissiveMap){ e.n=-1; continue; } e.M.emissiveIntensity=o?Math.max(e.M.ei0*(1-nN),.08)+nN*.85:0; e.M.color.setScalar(o?1-nN*.25:.55); } } /* (11/22 主委「晚上店家除了店面會亮 招牌也會發亮」: an open shop's signs light up as night falls) */ } /* 沒開的店：招牌不亮、櫥窗變暗 (checked once a second) */ try{ NT.tick(dt,LIVE); }catch(e){} try{ const bz=typeof meAv!=="undefined"&&meAv?meAv.pos.y:0, hi=TW.high=typeof meAv!=="undefined"&&meAv&&(Math.hypot(meAv.pos.x-66,bz+212)<16||!!(typeof LIFE!=="undefined"&&LIFE&&LIFE.chute&&LIFE.chute())), bx=hi?160:bz>58?128+(bz-58)*.7:0, onB=(bz>58||hi)&&!(typeof NOFOG!=="undefined"&&NOFOG.on); /* (the haze opens up over the sea, and on the top of 天后山 and in the air, so the whole village shows — 11/16) */ if(onB&&!TW.fogB){ TW.fogB=[scene.fog.near,scene.fog.far]; } if(TW.fogB){ const k=Math.max(0,Math.min(1,(bx-128)/14)); scene.fog.near=TW.fogB[0]+(160-TW.fogB[0])*k; scene.fog.far=TW.fogB[1]+(420-TW.fogB[1])*k; if(!onB&&k<=0){ scene.fog.near=TW.fogB[0]; scene.fog.far=TW.fogB[1]; TW.fogB=null; } } if(TW.sunS) TW.sunS.material.opacity=1-(typeof _dn!=="undefined"?_dn.night:0); }catch(e){} /* (no haze over the sea: it clears as you walk onto the beach) */ if(TW.cart&&(TW._ct=(TW._ct||0)+dt)>1){ TW._ct=0; try{ const o=!!(LIFE&&LIFE.isOpen&&LIFE.isOpen("tw:congee")); TW.cart.visible=o; if(TW.cartHit) TW.cartHit.userData.act=o?"tw:congee":null; }catch(e){} } /* in the town the camera never comes closer than ~1 m to anything, so the near plane can move out: the depth test gets ~2.7× finer and close-together surfaces (signs, windows, doors on walls) stop flickering on phones */ { const nn=camera.position.z<-50.5?.4:.15; if(camera.near!==nn){ camera.near=nn; camera.updateProjectionMatrix(); } } wt+=dt; for(const id in LIVE){ const w=LIVE[id].water; if(w){ w.material.map.offset.x=wt*.02; } } acc+=dt; if(acc<.4) return; acc=0; if(typeof meAv==="undefined"||!meAv) return; const px=meAv.pos.x, pz=meAv.pos.y; TW.on=TW.in(px,pz); fogCull(px,pz); { /* 地圖邊界 (11/16 主委：「不要做圍牆，走過去角色會說：先別過去不認識的地方吧！等等迷路了！然後往回走」) */ const B=WORLD_BOX, m=3.2; if(!islIn(px,pz)&&((TW.on&&(px<B.x0+m||pz<B.z0+m))||(pz>58&&Math.abs(px)>FRONT.xMax-1.5))&&!(TW.edgeT>nowS)){ TW.edgeT=nowS+6000; try{ meAv.say("先別過去不認識的地方吧！等等迷路了！","#ffe9b0",3.4); }catch(e){} try{ const tx=pz>58?Math.sign(px)*(FRONT.xMax-7):Math.max(B.x0+7,Math.min(px,B.x1-7)), tz=pz>58?pz:Math.max(B.z0+7,pz); if(typeof inputReset==="function") inputReset(); meAv.path=[]; meAv.target.set(tx,tz); }catch(e){} } } if(!ZONES){ /* 開放世界 (11/21 主委「開放世界…還原到最後版本 但用 webgl1 開」): districts load by distance again; only the temple's heavy inside is put away behind the 5-second loading picture at the 禪房 door, as before 分區 */
     if(!ZN.busy&&typeof MERGED!=="undefined"&&MERGED.length&&(typeof LQ==="undefined"||LQ.ready)&&!(typeof BUILD!=="undefined"&&BUILD.on)){ if(!ZN.off&&pz<-52&&ZN.re){ ZN.re=0; zoneForget(); } else if(!ZN.off&&pz<-52){ owVeil(true); } else if(ZN.off&&pz>-49.5){ owVeil(false); } } }
   else if(!ZN.busy&&(typeof LQ==="undefined"||LQ.ready||(ZM.cur==null&&pz>-49.5))&&!(typeof BUILD!=="undefined"&&BUILD.on&&ZM.cur)){ if(ZM.cur&&ZM.cur!=="t"&&!ZN.off&&ZN.re){ ZN.re=0; try{ zoneForget(); }catch(e){} } const w=zoneWant(px,pz,ZM.cur); if(w!==ZM.cur) zoneGo(w); }
   /* 手機上路和店不見 (11/16): a phone's graphics memory runs out sooner, and when it does a district's ground or houses just are not
@@ -14432,7 +14432,152 @@ async function edSave(){ const d=MD.pack(), txt=JSON.stringify(d); if(txt.length
 async function edCode(){ const txt="MZMAP:"+JSON.stringify(MD.pack()); let ok=false; try{ await navigator.clipboard.writeText(txt); ok=true; }catch(e){} toast(ok?`已複製配置碼（${Math.round(txt.length/1024)} KB），貼給 Claude 就能寫進遊戲`:"複製不了，請改用「固定」",3200); }
 TW.edOpen=edOpen;
 
+/* ===== 🏝️ 夢見島 (11/25 主委「開始做小島」; 企劃 https://claude.ai/artifact/JPt3Bdw6r253gJTKUKrYqe).
+   The island lies in the same world, far north of everything (centre ISL.cx, ISL.cz), so walking, the camera, the joystick and the town's
+   district loader all work as they are: the island is nine districts in CH (built when you are near, dropped when you leave), its ground,
+   water and where you can walk are answered by wrapping TW.ground / TW.water / TW.walk / TW.camOK for points out there. Half the town's
+   size (主委 11/24). No new kinds of material: the ground is the town's terrain(), the trees the town's trees and the chair's palm, the
+   sea / pond / brook one vertex-coloured Lambert (the same program as the forest props). No lights are added. */
+const IS=(()=>{
+  const cx=ISL.cx, cz=ISL.cz, S=64;
+  const Rc=a=>72+9*Math.sin(3*a+.7)+6*Math.sin(5*a+2.1)+3.5*Math.sin(8*a+.4); /* the coast: radius by bearing */
+  const HILL=[24,-30], POND=[-30,-22,6.5], BROOK=[[-30,-22],[-40,-13],[-50,-4],[-60,5],[-72,11],[-86,15]];
+  const segD=(P,u,v)=>{ let best=1e9; for(let i=0;i<P.length-1;i++){ const [ax,az]=P[i],[bx,bz]=P[i+1], dx=bx-ax, dz=bz-az, t=Math.max(0,Math.min(1,((u-ax)*dx+(v-az)*dz)/(dx*dx+dz*dz))); best=Math.min(best,Math.hypot(u-ax-dx*t,v-az-dz*t)); } return best; };
+  function base(u,v){ const r=Math.hypot(u,v), d=r/Rc(Math.atan2(v,u)), b=1-d;
+    if(d>=1) return .05-2.4*sstep(1,1.2,d);
+    return .05+.45*sstep(0,.16,b)+3*sstep(.14,.62,b)*(.75+.25*nz(u*.6,v*.6))+13*Math.exp(-((u-HILL[0])**2+(v-HILL[1])**2)/520)*sstep(.05,.35,b); }
+  const PONDY=base(POND[0],POND[1])-.35;
+  const pondD=(u,v)=>Math.hypot(u-POND[0],v-POND[1])*(1+.08*Math.sin(Math.atan2(v-POND[1],u-POND[0])*3));
+  function hL(u,v){ let h=base(u,v); const pd=pondD(u,v); if(pd<POND[2]+3) h=Math.min(h,h*(1-sstep(POND[2]+3,POND[2],pd))+(PONDY-1.1)*sstep(POND[2]+3,POND[2],pd)); const bd=segD(BROOK,u,v); if(bd<3) h-=.8*sstep(2.6,.8,bd)*sstep(-.1,.4,h); return h; }
+  const brookY=(u,v)=>base(u,v)-.42;
+  const loc=(x,z)=>[x-cx,z-cz];
+  const LAND=[cx+4,cz+Rc(Math.PI/2)-8]; /* 沉船灘: where you wake up, on the south shore */
+  ISL.land=LAND;
+  /* trees: one fixed list for everybody (企劃: the island is the same shape for all; what you cut is yours) */
+  const TREES=[], PALMS=[];
+  { const r=krng(20261125); const PH=typeof Q!=="undefined"&&Q.phone; for(let t=0;t<9000&&TREES.length<(PH?150:260);t++){ const u=(r()*2-1)*95, v=(r()*2-1)*95, R=Math.hypot(u,v), b=1-R/Rc(Math.atan2(v,u)); if(b<.2) continue; const h=hL(u,v); if(h<.6||h>11) continue; if(pondD(u,v)<POND[2]+3||segD(BROOK,u,v)<3.2) continue; if(Math.hypot(u+cx-LAND[0],v+cz-LAND[1])<16) continue; if(TREES.some(q=>Math.hypot(q[0]-u,q[1]-v)<4.2)) continue; TREES.push([u,v,.9+r()*.5,r()]); }
+    for(let t=0;t<6000&&PALMS.length<(PH?36:70);t++){ const a=r()*6.2832, R=Rc(a), b=.03+r()*.17, u=Math.cos(a)*R*(1-b), v=Math.sin(a)*R*(1-b); if(base(u,v)<.2) continue; if(Math.hypot(u+cx-LAND[0],v+cz-LAND[1])<7) continue; if(PALMS.some(q=>Math.hypot(q[0]-u,q[1]-v)<3.6)) continue; PALMS.push([u,v,6+r()*3.5,.85+r()*.35,r()*6.283]); } }
+  const SOLID=[...TREES.map(t=>[t[0],t[1],.45*t[2]]),...PALMS.map(p=>[p[0],p[1],.38])], SG=new Map(); /* (trunks you walk round; a 4 m grid so a step looks at a handful) */
+  for(const s of SOLID){ const k=Math.floor(s[0]/4)+","+Math.floor(s[1]/4); (SG.get(k)||SG.set(k,[]).get(k)).push(s); }
+  const solidAt=(u,v)=>{ const gx=Math.floor(u/4), gz=Math.floor(v/4); for(let a=-1;a<=1;a++) for(let b=-1;b<=1;b++){ const L=SG.get((gx+a)+","+(gz+b)); if(L) for(const s of L) if(Math.hypot(s[0]-u,s[1]-v)<s[2]) return true; } return false; };
+  function walkI(x,z){ const [u,v]=loc(x,z), h=hL(u,v); if(h<-.32) return false; if(pondD(u,v)<POND[2]+.3) return false;
+    if(solidAt(u,v)) return false;
+    const a=hL(u+.5,v), b=hL(u-.5,v), c=hL(u,v+.5), d=hL(u,v-.5); if(Math.hypot(a-b,c-d)>TW.maxSlope) return false; return true; }
+  function waterI(x,z){ const [u,v]=loc(x,z), h=hL(u,v); if(pondD(u,v)<POND[2]+.2) return {k:"isl",y:PONDY,w:"pond"}; if(segD(BROOK,u,v)<1.1&&h<brookY(u,v)) return {k:"isl",y:brookY(u,v),w:"brook"}; if(h<-.15) return {k:"isl",y:ISL.seaY,w:"sea"}; return null; }
+  { const g0=TW.ground, w0=TW.walk, wa0=TW.water, c0=TW.camOK;
+    TW.ground=(x,z)=>islIn(x,z)?(()=>{ const [u,v]=loc(x,z); return hL(u,v); })():g0(x,z);
+    TW.walk=(x,z)=>islIn(x,z)?walkI(x,z):w0(x,z);
+    TW.water=(x,z)=>islIn(x,z)?waterI(x,z):wa0(x,z);
+    TW.camOK=(x,y,z)=>{ if(!islIn(x,z)) return c0(x,y,z); const [u,v]=loc(x,z); if(y<hL(u,v)+6&&solidAt(u,v)) return false; try{ const px=meAv.pos.x-cx, pz=meAv.pos.y-cz, L=Math.hypot(u-px,v-pz), n=Math.floor(L/.8); for(let k=1;k<n;k++){ const f=k/n, qu=px+(u-px)*f, qv=pz+(v-pz)*f; if(solidAt(qu,qv)&&L*f>1.2) return false; } }catch(e){} /* (a trunk between you and the camera: the camera comes closer) */ return y>Math.max(hL(u,v),ISL.seaY)+.35&&y<60; }; }
+  /* finding a way on the island: A* on a 1.5 m grid, then straightened (you tap somewhere and walk round the pond and the trees) */
+  const GC=1.5, GN=Math.ceil(200/GC), OK=new Uint8Array(GN*GN); let okDone=false;
+  const okAt=i=>{ if(!okDone){ okDone=true; for(let k=0;k<GN*GN;k++){ const u=-100+(k%GN+.5)*GC, v=-100+((k/GN|0)+.5)*GC; OK[k]=walkI(u+cx,v+cz)?1:0; } } return OK[i]; };
+  const cellOf=(x,z)=>{ const a=Math.floor((x-cx+100)/GC), b=Math.floor((z-cz+100)/GC); return a<0||b<0||a>=GN||b>=GN?-1:b*GN+a; };
+  const ctr=i=>[cx-100+(i%GN+.5)*GC,cz-100+((i/GN|0)+.5)*GC];
+  const clearLine=(ax,az,bx,bz)=>{ const L=Math.hypot(bx-ax,bz-az), n=Math.ceil(L/.5); for(let k=1;k<n;k++){ if(!walkI(ax+(bx-ax)*k/n,az+(bz-az)*k/n)) return false; } return true; };
+  function route(fx,fz,tx,tz){ if(clearLine(fx,fz,tx,tz)) return [[tx,tz]]; let s=cellOf(fx,fz), e=cellOf(tx,tz); if(s<0||e<0) return [[tx,tz]];
+    if(!okAt(e)){ /* the nearest open cell to where you tapped */ let best=-1, bd=1e9; const ex=e%GN, ez=e/GN|0; for(let a=-6;a<=6;a++) for(let b=-6;b<=6;b++){ const X=ex+a, Z=ez+b; if(X<0||Z<0||X>=GN||Z>=GN) continue; const k=Z*GN+X; if(okAt(k)&&a*a+b*b<bd){ bd=a*a+b*b; best=k; } } if(best<0) return []; e=best; const c=ctr(e); tx=c[0]; tz=c[1]; }
+    const G=new Float32Array(GN*GN).fill(1e9), P=new Int32Array(GN*GN).fill(-1), H=[]; const ex=e%GN, ez=e/GN|0, hh=k=>Math.hypot(k%GN-ex,(k/GN|0)-ez);
+    const push=(k,f)=>{ H.push([f,k]); let i=H.length-1; while(i>0){ const p=(i-1)>>1; if(H[p][0]<=H[i][0]) break; [H[p],H[i]]=[H[i],H[p]]; i=p; } };
+    const pop=()=>{ const top=H[0], last=H.pop(); if(H.length){ H[0]=last; let i=0; for(;;){ const l=2*i+1, r=l+1; let m=i; if(l<H.length&&H[l][0]<H[m][0]) m=l; if(r<H.length&&H[r][0]<H[m][0]) m=r; if(m===i) break; [H[m],H[i]]=[H[i],H[m]]; i=m; } } return top; };
+    G[s]=0; push(hh(s),s); let n=0, found=false;
+    while(H.length&&n<30000){ n++; const [,k]=pop(); if(k===e){ found=true; break; } const X=k%GN, Z=k/GN|0;
+      for(let a=-1;a<=1;a++) for(let b=-1;b<=1;b++){ if(!a&&!b) continue; const X2=X+a, Z2=Z+b; if(X2<0||Z2<0||X2>=GN||Z2>=GN) continue; const k2=Z2*GN+X2; if(!okAt(k2)&&k2!==s) continue; if(a&&b&&(!okAt(Z*GN+X2)||!okAt(Z2*GN+X))) continue; const g=G[k]+(a&&b?1.414:1); if(g<G[k2]){ G[k2]=g; P[k2]=k; push(g+hh(k2),k2); } } }
+    if(!found) return [];
+    const cells=[]; for(let k=e;k>=0&&k!==s;k=P[k]) cells.push(ctr(k)); cells.reverse(); cells[cells.length-1]=[tx,tz];
+    const out=[]; let ax=fx, az=fz, i=0; while(i<cells.length){ let j=cells.length-1; while(j>i&&!clearLine(ax,az,cells[j][0],cells[j][1])) j--; out.push(cells[j]); [ax,az]=cells[j]; i=j+1; } return out; }
+  { const r0=TW.route; TW.route=(fx,fz,tx,tz,fg,tg)=>(islIn(fx,fz)||islIn(tx,tz))?(islIn(fx,fz)&&islIn(tx,tz)?route(fx,fz,tx,tz):[]):r0(fx,fz,tx,tz,fg,tg); }
+  /* ground colour */
+  const SAND=VC.sand, WET=VC.wet, JG=LAWN.clone().multiplyScalar(.8).lerp(VC.moss,.18), ROCK=CL("#8e958c"), MUD=CL("#9a8a66");
+  function cf(x,z,h,c){ const [u,v]=loc(x,z), R=Math.hypot(u,v), b=1-R/Rc(Math.atan2(v,u)), n=.5+.5*nz(u*1.3,v*1.3);
+    c.copy(JG).multiplyScalar(.92+.16*n); c.lerp(SAND,sstep(.15+n*.04,.08,b)); c.lerp(WET,sstep(.45,.05,h)*sstep(.1,.02,b)*.8); c.lerp(ROCK,sstep(8,11,h)*.75);
+    const bd=segD(BROOK,u,v); c.lerp(MUD,sstep(3,1.4,bd)*.7); c.lerp(MUD,sstep(POND[2]+3,POND[2]+.8,pondD(u,v))*.7); }
+  /* one material for every island water and the wreck's wood: vertex colours, Lambert (the forest props' program) */
+  let WM=null; const wmI=()=>WM||(WM=new T.MeshLambertMaterial({vertexColors:true}));
+  const tint=(g,f)=>{ const P=g.attributes.position, col=new Float32Array(P.count*3), c=new T.Color(); for(let i=0;i<P.count;i++){ f(P.getX(i),P.getY(i),P.getZ(i),c); col[i*3]=c.r; col[i*3+1]=c.g; col[i*3+2]=c.b; } g.setAttribute("color",new T.BufferAttribute(col,3)); return g; };
+  const WSH=CL("#8fdcd2"), WMI=CL("#4fb8c8"), WDE=CL("#2c78ac"), WFR=CL("#5ab6c4");
+  function pondMesh(C){ const g=new T.CircleGeometry(POND[2]+.9,40); g.rotateX(-Math.PI/2); tint(g,(x,y,z,c)=>c.copy(WFR).lerp(WSH,sstep(POND[2]*.4,POND[2]+.9,Math.hypot(x,z))*.6)); const m=new T.Mesh(g,wmI()); m.position.set(cx+POND[0],PONDY,cz+POND[1]); m.userData.keep=1; C.g.add(m); }
+  function brookMesh(C,x0,x1,z0,z1){ const pts=[]; for(let i=0;i<BROOK.length-1;i++){ const [ax,az]=BROOK[i],[bx,bz]=BROOK[i+1], L=Math.hypot(bx-ax,bz-az), n=Math.ceil(L); for(let k=0;k<n;k++) pts.push([ax+(bx-ax)*k/n,az+(bz-az)*k/n]); } pts.push(BROOK[BROOK.length-1]);
+    const pos=[], col=[], idx=[], c=new T.Color(); let first=-1;
+    for(let i=0;i<pts.length;i++){ const [u,v]=pts[i], wx=u+cx, wz=v+cz; if(wx<x0-2||wx>x1+2||wz<z0-2||wz>z1+2) continue; const [pu,pv]=pts[Math.max(0,i-1)], [nu,nv]=pts[Math.min(pts.length-1,i+1)], dx=nu-pu, dz=nv-pv, L=Math.hypot(dx,dz)||1, ox=-dz/L*1.05, oz=dx/L*1.05, y=Math.max(brookY(u,v),ISL.seaY+.02);
+      const k=pos.length/3; pos.push(wx+ox,y,wz+oz,wx-ox,y,wz-oz); c.copy(WFR); col.push(c.r,c.g,c.b,c.r,c.g,c.b); if(first>=0&&k>=2) idx.push(k-2,k-1,k,k-1,k+1,k); first=k; }
+    if(pos.length<12) return; const g=new T.BufferGeometry(); g.setAttribute("position",new T.Float32BufferAttribute(pos,3)); g.setAttribute("color",new T.Float32BufferAttribute(col,3)); g.setIndex(idx); g.computeVertexNormals(); const m=new T.Mesh(g,wmI()); m.userData.keep=1; C.g.add(m); }
+  const WOOD=CL("#7a5a3c"), WOOD2=CL("#5e4630");
+  function wreck(C){ const g=new T.Group(); g.position.set(LAND[0]+3.5,0,LAND[1]+5.5); g.rotation.y=.5; const bx=(w,h,d,x,y,z,ry,rz,col)=>{ const q=tint(new T.BoxGeometry(w,h,d),(a,b,c2,c)=>c.copy(col).multiplyScalar(.9+.2*Math.abs(Math.sin(a*7+c2*3)))); const m=new T.Mesh(q,wmI()); m.position.set(x,y,z); m.rotation.set(0,ry||0,rz||0); g.add(m); };
+    const gy=x=>hL(LAND[0]+3.5-cx,LAND[1]+5.5-cz);
+    const y0=gy(); bx(3.2,.12,.9,0,y0+.12,0,0,.08,WOOD); bx(2.6,.5,.1,0,y0+.35,.45,0,.1,WOOD2); bx(1.8,.4,.1,-.4,y0+.25,-.45,.15,-.2,WOOD2); bx(.14,.14,3.4,1.6,y0+.12,1.2,.9,0,WOOD); bx(1.1,.08,.35,-2.4,y0+.06,1.5,1.3,0,WOOD); bx(.9,.08,.3,2.8,y0+.05,-1.6,.3,0,WOOD2);
+    g.userData.keep=1; C.g.add(g); }
+  /* nine districts, 64 m each */
+  for(let i=-1;i<=1;i++) for(let j=-1;j<=1;j++){ const dx=cx+i*S, dz=cz+j*S, x0=dx-S/2, x1=dx+S/2, z0=dz-S/2, z1=dz+S/2;
+    CH.push({id:"isl"+(i+1)+(j+1),c:[dx,dz],r:S*.72,isl:1,build:C=>{
+      terrain(C,x0,x1,z0,z1,(x,z)=>{ const [u,v]=loc(x,z); return hL(u,v); },cf);
+      for(const t of TREES){ const x=t[0]+cx, z=t[1]+cz; if(x<x0||x>=x1||z<z0||z>=z1) continue; (C.lpt||(C.lpt=[])).push([x,hL(t[0],t[1]),z,t[2]*1.05,.9+t[3]*.3,t[3]*40,"leaf",4]); }
+      for(const p of PALMS){ const x=p[0]+cx, z=p[1]+cz; if(x<x0||x>=x1||z<z0||z>=z1) continue; (C.palm||(C.palm=[])).push([x,hL(p[0],p[1])-.05,z,p[2],p[3],p[4]]); }
+      if(Math.abs(POND[0]+cx-dx)<S/2+POND[2]&&Math.abs(POND[1]+cz-dz)<S/2+POND[2]&&POND[0]+cx>=x0&&POND[0]+cx<x1&&POND[1]+cz>=z0&&POND[1]+cz<z1) pondMesh(C);
+      brookMesh(C,x0,x1,z0,z1);
+      if(LAND[0]>=x0&&LAND[0]<x1&&LAND[1]>=z0&&LAND[1]<z1) wreck(C);
+      try{ propsScatter(C,x0,x1,z0,z1,(i+5)*31+(j+5)*7,(x,z)=>{ const [u,v]=loc(x,z); return hL(u,v)>.5&&Math.hypot(x-LAND[0],z-LAND[1])>9; }); }catch(e){} }}); }
+  /* the sea: one wide sheet round the island, shallow turquoise to deep blue; it rises and falls a little (the tide on the wet sand) */
+  let SEA=null; ISL.seaY=-.12;
+  function seaOn(on){ if(on&&!SEA){ const g=new T.PlaneGeometry(760,760,95,95); g.rotateX(-Math.PI/2); tint(g,(x,y,z,c)=>{ const d=Math.hypot(x,z)/Rc(Math.atan2(z,x)); c.copy(WSH).lerp(WMI,sstep(1,1.12,d)).lerp(WDE,sstep(1.1,1.6,d)); }); SEA=new T.Mesh(g,wmI()); SEA.position.set(cx,ISL.seaY,cz); SEA.userData.keep=1; SEA.raycast=()=>{}; scene.add(SEA); }
+    if(!on&&SEA){ scene.remove(SEA); SEA.geometry.dispose(); SEA=null; } }
+  let t=0; function tick(dt){ t+=dt; if(SEA){ ISL.seaY=-.12+.06*Math.sin(t*.45); SEA.position.y=ISL.seaY; } }
+  return {seaOn,tick,hL,loc,base,LAND,TREES,PALMS,
+    prep(){ for(const d of CH) if(d.isl&&!LIVE[d.id]&&Math.hypot(d.c[0]-LAND[0],d.c[1]-LAND[1])<90) try{ load(d); }catch(e){ console.warn("isl load",e); } },
+    drop(){ for(const id of Object.keys(LIVE)) if(id.startsWith("isl")) try{ unload(id); }catch(e){} }};
+})();
+TW.isl=IS;
+{ const t0=TW.tick; TW.tick=dt=>{ try{ if(ISL.on) IS.tick(dt); }catch(e){ console.warn("isl tick",e); } t0(dt); }; }
+
 return TW; })();
+/* ===== 🏝️ 夢見島：上島、回小鎮 (11/25). The first time you go you are alone (主委 11/24「只有第一次孤立」): the chat, the 香客留言
+   marquee, the hall and the online list are put away and a line at the top says the fog swallows every sound from the shore. Later trips
+   the chat is back. Either way nobody else is drawn on the island and nobody sees you there (each player's island is their own). The
+   town's music is hushed; the sea is heard instead (a soft wash made from noise, no sound file). */
+const ISLE=(()=>{
+  const st=()=>{ if(!bag.isl||typeof bag.isl!=="object") bag.isl={n:0}; return bag.isl; };
+  let hud=null, wav=null;
+  function css(){ if(document.getElementById("islCss")) return; const s=document.createElement("style"); s.id="islCss"; s.textContent=`
+    body.isl-solo #sayBtn,body.isl-solo #marquee,body.isl-solo #hallBtn,body.isl-solo #othersBtn,body.isl-solo #boardBtn,body.isl-on #tgBtn,body.isl-on #mmBox,body.isl-on #enPill,body.isl-on #mzTown{display:none!important}
+    #islHud{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 58px);transform:translateX(-50%);z-index:40;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
+    #islHud .fog{font-size:13px;color:#eef6f4;background:rgba(40,60,66,.55);padding:4px 12px;border-radius:12px;letter-spacing:.05em}
+    #islHud button{pointer-events:auto;font-size:13px;padding:6px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.35);background:rgba(30,50,58,.7);color:#fff}
+    #islVeil{position:fixed;inset:0;z-index:9500;background:#0d1418;opacity:0;transition:opacity .9s;pointer-events:none;display:flex;align-items:center;justify-content:center}
+    #islVeil.on{opacity:1;pointer-events:auto}
+    #islVeil p{color:#e8eef0;font-size:18px;letter-spacing:.12em;text-align:center;line-height:2;opacity:0;transition:opacity 1.2s;padding:0 24px}
+    #islVeil p.on{opacity:1}`; document.head.appendChild(s); }
+  function veil(lines,mid,done){ css(); let v=document.getElementById("islVeil"); if(!v){ v=document.createElement("div"); v.id="islVeil"; v.innerHTML="<p></p>"; document.body.appendChild(v); } const p=v.querySelector("p");
+    v.classList.add("on"); p.classList.remove("on"); let i=0;
+    const next=()=>{ if(i<lines.length){ p.innerHTML=lines[i++]; p.classList.add("on"); setTimeout(()=>{ p.classList.remove("on"); setTimeout(next,1100); },2300); return; }
+      v.classList.remove("on"); setTimeout(()=>{ try{ done&&done(); }catch(e){ console.warn(e); } },900); };
+    setTimeout(()=>{ try{ mid&&mid(); }catch(e){ console.warn("isl veil",e); } setTimeout(next,lines.length?400:600); },950); }
+  function hudOn(on){ css(); if(!on){ if(hud){ hud.remove(); hud=null; } return; } if(!hud){ hud=document.createElement("div"); hud.id="islHud"; document.body.appendChild(hud); }
+    hud.innerHTML=(ISL.solo?`<div class="fog">霧很大，聽不到岸上的聲音。</div>`:"")+`<button type="button" id="islBack">🛶 睡一覺，回小鎮</button>`;
+    hud.querySelector("#islBack").onclick=()=>{ try{ ensureAudio(); }catch(e){} openSheet("islBack","🛶 回小鎮",`<p class="lead">在沙灘上躺下來，閉上眼睛……醒來就會在小鎮的碼頭。</p><p class="note">島上的東西會留在島上，下次來還在。</p><div class="row"><button class="primary" data-act="islLeave">睡一覺，回小鎮</button><button class="secondary" data-act="islStay">再待一下</button></div>`); }; }
+  /* the sea: brown noise through a slow swell, very quiet */
+  function waves(on){ try{ if(!on){ if(wav){ const w=wav; wav=null; w.g.gain.setTargetAtTime(0,w.ac.currentTime,.6); setTimeout(()=>{ try{ w.src.stop(); }catch(e){} },2500); } return; } const A=ensureAudio(); if(!A||wav) return;
+    const n=A.sampleRate*4, b=A.createBuffer(1,n,A.sampleRate), d=b.getChannelData(0); let last=0; for(let i=0;i<n;i++){ const w=Math.random()*2-1; last=(last+.02*w)/1.02; d[i]=last*3.2; }
+    const src=A.createBufferSource(); src.buffer=b; src.loop=true; const f=A.createBiquadFilter(); f.type="lowpass"; f.frequency.value=650; const g=A.createGain(); g.gain.value=0; const sw=A.createGain(); sw.gain.value=.5;
+    const lfo=A.createOscillator(); lfo.frequency.value=.11; const lg=A.createGain(); lg.gain.value=.35; lfo.connect(lg); lg.connect(sw.gain); src.connect(f); f.connect(sw); sw.connect(g); g.connect(A.destination); src.start(); lfo.start(); g.gain.setTargetAtTime(.16*(typeof mVol==="function"?Math.max(.3,mVol()):1),A.currentTime,1.5); wav={ac:A,src,g}; }catch(e){ console.warn("isl waves",e); } }
+  function setOn(on,solo){ ISL.on=on; ISL.solo=on&&!!solo; document.body.classList.toggle("isl-on",on); document.body.classList.toggle("isl-solo",ISL.solo); try{ TOWNX.isl.seaOn(on); }catch(e){ console.warn(e); } bgmHush=on; hudOn(on); waves(on); try{ markDirty(); }catch(e){} }
+  function place(x,z,face){ try{ if(meAv.seat>=0) meAv.seat=-1; }catch(e){} meAv.pos.set(x,z); meAv.target.set(x,z); meAv.path=[]; meAv.gy=0; if(face!=null){ meAv.rotY=face; meAv.faceGoal=face; } try{ inputReset(); }catch(e){} }
+  function enter(opt){ opt=opt||{}; const S=st(), first=opt.first!=null?opt.first:!S.n; const L=ISL.land;
+    const lines=first?["海上起霧了……","雷聲很近。","……船翻了。"]:["划進霧裡……","霧散了。"];
+    veil(lines,()=>{ setOn(true,first); place(L[0],L[1],Math.PI); try{ TOWNX.isl.prep(); }catch(e){ console.warn(e); } S.n=(S.n||0)+1; saveBag(); },()=>{
+      if(first){ try{ meAv.say("這裡……沒有人。","#e8f4f2",4); }catch(e){} } else { try{ toast("🏝️ 回到夢見島了",2200); }catch(e){} } }); }
+  function leave(){ closeSheet(); veil(["……"],()=>{ setOn(false); try{ TOWNX.isl.drop(); }catch(e){} const d=(TOWNX.stOf&&TOWNX.stOf("tw:fish"))||[62,-136.5]; place(d[0],d[1]+1.2,0); },()=>{ try{ toast("⚓ 你在碼頭醒來了",2600); }catch(e){} }); }
+  HANDLERS.islLeave=()=>leave(); HANDLERS.islStay=()=>closeSheet();
+  /* 碼頭的老王 (企劃: 第一次免費，之後每趟 300) */
+  const FARE=300;
+  HANDLERS.islBoat=()=>{ const S=st(), first=!S.n;
+    openSheet("islBoat","🛶 老王的舢舨",first?`<p class="lead">老王：「想出海？外海那邊常常起大霧……舢舨借你，天氣好的話一個鐘頭就到香爐嶼。」</p><p class="note">老王：「先說喔，海上聽不到岸上的聲音，也收不到訊號。真的想回來，就找個地方睡一覺。」</p><div class="row"><button class="primary" data-act="islGo">出海</button><button class="secondary" data-act="islStay">改天再說</button></div>`
+      :`<p class="lead">老王：「又要去那座霧裡的島？你說有就有啦……船費 ${FARE} 平安幣，我幫你把舢舨推下水。」</p><div class="row"><button class="primary" data-act="islGo">付 ${FARE} 幣出海</button><button class="secondary" data-act="islStay">改天再說</button></div>`); };
+  HANDLERS.islGo=()=>{ const S=st(), first=!S.n; if(!first&&!me.sp){ if((bag.coins||0)<FARE){ toast(`平安幣不夠，船費要 ${FARE} 幣`,2600); return; } bag.coins-=FARE; saveBag(); } closeSheet(); enter({first}); };
+  /* 主委工具 */
+  HANDLERS.tmIsl=v=>{ closeSheet(); if(v==="first") enter({first:true}); else if(v==="again") enter({first:false}); else if(v==="back"){ if(ISL.on) leave(); else toast("你現在不在島上",1800); } else if(v==="reset"){ bag.isl={n:0}; saveBag(); toast("↩️ 夢見島紀錄清空了（下次算第一次）",2200); } };
+  return {enter,leave,st};
+})();
+
 /*TOWN>>*/
 /*<<LIFE*/
 /* ================= 小鎮生活 (11/13): fishing and the fish book first; the townsfolk, the salon and barber, the stall games,
@@ -15126,7 +15271,7 @@ function tipFor(n){ const r=FISH.filter(f=>f.r>=2); const f=r[(Math.random()*r.l
   if(n.tip==="games") return "小吃廣場有擠冰淇淋跟中藥對對碰，玩得好會有平安幣喔。"; return fishTip; }
 const GIFTS={10:[300,0,"n"],30:[0,1,"n"],60:[1000,2,"n"]}, GF={10:1,30:2,60:4}; /* (which return gifts were given: one bit each) */
 function npcSheet(n,line){ try{ if(line&&String(line).length<=40) window.MZ_DY("npc",1,[n.n,String(line)]); }catch(e){} const R=NR(n.id), t=tier(R.a); openSheet("lfNpc","💬 "+n.n,`<p class="note" style="margin:0 0 6px">${hearts(R.a)}　好感 ${R.a}</p><p class="lead">「${line}」</p>
-   <div class="row"><button class="primary" data-act="lfNpcTalk" data-v="${n.id}">聊聊天</button><button class="secondary" data-act="lfNpcGift" data-v="${n.id}">送禮物</button>${t>=2?`<button class="secondary" data-act="lfNpcTip" data-v="${n.id}">打聽消息</button>`:""}${n.id==="doc"?`<button class="secondary" data-act="lfDust">✨ 用星砂換星空家具</button>`:""}${n.id==="pan"?`<button class="secondary" data-act="lfBugCol">🔬 賣昆蟲・化石</button>`:""}</div>${n.id==="pang"?stpPangBox():""}${L.nqBox?L.nqBox(n.id):""}`); }
+   <div class="row"><button class="primary" data-act="lfNpcTalk" data-v="${n.id}">聊聊天</button><button class="secondary" data-act="lfNpcGift" data-v="${n.id}">送禮物</button>${t>=2?`<button class="secondary" data-act="lfNpcTip" data-v="${n.id}">打聽消息</button>`:""}${n.id==="doc"?`<button class="secondary" data-act="lfDust">✨ 用星砂換星空家具</button>`:""}${n.id==="pan"?`<button class="secondary" data-act="lfBugCol">🔬 賣昆蟲・化石</button>`:""}${n.id==="wang"?`<button class="secondary" data-act="islBoat">🛶 出海</button>`:""}</div>${n.id==="pang"?stpPangBox():""}${L.nqBox?L.nqBox(n.id):""}`); }
 function stpPangBox(){ const S=STP(), n=stpN(), N=MSPOT.length;
   if(!stpGot()) return `<div class="group"><span class="group-label">📮 小胖的集章冊</span><p class="lead">「欸欸！你們有去集章嗎？鎮上有 ${N} 個地方放了<b>集章桌</b>，桌上有印章跟印泥，走過去蓋一個就好！聽說蓋滿 ${N} 個，好像會有什麼紀念禮物喔！我這裡有集章冊，送你一本！」</p><p class="note">集章桌在哪裡，地圖上不會標，要自己在鎮上找。找不到的話可以回來問小胖。</p><div class="row"><button class="primary" data-act="stpTake">📮 拿集章冊</button></div></div>`;
   if(n>=N) return `<div class="group"><span class="group-label">📮 小胖的集章冊</span><p class="lead">「哇！你全部蓋滿了！你比我還厲害耶……我還差好幾個。」</p></div>`;
@@ -15550,7 +15695,7 @@ L.testPanel=()=>{ if(!me.sp) return; const b=(act,v,t,cls)=>`<button class="${cl
    ${sec("小遊戲（直接玩）",[["tw:bfast","🍔 疊漢堡"],["tw:ice","🍦 冰淇淋"],["tw:herb","🌿 中藥對對碰"],["tw:congee","🥣 深夜出餐"],["tw:drink","🧋 調飲料"],["tw:book","📚 推書櫃"],["tw:flower","💐 插花"]].map(([k,n])=>b("tmGame",k,n)).join("")+b("tmDish",1,"🫧 洗碗")+b("tmCook",1,"🍳 廚房切菜")+b("tmBq",1,"💐 花束打工")+b("tmIceDrink",1,"🧋 飲料（一定加冰）"))}
    ${sec("釣魚・溫室",b("tmRods",1,"🎣 全部釣竿")+b("tmBait",1,"🪱 釣餌各 10 份")+b("tmBait",0,"🪱 清空釣餌")+b("tmFish",1,"🐟 看下一隻魚模型")+b("tmDexAll",1,"📖 圖鑑全部點亮")+b("tmGarden",1,"🌱 花圃放滿作物"))}
    ${sec("任務",b("tmRst","god","↩️ 重置女神泉")+b("tmRst","ph","↩️ 重置照相館")+b("tmRst","gh","↩️ 重置溫室格數")+b("tmFin","god","⛲ 女神泉完成")+b("tmFin","ph","📷 照相館完成＋片尾")+b("tmCzEnd",8,"🥣 一粥七天直接結算")+b("tmStp","fill","📮 集章冊蓋到剩一格")+b("tmStp","rst","↩️ 重置集章冊"))}
-   ${sec("做夢＋日記・媽祖心事",b("tmDy","dream","💤 現在做夢＋看日記")+b("tmDy","diary","📖 只看今天的日記")+b("tmDy","mz","🙏 跟媽祖說說話（免參拜）"))}${sec("腳踏車",b("tmBike","on","🚲 給我腳踏車並騎上")+b("tmBike","hill","🏔️ 到山腳騎上天后山")+b("tmBike","quest","📦 試小潘的請託")+b("tmBike","off","↩️ 收回腳踏車"))}    ${sec("精力",b("tmEnLow",40,"⚡ 精力設成 40")+b("tmEnLow",0,"⚡ 精力設成 0")+b("tmEnLow",100,"⚡ 精力補滿"))}
+   ${sec("做夢＋日記・媽祖心事",b("tmDy","dream","💤 現在做夢＋看日記")+b("tmDy","diary","📖 只看今天的日記")+b("tmDy","mz","🙏 跟媽祖說說話（免參拜）"))}${sec("夢見島",b("tmIsl","first","🌫️ 第一次上島（翻船、孤立）")+b("tmIsl","again","🛶 再去一次（一般）")+b("tmIsl","back","⚓ 回小鎮碼頭")+b("tmIsl","reset","↩️ 清空上島紀錄"))}${sec("腳踏車",b("tmBike","on","🚲 給我腳踏車並騎上")+b("tmBike","hill","🏔️ 到山腳騎上天后山")+b("tmBike","quest","📦 試小潘的請託")+b("tmBike","off","↩️ 收回腳踏車"))}    ${sec("精力",b("tmEnLow",40,"⚡ 精力設成 40")+b("tmEnLow",0,"⚡ 精力設成 0")+b("tmEnLow",100,"⚡ 精力補滿"))}
    ${sec("造型・美容院",b("tmLookOpen",1,"🪞 換造型")+b("tmSalon","h","💇 美容院：髮型")+b("tmSalon","e","👁 美容院：眼睛")+b("tmSalon","m","👄 美容院：嘴巴")+b("tmFaceFit","f_eyes","📐 造型定位"))}
    ${sec("活動・特效",b("tmRain",1,"🧧 撒紅包")+b("tmMet",1,"🌠 流星")+b("lfChuteGo",1,"🪂 跳傘"))}
    ${sec("編輯工具",b("mapEdT",1,"🗺️ 地圖編輯","primary")+b("wTune",1,"💧 水面調整")+b("posOpen",1,"📍 座標定位"))}
@@ -16818,7 +16963,7 @@ function bugCard(b,first,N){ const c=document.createElement("div"); c.className=
 .bug-card .bc-burst{position:absolute;left:50%;top:78px;width:360px;height:360px;margin:-180px;background:repeating-conic-gradient(rgba(255,220,120,.35) 0 10deg,transparent 10deg 20deg);animation:bcS 6s linear infinite;border-radius:50%}
 .bug-card.out{animation:bcO .4s forwards} @keyframes bcF{from{opacity:0}} @keyframes bcP{0%{transform:scale(.3)}100%{transform:scale(1)}} @keyframes bcW{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-6px) rotate(4deg)}} @keyframes bcS{to{transform:rotate(360deg)}} @keyframes bcO{to{opacity:0;transform:scale(.9)}}`; document.head.appendChild(st); })();
 L.tick7=dt=>{ try{ bugTick(dt); }catch(e){ console.warn("bugs",e); }  };
-let bugPre=false; function bugTick(dt){ const inTown=TOWNX&&TOWNX.on, p=meAv.pos; const c=bugChip(); if(inTown&&!bugPre){ bugPre=true; BUGS.forEach(b=>bugTexOf(b[0])); }
+let bugPre=false; function bugTick(dt){ const inTown=TOWNX&&TOWNX.on&&!ISL.on, p=meAv.pos; const c=bugChip(); if(inTown&&!bugPre){ bugPre=true; BUGS.forEach(b=>bugTexOf(b[0])); }
   for(let i=BUGP.length-1;i>=0;i--){ const q=BUGP[i]; q.t+=dt; q.m.position.x+=q.vx*dt; q.m.position.y+=q.vy*dt; q.m.position.z+=q.vz*dt; q.vy-=3*dt; q.m.material.opacity=Math.max(0,1-q.t/q.l); if(q.t>q.l){ scene.remove(q.m); q.m.material.dispose(); BUGP.splice(i,1); } }
   if(!inTown){ while(BG2.list.length) bugRemove(BG2.list[0]); c.hidden=true; return; }
   BG2.t-=dt; if(BG2.t<=0){ BG2.t=2; if(BG2.list.length<(Q.phone?7:9)) bugSpawn(); } /* (11/22 晚 主委「昆蟲到底都在哪 很少看見」: a few more at a time) */
@@ -17036,7 +17181,7 @@ function digPop(o,q,good,S,ic,name,line){ if(digReward.again){ ic=digReward.agai
 function digCard(ic,name,line,q,good,S){ const c=document.createElement("div"); c.className="bug-card"; c.innerHTML=`<div class="bc-in ${good?"r4":q[3]==="junk"?"":"r3"}">${good?`<div class="bc-burst"></div>`:""}${/\.webp$|^data:/.test(ic)?`<img src="${ic}" alt="" style="width:132px;height:132px;object-fit:contain;position:relative;animation:bcW 1.2s ease-in-out infinite">`:`<span style="font-size:96px;line-height:1.1;position:relative;animation:bcW 1.2s ease-in-out infinite">${ic}</span>`}<b>${name}</b>${q[3]==="junk"?`<span class="bc-r" style="color:#8a7a6a">……是垃圾</span>`:({fossil:"化石！",gem:"寶石！",treasure:"寶物！",tackle:"古老的釣具！"})[q[3]]?`<span class="bc-r">${({fossil:"化石！",gem:"寶石！",treasure:"寶物！",tackle:"古老的釣具！"})[q[3]]}</span>`:""}<small>${line}</small><small class="bc-u">鏟子還能用 ${Math.max(0,S.u)} 次</small></div>`;
   document.body.appendChild(c); c.onclick=()=>c.remove(); setTimeout(()=>{ c.classList.add("out"); setTimeout(()=>c.remove(),400); },2800); }
 L.tick8=dt=>{ try{ digTick(dt); }catch(e){ console.warn("dig",e); }  };
-function digTick(dt){ const inTown=TOWNX&&TOWNX.on, p=meAv.pos, c=digChip();
+function digTick(dt){ const inTown=TOWNX&&TOWNX.on&&!ISL.on, p=meAv.pos, c=digChip();
   if(!inTown){ while(DG.list.length) digRemove(DG.list[0]); c.hidden=true; return; }
   DG.t-=dt; if(DG.t<=0){ DG.t=90+Math.random()*60; if(DG.list.length<3) digSpawn(); }
   const A=DG.act; if(A){ A.t+=dt; const ph=(A.t%.55)/.55, n=Math.floor(A.t/.55); A.sv.rotation.x=2.6-Math.sin(ph*Math.PI)*1.3; meAv.root.position.y=Math.abs(Math.sin(ph*Math.PI))*.12; meAv.root.scale.set(1+Math.sin(ph*Math.PI)*.06,1-Math.sin(ph*Math.PI)*.06,1+Math.sin(ph*Math.PI)*.06);
