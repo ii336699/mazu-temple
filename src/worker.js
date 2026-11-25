@@ -717,14 +717,15 @@ export class Lobby extends DurableObject {
     if (url.pathname === "/houses" || url.pathname === "/house") { // 天后新村 (11/16): 40 houses, one owner each, one house per player; the owner decides whether others may come in
       const uid = String(req.headers.get("x-uid") || "").replace(/[^a-f0-9]/g, "").slice(0, 40); if (!uid) return json({ ok: false });
       const HS = (await this.ctx.storage.get("HS")) || {}; const mine = () => { for (const l in HS) if (HS[l].u === uid) return +l; return -1; };
-      if (url.pathname === "/houses") return json({ ok: true, list: Object.keys(HS).map(l => ({ l: +l, n: HS[l].n, pub: !!HS[l].pub, mine: HS[l].u === uid })) });
-      if (req.method === "GET") { const l = url.searchParams.get("l") | 0, H = HS[l]; if (!H) return json({ ok: false, empty: true }); if (!H.pub && H.u !== uid) return json({ ok: false, closed: true, n: H.n }); return json({ ok: true, n: H.n, pub: !!H.pub, room: (await this.ctx.storage.get("HR:" + l)) || "" }); }
+      if (url.pathname === "/houses") return json({ ok: true, list: Object.keys(HS).map(l => ({ l: +l, n: HS[l].n, pub: !!HS[l].pub, up: !!HS[l].up, mine: HS[l].u === uid })) });
+      if (req.method === "GET") { const l = url.searchParams.get("l") | 0, H = HS[l]; if (!H) return json({ ok: false, empty: true }); if (!H.pub && H.u !== uid) return json({ ok: false, closed: true, n: H.n }); return json({ ok: true, n: H.n, pub: !!H.pub, up: !!H.up, room: (await this.ctx.storage.get("HR:" + l)) || "" }); }
       this.lastHouse = this.lastHouse || new Map(); const now = Date.now(); if (now - (this.lastHouse.get(uid) || 0) < 1500) return json({ ok: false, slow: true }); this.lastHouse.set(uid, now);
       let b = {}; try { b = await req.json(); } catch {} const op = String(b.op || ""), have = mine();
       if (op === "buy") { const l = Math.floor(Number(b.l)); if (!(l >= 0 && l < 80)) return json({ ok: false }); /* (11/23: 天后新村 40 + 住宅巷's houses) */ if (HS[l] && HS[l].u !== uid) return json({ ok: false, taken: true, n: HS[l].n }); if (have >= 0 && have !== l) return json({ ok: false, have });
         HS[l] = { u: uid, n: clean(b.n, 10) || "香客", pub: !!b.pub, at: now }; await this.ctx.storage.put("HS", HS); return json({ ok: true }); }
       if (have < 0) return json({ ok: false, none: true });
       if (op === "sell") { delete HS[have]; await this.ctx.storage.put("HS", HS); await this.ctx.storage.delete("HR:" + have); return json({ ok: true, l: have }); }
+      if (op === "up") { if (have < 0) return json({ ok: false }); HS[have].up = 1; await this.ctx.storage.put("HS", HS); return json({ ok: true, l: have }); } /* (11/26 主委「買小間房子的人 可以在裡面加蓋成大間 外觀也會變成兩層樓」「付完錢馬上完成」) */
       if (op === "set") { if (typeof b.pub === "boolean") HS[have].pub = b.pub; if (b.n) HS[have].n = clean(b.n, 10) || HS[have].n; await this.ctx.storage.put("HS", HS); return json({ ok: true }); }
       if (op === "room") { const r = String(b.room || ""); if (r.length > 24000) return json({ ok: false, big: true }); await this.ctx.storage.put("HR:" + have, r); return json({ ok: true }); }
       return json({ ok: false });
