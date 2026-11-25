@@ -14552,20 +14552,22 @@ const ISLE=(()=>{
       v.classList.remove("on"); setTimeout(()=>{ try{ done&&done(); }catch(e){ console.warn(e); } },900); };
     setTimeout(()=>{ try{ mid&&mid(); }catch(e){ console.warn("isl veil",e); } setTimeout(next,lines.length?400:600); },950); }
   function hudOn(on){ css(); if(!on){ if(hud){ hud.remove(); hud=null; } return; } if(!hud){ hud=document.createElement("div"); hud.id="islHud"; document.body.appendChild(hud); }
-    hud.innerHTML=(ISL.solo?`<div class="fog">霧很大，聽不到岸上的聲音。</div>`:"")+`<button type="button" id="islBack">🛶 睡一覺，回小鎮</button>`;
-    hud.querySelector("#islBack").onclick=()=>{ try{ ensureAudio(); }catch(e){} openSheet("islBack","🛶 回小鎮",`<p class="lead">在沙灘上躺下來，閉上眼睛……醒來就會在小鎮的碼頭。</p><p class="note">島上的東西會留在島上，下次來還在。</p><div class="row"><button class="primary" data-act="islLeave">睡一覺，回小鎮</button><button class="secondary" data-act="islStay">再待一下</button></div>`); }; }
+    /* (11/25 主委「我要他們真的在無人島上過到做完船才可以回來」: no way home until your own raft is built; after that the raft takes you back any time) */
+    const raft=!!st().raft;
+    hud.innerHTML=(ISL.solo?`<div class="fog">霧很大，聽不到岸上的聲音。</div>`:"")+(raft?`<button type="button" id="islBack">🛶 划木筏回小鎮</button>`:"");
+    const b=hud.querySelector("#islBack"); if(b) b.onclick=()=>{ try{ ensureAudio(); }catch(e){} openSheet("islBack","🛶 回小鎮",`<p class="lead">把木筏推下水，往霧裡划……霧散的時候，就是小鎮的碼頭。</p><p class="note">島上的東西會留在島上，下次來還在。</p><div class="row"><button class="primary" data-act="islLeave">划回小鎮</button><button class="secondary" data-act="islStay">再待一下</button></div>`); }; }
   /* the sea: brown noise through a slow swell, very quiet */
   function waves(on){ try{ if(!on){ if(wav){ const w=wav; wav=null; w.g.gain.setTargetAtTime(0,w.ac.currentTime,.6); setTimeout(()=>{ try{ w.src.stop(); }catch(e){} },2500); } return; } const A=ensureAudio(); if(!A||wav) return;
     const n=A.sampleRate*4, b=A.createBuffer(1,n,A.sampleRate), d=b.getChannelData(0); let last=0; for(let i=0;i<n;i++){ const w=Math.random()*2-1; last=(last+.02*w)/1.02; d[i]=last*3.2; }
     const src=A.createBufferSource(); src.buffer=b; src.loop=true; const f=A.createBiquadFilter(); f.type="lowpass"; f.frequency.value=650; const g=A.createGain(); g.gain.value=0; const sw=A.createGain(); sw.gain.value=.5;
     const lfo=A.createOscillator(); lfo.frequency.value=.11; const lg=A.createGain(); lg.gain.value=.35; lfo.connect(lg); lg.connect(sw.gain); src.connect(f); f.connect(sw); sw.connect(g); g.connect(A.destination); src.start(); lfo.start(); g.gain.setTargetAtTime(.16*(typeof mVol==="function"?Math.max(.3,mVol()):1),A.currentTime,1.5); wav={ac:A,src,g}; }catch(e){ console.warn("isl waves",e); } }
-  function setOn(on,solo){ ISL.on=on; ISL.solo=on&&!!solo; document.body.classList.toggle("isl-on",on); document.body.classList.toggle("isl-solo",ISL.solo); try{ TOWNX.isl.seaOn(on); }catch(e){ console.warn(e); } bgmHush=on; hudOn(on); waves(on); try{ markDirty(); }catch(e){} }
+  function setOn(on,solo){ ISL.on=on; ISL.solo=on&&!!solo; { const S=st(); S.on=on?1:0; S.solo=ISL.solo?1:0; } document.body.classList.toggle("isl-on",on); document.body.classList.toggle("isl-solo",ISL.solo); try{ TOWNX.isl.seaOn(on); }catch(e){ console.warn(e); } bgmHush=on; hudOn(on); waves(on); try{ markDirty(); }catch(e){} }
   function place(x,z,face){ try{ if(meAv.seat>=0) meAv.seat=-1; }catch(e){} meAv.pos.set(x,z); meAv.target.set(x,z); meAv.path=[]; meAv.gy=0; if(face!=null){ meAv.rotY=face; meAv.faceGoal=face; } try{ inputReset(); }catch(e){} }
   function enter(opt){ opt=opt||{}; const S=st(), first=opt.first!=null?opt.first:!S.n; const L=ISL.land;
     const lines=first?["海上起霧了……","雷聲很近。","……船翻了。"]:["划進霧裡……","霧散了。"];
     veil(lines,()=>{ setOn(true,first); place(L[0],L[1],Math.PI); try{ TOWNX.isl.prep(); }catch(e){ console.warn(e); } S.n=(S.n||0)+1; saveBag(); },()=>{
       if(first){ try{ meAv.say("這裡……沒有人。","#e8f4f2",4); }catch(e){} } else { try{ toast("🏝️ 回到夢見島了",2200); }catch(e){} } }); }
-  function leave(){ closeSheet(); veil(["……"],()=>{ setOn(false); try{ TOWNX.isl.drop(); }catch(e){} const d=(TOWNX.stOf&&TOWNX.stOf("tw:fish"))||[62,-136.5]; place(d[0],d[1]+1.2,0); },()=>{ try{ toast("⚓ 你在碼頭醒來了",2600); }catch(e){} }); }
+  function leave(force){ closeSheet(); if(!force&&!st().raft){ toast("還沒有船，回不去……",2400); return; } veil(["……"],()=>{ setOn(false); try{ TOWNX.isl.drop(); }catch(e){} const d=(TOWNX.stOf&&TOWNX.stOf("tw:fish"))||[62,-136.5]; place(d[0],d[1]+1.2,0); },()=>{ try{ toast("⚓ 你在碼頭醒來了",2600); }catch(e){} }); }
   HANDLERS.islLeave=()=>leave(); HANDLERS.islStay=()=>closeSheet();
   /* 碼頭的老王 (企劃: 第一次免費，之後每趟 300) */
   const FARE=300;
@@ -14574,8 +14576,12 @@ const ISLE=(()=>{
       :`<p class="lead">老王：「又要去那座霧裡的島？你說有就有啦……船費 ${FARE} 平安幣，我幫你把舢舨推下水。」</p><div class="row"><button class="primary" data-act="islGo">付 ${FARE} 幣出海</button><button class="secondary" data-act="islStay">改天再說</button></div>`); };
   HANDLERS.islGo=()=>{ const S=st(), first=!S.n; if(!first&&!me.sp){ if((bag.coins||0)<FARE){ toast(`平安幣不夠，船費要 ${FARE} 幣`,2600); return; } bag.coins-=FARE; saveBag(); } closeSheet(); enter({first}); };
   /* 主委工具 */
-  HANDLERS.tmIsl=v=>{ closeSheet(); if(v==="first") enter({first:true}); else if(v==="again") enter({first:false}); else if(v==="back"){ if(ISL.on) leave(); else toast("你現在不在島上",1800); } else if(v==="reset"){ bag.isl={n:0}; saveBag(); toast("↩️ 夢見島紀錄清空了（下次算第一次）",2200); } };
-  return {enter,leave,st};
+  HANDLERS.tmIsl=v=>{ closeSheet(); if(v==="first") enter({first:true}); else if(v==="again") enter({first:false}); else if(v==="back"){ if(ISL.on) leave(true); else toast("你現在不在島上",1800); } else if(v==="reset"){ bag.isl={n:0}; saveBag(); toast("↩️ 夢見島紀錄清空了（下次算第一次）",2200); } };
+  /* you closed the game on the island: you open it on the island again, where you were (bag.isl.at, kept every few seconds) */
+  function resume(){ const S=st(); if(!S.on) return; const at=Array.isArray(S.at)&&islIn(S.at[0],S.at[1])?S.at:ISL.land; setOn(true,!!S.solo); place(at[0],at[1],Math.PI); try{ TOWNX.isl.prep(); }catch(e){} }
+  let lastAt=0; setInterval(()=>{ try{ if(!ISL.on) return; const S=st(); S.at=[+meAv.pos.x.toFixed(1),+meAv.pos.y.toFixed(1)]; if(Date.now()-lastAt>20000){ lastAt=Date.now(); saveBag(); } }catch(e){} },4000);
+  setTimeout(()=>{ try{ resume(); }catch(e){ console.warn("isl resume",e); } },0);
+  return {enter,leave,st,resume};
 })();
 
 /*TOWN>>*/
