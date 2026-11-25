@@ -17354,7 +17354,7 @@ function ckTick(dt){ if(!CK) return; CK.pos+=CK.dir*dt*(.9+CK.hits.length*.35); 
 /* 動作按鈕 (11/16 UI 整理): 說話、釣魚、抓蟲、挖裂縫 used to sit at fixed heights and could land on top of each other; now they
    stack in one column above the joystick line, the nearest thing first, never overlapping (phone or computer) */
 let ACTS=null; function actStack(){ if(!ACTS){ ACTS=document.createElement("div"); ACTS.id="actStack"; document.body.appendChild(ACTS); const st=document.createElement("style"); st.textContent=`#actStack .near-chip{position:static!important;transform:none!important;pointer-events:auto} #actStack{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 100px);z-index:9;display:flex;flex-direction:column-reverse;align-items:center;gap:8px;pointer-events:none}#actStack>*{position:static!important;transform:none!important;left:auto!important;bottom:auto!important;pointer-events:auto;white-space:nowrap}#actStack>[hidden]{display:none!important}`; document.head.appendChild(st); }
-  for(const id of ["nearChip","lfChip","bugChip","digChip","lfTalk","bikeChip"]){ const c=document.getElementById(id); if(c&&c.parentNode!==ACTS) ACTS.appendChild(c); } } /* (11/16: the 「點我：…」 chip for shops and spots joins the column too — it sat under 「跟…說話」) */
+  for(const id of ["nearChip","lfChip","bugChip","digChip","lfTalk","bikeChip","stpChip"]){ const c=document.getElementById(id); if(c&&c.parentNode!==ACTS) ACTS.appendChild(c); } } /* (11/16: the 「點我：…」 chip for shops and spots joins the column too — it sat under 「跟…說話」) */
 /* ===== 小鎮指引 (11/24 主委 依團隊建議): after the 參拜指引, four things to try in town, 200 平安幣 each (800 in all), once per character.
    Any order; the pill (in town only) shows the first one not done; tapping it lists all four. ===== */
 const TG=[["dig","⛏️ 挖一次寶","到雜貨店找威利買鏟子，走到地上的裂縫按「挖」"],["fish","🎣 釣一條魚","到釣具行買釣竿和魚餌，在河邊、海邊拋竿"],["gift","🎁 送鎮民一樣禮物","跟鎮上的人說話，按「送禮」，挖到、釣到、種的都可以送"],["spring","⛲ 找到女神泉","森林深處有一座泉水，聽說住著一位女神"]];
@@ -17393,7 +17393,7 @@ const STP_HINT=["過了河往南走，森林的入口，樹蔭底下","爬到天
 const STB={g:null,near:-1,t:0}; window.MZ_STB=STB;
 /* where each stamp table stands (11/25 主委「重疊的移開」: 河濱公園 was inside the pavilion with its bench, 噴水池 under the big tree,
    女神泉 against a stone lantern, 天后新村 in a house corner — moved onto open ground nearby) */
-const STP_XY=MSPOT.map(q=>[q[0],q[1]]); STP_XY[3]=[12,-127.6]; STP_XY[4]=[64,-74]; STP_XY[5]=[83.1,-250.7]; STP_XY[10]=[-59,-82.1];
+const STP_XY=MSPOT.map(q=>[q[0],q[1]]); STP_XY[3]=[12,-127.6]; STP_XY[4]=[64,-74]; STP_XY[5]=[83.1,-250.7]; STP_XY[10]=[-59,-82.1]; STP_XY[1]=[72.8,-204.4]; /* (11/25 主委「放滑翔傘前面不會擋到滑翔傘嗎」: the summit table stood 1 m in front of the 起飛台 and its 「點我」 chip covered 「📮 蓋章」; moved to the open grass east of it) */
 function stpTableMesh(i){ const q=MSPOT[i], g=new T.Group(); const W=c=>new T.MeshStandardMaterial({color:c,roughness:.7});
   const top=new T.Mesh(new T.BoxGeometry(.9,.06,.56),W("#a8743f")); top.position.y=.78; g.add(top); const cloth=new T.Mesh(new T.BoxGeometry(.92,.012,.4),W("#c0392f")); cloth.position.y=.816; g.add(cloth);
   for(const [x,z] of [[-.4,-.24],[.4,-.24],[-.4,.24],[.4,.24]]){ const l=new T.Mesh(new T.BoxGeometry(.06,.78,.06),W("#7a4f28")); l.position.set(x,.39,z); g.add(l); }
