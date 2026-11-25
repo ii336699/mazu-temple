@@ -4741,7 +4741,7 @@ function initCF(first){
       if(m.t==="wx"){ WX.set=m.w||null; WX.setUntil=+m.until||0; return; } if(m.t==="evt"){ try{ window.MZ_EVTSET&&MZ_EVTSET(m.e); }catch(e){} return; }
       if(m.t==="hb"){ hbStart(m); return; }
       if(m.t==="gift"){ giftFetch(); return; }
-      if(m.t==="giftnow"&&m.g&&m.g.g){ const g=m.g; if(!GIFT_SEEN.has(g.g)){ GIFT_SEEN.add(g.g); save("mz.giftSeen",[...GIFT_SEEN].slice(-60)); giftApply({kind:g.kind==="item"?"item":g.kind==="acc"?"acc":"coins",k:String(g.k||""),n:Math.max(1,Math.min(100000,g.n|0)),from:String(g.from||"主委").slice(0,16)}); profSave(true); } return; } /* 只有在線上的人收得到的全服禮物 */
+      if(m.t==="giftnow"&&m.g&&m.g.g){ const g=m.g; if(!GIFT_SEEN.has(g.g)){ GIFT_SEEN.add(g.g); save("mz.giftSeen",[...GIFT_SEEN].slice(-60)); giftApply({kind:["item","acc","x","gacha"].includes(g.kind)?g.kind:"coins",k:String(g.k||""),n:Math.max(1,Math.min(100000,g.n|0)),from:String(g.from||"主委").slice(0,16)}); profSave(true); } return; } /* 只有在線上的人收得到的全服禮物 (11/25: 家具・釣具・扭蛋幣 were turned into 平安幣 here) */
       if(m.t==="sl50"&&Number.isFinite(m.seed)){ massLanterns(m.seed); return; }
       if(m.t==="fw"&&Number.isFinite(m.seed)){ fwStart(m.seed,+m.el||0,+m.sh||0,m.txt,m.cu||""); return; }
       if(m.t==="st"&&okId(m.id)&&m.p&&typeof m.p==="object"){ peerState.set(m.id,{p:m.p,t:Date.now()}); rebuild(); return; }
