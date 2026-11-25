@@ -4738,7 +4738,7 @@ function initCF(first){
       if(m.t==="puppet"){ ptSet(m); return; }
       if(m.t==="layout"){ if(!BUILD.on) buildFetch(); return; } if(m.t==="mapedit"){ try{ if(!TOWNX.MD.on) TOWNX.MD.fetch(); }catch(e){} return; }
       if(m.t==="market"){ mkSet(m.open||{}); return; }
-      if(m.t==="wx"){ WX.set=m.w||null; WX.setUntil=+m.until||0; return; }
+      if(m.t==="wx"){ WX.set=m.w||null; WX.setUntil=+m.until||0; return; } if(m.t==="evt"){ try{ window.MZ_EVTSET&&MZ_EVTSET(m.e); }catch(e){} return; }
       if(m.t==="hb"){ hbStart(m); return; }
       if(m.t==="gift"){ giftFetch(); return; }
       if(m.t==="giftnow"&&m.g&&m.g.g){ const g=m.g; if(!GIFT_SEEN.has(g.g)){ GIFT_SEEN.add(g.g); save("mz.giftSeen",[...GIFT_SEEN].slice(-60)); giftApply({kind:g.kind==="item"?"item":g.kind==="acc"?"acc":"coins",k:String(g.k||""),n:Math.max(1,Math.min(100000,g.n|0)),from:String(g.from||"主委").slice(0,16)}); profSave(true); } return; } /* 只有在線上的人收得到的全服禮物 */
@@ -14567,7 +14567,7 @@ const ISLE=(()=>{
     const lines=first?["海上起霧了……","雷聲很近。","……船翻了。"]:["划進霧裡……","霧散了。"];
     veil(lines,()=>{ setOn(true,first); place(L[0],L[1],Math.PI); try{ TOWNX.isl.prep(); }catch(e){ console.warn(e); } S.n=(S.n||0)+1; saveBag(); },()=>{
       if(first){ try{ meAv.say("這裡……沒有人。","#e8f4f2",4); }catch(e){} } else { try{ toast("🏝️ 回到夢見島了",2200); }catch(e){} } }); }
-  function leave(force){ closeSheet(); if(!force&&!st().raft){ toast("還沒有船，回不去……",2400); return; } veil(["……"],()=>{ setOn(false); try{ TOWNX.isl.drop(); }catch(e){} const d=(TOWNX.stOf&&TOWNX.stOf("tw:fish"))||[62,-136.5]; place(d[0],d[1]+1.2,0); },()=>{ try{ toast("⚓ 你在碼頭醒來了",2600); }catch(e){} }); }
+  function leave(force){ closeSheet(); if(!force&&!st().raft){ toast("還沒有船，回不去……",2400); return; } veil(["……"],()=>{ setOn(false); try{ TOWNX.isl.drop(); }catch(e){} place(28,-129.6,Math.PI); /* (wake on the plank pier by 老王) */ },()=>{ try{ toast("⚓ 你在碼頭醒來了",2600); }catch(e){} }); }
   HANDLERS.islLeave=()=>leave(); HANDLERS.islStay=()=>closeSheet();
   /* 碼頭的老王 (企劃: 第一次免費，之後每趟 300) */
   const FARE=300;
@@ -14766,7 +14766,7 @@ function baitFor(kind){ const k=kind==="o"?"s":"f", d=LF(), i=(k==="f"?d.bF:d.bS
    sooner; a rod widens the green zone, reels faster, holds big fish against their pull, lifts the rare ones and grows the catch.
    rodFx() turns a rod into those numbers (the shop and the picker show them), odds() the chances right here, right now. */
 const BAIT_X=6;
-function fishW(f,rod,bait){ return RW[f.r]*(f.r>=3&&rod?rod.luck:1)*(bait&&bait.t.includes(f.id)?BAIT_X:1)*(f.r>=3&&L.luck?1+L.luck()/50:1); } /* (鹹粥 luck: up to ×2 for the rare ones) */
+function fishW(f,rod,bait){ return (window.MZ_EVT&&MZ_EVT.fish>Date.now()&&f.r>=3?2:1)*RW[f.r]*(f.r>=3&&rod?rod.luck:1)*(bait&&bait.t.includes(f.id)?BAIT_X:1)*(f.r>=3&&L.luck?1+L.luck()/50:1); } /* (鹹粥 luck: up to ×2 for the rare ones) */
 function odds(kind,rod,bait){ const P=pool(kind); let tot=0; P.forEach(f=>tot+=fishW(f,rod,bait)); return P.map(f=>({f,p:fishW(f,rod,bait)/tot})).sort((a,b)=>b.p-a.p); }
 function rodFx(r){ return {zone:Math.round(r.ctl*2/.34*100), reel:Math.round((Math.pow(r.pow,1.8)-1)*100), rare:r.luck, size:Math.round(((1/(1.6/(1+(r.pow-1)*1.6)+1))/(1/2.6)-1)*100), react:r.win}; }
 function rodFxTxt(r){ const x=rodFx(r); return x.zone||x.reel?`綠色區 +${x.zone}%・收線快 ${x.reel}%・稀有魚 ×${x.rare}・釣到大隻 +${x.size}%・上鉤反應 +${x.react} 秒`:"基本款，沒有加成"; }
@@ -15701,7 +15701,7 @@ L.testPanel=()=>{ if(!me.sp) return; const b=(act,v,t,cls)=>`<button class="${cl
    ${sec("小遊戲（直接玩）",[["tw:bfast","🍔 疊漢堡"],["tw:ice","🍦 冰淇淋"],["tw:herb","🌿 中藥對對碰"],["tw:congee","🥣 深夜出餐"],["tw:drink","🧋 調飲料"],["tw:book","📚 推書櫃"],["tw:flower","💐 插花"]].map(([k,n])=>b("tmGame",k,n)).join("")+b("tmDish",1,"🫧 洗碗")+b("tmCook",1,"🍳 廚房切菜")+b("tmBq",1,"💐 花束打工")+b("tmIceDrink",1,"🧋 飲料（一定加冰）"))}
    ${sec("釣魚・溫室",b("tmRods",1,"🎣 全部釣竿")+b("tmBait",1,"🪱 釣餌各 10 份")+b("tmBait",0,"🪱 清空釣餌")+b("tmFish",1,"🐟 看下一隻魚模型")+b("tmDexAll",1,"📖 圖鑑全部點亮")+b("tmGarden",1,"🌱 花圃放滿作物"))}
    ${sec("任務",b("tmRst","god","↩️ 重置女神泉")+b("tmRst","ph","↩️ 重置照相館")+b("tmRst","gh","↩️ 重置溫室格數")+b("tmFin","god","⛲ 女神泉完成")+b("tmFin","ph","📷 照相館完成＋片尾")+b("tmCzEnd",8,"🥣 一粥七天直接結算")+b("tmStp","fill","📮 集章冊蓋到剩一格")+b("tmStp","rst","↩️ 重置集章冊"))}
-   ${sec("做夢＋日記・媽祖心事",b("tmDy","dream","💤 現在做夢＋看日記")+b("tmDy","diary","📖 只看今天的日記")+b("tmDy","mz","🙏 跟媽祖說說話（免參拜）"))}${sec("夢見島",b("tmIsl","first","🌫️ 第一次上島（翻船、孤立）")+b("tmIsl","again","🛶 再去一次（一般）")+b("tmIsl","back","⚓ 回小鎮碼頭")+b("tmIsl","reset","↩️ 清空上島紀錄"))}${sec("腳踏車",b("tmBike","on","🚲 給我腳踏車並騎上")+b("tmBike","hill","🏔️ 到山腳騎上天后山")+b("tmBike","quest","📦 試小潘的請託")+b("tmBike","off","↩️ 收回腳踏車"))}    ${sec("精力",b("tmEnLow",40,"⚡ 精力設成 40")+b("tmEnLow",0,"⚡ 精力設成 0")+b("tmEnLow",100,"⚡ 精力補滿"))}
+   ${sec("做夢＋日記・媽祖心事",b("tmDy","dream","💤 現在做夢＋看日記")+b("tmDy","diary","📖 只看今天的日記")+b("tmDy","mz","🙏 跟媽祖說說話（免參拜）"))}${sec("活動",b("evtOpen","","🎉 活動控制台（釣魚熱門、昆蟲、挖寶、放昆蟲／地洞）"))}${sec("夢見島",b("tmIsl","first","🌫️ 第一次上島（翻船、孤立）")+b("tmIsl","again","🛶 再去一次（一般）")+b("tmIsl","back","⚓ 回小鎮碼頭")+b("tmIsl","reset","↩️ 清空上島紀錄"))}${sec("腳踏車",b("tmBike","on","🚲 給我腳踏車並騎上")+b("tmBike","hill","🏔️ 到山腳騎上天后山")+b("tmBike","quest","📦 試小潘的請託")+b("tmBike","off","↩️ 收回腳踏車"))}    ${sec("精力",b("tmEnLow",40,"⚡ 精力設成 40")+b("tmEnLow",0,"⚡ 精力設成 0")+b("tmEnLow",100,"⚡ 精力補滿"))}
    ${sec("造型・美容院",b("tmLookOpen",1,"🪞 換造型")+b("tmSalon","h","💇 美容院：髮型")+b("tmSalon","e","👁 美容院：眼睛")+b("tmSalon","m","👄 美容院：嘴巴")+b("tmFaceFit","f_eyes","📐 造型定位"))}
    ${sec("活動・特效",b("tmRain",1,"🧧 撒紅包")+b("tmMet",1,"🌠 流星")+b("lfChuteGo",1,"🪂 跳傘"))}
    ${sec("編輯工具",b("mapEdT",1,"🗺️ 地圖編輯","primary")+b("wTune",1,"💧 水面調整")+b("posOpen",1,"📍 座標定位"))}
@@ -16887,8 +16887,8 @@ function surfPose(o){ const S=o.surf; let n,t; if(S.type==="trunk"){ n=[Math.cos
   else { n=S.n; t=S.t; o.m.position.set(S.ox+t[0]*o.u,o.y,S.oz+t[2]*o.u); }
   _bn.set(n[0],0,n[2]); _br2.set(t[0],0,t[2]); _bu.set(0,1,0); _bm.makeBasis(_br2,_bu,_bn); _bq.setFromRotationMatrix(_bm); _bqr.setFromAxisAngle(_bz,o.th+(o.mv?Math.sin(o.ph*22)*.08:0)); o.m.quaternion.copy(_bq).multiply(_bqr); return {n,t}; }
 L.bugTest={LF:()=>LF(),giAdd:(k,n)=>giAdd(k,n),spawn:f=>bugSpawn(f),list:()=>BG2.list.map(o=>[o.b[0],o.kind,o.surf&&o.surf.type,+o.s.toFixed(2),+o.m.position.x.toFixed(2),+o.m.position.z.toFixed(2),+o.m.position.y.toFixed(2),o.surf&&o.surf.x,o.surf&&o.surf.z])}; /* (for the tests) */
-function bugSpawn(force){ const p=meAv.pos, night=L.slot()===0, areas=[]; for(const k in BUG_AREA) for(const r of BUG_AREA[k]){ const cx=Math.max(r[0],Math.min(r[1],p.x)), cz=Math.max(r[2],Math.min(r[3],p.y)); if(Math.hypot(cx-p.x,cz-p.y)<30) areas.push([k,r]); } if(!areas.length) return;
-  const [k,r]=areas[(Math.random()*areas.length)|0]; let x,z,ok=false; for(let t=0;t<20&&!ok;t++){ const a=Math.random()*6.283, d=6+Math.random()*16; x=Math.max(r[0],Math.min(r[1],p.x+Math.sin(a)*d)); z=Math.max(r[2],Math.min(r[3],p.y+Math.cos(a)*d)); ok=TOWNX.walk(x,z)&&Math.hypot(x-p.x,z-p.y)>4; } if(!ok) return;
+function bugSpawn(force,any,at){ const me0=meAv.pos, p=at?{x:at[0],y:at[1]}:me0, night=L.slot()===0, areas=[]; if(at) areas.push(["ev",[p.x-3.5,p.x+3.5,p.y-3.5,p.y+3.5]]); else for(const k in BUG_AREA) for(const r of BUG_AREA[k]){ const cx=Math.max(r[0],Math.min(r[1],p.x)), cz=Math.max(r[2],Math.min(r[3],p.y)); if(Math.hypot(cx-p.x,cz-p.y)<30) areas.push([k,r]); } if(!areas.length&&any) areas.push(["ev",[p.x-24,p.x+24,p.y-24,p.y+24]]); /* (11/25 活動: the chair's bugs come anywhere in town, or round the spot the chair put them) */ if(!areas.length) return;
+  const [k,r]=areas[(Math.random()*areas.length)|0]; let x,z,ok=false; for(let t=0;t<20&&!ok;t++){ const a=Math.random()*6.283, d=at?.4+Math.random()*3:6+Math.random()*16; x=Math.max(r[0],Math.min(r[1],p.x+Math.sin(a)*d)); z=Math.max(r[2],Math.min(r[3],p.y+Math.cos(a)*d)); ok=TOWNX.walk(x,z)&&(at?true:Math.hypot(x-p.x,z-p.y)>4); } if(!ok) return;
   const pool=BUGS.filter(b=>b[5].split(" ").includes(k)&&(!b[6]||(b[6]==="n")===night)&&(b[0]!=="starbug"||L.starNight)); if(!pool.length&&!force) return; if(!pool.length) pool.push(BUGS[0]); const bw=c=>BUG_RW[c[4]]*(c[2]==="🦋"?.35:c[4]===1?1.5:1); /* (11/22 晚 主委「蝴蝶數量少一點 常見昆蟲多一點」) */ let tot=0; pool.forEach(c=>tot+=bw(c)); let q=Math.random()*tot, b=pool[0]; for(const c of pool){ q-=bw(c); if(q<=0){ b=c; break; } } if(force&&BUG_BY[force]) b=BUG_BY[force];
   let kind=BUGK[b[0]]||"flat", surf=null; if(kind==="wall"||kind==="perch"){ surf=bugSurface(x,z); if(!surf&&(b[0]==="stick"||kind==="perch")){ surf=bugSurface(p.x,p.y,30); if(surf){ x=surf.type==="trunk"?surf.x:surf.ox; z=surf.type==="trunk"?surf.z:surf.oz; } else return; } /* (11/21 主委「竹節蟲是爬樹上或是牆壁」: it is never on the ground — a tree or wall near you, or none this time) */ if(!surf) kind=kind==="wall"?"flat":"walk"; }
   const s=(BUG_SZ[b[0]]||BUG_SZ[kind])*(kind==="fly"||kind==="hover"?2:2.4), m=bugMesh(b,kind,s); /* (11/22 晚 主委「昆蟲太小了 放大一倍 怎麼都只看到蝴蝶」: twice the size — the ones on the ground, a wall or a trunk a little more, they were the ones nobody saw) */ const gy=bugGround(x,z);
@@ -16972,7 +16972,7 @@ L.tick7=dt=>{ try{ bugTick(dt); }catch(e){ console.warn("bugs",e); }  };
 let bugPre=false; function bugTick(dt){ const inTown=TOWNX&&TOWNX.on&&!ISL.on, p=meAv.pos; const c=bugChip(); if(inTown&&!bugPre){ bugPre=true; BUGS.forEach(b=>bugTexOf(b[0])); }
   for(let i=BUGP.length-1;i>=0;i--){ const q=BUGP[i]; q.t+=dt; q.m.position.x+=q.vx*dt; q.m.position.y+=q.vy*dt; q.m.position.z+=q.vz*dt; q.vy-=3*dt; q.m.material.opacity=Math.max(0,1-q.t/q.l); if(q.t>q.l){ scene.remove(q.m); q.m.material.dispose(); BUGP.splice(i,1); } }
   if(!inTown){ while(BG2.list.length) bugRemove(BG2.list[0]); c.hidden=true; return; }
-  BG2.t-=dt; if(BG2.t<=0){ BG2.t=2; if(BG2.list.length<(Q.phone?7:9)) bugSpawn(); } /* (11/22 晚 主委「昆蟲到底都在哪 很少看見」: a few more at a time) */
+  const evB=EVT.bug.until>Date.now(); BG2.t-=dt; if(BG2.t<=0){ BG2.t=evB?1:2; if(BG2.list.length<(Q.phone?7:9)+(evB?6:0)) bugSpawn(evB?evPick():undefined,evB); } try{ evBugDrops(); }catch(e){ console.warn("evt bugs",e); } /* (11/22 晚 主委「昆蟲到底都在哪 很少看見」: a few more at a time) */
   const S=BG2.swing; if(S){ S.t+=dt; const k=Math.min(1,S.t/.42); S.net.rotation.x=-2.2+k*3.3; meAv.root.position.y=Math.sin(Math.min(1,S.t/.5)*Math.PI)*.18; if(k>=.6&&!S.done){ S.done=1; if(BG2.list.includes(S.o)) bugTry(S.o); } if(S.t>.85){ S.net.parent&&S.net.parent.remove(S.net); S.net.traverse(q=>{ if(q.isMesh){ q.geometry.dispose(); q.material.dispose(); } }); BG2.swing=null; meAv.root.position.y=0; } }
   let best=null, bd=2.4; for(let i=BG2.list.length-1;i>=0;i--){ const o=BG2.list[i]; o.age+=dt; o.ph+=dt; const P=o.m.position;
     if(o.catching){ const hp=meAv.root.position; P.lerp(new T.Vector3(hp.x,1.4,hp.z),Math.min(1,dt*8)); o.sp.scale.multiplyScalar(Math.max(.5,1-dt*4)); if(Math.abs(o.sp.scale.y)<.08){ bugRemove(o); } continue; }
@@ -17151,10 +17151,10 @@ const SHOVEL=()=>{ const d=LF(); d.sh=d.sh||{u:0}; return d.sh; };
 const DG={list:[],t:20,act:null,chip:null}; let digNear=null;
 function crackTex(){ return new T.CanvasTexture(cvs0(128,128,(x)=>{ x.strokeStyle="rgba(40,26,14,.85)"; x.lineCap="round"; const br=(x0,y0,a,l,w,dep)=>{ if(dep>4||l<6) return; const x1=x0+Math.cos(a)*l, y1=y0+Math.sin(a)*l; x.lineWidth=w; x.beginPath(); x.moveTo(x0,y0); x.lineTo(x1,y1); x.stroke(); br(x1,y1,a+(Math.random()-.5)*.9,l*.7,w*.7,dep+1); if(Math.random()<.6) br(x1,y1,a+(Math.random()<.5?1:-1)*(.6+Math.random()*.5),l*.55,w*.6,dep+1); };
   for(let k=0;k<5;k++) br(64,64,k/5*6.283+Math.random()*.5,22+Math.random()*10,5,0); const g=x.createRadialGradient(64,64,2,64,64,20); g.addColorStop(0,"rgba(255,230,140,.9)"); g.addColorStop(1,"rgba(255,230,140,0)"); x.fillStyle=g; x.fillRect(0,0,128,128); })); }
-function digSpawn(){ const p=meAv.pos; for(let t=0;t<25;t++){ const a=Math.random()*6.283, d=8+Math.random()*25, x=p.x+Math.sin(a)*d, z=p.y+Math.cos(a)*d; if(z>-52||!TOWNX.walk(x,z)) continue; if(DG.list.some(o=>Math.hypot(o.x-x,o.z-z)<6)) continue;
+function digSpawn(at,ev){ const p=meAv.pos; for(let t=0;t<25;t++){ const a=Math.random()*6.283, d=8+Math.random()*25, x=at?at[0]:p.x+Math.sin(a)*d, z=at?at[1]:p.y+Math.cos(a)*d; if(!at&&(z>-52||!TOWNX.walk(x,z))) continue; if(!at&&DG.list.some(o=>Math.hypot(o.x-x,o.z-z)<6)) continue;
     const gy=bugGround(x,z); const m=new T.Mesh(new T.PlaneGeometry(1.3,1.3),new T.MeshBasicMaterial({map:crackTex(),transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4})); m.rotation.x=-Math.PI/2; m.rotation.z=Math.random()*6; m.position.set(x,gy+.04,z); m.userData.noMerge=1; scene.add(m);
-    const gl=new T.Sprite(new T.SpriteMaterial({map:FXTX(),color:new T.Color("#ffe27a"),transparent:true,depthWrite:false,blending:T.AdditiveBlending})); gl.position.set(x,gy+.35,z); gl.scale.set(.5,.5,1); scene.add(gl);
-    DG.list.push({x,z,gy,m,gl,ph:Math.random()*6,age:0}); return; } }
+    const gl=new T.Sprite(new T.SpriteMaterial({map:FXTX(),color:new T.Color("#ffe27a"),transparent:true,depthWrite:false,blending:T.AdditiveBlending})); gl.position.set(x,gy+.35,z); gl.scale.set(.5,.5,1); scene.add(gl); if(ev){ m.scale.set(1.5,1.5,1.5); gl.material.color.set("#ff9fd0"); }
+    DG.list.push({x,z,gy,m,gl,ph:Math.random()*6,age:0,ev:ev||null}); return; } }
 function digRemove(o){ scene.remove(o.m); scene.remove(o.gl); o.m.geometry.dispose(); o.m.material.map.dispose(); o.m.material.dispose(); o.gl.material.dispose(); DG.list.splice(DG.list.indexOf(o),1); }
 function digChip(){ if(DG.chip) return DG.chip; const c=document.createElement("button"); c.id="digChip"; c.style.cssText=`position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 128px);z-index:9;border:0;border-radius:999px;padding:11px 20px;font:900 16px ${UI_FONT};color:#fff;background:linear-gradient(#ffb347,#d4650f);outline:2px solid #ffe2b8;box-shadow:0 4px 14px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.4)`; c.hidden=true; c.textContent="⛏️ 挖"; c.onclick=()=>digStart(); document.body.appendChild(c); return DG.chip=c; }
 function shovelMesh(){ /* (11/22 晚 主委「鏟子很怪」: a plain garden spade — wooden shaft, a cross-grip on top, a metal collar and a flat pointed blade) */
@@ -17165,10 +17165,10 @@ function shovelMesh(){ /* (11/22 晚 主委「鏟子很怪」: a plain garden sp
   const sh=new T.Shape(); sh.moveTo(-.1,0); sh.lineTo(.1,0); sh.lineTo(.1,-.17); sh.quadraticCurveTo(.09,-.25,0,-.3); sh.quadraticCurveTo(-.09,-.25,-.1,-.17); sh.lineTo(-.1,0);
   const bl=new T.Mesh(new T.ExtrudeGeometry(sh,{depth:.008,bevelEnabled:false}),steel); bl.position.set(0,-.02,-.004); g.add(bl);
   /* (11/22 晚 主委「鏟子上下拿反了」: the hand holds it near the grip and the blade goes to the far end — the whole spade turned end over end) */ const o=new T.Group(); g.rotation.x=Math.PI; g.position.y=.72; o.add(g); return o; }
-function digStart(){ const o=digNear; if(!o||DG.act) return; if(!enHas(3)) return; /* (11/24 QA: 精力 before the shovel) */ const S=SHOVEL(); if(S.u<=0){ toast("要先有鏟子：小鎮主街的雜貨店（威利）有賣",2600); return; } const dd=LF(); if(dd.dgD!==today()){ dd.dgD=today(); dd.dgN=0; } if((dd.dgN|0)>=DIG_DAY&&!me.sp){ toast(`今天挖了 ${DIG_DAY} 次，手好痠……明天再挖吧`,2600); return; } if(!enPay(3)) return;
+function digStart(){ const o=digNear; if(!o||DG.act) return; if(!enHas(3)) return; /* (11/24 QA: 精力 before the shovel) */ const S=SHOVEL(); if(S.u<=0){ toast("要先有鏟子：小鎮主街的雜貨店（威利）有賣",2600); return; } const dd=LF(); if(dd.dgD!==today()){ dd.dgD=today(); dd.dgN=0; } if(!o.ev&&(dd.dgN|0)>=DIG_DAY&&!me.sp){ toast(`今天挖了 ${DIG_DAY} 次，手好痠……明天再挖吧`,2600); return; } if(!enPay(3)) return;
   meAv.path=[]; meAv.target.copy(meAv.pos); meAv.faceGoal=Math.atan2(o.x-meAv.pos.x,o.z-meAv.pos.y); const sv=shovelMesh(); const hand=meAv.hands&&meAv.hands[0]; (hand||meAv.root).add(sv); sv.position.set(0,-.1,.05); sv.rotation.set(2.6,0,0);
   DG.act={o,sv,t:0,hits:0}; }
-function digReward(o){ const S=SHOVEL(); S.u--; { const dd=LF(); dd.dgN=(dd.dgN|0)+1; } let tot=0; DIGS.forEach(q=>tot+=q[5]); let r=Math.random()*tot, q=DIGS[0]; for(const c of DIGS){ r-=c[5]; if(r<=0){ q=c; break; } }
+function digReward(o){ const S=SHOVEL(); if(o.ev){ const dd=LF(); (dd.evd||(dd.evd={}))[o.ev]=Date.now(); } else { S.u--; const dd=LF(); dd.dgN=(dd.dgN|0)+1; } /* (11/25 活動地洞: the chair's hole costs no shovel use and no daily dig, one per player, and gives something good) */ const DP=o.ev?DIGS.filter(c=>["fossil","gem","treasure"].includes(c[3])||c[0]==="$furn"||c[0]==="$hat"||c[0]==="$coins"):DIGS; let tot=0; DP.forEach(q=>tot+=q[5]); let r=Math.random()*tot, q=DP[0]; for(const c of DP){ r-=c[5]; if(r<=0){ q=c; break; } }
   let ic=q[2], name=q[1], line=q[7], extra="";
   if(q[0]==="$coins"){ const c=50+((Math.random()*6)|0)*50; bag.coins+=c; name=`${c} 平安幣`; line="一小袋錢，誰掉的呢？"; }
   else if(q[0]==="$gacha"){ bag.gacha=Math.min(255,(bag.gacha||0)+1); name="扭蛋幣 1 枚"; line="拿去廟埕的招財貓扭蛋機轉頭飾吧。"; }
@@ -17189,13 +17189,71 @@ function digCard(ic,name,line,q,good,S){ const c=document.createElement("div"); 
 L.tick8=dt=>{ try{ digTick(dt); }catch(e){ console.warn("dig",e); }  };
 function digTick(dt){ const inTown=TOWNX&&TOWNX.on&&!ISL.on, p=meAv.pos, c=digChip();
   if(!inTown){ while(DG.list.length) digRemove(DG.list[0]); c.hidden=true; return; }
-  DG.t-=dt; if(DG.t<=0){ DG.t=90+Math.random()*60; if(DG.list.length<3) digSpawn(); }
+  const evD=EVT.dig>Date.now(); DG.t-=dt; if(DG.t<=0){ DG.t=evD?10+Math.random()*10:90+Math.random()*60; if(DG.list.filter(o=>!o.ev).length<(evD?7:3)) digSpawn(); } try{ evDigDrops(); }catch(e){ console.warn("evt dig",e); }
   const A=DG.act; if(A){ A.t+=dt; const ph=(A.t%.55)/.55, n=Math.floor(A.t/.55); A.sv.rotation.x=2.6-Math.sin(ph*Math.PI)*1.3; meAv.root.position.y=Math.abs(Math.sin(ph*Math.PI))*.12; meAv.root.scale.set(1+Math.sin(ph*Math.PI)*.06,1-Math.sin(ph*Math.PI)*.06,1+Math.sin(ph*Math.PI)*.06);
     if(n>A.hits&&n<=3){ A.hits=n; bugPuff(new T.Vector3(A.o.x,A.o.gy+.15,A.o.z),"#b08a5a",12,1.6); try{ tone(180,.08,.07,"square"); tone(120,.1,.05,"triangle",.03); navigator.vibrate&&navigator.vibrate(25); }catch(e){} }
     if(A.t>=1.65){ A.sv.parent&&A.sv.parent.remove(A.sv); A.sv.traverse(q=>{ if(q.isMesh){ q.geometry.dispose(); q.material.dispose(); } }); meAv.root.position.y=0; meAv.root.scale.set(1,1,1); DG.act=null; const o=A.o; digReward(o); digRemove(o); } }
   if(DG.pop){ const P=DG.pop; P.t+=dt; const k=Math.min(1,P.t/.8), s=.1+Math.sin(Math.min(1,P.t/.35)*Math.PI/2)*.6; P.s.scale.set(s,s,1); P.s.position.y=P.o.gy+.2+Math.sin(k*Math.PI)*1.6; P.s.material.rotation=k*Math.PI*4; if(P.t>1.1){ scene.remove(P.s); P.s.material.map.dispose(); P.s.material.dispose(); DG.pop=null; } }
   let best=null, bd=1.8; for(const o of DG.list){ o.ph+=dt; o.age+=dt; o.gl.material.opacity=.45+.4*Math.sin(o.ph*3); const s=.4+.12*Math.sin(o.ph*3); o.gl.scale.set(s,s,1); const d=Math.hypot(p.x-o.x,p.y-o.z); if(d<bd){ bd=d; best=o; } }
-  digNear=best; c.hidden=!(best&&!busy()&&!F&&!DG.act); if(!c.hidden) c.textContent=SHOVEL().u>0?"⛏️ 挖開裂縫":"⛏️ 挖（沒有鏟子）"; }
+  digNear=best; c.hidden=!(best&&!busy()&&!F&&!DG.act); if(!c.hidden) c.textContent=SHOVEL().u>0?(best.ev?"⛏️ 挖開活動地洞":"⛏️ 挖開裂縫"):"⛏️ 挖（沒有鏟子）"; }
+/* ===== 🎉 活動 (11/25 主委「我能製作昆蟲 釣魚熱門時間(稀有度提高一倍) 製作挖掘地洞(遊戲中鏟子挖寶)的功能 我要做活動用」).
+   The chair starts, from 主委工具 →「🎉 活動」: 釣魚熱門時間 (稀有、傳說的魚機率 ×2), 昆蟲大量出現 (chosen kinds, anywhere in town, twice as often),
+   挖寶熱門時間 (cracks every 10–20 s), and drops at the chair's own feet: a few bugs of one kind, or an 活動地洞 (pink glow; every player can dig
+   it once, it costs no shovel use nor a daily dig, and gives something good). Kept by the server (/evt) and pushed to every hall; on the test
+   page (no server) it only happens on this phone. */
+const EVT={fish:0,bug:{until:0,ids:[]},dig:0,drops:[]}; window.MZ_EVT=EVT;
+const evOn=k=>k==="bug"?EVT.bug.until>Date.now():EVT[k]>Date.now();
+const evHM=t=>{ const d=new Date(t); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); };
+function evPick(){ const ids=EVT.bug.ids.filter(k=>BUG_BY[k]); const L2=ids.length?ids:BUGS.filter(b=>b[0]!=="starbug").map(b=>b[0]); return L2[(Math.random()*L2.length)|0]; }
+function evtSet(e,quiet){ if(!e) return; const was={fish:evOn("fish"),bug:evOn("bug"),dig:evOn("dig")}, oldIds=new Set(EVT.drops.map(d=>d.id));
+  EVT.fish=+e.fish||0; EVT.bug=e.bug&&+e.bug.until?{until:+e.bug.until,ids:Array.isArray(e.bug.ids)?e.bug.ids:[]}:{until:0,ids:[]}; EVT.dig=+e.dig||0; EVT.drops=Array.isArray(e.drops)?e.drops.filter(d=>+d.until>Date.now()):[];
+  if(!quiet){ const say=[]; if(evOn("fish")&&!was.fish) say.push(`🎣 釣魚熱門時間開始！到 ${evHM(EVT.fish)} 稀有的魚機率加倍`); if(evOn("bug")&&!was.bug) say.push(`🦋 昆蟲大量出現！到 ${evHM(EVT.bug.until)} 小鎮到處都是${EVT.bug.ids.length&&EVT.bug.ids.length<=3?EVT.bug.ids.map(k=>BUG_BY[k]?BUG_BY[k][1]:"").filter(Boolean).join("、"):"昆蟲"}`); if(evOn("dig")&&!was.dig) say.push(`⛏️ 挖寶熱門時間開始！到 ${evHM(EVT.dig)} 地上的裂縫冒得特別多`);
+    for(const d of EVT.drops) if(!oldIds.has(d.id)) say.push(d.k==="dig"?"⛏️ 小鎮某處出現了一個發粉紅光的活動地洞！":`🦋 小鎮某處出現了一群${BUG_BY[d.b]?BUG_BY[d.b][1]:"昆蟲"}！`);
+    say.slice(0,3).forEach((t,i)=>setTimeout(()=>{ try{ toast(t,4200); }catch(e){} },i*4400)); if(say.length){ try{ [784,988,1175].forEach((f,k)=>tone(f,.12,.05,"triangle",k*.09)); }catch(e){} } }
+  evBadge(); }
+window.MZ_EVTSET=evtSet;
+async function evtPoll(){ if(typeof USE_CF==="undefined"||!USE_CF) return; try{ const r=await fetch("/evt"); if(r.ok) evtSet(await r.json(),true); }catch(e){} }
+setTimeout(evtPoll,5000); setInterval(evtPoll,90000);
+/* a small line under the top bar while something is on */
+function evBadge(){ let el=document.getElementById("evBadge"); const on=[]; if(evOn("fish")) on.push(`🎣釣魚～${evHM(EVT.fish)}`); if(evOn("bug")) on.push(`🦋昆蟲～${evHM(EVT.bug.until)}`); if(evOn("dig")) on.push(`⛏️挖寶～${evHM(EVT.dig)}`);
+  if(!on.length){ if(el) el.hidden=true; return; } if(!el){ el=document.createElement("div"); el.id="evBadge"; el.style.cssText="position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 92px);z-index:8;font:700 12px "+UI_FONT+";color:#fff3c4;background:rgba(120,40,20,.72);border:1px solid rgba(255,215,120,.6);padding:3px 10px;border-radius:12px;pointer-events:none;max-width:52vw;text-align:center;line-height:1.45"; document.body.appendChild(el); }
+  el.hidden=!!(ISL&&ISL.on); el.textContent="🎉 活動中 "+on.join(" "); }
+setInterval(()=>{ try{ evBadge(); }catch(e){} },30000);
+/* the drops: bugs once per drop on this phone; the hole until you dig it (once per player) */
+const EVSEEN=new Set();
+function evBugDrops(){ const p=meAv.pos, now=Date.now(); for(const d of EVT.drops){ if(d.k!=="bug"||+d.until<now||EVSEEN.has(d.id)) continue; if(Math.hypot(p.x-d.x,p.y-d.z)>38) continue; EVSEEN.add(d.id); for(let i=0;i<Math.min(20,d.n|0||1);i++) bugSpawn(BUG_BY[d.b]?d.b:evPick(),true,[d.x,d.z]); } }
+function evDigDrops(){ const p=meAv.pos, now=Date.now(), got=(LF().evd||{}); for(const o of DG.list.slice()) if(o.ev&&!EVT.drops.some(d=>d.id===o.ev&&+d.until>now)) digRemove(o);
+  for(const d of EVT.drops){ if(d.k!=="dig"||+d.until<now||got[d.id]) continue; if(DG.list.some(o=>o.ev===d.id)) continue; if(Math.hypot(p.x-d.x,p.y-d.z)>45) continue; digSpawn([d.x,d.z],d.id); } }
+/* 主委：活動控制台 */
+let EVSEL=new Set(), EVN=5, EVMIN=30;
+function evApply(b){ const now=Date.now(), until=now+(b.min||30)*60000, e={fish:EVT.fish,bug:{...EVT.bug},dig:EVT.dig,drops:EVT.drops.slice()};
+  if(b.op==="fish") e.fish=b.off?0:until; else if(b.op==="bug") e.bug=b.off?{until:0,ids:[]}:{until,ids:b.ids||[]}; else if(b.op==="dig") e.dig=b.off?0:until;
+  else if(b.op==="drop") e.drops.push({id:now.toString(36)+Math.random().toString(36).slice(2,6),k:b.k,b:b.b||"",n:b.n||1,x:b.x,z:b.z,until});
+  else if(b.op==="clear") e.drops=b.k?e.drops.filter(d=>d.k!==b.k):[]; else if(b.op==="stop"){ e.fish=0; e.bug={until:0,ids:[]}; e.dig=0; e.drops=[]; } return e; }
+async function evtSend(b){ if(typeof USE_CF==="undefined"||!USE_CF){ evtSet(evApply(b)); evtOpen(); return; } const key=ck(); if(!key){ toast("請先在主委工具輸入密碼",2400); return; }
+  try{ const r=await fetch("/evt",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify(b)}); const j=await r.json().catch(()=>({})); try{ forgetKey(r,j); }catch(e){} if(j.ok){ evtSet(j.e); evtOpen(); } else toast(j.locked?"嘗試次數過多，今天先鎖住了":"沒有成功，請確認密碼",2600); }catch(e){ toast("連不上伺服器，請稍後再試",2400); } }
+function evtOpen(){ const now=Date.now(), left=t=>t>now?`進行中，到 ${evHM(t)}`:"沒有進行", mins=[15,30,60,120];
+  const minRow=`<div class="chips">${mins.map(m=>`<button class="chip" data-act="evMin" data-v="${m}" aria-pressed="${EVMIN===m}">${m} 分鐘</button>`).join("")}</div>`;
+  const bugChips=BUGS.filter(b=>b[0]!=="starbug").map(b=>`<button class="chip" data-act="evSel" data-v="${b[0]}" aria-pressed="${EVSEL.has(b[0])}" style="font-size:12px">${b[2]} ${b[1]}</button>`).join("");
+  const drops=EVT.drops.filter(d=>+d.until>now), bd=drops.filter(d=>d.k==="bug").length, dd=drops.filter(d=>d.k==="dig").length;
+  openSheet("evt","🎉 活動",`<p class="note">開始後所有玩家都會收到通知，畫面上方也會顯示活動和結束時間。時間：</p>${minRow}
+   <div class="ct-group"><span class="group-label">🎣 釣魚熱門時間（稀有、傳說的魚機率 ×2）</span><p class="note">${left(EVT.fish)}</p><div class="row"><button class="primary" data-act="evGo" data-v="fish">開始</button><button class="secondary" data-act="evGo" data-v="fish-off">結束</button></div></div>
+   <div class="ct-group"><span class="group-label">🦋 昆蟲大量出現（小鎮哪裡都會出現、出現得快兩倍）</span><p class="note">${left(EVT.bug.until)}${EVT.bug.until>now&&EVT.bug.ids.length?"：「"+EVT.bug.ids.map(k=>BUG_BY[k]?BUG_BY[k][1]:k).join("、")+"」":""}</p><p class="note">選要出現的昆蟲（不選＝全部隨機）：</p><div class="chips" style="max-height:150px;overflow:auto">${bugChips}</div><div class="row"><button class="primary" data-act="evGo" data-v="bug">開始</button><button class="secondary" data-act="evGo" data-v="bug-off">結束</button><button class="secondary" data-act="evSel" data-v="">清空選擇</button></div></div>
+   <div class="ct-group"><span class="group-label">🦋 在我身邊放昆蟲</span><p class="note">放上面選的第一種（沒選就隨機），每位玩家走過來都看得到。數量：</p><div class="chips">${[1,3,5,10].map(n=>`<button class="chip" data-act="evN" data-v="${n}" aria-pressed="${EVN===n}">${n} 隻</button>`).join("")}</div><div class="row"><button class="primary" data-act="evGo" data-v="dropbug">放在這裡</button></div></div>
+   <div class="ct-group"><span class="group-label">⛏️ 挖寶熱門時間（裂縫每 10–20 秒冒一條）</span><p class="note">${left(EVT.dig)}</p><div class="row"><button class="primary" data-act="evGo" data-v="dig">開始</button><button class="secondary" data-act="evGo" data-v="dig-off">結束</button></div></div>
+   <div class="ct-group"><span class="group-label">⛏️ 在我腳下放活動地洞</span><p class="note">發粉紅光。每位玩家能挖一次，不扣鏟子次數、不算每天次數，一定挖到好東西（化石、寶石、寶物、家具、頭飾或平安幣）。</p><div class="row"><button class="primary" data-act="evGo" data-v="dropdig">放在這裡</button></div></div>
+   <div class="ct-group"><span class="group-label">現在放著的</span><p class="note">昆蟲 ${bd} 處、地洞 ${dd} 處</p><div class="row"><button class="secondary" data-act="evGo" data-v="clear">收回全部放置</button><button class="secondary" data-act="evGo" data-v="stop">結束全部活動</button></div></div>`); }
+HANDLERS.evtOpen=()=>evtOpen();
+HANDLERS.evMin=v=>{ EVMIN=+v||30; evtOpen(); };
+HANDLERS.evN=v=>{ EVN=+v||5; evtOpen(); };
+HANDLERS.evSel=v=>{ if(!v) EVSEL.clear(); else if(EVSEL.has(v)) EVSEL.delete(v); else EVSEL.add(v); evtOpen(); };
+HANDLERS.evGo=v=>{ const p=meAv.pos, min=EVMIN;
+  if(v==="fish") evtSend({op:"fish",min}); else if(v==="fish-off") evtSend({op:"fish",off:1});
+  else if(v==="bug") evtSend({op:"bug",min,ids:[...EVSEL]}); else if(v==="bug-off") evtSend({op:"bug",off:1});
+  else if(v==="dig") evtSend({op:"dig",min}); else if(v==="dig-off") evtSend({op:"dig",off:1});
+  else if(v==="dropbug"){ if(!(TOWNX&&TOWNX.on)){ toast("要在小鎮裡才能放",2200); return; } const b=[...EVSEL][0]||""; evtSend({op:"drop",k:"bug",b,n:EVN,x:+p.x.toFixed(1),z:+p.y.toFixed(1),min:Math.max(min,30)}); }
+  else if(v==="dropdig"){ if(!(TOWNX&&TOWNX.on)){ toast("要在小鎮裡才能放",2200); return; } evtSend({op:"drop",k:"dig",x:+p.x.toFixed(1),z:+p.y.toFixed(1),min:Math.max(min,30)}); }
+  else if(v==="clear") evtSend({op:"clear"}); else if(v==="stop") evtSend({op:"stop"}); };
 function shovelShop(){ const S=SHOVEL(); return `<h4 style="margin:10px 0 4px">鏟子</h4><div class="lf-row"><img src="${MZIMG("cook/shovel.webp")}" alt="" style="width:56px;height:56px;object-fit:contain"><div class="t"><b>鏟子</b>　${dPrice("tw:grocer",400)} 幣<br><small>地上發光的裂縫可以挖，能挖 30 次。${S.u>0?`（你的還能用 ${S.u} 次）`:""}</small></div><button class="primary" data-act="digBuy">買</button></div>`; }
 HANDLERS.digBuy=()=>{ const S=SHOVEL(), pr=dPrice("tw:grocer",400); if(!me.sp){ if(bag.coins<pr){ try{ buzz(); }catch(e){} toast("平安幣不夠",2000); return; } bag.coins-=pr; } S.u+=30; save(); try{ profSave(true); chaChing(); }catch(e){} toast("威利：「好鏟子！挖到寶要分我看喔！」",2400); grocer(); };
 function digSellRows(kinds,who){ const g=GI(); const ks=Object.keys(g).filter(k=>k.startsWith("dig:")&&DIG_BY[k.slice(4)]&&kinds.includes(DIG_BY[k.slice(4)][3])&&DIG_BY[k.slice(4)][4]>0&&g[k]>0);

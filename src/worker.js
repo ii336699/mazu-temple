@@ -9,7 +9,7 @@ function snapInfo(str) { try { const raw = atob(String(str).slice(3).replace(/-/
   if (get(4) !== 1) return {}; get(65); const coins = get(16); get(30); get(1); const pn = get(3); get(pn * 6); get(24); const nl = get(4); let name = ""; for (let i = 0; i < nl; i++) name += String.fromCharCode(get(16)); return { name, coins }; } catch { return {}; } }
 const HALLS = 10, CAP = 100, MAX_MSG = 4000;
 const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000, "/puppet": 5000, "/crowd": 5000, "/market": 5000, "/layout": 5000, "/mapedit": 5000 };
-const LOBBY_PATHS = ["/lookup/givecat", "/lookup/restore", "/lookup/codes", "/lookup/restorecode", "/mapedit", "/photospots", "/photospot", "/rank", "/rankclaim", "/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather", "/stat", "/nev", "/paper", "/sponsor", "/hatfit", "/honor", "/lookup", "/crash", "/meteor"];
+const LOBBY_PATHS = ["/lookup/givecat", "/lookup/restore", "/lookup/codes", "/lookup/restorecode", "/mapedit", "/photospots", "/photospot", "/rank", "/rankclaim", "/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather", "/evt", "/stat", "/nev", "/paper", "/sponsor", "/hatfit", "/honor", "/lookup", "/crash", "/meteor"];
 const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage", "/puppet": "/puppet", "/crowd": "/crowd", "/market": "/market", "/layout": "/layout", "/mapedit": "/mapedit" }; // a POST here makes that cached list stale
 
 export default {
@@ -91,6 +91,10 @@ export class Hall extends DurableObject {
       let b = {}; try { b = await req.json(); } catch {}
       const out = JSON.stringify({ t: "hb", id: String(b.id || "").slice(0, 16), seed: (b.seed | 0) >>> 0, n: b.n | 0, x: Number(b.x) || 0, z: Number(b.z) || 0, at: Number(b.at) || Date.now() });
       for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
+    }
+    if (url.pathname === "/evtb") { // from the lobby: the chair started or ended an event (釣魚熱門、昆蟲、挖寶、放昆蟲／地洞)
+      let b = {}; try { b = await req.json(); } catch {}
+      const out = JSON.stringify({ t: "evt", e: b }); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
     }
     if (url.pathname === "/wx") { // from the lobby: the chair set the weather
       let b = {}; try { b = await req.json(); } catch {}
@@ -468,6 +472,27 @@ export class Lobby extends DurableObject {
         return json({ ok: true, w: k, until });
       }
       const wx = (await this.ctx.storage.get("wx")) || { w: "", until: 0 }; return json(wx.until > Date.now() ? wx : { w: "", until: 0 });
+    }
+    // 活動 (11/25 主委「我能製作昆蟲 釣魚熱門時間 製作挖掘地洞 我要做活動用」): the chair's events for everyone. Anyone reads; changes need the key.
+    // { fish: until, bug: { until, ids }, dig: until, drops: [{ id, k: "bug"|"dig", b, n, x, z, until }] }
+    if (url.pathname === "/evt") {
+      const now = Date.now(), clean = e => { e = e || {}; const o = { fish: +e.fish > now ? +e.fish : 0, bug: e.bug && +e.bug.until > now ? { until: +e.bug.until, ids: (e.bug.ids || []).slice(0, 60) } : { until: 0, ids: [] }, dig: +e.dig > now ? +e.dig : 0, drops: (e.drops || []).filter(d => +d.until > now).slice(-40) }; return o; };
+      if (req.method === "POST") {
+        const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
+        let b = {}; try { b = await req.json(); } catch {}
+        const e = clean(await this.ctx.storage.get("evt")), mins = Math.max(1, Math.min(240, Number(b.min) || 30)), until = now + mins * 60000;
+        const str = v => String(v || "").replace(/[^a-z0-9_]/gi, "").slice(0, 24);
+        if (b.op === "fish") e.fish = b.off ? 0 : until;
+        else if (b.op === "bug") e.bug = b.off ? { until: 0, ids: [] } : { until, ids: (Array.isArray(b.ids) ? b.ids : []).map(str).filter(Boolean).slice(0, 60) };
+        else if (b.op === "dig") e.dig = b.off ? 0 : until;
+        else if (b.op === "drop") { const x = Number(b.x), z = Number(b.z); if (!isFinite(x) || !isFinite(z)) return json({ ok: false }); e.drops.push({ id: now.toString(36) + Math.random().toString(36).slice(2, 6), k: b.k === "dig" ? "dig" : "bug", b: str(b.b), n: Math.max(1, Math.min(20, Number(b.n) || 1)), x: Math.round(x * 10) / 10, z: Math.round(z * 10) / 10, until }); e.drops = e.drops.slice(-40); }
+        else if (b.op === "clear") { e.drops = b.k ? e.drops.filter(d => d.k !== b.k) : []; }
+        else if (b.op === "stop") { e.fish = 0; e.bug = { until: 0, ids: [] }; e.dig = 0; e.drops = []; }
+        await this.ctx.storage.put("evt", e);
+        await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/evtb", { method: "POST", body: JSON.stringify(e) }).catch(() => {})));
+        return json({ ok: true, e });
+      }
+      return json(clean(await this.ctx.storage.get("evt")));
     }
     if (url.pathname === "/fwc") {
       if (req.method === "POST") {
