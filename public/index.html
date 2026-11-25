@@ -5366,7 +5366,7 @@ HANDLERS.spin=v=>{ pvSpin=0; pvYaw+= (+v)*Math.PI/4; };
 HANDLERS.pv=v=>{ if(v==="turn"){ pvSpin=Math.PI*2; return; } pvMode=v; syncPvSeg(); };
 HANDLERS.rollName=()=>{ const el=$("#nameInput"); if(el){ el.value=randomName(); el.focus(); } };
 HANDLERS.tab=v=>{ { const n=$("#nameInput"); if(n) me.name=n.value; } lookTab=v; renderLook(firstVisitPending); sheetBody.scrollTop=0; };
-HANDLERS.look=v=>{ const [i,n]=v.split(":").map(Number); if(i===3&&n===16&&!me.sp){ toast("這是主委專屬背心"); return; } if(!premOwned(i,n)){ toast(i===1?"這款髮型要到小鎮西側巷弄的理髮廳購買":"這款要到小鎮西側巷弄的美容院購買",3000); return; } if(i===3&&!styleOwned(n)){ toast(`「${STYLES[n]}」要到禪房旁的服飾店購買`,2800); return; } if(!Number.isInteger(i)||i<0||i>=LOOK_RANGE.length||!Number.isInteger(n)||n<0||n>=LOOK_RANGE[i]) return; draftLook[i]=n; if(i===1&&n>0){ draftLook[2]=HAIR_PRESET_COLOR[n]; } draftLook=sanitizeLook(draftLook,!!me.sp); meAv.setLook(draftLook); if(i===1) sheetBody.querySelectorAll(`[data-v^="2:"]`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===`2:${draftLook[2]}`))); sheetBody.querySelectorAll(`[data-v^="${i}:"]`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===v))); };
+HANDLERS.look=v=>{ const [i,n]=v.split(":").map(Number); if(i===3&&n===16&&!me.sp){ toast("這是主委專屬背心"); return; } if(!premOwned(i,n)){ toast(i===1?"這款髮型要到小鎮東側巷弄的理髮廳購買":"這款要到小鎮東側巷弄的美容院購買",3000); return; } if(i===3&&!styleOwned(n)){ toast(`「${STYLES[n]}」要到禪房旁的服飾店購買`,2800); return; } if(!Number.isInteger(i)||i<0||i>=LOOK_RANGE.length||!Number.isInteger(n)||n<0||n>=LOOK_RANGE[i]) return; draftLook[i]=n; if(i===1&&n>0){ draftLook[2]=HAIR_PRESET_COLOR[n]; } draftLook=sanitizeLook(draftLook,!!me.sp); meAv.setLook(draftLook); if(i===1) sheetBody.querySelectorAll(`[data-v^="2:"]`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===`2:${draftLook[2]}`))); sheetBody.querySelectorAll(`[data-v^="${i}:"]`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===v))); };
 HANDLERS.randomLook=()=>{ draftLook=randomLook(!!me.sp); draftLook[6]=0; if(!premOwned(1,draftLook[1])) draftLook[1]=1+Math.floor(Math.random()*24); if(!premOwned(7,draftLook[7])) draftLook[7]=Math.floor(Math.random()*15); if(!premOwned(9,draftLook[9])) draftLook[9]=Math.floor(Math.random()*4); if(!premOwned(13,draftLook[13])) draftLook[13]=0; if(!styleOwned(draftLook[3])) draftLook[3]=Math.floor(Math.random()*16); meAv.setLook(draftLook); renderLook(firstVisitPending); };
 HANDLERS.saveLook=async()=>{ setTimeout(()=>{ if(NET_ME()) profSave(false); },2500); const raw=$("#nameInput").value.trim(); if(hasAddLine(raw)){ toast("名字不能寫加賴",2800); return; } const ok=await _chk(raw);
   if(ok){ me.sp=1; me.name=SP_NAME; } else if(raw===SP_NAME&&me.sp){ me.name=SP_NAME; } else { me.sp=0; me.name=[SP_NAME,SP_OLD].includes(cleanName(raw))?"":cleanName(raw); }
@@ -15327,7 +15327,7 @@ function tipFor(n){ const r=FISH.filter(f=>f.r>=2); const f=r[(Math.random()*r.l
   if(n.tip==="fish") return fishTip; if(n.tip==="meteor") return L.meteorHint?L.meteorHint():"晚上偶爾會有流星，第一個找到的人會有好運。";
   if(n.tip==="goddess") return "森林最裡面有一座女神泉，丟一枚平安幣下去，女神問你的時候要說實話喔。";
   if(n.tip==="garden") return "河濱公園的「我的花圃」可以種東西，種子在花店買，記得澆水才長得快。";
-  if(n.tip==="salon") return "西側巷弄的理髮廳有新的精緻髮型，美容院可以換眼睛、鼻子、嘴巴。";
+  if(n.tip==="salon") return "東側巷弄的理髮廳有新的精緻髮型，美容院可以換眼睛、鼻子、嘴巴。";
   if(n.tip==="games") return "小吃廣場有擠冰淇淋跟中藥對對碰，玩得好會有平安幣喔。"; return fishTip; }
 const GIFTS={10:[300,0,"n"],30:[0,1,"n"],60:[1000,2,"n"]}, GF={10:1,30:2,60:4}; /* (which return gifts were given: one bit each) */
 function npcSheet(n,line){ try{ if(line&&String(line).length<=40) window.MZ_DY("npc",1,[n.n,String(line)]); }catch(e){} const R=NR(n.id), t=tier(R.a); openSheet("lfNpc","💬 "+n.n,`<p class="note" style="margin:0 0 6px">${hearts(R.a)}　好感 ${R.a}</p><p class="lead">「${line}」</p>
@@ -15528,7 +15528,7 @@ L.tick4=dt=>{ iceTick(dt); herbTick(dt);  };
 /* ---------- 流星: on about one game night in three, a meteor falls somewhere in or around the town — the same night, the same
    moment and the same place for everyone (worked out from the game day). A beam of light shows where it came down; whoever gets
    there first (the server keeps track) gets a special prize, everyone after still gets a little stardust. ---------- */
-const MSPOT=[[61.5,-150,"南岸森林"],[66,-206.6,"天后山頂"],[40,84,"廟前沙灘"],[12,-125,"河濱公園"],[64.5,-71.5,"噴水池廣場"],[84.6,-251.2,"女神泉"],[-21.5,-170,"西山小徑"],[-18,96,"燈塔附近"],[8,-87,"西側巷弄"],[55,-128,"河堤邊"],[-60,-74,"天后新村"],[-50,-203,"溪邊步道"]]; /* (11/16 晚上: the new map — the beach in front of the temple, the falls, the goddess's path, the village) */
+const MSPOT=[[61.5,-150,"南岸森林"],[66,-206.6,"天后山頂"],[40,84,"廟前沙灘"],[12,-125,"河濱公園"],[64.5,-71.5,"噴水池廣場"],[84.6,-251.2,"女神泉"],[-21.5,-170,"西山小徑"],[-18,96,"燈塔附近"],[8,-87,"東側巷弄"],[55,-128,"河堤邊"],[-60,-74,"天后新村"],[-50,-203,"溪邊步道"]]; /* (11/16 晚上: the new map — the beach in front of the temple, the falls, the goddess's path, the village) */
 const hsh=n=>{ n=(n^61)^(n>>>16); n=Math.imul(n,9); n^=n>>>4; n=Math.imul(n,0x27d4eb2d); n^=n>>>15; return n>>>0; };
 function meteorOf(D){ const h=hsh(D*7919+13); if(h%3&&!(L.forceD===D)) return null; const p=.58+((h>>>3)%100)/100*.2, at=(D+p)*TOD_LEN*1000; const sp=MSPOT[(h>>>11)%MSPOT.length]; return {id:D,at,end:(D+.86)*TOD_LEN*1000,x:sp[0],z:sp[1],nm:sp[2]}; }
 const curD=()=>Math.floor(Date.now()/1000/TOD_LEN);
@@ -17503,7 +17503,7 @@ HANDLERS.stpWear=()=>{ closeSheet(); try{ me.look[3]=27; meAv.setLook(me.look); 
    the book comes from 小胖; each of the 12 places has a little table with a stamp and an ink pad; walk up to it and press 📮 蓋章.
    The map does not show them — the book lists the places by name and 小胖 gives a hint. */
 const stpGot=()=>{ const S=STP(); if(!S.got&&S.m) S.got=1; return !!S.got; };
-const STP_HINT=["過了河往南走，森林的入口，樹蔭底下","爬到天后山最高的地方，滑翔傘起飛的旁邊","廟前面的沙灘，聽得到海浪的地方","小鎮河邊的公園，常有人在散步","有噴水池的那個廣場","森林最深處，住著女神的泉水旁邊","往西邊的山上走，小路上","晚上會亮的那座燈塔底下","小鎮西邊彎彎曲曲的小巷子裡","沿著河堤一直走","大家住的天后新村裡","溪水旁邊的步道"];
+/* (11/25 23:17 主委: hints follow the minimap — north is up; the 理髮廳 lane is east of the main street) */ const STP_HINT=["小鎮北邊，過了河上那座拱橋，橋頭就是森林的入口，樹蔭底下","爬到天后山最高的地方，滑翔傘起飛的旁邊","廟前面的沙灘，聽得到海浪的地方","小鎮河邊的公園，常有人在散步","有噴水池的那個廣場","森林最深處，住著女神的泉水旁邊","往西邊的山上走，小路上","晚上會亮的那座燈塔底下","讓你變美的地方：理髮廳和美容院那條小巷子裡","沿著河堤一直走","大家住的天后新村裡","溪水旁邊的步道"];
 const STB={g:null,near:-1,t:0}; window.MZ_STB=STB;
 /* where each stamp table stands (11/25 主委「重疊的移開」: 河濱公園 was inside the pavilion with its bench, 噴水池 under the big tree,
    女神泉 against a stone lantern, 天后新村 in a house corner — moved onto open ground nearby) */
