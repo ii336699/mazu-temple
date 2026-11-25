@@ -3945,7 +3945,10 @@ class Avatar{
     this.parts=new T.Group(); this.root.add(this.parts); this.setLook(look); this.label=null; this.bubble=null; this.bubbleT=0; }
   setLook(l){ const lo=!this.isMe; if(!lo) return this._setLook(l); const keep=Object.assign({},G); LOWPOLY=true; Object.assign(G,G_LO); try{ return this._setLook(l); } finally{ Object.assign(G,keep); LOWPOLY=false; } }
   _setLook(l){ l=sanitizeLook(l,!!this.sp); this.shoulderPet=null; this.look=l.slice(); const p=this.parts; while(p.children.length) p.remove(p.children[0]); if(this._mg){ this._mg.forEach(g=>g.dispose()); } this._mg=[];
-    try{ return this._setLook0(l); } finally{ try{ avMerge(this); }catch(e){ console.warn("avMerge",e); } } }
+    /* (11/25 主委截圖「旁邊那個隱形的」= a body with no head: a pilgrim baked while their new hairstyle was still downloading got rebuilt when it
+       arrived, but the old baked body stayed, tied to the bones just thrown away. Take the old baked pieces off here, and bake again after.) */
+    { const dead=[]; this.root.traverse(o=>{ if(o.userData&&o.userData.skinBake) dead.push(o); }); dead.forEach(o=>{ o.parent&&o.parent.remove(o); try{ o.geometry.dispose(); }catch(e){} }); }
+    try{ return this._setLook0(l); } finally{ try{ avMerge(this); }catch(e){ console.warn("avMerge",e); } if(this._baked&&!this.autoBake) try{ bakeAvatar(this); }catch(e){} } }
   _setLook0(l){ const p=this.parts;
     const sp=!!this.sp; // Role controls the name badge and privileges, never wardrobe.
     const out=OUTFIT[l[4]], acc=ACCENT[l[5]], skinM=mat(SKIN[l[0]],{roughness:.6}), outM=mat(out,{roughness:.75});
@@ -4462,7 +4465,7 @@ function botPose(n){ if(n.anim==="shake"){ const k=Math.sin(n.st*13)*.16, rest=(
 const BOT_VC=new T.MeshStandardMaterial({vertexColors:true,roughness:.7,metalness:.05}), BOT_VC2=new T.MeshStandardMaterial({vertexColors:true,roughness:.7,metalness:.05,side:T.DoubleSide});
 const SK_VC=BOT_VC.clone(), SK_VC2=BOT_VC2.clone(); SK_VC.skinning=true; SK_VC2.skinning=true; const SK_MAT=new Map();
 function skinMat(m){ let k=SK_MAT.get(m); if(!k){ k=m.clone(); k.skinning=true; SK_MAT.set(m,k); } return k; }
-function bakeAvatar(av){ if(av.sp||av.isMe) return; const boneList=[av.root,av.parts,av.hips,av.torso,av.head,...av.legs,...av.arms].filter(Boolean), bones=new Set(boneList), keep=new Set([av.incense,av.amulet,av.thread,av.shoulderPet,av.accHead,av.accHand].filter(Boolean));
+function bakeAvatar(av){ if(av.sp||av.isMe) return; av._baked=1; const boneList=[av.root,av.parts,av.hips,av.torso,av.head,...av.legs,...av.arms].filter(Boolean), bones=new Set(boneList), keep=new Set([av.incense,av.amulet,av.thread,av.shoulderPet,av.accHead,av.accHand].filter(Boolean));
   // a person baked before (look changed): take the old merged pieces off first
   av.root.traverse(o=>{ if(o.userData.skinBake) o.userData.dead=1; }); const dead=[]; av.root.traverse(o=>{ if(o.userData.dead) dead.push(o); }); dead.forEach(o=>{ o.parent&&o.parent.remove(o); o.geometry.dispose(); });
   av.root.updateMatrixWorld(true); const rootInv=new T.Matrix4().copy(av.root.matrixWorld).invert(), mtx=new T.Matrix4(), c=new T.Color(), buckets=new Map();
@@ -5795,7 +5798,7 @@ function sendChat(text){ text=cleanChat(text); if(!text) return false; const now
   const fl=floodCheck(text); if(fl){ toast(fl,2800); return false; } floodNote(text);
   lastChatAt=now; myChat=[text,Math.random().toString(36).slice(2,8)]; markDirty(); meAv.say(text,"#f7ecd6",5); try{ if(ROOMX&&ROOMX.av) ROOMX.av.say(text,"#f7ecd6",5); }catch(e){} logChat(me.name||"你",text,true); botHear(meAv,text); return true; }
 /* ---- greetings ---- */
-function openSay(){ openSheet("say","聊天",`<div class="chips" style="margin:0 0 6px"><button class="chip" aria-pressed="true">💬 聊天</button><button class="chip" data-act="whoOpen">👥 線上名單（${whoList().length} 人）</button></div><div class="chat-log" id="chatLog" aria-live="polite"></div>
+function openSay(){ openSheet("say","聊天",`<div class="chips" style="margin:0 0 6px"><button class="chip" aria-pressed="true">💬 聊天</button><button class="chip" data-act="whoOpen">👥 線上名單（${whoList().length+1} 人）</button></div><div class="chat-log" id="chatLog" aria-live="polite"></div>
   <form class="chat-row" id="chatForm"><input id="chatInput" maxlength="40" autocomplete="off" placeholder="說點什麼，會顯示在你頭上" aria-label="聊天訊息"><button class="primary" type="submit">送出</button></form>
   <div class="chips">${PHRASES.map((p,i)=>`<button class="chip" data-act="say" data-v="${i}">${p}</button>`).join("")}</div>`);
   renderChatLog(); $("#chatForm").addEventListener("submit",e=>{ e.preventDefault(); const inp=$("#chatInput"); if(sendChat(inp.value)) inp.value=""; });
@@ -5806,11 +5809,22 @@ const whoPlace=(x,z,hm)=>{ const P=placeOf(x,z,hm); if(P!=="天后宮") return P
 function whoList(){ const L=[], mx=meAv.pos.x, mz=meAv.pos.y;
   try{ ONLINE.forEach((o,id)=>{ const pr=o.pr||{}; if(pr.u===0) return; const x=+pr.x||0, z=+pr.z||0, hm=Number.isInteger(pr.hm)?pr.hm:-1; L.push({k:"p:"+id,n:pr.q===1?"主委":(cleanName(String(pr.n||""))||"香客"),x,z,hm,d:hm>=0?1e9:Math.hypot(x-mx,z-mz)}); }); }catch(e){}
   try{ npcs.forEach((a,i)=>{ if(!a.isBot||!a.name||!a.root) return; const x=a.pos.x, z=a.pos.y; L.push({k:"b:"+i,n:a.name,x,z,hm:-1,d:Math.hypot(x-mx,z-mz)}); }); }catch(e){}
+  /* (11/25 主委「線上名單 假香客不要被發現是假香客喔 我要看起來是玩家」): the list holds exactly as many people as 殿內 N 人 says — the ones
+     not in sight are out on the map (town, village, mountain, forest, someone's house), each keeping their spot for a few minutes */
+  try{ let want=0; try{ want=(FAKE_CROWD?hallShown(HALLS.current(),Date.now()):0)-1-L.length; }catch(e){} const h=HALLS.current?HALLS.current():0;
+    if(!WHO_V.h||WHO_V.h!==h){ WHO_V.h=h; WHO_V.l=[]; } const now=Date.now();
+    while(WHO_V.l.length<want){ const i=WHO_V.l.length; let nm=""; try{ nm=npcName(`who-${h}-${i}`); }catch(e){ nm=randomName(); } WHO_V.l.push({n:nm,t:0}); }
+    WHO_V.l.slice(0,Math.max(0,want)).forEach((v,i)=>{ if(now>v.t){ v.t=now+rand(3,9)*60e3; const r=Math.random(); let x,z,hm=-1;
+        if(r<.16){ hm=(Math.random()*40)|0; try{ const Lt=TOWNX.LOTS[hm]; x=Lt.x; z=Lt.f; }catch(e){ x=-40; z=-190; } }
+        else { const A=r<.5?[-12,40,-215,-150]:r<.66?[-90,-30,-235,-160]:r<.82?[40,92,-250,-180]:r<.92?[22,80,-150,-120]:[90,140,-200,-60]; x=rand(A[0],A[1]); z=rand(A[2],A[3]); }
+        v.x=x; v.z=z; v.hm=hm; }
+      L.push({k:"v:"+i,n:v.n,x:v.x,z:v.z,hm:v.hm,d:v.hm>=0?1e9:Math.hypot(v.x-mx,v.z-mz)}); }); }catch(e){}
   return L.sort((a,b)=>a.d-b.d); }
+const WHO_V={h:null,l:[]};
 HANDLERS.whoOpen=()=>{ const L=whoList(), me0=myLabel();
   HANDLERS.whoGo=v=>{ const q=whoList().find(r=>r.k===v); if(!q){ toast("對方已經走開了",1800); return; } if(q.hm>=0){ toast(`${q.n} 在${whoPlace(q.x,q.z,q.hm)}`,2200); return; } closeSheet(); walkTo(q.x+.8,q.z+.8); toast(`走向 ${q.n}……`,1600); };
-  openSheet("say","👥 線上名單",`<div class="chips" style="margin:0 0 6px"><button class="chip" data-act="whoBack">💬 聊天</button><button class="chip" aria-pressed="true">👥 線上名單（${L.length} 人）</button></div>
-    <p class="note">這一殿現在的香客，離你近的排前面。</p><div class="lf-row"><div class="t"><b>${esc(me0)}</b><br><small>${whoPlace(meAv.pos.x,meAv.pos.y,-1)}（你）</small></div></div>
+  openSheet("say","👥 線上名單",`<div class="chips" style="margin:0 0 6px"><button class="chip" data-act="whoBack">💬 聊天</button><button class="chip" aria-pressed="true">👥 線上名單（${L.length+1} 人）</button></div>
+    <p class="note">${esc(($(".hall-name")||{}).textContent||"這一殿")}現在的香客，離你近的排前面。</p><div class="lf-row"><div class="t"><b>${esc(me0)}</b><br><small>${whoPlace(meAv.pos.x,meAv.pos.y,-1)}（你）</small></div></div>
     ${L.length?L.map(q=>`<div class="lf-row"><div class="t"><b>${esc(q.n)}</b><br><small>${whoPlace(q.x,q.z,q.hm)}${q.hm>=0?"":`・距離 ${Math.round(q.d)} m`}</small></div>${q.hm<0&&q.d<120?`<button class="secondary" data-act="whoGo" data-v="${q.k}">📍 走過去</button>`:""}</div>`).join(""):`<p class="note">這一殿現在只有你。</p>`}
     <div class="row" style="margin-top:8px"><button class="secondary" data-act="whoOpen">重新整理</button></div>`); };
 HANDLERS.whoBack=()=>openSay();
@@ -10598,6 +10612,12 @@ const CAT_ANIM={
   loaf:t=>({fl0:-1.35,fl1:.15,fr0:-1.35,fr1:.15,bl0:-1.1,bl1:2.1,br0:-1.1,br1:2.1,by:-.19,hp:.22,ty:1.1,tp:.9,t2:.6,sp:Math.sin(t*1.4)*.02}),
   side:t=>({rz:1.42,by:-.14,fl0:-.5,fl1:.35,fr0:-.35,fr1:.2,bl0:-.4,bl1:-.25,br0:-.25,br1:-.1,fla:-.62,bla:-.55,fra:.1,bra:.1,hp:.15,ty:.9,tp:.3,sp:Math.sin(t*1.3)*.025}),
   dig:t=>{ const p=t*14; return {rx:.24,by:-.04,fl0:-.55+.55*Math.sin(p),fl1:.7*Math.max(0,Math.cos(p)),fr0:-.55+.55*Math.sin(p+Math.PI),fr1:.7*Math.max(0,Math.cos(p+Math.PI)),bl0:-.25,bl1:-.35,br0:-.25,br1:-.35,hp:.35,tp:-.8,ty:Math.sin(t*6)*.25}; },
+  /* (11/25 主委「增加貓咪各種動作 趴著睡躺著睡等等」) */
+  groom:t=>({bl0:-1.0,bl1:1.7,br0:-1.0,br1:1.7,fl0:-1.55,fl1:2.0,fr0:.42,rx:-.5,by:-.1,hp:.55+Math.sin(t*9)*.12,hy:.35,ty:Math.sin(t*1.1)*.3+.6,tp:.6}),
+  stretch:t=>{ const u=Math.min(1,t/.6); return {fl0:-1.45*u,fr0:-1.45*u,fl1:-.15,fr1:-.15,bl0:.25,br0:.25,bl1:-.1,br1:-.1,rx:.32*u,by:-.07*u,hp:-.3,tp:-1.1,ty:Math.sin(t*2)*.2}; },
+  belly:t=>({rz:2.85,by:-.02,fl0:-.9,fl1:1.25,fr0:-.6,fr1:1.45,bl0:.55,bl1:-.9,br0:.75,br1:-1.0,fla:.35,fra:.35,bla:.4,bra:.4,hy:-.35,hp:-.45,ty:.4,tp:.2,sp:Math.sin(t*1.2)*.03}),
+  curl:t=>({fl0:-1.35,fl1:.2,fr0:-1.35,fr1:.2,bl0:-1.1,bl1:2.1,br0:-1.1,br1:2.1,by:-.2,hp:.95,hy:.75,ty:2.4,tp:1.45,t2:1.3,sp:Math.sin(t*1.2)*.025}),
+  yawn:t=>({bl0:-1.0,bl1:1.7,br0:-1.0,br1:1.7,fl0:.42,fr0:.42,rx:-.42,by:-.1,hp:-.55*Math.min(1,Math.sin(Math.min(Math.PI,t*1.6))*1.4),ty:.6,tp:.6}),
   flip:t=>{ const u=Math.min(1,t/1.1), sm=u*u*(3-2*u), up=Math.sin(Math.PI*u); return {rx:-Math.PI*2*sm,by:1.3*up,fl0:-.9*up,fl1:1.1*up,fr0:-.9*up,fr1:1.1*up,bl0:-.7*up,bl1:-1.1*up,br0:-.7*up,br1:-1.1*up,tp:-.5}; },
 };
 function catRigPose(c,anim,t,k){ const tgt=Object.assign(catRigZero(),(CAT_ANIM[anim]||CAT_ANIM.idle)(t)); const P=c.P; k=k==null?1:k; for(const key in tgt){ if(k>=1||key==="rx"&&anim==="flip") P[key]=tgt[key]; else { if(key==="rx"||key==="rz"||key==="ry"){ const w=Math.PI*2; P[key]=tgt[key]+(((P[key]-tgt[key]+Math.PI)%w+w)%w-Math.PI); } /* a whole turn left over from a flip or roll counts as none, so it settles the short way instead of spinning back */ P[key]+=(tgt[key]-P[key])*k; } } catRigApply(c); }
@@ -10630,6 +10650,13 @@ function catEnt(kind,ref){ if(!CAT.src) return null; const rig=catRigMake(CAT.sr
 function catDrop(e){ scene.remove(e.g); try{ e.rig.mesh.material.dispose(); }catch(_){} if(e.z){ scene.remove(e.z); } if(e.sick){ scene.remove(e.sick); } scene.remove(e.hit); const i=pickables.indexOf(e.hit); if(i>=0) pickables.splice(i,1); CAT.ents.splice(CAT.ents.indexOf(e),1); }
 const CAT_NAP=[[7.6,32.6],[12.4,24.8],[-7.6,29.4],[-5.2,17.6],[5.4,17.8],[13.4,36.4],[-12.6,35.6]];
 const catRain=()=>typeof WX!=="undefined"&&WX.r>.45;
+/* (11/25 主委「三隻貓咪走路不要疊再一起」): cats closer than .62 m are eased apart (never onto a wall or into water) */
+function catSpread(list,get,ok){ const R=.62; for(let i=0;i<list.length;i++) for(let j=i+1;j<list.length;j++){ const a=get(list[i]), b=get(list[j]); if(!a||!b) continue; let dx=b.x-a.x, dz=b.z-a.z, d=Math.hypot(dx,dz);
+    if(d>=R) continue; if(d<1e-3){ const t=Math.random()*6.283; dx=Math.sin(t); dz=Math.cos(t); d=1; } const k=(R-d)*.5/d*.35; const ax=a.x-dx*k, az=a.z-dz*k, bx=b.x+dx*k, bz=b.z+dz*k;
+    if(!ok||ok(ax,az)){ a.x=ax; a.z=az; } if(!ok||ok(bx,bz)){ b.x=bx; b.z=bz; } } }
+const CAT_SLEEPS=["loaf","side","belly","curl"], catSleepPose=()=>CAT_SLEEPS[(Math.random()*CAT_SLEEPS.length)|0];
+/* a straight line a cat can run along (no wall, no water in between) */
+function catClear(x0,z0,x1,z1){ const d=Math.hypot(x1-x0,z1-z0), n=Math.ceil(d/.4); for(let i=1;i<n;i++){ const u=i/n; if(!walkable(x0+(x1-x0)*u,z0+(z1-z0)*u)) return false; } return true; }
 /* (11/17 主委「為什麼這三隻貓會在廟裡」: the strays never go into the halls any more — not in the rain, not after a friend who walks in;
    they stay out in the courtyard. Only a cat you have adopted follows you indoors) */
 function catPlace(near,yard){ for(let k=0;k<30;k++){ let x,z; if(near){ x=near[0]+rand(-2.5,2.5); z=near[1]+rand(-2.5,2.5); } else { x=rand(-14,14); z=rand(HZ+2.5,HZ+YX+13); } if(walkable(x,z)&&(!yard||zoneOf(x,z)==="C")) return [x,z]; } return [CAT.mom.x-1,CAT.mom.z+1]; }
@@ -10667,13 +10694,15 @@ function rcatTick(dt){ if(!CAT.src) return; let n=0;
     while(T.length>1&&Math.hypot(T[0][0]-g.position.x,T[0][1]-g.position.z)<.3) T.shift();
     let rem=Math.hypot(T[0][0]-g.position.x,T[0][1]-g.position.z); for(let i=1;i<T.length;i++) rem+=Math.hypot(T[i][0]-T[i-1][0],T[i][1]-T[i-1][1]);
     let spd=0; if(rem>40||Math.hypot(av.pos.x-g.position.x,av.pos.y-g.position.z)>22){ g.position.set(av.pos.x,0,av.pos.y); c.trail=[[av.pos.x,av.pos.y]]; c.cg={gy:av.gy||0}; }
-    else if(rem>1.1+c.i*.8){ spd=Math.min(3.6,.9+rem*1.3); const dx=T[0][0]-g.position.x, dz=T[0][1]-g.position.z, d=Math.hypot(dx,dz)||1, s=Math.min(d,spd*dt); g.position.x+=dx/d*s; g.position.z+=dz/d*s; g.rotation.y=lerpAngle(g.rotation.y,Math.atan2(dx,dz),Math.min(1,dt*8)); c.st="walk"; }
+    else if(rem>1.1+c.i*.8){ if((c.cut=(c.cut||0)-dt)<0&&T.length>2){ c.cut=.3; for(let j=Math.min(T.length-1,30);j>=1;j--){ if(catClear(g.position.x,g.position.z,T[j][0],T[j][1])){ T.splice(0,j); break; } } } spd=Math.min(6,1.8+rem*2); const dx=T[0][0]-g.position.x, dz=T[0][1]-g.position.z, d=Math.hypot(dx,dz)||1, s=Math.min(d,spd*dt); g.position.x+=dx/d*s; g.position.z+=dz/d*s; g.rotation.y=lerpAngle(g.rotation.y,Math.atan2(dx,dz),Math.min(1,dt*8)); c.st="walk"; }
     else { if(c.st==="walk") c.st="sit"; g.rotation.y=lerpAngle(g.rotation.y,av.rotY,dt*2); }
     { const h=groundAt(c.cg,g.position.x,g.position.z); g.position.y=h<0?0:h; }
-    catRigPose(c.rig,c.st==="walk"?(spd>1.5?"run":"walk"):"sit",c.ph,Math.min(1,dt*8)); } } }
+    catRigPose(c.rig,c.st==="walk"?(spd>1.5?"run":"walk"):"sit",c.ph,Math.min(1,dt*8)); } }
+  try{ catSpread([...RCAT.values()],c=>c.rig.root.position,(x,z)=>walkable(x,z)); }catch(e){} }
 function catTick(dt){ CAT.t+=dt; try{ rcatTick(dt); }catch(err){} if(CAT.resc){ try{ catRescueTick(dt); }catch(err){ CAT.resc=null; } } if(CAT.momAv){ CAT.momAv.update(dt); if((CAT.momAv.talkIn-=dt)<0){ CAT.momAv.talkIn=rand(14,30); if(Math.hypot(meAv.pos.x-CAT.mom.x,meAv.pos.y-CAT.mom.z)<9) CAT.momAv.say(["小貓咪要吃飯囉～","罐頭一罐 10 塊，貓咪一天吃一罐","摸摸牠們，牠們就會記得你","領養之前要想清楚喔","貓砂每天都要清一次","貓咪不舒服要趕快帶去看醫生","訓練的時候給一條肉泥，牠會學得很快"][(Math.random()*7)|0],"#f7ecd6",3); } }
   if(CAT.dirt){ const ps=bag.cat&&Array.isArray(bag.cat.pets)?bag.cat.pets:[]; CAT.dirt.visible=ps.some(p=>p&&!p.vet&&catDays(p,"ll")>=1); }
-  if(!CAT.ents.length) return; const me2=meAv.pos, rain=catRain(); { let fi=0; for(const e of CAT.ents) if(e.kind==="pet") e.fi=e.ref.home?0:fi++; } /* (several cats: each walks a little further back, in a line) */
+  if(!CAT.ents.length) return; const me2=meAv.pos, rain=catRain(); { let fi=0; for(const e of CAT.ents) if(e.kind==="pet") e.fi=e.ref.home?0:fi++; }
+  try{ catSpread(CAT.ents.filter(e=>!e.trick&&!e.dig&&!(e.st==="sleep"&&e.kind==="pet"&&e.ref.home)),e=>e.g.position,(x,z)=>walkable(x,z)); }catch(err){} /* (several cats: each walks a little further back, in a line) */
   for(const e of CAT.ents){ const g=e.g; e.ph+=dt; let anim="idle", spd=0; const sick=e.kind==="pet"&&!!e.ref.sick;
     if(e.trick){ catTrickPose(e,dt); }
     else if(e.dig){ catDigStep(e,dt); }
@@ -10686,8 +10715,13 @@ function catTick(dt){ CAT.t+=dt; try{ rcatTick(dt); }catch(err){} if(CAT.resc){ 
       if(!sick) catDigMaybe(e,dt);
       if(e.st==="walk"){ e.stk=(e.stk||0)+dt; const m=e.mk||(e.mk=[g.position.x,g.position.z]); if(Math.hypot(g.position.x-m[0],g.position.z-m[1])>.3||rem<1.2){ e.stk=0; e.mk=[g.position.x,g.position.z]; } } else e.stk=0;
       if(d>22||rem>45||e.stk>4){ /* left far behind, or not getting anywhere: it simply turns up next to you */ catBeside(e); e.st="sit"; e.stk=0; }
-      else if(rem>(e.st==="sleep"?2.6:1.1)+(e.fi||0)*.8){ spd=Math.min(sick?1.4:3.6,.9+rem*1.3); catMove(e,T[0][0],T[0][1],spd,dt); e.st="walk"; e.idle=0; }
-      else { e.idle=(e.idle||0)+dt; if(e.st==="walk") e.st="sit"; if(e.st!=="sleep"&&(e.idle>30||sick)){ e.st="sleep"; e.sl=Math.random()<.5?"loaf":"side"; } if(e.st!=="sleep") g.rotation.y=lerpAngle(g.rotation.y,meAv.rotY,dt*2); } }
+      else if(rem>(e.st==="sleep"?2.6:1.1)+(e.fi||0)*.8){ /* (11/25 主委「貓咪跟的速度加快 如果有繞彎會直動找近路」) */
+        if((e.cut=(e.cut||0)-dt)<0&&T.length>2){ e.cut=.25; for(let j=Math.min(T.length-1,30);j>=1;j--){ if(catClear(g.position.x,g.position.z,T[j][0],T[j][1])){ T.splice(0,j); break; } } }
+        spd=Math.min(sick?1.6:6,1.8+rem*2); catMove(e,T[0][0],T[0][1],spd,dt); e.st="walk"; e.idle=0; e.act=null; }
+      else { e.idle=(e.idle||0)+dt; if(e.st==="walk") e.st="sit";
+        if(e.st!=="sleep"&&(e.idle>25||sick)){ e.st="sleep"; e.sl=sick?"loaf":catSleepPose(); e.act=null; }
+        else if(e.st!=="sleep"){ if(e.act){ e.actT-=dt; if(e.actT<0){ e.act=null; e.nact=rand(4,9); } } else if((e.nact=(e.nact==null?rand(2,5):e.nact)-dt)<0){ const r=Math.random(); e.act=r<.4?"groom":r<.65?"stretch":r<.85?"yawn":"loaf"; e.actT=e.act==="groom"?rand(3,6):e.act==="loaf"?rand(5,10):e.act==="stretch"?2.4:1.8; e.ph0=e.ph; }
+          if(!e.act||e.act==="loaf") g.rotation.y=lerpAngle(g.rotation.y,meAv.rotY,dt*2); } } }
     else { /* wandering, sitting, napping; out of the rain when it pours */
       e.tt-=dt; const out=zoneOf(g.position.x,g.position.z)==="C";
       if(e.kind==="stray"&&e.ref.own&&(e.fl=(e.fl||0)-dt)<0){ e.fl=.4; const o=catStranger(g.position.x,g.position.z,2.2); /* someone else close by: off it runs */
@@ -10695,14 +10729,14 @@ function catTick(dt){ CAT.t+=dt; try{ rcatTick(dt); }catch(err){} if(CAT.resc){ 
           if(to){ e.tx=to[0]; e.tz=to[1]; e.path=planPath(g.position.x,g.position.z,to[0],to[1],0,0); e.st="walk"; e.tt=40; e.run=2.5; } } }
       if(e.run>0) e.run-=dt;
       if(rain&&!out&&e.kind==="stray"&&e.st!=="walk") e.tt=-1; /* (a stray that is indoors walks back out) */
-      if(e.st==="walk"){ spd=e.run>0?3:rain&&out?2.2:.75; if(catMoveP(e,spd,dt)){ e.st=Math.random()<.4?"sleep":"sit"; if(e.st==="sleep") e.sl=Math.random()<.5?"loaf":"side"; e.tt=e.st==="sleep"?rand(25,70):rand(5,14); } }
+      if(e.st==="walk"){ spd=e.run>0?3:rain&&out?2.2:.75; if(catMoveP(e,spd,dt)){ e.st=Math.random()<.4?"sleep":"sit"; if(e.st==="sleep") e.sl=catSleepPose(); e.tt=e.st==="sleep"?rand(25,70):rand(5,14); } }
       else if(e.tt<0){ let to; const near=e.kind==="pet"&&!rain?[CAT.bed.x,CAT.bed.z]:null;
         if(rain) to=catPlace(out?null:[g.position.x,g.position.z],e.kind==="stray");
         else if(e.kind==="stray"&&e.ref.a>=40&&Math.hypot(me2.x-g.position.x,me2.y-g.position.z)<10&&Math.random()<.5) to=catPlace([me2.x,me2.y],true); else if(!near&&Math.random()<.3){ const n=CAT_NAP[(Math.random()*CAT_NAP.length)|0]; to=[n[0]+rand(-.5,.5),n[1]+rand(-.5,.5)]; if(!walkable(to[0],to[1])) to=catPlace(); } else to=catPlace(near);
         e.tx=to[0]; e.tz=to[1]; e.path=planPath(g.position.x,g.position.z,to[0],to[1],0,0); e.st="walk"; e.tt=40; } }
-    if(!e.trick&&!e.dig){ anim=e.st==="walk"?(spd>1.5?"run":"walk"):e.st==="sleep"?e.sl:e.st==="sit"?"sit":"idle"; if(sick&&e.st!=="walk") anim="loaf";
-      catRigPose(e.rig,anim,e.ph,Math.min(1,dt*(e.st==="sleep"?3:8)));
-      if(e.st==="sit"&&!sick){ const dd=Math.hypot(me2.x-g.position.x,me2.y-g.position.z); let a=Math.atan2(me2.x-g.position.x,me2.y-g.position.z)-g.rotation.y; a=((a+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI; if(dd<5&&Math.abs(a)<1.6){ e.rig.P.hy=a*.7; catRigApply(e.rig); } } } /* (a sitting cat turns its head to look at you) */
+    if(!e.trick&&!e.dig){ anim=e.st==="walk"?(spd>1.5?"run":"walk"):e.st==="sleep"?e.sl:e.st==="sit"?(e.act||"sit"):"idle"; if(sick&&e.st!=="walk") anim="loaf";
+      catRigPose(e.rig,anim,e.act==="stretch"||e.act==="yawn"?e.ph-(e.ph0||0):e.ph,Math.min(1,dt*(e.st==="sleep"||e.act?3:8)));
+      if(e.st==="sit"&&!sick&&!e.act){ const dd=Math.hypot(me2.x-g.position.x,me2.y-g.position.z); let a=Math.atan2(me2.x-g.position.x,me2.y-g.position.z)-g.rotation.y; a=((a+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI; if(dd<5&&Math.abs(a)<1.6){ e.rig.P.hy=a*.7; catRigApply(e.rig); } } } /* (a sitting cat turns its head to look at you) */
     { const u=e.rig.mesh.material.userData.u; if(u){ const want=e.trick||e.dig?0:e.st==="sleep"?1:sick?.55:0; u.uSleep.value+=(want-u.uSleep.value)*Math.min(1,dt*4); } } /* eyes close when it sleeps, half shut when sick */
     /* Zz over a sleeping cat, a fever face over a sick one */
     if(e.st==="sleep"&&!e.trick&&!sick){ if(!e.z){ e.z=textSprite("Zz",{fs:40,h:.18,color:"#dfe8ff"}); scene.add(e.z); } e.z.position.set(g.position.x,g.position.y+.5+Math.sin(e.ph*1.4)*.05,g.position.z); } else if(e.z){ scene.remove(e.z); e.z=null; }
@@ -11615,11 +11649,12 @@ const MMAP=(()=>{
     ["pray","參拜","#d9aa3d",["shop","tiangong","burn","donate","lot","jieqian","lamp","bell","drum","wish","fountain"]],
     ["game","遊戲","#ff6fae",["claw","gacha","cats","fortune","nm:qq","nm:sausage","nm:bbq","nm:fish","nm:pachinko","nm:boba","nm:balloon"]],
     ["shop","商店","#4fb3ff",["cvs","cloth","innDesk","catMom","tw:tackle","tw:grocer","tw:flower","tw:barber","tw:beauty","tw:furn","tw:cafe"]],
-    ["town","小鎮","#7fd08a",["tw:bfast","tw:garden","tw:goddess","tw:camp","tw:ice","tw:herb","tw:board","tw:lounge"]]];
+    ["town","小鎮","#7fd08a",["tw:bfast","tw:garden","tw:goddess","tw:camp","tw:ice","tw:herb","tw:board","tw:lounge"]],
+    ["stp","📮 集章","#e0663a",[]]];
   const LBL={innDesk:"禪房櫃台"}; const MM_TOWN=true; /* the town, brook and beach on the map (11/12 night: the chair opened the town in the test version to keep building it; the shops-only live version has no town) */ const SKIP=new Set(["lampR"]);
   const catOf=k=>{ if(/^tw:lot:/.test(k)) return CAT[4]; for(const c of CAT) if(c[3].includes(k)) return c; return ["etc","其他","#7fd08a",[]]; };
   const label=k=>LBL[k]||(typeof STATION_LABEL!=="undefined"&&STATION_LABEL[k])||"";
-  const pois=()=>Object.keys(stations).filter(k=>!SKIP.has(k)&&label(k)&&!/^tw:(house|soon):/.test(k)&&(!/^tw:lot:/.test(k)||(typeof LIFE!=="undefined"&&LIFE&&LIFE.isHome&&LIFE.isHome(k)))).map(k=>({k,n:label(k),x:stations[k].approach.x,z:stations[k].approach.y,c:catOf(k)}));
+  const pois=()=>Object.keys(stations).filter(k=>!SKIP.has(k)&&label(k)&&!/^tw:(house|soon):/.test(k)&&(!/^tw:lot:/.test(k)||(typeof LIFE!=="undefined"&&LIFE&&LIFE.isHome&&LIFE.isHome(k)))).map(k=>({k,n:label(k),x:stations[k].approach.x,z:stations[k].approach.y,c:catOf(k)})).concat((window.MZ_STPLEFT?window.MZ_STPLEFT():[]).map(q=>({k:"stp:"+q.i,n:"📮"+q.n,x:q.x,z:q.z,c:CAT[5]})));
   /* the ground: every walkable spot, sampled once in small steps after the game has loaded */
   let B=[WORLD_BOX.x0,WORLD_BOX.x1+12,WORLD_BOX.z0,WORLD_BOX.z1], ST=.5, W=1, H=1; /* (11/16 晚上 主委「小地圖請更新」: the whole map — the beach and sea in front, 天后新村, the mountains and the river) */ const base=document.createElement("canvas"); let ready=false, row=0, img=null;
   const sizeUp=()=>{ try{ if(MM_TOWN&&typeof TOWNX!=="undefined"&&TOWNX){ const r=TOWNX.zrect||TOWNX.ZR||[-8,182,-137.5,-50.5]; B=[Math.min(B[0],r[0]),Math.max(B[1],r[1]),Math.min(B[2],r[2]),Math.max(B[3],r[3])]; } }catch(e){} /* (the town, when this version has it) */
@@ -11669,7 +11704,7 @@ const MMAP=(()=>{
   const open=()=>{ try{ ensureAudio(); }catch(e){} try{ closeSheet(); }catch(e){} let o=document.querySelector("#mmBig"); if(o) o.remove(); o=document.createElement("div"); o.id="mmBig";
     o.innerHTML=`<div class="hd"><b>🗺️ 地圖・點一下就走過去</b>${(bag.cat&&(bag.cat.pets||[bag.cat.pet]).some(q=>q&&!q.home&&!q.vet&&!q.away)&&typeof catRescue==="function")?`<button class="x" id="mmCat">🆘 貓咪救援</button>`:""}<button class="x" id="mmX">關閉</button></div><div class="cats">${CAT.map(c=>`<button data-c="${c[0]}" style="--c:${c[2]}" aria-pressed="${c[0]===cat}">${c[1]}</button>`).join("")}</div><div class="map"><canvas></canvas></div><div class="list"></div>`;
     document.body.appendChild(o); const mc=o.querySelector(".map canvas"), box=o.querySelector(".map"); let fit=null;
-    const go=k=>{ o.remove(); if(stations[k]) goStation(k); else toast("那裡現在去不了",2000); };
+    const go=k=>{ o.remove(); if(stations[k]) goStation(k); else if(/^stp:/.test(k)){ const q=(window.MZ_STPLEFT?window.MZ_STPLEFT():[]).find(v=>"stp:"+v.i===k); if(q){ walkTo(q.x,q.z); toast(`走向集章點：${q.n}`,2200); } } else toast("那裡現在去不了",2000); };
     const draw=()=>{ const r=box.getBoundingClientRect(), d=Math.min(2,devicePixelRatio||1); mc.width=Math.round(r.width*d); mc.height=Math.round(r.height*d); const g=mc.getContext("2d");
       const P=pois(), sel=P.filter(p=>p.c[0]===cat); /* fit the whole grounds, centred */ const s=Math.min(mc.width/W,mc.height/H)*.96, ox=(mc.width-W*s)/2, oy=(mc.height-H*s)/2; fit={s,ox,oy,d};
       g.fillStyle="#22160f"; g.fillRect(0,0,mc.width,mc.height); if(ready){ g.drawImage(base,ox,oy,W*s,H*s); try{ const pl=paths(); if(pl.width>1) g.drawImage(pl,ox,oy,W*s,H*s); }catch(e){} } else { g.fillStyle="#e9d9b8"; g.font=`${14*d}px sans-serif`; g.textAlign="center"; g.fillText("地圖準備中…",mc.width/2,mc.height/2); }
@@ -12458,7 +12493,8 @@ let HCATS=[]; /* (11/25 主委「家裡也要三隻貓」: every cat you keep is
 function homeCat(D,dt,av){ let ps=[]; try{ ps=catData().pets.filter(p=>!p.away&&!p.vet); }catch(e){} if(RM.visit||!CAT.src) ps=[];
   HCATS=HCATS.filter(c=>{ const ok=c.D===D&&ps.some(p=>p.sd===c.sd&&p.t===c.t); if(!ok) try{ c.D.S.remove(c.g); }catch(e){} return ok; });
   ps.forEach((p,i)=>{ if(HCATS.some(c=>c.sd===p.sd)) return; const rig=catRigMake(CAT.src,catTex(p.t),CAT_FACES[p.t]||{}), g=rig.root; g.scale.setScalar(.42); g.position.set(1.4-i*.9,0,-RD/2+.55); D.S.add(g); HCATS.push({D,g,rig,t:p.t,sd:p.sd,st:"rest",tt:2+i*1.7,ph:i*2.3,y:0,slp:false,up:-1}); });
-  for(const c of HCATS){ try{ homeCat1(c,D,dt,av); }catch(e){} } }
+  for(const c of HCATS){ try{ homeCat1(c,D,dt,av); }catch(e){} }
+  try{ catSpread(HCATS.filter(c=>c.y<.05&&c.st!=="jump"),c=>c.g.position,(x,z)=>Math.abs(x)<RW/2-.3&&Math.abs(z)<RD/2-.3); }catch(e){} }
 function homeCat1(c,D,dt,av){ const g=c.g, its=ST().it; c.ph+=dt;
   const tops=()=>its.map((t,n)=>{ if(HCATS.some(o=>o!==c&&o.up===n)) return null; const F=FURN[t[0]]; if(!F||F.wall||F.small) return null; if(!/^(bed|table|cabinet|chair)$/.test(F.c)&&F.id!=="misc01") return null; const y=F.top>0?F.top:F.c==="bed"?Math.min(.6,F.h):F.c==="chair"?Math.min(.48,F.h*.5):F.h; if(y<.25||y>1.3) return null; const [hw,hd]=foot(t); return {n,x:t[1],z:t[2],y,hw,hd}; }).filter(Boolean);
   const floorPt=(near)=>{ for(let k=0;k<12;k++){ const x=near?near[0]+(Math.random()-.5)*1.6:(Math.random()-.5)*(RW-1.2), z=near?near[1]+(Math.random()-.5)*1.6:(Math.random()-.5)*(RD-1.2); if(Math.abs(x)<RW/2-.4&&Math.abs(z)<RD/2-.4&&!tops().some(o=>Math.abs(x-o.x)<o.hw+.15&&Math.abs(z-o.z)<o.hd+.15)) return [x,z]; } return [0,0]; };
@@ -12467,7 +12503,8 @@ function homeCat1(c,D,dt,av){ const g=c.g, its=ST().it; c.ph+=dt;
     else { const sp=c.run?1.9:.95, s=Math.min(d,sp*dt); g.position.x+=dx/d*s; g.position.z+=dz/d*s; g.rotation.y=lerpAngle(g.rotation.y,Math.atan2(dx,dz),Math.min(1,dt*9)); catRigPose(c.rig,c.run?"run":"walk",c.ph,Math.min(1,dt*8)); } }
   else if(c.st==="jump"){ c.jt+=dt/.5; const u=Math.min(1,c.jt), a=c.j0, b=c.j1; g.position.set(a[0]+(b[0]-a[0])*u,a[1]+(b[1]-a[1])*u+Math.sin(Math.PI*u)*.42,a[2]+(b[2]-a[2])*u); catRigPose(c.rig,"run",c.ph*1.4,Math.min(1,dt*10));
     if(u>=1){ c.y=b[1]; if(c.y>.05){ c.st="rest"; c.tt=6+Math.random()*12; c.slp=Math.random()<.45; } else { c.up=-1; c.st="rest"; c.tt=1+Math.random()*2; c.slp=false; } } }
-  else { c.tt-=dt; catRigPose(c.rig,c.slp?"loaf":"sit",c.ph,Math.min(1,dt*4)); if(!c.slp){ const P=av.root.position; let a=Math.atan2(P.x-g.position.x,P.z-g.position.z)-g.rotation.y; a=((a+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI; if(Math.abs(a)<1.5){ c.rig.P.hy=a*.7; catRigApply(c.rig); } }
+  else { c.tt-=dt; if(c.slp&&!c.sp) c.sp=catSleepPose(); if(!c.slp) c.sp=null; if(!c.slp&&!c.ac&&Math.random()<dt*.12){ c.ac=Math.random()<.6?"groom":"yawn"; c.acT=c.ac==="groom"?rand(3,5):1.8; c.ph0=c.ph; } if(c.ac&&(c.acT-=dt)<0) c.ac=null;
+    catRigPose(c.rig,c.slp?c.sp:(c.ac||"sit"),c.ac==="yawn"?c.ph-c.ph0:c.ph,Math.min(1,dt*4)); { const u=c.rig.mesh.material.userData.u; if(u) u.uSleep.value+=((c.slp?1:0)-u.uSleep.value)*Math.min(1,dt*3); } if(!c.slp&&!c.ac){ const P=av.root.position; let a=Math.atan2(P.x-g.position.x,P.z-g.position.z)-g.rotation.y; a=((a+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI; if(Math.abs(a)<1.5){ c.rig.P.hy=a*.7; catRigApply(c.rig); } }
     if(c.tt<0){ if(c.y>.05){ const f=floorPt([g.position.x,g.position.z]); jump(f[0],0,f[1]); return; } const T=tops(), r=Math.random(); c.run=Math.random()<.3;
       if(T.length&&r<.5){ const o=T[(Math.random()*T.length)|0], side=Math.random()<.5?-1:1, ax=o.x+side*(o.hw+.32), az=o.z+(Math.random()-.5)*o.hd; c.top=o; c.to=[Math.max(-RW/2+.35,Math.min(RW/2-.35,ax)),Math.max(-RD/2+.35,Math.min(RD/2-.35,az))]; c.st="walk"; }
       else if(r<.78){ const P=av.root.position; c.to=floorPt([P.x,P.z]); c.st="walk"; } else { c.to=floorPt(null); c.st="walk"; } } } }
@@ -16637,7 +16674,13 @@ const BUG_RN=["","常見","少見","稀有","傳說"], BUG_RW={1:10,2:3,3:.6,4:.
 const BUG_AREA={park:[[-6,21,-130,-118],[35,64,-130,-118]],valley:[[90,132,-116,-56]],forest:[[18,114,-172,-147]],mount:[[26,106,-248,-180]],beach:[[137,150,-118,-62]]};
 const NETS=[null,{n:"普通捕蟲網",u:20,c:"#c9a26a",ring:"#9a7a4a"},{n:"高級捕蟲網",u:30,c:"#5a8fc8",ring:"#3a5a8a"},{n:"黃金捕蟲網",u:40,c:"#e8c24a",ring:"#c89a2a"}];
 const NET_RATE=[null,[.85,.55,.25,.08],[.95,.78,.5,.25],[1,.92,.75,.5]];
-const NETD=()=>{ const d=LF(); d.net=d.net||{t:0,u:0}; return d.net; }; const BUGDEX=()=>{ const d=LF(); d.bug=d.bug||{}; return d.bug; };
+const NETD=()=>{ const d=LF(); d.net=d.net||{t:0,u:0}; const N=d.net; if(!N.st||typeof N.st!=="object") N.st={}; return N; };
+/* (11/25 主委「買了捕蟲網 進階高級捕蟲網舊的就會不見 我想要他們能夠保留 自己選用什麼網子抓」): every net you have stays; you pick which one is in your hand */
+const netLeft=t=>{ const N=NETD(); return t===N.t?N.u:(N.st[t]|0); };
+const netOwned=()=>[1,2,3].filter(t=>netLeft(t)>0);
+function netUse(t){ const N=NETD(); if(t===N.t||netLeft(t)<=0) return false; if(N.t&&N.u>0) N.st[N.t]=N.u; N.u=N.st[t]|0; N.st[t]=0; N.t=t; save(); return true; }
+function netAdd(t,u){ const N=NETD(); if(N.t===t) N.u+=u; else if(!N.t||N.u<=0){ if(N.t&&N.u>0) N.st[N.t]=N.u; N.t=t; N.u=(N.st[t]|0)+u; N.st[t]=0; } else N.st[t]=(N.st[t]|0)+u; }
+function netPick(){ return netOwned().length>1?`<div class="chips" style="margin:4px 0 8px">${netOwned().map(t=>`<button class="chip" data-act="netUse" data-v="${t}" aria-pressed="${t===NETD().t}">${t===NETD().t?"✋ ":""}${NETS[t].n}（${netLeft(t)} 次）</button>`).join("")}</div>`:""; } const BUGDEX=()=>{ const d=LF(); d.bug=d.bug||{}; return d.bug; };
 const bugTex={}; function bugPic(id){ return MZIMG("bugs/"+id+".webp"); } function bugPicOld(id){ if(bugTex[id]) return bugTex[id]; const b=BUG_BY[id]; const c=document.createElement("canvas"); c.width=c.height=128; const x=c.getContext("2d");
   if(b[4]>=3){ const g=x.createRadialGradient(64,64,10,64,64,62); g.addColorStop(0,b[4]>=4?"rgba(255,230,120,.9)":"rgba(190,230,255,.75)"); g.addColorStop(1,"rgba(255,255,255,0)"); x.fillStyle=g; x.fillRect(0,0,128,128); }
   x.filter=b[3]?`hue-rotate(${b[3]}deg) saturate(1.3)`:"none"; x.font="88px serif"; x.textAlign="center"; x.textBaseline="middle"; x.fillText(b[2],64,70); return bugTex[id]=c.toDataURL(); }
@@ -16725,7 +16768,7 @@ function cvs0(w,h,f){ const c=document.createElement("canvas"); c.width=w; c.hei
   const bag=new T.Mesh(new T.LatheGeometry(pts,18),M("#f4f4f0",{map:mesh,transparent:true,opacity:.9,alphaTest:.05,side:T.DoubleSide,depthWrite:false})); bag.rotation.x=Math.PI/2; bag.position.set(0,1.28,0); g.add(bag); return g; }
 function bugChip(){ if(BG2.chip) return BG2.chip; const c=document.createElement("button"); c.id="bugChip"; c.style.cssText=`position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 128px);z-index:9;border:0;border-radius:999px;padding:11px 20px;font:900 16px ${UI_FONT};color:#fff;background:linear-gradient(#9be04f,#3c9a22);outline:2px solid #e2ffc4;box-shadow:0 4px 14px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.4)`; c.hidden=true; c.textContent="🦋 抓蟲"; c.onclick=()=>bugSwing(); document.body.appendChild(c); return BG2.chip=c; }
 let bugNear=null;
-function bugSwing(){ const o=bugNear; if(!o||BG2.swing) return; if(!enHas(1)) return; /* (11/24 QA: 精力 before the net) */ const N=NETD(); if(!N.t||N.u<=0){ toast(N.t?"捕蟲網破了……到雜貨店找威利":"要先有捕蟲網：小鎮主街的雜貨店（威利）有賣",2800); return; }
+function bugSwing(){ const o=bugNear; if(!o||BG2.swing) return; if(!enHas(1)) return; /* (11/24 QA: 精力 before the net) */ const N=NETD(); if((!N.t||N.u<=0)&&netOwned().length){ const t=Math.max(...netOwned()); netUse(t); toast(`換上${NETS[t].n}`,1600); } if(!N.t||N.u<=0){ toast(N.t?"捕蟲網破了……到雜貨店找威利":"要先有捕蟲網：小鎮主街的雜貨店（威利）有賣",2800); return; }
   meAv.path=[]; meAv.target.copy(meAv.pos); meAv.faceGoal=Math.atan2(o.sp.position.x-meAv.pos.x,o.sp.position.z-meAv.pos.y);
   const net=netMesh(N.t); const hand=meAv.hands&&meAv.hands[0]; (hand||meAv.root).add(net); net.position.set(0,-.05,0); net.rotation.set(-2.2,0,0);
   BG2.swing={o,net,t:0,done:0}; try{ tone(320,.16,.05,"sawtooth"); tone(520,.12,.04,"triangle",.08); }catch(e){} }
@@ -16792,14 +16835,15 @@ HANDLERS.wlQ=v=>{ const d=LF(); if(v==="go"){ if(!d.wl){ d.wl=1; save(); } groce
 HANDLERS.lfWlOk=()=>grocer();
 /* 雜貨店・威利: nets, and (later) seasonings */
 function netShop(){ const N=NETD(), d=LF(), g=GI(); const have=r=>Object.keys(g).filter(k=>k.startsWith("bug:")&&BUG_BY[k.slice(4)]&&BUG_BY[k.slice(4)][4]===r).reduce((a,k)=>a+g[k],0);
-  return `<h4 style="margin:10px 0 4px">捕蟲網</h4><p class="note" style="margin:0 0 6px">${N.t?`你的${NETS[N.t].n}還能用 ${N.u} 次。`:"你還沒有捕蟲網。"}</p>
+  return `<h4 style="margin:10px 0 4px">捕蟲網</h4><p class="note" style="margin:0 0 6px">${netOwned().length?`你有：${netOwned().map(t=>`${NETS[t].n} ${netLeft(t)} 次${t===N.t?"（手上這支）":""}`).join("、")}。`:"你還沒有捕蟲網。"}${netOwned().length>1?"點下面換手上用的網子：":""}</p>${netPick()}
   <div class="lf-row"><img src="${MZIMG("cook/net1.webp")}" alt="" style="width:56px;height:56px;object-fit:contain"><div class="t"><b>普通捕蟲網</b>　${dPrice("tw:grocer",300)} 幣<br><small>可以抓 20 次。常見的蟲很好抓，稀有的就要靠運氣。</small></div><button class="primary" data-act="bugNet" data-v="1">買</button></div>
   <div class="lf-row"><img src="${MZIMG("cook/net2.webp")}" alt="" style="width:56px;height:56px;object-fit:contain"><div class="t"><b>高級捕蟲網</b>　用 2 隻稀有昆蟲換<br><small>可以抓 30 次，稀有的蟲好抓很多。（你有稀有 ${have(3)} 隻）</small></div><button class="primary" data-act="bugNet" data-v="2" ${have(3)>=2?"":"disabled"}>換</button></div>
   <div class="lf-row"><img src="${MZIMG("cook/net3.webp")}" alt="" style="width:56px;height:56px;object-fit:contain"><div class="t"><b>黃金捕蟲網</b>　用 1 隻傳說＋2 隻稀有換<br><small>可以抓 40 次，傳說的蟲也有一半機會。（你有傳說 ${have(4)} 隻）</small></div><button class="primary" data-act="bugNet" data-v="3" ${have(4)>=1&&have(3)>=2?"":"disabled"}>換</button></div>`; }
 HANDLERS.bugNet=v=>{ const t=+v, N=NETD(), g=GI(); const take=(r,n)=>{ for(const k of Object.keys(g)){ if(n<=0) break; if(k.startsWith("bug:")&&BUG_BY[k.slice(4)]&&BUG_BY[k.slice(4)][4]===r){ const m=Math.min(n,g[k]); giAdd(k,-m); n-=m; } } };
-  if(t===1){ const pr=dPrice("tw:grocer",300); if(!me.sp){ if(bag.coins<pr){ try{ buzz(); }catch(e){} toast("平安幣不夠",2000); return; } bag.coins-=pr; } if(N.t>1&&N.u>0){ toast("你手上的網子比較好，用完再來買吧",2400); if(!me.sp) bag.coins+=pr; return; } N.t=1; N.u=(N.t===1?N.u:0)+20; }
-  else if(t===2){ take(3,2); N.t=2; N.u=30; } else if(t===3){ take(4,1); take(3,2); N.t=3; N.u=40; }
-  save(); try{ profSave(true); chaChing(); }catch(e){} toast(`威利：「拿去吧！${NETS[t].n}，好好用喔！」`,2600); grocer(); };
+  if(t===1){ const pr=dPrice("tw:grocer",300); if(!me.sp){ if(bag.coins<pr){ try{ buzz(); }catch(e){} toast("平安幣不夠",2000); return; } bag.coins-=pr; } netAdd(1,20); }
+  else if(t===2){ take(3,2); netAdd(2,30); } else if(t===3){ take(4,1); take(3,2); netAdd(3,40); } /* (the new one goes in your hand only if your hands were empty; the others stay in the bag) */
+  save(); try{ profSave(true); chaChing(); }catch(e){} toast(`威利：「拿去吧！${NETS[t].n}，好好用喔！」${NETD().t!==t?"（放進背包了，要用的時候在背包或這裡換）":""}`,3200); grocer(); };
+HANDLERS.netUse=v=>{ const t=+v; if(netUse(t)){ toast(`換上${NETS[t].n}（還能用 ${NETD().u} 次）`,2000); try{ profSave(true); }catch(e){} } if(sheetKind==="bag"){ try{ openBag(); }catch(e){} } else if(sheetKind==="lfGrocer"){ try{ grocer(); }catch(e){} } };
 /* 博士 buys bugs */
 /* 收藏家小潘 (11/21 主委): bugs sell only to 小潘, like the fish — tick up to 10 a day, the ones not sold are let go and leave the bag;
    every time you talk to him he checks your bugs for a rare or legendary kind he has not had from you (first-time present); he also
@@ -17150,8 +17194,9 @@ const tgDone=i=>!!(TGD().m&(1<<i)), tgAll=()=>TG.every((q,i)=>tgDone(i));
 function tgMark(k){ const i=TG.findIndex(q=>q[0]===k); if(i<0||tgDone(i)) return; const t=TGD(); t.m|=1<<i; bag.coins+=TG_PAY; save(); try{ profSave(true); chaChing(); }catch(e){} toast(`✅ 小鎮指引：${TG[i][1].replace(/^\S+\s/,"")}　平安幣 +${TG_PAY}${tgAll()?"　小鎮指引全部完成！":""}`,3600); tgDraw(); }
 window.MZ_TGEV=k=>{ if(k==="digN") tgMark("dig"); else if(k==="lfFish") tgMark("fish"); else if(k==="npcGift") tgMark("gift"); };
 function tgDraw(){ const b=document.getElementById("tgBtn"); if(!b) return; const on=!!(TOWNX&&TOWNX.on)&&!tgAll()&&!me.sp; b.hidden=!on; if(!on) return; const i=TG.findIndex((q,j)=>!tgDone(j)), n=TG.filter((q,j)=>tgDone(j)).length; document.getElementById("tgStep").textContent=`小鎮指引 ${n}/${TG.length}`; document.getElementById("tgText").textContent=TG[i][1].replace(/^\S+\s/,""); }
-function tgTick(){ try{ if(TOWNX&&TOWNX.on&&!tgDone(3)&&Math.hypot(meAv.pos.x-85.4,meAv.pos.y-250.2*-1)<16) tgMark("spring"); }catch(e){} tgDraw(); }
-HANDLERS.tgOpen=()=>openSheet("tgGuide","🗺️ 小鎮指引",`<p class="lead">參拜完，來小鎮走走吧！每完成一項送 ${TG_PAY} 平安幣，順序不限。</p>${TG.map((q,i)=>`<div class="lf-row" style="${tgDone(i)?"opacity:.55":""}"><span style="font-size:26px;width:44px;text-align:center">${tgDone(i)?"✅":q[1].split(" ")[0]}</span><div class="t"><b>${q[1].replace(/^\S+\s/,"")}</b><br><small>${q[2]}</small></div><small>${tgDone(i)?"完成":"+"+TG_PAY}</small></div>`).join("")}<p class="note">找不到地方的話，左上的「地圖・導航」可以帶你去。</p>`);
+function tgTick(){ try{ if(TOWNX&&TOWNX.on&&!me.sp&&!LF().stpH&&window.MZ_STPN&&window.MZ_STPN()<MSPOT.length){ LF().stpH=1; save(); setTimeout(()=>toast(`📮 小鎮巡禮：鎮上 ${MSPOT.length} 個地點走過去就會蓋章，蓋滿送稱號和衣服。左上「地圖・導航」的「📮 集章」看得到在哪裡`,6500),6000); } }catch(e){} try{ if(TOWNX&&TOWNX.on&&!tgDone(3)&&Math.hypot(meAv.pos.x-85.4,meAv.pos.y-250.2*-1)<16) tgMark("spring"); }catch(e){} tgDraw(); }
+HANDLERS.tgOpen=()=>openSheet("tgGuide","🗺️ 小鎮指引",`<p class="lead">參拜完，來小鎮走走吧！每完成一項送 ${TG_PAY} 平安幣，順序不限。</p>${TG.map((q,i)=>`<div class="lf-row" style="${tgDone(i)?"opacity:.55":""}"><span style="font-size:26px;width:44px;text-align:center">${tgDone(i)?"✅":q[1].split(" ")[0]}</span><div class="t"><b>${q[1].replace(/^\S+\s/,"")}</b><br><small>${q[2]}</small></div><small>${tgDone(i)?"完成":"+"+TG_PAY}</small></div>`).join("")}<div class="lf-row"><span style="font-size:26px;width:44px;text-align:center">📮</span><div class="t"><b>小鎮巡禮集章冊 ${window.MZ_STPN?window.MZ_STPN():0}/${MSPOT.length}</b><br><small>鎮上 ${MSPOT.length} 個地點，走過去就會自動蓋章，蓋滿送稱號和衣服。地圖的「📮 集章」分頁看得到還沒蓋的地方。</small></div><button class="secondary" data-act="tgStp">看集章冊</button></div><p class="note">找不到地方的話，左上的「地圖・導航」可以帶你去。</p>`);
+HANDLERS.tgStp=()=>{ if(window.MZ_STPBOOK) window.MZ_STPBOOK(); };
 { const b=document.getElementById("tgBtn"); if(b) b.onclick=()=>{ try{ ensureAudio(); }catch(e){} HANDLERS.tgOpen(); }; }
 L.tg=()=>({m:TGD().m,all:tgAll()});
 /* ===== 📮 小鎮巡禮集章冊 (11/24 主委「小鎮巡禮集章冊 蓋滿給稱號+精緻特色服裝（你直接設計）」): the 12 places of MSPOT; walk, ride or glide
@@ -17159,6 +17204,9 @@ L.tg=()=>({m:TGD().m,all:tgAll()});
    title 「小鎮旅人」 (XTITLES 50) and the 小鎮旅人裝 (style 27, bag.clo bit 9). Seen in 圖鑑 → 📮 集章. LF().stp.m = the bits. ===== */
 const STP_LINE=["阿凱：「南岸的樹，比我阿公還老。」","山頂的風：「爬上來的人，都值得一個好天氣。」","沙灘的貝殼：「浪每天都來，每天都不一樣。」","公園的阿伯：「坐一下吧，河又不會跑掉。」","噴水池邊的小孩：「丟一枚硬幣，許一個不能說的願。」","女神泉：「說實話的人，泉水會記得。」","西山的小路：「慢慢走，路會自己變短。」","燈塔：「海那邊的人，也看得到這盞燈。」","巷子裡的貓：「喵。」（牠看起來很滿意你來了）","河堤上釣魚的人：「今天沒釣到，可是浮標很好看。」","天后新村的門牌：「歡迎回家。」","溪邊的石頭：「水會繞過去的，你也可以。」"];
 const STP=()=>{ const d=LF(); if(!d.stp||typeof d.stp!=="object") d.stp={m:0}; return d.stp; }, stpN=()=>MSPOT.filter((q,i)=>STP().m&(1<<i)).length;
+/* (11/25 主委「小鎮巡禮完全沒提示會不會太難找」): the map gets a 📮 集章 tab with every spot still to stamp, and the town guide points at the book */
+window.MZ_STPLEFT=()=>{ try{ const m=STP().m; return MSPOT.map((q,i)=>({i,x:q[0],z:q[1],n:q[2]})).filter(q=>!(m&(1<<q.i))); }catch(e){ return []; } };
+window.MZ_STPN=()=>{ try{ return stpN(); }catch(e){ return 0; } }; window.MZ_STPBOOK=()=>{ try{ dexTab="s"; stpBook(); }catch(e){} };
 function stpPop(i){ let el=document.getElementById("stpPop"); if(!el){ el=document.createElement("div"); el.id="stpPop"; el.style.cssText="position:fixed;left:50%;top:38%;z-index:60;transform:translate(-50%,-50%);pointer-events:none;text-align:center;transition:opacity .5s"; document.body.appendChild(el); }
   const n=stpN(); el.innerHTML=`<div style="width:150px;height:150px;margin:0 auto;border-radius:50%;border:6px double #c0392f;color:#c0392f;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,248,235,.92);font-weight:900;box-shadow:0 6px 24px rgba(0,0,0,.35);animation:stpIn .45s cubic-bezier(.2,1.6,.4,1) forwards;transform:rotate(-8deg)"><div style="font-size:13px;letter-spacing:2px">小鎮巡禮</div><div style="font-size:24px;margin:4px 0">${MSPOT[i][2]}</div><div style="font-size:13px">${n} / ${MSPOT.length}</div></div><div style="margin-top:10px;background:rgba(30,20,10,.78);color:#fff6e0;padding:8px 14px;border-radius:12px;font-size:15px;max-width:300px">${esc(STP_LINE[i]||"")}</div>`;
   if(!document.getElementById("stpCss")){ const st=document.createElement("style"); st.id="stpCss"; st.textContent="@keyframes stpIn{0%{transform:scale(2.2) rotate(-25deg);opacity:0}100%{transform:scale(1) rotate(-8deg);opacity:1}}"; document.head.appendChild(st); }
@@ -17181,7 +17229,7 @@ function enCard(n){ const e=Math.round(bag.en??100), rl=Math.round(SHOPX&&SHOPX.
   if(performance.now()-ENC_T<45000||document.querySelector(".sheet.open,#sheet.open")){ toast(rl>0?`精力不夠（要 ${n}，現在 ${e}）。今天還能補 ${rl} 點`:`精力不夠（要 ${n}，現在 ${e}）。明天 0:00 補滿`,2400); return; } ENC_T=performance.now();
   const B=(act,v,ic,t,sub)=>`<button class="good" data-act="${act}" data-v="${v}"><span class="name">${ic} ${t}</span><span class="meta">${sub}</span></button>`;
   let lead, rows="";
-  if(cg>0){ lead=`精力不夠了（要 ${n}，現在 ${e}）。背包裡還有 <b>${cg}</b> 碗鹹粥，一碗回 100！`; rows+=B("lfEatCongee","", "🥣","喝一碗鹹粥","馬上回 100 精力"); }
+  if(cg>0){ lead=`精力不夠了（要 ${n}，現在 ${e}）。背包裡還有 <b>${cg}</b> 碗鹹粥，一碗回 100，想喝的時候打開背包就能喝。`; } /* (11/25 主委「鹹粥不要直接喝 給玩家自己用」) */
   else if(rl>0){ lead=`⚡ 精力用完了，今天還能補 <b>${rl}</b> 點。去泡個溫泉，或到禪堂坐一下吧。`; rows+=B("enGo","onsen","♨️","帶我去泡溫泉","禪房一樓，每分鐘回 2 點")+B("enGo","zen","🧘","帶我去禪堂靜坐","每分鐘回 1 點"); }
   else lead=`⚡ 今天辛苦了。精力明天 0:00 就補滿。<br>現在不用精力，也可以做這些：`;
   if(!cg&&!cgT) rows+=B("enGo","congee","🫧","到一粥七天洗碗","每天第一次洗好碗送一碗鹹粥（回 100，不算在每天的恢復裡）");
@@ -17271,15 +17319,15 @@ HANDLERS.lfNq=nid=>{ const c=nqCur(nid); if(!c||c.done||!c.open) return; const i
    falling-star stones — show in the bag too; 送禮 items can be given from there (walk up to someone and choose 送禮物) ---------- */
 { const E0=L.bagEntries, A0=L.bagActs, I0=L.bic; const em=(s,cls)=>`<span class="bic ${cls||""}" style="display:flex;align-items:center;justify-content:center;font-size:34px;background:none">${s}</span>`;
   const enc=id=>id.replace(/:/g,"~"), dec=s=>s.replace(/~/g,":");
-  L.bic=(k,cls)=>{ const id=k.slice(3); if(id.startsWith("gi_")){ const g=giInfo(dec(id.slice(3))); return /\.(webp|png|jpg)$|^data:/.test(g.ic)?`<span class="bic ${cls||""}" style="background:url(${g.ic}) center/contain no-repeat"></span>`:em(g.ic,cls); } const P={q_stone:"stone",q_dust:"dust",g_dht:"dht",g_rcp:"rcp",g_spd:"spd",g_pk_duck:"pk_duck",g_pk_siwu:"pk_siwu",g_pk_lu:"pk_lu",g_pk_beef:"pk_beef"}; if(id.startsWith("in_")) P[id]=id; if(P[id]) return `<span class="bic ${cls||""}" style="background:url(${MZIMG("cook/"+P[id]+".webp")}) center/contain no-repeat"></span>`; if(id==="t_net") P[id]="net"+(NETD().t||1); if(id==="t_sh") P[id]="shovel"; if(P[id]) return `<span class="bic ${cls||""}" style="background:url(${MZIMG("cook/"+P[id]+".webp")}) center/contain no-repeat"></span>`; return I0(k,cls); };
+  L.bic=(k,cls)=>{ const id=k.slice(3); if(id.startsWith("gi_")){ const g=giInfo(dec(id.slice(3))); return /\.(webp|png|jpg)$|^data:/.test(g.ic)?`<span class="bic ${cls||""}" style="background:url(${g.ic}) center/contain no-repeat"></span>`:em(g.ic,cls); } const P={q_stone:"stone",q_dust:"dust",g_dht:"dht",g_rcp:"rcp",g_spd:"spd",g_pk_duck:"pk_duck",g_pk_siwu:"pk_siwu",g_pk_lu:"pk_lu",g_pk_beef:"pk_beef"}; if(id.startsWith("in_")) P[id]=id; if(P[id]) return `<span class="bic ${cls||""}" style="background:url(${MZIMG("cook/"+P[id]+".webp")}) center/contain no-repeat"></span>`; if(id==="t_net") P[id]="net"+(NETD().t||1); if(/^t_net\d$/.test(id)) P[id]="net"+id.slice(5); if(id==="t_sh") P[id]="shovel"; if(P[id]) return `<span class="bic ${cls||""}" style="background:url(${MZIMG("cook/"+P[id]+".webp")}) center/contain no-repeat"></span>`; return I0(k,cls); };
   L.bagEntries=(out,tab)=>{ E0(out,tab); if(tab!=="all"&&tab!=="goods") return; const d=LF(), g=GI();
     Object.keys(g).filter(k=>g[k]>0).forEach(k=>{ const q=giInfo(k); out.push({id:"lf:gi_"+enc(k),ic:"lf_gi_"+enc(k),n:g[k],name:q.n,desc:(q.d||"")+(k.startsWith("bug:")?"　可以賣給收藏家小潘（每天 10 隻），或送給鎮上的人。":k.startsWith("dig:")?(DIG_BY[k.slice(4)]&&DIG_BY[k.slice(4)][3]==="tackle"?"":"　化石、古物、寶石賣給收藏家小潘，垃圾給威利回收；也可以送人。"):k.startsWith("ck:")||k.startsWith("cz:")?"":"")}); });
     Object.keys(INGD()).filter(k=>INGD()[k]>0&&IB[k]).forEach(k=>out.push({id:"lf:in_"+k,ic:"lf_in_"+k,n:INGD()[k],name:IB[k][1],desc:`雜貨店買的${SEASON.has(k)?"調味料":"食材"}，在家裡的廚房煮菜用。`}));
-    const N=NETD(); if(N.u>0) out.push({id:"lf:t_net",ic:"lf_t_net",n:N.u,name:NETS[N.t]?NETS[N.t].n:"捕蟲網",desc:`抓蟲用。還能用 ${N.u} 次。走近飛來飛去的蟲，按「🦋 抓蟲」。`});
+    const N=NETD(); for(const t of netOwned()) out.push({id:"lf:t_net"+t,ic:"lf_t_net"+t,n:netLeft(t),name:NETS[t].n+(t===N.t?"（手上）":""),desc:`抓蟲用。還能用 ${netLeft(t)} 次。${t===N.t?"現在手上拿的就是這支。":"在背包裡，要用就按「換這支」。"}走近飛來飛去的蟲，按「🦋 抓蟲」。`});
     if(SHOVEL().u>0) out.push({id:"lf:t_sh",ic:"lf_t_sh",n:SHOVEL().u,name:"鏟子",desc:`地上發光的裂縫可以挖開，還能用 ${SHOVEL().u} 次。`});
     if((d.stone|0)>0) out.push({id:"lf:q_stone",ic:"lf_q_stone",n:d.stone,name:"流星石",desc:"流星夜撿到的石頭。女神泉、釣具行的阿財伯都用得到。"});
     if((d.dust|0)>0) out.push({id:"lf:q_dust",ic:"lf_q_dust",n:d.dust,name:"星砂",desc:"流星掉下來的地方撿到的。8 顆可以找收藏家小潘換一件星空家具。"}); };
-  L.bagActs=(k,e)=>{ if(k.startsWith("gi_ck~")) return `<button class="chip" data-act="lfCkEat" data-v="${dec(k.slice(3))}">吃掉</button>`; if(k.startsWith("gi_")||k.startsWith("in_")||k.startsWith("t_")||k.startsWith("q_")) return ""; return A0(k,e); }; }
+  L.bagActs=(k,e)=>{ if(k.startsWith("gi_ck~")) return `<button class="chip" data-act="lfCkEat" data-v="${dec(k.slice(3))}">吃掉</button>`; if(/^t_net\d$/.test(k)&&+k.slice(5)!==NETD().t) return `<button class="chip" data-act="netUse" data-v="${k.slice(5)}">換這支</button>`; if(k.startsWith("gi_")||k.startsWith("in_")||k.startsWith("t_")||k.startsWith("q_")) return ""; return A0(k,e); }; }
 
 /* 威利's ingredients */
 L.seasonShop=()=>`<h4 style="margin:10px 0 4px">食材・調味料</h4><p class="note" style="margin:0 0 6px">在家裡的廚房煮菜用。調味料一瓶可以用 5 次。</p><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px">${ING.map(q=>`<button class="secondary" style="min-height:0;padding:6px 4px;font-size:13px;line-height:1.3" data-act="lfIng" data-v="${q[0]}"><img src="${MZIMG("cook/in_"+q[0]+".webp")}" alt="" style="width:40px;height:40px;object-fit:contain;display:block;margin:0 auto">${q[1]}<br><small>${dPrice("tw:grocer",q[2])} 幣${INGD()[q[0]]?`・有 ${INGD()[q[0]]}`:""}</small></button>`).join("")}</div>`;
