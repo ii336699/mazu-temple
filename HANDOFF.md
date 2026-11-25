@@ -2008,3 +2008,12 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - 主委看魚模型（tmFish）多「▶ 下一隻」「✖ 關掉」（#fvBar）。
 - 小屋加蓋：自己的小屋面板「⬆️ 加蓋成兩層樓」，價錢 = 同位置大間差價 + 2,000（約 2 萬），付完馬上完成：TW.lotUp(i) 把 TOWNB 那間 fl=2、重建附近區塊；屋裡用 lotK(i)="M" 10×8；賣掉多退一半加蓋費。worker /house op "up"（HS[l].up），/houses 清單帶 up，每個玩家讀到就把那間畫成兩層樓 → 要部署 worker 才大家看得到（正式站 worker 建置目前失敗中）。
 - 島上 UI 總檢查（手機）：工具列原本跟右上「今日」重疊 → 移到左上。
+
+## 11/26 01:10 遊戲時間、地圖座標、跟隨、主委拉人、聊天室（未部署；worker 有改）
+- 21:50 那次部署其實成功了：GitHub check 後來變 success，正式站 /evt 已是新程式。
+- 遊戲時間：小地圖右上角 #mmClock（MZ_CLOCK：一天 24 分鐘，p=0 是早上 8 點），每 2 秒更新。
+- 大地圖左下 #mmXY：你在 (x,z)・游標／手指那點的座標（px/pz 反算）。
+- 點玩家（giftTap 改成大家都能點，主委不能點主委）→ peerMenu：🚶 跟隨（每 0.4 s planPath 走到他身邊 1.6 m；自己按方向鍵／搖桿／點地就停；右側「⏹ 停止跟隨」#followChip bottom 320）。主委多 🎁 送禮、🧲 拉過來／✋ 放開。
+- 主委拉人：POST /pull（x-key）{to,on,by=主委 mz.id,slot,x,z} → lobby → 各 hall /h1 送給 tag=to 的連線 {t:"pull"}。被拉的人：pullMsg 立刻到主委身後，MZ_PULLTICK（meAv.update 後）每幀跟在主委後方 (slot+1)×1.4 m、高度跟主委（飛也跟），MZ_HOLD 鎖操作；放開就停在原地。放開一個時，後面的人重排 slot。測試頁沒伺服器只會提示。
+- 聊天室（RO 風）：主委工具「聊天室・帶人」→ 💬 聊天室：打標題開房／改標題／關房／看紀錄。lobby /croom：GET 目前房間＋最近 150 句；POST op open/close（要 key）、join/leave、say（0.9 秒一句、主委的字標金色）。廣播 hall /hb {t:"croom"}/{t:"crmsg"}。主委頭上有標題牌（textSprite，別人看得到在 av.sp 的人頭上），右側「💬 加入聊天室」#crChip bottom 378。測試頁存在 localStorage mz.croomL。
+- UI 總檢查（手機、電腦）新按鈕 0 問題。
