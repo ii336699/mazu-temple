@@ -9,7 +9,7 @@ function snapInfo(str) { try { const raw = atob(String(str).slice(3).replace(/-/
   if (get(4) !== 1) return {}; get(65); const coins = get(16); get(30); get(1); const pn = get(3); get(pn * 6); get(24); const nl = get(4); let name = ""; for (let i = 0; i < nl; i++) name += String.fromCharCode(get(16)); return { name, coins }; } catch { return {}; } }
 const HALLS = 10, CAP = 100, MAX_MSG = 4000;
 const MEMO = new Map(), MEMO_TTL = { "/halls": 8000, "/lamps": 60000, "/wishes": 30000, "/board": 30000, "/stage": 5000, "/puppet": 5000, "/crowd": 5000, "/market": 5000, "/layout": 5000, "/mapedit": 5000 };
-const LOBBY_PATHS = ["/lookup/givecat", "/lookup/restore", "/lookup/codes", "/lookup/restorecode", "/mapedit", "/photospots", "/photospot", "/rank", "/rankclaim", "/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather", "/evt", "/stat", "/nev", "/paper", "/sponsor", "/hatfit", "/honor", "/lookup", "/crash", "/meteor"];
+const LOBBY_PATHS = ["/croom", "/pull", "/lookup/givecat", "/lookup/restore", "/lookup/codes", "/lookup/restorecode", "/mapedit", "/photospots", "/photospot", "/rank", "/rankclaim", "/lb", "/lamps", "/lamp", "/wishes", "/wish", "/msg", "/msgs", "/announce", "/fireworks", "/zhan", "/lanterns", "/board", "/reply", "/letters", "/stage", "/puppet", "/crowd", "/market", "/nmrec", "/hongbao", "/hbclaim", "/layout", "/schedule", "/fwc", "/weather", "/evt", "/stat", "/nev", "/paper", "/sponsor", "/hatfit", "/honor", "/lookup", "/crash", "/meteor"];
 const MEMO_OF = { "/lamp": "/lamps", "/wish": "/wishes", "/board": "/board", "/stage": "/stage", "/puppet": "/puppet", "/crowd": "/crowd", "/market": "/market", "/layout": "/layout", "/mapedit": "/mapedit" }; // a POST here makes that cached list stale
 
 export default {
@@ -92,6 +92,8 @@ export class Hall extends DurableObject {
       const out = JSON.stringify({ t: "hb", id: String(b.id || "").slice(0, 16), seed: (b.seed | 0) >>> 0, n: b.n | 0, x: Number(b.x) || 0, z: Number(b.z) || 0, at: Number(b.at) || Date.now() });
       for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
     }
+    if (url.pathname === "/hb") { const out = await req.text(); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok"); } /* (from the lobby: a message for everyone in this hall — the chair's chat room) */
+    if (url.pathname === "/h1") { let b = {}; try { b = await req.json(); } catch {} const to = String(b.to || "").replace(/[^a-z0-9]/g, "").slice(0, 16); if (to) { const out = JSON.stringify(b.m || {}); for (const w of this.ctx.getWebSockets(to)) { try { w.send(out); } catch {} } } return new Response("ok"); } /* (from the lobby: a message for one player — the chair pulling someone along) */
     if (url.pathname === "/evtb") { // from the lobby: the chair started or ended an event (釣魚熱門、昆蟲、挖寶、放昆蟲／地洞)
       let b = {}; try { b = await req.json(); } catch {}
       const out = JSON.stringify({ t: "evt", e: b }); for (const w of this.ctx.getWebSockets()) { try { w.send(out); } catch {} } return new Response("ok");
@@ -475,6 +477,32 @@ export class Lobby extends DurableObject {
     }
     // 活動 (11/25 主委「我能製作昆蟲 釣魚熱門時間 製作挖掘地洞 我要做活動用」): the chair's events for everyone. Anyone reads; changes need the key.
     // { fish: until, bug: { until, ids }, dig: until, drops: [{ id, k: "bug"|"dig", b, n, x, z, until }] }
+    /* 聊天室 (11/26 主委「像 RO 的聊天室 可以打標題 開聊天室 玩家可以點擊加入 主委斷線上線也可以看紀錄」): one room at a time, opened and
+       closed by the chair; anyone can join, talk and read what was said (the last 150 lines stay, also after the chair comes back) */
+    if (url.pathname === "/croom") {
+      const CR = (await this.ctx.storage.get("cr")) || { title: "", open: 0, at: 0, msgs: [], mem: [] };
+      const pub = () => ({ title: CR.title, open: CR.open, at: CR.at, mem: CR.mem.map(m => m.n) });
+      const all = (m) => Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/hb", { method: "POST", body: JSON.stringify(m) }).catch(() => {})));
+      if (req.method !== "POST") return json({ ok: true, cr: pub(), msgs: CR.msgs.slice(-150) });
+      let b = {}; try { b = await req.json(); } catch {} const op = String(b.op || ""), now = Date.now();
+      CR.mem = (CR.mem || []).filter(m => now - m.at < 30 * 60e3);
+      if (op === "open" || op === "close") { const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
+        if (op === "open") { const t = String(b.title || "").replace(/[<>]/g, "").slice(0, 24).trim(); if (!t) return json({ ok: false }); Object.assign(CR, { title: t, open: 1, at: now, msgs: b.keep ? CR.msgs : [], mem: [] }); } else CR.open = 0;
+        await this.ctx.storage.put("cr", CR); await all({ t: "croom", cr: pub() }); return json({ ok: true, cr: pub() }); }
+      if (!CR.open) return json({ ok: false, closed: true });
+      const n = String(b.n || "").replace(/[<>]/g, "").slice(0, 16) || "香客", id = String(b.id || "").replace(/[^a-z0-9]/g, "").slice(0, 16);
+      if (op === "join" || op === "leave") { CR.mem = CR.mem.filter(m => m.id !== id); if (op === "join") CR.mem.push({ id, n, at: now }); CR.mem = CR.mem.slice(-60); await this.ctx.storage.put("cr", CR); await all({ t: "croom", cr: pub() }); return json({ ok: true, cr: pub(), msgs: CR.msgs.slice(-150) }); }
+      if (op === "say") { const t = String(b.t || "").replace(/[<>]/g, "").slice(0, 120).trim(); if (!t) return json({ ok: false });
+        this.crLast = this.crLast || new Map(); if (now - (this.crLast.get(id) || 0) < 900) return json({ ok: false, slow: true }); this.crLast.set(id, now);
+        const m = { n, t, at: now, sp: b.sp && (await this.checkKey(req)).ok ? 1 : 0 }; CR.msgs.push(m); CR.msgs = CR.msgs.slice(-150); const me = CR.mem.find(q => q.id === id); if (me) me.at = now;
+        await this.ctx.storage.put("cr", CR); await all({ t: "crmsg", m }); return json({ ok: true }); }
+      return json({ ok: false });
+    }
+    /* 主委拉人 (11/26): the chair takes a player along behind them (on) or lets them go (off) — sent to that one player wherever they are */
+    if (url.pathname === "/pull" && req.method === "POST") { const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
+      let b = {}; try { b = await req.json(); } catch {} const to = String(b.to || "").replace(/[^a-z0-9]/g, "").slice(0, 16); if (!to) return json({ ok: false });
+      const m = { t: "pull", on: b.on ? 1 : 0, by: String(b.by || "").replace(/[^a-z0-9]/g, "").slice(0, 16), slot: Math.max(0, Math.min(20, b.slot | 0)), x: +b.x || 0, z: +b.z || 0 };
+      await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/h1", { method: "POST", body: JSON.stringify({ to, m }) }).catch(() => {}))); return json({ ok: true }); }
     if (url.pathname === "/evt") {
       const now = Date.now(), clean = e => { e = e || {}; const o = { fish: +e.fish > now ? +e.fish : 0, bug: e.bug && +e.bug.until > now ? { until: +e.bug.until, ids: (e.bug.ids || []).slice(0, 60) } : { until: 0, ids: [] }, dig: +e.dig > now ? +e.dig : 0, drops: (e.drops || []).filter(d => +d.until > now).slice(-40) }; return o; };
       if (req.method === "POST") {

@@ -4297,7 +4297,7 @@ function opDetour(start,pts){ if(!OP||!OP.on) return pts; const o=opRect(), out=
   for(const q of pts){ const zl=Math.min(p[1],q[1]), zh=Math.max(p[1],q[1]); if(zl<o.z1&&zh>o.z0){ const xm=(p[0]+q[0])/2; if(xm>o.x0-1&&xm<o.x1+1&&!(opInside(p[0],p[1])||opInside(q[0],q[1]))){ const sx=xm<OP.x?o.x0-.5:o.x1+.5; const n=p[1]<q[1]; out.push([sx,n?o.z0-.3:o.z1+.3],[sx,n?o.z1+.3:o.z0-.3]); } } out.push(q); p=q; } return out; }
 station("altar",[0,-9.35],Math.PI);
 let tapGy=0, tapGyS=-1;
-function walkTo(x,z,stationKey){ if(window.MZ_HOLD) return; if(sjGuard(()=>walkTo(x,z,stationKey))) return; closeSheet(); if(!stationKey) showTap(x,z); else { const st=stations[stationKey]; showTap(st.approach.x,st.approach.y); } const pth=myFly?[flyClamp(x,z)]:planPath(meAv.pos.x,meAv.pos.y,x,z,meAv.gy||0,tapGy); tapGy=0; if(!myFly&&zoneOf(x,z)==="R"){ const si=tapGyS; tapGyS=-1; if(si>=0&&innLockedBy(si)==="other"&&innSuiteAt(meAv.pos.x,meAv.pos.y)!==si){ toast("這間套房有人鎖門了",2400); return; } } meAv.moveTo(pth[0][0],pth[0][1]); meAv.path=pth.slice(1); meAv.faceGoal=null; pendingStation=stationKey||null; meAv.hold=meAv.hold&&!stationKey?meAv.hold:meAv.hold; markDirty(); updateStandBtn(); }
+function walkTo(x,z,stationKey){ if(window.MZ_HOLD) return; try{ if(PEER.follow) stopFollow(true); }catch(e){} if(sjGuard(()=>walkTo(x,z,stationKey))) return; closeSheet(); if(!stationKey) showTap(x,z); else { const st=stations[stationKey]; showTap(st.approach.x,st.approach.y); } const pth=myFly?[flyClamp(x,z)]:planPath(meAv.pos.x,meAv.pos.y,x,z,meAv.gy||0,tapGy); tapGy=0; if(!myFly&&zoneOf(x,z)==="R"){ const si=tapGyS; tapGyS=-1; if(si>=0&&innLockedBy(si)==="other"&&innSuiteAt(meAv.pos.x,meAv.pos.y)!==si){ toast("這間套房有人鎖門了",2400); return; } } meAv.moveTo(pth[0][0],pth[0][1]); meAv.path=pth.slice(1); meAv.faceGoal=null; pendingStation=stationKey||null; meAv.hold=meAv.hold&&!stationKey?meAv.hold:meAv.hold; markDirty(); updateStandBtn(); }
 function goStation(k){ const s=stations[k]; walkTo(s.approach.x,s.approach.y,k); const h=STATION_HINT[k]||(STATION_LABEL[k]?"走向"+STATION_LABEL[k]:""); if(h) toast(h); } /* (11/17 晚 主委「黑點…在跳出對話框之前會先跳」: the town's spots have no 走向… line, so an empty toast showed as a dark dot) */
 const STATION_HINT={gacha:"走向扭蛋機",innDesk:"走向禪房櫃台",xuantian:"走向玄天上帝",guangong:"走向關聖帝君",cats:"走向小貓",fountain:"走向觀音噴泉",wish:"走向許願樹",jieqian:"走向解籤處",tiangong:"走向天公爐",caishen:"走向財神爺",yuelao:"走向月老",huye:"走向虎爺",lamp:"走向光明燈",lampR:"走向光明燈",bell:"走去敲鐘",drum:"走去擊鼓",altar:"走向供桌",lot:"走向籤詩櫃",shop:"走向服務處",burn:"走向金爐",donate:"走向香油錢箱"};
 function trySit(i){ if(sjGuard(()=>trySit(i))) return; { const S0=SEATS[i]; statInc("sit_"+(S0&&(S0.kind||(S0.zen?"zen":""))||"mat")); } { const S=SEATS[i]; if(S&&S.kind==="futon"&&!(bag.gd&&bag.gd.bedding)){ toast("先到櫃台跟阿姨領床具，才能鋪床睡覺喔",3000); return; } if(S&&S.suite!=null&&innLockedBy(S.suite)==="other"){ toast("這間套房有人鎖門了",2400); return; } } if(seatTakenByPeer(i)){ toast("這個拜墊已經有人了"); return; } closeSheet(); showTap(SEATS[i].x,SEATS[i].y); pendingStation=null; meAv.sitAt(i); { const pth=planPath(meAv.pos.x,meAv.pos.y,SEATS[i].x,SEATS[i].y,meAv.gy||0,SEATS[i].gy||0); meAv.target.set(pth[0][0],pth[0][1]); meAv.path=pth.slice(1); } meAv.faceGoal=null; npcYield(i); markDirty(); updateStandBtn(); }
@@ -4741,6 +4741,7 @@ function initCF(first){
       if(m.t==="wx"){ WX.set=m.w||null; WX.setUntil=+m.until||0; return; } if(m.t==="evt"){ try{ window.MZ_EVTSET&&MZ_EVTSET(m.e); }catch(e){} return; }
       if(m.t==="hb"){ hbStart(m); return; }
       if(m.t==="gift"){ giftFetch(); return; }
+      if(m.t==="croom"||m.t==="crmsg"){ try{ crNet(m); }catch(e){ console.warn(e); } return; } if(m.t==="pull"){ try{ pullMsg(m); }catch(e){ console.warn(e); } return; }
       if(m.t==="giftnow"&&m.g&&m.g.g){ const g=m.g; if(!GIFT_SEEN.has(g.g)){ GIFT_SEEN.add(g.g); save("mz.giftSeen",[...GIFT_SEEN].slice(-60)); giftApply({kind:["item","acc","x","gacha"].includes(g.kind)?g.kind:"coins",k:String(g.k||""),n:Math.max(1,Math.min(100000,g.n|0)),from:String(g.from||"主委").slice(0,16)}); profSave(true); } return; } /* 只有在線上的人收得到的全服禮物 (11/25: 家具・釣具・扭蛋幣 were turned into 平安幣 here) */
       if(m.t==="sl50"&&Number.isFinite(m.seed)){ massLanterns(m.seed); return; }
       if(m.t==="fw"&&Number.isFinite(m.seed)){ fwStart(m.seed,+m.el||0,+m.sh||0,m.txt,m.cu||""); return; }
@@ -5339,8 +5340,81 @@ HANDLERS.giftList=()=>{ if(!me.sp) return; const list=[...remotes.entries()].fil
   openSheet("gift","送禮",`<p class="lead">選一位這一殿的玩家，也可以直接在畫面上點他。</p><div class="goods"><button class="good" data-act="giftPick" data-v="all" style="border-color:var(--gold)"><span class="name">🌐 送給全伺服器</span><span class="meta">每位玩家各一份（平安幣・道具・飾品）</span></button>${rows}${USE_CF?"":`<button class="good" data-act="giftPick" data-v="me"><span class="name">送給自己（預覽字卡）</span></button>`}</div>${backBtn}`); };
 HANDLERS.giftPick=v=>{ if(v==="all"){ openGift("all","全伺服器所有玩家"); return; } if(v==="me"){ openGift("me",me.name||"自己"); return; } const av=remotes.get(v); if(av) openGift(v,av.name||"香客"); };
 // tapping a real player opens the gift sheet for the 主委
-function giftTap(rc){ if(!me.sp||!remotes.size) return false; const roots=[...remotes.entries()].filter(([id,av])=>av.root.visible&&!av.sp); if(!roots.length) return false;
-  const hit=rc.intersectObjects(roots.map(r=>r[1].root),true)[0]; if(!hit) return false; let o=hit.object; while(o&&!roots.some(r=>r[1].root===o)) o=o.parent; const e=roots.find(r=>r[1].root===o); if(!e) return false; openGift(e[0],e[1].name||"香客"); return true; }
+function giftTap(rc){ if(!remotes.size) return false; const roots=[...remotes.entries()].filter(([id,av])=>av.root.visible&&!(me.sp&&av.sp)); if(!roots.length) return false;
+  const hit=rc.intersectObjects(roots.map(r=>r[1].root),true)[0]; if(!hit) return false; let o=hit.object; while(o&&!roots.some(r=>r[1].root===o)) o=o.parent; const e=roots.find(r=>r[1].root===o); if(!e) return false; peerMenu(e[0]); return true; } /* (11/26: anyone can tap a player — 跟隨; the chair also 送禮 and 拉過來) */
+/* ===== 玩家選單・跟隨・主委拉人・聊天室 (11/26 主委 00:31)
+   Tap another player: 🚶 跟隨 (anyone) — you walk after them until you move yourself; the chair also gets 🎁 送禮 and 🧲 拉過來／✋ 放開.
+   拉過來: the server tells that one player; their game puts them behind the chair in a queue (first pulled first), copies the chair's
+   height when flying, and holds their own controls until let go — then they stay where they are.
+   聊天室 (RO style): the chair opens a room with a title; a sign floats over the chair, a button lets anyone join; members talk; the
+   last 150 lines stay on the server, so the chair (or anyone) reads them after coming back. The test page keeps it on this device. ===== */
+const PEER={follow:null,pulled:[],pull:null};
+const myPid=()=>load("mz.id","");
+function peerMenu(id){ const av=remotes.get(id); if(!av) return; const nm=av.name||"香客", pulled=PEER.pulled.includes(id);
+  openSheet("peer","👤 "+esc(nm),`<div class="row" style="flex-wrap:wrap;gap:8px"><button class="${PEER.follow===id?"secondary":"primary"}" data-act="pFollow" data-v="${esc(id)}">${PEER.follow===id?"⏹ 停止跟隨":"🚶 跟隨"}</button>${me.sp?`<button class="secondary" data-act="pGift" data-v="${esc(id)}">🎁 送禮</button><button class="secondary" data-act="pPull" data-v="${esc(id)}">${pulled?"✋ 放開":"🧲 拉過來"}</button>`:""}</div>
+    <p class="note">${PEER.follow===id?"你正跟著他走，自己一移動就會停。":"跟隨：你的人物會自動跟著他走。"}${me.sp?`<br>拉過來：把他帶到你身後，你走到哪、飛到哪他都跟著，可以一次帶好幾個排成一列；按「放開」他就留在當下的位置。`:""}</p>
+    ${me.sp&&PEER.pulled.length?`<div class="row"><button class="secondary" data-act="pPullAll">✋ 全部放開（現在帶著 ${PEER.pulled.length} 個人）</button></div>`:""}`); }
+HANDLERS.pGift=v=>{ const av=remotes.get(v); if(av) openGift(v,av.name||"香客"); };
+/* 跟隨 */
+function followChip(){ let c=document.getElementById("followChip"); const av=PEER.follow&&remotes.get(PEER.follow);
+  if(!av){ if(c) c.remove(); return; } if(!c){ c=document.createElement("button"); c.id="followChip"; c.className="near-chip side-act glass"; c.style.bottom="calc(env(safe-area-inset-bottom,0px) + 320px)"; c.onclick=()=>stopFollow(true); document.body.appendChild(c); } c.textContent=`⏹ 停止跟隨 ${String(av.name||"香客").slice(0,6)}`; }
+function stopFollow(say){ if(!PEER.follow) return; PEER.follow=null; followChip(); if(say) toast("不跟了",1400); }
+HANDLERS.pFollow=v=>{ closeSheet(); if(PEER.follow===v){ stopFollow(true); return; } if(PEER.pull){ toast("主委正帶著你，現在不能跟別人",2200); return; } const av=remotes.get(v); if(!av) return; PEER.follow=v; followChip(); toast(`🚶 跟著 ${av.name||"香客"} 走（自己一動就會停）`,2400); };
+setInterval(()=>{ try{ if(!PEER.follow) return; const av=remotes.get(PEER.follow); if(!av||!av.root.visible){ stopFollow(); toast("跟丟了……",1800); return; }
+    if((typeof keys!=="undefined"&&keys.size)||(typeof joy!=="undefined"&&joy.on)){ stopFollow(true); return; }
+    const d=Math.hypot(av.pos.x-meAv.pos.x,av.pos.y-meAv.pos.y); if(d<2.2) return; if(d>60){ stopFollow(); toast("他走太遠了，跟丟了",1800); return; }
+    const k=1.6/d, tx=av.pos.x+(meAv.pos.x-av.pos.x)*k, tz=av.pos.y+(meAv.pos.y-av.pos.y)*k;
+    const pth=myFly?[flyClamp(tx,tz)]:planPath(meAv.pos.x,meAv.pos.y,tx,tz,meAv.gy||0,0); if(pth&&pth.length){ meAv.moveTo(pth[0][0],pth[0][1]); meAv.path=pth.slice(1); meAv.faceGoal=null; markDirty(); } }catch(e){ console.warn("follow",e); } },400);
+/* 主委拉人 — the chair's side */
+async function pullSend(id,on){ const key=ck(); if(!key){ toast("先在主委工具輸入密碼",2200); return false; }
+  if(!USE_CF){ toast("測試版沒有伺服器：正式站才會真的把人拉過來",2600); return true; }
+  try{ const r=await fetch("/pull",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({to:id,on:on?1:0,by:myPid(),slot:PEER.pulled.indexOf(id),x:meAv.pos.x,z:meAv.pos.y})}); const j=await r.json().catch(()=>({})); forgetKey(r,j); if(!j.ok){ toast("密碼不對或伺服器沒回應",2200); return false; } save("mz.rk",key); return true; }catch(e){ toast("沒有送出，請稍後再試",2000); return false; } }
+HANDLERS.pPull=async v=>{ if(!me.sp) return; const av=remotes.get(v); if(!av) return; closeSheet();
+  if(PEER.pulled.includes(v)){ PEER.pulled=PEER.pulled.filter(q=>q!==v); if(await pullSend(v,false)) toast(`✋ 放開了 ${av.name||"香客"}`,1800); PEER.pulled.forEach((q,i)=>pullSend(q,true)); /* (the queue closes up) */ return; }
+  PEER.pulled.push(v); if(await pullSend(v,true)) toast(`🧲 ${av.name||"香客"} 跟在你後面了（第 ${PEER.pulled.length} 個）`,2200); else PEER.pulled=PEER.pulled.filter(q=>q!==v); };
+HANDLERS.pPullAll=async()=>{ if(!me.sp) return; closeSheet(); const L=PEER.pulled.slice(); PEER.pulled=[]; for(const v of L) await pullSend(v,false); toast("✋ 全部放開了",1800); };
+/* 主委拉人 — the pulled player's side */
+function pullMsg(m){ if(m.on){ const first=!PEER.pull; PEER.pull={by:m.by,slot:m.slot|0}; stopFollow(); window.MZ_HOLD=true; try{ closeSheet(); }catch(e){}
+    if(first){ const b=(m.slot+1)*1.4; meAv.pos.set(m.x-Math.sin(meAv.rotY)*b,m.z-Math.cos(meAv.rotY)*b); meAv.target.copy(meAv.pos); meAv.path=[]; toast("🧲 主委把你帶在身邊了，主委走到哪你就跟到哪",3200); } }
+  else if(PEER.pull){ PEER.pull=null; window.MZ_HOLD=false; meAv.target.copy(meAv.pos); meAv.path=[]; toast("主委放開你了，你可以自己走了",2600); } }
+window.MZ_PULLTICK=dt=>{ const P=PEER.pull; if(!P) return; window.MZ_HOLD=true; const av=remotes.get(P.by); if(!av) return; const b=(P.slot+1)*1.4, ry=av.rotY||0;
+  const tx=av.pos.x-Math.sin(ry)*b, tz=av.pos.y-Math.cos(ry)*b, d=Math.hypot(tx-meAv.pos.x,tz-meAv.pos.y);
+  if(d>30){ meAv.pos.set(tx,tz); } else { const k=Math.min(1,dt*5); meAv.pos.set(meAv.pos.x+(tx-meAv.pos.x)*k,meAv.pos.y+(tz-meAv.pos.y)*k); }
+  meAv.target.copy(meAv.pos); meAv.path=[]; meAv.walking=d>.15; meAv.rotY=lerpAngle(meAv.rotY,Math.atan2(av.pos.x-meAv.pos.x,av.pos.y-meAv.pos.y),Math.min(1,dt*6));
+  const ay=av.root.position.y; if(ay>meAv.root.position.y+.3) meAv.root.position.y=ay; /* (flying with the chair) */ };
+/* 聊天室 */
+const CRM={cr:{title:"",open:0,mem:[]},msgs:[],joined:false,sign:null,signFor:null};
+const crLocal=()=>{ const d=load("mz.croomL",null)||{cr:{title:"",open:0,mem:[]},msgs:[]}; return d; };
+async function crFetch(){ if(!USE_CF){ const d=crLocal(); CRM.cr=d.cr; CRM.msgs=d.msgs; crUI(); return; } try{ const j=await (await fetch("/croom",{cache:"no-store"})).json(); if(j.ok){ CRM.cr=j.cr; CRM.msgs=j.msgs||[]; crUI(); } }catch(e){} }
+async function crPost(b,key){ if(!USE_CF){ const d=crLocal(), now=Date.now();
+    if(b.op==="open"){ d.cr={title:b.title,open:1,at:now,mem:[]}; if(!b.keep) d.msgs=[]; } else if(b.op==="close") d.cr.open=0; else if(b.op==="join"){ d.cr.mem=[...new Set([...(d.cr.mem||[]),b.n])]; } else if(b.op==="leave"){ d.cr.mem=(d.cr.mem||[]).filter(q=>q!==b.n); } else if(b.op==="say"){ if(!d.cr.open) return {ok:false,closed:true}; d.msgs.push({n:b.n,t:b.t,at:now,sp:b.sp?1:0}); d.msgs=d.msgs.slice(-150); }
+    save("mz.croomL",d); CRM.cr=d.cr; CRM.msgs=d.msgs; crUI(); return {ok:true}; }
+  const h={"content-type":"application/json"}; if(key) h["x-key"]=key; try{ const r=await fetch("/croom",{method:"POST",headers:h,body:JSON.stringify(b)}); const j=await r.json().catch(()=>({})); if(key) forgetKey(r,j); if(j.cr) CRM.cr=j.cr; if(j.msgs) CRM.msgs=j.msgs; crUI(); return j; }catch(e){ return {ok:false}; } }
+function crNet(m){ if(m.t==="croom"){ const was=CRM.cr.open; CRM.cr=m.cr||CRM.cr; if(was&&!CRM.cr.open&&CRM.joined){ CRM.joined=false; toast("主委關閉了聊天室",2400); } if(!was&&CRM.cr.open) toast(`💬 主委開了聊天室「${CRM.cr.title}」，點右邊的按鈕加入`,3600); crUI(); }
+  else if(m.t==="crmsg"&&m.m){ CRM.msgs.push(m.m); CRM.msgs=CRM.msgs.slice(-150); if(sheetKind==="croom") crRender(); else if(CRM.joined) toast(`💬 ${m.m.n}：${String(m.m.t).slice(0,30)}`,2600); } }
+function crSignHost(){ if(me.sp) return meAv; for(const av of remotes.values()) if(av.sp&&av.root.visible) return av; return null; }
+function crUI(){ /* the button on the right, and the sign over the chair's head */
+  let c=document.getElementById("crChip"); if(CRM.cr.open){ if(!c){ c=document.createElement("button"); c.id="crChip"; c.className="near-chip side-act glass"; c.style.bottom="calc(env(safe-area-inset-bottom,0px) + 378px)"; c.onclick=()=>{ try{ ensureAudio(); }catch(e){} crOpen(); }; document.body.appendChild(c); } c.textContent=(CRM.joined?"💬 回到聊天室":"💬 加入聊天室")+"「"+CRM.cr.title.slice(0,8)+"」"; } else if(c) c.remove();
+  const host=CRM.cr.open?crSignHost():null; if(CRM.sign&&(CRM.signFor!==host||!CRM.cr.open||CRM.sign.userData.t!==CRM.cr.title)){ try{ CRM.sign.parent&&CRM.sign.parent.remove(CRM.sign); }catch(e){} CRM.sign=null; CRM.signFor=null; }
+  if(host&&!CRM.sign){ try{ const s=textSprite("💬 "+CRM.cr.title,{fs:40,color:"#3a2a10",bg:"#fff6d8"}); const k=.42/(s.scale.y||1); s.scale.multiplyScalar(k); s.position.set(0,2.35,0); s.userData.t=CRM.cr.title; host.root.add(s); CRM.sign=s; CRM.signFor=host; }catch(e){ console.warn("cr sign",e); } } }
+function crRender(){ const L=document.getElementById("crLog"); if(L){ L.innerHTML=CRM.msgs.slice(-150).map(m=>`<div style="margin:2px 0"><b style="color:${m.sp?"#ffd27a":"#bfe3ff"}">${esc(m.n)}</b>：${esc(m.t)} <small style="opacity:.5">${new Date(m.at).toLocaleTimeString("zh-TW",{hour:"2-digit",minute:"2-digit"})}</small></div>`).join("")||`<p class="note">還沒有人說話。</p>`; L.scrollTop=L.scrollHeight; }
+  const M=document.getElementById("crMem"); if(M) M.textContent=`在裡面的人（${(CRM.cr.mem||[]).length}）：${(CRM.cr.mem||[]).join("、")||"—"}`; }
+async function crOpen(view){ await crFetch(); if(!CRM.cr.open&&!view){ toast("聊天室已經關了",1800); return; }
+  if(CRM.cr.open&&!CRM.joined&&!view){ CRM.joined=true; crPost({op:"join",n:me.name||"香客",id:myPid()}); crUI(); }
+  openSheet("croom","💬 "+esc(CRM.cr.title||"聊天室")+(CRM.cr.open?"":"（已關閉）"),`<p class="note" id="crMem"></p><div id="crLog" style="max-height:42vh;overflow:auto;background:rgba(0,0,0,.25);border-radius:10px;padding:8px 10px;font-size:14px;line-height:1.6"></div>
+    ${CRM.cr.open?`<form id="crForm" class="mail-row" style="margin-top:8px"><input class="mail-box" id="crIn" maxlength="120" placeholder="說點什麼…" autocomplete="off"><button class="primary" type="submit">送出</button></form>`:""}
+    <div class="row">${CRM.joined?`<button class="secondary" data-act="crLeave">離開聊天室</button>`:""}${me.sp&&CRM.cr.open?`<button class="secondary" data-act="crClose">關閉聊天室</button>`:""}</div>`);
+  crRender(); const f=document.getElementById("crForm"); if(f) f.addEventListener("submit",async e=>{ e.preventDefault(); const i=document.getElementById("crIn"); const t=(i.value||"").trim(); if(!t) return; const tx=typeof cleanChat==="function"?cleanChat(t):t; if(!tx) return; i.value=""; const j=await crPost({op:"say",n:me.name||"香客",id:myPid(),t:tx,sp:me.sp?1:0},me.sp?ck():null); if(j&&j.slow) toast("說慢一點",1200); else if(j&&j.closed) toast("聊天室已經關了",1800); if(!USE_CF) crRender(); }); }
+HANDLERS.crLeave=()=>{ CRM.joined=false; crPost({op:"leave",n:me.name||"香客",id:myPid()}); closeSheet(); crUI(); toast("離開聊天室了",1400); };
+HANDLERS.crClose=async()=>{ if(!me.sp) return; const key=ck(); if(USE_CF&&!key){ toast("先在主委工具輸入密碼",2200); return; } await crPost({op:"close"},key); CRM.joined=false; closeSheet(); crUI(); toast("聊天室關閉了（紀錄留著，主委工具裡看得到）",2600); };
+HANDLERS.crAdmin=async()=>{ if(!me.sp) return; await crFetch(); openSheet("crAdmin","💬 聊天室",`<p class="lead">${CRM.cr.open?`現在開著：「${esc(CRM.cr.title)}」，${(CRM.cr.mem||[]).length} 個人在裡面。`:"現在沒有開聊天室。"}</p>
+    <div class="mail-row"><input class="mail-box" id="crTitle" maxlength="24" placeholder="聊天室標題（24 字以內）" value="${esc(CRM.cr.open?CRM.cr.title:"")}"><button class="primary" data-act="crOpenGo">${CRM.cr.open?"改標題重開":"開聊天室"}</button></div>
+    <p class="note">開了以後，你頭上會出現聊天室的牌子，大家畫面右邊會有「加入聊天室」。最近 150 句會留在伺服器，你下線再上來也看得到。</p>
+    <div class="row"><button class="secondary" data-act="crView">📜 看紀錄</button>${CRM.cr.open?`<button class="secondary" data-act="crClose">關閉聊天室</button>`:""}</div>`); };
+HANDLERS.crOpenGo=async()=>{ if(!me.sp) return; const t=((document.getElementById("crTitle")||{}).value||"").trim(); if(!t){ toast("請先打標題",1600); return; } const key=ck(); if(USE_CF&&!key){ toast("先在主委工具輸入密碼",2200); return; } const keep=CRM.cr.open; const j=await crPost({op:"open",title:t,keep},key); if(j&&j.ok===false){ toast("沒開成功（密碼？）",2200); return; } if(USE_CF) save("mz.rk",key); CRM.joined=true; crPost({op:"join",n:me.name||"主委",id:myPid()}); closeSheet(); crUI(); toast(`💬 聊天室「${t}」開好了`,2200); crOpen(); };
+HANDLERS.crView=()=>{ crOpen(true); };
+setTimeout(crFetch,4000); setInterval(()=>{ crFetch(); },60000); setInterval(()=>{ try{ crUI(); }catch(e){} },3000);
+
 
 function renderLook(first){ if(lookTab==="hat") lookTab="face"; if(draftLook&&draftLook[6]){ draftLook[6]=0; try{ meAv.setLook(draftLook); }catch(e){} } if(lookTab==="nose") lookTab="eyes"; if(!["me","face","eyes","mouth","hair","wear"].includes(lookTab)) lookTab="me";
   const tabs=[["me","名字"],["face","臉"],["eyes","眼睛"],["mouth","嘴巴"],["hair","髮型"],["wear","服裝"]];
@@ -9431,7 +9505,7 @@ function tick(){ try{ tick0(); }catch(e){ TICKERR.n++; const m=String(e&&(e.stac
 function tick0(){ if(gameAsleep) return; const _ft0=performance.now(); FMK.t=_ft0; FMK.a=[]; { const now=performance.now(), cap=frameCap(); if(cap<60&&now-PACE.last<1000/cap-4){ requestAnimationFrame(tick); return; } PACE.last=now; } dresTick();
   const dt=Math.min(.07,clock.getDelta()); const t=clock.elapsedTime;
   { const nowP=performance.now(); if(AUQ.frame&&nowP-AUQ.frame>800){ AUQ.until=nowP+1500; remotes.forEach(av=>{ if(av.goalX!=null){ av.pos.set(av.goalX,av.goalZ); av.target.set(av.goalX,av.goalZ); av.path=[]; } }); } AUQ.frame=nowP; }
-  FMK.mk("開頭"); meAv.update(dt); accTick(meAv,dt); arrivedCheck(); FMK.mk("自己"); { const fb=document.getElementById("frogBtn"), on=!!(meAv.eq&&meAv.eq[0]==="h_frog")&&!miniOpen; if(fb&&fb.hidden===on) fb.hidden=!on; }
+  FMK.mk("開頭"); meAv.update(dt); try{ window.MZ_PULLTICK&&MZ_PULLTICK(dt); }catch(e){} accTick(meAv,dt); arrivedCheck(); FMK.mk("自己"); { const fb=document.getElementById("frogBtn"), on=!!(meAv.eq&&meAv.eq[0]==="h_frog")&&!miniOpen; if(fb&&fb.hidden===on) fb.hidden=!on; }
   if(tapMark.visible){ tapT+=dt; const arrived=!(meAv.path&&meAv.path.length)&&meAv.pos.distanceTo(meAv.target)<.06; const k=1+Math.sin(tapT*6)*.12; const [r1,r2,dot]=tapMark.userData.parts;
     r1.scale.setScalar(k); r2.scale.setScalar(1+((tapT*1.2)%1)*.8); r2.material.opacity=.7*(1-((tapT*1.2)%1));
     if(arrived||tapT>12){ const f=Math.max(0,r1.material.opacity-dt*3); r1.material.opacity=f; dot.material.opacity=f; if(f<=0){ tapMark.visible=false; r1.material.opacity=.9; dot.material.opacity=.9; } } }
@@ -11691,7 +11765,7 @@ const MMAP=(()=>{
 #mmBig .list{display:flex;gap:6px;flex-wrap:wrap;width:100%;max-width:560px;max-height:30vh;overflow:auto}#mmBig .list button{border-radius:12px;padding:8px 12px;font-weight:900;font-size:14px;color:#fff;background:rgba(255,255,255,.1);border:1.5px solid var(--c)}
 #mmBig .x{border-radius:999px;padding:6px 14px;font-weight:900;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.3)}`; document.head.appendChild(css);
   const hall=document.querySelector(".top .hall"); const rowEl=document.createElement("div"); rowEl.className="mm-row";
-  rowEl.innerHTML=`<button id="mmBox" class="glass" aria-label="地圖"><canvas id="mmCv"></canvas><span>地圖・導航</span></button><div id="enPill" class="glass" role="button" aria-label="精力"><span class="ic">⚡</span><span class="bar"><i></i></span><b id="enNum">100</b><small id="enMx">/100</small></div>`;
+  rowEl.innerHTML=`<button id="mmBox" class="glass" aria-label="地圖"><canvas id="mmCv"></canvas><i id="mmClock" style="position:absolute;right:5px;top:3px;font:800 10.5px/1 sans-serif;font-style:normal;color:#fff;text-shadow:0 1px 2px #000,0 0 3px #000;letter-spacing:.02em"></i><span>地圖・導航</span></button><div id="enPill" class="glass" role="button" aria-label="精力"><span class="ic">⚡</span><span class="bar"><i></i></span><b id="enNum">100</b><small id="enMx">/100</small></div>`;
   if(hall) hall.prepend(rowEl);
   const cv=rowEl.querySelector("#mmCv"), cx=cv.getContext("2d"); const DPR=Math.min(2,devicePixelRatio||1); cv.width=cv.height=Math.round(92*DPR);
   const enMax=()=>{ try{ return SHOPX.enMax(); }catch(e){ return 100; } }; /* (11/23 玩家「上面精力條一直顯示一百不會變 要開包包才看得到正確數字」: enMax lives inside the shops module and was not reachable here — every update failed silently and the pill kept its first 100) */
@@ -11702,11 +11776,14 @@ const MMAP=(()=>{
     const mx=meAv.pos.x, mz=meAv.pos.y; cx.imageSmoothingEnabled=true; cx.drawImage(base,w/2-px(mx)*k,h/2-pz(mz)*k,W*k,H*k); try{ const pl=paths(); if(pl.width>1) cx.drawImage(pl,w/2-px(mx)*k,h/2-pz(mz)*k,W*k,H*k); }catch(e){}
     for(const p of pois()){ const x=w/2+(p.x-mx)/ST*k, y=h/2+(p.z-mz)/ST*k; if(x<-4||y<-4||x>w+4||y>h+4) continue; cx.fillStyle=p.c[2]; cx.beginPath(); cx.arc(x,y,2.6*DPR,0,7); cx.fill(); }
     arrow(cx,w/2,h/2,Math.PI-meAv.rotY,6*DPR,"#ffe14a"); };
-  setInterval(()=>{ enUpd(); if(document.hidden||document.body.classList.contains("shopmode")) return; try{ drawMini(); }catch(e){} },250);
+  /* (11/26 主委「增加一個遊戲內時間顯示 小小的就好」: the game's own clock in the corner of the map, a 24-minute day — 0 is 8 in the morning) */
+  const gameClock=()=>{ let p=(Date.now()/1000%TOD_LEN)/TOD_LEN; if(typeof window.MZ_TOD==="number") p=window.MZ_TOD; const m=Math.floor(((8+p*24)%24)*60), h=Math.floor(m/60), mm=m%60; return (h<5?"凌晨":h<11?"上午":h<13?"中午":h<18?"下午":"晚上")+" "+(h%12||12)+":"+String(mm).padStart(2,"0"); };
+  window.MZ_CLOCK=gameClock; let clkT=0;
+  setInterval(()=>{ enUpd(); if((clkT=(clkT+1)%8)===0){ try{ const c=document.getElementById("mmClock"); if(c) c.textContent=gameClock(); }catch(e){} } if(document.hidden||document.body.classList.contains("shopmode")) return; try{ drawMini(); }catch(e){} },250);
   /* the big map */
   let cat="god";
   const open=()=>{ try{ ensureAudio(); }catch(e){} try{ closeSheet(); }catch(e){} let o=document.querySelector("#mmBig"); if(o) o.remove(); o=document.createElement("div"); o.id="mmBig";
-    o.innerHTML=`<div class="hd"><b>🗺️ 地圖・點一下就走過去</b>${(bag.cat&&(bag.cat.pets||[bag.cat.pet]).some(q=>q&&!q.home&&!q.vet&&!q.away)&&typeof catRescue==="function")?`<button class="x" id="mmCat">🆘 貓咪救援</button>`:""}<button class="x" id="mmX">關閉</button></div><div class="cats">${CAT.map(c=>`<button data-c="${c[0]}" style="--c:${c[2]}" aria-pressed="${c[0]===cat}">${c[1]}</button>`).join("")}</div><div class="map"><canvas></canvas></div><div class="list"></div>`;
+    o.innerHTML=`<div class="hd"><b>🗺️ 地圖・點一下就走過去</b>${(bag.cat&&(bag.cat.pets||[bag.cat.pet]).some(q=>q&&!q.home&&!q.vet&&!q.away)&&typeof catRescue==="function")?`<button class="x" id="mmCat">🆘 貓咪救援</button>`:""}<button class="x" id="mmX">關閉</button></div><div class="cats">${CAT.map(c=>`<button data-c="${c[0]}" style="--c:${c[2]}" aria-pressed="${c[0]===cat}">${c[1]}</button>`).join("")}</div><div class="map" style="position:relative"><canvas></canvas><span id="mmXY" style="position:absolute;left:8px;bottom:6px;font:700 12px/1.4 sans-serif;color:#ffe9b0;background:rgba(20,12,8,.72);padding:3px 8px;border-radius:8px;pointer-events:none">📍 你在 (${meAv.pos.x.toFixed(0)}, ${meAv.pos.y.toFixed(0)})</span></div><div class="list"></div>`; /* (11/26 主委「地圖增加座標可以看」: where you are, and wherever the pointer or finger is on the map) */
     document.body.appendChild(o); const mc=o.querySelector(".map canvas"), box=o.querySelector(".map"); let fit=null;
     const go=k=>{ o.remove(); if(stations[k]) goStation(k); else toast("那裡現在去不了",2000); };
     const draw=()=>{ const r=box.getBoundingClientRect(), d=Math.min(2,devicePixelRatio||1); mc.width=Math.round(r.width*d); mc.height=Math.round(r.height*d); const g=mc.getContext("2d");
@@ -11720,6 +11797,8 @@ const MMAP=(()=>{
       o.querySelector(".list").innerHTML=sel.map(p=>`<button data-k="${p.k}" style="--c:${p.c[2]}">${p.n}</button>`).join("")||`<span style="color:#d9c9a8;font-size:13px">這一類現在沒有地方可以去</span>`;
       o.querySelectorAll(".list button").forEach(b=>b.onclick=()=>go(b.dataset.k)); };
     o.querySelector("#mmX").onclick=()=>o.remove(); { const c=o.querySelector("#mmCat"); if(c) c.onclick=()=>{ o.remove(); catRescue(); }; } o.querySelectorAll(".cats button").forEach(b=>b.onclick=()=>{ cat=b.dataset.c; o.querySelectorAll(".cats button").forEach(x=>x.setAttribute("aria-pressed",x===b)); draw(); });
+    { const xy=o.querySelector("#mmXY"), me0=()=>`📍 你在 (${meAv.pos.x.toFixed(0)}, ${meAv.pos.y.toFixed(0)})`; const at=e=>{ if(!fit) return null; const r=mc.getBoundingClientRect(), x=(e.clientX-r.left)*fit.d, y=(e.clientY-r.top)*fit.d; return [B[0]+(x-fit.ox)/fit.s*ST, B[2]+(y-fit.oy)/fit.s*ST]; };
+      const show=e=>{ const w=at(e); if(w&&xy) xy.textContent=`${me0()}　·　這裡 (${w[0].toFixed(0)}, ${w[1].toFixed(0)})`; }; mc.addEventListener("pointermove",show); mc.addEventListener("pointerdown",show); mc.addEventListener("pointerleave",()=>{ if(xy) xy.textContent=me0(); }); }
     mc.addEventListener("click",e=>{ if(!fit) return; const r=mc.getBoundingClientRect(), x=(e.clientX-r.left)*fit.d, y=(e.clientY-r.top)*fit.d; let best=null, bd=22*fit.d;
       for(const p of pois()){ if(p.c[0]!==cat) continue; const dx=fit.ox+px(p.x)*fit.s-x, dy=fit.oy+pz(p.z)*fit.s-y, dd=Math.hypot(dx,dy); if(dd<bd){ bd=dd; best=p; } } if(best) go(best.k); });
     requestAnimationFrame(draw); };
@@ -15755,7 +15834,7 @@ L.testPanel=()=>{ if(!me.sp) return; const b=(act,v,t,cls)=>`<button class="${cl
    ${sec("小遊戲（直接玩）",[["tw:bfast","🍔 疊漢堡"],["tw:ice","🍦 冰淇淋"],["tw:herb","🌿 中藥對對碰"],["tw:congee","🥣 深夜出餐"],["tw:drink","🧋 調飲料"],["tw:book","📚 推書櫃"],["tw:flower","💐 插花"]].map(([k,n])=>b("tmGame",k,n)).join("")+b("tmDish",1,"🫧 洗碗")+b("tmCook",1,"🍳 廚房切菜")+b("tmBq",1,"💐 花束打工")+b("tmIceDrink",1,"🧋 飲料（一定加冰）"))}
    ${sec("釣魚・溫室",b("tmRods",1,"🎣 全部釣竿")+b("tmBait",1,"🪱 釣餌各 10 份")+b("tmBait",0,"🪱 清空釣餌")+b("tmFish",1,"🐟 看下一隻魚模型")+b("tmDexAll",1,"📖 圖鑑全部點亮")+b("tmGarden",1,"🌱 花圃放滿作物"))}
    ${sec("任務",b("tmRst","god","↩️ 重置女神泉")+b("tmRst","ph","↩️ 重置照相館")+b("tmRst","gh","↩️ 重置溫室格數")+b("tmFin","god","⛲ 女神泉完成")+b("tmFin","ph","📷 照相館完成＋片尾")+b("tmCzEnd",8,"🥣 一粥七天直接結算")+b("tmStp","fill","📮 集章冊蓋到剩一格")+b("tmStp","rst","↩️ 重置集章冊"))}
-   ${sec("做夢＋日記・媽祖心事",b("tmDy","dream","💤 現在做夢＋看日記")+b("tmDy","diary","📖 只看今天的日記")+b("tmDy","mz","🙏 跟媽祖說說話（免參拜）"))}${sec("活動",b("evtOpen","","🎉 活動控制台（釣魚熱門、昆蟲、挖寶、放昆蟲／地洞）"))}${sec("夢見島",b("tmIsl","first","🌫️ 第一次上島（翻船、孤立）")+b("tmIsl","again","🛶 再去一次（一般）")+b("tmIsl","back","⚓ 回小鎮碼頭")+b("tmIsl","reset","↩️ 清空上島紀錄"))}${sec("腳踏車",b("tmBike","on","🚲 給我腳踏車並騎上")+b("tmBike","hill","🏔️ 到山腳騎上天后山")+b("tmBike","quest","📦 試小潘的請託")+b("tmBike","off","↩️ 收回腳踏車"))}    ${sec("精力",b("tmEnLow",40,"⚡ 精力設成 40")+b("tmEnLow",0,"⚡ 精力設成 0")+b("tmEnLow",100,"⚡ 精力補滿"))}
+   ${sec("做夢＋日記・媽祖心事",b("tmDy","dream","💤 現在做夢＋看日記")+b("tmDy","diary","📖 只看今天的日記")+b("tmDy","mz","🙏 跟媽祖說說話（免參拜）"))}${sec("聊天室・帶人",b("crAdmin","","💬 聊天室（開房、關房、看紀錄）")+b("pPullAll","","✋ 放開帶著的所有人"))}${sec("活動",b("evtOpen","","🎉 活動控制台（釣魚熱門、昆蟲、挖寶、放昆蟲／地洞）"))}${sec("夢見島",b("tmIsl","first","🌫️ 第一次上島（翻船、孤立）")+b("tmIsl","again","🛶 再去一次（一般）")+b("tmIsl","back","⚓ 回小鎮碼頭")+b("tmIsl","reset","↩️ 清空上島紀錄"))}${sec("腳踏車",b("tmBike","on","🚲 給我腳踏車並騎上")+b("tmBike","hill","🏔️ 到山腳騎上天后山")+b("tmBike","quest","📦 試小潘的請託")+b("tmBike","off","↩️ 收回腳踏車"))}    ${sec("精力",b("tmEnLow",40,"⚡ 精力設成 40")+b("tmEnLow",0,"⚡ 精力設成 0")+b("tmEnLow",100,"⚡ 精力補滿"))}
    ${sec("造型・美容院",b("tmLookOpen",1,"🪞 換造型")+b("tmSalon","h","💇 美容院：髮型")+b("tmSalon","e","👁 美容院：眼睛")+b("tmSalon","m","👄 美容院：嘴巴")+b("tmFaceFit","f_eyes","📐 造型定位"))}
    ${sec("活動・特效",b("tmRain",1,"🧧 撒紅包")+b("tmMet",1,"🌠 流星")+b("lfChuteGo",1,"🪂 跳傘"))}
    ${sec("編輯工具",b("mapEdT",1,"🗺️ 地圖編輯","primary")+b("wTune",1,"💧 水面調整")+b("posOpen",1,"📍 座標定位"))}
