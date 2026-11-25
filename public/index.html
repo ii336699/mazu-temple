@@ -17216,7 +17216,7 @@ async function evtPoll(){ if(typeof USE_CF==="undefined"||!USE_CF) return; try{ 
 setTimeout(evtPoll,5000); setInterval(evtPoll,90000);
 /* a small line under the top bar while something is on */
 function evBadge(){ let el=document.getElementById("evBadge"); const on=[]; if(evOn("fish")) on.push(`🎣釣魚～${evHM(EVT.fish)}`); if(evOn("bug")) on.push(`🦋昆蟲～${evHM(EVT.bug.until)}`); if(evOn("dig")) on.push(`⛏️挖寶～${evHM(EVT.dig)}`);
-  if(!on.length){ if(el) el.hidden=true; return; } if(!el){ el=document.createElement("div"); el.id="evBadge"; el.style.cssText="position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 92px);z-index:8;font:700 12px "+UI_FONT+";color:#fff3c4;background:rgba(120,40,20,.72);border:1px solid rgba(255,215,120,.6);padding:3px 10px;border-radius:12px;pointer-events:none;max-width:52vw;text-align:center;line-height:1.45"; document.body.appendChild(el); }
+  if(!on.length){ if(el) el.hidden=true; return; } if(!el){ el=document.createElement("div"); el.id="evBadge"; el.style.cssText="position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 164px);z-index:8;font:700 12px "+UI_FONT+";color:#fff3c4;background:rgba(120,40,20,.72);border:1px solid rgba(255,215,120,.6);padding:3px 10px;border-radius:12px;pointer-events:none;max-width:52vw;text-align:center;line-height:1.45"; document.body.appendChild(el); }
   el.hidden=!!(ISL&&ISL.on); el.textContent="🎉 活動中 "+on.join(" "); }
 setInterval(()=>{ try{ evBadge(); }catch(e){} },30000);
 /* the drops: bugs once per drop on this phone; the hole until you dig it (once per player) */
