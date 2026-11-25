@@ -1202,9 +1202,9 @@ const fontTextures=[plaqueTex,coupletL,coupletR,donateTex,lotSignTex,shopSignTex
 
 /* ---------- environment (sky + reflections) ---------- */
 const SUN=new T.Vector3(1,.11,-.22).normalize();
-const skyMat=new T.ShaderMaterial({side:T.BackSide,depthWrite:false,fog:false,uniforms:{sun:{value:SUN},time:{value:0},night:{value:0},day:{value:0},cloudy:{value:0},flash:{value:0}},
+const skyMat=new T.ShaderMaterial({side:T.BackSide,depthWrite:false,fog:false,uniforms:{sun:{value:SUN},time:{value:0},night:{value:0},day:{value:0},cloudy:{value:0},flash:{value:0},isl:{value:0}},
   vertexShader:`varying vec3 vD; void main(){ vD=normalize(position); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);} `,
-  fragmentShader:`varying vec3 vD; uniform vec3 sun; uniform float time; uniform float night; uniform float day; uniform float cloudy; uniform float flash;
+  fragmentShader:`varying vec3 vD; uniform vec3 sun; uniform float time; uniform float night; uniform float day; uniform float cloudy; uniform float flash; uniform float isl;
   float hash(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
   float noise(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f); return mix(mix(hash(i),hash(i+vec2(1.0,0.0)),f.x),mix(hash(i+vec2(0.0,1.0)),hash(i+vec2(1.0,1.0)),f.x),f.y); }
   float fbm(vec2 p){ float v=0.0, a=0.5; for(int i=0;i<5;i++){ v+=a*noise(p); p=p*2.03+vec2(1.7,9.2); a*=0.5; } return v; }
@@ -1235,20 +1235,21 @@ const skyMat=new T.ShaderMaterial({side:T.BackSide,depthWrite:false,fog:false,un
     float az=atan(d.z,d.x); vec2 ring=vec2(cos(az),sin(az));
     float m1=.03+.032*fbm(ring*2.4+3.1)+.008*sin(az*9.0);
     float m2=.012+.03*fbm(ring*4.3+7.7);
+    m1=mix(m1,-1.,isl); m2=mix(m2,-1.,isl); /* (夢見島: no mountains, open sea all round) */
     if(h<m1){ c=mix(c,mix(vec3(.52,.25,.34),c,.3),.88); }
     if(h<m2){ c=vec3(.17,.08,.1)+vec3(.14,.06,.03)*pow(s,3.0); }
-    if(h<0.0){ c=vec3(.11,.055,.05); }
+    if(h<0.0){ c=mix(vec3(.11,.055,.05),vec3(.02,.07,.11),isl); }
     vec3 dc=mix(vec3(.78,.87,.96),vec3(.36,.6,.92),smoothstep(0.,.35,h)); dc=mix(dc,vec3(.2,.42,.84),smoothstep(.35,.9,h)); dc+=vec3(1.,.95,.8)*pow(s,8.0)*.25;
     if(h>0.0&&day>.01){ vec2 uv2=d.xz/(h+.18); float q=fbm(uv2*vec2(.7,1.1)+vec2(time*.006,0.0)); float q2=fbm(uv2*2.2-vec2(time*.009,0.0)+3.0);
       float cv=smoothstep(.5,.78,q*.8+q2*.3)*smoothstep(.02,.12,h)*(1.0-smoothstep(.55,.85,h)); vec3 cw=mix(vec3(.72,.76,.84),vec3(1.0,.99,.97),smoothstep(.35,.8,q2+pow(s,2.0)*.3)); dc=mix(dc,cw,cv*.9); }
-    if(h<m1) dc=mix(vec3(.42,.52,.5),dc,.25); if(h<m2) dc=vec3(.24,.33,.28); if(h<0.0) dc=vec3(.18,.22,.18);
+    if(h<m1) dc=mix(vec3(.42,.52,.5),dc,.25); if(h<m2) dc=vec3(.24,.33,.28); if(h<0.0) dc=mix(vec3(.18,.22,.18),vec3(.12,.34,.45),isl);
     dc=mix(dc,vec3(1.,.98,.92)*2.4,smoothstep(.99984,.99993,s)*step(0.,h)); dc+=vec3(1.,.96,.85)*pow(s,700.)*.55*step(0.,h); c=mix(c,dc,day);
     c=mix(c,c*vec3(.16,.17,.32)+vec3(.006,.008,.03),night);
     vec3 sd=floor(normalize(vD)*260.); float st=fract(sin(dot(sd,vec3(12.9898,78.233,37.719)))*43758.5453); c+=vec3(.9,.92,1.)*step(.9975,st)*night*(1.-cloudy)*step(m1,h)*(.6+.4*sin(time*2.+st*40.));
     { float g=dot(c,vec3(.3,.5,.2)); vec3 oc=vec3(g)*vec3(.86,.9,.97)*(.78+.22*day); if(h>0.0){ vec2 uv3=d.xz/(h+.2); float q3=fbm(uv3*1.4+vec2(time*.02,0.0)); oc*=.82+.3*q3; } c=mix(c,oc,cloudy*.92); } /* overcast: grey, heavy cloud */
     c+=vec3(.75,.8,1.0)*flash*(.6+.4*step(0.,h));
     gl_FragColor=vec4(c,1.0); }`});
-if(CURVE.on) skyMat.fragmentShader=skyMat.fragmentShader.replace("if(h<0.0) dc=vec3(.18,.22,.18);","if(h<0.0) dc=mix(vec3(.24,.33,.28),vec3(.74,.84,.93),smoothstep(0.,-.12,h));").replace("if(h<0.0){ c=vec3(.11,.055,.05); }","if(h<0.0){ c=mix(vec3(.11,.055,.05),vec3(.32,.2,.24),smoothstep(0.,-.12,h)); }"); /* (滾筒世界: the ground rolls away below the horizon, so the sky under it shows — it fades to haze there instead of the dark hills colour) */
+if(CURVE.on) skyMat.fragmentShader=skyMat.fragmentShader.replace("if(h<0.0) dc=mix(vec3(.18,.22,.18),vec3(.12,.34,.45),isl);","if(h<0.0) dc=mix(mix(vec3(.24,.33,.28),vec3(.74,.84,.93),smoothstep(0.,-.12,h)),vec3(.12,.34,.45),isl);").replace("if(h<0.0){ c=mix(vec3(.11,.055,.05),vec3(.02,.07,.11),isl); }","if(h<0.0){ c=mix(mix(vec3(.11,.055,.05),vec3(.32,.2,.24),smoothstep(0.,-.12,h)),vec3(.02,.07,.11),isl); }"); /* (滾筒世界: the ground rolls away below the horizon, so the sky under it shows — it fades to haze there instead of the dark hills colour) */
 const sky=new T.Mesh(new T.SphereGeometry(150,32,16),skyMat); scene.add(sky); if(CURVE.on) sky.scale.setScalar(.56); /* (滾筒世界: the view ends at 90 m, so the sky dome comes inside it) */
 const envTex=cvs(256,128,(x,w,h)=>{ const g=x.createLinearGradient(0,0,0,h); g.addColorStop(0,"#2a1612"); g.addColorStop(.45,"#7a3a22"); g.addColorStop(.52,"#f0a060"); g.addColorStop(.6,"#3a1a10"); g.addColorStop(1,"#120806"); x.fillStyle=g; x.fillRect(0,0,w,h);
   for(let i=0;i<14;i++){ x.fillStyle="rgba(255,190,110,.5)"; x.beginPath(); x.arc(Math.random()*w,h*.3+Math.random()*12,3,0,7); x.fill(); } });
@@ -4180,8 +4181,9 @@ const raycaster=new T.Raycaster(); const ndc=new T.Vector2();
   scene.traverse(o=>{ if(o.isSprite&&o.material===glowMat&&(o.parent&&o.parent.children.some(c=>c.material===lanternMat)||o.userData.lanternGlow)) o.material=redGlow; }); }
 const pickables=[]; scene.traverse(o=>{ if(o.userData&&(o.userData.act||o.userData.seats||o.userData.floor)) pickables.push(o); }); ZEN.pick.forEach(o=>{ if(!pickables.includes(o)) pickables.push(o); });
 let pointers=new Map(), dragStart=null, pinchD=0, moved=false, camWideX=0, camTight=0; const CAMSEAT={done:-1};
-canvas.addEventListener("pointerdown",e=>{ canvas.setPointerCapture(e.pointerId); pointers.set(e.pointerId,{x:e.clientX,y:e.clientY}); if(pointers.size===1){ dragStart={x:e.clientX,y:e.clientY,t:performance.now(),yaw:camYaw,pitch:camPitch,pv:pvYaw}; moved=false; rotAnim=null; } else if(pointers.size===2){ const [a,b]=[...pointers.values()]; pinchD=Math.hypot(a.x-b.x,a.y-b.y); moved=true; } });
-canvas.addEventListener("pointermove",e=>{ if(!pointers.has(e.pointerId)) return; pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+const viewLocked=()=>document.body.classList.contains("inshop"); /* (11/25 23:20 主委「點進商店後禁止滑鼠移動」: inside a shop the mouse no longer turns, zooms or walks the world behind it) */
+canvas.addEventListener("pointerdown",e=>{ if(viewLocked()) return; canvas.setPointerCapture(e.pointerId); pointers.set(e.pointerId,{x:e.clientX,y:e.clientY}); if(pointers.size===1){ dragStart={x:e.clientX,y:e.clientY,t:performance.now(),yaw:camYaw,pitch:camPitch,pv:pvYaw}; moved=false; rotAnim=null; } else if(pointers.size===2){ const [a,b]=[...pointers.values()]; pinchD=Math.hypot(a.x-b.x,a.y-b.y); moved=true; } });
+canvas.addEventListener("pointermove",e=>{ if(!pointers.has(e.pointerId)||viewLocked()) return; pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(pointers.size===2&&fwZoomable()){ const [a,b]=[...pointers.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); FW_ZOOM=Math.max(1,Math.min(2.8,FW_ZOOM*d/Math.max(1,pinchD))); pinchD=d; return; } /* watching fireworks: two fingers zoom the lens in and out */
   if(pointers.size===2&&meAv&&meAv.pos.x<-23.5&&meAv.pos.y>-50){ const [a,b]=[...pointers.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); ZEN.fovX=Math.max(0,Math.min(34,(ZEN.fovX||0)+(pinchD-d)*.12)); pinchD=d; return; } /* 禪院: two fingers widen / narrow the lens */
   if(pointers.size===2){ const [a,b]=[...pointers.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); camDist=Math.max(2.4,Math.min(13,camDist*pinchD/d)); pinchD=d; return; }
@@ -4190,7 +4192,7 @@ function endPointer(e){ const wasTap=pointers.size===1&&dragStart&&!moved&&perfo
 /* with a mouse, one click on the ground does not walk you there (stray clicks kept sending people running): double-click the ground to walk; things (gods, stalls, seats) still answer one click */
 const TAPM={mouse:false,x:0,y:0,last:0,lx:0,ly:0,hinted:false};
 canvas.addEventListener("pointerup",endPointer); canvas.addEventListener("pointercancel",e=>{pointers.delete(e.pointerId); dragStart=null;});
-canvas.addEventListener("wheel",e=>{ e.preventDefault(); if(fwZoomable()){ FW_ZOOM=Math.max(1,Math.min(2.8,FW_ZOOM*(1-e.deltaY*.0015))); return; } if(customizing){ pvMode=e.deltaY<0?"face":"full"; syncPvSeg(); return; } if(meAv&&meAv.pos.x<-23.5&&meAv.pos.y>-50){ ZEN.fovX=Math.max(0,Math.min(34,(ZEN.fovX||0)+e.deltaY*.03)); return; } camDist=Math.max(2.4,Math.min(13,camDist*(1+e.deltaY*.001))); },{passive:false});
+canvas.addEventListener("wheel",e=>{ e.preventDefault(); if(viewLocked()) return; if(fwZoomable()){ FW_ZOOM=Math.max(1,Math.min(2.8,FW_ZOOM*(1-e.deltaY*.0015))); return; } if(customizing){ pvMode=e.deltaY<0?"face":"full"; syncPvSeg(); return; } if(meAv&&meAv.pos.x<-23.5&&meAv.pos.y>-50){ ZEN.fovX=Math.max(0,Math.min(34,(ZEN.fovX||0)+e.deltaY*.03)); return; } camDist=Math.max(2.4,Math.min(13,camDist*(1+e.deltaY*.001))); },{passive:false});
 
 let pendingStation=null; let nearKey=null;
 const STATION_LABEL={gacha:"招財貓扭蛋機",xuantian:"玄天上帝",guangong:"關聖帝君",fountain:"觀音噴泉",cats:"跳舞小貓",lot:"求籤",altar:"媽祖供桌",shop:"服務處",burn:"金爐",donate:"香油錢",lamp:"光明燈",lampR:"光明燈",bell:"敲鐘",drum:"擊鼓",tiangong:"天公爐",caishen:"財神爺",yuelao:"月老",huye:"虎爺",jieqian:"解籤處",wish:"許願樹"};
@@ -13734,7 +13736,7 @@ function southC(x,z,h,c){ const n=.5+.5*nz(x*1.3,z*1.3); c.copy(LAWN).multiplySc
    beach — 「做成有高矮胖瘦」): every tree of a kind in a district is one instanced draw per material, each with its own height, girth,
    turn and a slight lean. The models are a lightened copy (cedar 1.5k triangles, palm 3.3k). */
 const TREEM={};
-function treeModel(name,cb){ if(TREEM[name]){ cb(TREEM[name]); return; } loadShared(name,m=>{ if(!TREEM[name]){ m.updateMatrixWorld(true); const bb=new T.Box3().setFromObject(m), c=bb.getCenter(new T.Vector3()), parts=[]; m.traverse(o=>{ if(!o.isMesh) return; const g=o.geometry.clone(); g.applyMatrix4(o.matrixWorld); g.translate(-c.x,-bb.min.y,-c.z); const mt=o.material; mt.side=/Frond|Needle|Grass/i.test(mt.name||"")?T.DoubleSide:mt.side; if(mt.map) mt.alphaTest=mt.transparent?.5:0; mt.transparent=false; mt.depthWrite=true; mt.roughness=Math.max(.8,mt.roughness||0); mt.metalness=0; /* (the undersides of the boughs came out black in the shade: a little of the tree's own colour always shows) */ if(mt.map){ mt.emissive=new T.Color("#ffffff"); mt.emissiveMap=mt.map; mt.emissiveIntensity=.34; } else { mt.emissive=mt.color.clone(); mt.emissiveIntensity=.3; } parts.push({g,m:mt}); }); TREEM[name]={parts,h:bb.max.y-bb.min.y}; } cb(TREEM[name]); }); }
+function treeModel(name,cb){ if(TREEM[name]){ cb(TREEM[name]); return; } loadShared(name,m=>{ if(!TREEM[name]){ m.updateMatrixWorld(true); const bb=new T.Box3().setFromObject(m), c=bb.getCenter(new T.Vector3()), parts=[]; m.traverse(o=>{ if(!o.isMesh) return; const g=o.geometry.clone(); g.applyMatrix4(o.matrixWorld); g.translate(-c.x,-bb.min.y,-c.z); const mt=o.material; mt.side=/Frond|Needle|Grass/i.test(mt.name||"")?T.DoubleSide:mt.side; if(mt.map) mt.alphaTest=mt.transparent?.5:0; mt.transparent=false; mt.depthWrite=true; mt.roughness=Math.max(.8,mt.roughness||0); mt.metalness=0; /* (the undersides of the boughs came out black in the shade: a little of the tree's own colour always shows) */ const glow=/palm/i.test(name)?.07:1; /* (11/25 23:27 主委「椰子樹亮度太怪了 好像有打燈」: the palms keep only a trace of it) */ if(mt.map){ mt.emissive=new T.Color("#ffffff"); mt.emissiveMap=mt.map; mt.emissiveIntensity=.34*glow; } else { mt.emissive=mt.color.clone(); mt.emissiveIntensity=.3*glow; } parts.push({g,m:mt}); }); TREEM[name]={parts,h:bb.max.y-bb.min.y}; } cb(TREEM[name]); }); }
 /* (11/17 主委「刪除椰子樹跟杉木」: where a cedar stood there is one of the chair's trunk trees now, deep green; the palms are gone) */
 function pine(C,x,y,z,s,r){ twTree({C,x,z,s:s*.9,pine:1}); (C.lpt||(C.lpt=[])).push([x,y,z,s*(.8+r()*.55),1,r()*6.283,"deep"]); }
 function palmAt(){}
@@ -14446,7 +14448,7 @@ const IS=(()=>{
   function base(u,v){ const r=Math.hypot(u,v), d=r/Rc(Math.atan2(v,u)), b=1-d;
     if(d>=1) return .05-2.4*sstep(1,1.2,d);
     return .05+.45*sstep(0,.16,b)+3*sstep(.14,.62,b)*(.75+.25*nz(u*.6,v*.6))+13*Math.exp(-((u-HILL[0])**2+(v-HILL[1])**2)/520)*sstep(.05,.35,b); }
-  const PONDY=base(POND[0],POND[1])-.35;
+  const PONDY=(()=>{ let m=1e9; for(let i=0;i<64;i++){ const a=i/64*Math.PI*2; for(const r of [POND[2]+.8,POND[2]+1.8,POND[2]+3]) m=Math.min(m,base(POND[0]+Math.cos(a)*r*1.1,POND[1]+Math.sin(a)*r*1.1)); } return m-.4; })(); /* (11/25 23:25 主委「那片湖怪怪的 水面高度在半空中」: the water was set from the middle of a slope, above the low side of its own bank — now from the lowest point of the rim) */
   const pondD=(u,v)=>Math.hypot(u-POND[0],v-POND[1])*(1+.08*Math.sin(Math.atan2(v-POND[1],u-POND[0])*3));
   function hL(u,v){ let h=base(u,v); const pd=pondD(u,v); if(pd<POND[2]+3) h=Math.min(h,h*(1-sstep(POND[2]+3,POND[2],pd))+(PONDY-1.1)*sstep(POND[2]+3,POND[2],pd)); const bd=segD(BROOK,u,v); if(bd<3) h-=.8*sstep(2.6,.8,bd)*sstep(-.1,.4,h); return h; }
   const brookY=(u,v)=>base(u,v)-.42;
@@ -14561,7 +14563,12 @@ const ISLE=(()=>{
     const n=A.sampleRate*4, b=A.createBuffer(1,n,A.sampleRate), d=b.getChannelData(0); let last=0; for(let i=0;i<n;i++){ const w=Math.random()*2-1; last=(last+.02*w)/1.02; d[i]=last*3.2; }
     const src=A.createBufferSource(); src.buffer=b; src.loop=true; const f=A.createBiquadFilter(); f.type="lowpass"; f.frequency.value=650; const g=A.createGain(); g.gain.value=0; const sw=A.createGain(); sw.gain.value=.5;
     const lfo=A.createOscillator(); lfo.frequency.value=.11; const lg=A.createGain(); lg.gain.value=.35; lfo.connect(lg); lg.connect(sw.gain); src.connect(f); f.connect(sw); sw.connect(g); g.connect(A.destination); src.start(); lfo.start(); g.gain.setTargetAtTime(.16*(typeof mVol==="function"?Math.max(.3,mVol()):1),A.currentTime,1.5); wav={ac:A,src,g}; }catch(e){ console.warn("isl waves",e); } }
-  function setOn(on,solo){ ISL.on=on; ISL.solo=on&&!!solo; { const S=st(); S.on=on?1:0; S.solo=ISL.solo?1:0; } document.body.classList.toggle("isl-on",on); document.body.classList.toggle("isl-solo",ISL.solo); try{ TOWNX.isl.seaOn(on); }catch(e){ console.warn(e); } bgmHush=on; hudOn(on); waves(on); try{ markDirty(); }catch(e){} }
+  /* (11/25 23:25 主委「島的遠景不要有山 一望無際的海就好」: on the island everything of the mainland — town, temple, hills — is hidden,
+     so all round is open sea; anything far from the island added later is caught every two seconds) */
+  const HID=new Set(); let hidT=0;
+  function farFromIsl(o){ if(o.userData&&o.userData.islKeep) return false; if(o===meAv.root||o.isLight||o.isCamera||(typeof sky!=="undefined"&&o===sky)) return false; if(o.position&&o.position.distanceTo(camera.position)<8) return false; /* (the sky and whatever travels with the camera stay) */ try{ const b=new T.Box3().setFromObject(o); if(b.isEmpty()) return false; const c=b.getCenter(new T.Vector3()), r=b.getSize(new T.Vector3()).length()/2; if(r>2500) return false; return Math.hypot(c.x-ISL.cx,c.z-ISL.cz)-r>420; }catch(e){ return false; } }
+  function mainHide(on){ if(on){ for(const o of scene.children){ if(HID.has(o)||!o.visible) continue; if(farFromIsl(o)){ o.visible=false; HID.add(o); } } } else { for(const o of HID) o.visible=true; HID.clear(); } }
+  function setOn(on,solo){ ISL.on=on; try{ skyMat.uniforms.isl.value=on?1:0; }catch(e){} if(!on){ try{ mainHide(false); }catch(e){} } else [1500,4000].forEach(ms=>setTimeout(()=>{ try{ if(ISL.on) mainHide(true); }catch(e){ console.warn("isl hide",e); } },ms)); /* (after the camera has come over to the island) */ ISL.solo=on&&!!solo; { const S=st(); S.on=on?1:0; S.solo=ISL.solo?1:0; } document.body.classList.toggle("isl-on",on); document.body.classList.toggle("isl-solo",ISL.solo); try{ TOWNX.isl.seaOn(on); }catch(e){ console.warn(e); } bgmHush=on; hudOn(on); waves(on); try{ markDirty(); }catch(e){} }
   function place(x,z,face){ try{ if(meAv.seat>=0) meAv.seat=-1; }catch(e){} meAv.pos.set(x,z); meAv.target.set(x,z); meAv.path=[]; meAv.gy=0; if(face!=null){ meAv.rotY=face; meAv.faceGoal=face; } try{ inputReset(); }catch(e){} }
   /* 翻船過場 (11/25 主委: GPT 圖、Q 版剪影、抖動、打雷閃光): five pictures — 出港 → 起霧 → 雷雨 → 翻船 → 漂到島上 — each slowly
      pushing in, with rain, shaking, white lightning, thunder and waves made in WebAudio, one line of words each. The island is built
@@ -14603,19 +14610,30 @@ const ISLE=(()=>{
     box.querySelector(".cs-skip").onclick=()=>{ blk.style.opacity="1"; finish(); };
     requestAnimationFrame(()=>{ box.style.opacity="1"; });
     let waveBed=null, rainBed=null;
-    at(0,()=>{ show("cs1",5200,1.02,1.12,0,-1,"黃昏，從老王的碼頭出海。"); waveBed=bed("lowpass",420,.7,.16,.12); });
-    at(5200,()=>{ show("cs2",5200,1.1,1.02,-2,0,"海上起霧了……"); fog.style.opacity="1"; shake=.25; });
-    at(8200,()=>{ boom(false); });
-    at(10400,()=>{ show("cs3",5600,1.04,1.16,1,1,"雷聲很近。"); fog.style.opacity=".25"; rain=1; shake=.6; rainBed=bed("highpass",1400,.5,.22); if(waveBed) waveBed.g.gain.setTargetAtTime(.3*vol(),A.currentTime,.6); });
-    at(10900,()=>{ flash(2); boom(true); shake=1.6; }); at(11800,()=>{ shake=.6; });
-    at(13600,()=>{ flash(3); boom(true); shake=1.8; }); at(14500,()=>{ shake=.8; });
-    at(16000,()=>{ show("cs4",3800,1.0,1.2,0,2,"……船翻了。"); rain=1.4; flash(2); boom(true); shake=3.2; });
-    at(17200,()=>{ shake=2.2; }); at(18600,()=>{ shake=1.2; });
-    at(19800,()=>{ blk.style.opacity="1"; cap.style.opacity="0"; shake=0; rain=0; if(rainBed) rainBed.g.gain.setTargetAtTime(0,A.currentTime,.6); if(waveBed) waveBed.g.gain.setTargetAtTime(.05*vol(),A.currentTime,1.2); });
-    at(21000,()=>{ doMid(); fog.style.opacity="0"; });
-    at(23200,()=>{ show("cs5",6400,1.12,1.02,0,0,""); blk.style.opacity="0"; if(waveBed) waveBed.g.gain.setTargetAtTime(.12*vol(),A.currentTime,1.5); });
-    at(25400,()=>{ cap.textContent="……這裡是哪裡？"; cap.style.opacity="1"; });
-    at(29200,finish); }
+    const say=(t,ms)=>{ cap.style.opacity="0"; setTimeout(()=>{ cap.textContent=t; cap.style.opacity=t?"1":"0"; },ms==null?380:ms); }; /* (11/25 23:24 主委「翻船描述太簡陋 沒臨場感」: a line every two or three seconds, following the pictures) */
+    at(0,()=>{ show("cs1",8200,1.02,1.14,0,-1,"傍晚，老王把小舢舨推下水。"); waveBed=bed("lowpass",420,.7,.16,.12); });
+    at(2900,()=>say("「天氣好的話，一個鐘頭就到香爐嶼了。」"));
+    at(5600,()=>say("夕陽把海面染成一片金色，燈塔慢慢被拋在身後。"));
+    at(8200,()=>{ show("cs2",8600,1.1,1.0,-2,0,"出港沒多久，海上起了霧。"); fog.style.opacity="1"; shake=.25; });
+    at(10900,()=>say("燈塔的光越來越淡……越來越遠。"));
+    at(12600,()=>{ boom(false); });
+    at(13600,()=>say("遠方傳來悶悶的雷聲。四周只剩下浪的聲音。"));
+    at(16800,()=>{ show("cs3",9000,1.04,1.18,1,1,"轟——！"); fog.style.opacity=".25"; rain=1; shake=.6; rainBed=bed("highpass",1400,.5,.22); if(waveBed) waveBed.g.gain.setTargetAtTime(.3*vol(),A.currentTime,.6); flash(2); boom(true); shake=1.6; });
+    at(17700,()=>{ shake=.6; });
+    at(19200,()=>say("大雨打在臉上，什麼都看不清楚。"));
+    at(21600,()=>{ flash(3); boom(true); shake=1.8; say("船身被浪高高抬起，又重重摔下——"); });
+    at(22500,()=>{ shake=.8; });
+    at(24000,()=>say("雙手死命抓著船舷。不能放手……不能放手……"));
+    at(25800,()=>{ show("cs4",5200,1.0,1.22,0,2,"一道巨浪從側面打了過來——"); rain=1.4; flash(2); boom(true); shake=3.2; });
+    at(27200,()=>{ shake=2.2; }); at(28000,()=>say("整艘船翻了過去。"));
+    at(29300,()=>{ shake=1.2; });
+    at(31000,()=>{ blk.style.opacity="1"; shake=0; rain=0; say("冰冷的海水灌進耳朵，四周一片黑……",500); if(rainBed) rainBed.g.gain.setTargetAtTime(0,A.currentTime,.6); if(waveBed) waveBed.g.gain.setTargetAtTime(.05*vol(),A.currentTime,1.2); });
+    at(33600,()=>{ doMid(); fog.style.opacity="0"; say("……"); });
+    at(35400,()=>{ show("cs5",9000,1.12,1.02,0,0,"不知道過了多久。"); blk.style.opacity="0"; if(waveBed) waveBed.g.gain.setTargetAtTime(.12*vol(),A.currentTime,1.5); });
+    at(38000,()=>say("海浪一下、一下，輕輕拍著腳邊。"));
+    at(40600,()=>say("嘴裡都是鹹鹹的沙……身邊散著舢舨的碎木板。"));
+    at(43200,()=>say("……這裡，是哪裡？"));
+    at(46000,finish); }
   function enter(opt){ opt=opt||{}; const S=st(), first=opt.first!=null?opt.first:!S.n; const L=ISL.land;
     if(first){ capsize(()=>{ setOn(true,true); place(L[0],L[1],Math.PI); try{ TOWNX.isl.prep(); }catch(e){ console.warn(e); } S.n=(S.n||0)+1; saveBag(); },()=>{ try{ meAv.say("這裡……沒有人。","#e8f4f2",4); }catch(e){} }); return; }
     const lines=first?["海上起霧了……","雷聲很近。","……船翻了。"]:["划進霧裡……","霧散了。"];
@@ -14633,9 +14651,9 @@ const ISLE=(()=>{
   HANDLERS.tmIsl=v=>{ closeSheet(); if(v==="first") enter({first:true}); else if(v==="again") enter({first:false}); else if(v==="back"){ if(ISL.on) leave(true); else toast("你現在不在島上",1800); } else if(v==="reset"){ bag.isl={n:0}; saveBag(); toast("↩️ 夢見島紀錄清空了（下次算第一次）",2200); } };
   /* you closed the game on the island: you open it on the island again, where you were (bag.isl.at, kept every few seconds) */
   function resume(){ const S=st(); if(!S.on) return; const at=Array.isArray(S.at)&&islIn(S.at[0],S.at[1])?S.at:ISL.land; setOn(true,!!S.solo); place(at[0],at[1],Math.PI); try{ TOWNX.isl.prep(); }catch(e){} }
-  let lastAt=0; setInterval(()=>{ try{ if(!ISL.on) return; const S=st(); S.at=[+meAv.pos.x.toFixed(1),+meAv.pos.y.toFixed(1)]; if(Date.now()-lastAt>20000){ lastAt=Date.now(); saveBag(); } }catch(e){} },4000);
+  let lastAt=0; setInterval(()=>{ try{ if(!ISL.on) return; try{ if((hidT=(hidT+1)%2)===0) mainHide(true); }catch(e){} const S=st(); S.at=[+meAv.pos.x.toFixed(1),+meAv.pos.y.toFixed(1)]; if(Date.now()-lastAt>20000){ lastAt=Date.now(); saveBag(); } }catch(e){} },4000);
   setTimeout(()=>{ try{ resume(); }catch(e){ console.warn("isl resume",e); } },0);
-  return {enter,leave,st,resume};
+  return {enter,leave,st,resume,mainHide,HID};
 })();
 
 /*TOWN>>*/
@@ -15850,7 +15868,7 @@ function ivOpen(k,open){ ivClose(true); const K=KEEP[k]; const R=ivBuild(k); IV.
     if(P.bun){ try{ plush(av.head,HAIRC[look[2]],0,.05,-.265,.092,.086,.086); plush(av.head,"#c0392b",0,.045,-.225,.07,.07,.025); }catch(e){} } /* (a bun at the back, under the cap — a cap hides the hairdo's own bun; with a red band, 11/15) */
     if(P.rod){ const r=new T.Mesh(new T.CylinderGeometry(.012,.02,1.3,6),new T.MeshStandardMaterial({color:"#6b4a2e",roughness:.6})); r.position.set(0,-.3,.35); r.rotation.x=1.1; av.arms[1].add(r); } IV.avs.push(av); });
   KS[k]={avs:IV.avs,sp:{x:meAv.pos.x,z:meAv.pos.y,ry:0},t:0,mode:K.mode,last:0,busy:true,inside:1};
-  window.MZ_VIEW={scene:IV.scene,cam:IV.cam}; document.body.classList.add("inshop");
+  window.MZ_VIEW={scene:IV.scene,cam:IV.cam}; document.body.classList.add("inshop"); try{ pointers.clear(); dragStart=null; }catch(e){}
   const ui=document.createElement("div"); ui.id="ivUI"; ui.innerHTML=`<div id="ivBox" style="position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 12px);z-index:30;background:rgba(255,252,246,.96);border:2px solid #c9a27a;border-radius:16px;padding:10px 14px;box-shadow:0 6px 18px rgba(80,40,10,.25);color:#3b2416;font:700 16px/1.6 ${UI_FONT};min-height:52px"><b id="ivName" style="color:#8e1c14;font-size:14px"></b><div id="ivText"></div></div><button class="secondary" id="ivX" style="position:fixed;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);z-index:30">🚪 離開</button>`;
   document.body.appendChild(ui); ui.querySelector("#ivX").onclick=()=>{ closeSheet(); ivClose(); };
   IV.open=open; IV.opened=false; IV.idle=0; return K; }
