@@ -1978,3 +1978,9 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - 原因：ws `giftnow` 處理只認 item/acc，其他（x 家具・釣具・大還丹、gacha 扭蛋幣）都被當成 coins，數量變成平安幣。
 - 修正：kind 是 item/acc/x/gacha 就照原樣，其他才當平安幣（fa83fc3）。「所有玩家（14 天內）」那條路本來就對。
 - 已經用「只有線上」送錯的那一次，玩家拿到的是平安幣，不會自動補家具；要補就再送一次。
+
+## 11/25 21:50 部署（main fb1afb0）— Cloudflare 建置回報 failure
+- 主委：「除了夢見島之外都部署」。夢見島本來就只有主委看得到（老王出海鈕 me.sp），沒動。
+- push f879d3e、再重跑 fb1afb0，兩次 Workers Builds 都是 failure（GitHub 看不到原因，Chrome 沒登入 Cloudflare）。
+- 實測正式站：index.html 是新的（禮物修正、活動條都在），但 GET /evt 回 {cap,counts}＝Lobby 還是舊程式。本機 wrangler 4.40 dry-run、wrangler dev 都正常（/evt 回 {fish,bug,dig,drops}）。
+- 等主委看 Cloudflare 建置紀錄的錯誤訊息。活動控制台要等 worker 上去才能全服生效。
