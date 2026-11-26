@@ -13016,6 +13016,12 @@ const TOWNB=(()=>{ const out=[]; let sd=101;
   row("hN","x",-105,Math.PI,-8,24.6,"house",[{a:15.5,w:6,kind:"house",fl:2,col:"#f6d6cf",rcol:"#d9624a",roof:"gable"}] /* (11/23 主委「為什麼大家都有家 我是要大家自己去買家」: this used to be a free 「我的家」 for every player — now just a house in the lane; a home is bought in 天后新村) */);
   row("hN2","x",-105,Math.PI,33.6,66,"house");
   row("hS","x",-111,0,-8,24.6,"house"); row("hS2","x",-111,0,33.6,66,"house");
+  /* 住宅巷東段 (11/26 主委「六間 兩層樓」: the empty ground east of the lane, beside 美食廣場): the lane runs on to x 86.4 with three
+     two-storey houses on each side. Added after every other row so the houses already for sale keep their numbers (住宅巷 1–17 =
+     lots 40–56); these are 住宅巷 18–23 = lots 57–62. */
+  { const pal=[["#f3e3c8","#b8574a"],["#dfe9e4","#4f6f8f"],["#f6d6cf","#8a4b3a"],["#e8ddf0","#6a5a8a"],["#fbeec0","#a8623a"],["#d8e6f2","#c0504a"]];
+    const six=(z0)=>[67,73.8,80.6].map((a,k)=>{ const c=pal[(k+(z0?3:0))%6]; return {a,w:5.8,d:6.2,kind:"house",fl:2,col:c[0],rcol:c[1],roof:k===1?"hip":"gable"}; });
+    row("hN3","x",-105,Math.PI,67,86.4,"house",six(0)); row("hS3","x",-111,0,67,86.4,"house",six(1)); }
   LOTS.forEach(L=>out.push({row:"vil"+VIL.lanes.indexOf(L.ry?L.f-3:L.f+3)+(L.ry?"s":"n"),axis:"x",f:L.f,ry:L.ry,c:L.x,w:L.w,d:L.d,kind:"house",fl:L.fl,col:L.col,rcol:L.rcol,roof:L.roof,seed:900+L.i*13,key:"tw:lot:"+L.i,name:null,lot:L.i}));
   /* (11/14) a generated building may never overlap a named one in the same street front: 一粥七天 had a second wall in the very same plane — that was its flicker */
   for(let i=out.length-1;i>=0;i--){ const b=out[i]; if(b.key||b.deco) continue; if(out.some(q=>q!==b&&q.key&&q.f===b.f&&q.axis===b.axis&&Math.abs(q.c-b.c)<(q.w+b.w)/2-.05)) out.splice(i,1); }
@@ -13090,7 +13096,8 @@ const CH=[
  {id:"vil0",c:[-60,-64],r:38,build:C=>{ villageLane(C,0,-64); }},
  {id:"vil1",c:[-60,-84],r:38,build:C=>{ villageLane(C,1,-84); }},
  {id:"vil2",c:[-60,-104],r:38,build:C=>{ villageLane(C,2,-104); }},
- {id:"laneE",c:[50,-108],r:22,build:C=>{ street(C,33.2,66,-111,-105,"x",undefined,undefined,{end1:1}); rowBuild(C,["hN2","hS2"]); for(const x of [40,54]) lamp(C,gapNear(["hN2"],x),-105.6); ground(C,"pave",62,70,-117,-99,.008,false,2); { const g=new T.Group(); C.g.add(g); pole(g,36,-110.6); pole(g,50,-110.6); pole(g,64,-110.6); wire(g,[36.4,-110.6],[50.4,-110.6],6.8,.5); wire(g,[50.4,-110.6],[64.4,-110.6],6.8,.5); vend(g,65.4,-105.6,Math.PI); } }},
+ {id:"laneE",c:[50,-108],r:22,build:C=>{ street(C,33.2,66,-111,-105,"x"); rowBuild(C,["hN2","hS2"]); for(const x of [40,54]) lamp(C,gapNear(["hN2"],x),-105.6); ground(C,"pave",62,70,-117,-99,.008,false,2); { const g=new T.Group(); C.g.add(g); pole(g,36,-110.6); pole(g,50,-110.6); pole(g,64,-110.6); wire(g,[36.4,-110.6],[50.4,-110.6],6.8,.5); wire(g,[50.4,-110.6],[64.4,-110.6],6.8,.5); vend(g,65.4,-105.6,Math.PI); } }},
+ {id:"laneE2",c:[77,-108],r:14,build:C=>{ street(C,66,86.4,-111,-105,"x",undefined,undefined,{end1:1}); rowBuild(C,["hN3","hS3"]); ground(C,"plaza",66,87,-118,-111.6,.012,true,4); ground(C,"plaza",66,87,-104.4,-98,.012,true,4); for(const x of [70.4,77.2]) lamp(C,gapNear(["hN3"],x),-105.6); }},
  {id:"pier",c:[28,-124],r:18,build:C=>{ street(C,25,33.2,-131,-105,"z",ROAD_A0,ROAD_A1); /* (11/17 主委「橋頭的磁磚也改成柏油路就好」: the street runs on to the bridge, no tiled square) */ const wood=mat("#8a6246",{roughness:.85}); /* 木板碼頭 (11/16 主委「那座橋請做成木板橋，不要是色塊」): planks with gaps, two beams under them, a rail on both sides */
    { const pw=[mat("#9a7050",{roughness:.85}),mat("#8a6246",{roughness:.85}),mat("#a87c58",{roughness:.85})], dk=mat("#5a3e2a",{roughness:.9}); /* (11/17 主委「釣魚碼頭地名移除 那邊做成一條過去對岸的橋」: the plank walk runs right across the river now) */ for(let k=0;k<28;k++){ const z=-130.6-k*.5; box(3.5,.07,.44,pw[k%3],28+((k*37)%7-3)*.01,.02,z,C.g); }
      for(const x of [26.6,29.4]) box(.16,.14,14,dk,x,-.08,-137.5,C.g); for(const x of [26.1,29.9]){ box(.07,.07,14,wood,x,.85,-137.5,C.g); for(let k=0;k<9;k++) box(.08,.85,.08,wood,x,.43,-130.7-k*1.7,C.g); } }
