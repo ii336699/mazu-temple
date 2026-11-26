@@ -501,7 +501,7 @@ export class Lobby extends DurableObject {
     /* 主委拉人 (11/26): the chair takes a player along behind them (on) or lets them go (off) — sent to that one player wherever they are */
     if (url.pathname === "/pull" && req.method === "POST") { const auth = await this.checkKey(req); if (!auth.ok) return json(auth);
       let b = {}; try { b = await req.json(); } catch {} const to = String(b.to || "").replace(/[^a-z0-9]/g, "").slice(0, 16); if (!to) return json({ ok: false });
-      const m = { t: "pull", on: b.on ? 1 : 0, by: String(b.by || "").replace(/[^a-z0-9]/g, "").slice(0, 16), slot: Math.max(0, Math.min(20, b.slot | 0)), x: +b.x || 0, z: +b.z || 0 };
+      const m = { t: "pull", on: b.on ? 1 : 0, by: String(b.by || "").replace(/[^a-z0-9]/g, "").slice(0, 16), slot: Math.max(0, Math.min(20, b.slot | 0)), ah: String(b.ah || "").replace(/[^a-z0-9]/g, "").slice(0, 16), x: +b.x || 0, z: +b.z || 0 };
       const ns = await Promise.all(Array.from({ length: HALLS }, (_, h) => this.env.HALL.get(this.env.HALL.idFromName("hall-" + h)).fetch("https://hall/h1", { method: "POST", body: JSON.stringify({ to, m }) }).then(r => r.text()).then(t => parseInt(t, 10) || 0).catch(() => 0))); return json({ ok: true, n: ns.reduce((a, b) => a + b, 0) }); } /* (n: how many open pages got it — 0 means that player is offline) */
     if (url.pathname === "/evt") {
       const now = Date.now(), clean = e => { e = e || {}; const o = { fish: +e.fish > now ? +e.fish : 0, bug: e.bug && +e.bug.until > now ? { until: +e.bug.until, ids: (e.bug.ids || []).slice(0, 60) } : { until: 0, ids: [] }, dig: +e.dig > now ? +e.dig : 0, drops: (e.drops || []).filter(d => +d.until > now).slice(-40) }; return o; };

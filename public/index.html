@@ -4618,7 +4618,7 @@ let chairHidden=false;
 function presenceGoal(){ const T=meAv.target, P=meAv.pos; if(!((joy.on||keys.size)&&!myFly&&!(meAv.path&&meAv.path.length))) return [T.x,T.y]; const dx=T.x-P.x, dz=T.y-P.y, L=Math.hypot(dx,dz); if(L<.05) return [T.x,T.y];
   let k=3; while(k>.5&&!(walkable(P.x+dx/L*k,P.y+dz/L*k)&&walkable(P.x+dx/L*k*.5,P.y+dz/L*k*.5))) k-=.4; return k>.5?[P.x+dx/L*k,P.y+dz/L*k]:[T.x,T.y]; }
 const MZ_VER=261126; /* (11/26 主委「拉過來對方沒過來」: pages say which build they run, so the chair can tell who still has an old page open) */
-function presencePayload(){ const PG=presenceGoal(); const RP=(()=>{ try{ return ROOMX&&ROOMX.pos&&ROOMX.lot>=0?ROOMX.pos:null; }catch(e){ return null; } })(); return {vr:MZ_VER,hm:RP?ROOMX.lot:-1,hx:RP?+RP.x.toFixed(2):0,hz:RP?+RP.z.toFixed(2):0,hr:RP?+RP.r.toFixed(1):0,v:1,u:(customizing||chairHidden||RP||ISL.on)?0:1,n:(me.name||"").slice(0,10),k:me.no||0,l:me.look,x:+PG[0].toFixed(2),z:+PG[1].toFixed(2),r:+meAv.rotY.toFixed(1),s:meAv.seat,b:myBow,h:meAv.hold?1:0,j:myJiao,f:myBurn,o:myOffers,a:bag.items.fu?1:0,g:me.lamp??-1,m:myMsg,c:myChat,p:myPlant,gf:myGF,fx:myFx,t:threadOn()?1:0,q:me.sp?1:0,eq:myEq(),um:umbMine(),w:myWish,y:+meAv.headGoal.toFixed(1),sq:mySj?[mySj.g+1,mySj.at]:0,sk:mySparkler?1:0,fs:myFwShow||0,e:myEmo,ac:myAct,sl:mySL,sm:myMassSL||0,fl:myFly?+(meAv.flyGoal||FLY_H).toFixed(1):0,cs:myCs,iy:(meAv.gy||0)>2.3?1:0,lk:INN.lock||0,tl:DQ?DQ.title():0,bk:(typeof LIFE!=="undefined"&&LIFE&&LIFE.bikeOn&&LIFE.bikeOn())?1:0,pc:(()=>{ try{ const p=bag.cat&&(Array.isArray(bag.cat.pets)?bag.cat.pets.find(q=>q&&!q.home&&!q.vet&&!q.away):bag.cat.pet); return p&&!p.home&&!p.vet&&!p.away?(p.t|0)+1:0; }catch(e){ return 0; } })(),pc3:(()=>{ try{ return (bag.cat&&Array.isArray(bag.cat.pets)?bag.cat.pets:[]).filter(q=>q&&!q.home&&!q.vet&&!q.away).slice(0,3).map(q=>(q.t|0)+1); }catch(e){ return []; } })()}; } /* pc: the coat of the cat following you (others see it too) */
+function presencePayload(){ const PG=presenceGoal(); const RP=(()=>{ try{ return ROOMX&&ROOMX.pos&&ROOMX.lot>=0?ROOMX.pos:null; }catch(e){ return null; } })(); return {vr:MZ_VER,hm:RP?ROOMX.lot:-1,hx:RP?+RP.x.toFixed(2):0,hz:RP?+RP.z.toFixed(2):0,hr:RP?+RP.r.toFixed(1):0,v:1,u:(customizing||chairHidden||RP||ISL.on)?0:1,n:(me.name||"").slice(0,10),k:me.no||0,l:me.look,x:+PG[0].toFixed(2),z:+PG[1].toFixed(2),r:+meAv.rotY.toFixed(1),s:meAv.seat,b:myBow,h:meAv.hold?1:0,j:myJiao,f:myBurn,o:myOffers,a:bag.items.fu?1:0,g:me.lamp??-1,m:myMsg,c:myChat,p:myPlant,gf:myGF,fx:myFx,t:threadOn()?1:0,q:me.sp?1:0,eq:myEq(),um:umbMine(),w:myWish,y:+meAv.headGoal.toFixed(1),sq:mySj?[mySj.g+1,mySj.at]:0,sk:mySparkler?1:0,fs:myFwShow||0,e:myEmo,ac:myAct,sl:mySL,sm:myMassSL||0,fl:(myFly||(window.MZ_PULLED&&meAv.flyGoal>0))?+(meAv.flyGoal||FLY_H).toFixed(1):0,pl:window.MZ_PULLED?1:0,cs:myCs,iy:(meAv.gy||0)>2.3?1:0,lk:INN.lock||0,tl:DQ?DQ.title():0,bk:(typeof LIFE!=="undefined"&&LIFE&&LIFE.bikeOn&&LIFE.bikeOn())?1:0,pc:(()=>{ try{ const p=bag.cat&&(Array.isArray(bag.cat.pets)?bag.cat.pets.find(q=>q&&!q.home&&!q.vet&&!q.away):bag.cat.pet); return p&&!p.home&&!p.vet&&!p.away?(p.t|0)+1:0; }catch(e){ return 0; } })(),pc3:(()=>{ try{ return (bag.cat&&Array.isArray(bag.cat.pets)?bag.cat.pets:[]).filter(q=>q&&!q.home&&!q.vet&&!q.away).slice(0,3).map(q=>(q.t|0)+1); }catch(e){ return []; } })()}; } /* pc: the coat of the cat following you (others see it too) */
 let lastSent="", lastBeat=0;
 setInterval(()=>{ if(room) sendPresence(true); },50000); // heartbeat while idle
 function sendPresence(force){ if(!room) return; dirty=false; const p=presencePayload(), str=JSON.stringify(p), now=performance.now(); lastSend=now; if(str===lastSent&&force!==true&&now-lastBeat<60000) return; lastSent=str; lastBeat=now; room.presence(p).catch(()=>{}); }
@@ -4664,7 +4664,7 @@ function syncPeers(peers){ try{ onlineNote(peers); }catch(e){} ROOM_PEERS.clear(
     else if(av.swim&&av.swimSave){ if(look.join()!==av.swimSave.join()) av.swimSave=look.slice(); } /* in the hot spring: keep the swimsuit, remember the new clothes for afterwards */
     else if(look.join()!==av.look.join()) av.setLook(look);
     const pno=Number.isInteger(pr.k)&&pr.k>0&&pr.k<1e8?pr.k:0; let nm=cleanName(pr.n)||(pno?`香客${pno}`:"香客"); if(pr.q!==1&&[SP_NAME,SP_OLD].includes(nm)) nm=pno?`香客${pno}`:"香客"; { const tl=DQ&&pr.q!==1?DQ.ttl(pr.tl|0):""; if(nm!==av.name||av.lblSp!==!!(me&&me.sp)||(av.ttl||"")!==tl){ av.name=nm; av.ttl=tl; av.lblSp=!!(me&&me.sp); av.setName(tl?tl+"・"+nm:nm); } }
-    try{ if(window.MZ_BIKESET&&(pr.bk===1)!==!!av._bkOn){ av._bkOn=pr.bk===1; window.MZ_BIKESET(av,av._bkOn); } }catch(_){ } av.pcT=Number.isInteger(pr.pc)&&pr.pc>0&&pr.pc<=12?pr.pc-1:-1; av.pcTs=Array.isArray(pr.pc3)?pr.pc3.slice(0,3).filter(v=>Number.isInteger(v)&&v>0&&v<=12).map(v=>v-1):(av.pcT>=0?[av.pcT]:[]); av.setSp(pr.q===1); if(pr.q===1) av.name=SP_NAME; av.flyGoal=pr.q===1&&pr.fl?Math.max(.6,Math.min(40,+pr.fl||FLY_H)):0; csForm(av,pr.q===1&&pr.cs===1);
+    try{ if(window.MZ_BIKESET&&(pr.bk===1)!==!!av._bkOn){ av._bkOn=pr.bk===1; window.MZ_BIKESET(av,av._bkOn); } }catch(_){ } av.pcT=Number.isInteger(pr.pc)&&pr.pc>0&&pr.pc<=12?pr.pc-1:-1; av.pcTs=Array.isArray(pr.pc3)?pr.pc3.slice(0,3).filter(v=>Number.isInteger(v)&&v>0&&v<=12).map(v=>v-1):(av.pcT>=0?[av.pcT]:[]); av.setSp(pr.q===1); if(pr.q===1) av.name=SP_NAME; av.flyGoal=(pr.q===1||pr.pl===1)&&pr.fl?Math.max(.6,Math.min(40,+pr.fl||FLY_H)):0; av.pulled=pr.pl===1; csForm(av,pr.q===1&&pr.cs===1);
     av.umbC=typeof pr.um==="number"&&pr.um>=-1&&pr.um<=8?pr.um|0:-1;
     { const eq=Array.isArray(pr.eq)?[pr.eq[0],pr.eq[1],pr.eq[2],pr.eq[3]].map(v=>typeof v==="string"&&ACC[v]?v:0):[0,0,0,0]; if(String(eq)!==String(av.eq||[0,0,0,0])) av.setAcc(eq); }
     { const tx=num(pr.x,-110,160,av.target.x), tz=num(pr.z,-300,125,av.target.y); if(tx!==av.goalX||tz!==av.goalZ){ av.goalX=tx; av.goalZ=tz; av.wantGy=pr.iy===1?INN.F2:0; const pth=av.flyGoal>0?[[tx,tz]]:planPath(av.pos.x,av.pos.y,tx,tz,av.gy||0,pr.iy===1?INN.F2:0); av.target.set(pth[0][0],pth[0][1]); av.path=pth.slice(1); } } av.lk=Number.isInteger(pr.lk)&&pr.lk>=1&&pr.lk<=4?pr.lk:0; const seat=Number.isInteger(pr.s)&&pr.s>=0&&pr.s<SEATS.length?pr.s:-1; av.seat=seat; if(seat>=0) npcYield(seat);
@@ -5381,20 +5381,33 @@ setInterval(()=>{ try{ if(!PEER.follow) return; const av=remotes.get(PEER.follow
 /* 主委拉人 — the chair's side */
 async function pullSend(id,on){ const key=ck(); if(!key){ toast("先在主委工具輸入密碼",2200); return false; }
   if(!USE_CF){ toast("測試版沒有伺服器：正式站才會真的把人拉過來",2600); return true; }
-  try{ const r=await fetch("/pull",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({to:id,on:on?1:0,by:myPid(),slot:PEER.pulled.indexOf(id),x:meAv.pos.x,z:meAv.pos.y})}); const j=await r.json().catch(()=>({})); forgetKey(r,j); if(!j.ok){ toast("密碼不對或伺服器沒回應",2200); return false; } save("mz.rk",key); if(j.n===0&&on){ toast("他已經離線了，拉不過來",2400); return false; } return true; }catch(e){ toast("沒有送出，請稍後再試",2000); return false; } }
+  try{ const r=await fetch("/pull",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({to:id,on:on?1:0,by:myPid(),slot:PEER.pulled.indexOf(id),ah:PEER.pulled.indexOf(id)>0?PEER.pulled[PEER.pulled.indexOf(id)-1]:myPid(),x:meAv.pos.x,z:meAv.pos.y})}); const j=await r.json().catch(()=>({})); forgetKey(r,j); if(!j.ok){ toast("密碼不對或伺服器沒回應",2200); return false; } save("mz.rk",key); if(j.n===0&&on){ toast("他已經離線了，拉不過來",2400); return false; } return true; }catch(e){ toast("沒有送出，請稍後再試",2000); return false; } }
 HANDLERS.pPull=async v=>{ if(!me.sp) return; const av=remotes.get(v); if(!av) return; closeSheet();
   if(PEER.pulled.includes(v)){ PEER.pulled=PEER.pulled.filter(q=>q!==v); if(await pullSend(v,false)) toast(`✋ 放開了 ${av.name||"香客"}`,1800); PEER.pulled.forEach((q,i)=>pullSend(q,true)); /* (the queue closes up) */ return; }
   PEER.pulled.push(v); if(await pullSend(v,true)) toast(`🧲 ${av.name||"香客"} 跟在你後面了（第 ${PEER.pulled.length} 個）`,2200); else PEER.pulled=PEER.pulled.filter(q=>q!==v); };
 HANDLERS.pPullAll=async()=>{ if(!me.sp) return; closeSheet(); const L=PEER.pulled.slice(); PEER.pulled=[]; for(const v of L) await pullSend(v,false); toast("✋ 全部放開了",1800); };
 /* 主委拉人 — the pulled player's side */
-function pullMsg(m){ if(m.on){ const first=!PEER.pull; PEER.pull={by:m.by,slot:m.slot|0}; stopFollow(); window.MZ_HOLD=true; try{ closeSheet(); }catch(e){}
+function pullMsg(m){ if(m.on){ const first=!PEER.pull; PEER.pull={by:m.by,slot:m.slot|0,ah:m.ah||m.by}; window.MZ_PULLED=1; stopFollow(); window.MZ_HOLD=true; try{ closeSheet(); }catch(e){}
     if(first){ const b=(m.slot+1)*1.4; meAv.pos.set(m.x-Math.sin(meAv.rotY)*b,m.z-Math.cos(meAv.rotY)*b); meAv.target.copy(meAv.pos); meAv.path=[]; toast("🧲 主委把你帶在身邊了，主委走到哪你就跟到哪",3200); } }
-  else if(PEER.pull){ PEER.pull=null; window.MZ_HOLD=false; meAv.target.copy(meAv.pos); meAv.path=[]; toast("主委放開你了，你可以自己走了",2600); } }
-window.MZ_PULLTICK=dt=>{ const P=PEER.pull; if(!P) return; window.MZ_HOLD=true; const av=remotes.get(P.by); if(!av) return; const b=(P.slot+1)*1.4, ry=av.rotY||0;
-  const tx=av.pos.x-Math.sin(ry)*b, tz=av.pos.y-Math.cos(ry)*b, d=Math.hypot(tx-meAv.pos.x,tz-meAv.pos.y);
-  if(d>30){ meAv.pos.set(tx,tz); } else { const k=Math.min(1,dt*5); meAv.pos.set(meAv.pos.x+(tx-meAv.pos.x)*k,meAv.pos.y+(tz-meAv.pos.y)*k); }
-  meAv.target.copy(meAv.pos); meAv.path=[]; meAv.walking=d>.15; meAv.rotY=lerpAngle(meAv.rotY,Math.atan2(av.pos.x-meAv.pos.x,av.pos.y-meAv.pos.y),Math.min(1,dt*6));
-  const ay=av.root.position.y; if(ay>meAv.root.position.y+.3) meAv.root.position.y=ay; /* (flying with the chair) */ };
+  else if(PEER.pull){ PEER.pull=null; window.MZ_PULLED=0; window.MZ_HOLD=false; if(!myFly) meAv.flyGoal=0; meAv.target.copy(meAv.pos); meAv.path=[]; toast("主委放開你了，你可以自己走了",2600); } }
+/* 火車隊形 (11/26 主委「飛起來的時候他們也能踩著雲…像火車一樣一個接一個…不要他在飛但我看他是在地上跑」): each person in the line
+   follows the one in front of them (the chair for the first) 1.4 m behind, so the line bends along the chair's way like a train;
+   their height copies the chair's, so they stand on their own cloud. The pulled player moves themself this way and sends it out
+   (presence fl + pl), and the chair's page also places the people it leads the same way every frame, so on the chair's screen they
+   fly right behind with no lag. */
+function trainStep(av,lead,fly,dt){ const dx=av.pos.x-lead.pos.x, dz=av.pos.y-lead.pos.y, d=Math.hypot(dx,dz)||1, gap=1.4;
+  let tx=av.pos.x, tz=av.pos.y; if(d>30){ const ry=lead.rotY||0; tx=lead.pos.x-Math.sin(ry)*gap; tz=lead.pos.y-Math.cos(ry)*gap; av.pos.set(tx,tz); }
+  else if(d>gap){ tx=lead.pos.x+dx/d*gap; tz=lead.pos.y+dz/d*gap; const k=Math.min(1,dt*8); av.pos.set(av.pos.x+(tx-av.pos.x)*k,av.pos.y+(tz-av.pos.y)*k); }
+  av.target.copy(av.pos); av.path=[]; const mv=d>gap+.05; av.walking=mv&&!(fly>0); av.flyGoal=fly>0?fly:0;
+  if(mv) av.rotY=lerpAngle(av.rotY,Math.atan2(lead.pos.x-av.pos.x,lead.pos.y-av.pos.y),Math.min(1,dt*6)); }
+window.MZ_PULLTICK=dt=>{
+  if(me.sp&&PEER.pulled.length){ let lead=meAv; const fly=myFly?(meAv.flyGoal||FLY_H):0; for(const id of PEER.pulled){ const av=remotes.get(id); if(!av) continue; trainStep(av,lead,fly,dt); lead=av; } }
+  const P=PEER.pull; if(!P) return; window.MZ_HOLD=true; const ch=remotes.get(P.by); if(!ch) return;
+  const lead=(P.ah&&P.ah!==P.by&&remotes.get(P.ah))||ch; const fly=ch.flyGoal>0?ch.flyGoal:0;
+  if(lead===ch&&P.slot>0){ /* (the one in front is not on my screen: keep my place by counting back from the chair) */ const b=(P.slot+1)*1.4, ry=ch.rotY||0; const tx=ch.pos.x-Math.sin(ry)*b, tz=ch.pos.y-Math.cos(ry)*b, d=Math.hypot(tx-meAv.pos.x,tz-meAv.pos.y);
+    if(d>30) meAv.pos.set(tx,tz); else { const k=Math.min(1,dt*5); meAv.pos.set(meAv.pos.x+(tx-meAv.pos.x)*k,meAv.pos.y+(tz-meAv.pos.y)*k); } meAv.target.copy(meAv.pos); meAv.path=[]; meAv.walking=d>.15&&!fly; meAv.flyGoal=fly; }
+  else trainStep(meAv,lead,fly,dt);
+  markDirty(); };
 /* 聊天室 */
 const CRM={cr:{title:"",open:0,mem:[]},msgs:[],joined:false,sign:null,signFor:null};
 const crLocal=()=>{ const d=load("mz.croomL",null)||{cr:{title:"",open:0,mem:[]},msgs:[]}; return d; };
@@ -7714,16 +7727,31 @@ function hbStart(m){ if(!m||!m.id||HB.drops.has(m.id)) return; const R=hbRand(m.
     const gl=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffcf4a"),transparent:true,opacity:.55,blending:T.AdditiveBlending,depthWrite:false})); gl.scale.set(1.1,1.1,1); s.add(gl); gl.scale.set(1.8,1.8,1);
     const e={i,x,z,y0,v,ph,sw,s,done:false}; s.userData.hb=[m.id,i]; d.env.push(e); HB.list.push(e); }
   if(Date.now()-at<4000){ toast("🧧 財神爺撒紅包囉！快去接！",3200); hbFakes(m,R); } }
-/* 5–10 make-believe players run in and grab some of the envelopes too (主委 11/14). Only on this screen: they never claim anything from the server. */
-function hbFakes(m,R){ const n=5+Math.floor(R()*6); for(let i=0;i<n;i++) setTimeout(()=>{ try{ let x=0,z=0; for(let k=0;k<10;k++){ const a=Math.random()*6.283, r=9+Math.random()*5; x=m.x+Math.sin(a)*r; z=m.z+Math.cos(a)*r; if(walkable(x,z)) break; }
-    const a=new Avatar(randomLook(),{npc:true,x,z}); a.moveSpeed=3.0+Math.random()*.8; try{ a.setName(randomName()); }catch(e){} a.path=[]; a.hbF={t:0,got:0,max:1+(Math.random()<.5?1:0),home:[x,z],e:null}; HB.fk.push(a); }catch(e){ console.warn("hb fake",e); } },300+i*260); }
+/* 3–4 make-believe players (11/26 主委「假人不要那麼多 三、四個就好」; was 5–10) run in and grab some of the envelopes too (主委 11/14). Only on this screen: they never claim anything from the server.
+   (11/26 主委「他們為什麼能穿牆 還有他們都走一樣的路 搶紅包也搶一樣的 太假了 他們不要搶這麼快 假裝有搶就好 然後不要走一起」):
+   they walk real paths (planPath, no walls), come in from different sides at different times and speeds, each goes for a different
+   envelope (never one you are standing near), hesitates, looks up, sometimes misses or gives up and wanders, and takes one at most
+   (rarely two). */
+function hbGo(a,x,z){ try{ const c=clampSpot(x,z); const p=planPath(a.pos.x,a.pos.y,c[0],c[1],a.gy||0,0); if(p&&p.length){ a.moveTo(p[0][0],p[0][1]); a.path=p.slice(1); return true; } }catch(e){} return false; }
+function hbFakes(m,R){ const n=3+Math.floor(R()*2), a0=Math.random()*6.283; for(let i=0;i<n;i++) setTimeout(()=>{ try{ let x=0,z=0, ok=false;
+    for(let k=0;k<14&&!ok;k++){ const ang=a0+i/n*6.283+(Math.random()-.5)*.6, r=11+Math.random()*9; x=m.x+Math.sin(ang)*r; z=m.z+Math.cos(ang)*r; ok=walkable(x,z)&&!!planPath(x,z,m.x,m.z,0,0); }
+    if(!ok) return;
+    const a=new Avatar(randomLook(),{npc:true,x,z}); a.moveSpeed=1.9+Math.random()*1.1; try{ a.setName(randomName()); }catch(e){} a.path=[];
+    a.hbF={t:0,got:0,max:Math.random()<.25?2:1,home:[x,z],e:null,wait:1.2+Math.random()*3.5,re:0,miss:Math.random()*.55,off:[(Math.random()-.5)*2.4,(Math.random()-.5)*2.4]}; HB.fk.push(a); }catch(e){ console.warn("hb fake",e); } },500+i*(500+Math.random()*900)); }
 HB.fk=[];
 function hbFakeTick(dt){ if(!HB.fk.length) return; for(const a of HB.fk){ const F=a.hbF; F.t+=dt; try{ a.update(dt); }catch(e){}
-    if(F.gone){ F.gt=(F.gt||0)+dt; if(F.gt>6){ a.dispose(); F.dead=1; } continue; }
-    if(F.got>=F.max||F.t>45||!HB.list.length){ F.gone=1; a.moveTo(F.home[0]+(Math.random()-.5)*20,F.home[1]+(Math.random()-.5)*20); continue; }
-    if(!F.e||F.e.done){ let best=null, bd=1e9; for(const e of HB.list){ if(e.done||e.pending) continue; const d=Math.hypot(e.x-a.pos.x,e.z-a.pos.y)+e.s.position.y*.8; if(d<bd){ bd=d; best=e; } } F.e=best; if(best) a.moveTo(best.x,best.z); continue; }
-    const e=F.e, d=Math.hypot(e.s.position.x-a.pos.x,e.s.position.z-a.pos.y); if(d>1.2&&Math.random()<dt) a.moveTo(e.s.position.x,e.s.position.z);
-    if(d<1.0&&e.s.position.y<2.2){ hbRemove(e,true); F.got++; F.e=null; try{ a.say(Math.random()<.15?"+1 扭蛋幣":`+${Math.random()<.1?100:50} 平安幣`,"#ffd27a",2); }catch(x){} } }
+    if(F.gone){ F.gt=(F.gt||0)+dt; if(F.gt>8){ a.dispose(); F.dead=1; } continue; }
+    if(F.got>=F.max||F.t>45||!HB.list.length){ F.gone=1; hbGo(a,F.home[0]+(Math.random()-.5)*16,F.home[1]+(Math.random()-.5)*16); continue; }
+    if(F.wait>0){ F.wait-=dt; continue; } /* (looking up, making up their mind) */
+    if(!F.e||F.e.done||F.e.pending){ const mine=new Set(HB.fk.map(b=>b!==a&&b.hbF.e).filter(Boolean)); const cand=[];
+      for(const e of HB.list){ if(e.done||e.pending||mine.has(e)) continue; if(Math.hypot(e.x-meAv.pos.x,e.z-meAv.pos.y)<4.5) continue; cand.push([Math.hypot(e.x-a.pos.x,e.z-a.pos.y)+Math.random()*8,e]); }
+      cand.sort((p,q)=>p[0]-q[0]); const pick=cand[Math.floor(Math.random()*Math.min(3,cand.length))];
+      F.e=pick?pick[1]:null; F.re=0; if(F.e) hbGo(a,F.e.x+F.off[0],F.e.z+F.off[1]); else { F.wait=2+Math.random()*2; hbGo(a,a.pos.x+(Math.random()-.5)*8,a.pos.y+(Math.random()-.5)*8); } continue; }
+    const e=F.e, d=Math.hypot(e.x-a.pos.x,e.z-a.pos.y); F.re-=dt;
+    if(Math.hypot(e.x-meAv.pos.x,e.z-meAv.pos.y)<3.5){ F.e=null; F.wait=1+Math.random()*2; continue; } /* (you are right there: let you have it) */
+    if(d>1.3&&F.re<=0&&!(a.path&&a.path.length)){ F.re=2+Math.random()*2; hbGo(a,e.x+F.off[0]*.4,e.z+F.off[1]*.4); }
+    if(d<1.3&&e.s.position.y<1.9){ if(Math.random()<F.miss){ F.e=null; F.miss*=.5; F.wait=1.5+Math.random()*2.5; try{ a.say(["差一點！","哎呀","沒接到…"][Math.floor(Math.random()*3)],"#ffd27a",1.6); }catch(x){} continue; }
+      hbRemove(e,true); F.got++; F.e=null; F.wait=2+Math.random()*3; try{ a.say(Math.random()<.15?"+1 扭蛋幣":`+${Math.random()<.1?100:50} 平安幣`,"#ffd27a",2); }catch(x){} } }
   HB.fk=HB.fk.filter(a=>!a.hbF.dead); }
 function hbRemove(e,burst){ if(e.done) return; e.done=true; scene.remove(e.s); if(burst){ for(let k=0;k<10;k++) spawnSmoke(e.s.position.x,e.s.position.y,e.s.position.z,{size:.05,grow:.1,life:.8,op:.6,vy:.8}); } }
 function hbTick(dt){ try{ hbFakeTick(dt); }catch(e){} if(!HB.list.length) return; const now=Date.now();
