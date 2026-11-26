@@ -2023,3 +2023,9 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - 做法：從 origin/main 開 deploy5，cherry-pick 6e3ee0c（房間聊天表情）、c8abb1a（UI 總檢查，面板層級 12，新浮動鈕才不會蓋住面板）、47cbc18（時間、座標、跟隨、拉人、聊天室＋worker /croom /pull）。c8abb1a 裡混進的翻船過場 capsize 已剔掉，enter() 還原成 main 的版本。
 - 正式站還沒上的：集章提示與女神泉桌（02b4bdd／72be7ae 的桌子部分）、商店禁轉畫面（23dfa67）、夢見島翻船過場與生存、小屋加蓋＋照相館再看一次＋看魚關掉鈕（ba0e4c4，跟島的工具列混在同一批）。
 - 下次部署 audio-fix 全部時，main 和 audio-fix 已分岔，直接把 audio-fix 合進 main（內容是 main 的超集，衝突只會在剔掉 capsize 那段，取 audio-fix 版本）。
+
+## 11/26 16:30 拉過來對方沒過來（未部署；worker 有改）
+- 主委回報正式站「拉過來對方沒過來」。本機 wrangler dev＋兩個瀏覽器實測：伺服器有送到、對方被傳到主委身後、放開也正常 → 最可能是對方開著部署前的舊網頁（跟送家具變平安幣同一原因）。
+- 修改：presence 多 vr（MZ_VER=261126）；主委點玩家時對方 vr 比較舊會出現「⚠️ 他開的還是舊版網頁…請他重新整理」。worker /h1 回傳送到幾個連線、/pull 回 n，0＝離線，主委看到「他已經離線了」。
+- 新版自動更新 verWatch()：只在正式站（initCF）啟動，記住 index.html 的 ETag，每 3 分鐘 HEAD 一次，變了就等閒著（沒開面板、沒打字、沒換造型、不在店裡、MZ_HOLD 沒開、沒過場）存檔後重新整理。本機用假 ETag 測過會重新整理。
+- 部署時：main 跟 audio-fix 分岔，要把這個 commit cherry-pick 到 main（不要整包 audio-fix，荒島還不上）。
