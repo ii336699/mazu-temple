@@ -4617,7 +4617,8 @@ let chairHidden=false;
 /* where others should see you heading: walking with the stick or keys, a point about 3 m ahead on your line (so between two updates — one every 0.8 s while walking — they keep walking smoothly instead of stepping half a metre and waiting); otherwise where you are going */
 function presenceGoal(){ const T=meAv.target, P=meAv.pos; if(!((joy.on||keys.size)&&!myFly&&!(meAv.path&&meAv.path.length))) return [T.x,T.y]; const dx=T.x-P.x, dz=T.y-P.y, L=Math.hypot(dx,dz); if(L<.05) return [T.x,T.y];
   let k=3; while(k>.5&&!(walkable(P.x+dx/L*k,P.y+dz/L*k)&&walkable(P.x+dx/L*k*.5,P.y+dz/L*k*.5))) k-=.4; return k>.5?[P.x+dx/L*k,P.y+dz/L*k]:[T.x,T.y]; }
-function presencePayload(){ const PG=presenceGoal(); const RP=(()=>{ try{ return ROOMX&&ROOMX.pos&&ROOMX.lot>=0?ROOMX.pos:null; }catch(e){ return null; } })(); return {hm:RP?ROOMX.lot:-1,hx:RP?+RP.x.toFixed(2):0,hz:RP?+RP.z.toFixed(2):0,hr:RP?+RP.r.toFixed(1):0,v:1,u:(customizing||chairHidden||RP||ISL.on)?0:1,n:(me.name||"").slice(0,10),k:me.no||0,l:me.look,x:+PG[0].toFixed(2),z:+PG[1].toFixed(2),r:+meAv.rotY.toFixed(1),s:meAv.seat,b:myBow,h:meAv.hold?1:0,j:myJiao,f:myBurn,o:myOffers,a:bag.items.fu?1:0,g:me.lamp??-1,m:myMsg,c:myChat,p:myPlant,gf:myGF,fx:myFx,t:threadOn()?1:0,q:me.sp?1:0,eq:myEq(),um:umbMine(),w:myWish,y:+meAv.headGoal.toFixed(1),sq:mySj?[mySj.g+1,mySj.at]:0,sk:mySparkler?1:0,fs:myFwShow||0,e:myEmo,ac:myAct,sl:mySL,sm:myMassSL||0,fl:myFly?+(meAv.flyGoal||FLY_H).toFixed(1):0,cs:myCs,iy:(meAv.gy||0)>2.3?1:0,lk:INN.lock||0,tl:DQ?DQ.title():0,bk:(typeof LIFE!=="undefined"&&LIFE&&LIFE.bikeOn&&LIFE.bikeOn())?1:0,pc:(()=>{ try{ const p=bag.cat&&(Array.isArray(bag.cat.pets)?bag.cat.pets.find(q=>q&&!q.home&&!q.vet&&!q.away):bag.cat.pet); return p&&!p.home&&!p.vet&&!p.away?(p.t|0)+1:0; }catch(e){ return 0; } })(),pc3:(()=>{ try{ return (bag.cat&&Array.isArray(bag.cat.pets)?bag.cat.pets:[]).filter(q=>q&&!q.home&&!q.vet&&!q.away).slice(0,3).map(q=>(q.t|0)+1); }catch(e){ return []; } })()}; } /* pc: the coat of the cat following you (others see it too) */
+const MZ_VER=261126; /* (11/26 主委「拉過來對方沒過來」: pages say which build they run, so the chair can tell who still has an old page open) */
+function presencePayload(){ const PG=presenceGoal(); const RP=(()=>{ try{ return ROOMX&&ROOMX.pos&&ROOMX.lot>=0?ROOMX.pos:null; }catch(e){ return null; } })(); return {vr:MZ_VER,hm:RP?ROOMX.lot:-1,hx:RP?+RP.x.toFixed(2):0,hz:RP?+RP.z.toFixed(2):0,hr:RP?+RP.r.toFixed(1):0,v:1,u:(customizing||chairHidden||RP||ISL.on)?0:1,n:(me.name||"").slice(0,10),k:me.no||0,l:me.look,x:+PG[0].toFixed(2),z:+PG[1].toFixed(2),r:+meAv.rotY.toFixed(1),s:meAv.seat,b:myBow,h:meAv.hold?1:0,j:myJiao,f:myBurn,o:myOffers,a:bag.items.fu?1:0,g:me.lamp??-1,m:myMsg,c:myChat,p:myPlant,gf:myGF,fx:myFx,t:threadOn()?1:0,q:me.sp?1:0,eq:myEq(),um:umbMine(),w:myWish,y:+meAv.headGoal.toFixed(1),sq:mySj?[mySj.g+1,mySj.at]:0,sk:mySparkler?1:0,fs:myFwShow||0,e:myEmo,ac:myAct,sl:mySL,sm:myMassSL||0,fl:myFly?+(meAv.flyGoal||FLY_H).toFixed(1):0,cs:myCs,iy:(meAv.gy||0)>2.3?1:0,lk:INN.lock||0,tl:DQ?DQ.title():0,bk:(typeof LIFE!=="undefined"&&LIFE&&LIFE.bikeOn&&LIFE.bikeOn())?1:0,pc:(()=>{ try{ const p=bag.cat&&(Array.isArray(bag.cat.pets)?bag.cat.pets.find(q=>q&&!q.home&&!q.vet&&!q.away):bag.cat.pet); return p&&!p.home&&!p.vet&&!p.away?(p.t|0)+1:0; }catch(e){ return 0; } })(),pc3:(()=>{ try{ return (bag.cat&&Array.isArray(bag.cat.pets)?bag.cat.pets:[]).filter(q=>q&&!q.home&&!q.vet&&!q.away).slice(0,3).map(q=>(q.t|0)+1); }catch(e){ return []; } })()}; } /* pc: the coat of the cat following you (others see it too) */
 let lastSent="", lastBeat=0;
 setInterval(()=>{ if(room) sendPresence(true); },50000); // heartbeat while idle
 function sendPresence(force){ if(!room) return; dirty=false; const p=presencePayload(), str=JSON.stringify(p), now=performance.now(); lastSend=now; if(str===lastSent&&force!==true&&now-lastBeat<60000) return; lastSent=str; lastBeat=now; room.presence(p).catch(()=>{}); }
@@ -4667,7 +4668,7 @@ function syncPeers(peers){ try{ onlineNote(peers); }catch(e){} ROOM_PEERS.clear(
     av.umbC=typeof pr.um==="number"&&pr.um>=-1&&pr.um<=8?pr.um|0:-1;
     { const eq=Array.isArray(pr.eq)?[pr.eq[0],pr.eq[1],pr.eq[2],pr.eq[3]].map(v=>typeof v==="string"&&ACC[v]?v:0):[0,0,0,0]; if(String(eq)!==String(av.eq||[0,0,0,0])) av.setAcc(eq); }
     { const tx=num(pr.x,-110,160,av.target.x), tz=num(pr.z,-300,125,av.target.y); if(tx!==av.goalX||tz!==av.goalZ){ av.goalX=tx; av.goalZ=tz; av.wantGy=pr.iy===1?INN.F2:0; const pth=av.flyGoal>0?[[tx,tz]]:planPath(av.pos.x,av.pos.y,tx,tz,av.gy||0,pr.iy===1?INN.F2:0); av.target.set(pth[0][0],pth[0][1]); av.path=pth.slice(1); } } av.lk=Number.isInteger(pr.lk)&&pr.lk>=1&&pr.lk<=4?pr.lk:0; const seat=Number.isInteger(pr.s)&&pr.s>=0&&pr.s<SEATS.length?pr.s:-1; av.seat=seat; if(seat>=0) npcYield(seat);
-    av.faceGoal=num(pr.r,-10,10,Math.PI); av.hold=pr.h===1?1:0; av.headGoal=num(pr.y,-1.2,1.2,0); av.sparkler=pr.sk===1; if(Array.isArray(pr.fs)&&Number.isFinite(pr.fs[0])&&pr.fs[0]!==FW.seed){ const sh=FW_SHOWS[pr.fs[2]]?pr.fs[2]|0:0, el=Date.now()-num(pr.fs[1],0,1e13,0); if(el>-15000&&el<FW_SHOWS[sh].len*1000) fwStart(pr.fs[0],el,sh,typeof pr.fs[3]==="string"?pr.fs[3]:""); } av.sq=(Array.isArray(pr.sq)&&pr.sq[0]>=1&&pr.sq[0]<=2)?[pr.sq[0]-1,num(pr.sq[1],0,1e13,0)]:null;
+    av.faceGoal=num(pr.r,-10,10,Math.PI); av.hold=pr.h===1?1:0; av.vr=+pr.vr||0; av.headGoal=num(pr.y,-1.2,1.2,0); av.sparkler=pr.sk===1; if(Array.isArray(pr.fs)&&Number.isFinite(pr.fs[0])&&pr.fs[0]!==FW.seed){ const sh=FW_SHOWS[pr.fs[2]]?pr.fs[2]|0:0, el=Date.now()-num(pr.fs[1],0,1e13,0); if(el>-15000&&el<FW_SHOWS[sh].len*1000) fwStart(pr.fs[0],el,sh,typeof pr.fs[3]==="string"?pr.fs[3]:""); } av.sq=(Array.isArray(pr.sq)&&pr.sq[0]>=1&&pr.sq[0]<=2)?[pr.sq[0]-1,num(pr.sq[1],0,1e13,0)]:null;
     if(pr.b!==av.lastBow){ av.lastBow=pr.b; if(!quietFx()) av.bow(); }
     if(Array.isArray(pr.j)&&pr.j[1]&&pr.j[1]!==av.lastJ){ av.lastJ=pr.j[1]; const res=RESULT[pr.j[0]]?pr.j[0]:"sheng"; if(!quietFx()) throwJiao(av,res,()=>av.say(RESULT[res].t,RESULT[res].c)); }
     if(pr.f!==av.lastF){ av.lastF=pr.f; if(!quietFx()){ av.burnT=0; burnFx(); } }
@@ -4716,9 +4717,20 @@ function watchDailyReset(){ const off=Math.random()*30000; let ready=false;
     await new Promise(r=>setTimeout(r,off)); const j=await probeCF(); if(!j) return; ready=true; toast("大殿伺服器恢復了，馬上帶你回到每殿百人的大殿",3500);
     const go=setInterval(()=>{ const typing=document.activeElement&&/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName); if(!sheetKind&&!customizing&&!typing){ clearInterval(go); setTimeout(()=>location.reload(),1500); } },2000); },60000); }
 // ---- Cloudflare Durable Objects (used automatically when the site's server answers /halls) ----
+/* 新版自動更新 (11/26 主委「拉過來對方沒過來」: the other player still had the page from before the deploy). The page remembers the
+   ETag of its own index.html; every 3 minutes it asks again, and when the site has a new build it saves and reloads at a quiet
+   moment — no panel open, not typing, not dressing up, not in a shop, not fishing, gliding or being led by the chair. */
+function verWatch(){ if(verWatch.on) return; verWatch.on=1; let tag="";
+  const ask=async()=>{ try{ const r=await fetch(location.pathname,{method:"HEAD",cache:"no-store"}); if(!r.ok) return ""; return r.headers.get("etag")||r.headers.get("last-modified")||""; }catch(e){ return ""; } };
+  ask().then(t=>{ tag=t; });
+  setInterval(async()=>{ if(!tag||verWatch.go) return; const t=await ask(); if(!t||t===tag) return; verWatch.go=1;
+    const quiet=()=>{ const typing=document.activeElement&&/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName); let shop=false; try{ shop=!!(SHOPX&&SHOPX.on); }catch(e){}
+      return !sheetKind&&!customizing&&!typing&&!shop&&!window.MZ_HOLD&&!document.getElementById("csBox"); };
+    const go=setInterval(()=>{ if(!quiet()) return; clearInterval(go); toast("遊戲有新版本，馬上幫你更新",2600); try{ saveBag(); }catch(e){} try{ profSave(false); }catch(e){} setTimeout(()=>location.reload(),2600); },3000); },180000); }
 let USE_CF=false;
 async function probeCF(){ try{ const r=await fetch("/halls",{cache:"no-store"}); if(!r.ok) return null; const j=await r.json(); return j&&Array.isArray(j.counts)?j:null; }catch(e){ return null; } }
 function initCF(first){
+  verWatch();
   let myId=load("mz.id",""); if(!myId){ myId=Math.random().toString(36).slice(2,12); save("mz.id",myId); }
   HALL_CAP=first.cap||100; HALLS.counts=first.counts.slice();
   const peerState=new Map(); let ws=null, hall=0, retry=0, closedByUs=false;
@@ -5353,6 +5365,7 @@ const myPid=()=>load("mz.id","");
 function peerMenu(id){ const av=remotes.get(id); if(!av) return; const nm=av.name||"香客", pulled=PEER.pulled.includes(id);
   openSheet("peer","👤 "+esc(nm),`<div class="row" style="flex-wrap:wrap;gap:8px"><button class="${PEER.follow===id?"secondary":"primary"}" data-act="pFollow" data-v="${esc(id)}">${PEER.follow===id?"⏹ 停止跟隨":"🚶 跟隨"}</button>${me.sp?`<button class="secondary" data-act="pGift" data-v="${esc(id)}">🎁 送禮</button><button class="secondary" data-act="pPull" data-v="${esc(id)}">${pulled?"✋ 放開":"🧲 拉過來"}</button>`:""}</div>
     <p class="note">${PEER.follow===id?"你正跟著他走，自己一移動就會停。":"跟隨：你的人物會自動跟著他走。"}${me.sp?`<br>拉過來：把他帶到你身後，你走到哪、飛到哪他都跟著，可以一次帶好幾個排成一列；按「放開」他就留在當下的位置。`:""}</p>
+    ${me.sp&&!(av.vr>=MZ_VER)?`<p class="note" style="color:#ffcf7a">⚠️ 他開的還是舊版網頁，拉過來、跟隨他都收不到。請他重新整理一次（新版之後會自己更新）。</p>`:""}
     ${me.sp&&PEER.pulled.length?`<div class="row"><button class="secondary" data-act="pPullAll">✋ 全部放開（現在帶著 ${PEER.pulled.length} 個人）</button></div>`:""}`); }
 HANDLERS.pGift=v=>{ const av=remotes.get(v); if(av) openGift(v,av.name||"香客"); };
 /* 跟隨 */
@@ -5368,7 +5381,7 @@ setInterval(()=>{ try{ if(!PEER.follow) return; const av=remotes.get(PEER.follow
 /* 主委拉人 — the chair's side */
 async function pullSend(id,on){ const key=ck(); if(!key){ toast("先在主委工具輸入密碼",2200); return false; }
   if(!USE_CF){ toast("測試版沒有伺服器：正式站才會真的把人拉過來",2600); return true; }
-  try{ const r=await fetch("/pull",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({to:id,on:on?1:0,by:myPid(),slot:PEER.pulled.indexOf(id),x:meAv.pos.x,z:meAv.pos.y})}); const j=await r.json().catch(()=>({})); forgetKey(r,j); if(!j.ok){ toast("密碼不對或伺服器沒回應",2200); return false; } save("mz.rk",key); return true; }catch(e){ toast("沒有送出，請稍後再試",2000); return false; } }
+  try{ const r=await fetch("/pull",{method:"POST",headers:{"content-type":"application/json","x-key":key},body:JSON.stringify({to:id,on:on?1:0,by:myPid(),slot:PEER.pulled.indexOf(id),x:meAv.pos.x,z:meAv.pos.y})}); const j=await r.json().catch(()=>({})); forgetKey(r,j); if(!j.ok){ toast("密碼不對或伺服器沒回應",2200); return false; } save("mz.rk",key); if(j.n===0&&on){ toast("他已經離線了，拉不過來",2400); return false; } return true; }catch(e){ toast("沒有送出，請稍後再試",2000); return false; } }
 HANDLERS.pPull=async v=>{ if(!me.sp) return; const av=remotes.get(v); if(!av) return; closeSheet();
   if(PEER.pulled.includes(v)){ PEER.pulled=PEER.pulled.filter(q=>q!==v); if(await pullSend(v,false)) toast(`✋ 放開了 ${av.name||"香客"}`,1800); PEER.pulled.forEach((q,i)=>pullSend(q,true)); /* (the queue closes up) */ return; }
   PEER.pulled.push(v); if(await pullSend(v,true)) toast(`🧲 ${av.name||"香客"} 跟在你後面了（第 ${PEER.pulled.length} 個）`,2200); else PEER.pulled=PEER.pulled.filter(q=>q!==v); };
