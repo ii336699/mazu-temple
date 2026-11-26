@@ -4209,6 +4209,7 @@ document.addEventListener("contextmenu",e=>{ if(e.target===canvas) e.preventDefa
 function addHit(key,x,y,z,r,h){ const m=new T.Mesh(new T.CylinderGeometry(r,r,h,12),new T.MeshBasicMaterial()); m.visible=false; m.position.set(x,y+h/2,z); m.userData.act=key; m.userData.noMerge=1; scene.add(m); pickables.push(m); return m; }
 function onTap(cx,cy){ ensureAudio(); if(POSF.on){ POSF.tap(cx,cy); return; } if(customizing||(SHOPX&&SHOPX.on)) return; if(sheetKind){ closeSheet(); return; } const r=canvas.getBoundingClientRect(); ndc.set((cx-r.left)/r.width*2-1,-(cy-r.top)/r.height*2+1); raycaster.setFromCamera(ndc,camera);
   if(hbTap(raycaster)) return;
+  try{ if(window.MZ_ISLTAP&&window.MZ_ISLTAP(raycaster)) return; }catch(e){ console.warn("isl tap",e); }
   if(giftTap(raycaster)) return;
   if(buildTap(raycaster)) return;
   const hits=raycaster.intersectObjects(pickables,true); if(!hits.length) return; let h=hits[0];
@@ -14598,7 +14599,11 @@ const IS=(()=>{
   const TREES=[], PALMS=[];
   { const r=krng(20261125); const PH=typeof Q!=="undefined"&&Q.phone; for(let t=0;t<9000&&TREES.length<(PH?150:260);t++){ const u=(r()*2-1)*95, v=(r()*2-1)*95, R=Math.hypot(u,v), b=1-R/Rc(Math.atan2(v,u)); if(b<.2) continue; const h=hL(u,v); if(h<.6||h>11) continue; if(pondD(u,v)<POND[2]+3||segD(BROOK,u,v)<3.2) continue; if(Math.hypot(u+cx-LAND[0],v+cz-LAND[1])<16) continue; if(TREES.some(q=>Math.hypot(q[0]-u,q[1]-v)<4.2)) continue; TREES.push([u,v,.9+r()*.5,r()]); }
     for(let t=0;t<6000&&PALMS.length<(PH?36:70);t++){ const a=r()*6.2832, R=Rc(a), b=.03+r()*.17, u=Math.cos(a)*R*(1-b), v=Math.sin(a)*R*(1-b); if(base(u,v)<.2) continue; if(Math.hypot(u+cx-LAND[0],v+cz-LAND[1])<7) continue; if(PALMS.some(q=>Math.hypot(q[0]-u,q[1]-v)<3.6)) continue; PALMS.push([u,v,6+r()*3.5,.85+r()*.35,r()*6.283]); } }
-  const SOLID=[...TREES.map(t=>[t[0],t[1],.45*t[2]]),...PALMS.map(p=>[p[0],p[1],.38])], SG=new Map(); /* (trunks you walk round; a 4 m grid so a step looks at a handful) */
+  /* 大岩石 (11/27 生存 v2: the rocks you strike 石片 off with the 石錘): one fixed list, a few near the wreck */
+  const ROCKS=[]; { const r=krng(5150), PH=typeof Q!=="undefined"&&Q.phone; const okR=(u,v)=>{ const R=Math.hypot(u,v), b=1-R/Rc(Math.atan2(v,u)); if(b<.06||b>.88) return false; const h=hL(u,v); if(h<.35||h>9) return false; if(pondD(u,v)<POND[2]+4||segD(BROOK,u,v)<4) return false; if(Math.hypot(u+cx-LAND[0],v+cz-LAND[1])<6) return false; if(TREES.some(q=>Math.hypot(q[0]-u,q[1]-v)<3)||PALMS.some(q=>Math.hypot(q[0]-u,q[1]-v)<3)||ROCKS.some(q=>Math.hypot(q[0]-u,q[1]-v)<9)) return false; return true; };
+    for(let t=0;t<400&&ROCKS.length<2;t++){ const a=r()*6.283, d=9+r()*10, u=LAND[0]-cx+Math.cos(a)*d, v=LAND[1]-cz-Math.abs(Math.sin(a))*d; if(okR(u,v)) ROCKS.push([u,v,.8+r()*.4,r()*6.28]); }
+    for(let t=0;t<4000&&ROCKS.length<(PH?12:18);t++){ const u=(r()*2-1)*85, v=(r()*2-1)*85; if(okR(u,v)) ROCKS.push([u,v,.8+r()*.5,r()*6.28]); } }
+  const SOLID=[...TREES.map(t=>[t[0],t[1],.45*t[2]]),...PALMS.map(p=>[p[0],p[1],.38]),...ROCKS.map(k=>[k[0],k[1],.78*k[2]])], SG=new Map(); /* (trunks you walk round; a 4 m grid so a step looks at a handful) */
   for(const s of SOLID){ const k=Math.floor(s[0]/4)+","+Math.floor(s[1]/4); (SG.get(k)||SG.set(k,[]).get(k)).push(s); }
   const solidAt=(u,v)=>{ const gx=Math.floor(u/4), gz=Math.floor(v/4); for(let a=-1;a<=1;a++) for(let b=-1;b<=1;b++){ const L=SG.get((gx+a)+","+(gz+b)); if(L) for(const s of L) if(Math.hypot(s[0]-u,s[1]-v)<s[2]) return true; } return false; };
   function walkI(x,z){ const [u,v]=loc(x,z), h=hL(u,v); if(h<-.32) return false; if(pondD(u,v)<POND[2]+.3) return false;
@@ -14657,6 +14662,7 @@ const IS=(()=>{
       if(Math.abs(POND[0]+cx-dx)<S/2+POND[2]&&Math.abs(POND[1]+cz-dz)<S/2+POND[2]&&POND[0]+cx>=x0&&POND[0]+cx<x1&&POND[1]+cz>=z0&&POND[1]+cz<z1) pondMesh(C);
       brookMesh(C,x0,x1,z0,z1);
       if(LAND[0]>=x0&&LAND[0]<x1&&LAND[1]>=z0&&LAND[1]<z1) wreck(C);
+      for(const k of ROCKS){ const x=k[0]+cx, z=k[1]+cz; if(x<x0||x>=x1||z<z0||z>=z1) continue; const g=tint(new T.DodecahedronGeometry(1,1),(a,b,c2,c)=>c.copy(ROCK).multiplyScalar(.78+.22*Math.abs(Math.sin(a*5.3+b*3.1+c2*2.7)))); g.scale(1.15*k[2],.78*k[2],1*k[2]); const m=new T.Mesh(g,wmI()); m.position.set(x,hL(k[0],k[1])+.18*k[2],z); m.rotation.y=k[3]; m.userData.keep=1; m.castShadow=true; C.g.add(m); }
       try{ propsScatter(C,x0,x1,z0,z1,(i+5)*31+(j+5)*7,(x,z)=>{ const [u,v]=loc(x,z); return hL(u,v)>.5&&Math.hypot(x-LAND[0],z-LAND[1])>9; }); }catch(e){} }}); }
   /* the sea: one wide sheet round the island, shallow turquoise to deep blue; it rises and falls a little (the tide on the wet sand) */
   let SEA=null; ISL.seaY=-.12;
@@ -14664,7 +14670,7 @@ const IS=(()=>{
     if(!on&&SEA){ scene.remove(SEA); SEA.geometry.dispose(); SEA=null; } }
   let t=0; function tick(dt){ t+=dt; if(SEA){ ISL.seaY=-.12+.06*Math.sin(t*.45); SEA.position.y=ISL.seaY; } }
   let CUTF=null, STUMPG=null, STUMPM=null;
-  return {seaOn,tick,hL,loc,base,LAND,TREES,PALMS,POND,BROOK,pondD,brookD:(u,v)=>segD(BROOK,u,v),cx,cz,
+  return {seaOn,tick,hL,loc,base,LAND,TREES,PALMS,ROCKS,POND,BROOK,pondD,brookD:(u,v)=>segD(BROOK,u,v),cx,cz,
     setCut(f){ CUTF=f; },
     reload(x,z){ for(const d of CH){ if(!d.isl||Math.abs(x-d.c[0])>32||Math.abs(z-d.c[1])>32) continue; if(LIVE[d.id]){ try{ unload(d.id); load(d); }catch(e){ console.warn("isl reload",e); } } } },
     prep(){ for(const d of CH) if(d.isl&&!LIVE[d.id]&&Math.hypot(d.c[0]-LAND[0],d.c[1]-LAND[1])<90) try{ load(d); }catch(e){ console.warn("isl load",e); } },
@@ -14690,7 +14696,10 @@ const ISLE=(()=>{
     #islVeil.on{opacity:1;pointer-events:auto}
     .isl-chip{border-radius:999px;padding:9px 18px;font-size:15px;border:1px solid var(--gold);color:var(--gold);font-family:var(--f-display);letter-spacing:.06em;white-space:nowrap}
     #islVeil p{color:#e8eef0;font-size:18px;letter-spacing:.12em;text-align:center;line-height:2;opacity:0;transition:opacity 1.2s;padding:0 24px}
-    #islVeil p.on{opacity:1}`; document.head.appendChild(s); }
+    #islVeil p.on{opacity:1}
+    #islAct[hidden],#islPlace[hidden]{display:none!important}
+    body.isl-mini .icon-btn,body.isl-mini #camReset,body.isl-mini #islHud,body.isl-mini #islAct,body.isl-mini #lfChip,body.isl-mini #actStack{visibility:hidden!important;pointer-events:none!important}
+    .fog-tip{font-size:13px;color:#eef6f4;background:rgba(40,60,66,.72);padding:4px 12px;border-radius:12px;letter-spacing:.04em;text-align:center;max-width:86vw}`; document.head.appendChild(s); }
   function veil(lines,mid,done){ css(); let v=document.getElementById("islVeil"); if(!v){ v=document.createElement("div"); v.id="islVeil"; v.innerHTML="<p></p>"; document.body.appendChild(v); } const p=v.querySelector("p");
     v.classList.add("on"); p.classList.remove("on"); let i=0;
     const next=()=>{ if(i<lines.length){ p.innerHTML=lines[i++]; p.classList.add("on"); setTimeout(()=>{ p.classList.remove("on"); setTimeout(next,1100); },2300); return; }
@@ -14777,145 +14786,323 @@ const ISLE=(()=>{
     at(40600,()=>say("嘴裡都是鹹鹹的沙……身邊散著舢舨的碎木板。"));
     at(43200,()=>say("……這裡，是哪裡？"));
     at(46000,finish); }
-  /* ===== 夢見島生存 (11/25 主委「把砍樹那些功能都做上去 蓋草屋也是 工具台 製作功能都做好」「一開始會要求先做火把跟準備食物 椰子 魚 起火等等」)
-     What you carry (S.inv), your tools (S.tool), what you built (S.b: fire / bench / hut / raft with their places), 體力 (S.hp, the island's
-     own), the step of the island's to-do list (S.q) and felled trees (S.cut, they grow back after REGROW).
-     One or two action buttons at the bottom change with where you stand: by a tree, a palm, the beach, the water's edge, the grass, the fire.
-     「🎒 背包・製作」 in the island bar: what you have, eating, and every recipe (some need the 工作台 close by). ===== */
-  const IT={stick:["🪵","樹枝"],stone:["🪨","石頭"],fiber:["🌿","草纖維"],shell:["🐚","貝殼"],coco:["🥥","椰子"],leaf:["🍃","椰葉"],wood:["🪓","木頭"],fish:["🐟","生魚"],cfish:["🍢","烤魚"],rope:["🧵","繩子"],torch:["🔥","火把"]};
-  const TOOLS={spear:"🔱 魚叉",knife:"🔪 貝殼刀",hammer:"🔨 石錘",axe:"🪓 石斧"};
-  const REC=[ /* id, name, needs, where (hand / bench / fire / beach), what it makes */
-    ["rope","繩子",{fiber:3},"hand","把草纖維搓成一條繩子"],
-    ["fire","營火",{stick:5,stone:4},"hand","圍一圈石頭、架上樹枝，放在你站的地方"],
-    ["torch","火把",{stick:1,fiber:1},"fire","要在點著的營火旁邊做"],
-    ["spear","魚叉",{stick:2,rope:1,shell:1},"hand","綁上尖貝殼，可以在水邊叉魚"],
-    ["bench","工作台",{stick:8,rope:2,stone:2},"hand","做工具要在工作台旁邊"],
-    ["knife","貝殼刀",{shell:2,rope:1,stick:1},"bench","可以割椰葉"],
-    ["hammer","石錘",{stone:2,stick:1,rope:1},"bench","敲打石頭，做石斧要用"],
-    ["axe","石斧",{stone:3,stick:2,rope:1},"bench","可以砍樹（要先有石錘）"],
-    ["hut","草屋",{wood:10,leaf:12,rope:4},"bench","在工作台附近蓋一間可以睡覺的草屋"],
-    ["raft","木筏",{wood:20,rope:8,leaf:6},"beach","在沙灘上做，做好就能划回小鎮"]];
+  /* ===== 夢見島生存 v2 (11/27 主委「收集東西互動體驗很差 動作也沒做出來 感覺只是按了 過幾秒有獲得物品 為什麼一開始能收集樹枝 那斧頭作用是啥
+     槌子要幹嘛 然後可以釣魚為什麼有魚叉要用魚叉叉魚 很不符合邏輯」「請參考生存遊戲」). Built the way Stranded Deep / The Forest / Don't Starve do it:
+     · what you can take LIES ON THE GROUND — dead sticks under the trees, stones, shells on the sand, grass tufts, fallen coconuts. You walk up
+       (or tap it), crouch, pick it up, and it is gone; it comes back after a while.
+     · trees need the 石斧 (one swing per tap, five or six, the tree falls and breaks into logs you pick up); the big rocks need the 石錘
+       (strikes, sparks, 石片 break off); palms you shake until coconuts drop and roll.
+     · every tool has a reason: 石錘 (made by hand) breaks 石片 off rocks and drives the stakes of what you build; 石刀 cuts palm leaves and
+       guts fish (a fish must be gutted to be roasted); 石斧 fells trees (logs: the hut and the raft need them); 木矛 is how you catch fish at
+       first (stand at shallow water, strike when a fish crosses the ring); the 簡易釣竿 comes later — your own rod sank with the boat, so
+       on the first trip there is no rod fishing until you make one. Tools wear out.
+     · 飽足 and 水分: a coconut must be cracked open with a stone (water, and an empty shell to carry water in); pond or brook water boiled at
+       the fire is safe, raw water or raw fish may give you a stomach ache. Sea water cannot be drunk.
+     · building: a see-through preview in front of you, then you hammer it together blow by blow. The fire burns down unless you feed it
+       sticks. At night you need a torch or the fire's light to chop, strike or fish. ===== */
+  const IT={stick:["🪵","枯枝"],stone:["🪨","石頭"],flint:["🔺","石片"],fiber:["🌿","草纖維"],shell:["🐚","貝殼"],coco:["🥥","椰子"],cshell:["🥣","空椰殼"],cwater:["💧","椰殼裝的生水"],bwater:["🫖","煮開的水"],leaf:["🍃","椰葉"],log:["🪓","木頭"],fish:["🐟","生魚"],cfish:["🍢","烤魚"],rope:["🧵","繩子"],torch:["🔥","火把"]};
+  const TOOLS={hammer:"🔨 石錘",knife:"🔪 石刀",axe:"🪓 石斧",spear:"🔱 木矛",rod:"🎣 簡易釣竿"};
+  const DUR={hammer:40,knife:30,axe:30,spear:15,rod:9999};
+  const REC=[ /* id, name, needs, where (hand / bench / fire / beach), what it is for */
+    ["rope","繩子",{fiber:3},"hand","把草纖維搓成繩子，綁工具、蓋東西都要用"],
+    ["hammer","石錘",{stone:2,stick:1,rope:1},"hand","敲岩石取石片、蓋東西時打木樁"],
+    ["fire","營火",{stone:5,stick:4},"hand","擺好位置，圍石頭架樹枝，再鑽木取火"],
+    ["knife","石刀",{flint:1,stick:1,rope:1},"hand","割椰葉；魚要先用刀剖開才能烤"],
+    ["spear","木矛",{stick:2,flint:1,rope:1},"hand","站在淺水邊，魚游進圈裡就刺"],
+    ["torch","火把",{stick:1,fiber:2},"fire","在點著的營火旁做；天黑拿著才看得清楚"],
+    ["bench","工作台",{stick:8,stone:2,rope:3},"hand","擺好位置，用石錘一下一下釘起來"],
+    ["axe","石斧",{flint:2,stick:2,rope:2},"bench","砍樹，砍倒的樹會變成木頭"],
+    ["rod","簡易釣竿",{stick:3,rope:3,shell:2},"bench","貝殼磨成魚鉤，可以到深一點的水釣魚"],
+    ["hut","草屋",{log:8,leaf:12,rope:4},"bench","在工作台附近擺好位置，一下一下蓋起來"],
+    ["raft","木筏",{log:12,rope:8,leaf:6},"beach","在沙灘上擺好位置，綁好就能划回小鎮"]];
+  const BUILD={fire:3,bench:5,hut:8,raft:10}; /* blows it takes to put up */
   const Q=[ /* the island's to-do list, in order */
-    ["先找點吃的：搖下 2 顆椰子",S=>(S.st.coco|0)>=2],
-    ["天快黑了：撿 6 根樹枝、4 顆石頭、3 把草纖維",S=>(S.st.stick|0)>=6&&(S.st.stone|0)>=4&&(S.st.fiber|0)>=3],
-    ["做一個營火，鑽木把火生起來",S=>!!(S.b.fire&&S.b.fire[2])],
-    ["在營火旁做一支火把",S=>(S.inv.torch|0)>=1],
-    ["做一支魚叉，叉一條魚，放在營火上烤來吃",S=>(S.st.ate|0)>=1],
+    ["醒來了……先撿地上的枯枝和石頭（枯枝 4、石頭 3）",S=>(S.st.stick|0)>=4&&(S.st.stone|0)>=3],
+    ["好渴：撿一顆椰子，拿石頭敲開來喝",S=>(S.st.drank|0)>=1],
+    ["拔草叢搓繩子，做一把石錘",S=>(S.st.mk_hammer|0)>=1],
+    ["用石錘敲大岩石，敲下 2 塊石片",S=>(S.st.flint|0)>=2],
+    ["做營火，鑽木把火生起來",S=>(S.st.lit|0)>=1],
+    ["做石刀和木矛",S=>(S.st.mk_knife|0)>=1&&(S.st.mk_spear|0)>=1],
+    ["到淺水用木矛刺一條魚，剖開烤熟吃掉",S=>(S.st.ate|0)>=1],
+    ["用空椰殼到水潭或小溪裝水，在營火上煮開喝",S=>(S.st.boiled|0)>=1],
     ["做一張工作台",S=>!!S.b.bench],
-    ["在工作台做貝殼刀、石錘、石斧",S=>!!(S.tool.knife&&S.tool.hammer&&S.tool.axe)],
-    ["用石斧砍樹，收集 10 塊木頭",S=>(S.st.wood|0)>=10],
-    ["割椰葉、蓋一間草屋，在裡面睡一覺",S=>(S.st.slept|0)>=1],
-    ["造一艘木筏（木頭 20、繩子 8、椰葉 6）",S=>!!S.raft]];
-  const REGROW=40*60e3, HPMAX=100;
-  const sv=()=>{ const S=st(); S.inv=S.inv||{}; S.tool=S.tool||{}; S.b=S.b||{}; S.cut=S.cut||{}; S.st=S.st||{}; if(S.hp==null) S.hp=HPMAX; S.q=S.q|0; return S; };
+    ["在工作台做石斧，砍倒一棵樹",S=>(S.st.felled|0)>=1],
+    ["割椰葉、收集木頭，蓋草屋並在裡面睡一覺",S=>(S.st.slept|0)>=1],
+    ["造一艘木筏（木頭 12、繩子 8、椰葉 6）",S=>!!S.raft]];
+  const REGROW=40*60e3, FMAX=100;
+  const sv=()=>{ const S=st(); S.inv=S.inv||{}; S.tool=S.tool||{}; S.b=S.b||{}; S.cut=S.cut||{}; S.st=S.st||{}; S.pk=S.pk||{}; S.gd=Array.isArray(S.gd)?S.gd:[]; S.rk=S.rk||{}; S.pc=S.pc||{};
+    if(S.v2!==1){ S.v2=1; if(S.hp!=null){ S.food=S.hp; S.water=Math.min(FMAX,S.hp+15); delete S.hp; } for(const k in S.tool) if(S.tool[k]===1) S.tool[k]=DUR[k]||20; if(S.inv.wood){ S.inv.log=(S.inv.log|0)+S.inv.wood; delete S.inv.wood; } S.q=0; } /* (saves from the first version) */
+    if(S.food==null) S.food=FMAX; if(S.water==null) S.water=FMAX; S.q=S.q|0; return S; };
   const I=()=>TOWNX.isl, W2L=(x,z)=>[x-I().cx,z-I().cz];
   try{ TOWNX.isl.setCut((u,v)=>{ const t=st().cut&&st().cut[u.toFixed(1)+","+v.toFixed(1)]; return !!t&&Date.now()-t<REGROW; }); }catch(e){}
   const has=(need)=>{ const S=sv(); return Object.keys(need).every(k=>(S.inv[k]|0)>=need[k]); };
   const take=(need)=>{ const S=sv(); for(const k in need) S.inv[k]=(S.inv[k]|0)-need[k]; };
-  const give=(k,n)=>{ const S=sv(); S.inv[k]=(S.inv[k]|0)+n; if(["coco","stick","stone","fiber","wood"].includes(k)) S.st[k]=(S.st[k]|0)+n; };
-  const hpUse=n=>{ const S=sv(); if(me.sp&&window.MZ_ENFREE) return true; if(S.hp<n){ toast("肚子好餓，沒力氣了……先吃點東西（🎒 背包裡吃椰子、烤魚）",3200); return false; } S.hp=Math.max(0,S.hp-n); return true; };
-  /* where you stand */
-  function spot(){ const x=meAv.pos.x, z=meAv.pos.y, [u,v]=W2L(x,z), L=I(); const h=L.hL(u,v); const S=sv(); const near=(arr,r)=>{ let best=null, bd=r; for(const t of arr){ const d=Math.hypot(t[0]-u,t[1]-v); if(d<bd){ bd=d; best=t; } } return best; };
-    const tree=near(L.TREES.filter(t=>!S.cut[t[0].toFixed(1)+","+t[1].toFixed(1)]||Date.now()-S.cut[t[0].toFixed(1)+","+t[1].toFixed(1)]>=REGROW),2.6), palm=near(L.PALMS,2.6);
-    const pond=L.pondD(u,v)<L.POND[2]+2, brook=L.brookD(u,v)<2.6, beach=h<.75&&h>-.3, sea=h<.25;
+  const give=(k,n)=>{ const S=sv(); S.inv[k]=(S.inv[k]|0)+n; if(["coco","stick","stone","fiber","log","flint","leaf","shell"].includes(k)) S.st[k]=(S.st[k]|0)+n; };
+  const freeE=()=>me.sp&&window.MZ_ENFREE;
+  function spend(f,w){ const S=sv(); if(freeE()) return true; if(S.food<=0||S.water<=0){ toast(S.water<=0?"渴得頭昏眼花……先喝點水（敲開椰子，或喝煮開的水）":"餓得沒力氣了……先吃點東西",2800); try{ meAv.say(S.water<=0?"好渴……":"好餓……","#e8f4f2",2); }catch(e){} return false; }
+    const k=sick()?1.6:1; S.food=Math.max(0,S.food-(f||0)*k); S.water=Math.max(0,S.water-(w||0)*k); return true; }
+  const sick=()=>{ const S=sv(); return (S.sick||0)>Date.now(); };
+  function wear(k){ const S=sv(); if(!S.tool[k]||freeE()) return; S.tool[k]--; if(S.tool[k]<=0){ delete S.tool[k]; toast(`💥 ${TOOLS[k]}壞掉了……再做一把吧`,2800); try{ tone(140,.25,.08,"sawtooth"); }catch(e){} } }
+  const dark=()=>{ try{ return LIFE.slot()===3; }catch(e){ return false; } };
+  const fireOn=()=>{ const S=sv(); return !!(S.b.fire&&S.b.fire[2]); };
+  const lightHere=()=>{ const S=sv(); if(S.torchOn&&(S.inv.torch|0)>0) return true; return fireOn()&&Math.hypot(S.b.fire[0]-meAv.pos.x,S.b.fire[1]-meAv.pos.y)<7; };
+  const seeOk=()=>{ if(!dark()||lightHere()) return true; toast("天太黑了，看不清楚……拿著火把，或待在營火旁",2600); return false; };
+
+  /* ---------- things lying on the ground ---------- */
+  const PKK={stick:{n:"枯枝",gv:["stick",1],re:6},stone:{n:"石頭",gv:["stone",1],re:10},shell:{n:"貝殼",gv:["shell",1],re:8},fiber:{n:"草叢",gv:["fiber",2],re:8,pull:1},coco:{n:"椰子",gv:["coco",1],re:7},log:{n:"木頭",gv:["log",1]},flint:{n:"石片",gv:["flint",1]}};
+  let PKL=null;
+  const rng=s=>()=>{ s|=0; s=s+0x6D2B79F5|0; let t=Math.imul(s^s>>>15,1|s); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; /* (krng lives in the town module) */
+  function pkList(){ if(PKL) return PKL; const L=I(), r=rng(77011), out=[], cnt={stone:0,shell:0,fiber:0};
+    const ok=(u,v)=>{ const h=L.hL(u,v); if(!(h>-.05)) return false; if(L.pondD(u,v)<L.POND[2]+.8||L.brookD(u,v)<1.4) return false; try{ return walkable(u+L.cx,v+L.cz); }catch(e){ return true; } };
+    const add=(k,u,v)=>{ if(!ok(u,v)) return false; out.push({id:k+":"+out.length,k,u,v,ry:r()*6.283,s:.85+r()*.35}); return true; };
+    const lu=L.LAND[0]-L.cx, lv=L.LAND[1]-L.cz; /* (a few of each near the wreck, so the first steps are close) */
+    for(const [k,n] of [["stick",5],["stone",4],["fiber",3]]) for(let i=0,t=0;i<n&&t<80;t++){ const a=r()*6.283, d=4+r()*9; if(add(k,lu+Math.cos(a)*d,lv-Math.abs(Math.sin(a))*d)) i++; }
+    for(const t of L.TREES){ if(r()<.6){ const a=r()*6.283, d=1.3+r()*1.9; add("stick",t[0]+Math.cos(a)*d,t[1]+Math.sin(a)*d); } }
+    for(const p of L.PALMS){ if(r()<.55){ const a=r()*6.283, d=.9+r()*1.3; add("coco",p[0]+Math.cos(a)*d,p[1]+Math.sin(a)*d); } }
+    for(let t=0;t<9000;t++){ const a=r()*6.283, R=r()*92, u=Math.cos(a)*R, v=Math.sin(a)*R, h=L.hL(u,v); if(h<.04) continue;
+      if(h<.75){ if(cnt.shell<70&&r()<.5&&add("shell",u,v)) cnt.shell++; continue; }
+      if(h>9) continue; if(cnt.stone<60&&r()<.35){ if(add("stone",u,v)) cnt.stone++; } else if(cnt.fiber<80&&r()<.5){ if(add("fiber",u,v)) cnt.fiber++; } }
+    PKL=out; return out; }
+  const pkHere=p=>{ const S=sv(), t=S.pk[p.id]; return !t||Date.now()-t>(PKK[p.k].re||10)*60e3; };
+  const dropAdd=(k,x,z)=>{ const S=sv(); S.gd.push({k,x:+x.toFixed(2),z:+z.toFixed(2),t:Date.now(),id:"d"+Date.now().toString(36)+Math.random().toString(36).slice(2,5)}); if(S.gd.length>90) S.gd.splice(0,S.gd.length-90); pkDirty=true; };
+  /* drawn as one InstancedMesh per kind (a handful of draw calls for hundreds of things) */
+  const PKG={}; let pkDirty=true, pkRoot=null, pkRing=null;
+  function tuftGeo(){ const parts=[]; for(let i=0;i<6;i++){ const c=new T.ConeGeometry(.045,.42+.12*(i%3),4).toNonIndexed(); c.rotateZ((i%2?1:-1)*(.15+.06*i)); c.rotateY(i*1.05); c.translate(Math.cos(i*1.05)*.07,.2,Math.sin(i*1.05)*.07); parts.push(c); }
+    const n=parts.reduce((a,g)=>a+g.attributes.position.count,0), P=new Float32Array(n*3), N=new Float32Array(n*3); let o=0; for(const g of parts){ g.computeVertexNormals(); P.set(g.attributes.position.array,o*3); N.set(g.attributes.normal.array,o*3); o+=g.attributes.position.count; g.dispose(); }
+    const g=new T.BufferGeometry(); g.setAttribute("position",new T.BufferAttribute(P,3)); g.setAttribute("normal",new T.BufferAttribute(N,3)); return g; }
+  const PKLOOK={stick:()=>[(()=>{ const g=new T.CylinderGeometry(.03,.045,1.05,5); g.rotateZ(Math.PI/2); g.translate(0,.04,0); return g; })(),"#86603a"],
+    stone:()=>[(()=>{ const g=new T.DodecahedronGeometry(.15,0); g.scale(1,.6,1.15); g.translate(0,.05,0); return g; })(),"#8f8c86"],
+    shell:()=>[(()=>{ const g=new T.SphereGeometry(.1,8,5,0,Math.PI*2,0,Math.PI/2); g.scale(1,.55,1.3); return g; })(),"#f1ddc8"],
+    fiber:()=>[tuftGeo(),"#6fa04a"],
+    coco:()=>[(()=>{ const g=new T.SphereGeometry(.15,10,8); g.scale(1,.9,1.05); g.translate(0,.13,0); return g; })(),"#7a5a2c"],
+    log:()=>[(()=>{ const g=new T.CylinderGeometry(.16,.18,1.25,8); g.rotateZ(Math.PI/2); g.translate(0,.16,0); return g; })(),"#7a5233"],
+    flint:()=>[(()=>{ const g=new T.OctahedronGeometry(.1,0); g.scale(1.3,.45,1); g.translate(0,.04,0); return g; })(),"#4c4d57"]};
+  const M4=new T.Matrix4(), Qn=new T.Quaternion(), V1=new T.Vector3(), V2=new T.Vector3(1,1,1), EU=new T.Euler();
+  function pkBuild(){ if(!ISL.on) return; const L=I(), S=sv(), list=pkList(); if(!pkRoot){ pkRoot=new T.Group(); pkRoot.userData.islKeep=1; pkRoot.userData.noMerge=1; scene.add(pkRoot); }
+    const by={}; for(const p of list) if(pkHere(p)) (by[p.k]||(by[p.k]=[])).push([p.u+L.cx,p.v+L.cz,p.ry,p.s,p]);
+    const now=Date.now(); S.gd=S.gd.filter(d=>now-d.t<30*60e3); for(const d of S.gd) (by[d.k]||(by[d.k]=[])).push([d.x,d.z,(d.t%628)/100,1,d]);
+    for(const k of Object.keys(PKLOOK)){ const arr=by[k]||[]; let G=PKG[k]; const need=Math.max(8,arr.length);
+      if(!G||G.cap<need){ if(G){ pkRoot.remove(G.m); G.m.dispose&&G.m.dispose(); } const [geo,col]=PKLOOK[k](); const cap=Math.ceil(need*1.3)+10; const m=new T.InstancedMesh(geo,new T.MeshLambertMaterial({color:col}),cap); m.userData.islKeep=1; m.frustumCulled=false; pkRoot.add(m); G=PKG[k]={m,cap,items:[]}; }
+      G.items=arr.map(a=>a[4]); for(let i=0;i<arr.length;i++){ const [x,z,ry,s]=arr[i], [u,v]=W2L(x,z); let y=L.hL(u,v); if(y<ISL.seaY) y=ISL.seaY; EU.set(0,ry,0); Qn.setFromEuler(EU); M4.compose(V1.set(x,y,z),Qn,V2.set(s,s,s)); G.m.setMatrixAt(i,M4); }
+      G.m.count=arr.length; G.m.instanceMatrix.needsUpdate=true; G.m.computeBoundingSphere&&G.m.computeBoundingSphere(); }
+    pkDirty=false; }
+  function pkClear(){ if(pkRoot){ scene.remove(pkRoot); pkRoot.traverse(o=>{ if(o.isMesh){ o.geometry.dispose(); o.material.dispose(); } }); pkRoot=null; } for(const k in PKG) delete PKG[k]; pkDirty=true; if(pkRing){ scene.remove(pkRing); pkRing=null; } }
+  const itemXZ=p=>p.u!=null?[p.u+I().cx,p.v+I().cz]:[p.x,p.z];
+  function pkNear(r){ let best=null, bd=r||1.7; for(const k in PKG) for(const p of PKG[k].items){ const [x,z]=itemXZ(p), d=Math.hypot(x-meAv.pos.x,z-meAv.pos.y); if(d<bd){ bd=d; best=p; } } return best; }
+  /* the picking up itself: crouch, the thing rises into your hand and is gone */
+  let pending=null;
+  function pick(p){ if(busy||!p) return; const S=sv(); if(!spend(.15,.1)) return; const [x,z]=itemXZ(p), K=PKK[p.k]; meAv.rotY=Math.atan2(x-meAv.pos.x,z-meAv.pos.y);
+    work(K.pull?"pull":"pick",.75,()=>{ if(p.u!=null) S.pk[p.id]=Date.now(); else S.gd=S.gd.filter(d=>d!==p); pkDirty=true; pkBuild(); give(K.gv[0],K.gv[1]); fly(p.k,x,z);
+      toast(`${IT[K.gv[0]][0]} ${IT[K.gv[0]][1]} +${K.gv[1]}`,1300); try{ tone(720,.05,.04,"triangle"); tone(960,.05,.03,"triangle",.05); }catch(e){} },.45,()=>{ /* (halfway: it leaves the ground) */ if(p.u!=null) S.pk[p.id]=Date.now(); else S.gd=S.gd.filter(d=>d!==p); pkBuild(); flyUp(p.k,x,z); }); }
+  const FLY=[]; let flyRaf=0;
+  function flyLoop(){ if(flyRaf) return; let last=performance.now(); const f=now=>{ const dt=Math.min(.05,(now-last)/1000); last=now; for(let i=FLY.length-1;i>=0;i--){ const o=FLY[i]; o.t+=dt; const k=Math.min(1,o.t/o.d); o.step(k,dt); if(k>=1){ scene.remove(o.m); o.m.geometry.dispose(); o.m.material.dispose(); FLY.splice(i,1); o.end&&o.end(); } } flyRaf=FLY.length?requestAnimationFrame(f):0; }; flyRaf=requestAnimationFrame(f); }
+  function flyUp(k,x,z){ const [geo,col]=PKLOOK[k](), m=new T.Mesh(geo,new T.MeshLambertMaterial({color:col})); const y0=(()=>{ try{ return groundAt({},x,z); }catch(e){ return 0; } })(); m.position.set(x,y0,z); scene.add(m);
+    FLY.push({m,t:0,d:.45,step:k2=>{ const hx=meAv.pos.x+Math.sin(meAv.rotY)*.25, hz=meAv.pos.y+Math.cos(meAv.rotY)*.25, hy=meAv.root.position.y+1.0; m.position.set(x+(hx-x)*k2,y0+(hy-y0)*k2+Math.sin(k2*Math.PI)*.35,z+(hz-z)*k2); const s=1-.75*k2; m.scale.set(s,s,s); }}); flyLoop(); }
+  function fly(){ }
+  /* ---------- rocks you strike, trees you fell, palms you shake ---------- */
+  const near=(arr,r,u,v)=>{ let best=null, bd=r; for(const t of arr){ const d=Math.hypot(t[0]-u,t[1]-v); if(d<bd){ bd=d; best=t; } } return best; };
+  const keyOf=t=>t[0].toFixed(1)+","+t[1].toFixed(1);
+  const HPT=new Map(), HPR=new Map(), SHK=new Map();
+  function spot(){ const x=meAv.pos.x, z=meAv.pos.y, [u,v]=W2L(x,z), L=I(); const h=L.hL(u,v); const S=sv();
+    const tree=near(L.TREES.filter(t=>!S.cut[keyOf(t)]||Date.now()-S.cut[keyOf(t)]>=REGROW),2.7,u,v), palm=near(L.PALMS,2.6,u,v), rock=near(L.ROCKS||[],2.4,u,v);
+    const fresh=L.pondD(u,v)<L.POND[2]+2.2||L.brookD(u,v)<2.8, shallow=(()=>{ for(const d of [1,2,3]) for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1],[.7,.7],[-.7,.7],[.7,-.7],[-.7,-.7]]){ let w=null; try{ w=TOWNX.water(x+a*d,z+b*d); }catch(e){} if(w&&L.hL(u+a*d,v+b*d)>-1.6) return true; } /* (real water within 3 m, and not deep) */ return fresh; })();
     const by=k=>S.b[k]&&Math.hypot(S.b[k][0]-x,S.b[k][1]-z)<(k==="hut"?3.4:2.6);
-    return {x,z,u,v,h,tree,palm,water:pond||brook||sea,beach,grass:h>.75&&!tree&&!palm,fire:by("fire"),bench:by("bench"),hut:by("hut")}; }
-  /* the busy pose: arms swinging while you work; the world waits */
-  let busy=false;
-  function work(kind,secs,done){ if(busy) return; busy=true; window.MZ_HOLD=true; const av=meAv, old=av.custPose; let t=0;
-    const pose=dt=>{ t+=dt; const k=kind==="chop"?Math.sin(t*9):kind==="shake"?Math.sin(t*14):Math.sin(t*6); av.arms[0].rotation.set(kind==="chop"?-2.1+k*.9:-.9+k*.4,0,.1); av.arms[1].rotation.set(kind==="chop"?-2.1+k*.9:-.9-k*.4,0,-.1); av.torso.rotation.x=kind==="pick"||kind==="fish"?.35+k*.05:kind==="chop"?.12+k*.1:0; };
-    av.custPose=pose; const iv=setInterval(()=>{ if(kind==="chop"){ try{ tone(170+Math.random()*30,.07,.08,"square"); tone(90,.12,.06,"triangle"); }catch(e){} chips(av.pos.x+Math.sin(av.rotY)*1.1,av.pos.y+Math.cos(av.rotY)*1.1,"#c8a070"); } else if(kind!=="eat") { try{ tone(500+Math.random()*200,.04,.03,"triangle"); }catch(e){} } },kind==="chop"?360:500);
-    setTimeout(()=>{ clearInterval(iv); if(av.custPose===pose) av.custPose=old||null; av.torso.rotation.x=0; window.MZ_HOLD=false; busy=false; try{ done(); }catch(e){ console.warn("isl work",e); } hudFill(); try{ markDirty(); saveBag(); }catch(e){} },secs*1000); }
-  /* little flying bits (wood chips, sand, water) */
+    return {x,z,u,v,h,tree,palm,rock,fresh,shallow,beach:h<.75&&h>-.3,fire:by("fire"),bench:by("bench"),hut:by("hut")}; }
+  /* the working pose: what you hold, how you move; mid() at a fraction of the time (the blow lands), done() at the end */
+  let busy=false, HELD=null;
+  const TOOLLOOK={ hammer:()=>{ const g=new T.Group(); const h=new T.Mesh(new T.CylinderGeometry(.022,.026,.46,6),new T.MeshLambertMaterial({color:"#8a6038"})); h.position.y=.17; g.add(h); const s=new T.Mesh(new T.DodecahedronGeometry(.1,0),new T.MeshLambertMaterial({color:"#8a8780"})); s.scale.set(1.6,.95,.95); s.position.y=.4; g.add(s); const r=new T.Mesh(new T.TorusGeometry(.04,.012,4,8),new T.MeshLambertMaterial({color:"#c9b48a"})); r.rotation.x=Math.PI/2; r.position.y=.34; g.add(r); return g; },
+    axe:()=>{ const g=new T.Group(); const h=new T.Mesh(new T.CylinderGeometry(.022,.026,.6,6),new T.MeshLambertMaterial({color:"#8a6038"})); h.position.y=.22; g.add(h); const b=new T.Mesh(new T.OctahedronGeometry(.13,0),new T.MeshLambertMaterial({color:"#55565f"})); b.scale.set(1.5,.75,.35); b.position.set(0,.46,.1); b.rotation.y=Math.PI/2; g.add(b); const r=new T.Mesh(new T.TorusGeometry(.035,.012,4,8),new T.MeshLambertMaterial({color:"#c9b48a"})); r.rotation.x=Math.PI/2; r.position.y=.44; g.add(r); return g; },
+    knife:()=>{ const g=new T.Group(); const h=new T.Mesh(new T.CylinderGeometry(.02,.022,.14,6),new T.MeshLambertMaterial({color:"#8a6038"})); h.position.y=.04; g.add(h); const b=new T.Mesh(new T.ConeGeometry(.032,.22,4),new T.MeshLambertMaterial({color:"#55565f"})); b.scale.set(1,1,.35); b.position.y=.22; g.add(b); return g; },
+    spear:()=>{ const g=new T.Group(); const h=new T.Mesh(new T.CylinderGeometry(.02,.024,1.7,6),new T.MeshLambertMaterial({color:"#9a7044"})); h.position.y=.35; g.add(h); const b=new T.Mesh(new T.ConeGeometry(.035,.18,4),new T.MeshLambertMaterial({color:"#55565f"})); b.position.y=1.28; g.add(b); return g; },
+    torch:()=>{ const g=new T.Group(); const h=new T.Mesh(new T.CylinderGeometry(.025,.03,.5,6),new T.MeshLambertMaterial({color:"#7a5233"})); h.position.y=.1; g.add(h); const f=new T.Mesh(new T.ConeGeometry(.07,.22,6),new T.MeshBasicMaterial({color:"#ffb43a"})); f.position.y=.44; g.add(f); return g; } };
+  function hold(k){ const av=meAv, arm=av.arms&&av.arms[0]; if(!arm) return; if(HELD){ if(HELD.k===k) return; arm.remove(HELD.g); HELD.g.traverse(o=>{ if(o.isMesh){ o.geometry.dispose(); o.material.dispose(); } }); HELD=null; } if(!k||!TOOLLOOK[k]) return;
+    const g=TOOLLOOK[k](); g.position.set(0,-.3,.02); g.rotation.set(Math.PI/2,0,0); g.userData.islKeep=1; arm.add(g); HELD={k,g}; }
+  const restHold=()=>{ const S=sv(); hold(S.torchOn&&(S.inv.torch|0)>0?"torch":null); };
+  function work(kind,secs,done,midAt,mid,tool){ if(busy) return; busy=true; window.MZ_ISLBUSY=true; window.MZ_HOLD=true; const av=meAv, old=av.custPose; let t=0, hit=false; const t0=performance.now(); if(tool) hold(tool);
+    const pose=dt=>{ t=(performance.now()-t0)/1000; const f=Math.min(1,t/secs); /* (real time, not the frame clock: on a slow phone the blow must still land) */
+      if(kind==="pick"||kind==="pull"){ const c=Math.sin(Math.min(1,f*1.6)*Math.PI*.5)*(f<.8?1:Math.max(0,1-(f-.8)/.2)); av.hips.position.y=.3-.17*c; av.torso.rotation.x=.95*c; av.arms[0].rotation.set(-.35*c-(kind==="pull"&&f>.45?.6*(f-.45):0),0,.1); av.arms[1].rotation.set(-.25*c,0,-.1); }
+      else if(kind==="chop"||kind==="strike"||kind==="build"){ /* wind up over the shoulder, then down hard */ const up=f<.55?f/.55:1-(f-.55)/.45*1.15; const a=kind==="build"?-2.0:-2.6; av.arms[0].rotation.set(a*Math.max(-.1,up)+(-.4),0,kind==="chop"?.35:.1); av.arms[1].rotation.set(a*Math.max(-.1,up)*.6-.3,0,-.1); av.torso.rotation.x=.25*(1-Math.max(0,up)); av.torso.rotation.y=kind==="chop"?.35*(Math.max(0,up)-.5):0; }
+      else if(kind==="shake"){ const k=Math.sin(t*16); av.arms[0].rotation.set(-1.55+k*.18,0,.25); av.arms[1].rotation.set(-1.55-k*.18,0,-.25); av.torso.rotation.z=k*.06; av.torso.rotation.x=.08; }
+      else if(kind==="cut"){ const k=Math.sin(t*12); av.arms[0].rotation.set(-1.9+k*.35,0,.2); av.arms[1].rotation.set(-1.6,0,-.2); }
+      else if(kind==="cook"){ av.arms[0].rotation.set(-1.0,0,.1); av.arms[1].rotation.set(-1.0,0,-.1); av.torso.rotation.x=.3; av.hips.position.y=.2; }
+      else if(kind==="drink"){ const c=Math.sin(Math.min(1,f*2)*Math.PI*.5); av.arms[0].rotation.set(-2.4*c,0,.5*c); av.arms[1].rotation.set(-2.2*c,0,-.5*c); av.torso.rotation.x=-.25*c; }
+      else { const k=Math.sin(t*6); av.arms[0].rotation.set(-.9+k*.4,0,.1); av.arms[1].rotation.set(-.9-k*.4,0,-.1); }
+      if(!hit&&midAt!=null&&f>=midAt){ hit=true; try{ mid&&mid(); }catch(e){ console.warn("isl mid",e); } } };
+    av.custPose=pose;
+    setTimeout(()=>{ if(!hit&&midAt!=null){ hit=true; try{ mid&&mid(); }catch(e){ console.warn("isl mid",e); } } if(av.custPose===pose) av.custPose=old||null; av.torso.rotation.set(0,0,0); av.hips.position.y=.3; window.MZ_HOLD=false; window.MZ_ISLBUSY=false; busy=false; restHold(); try{ done&&done(); }catch(e){ console.warn("isl work",e); } hudFill(); try{ markDirty(); saveBag(); }catch(e){} },secs*1000); }
+  /* little flying bits (wood chips, sparks, sand, water) */
   const BITS=[]; let bitsRaf=0;
-  function chips(x,z,col){ const gy=(()=>{ try{ return groundAt({},x,z); }catch(e){ return 0; } })(); for(let i=0;i<7;i++){ const m=new T.Mesh(new T.BoxGeometry(.07,.04,.05),new T.MeshStandardMaterial({color:col})); m.position.set(x,gy+.9,z); m.userData.v=[(Math.random()-.5)*2.4,2+Math.random()*1.6,(Math.random()-.5)*2.4]; m.userData.t=0; m.userData.islKeep=1; scene.add(m); BITS.push(m); }
+  function chips(x,z,col,y,n,glow){ const gy=y!=null?y:(()=>{ try{ return groundAt({},x,z)+.9; }catch(e){ return .9; } })(); for(let i=0;i<(n||7);i++){ const m=new T.Mesh(new T.BoxGeometry(.07,.04,.05),glow?new T.MeshBasicMaterial({color:col}):new T.MeshStandardMaterial({color:col})); m.position.set(x,gy,z); m.userData.v=[(Math.random()-.5)*2.4,2+Math.random()*1.6,(Math.random()-.5)*2.4]; m.userData.t=0; m.userData.islKeep=1; scene.add(m); BITS.push(m); }
     if(!bitsRaf){ let last=performance.now(); const f=now=>{ const dt=Math.min(.05,(now-last)/1000); last=now; for(let i=BITS.length-1;i>=0;i--){ const m=BITS[i], v=m.userData.v; m.userData.t+=dt; v[1]-=9*dt; m.position.x+=v[0]*dt; m.position.y+=v[1]*dt; m.position.z+=v[2]*dt; m.rotation.x+=dt*8; if(m.userData.t>.9){ scene.remove(m); m.geometry.dispose(); m.material.dispose(); BITS.splice(i,1); } } bitsRaf=BITS.length?requestAnimationFrame(f):0; }; bitsRaf=requestAnimationFrame(f); } }
-  /* a tree falling: a stand-in trunk and crown tip over, bounce once, fade */
-  function fall(u,v,s){ const L=I(), x=u+L.cx, z=v+L.cz, y=L.hL(u,v); const g=new T.Group(); g.userData.islKeep=1; const tr=new T.Mesh(new T.CylinderGeometry(.16*s,.24*s,3.2*s,8),new T.MeshStandardMaterial({color:"#a0683e",roughness:.9})); tr.position.y=1.6*s; g.add(tr);
+  /* a tree falling: a stand-in trunk and crown tip over, bounce once, fade — and logs are left lying where it fell */
+  function fall(u,v,s,dir){ const L=I(), x=u+L.cx, z=v+L.cz, y=L.hL(u,v); const g=new T.Group(); g.userData.islKeep=1; const tr=new T.Mesh(new T.CylinderGeometry(.16*s,.24*s,3.2*s,8),new T.MeshStandardMaterial({color:"#a0683e",roughness:.9})); tr.position.y=1.6*s; g.add(tr);
     const cr=new T.Mesh(new T.SphereGeometry(1.5*s,10,8),new T.MeshStandardMaterial({color:"#3f8f3a",roughness:.9,transparent:true})); cr.position.y=3.6*s; g.add(cr); g.position.set(x,y,z); scene.add(g);
-    const dir=Math.atan2(x-meAv.pos.x,z-meAv.pos.y); g.rotation.y=dir; let t=0, last=performance.now(); try{ tone(220,.4,.06,"sawtooth"); }catch(e){}
+    g.rotation.y=dir; let t=0, last=performance.now(); try{ tone(220,.4,.06,"sawtooth"); }catch(e){}
     const f=now=>{ const dt=Math.min(.05,(now-last)/1000); last=now; t+=dt; const a=Math.min(Math.PI/2,1.4*t*t); g.rotation.x=a; if(a>=Math.PI/2&&!g.userData.th){ g.userData.th=1; try{ tone(70,.35,.12,"triangle"); tone(55,.5,.1,"sine",.05); }catch(e){} chips(x+Math.sin(dir)*2.6,z+Math.cos(dir)*2.6,"#7fb06a"); }
       if(t>1.6){ const o=Math.max(0,1-(t-1.6)/.8); cr.material.opacity=o; tr.material.transparent=true; tr.material.opacity=o; } if(t<2.5) requestAnimationFrame(f); else { scene.remove(g); g.traverse(o=>{ if(o.isMesh){ o.geometry.dispose(); o.material.dispose(); } }); } };
     requestAnimationFrame(f); }
-  /* the things you build */
+  /* a coconut dropping from the crown: falls, bounces, rolls a little, then lies there to be picked up */
+  function cocoDrop(p){ const L=I(), px=p[0]+L.cx, pz=p[1]+L.cz, top=L.hL(p[0],p[1])+p[2]*.92; const a=Math.random()*6.283, ex=px+Math.cos(a)*(1.1+Math.random()*1.4), ez=pz+Math.sin(a)*(1.1+Math.random()*1.4); const gy=L.hL(ex-L.cx,ez-L.cz);
+    const [geo,col]=PKLOOK.coco(), m=new T.Mesh(geo,new T.MeshLambertMaterial({color:col})); m.position.set(px+Math.cos(a)*.5,top,pz+Math.sin(a)*.5); scene.add(m);
+    FLY.push({m,t:0,d:1.15,step:k=>{ const ff=Math.min(1,k/.55); if(k<.55){ m.position.y=top+(gy-top)*ff*ff; } else { const b=(k-.55)/.45; m.position.y=gy+Math.abs(Math.sin(b*Math.PI*2))*.35*(1-b); m.position.x=px+Math.cos(a)*.5+(ex-px-Math.cos(a)*.5)*b; m.position.z=pz+Math.sin(a)*.5+(ez-pz-Math.sin(a)*.5)*b; m.rotation.z+=.2; if(!m.userData.th){ m.userData.th=1; try{ tone(120,.12,.12,"triangle"); }catch(e){} } } },end:()=>{ dropAdd("coco",ex,ez); pkBuild(); }}); flyLoop(); }
+  /* ---------- the things you build ---------- */
   const BLT={}; let fireL=null, torchL=null;
-  function mk(k){ const S=sv(), p=S.b[k]; if(BLT[k]){ scene.remove(BLT[k]); BLT[k].traverse(o=>{ if(o.isMesh){ o.geometry.dispose(); o.material.dispose(); } }); delete BLT[k]; } if(!p||!ISL.on) return;
-    const g=new T.Group(); g.userData.islKeep=1; g.userData.noMerge=1; const m=(geo,col,x,y,z,rx,ry,rz,o)=>{ const ms=new T.Mesh(geo,new T.MeshStandardMaterial(Object.assign({color:col,roughness:.9},o||{}))); ms.position.set(x,y,z); ms.rotation.set(rx||0,ry||0,rz||0); ms.castShadow=true; g.add(ms); return ms; };
-    if(k==="fire"){ for(let i=0;i<8;i++){ const a=i/8*Math.PI*2; m(new T.DodecahedronGeometry(.17),"#8d8a84",Math.cos(a)*.55,.1,Math.sin(a)*.55); } for(let i=0;i<3;i++) m(new T.CylinderGeometry(.05,.06,.9,6),"#7a5233",0,.22,0,Math.PI/2.4,i*2.1,0);
-      if(p[2]){ const fl=[]; for(let i=0;i<3;i++) fl.push(m(new T.ConeGeometry(.2-.05*i,.6-.12*i,7),i?"#ffd25a":"#ff7a2a",0,.45,0,0,0,0,{emissive:i?"#ffb020":"#ff5010",emissiveIntensity:1.6,transparent:true,opacity:.9})); g.userData.fl=fl;
-        if(!fireL){ fireL=new T.PointLight("#ff9a40",1.3,11,1.6); } fireL.position.set(0,.9,0); g.add(fireL); } }
+  function bodyOf(k,g,m){ /* the shapes, shared by the real thing and the see-through preview */
+    if(k==="fire"){ for(let i=0;i<8;i++){ const a=i/8*Math.PI*2; m(new T.DodecahedronGeometry(.17),"#8d8a84",Math.cos(a)*.55,.1,Math.sin(a)*.55); } for(let i=0;i<3;i++) m(new T.CylinderGeometry(.05,.06,.9,6),"#7a5233",0,.22,0,Math.PI/2.4,i*2.1,0); }
     else if(k==="bench"){ m(new T.BoxGeometry(1.4,.12,.8),"#9a6b40",0,.78,0); for(const [a,b] of [[-.6,-.32],[.6,-.32],[-.6,.32],[.6,.32]]) m(new T.CylinderGeometry(.05,.06,.76,6),"#7a5233",a,.38,b); m(new T.DodecahedronGeometry(.12),"#8d8a84",.35,.9,0); m(new T.BoxGeometry(.5,.04,.12),"#c9b48a",-.25,.86,.1); }
-    else if(k==="hut"){ const th={color:"#8c9450",side:T.DoubleSide,roughness:1}; for(const sd of [-1,1]){ const pg=new T.PlaneGeometry(2.3,3.4,1,6); pg.rotateX(-Math.PI/2); const r=m(pg,"#8c9450",sd*.56,.98,0,0,0,-sd*Math.PI/3,th); for(let i=0;i<5;i++){ const st=m(new T.BoxGeometry(.04,.03,3.4),"#6f7a3a",sd*(1.03-i*.2),.22+i*.35,0,0,0,-sd*Math.PI/3); } }
-      const tri=new T.Shape(); tri.moveTo(-1.12,0); tri.lineTo(1.12,0); tri.lineTo(0,1.94); tri.lineTo(-1.12,0); const gb=m(new T.ShapeGeometry(tri),"#7d8646",0,0,-1.66,0,0,0,{side:T.DoubleSide,roughness:1});
+    else if(k==="hut"){ const th={side:T.DoubleSide,roughness:1}; for(const sd of [-1,1]){ const pg=new T.PlaneGeometry(2.3,3.4,1,6); pg.rotateX(-Math.PI/2); m(pg,"#8c9450",sd*.56,.98,0,0,0,-sd*Math.PI/3,th); for(let i=0;i<5;i++) m(new T.BoxGeometry(.04,.03,3.4),"#6f7a3a",sd*(1.03-i*.2),.22+i*.35,0,0,0,-sd*Math.PI/3); }
+      const tri=new T.Shape(); tri.moveTo(-1.12,0); tri.lineTo(1.12,0); tri.lineTo(0,1.94); tri.lineTo(-1.12,0); m(new T.ShapeGeometry(tri),"#7d8646",0,0,-1.66,0,0,0,{side:T.DoubleSide,roughness:1});
       m(new T.CylinderGeometry(.05,.05,3.6,6),"#7a5233",0,1.96,0,Math.PI/2,0,0); for(const z of [-1.65,1.65]) for(const sd of [-1,1]) m(new T.CylinderGeometry(.05,.06,2.3,6),"#7a5233",sd*.56,.98,z,0,0,sd*Math.PI/6);
       m(new T.BoxGeometry(1.9,.05,3.2),"#b89a6a",0,.03,0); m(new T.BoxGeometry(1.1,.04,1.8),"#9d8456",0,.07,-.5); }
-    else if(k==="raft"){ for(let i=0;i<7;i++) m(new T.CylinderGeometry(.14,.15,2.6,8),"#8a5e38",-.9+i*.3,.14,0,Math.PI/2,0,0); for(const z of [-.9,.9]) m(new T.BoxGeometry(2.3,.06,.12),"#c9b48a",0,.3,z); m(new T.CylinderGeometry(.04,.04,1.8,6),"#7a5233",.3,.9,1.2,0,0,.6); }
+    else if(k==="raft"){ for(let i=0;i<7;i++) m(new T.CylinderGeometry(.14,.15,2.6,8),"#8a5e38",-.9+i*.3,.14,0,Math.PI/2,0,0); for(const z of [-.9,.9]) m(new T.BoxGeometry(2.3,.06,.12),"#c9b48a",0,.3,z); m(new T.CylinderGeometry(.04,.04,1.8,6),"#7a5233",.3,.9,1.2,0,0,.6); } }
+  function mk(k){ const S=sv(), p=S.b[k]; if(BLT[k]){ scene.remove(BLT[k]); BLT[k].traverse(o=>{ if(o.isMesh){ o.geometry.dispose(); o.material.dispose(); } }); delete BLT[k]; } if(!p||!ISL.on) return;
+    const g=new T.Group(); g.userData.islKeep=1; g.userData.noMerge=1; const m=(geo,col,x,y,z,rx,ry,rz,o)=>{ const ms=new T.Mesh(geo,new T.MeshStandardMaterial(Object.assign({color:col,roughness:.9},o||{}))); ms.position.set(x,y,z); ms.rotation.set(rx||0,ry||0,rz||0); ms.castShadow=true; g.add(ms); return ms; };
+    bodyOf(k,g,m);
+    if(k==="fire"&&p[2]){ const fl=[]; for(let i=0;i<3;i++) fl.push(m(new T.ConeGeometry(.2-.05*i,.6-.12*i,7),i?"#ffd25a":"#ff7a2a",0,.45,0,0,0,0,{emissive:i?"#ffb020":"#ff5010",emissiveIntensity:1.6,transparent:true,opacity:.9})); g.userData.fl=fl;
+      if(!fireL){ fireL=new T.PointLight("#ff9a40",1.3,11,1.6); } fireL.position.set(0,.9,0); g.add(fireL); }
     const L=I(), [u,v]=W2L(p[0],p[1]); g.position.set(p[0],L.hL(u,v),p[1]); g.rotation.y=p[3]||0; scene.add(g); BLT[k]=g; }
-  function mkAll(){ for(const k of ["fire","bench","hut","raft"]) mk(k); torchSet(); }
-  function clearAll(){ for(const k of Object.keys(BLT)){ scene.remove(BLT[k]); delete BLT[k]; } if(torchL){ meAv.root.remove(torchL); } }
-  function torchSet(){ const S=sv(); const on=ISL.on&&S.torchOn&&(S.inv.torch|0)>0; if(on){ if(!torchL){ torchL=new T.PointLight("#ffb060",1.1,12,1.5); torchL.position.set(.35,1.6,.2); } if(torchL.parent!==meAv.root) meAv.root.add(torchL); } else if(torchL&&torchL.parent) torchL.parent.remove(torchL); }
+  function mkAll(){ for(const k of ["fire","bench","hut","raft"]) mk(k); torchSet(); pkDirty=true; }
+  function clearAll(){ mini(false); for(const k of Object.keys(BLT)){ scene.remove(BLT[k]); delete BLT[k]; } if(torchL&&torchL.parent){ torchL.parent.remove(torchL); } pkClear(); placeEnd(); hold(null); }
+  function torchSet(){ const S=sv(); const on=ISL.on&&S.torchOn&&(S.inv.torch|0)>0; if(on){ if(!torchL){ torchL=new T.PointLight("#ffb060",1.1,12,1.5); torchL.position.set(.35,1.6,.2); } if(torchL.parent!==meAv.root) meAv.root.add(torchL); } else if(torchL&&torchL.parent) torchL.parent.remove(torchL); if(!busy) restHold(); }
   const ahead=d=>[meAv.pos.x+Math.sin(meAv.rotY)*d,meAv.pos.y+Math.cos(meAv.rotY)*d,meAv.rotY];
-  /* the action buttons */
+  /* placing: a see-through copy follows in front of you; 「🔨 蓋在這裡」 then one blow per tap */
+  let PL=null;
+  function placeStart(k){ placeEnd(); const g=new T.Group(); g.userData.islKeep=1; g.userData.noMerge=1; const mats=[]; const m=(geo,col,x,y,z,rx,ry,rz,o)=>{ const mt=new T.MeshBasicMaterial({color:"#9fe0b0",transparent:true,opacity:.38,depthWrite:false,side:(o&&o.side)||T.FrontSide}); mats.push(mt); const ms=new T.Mesh(geo,mt); ms.position.set(x,y,z); ms.rotation.set(rx||0,ry||0,rz||0); g.add(ms); return ms; };
+    bodyOf(k,g,m); scene.add(g); PL={k,g,mats,blows:0,ok:false,rot:0,set:false}; if(chipBox) chipBox.hidden=true; placeUI(); }
+  function placeEnd(){ if(PL){ scene.remove(PL.g); PL.g.traverse(o=>{ if(o.isMesh){ o.geometry.dispose(); o.material.dispose(); } }); PL=null; } const b=document.getElementById("islPlace"); if(b) b.remove(); }
+  function placeOk(k,x,z){ const L=I(), [u,v]=W2L(x,z), h=L.hL(u,v); if(k==="raft") return h<.75&&h>-.35; const r=k==="hut"?1.6:k==="bench"?.8:.6; for(const [a,b] of [[0,0],[r,0],[-r,0],[0,r],[0,-r]]){ const hh=L.hL(u+a,v+b); if(hh<.08) return false; try{ if(TOWNX.water&&TOWNX.water(x+a,z+b)) return false; }catch(e){} } if(k==="hut"){ const S=sv(); if(!S.b.bench||Math.hypot(S.b.bench[0]-x,S.b.bench[1]-z)>14) return false; } return true; }
+  function placeTick(){ if(!PL) return; if(PL.set){ return; } const d=PL.k==="hut"?3.4:PL.k==="raft"?2.6:1.8, a=ahead(d); const L=I(), [u,v]=W2L(a[0],a[1]); PL.g.position.set(a[0],L.hL(u,v),a[1]); PL.g.rotation.y=a[2]+Math.PI+PL.rot; const ok=placeOk(PL.k,a[0],a[1]); if(ok!==PL.ok){ PL.ok=ok; PL.mats.forEach(m=>m.color.set(ok?"#9fe0b0":"#ff8a7a")); placeUI(); } }
+  function placeUI(){ let b=document.getElementById("islPlace"); if(!PL){ if(b) b.remove(); return; } if(!b){ b=document.createElement("div"); b.id="islPlace"; b.style.cssText="position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 100px);z-index:9;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:auto"; document.body.appendChild(b); }
+    const R=REC.find(r=>r[0]===PL.k), nm=R?R[1]:"";
+    b.innerHTML=PL.set?`<span class="fog-tip">${nm}：再敲 ${BUILD[PL.k]-PL.blows} 下</span><button class="glass isl-chip" data-pl="blow">🔨 敲（${PL.blows}/${BUILD[PL.k]}）</button>`
+      :`<span class="fog-tip">${PL.ok?`走動調整位置，選好就蓋`:PL.k==="raft"?"木筏要擺在沙灘上":PL.k==="hut"?"草屋要蓋在工作台附近的平地":"這裡不能蓋（不平或有水）"}</span><div style="display:flex;gap:8px"><button class="glass isl-chip" data-pl="ok" ${PL.ok?"":"disabled style=\"opacity:.45\""}>🔨 蓋在這裡</button><button class="glass isl-chip" data-pl="rot">↻</button><button class="glass isl-chip" data-pl="no">✖</button></div>`;
+    b.querySelectorAll("button").forEach(x=>x.onclick=()=>{ try{ ensureAudio(); }catch(e){} placeAct(x.dataset.pl); }); }
+  function placeAct(a){ if(!PL||busy) return; const S=sv(), k=PL.k, R=REC.find(r=>r[0]===k);
+    if(a==="no"){ placeEnd(); toast("先不蓋了",1200); return; } if(a==="rot"){ PL.rot+=Math.PI/4; return; }
+    if(a==="ok"){ if(!PL.ok) return; if(!has(R[2])){ toast("材料不夠",1600); placeEnd(); return; } if(k!=="fire"&&!S.tool.hammer){ toast("要有石錘才能釘木樁、把它搭起來",2400); return; } take(R[2]); PL.set=true; PL.at=[PL.g.position.x,PL.g.position.z,PL.g.rotation.y]; PL.mats.forEach(m=>{ m.color.set("#e8d8b0"); m.opacity=.25; }); placeUI(); return; }
+    if(a==="blow"){ if(!spend(.5,.4)) return; meAv.rotY=Math.atan2(PL.at[0]-meAv.pos.x,PL.at[1]-meAv.pos.y);
+      work("build",.6,()=>{ placeUI(); },.55,()=>{ PL.blows++; PL.mats.forEach(m=>m.opacity=.25+.6*PL.blows/BUILD[k]); chips(PL.at[0],PL.at[1],"#c8a070",.6,5); try{ tone(180,.06,.1,"square"); tone(95,.1,.07,"triangle"); }catch(e){} if(k!=="fire") wear("hammer");
+        if(PL.blows>=BUILD[k]){ const at=PL.at; placeEnd(); S.b[k]=[+at[0].toFixed(2),+at[1].toFixed(2),0,+at[2].toFixed(2)]; if(k==="fire") S.b.fire[4]=0; if(k==="raft"){ S.raft=1; hudOn(true); } mk(k); toast(`✨ ${R[1]}蓋好了！`,2200); try{ [523,659,784].forEach((f,i)=>tone(f,.1,.05,"triangle",i*.08)); }catch(e){} hudFill(); saveBag(); } },k==="fire"?null:"hammer"); } }
+  const mini=on=>{ document.body.classList.toggle("isl-mini",!!on); if(on&&chipBox) chipBox.hidden=true; }; /* (a mini-game has the screen to itself: the other buttons step aside) */
+  /* ---------- 鑽木取火: tap fast — smoke, then sparks, then flame; stop and it dies down ---------- */
+  function lightGame(){ const S=sv(); if(!S.b.fire) return; if((S.inv.stick|0)<1&&S.b.fire[5]){ toast("要一根枯枝當柴才能再點",2200); return; } let v=0, done=false; const box=document.createElement("div"); box.id="islFireG"; box.style.cssText="position:fixed;inset:0;z-index:60;display:flex;align-items:flex-end;justify-content:center;pointer-events:none";
+    box.innerHTML=`<div style="pointer-events:auto;margin-bottom:calc(env(safe-area-inset-bottom,0px) + 96px);background:rgba(20,26,28,.82);border:1px solid var(--gold);border-radius:16px;padding:12px 16px;width:min(86vw,340px);text-align:center;color:#f4ead2">
+      <div id="fgT" style="font-size:14px;margin-bottom:8px">用力搓！越快越熱</div><div style="height:12px;border-radius:6px;background:#3a3026;overflow:hidden"><div id="fgB" style="height:100%;width:0;background:linear-gradient(90deg,#c9a06a,#ff9a3a,#ffd25a)"></div></div>
+      <div style="display:flex;gap:8px;justify-content:center;margin-top:10px"><button class="glass isl-chip" id="fgGo" style="font-size:17px;padding:12px 26px">🔥 搓！</button><button class="glass isl-chip" id="fgNo">✖</button></div></div>`;
+    document.body.appendChild(box); mini(true); const B=box.querySelector("#fgB"), Tt=box.querySelector("#fgT"); const fx=S.b.fire[0], fz=S.b.fire[1]; meAv.rotY=Math.atan2(fx-meAv.pos.x,fz-meAv.pos.y); window.MZ_HOLD=true; window.MZ_ISLBUSY=true;
+    const av=meAv, old=av.custPose; let ph=0; av.custPose=dt=>{ ph+=dt; av.hips.position.y=.16; av.torso.rotation.x=.55; const k=Math.sin(ph*(8+v*.25)); av.arms[0].rotation.set(-.9+k*.25,0,.3); av.arms[1].rotation.set(-.9-k*.25,0,-.3); };
+    const end=ok=>{ if(done) return; done=true; clearInterval(iv); box.remove(); mini(false); if(av.custPose) av.custPose=old||null; av.torso.rotation.set(0,0,0); av.hips.position.y=.3; window.MZ_HOLD=false; window.MZ_ISLBUSY=false;
+      if(ok){ if(S.b.fire[5]) S.inv.stick--; S.b.fire[2]=1; S.b.fire[4]=Date.now()+5*60e3; S.b.fire[5]=1; S.st.lit=(S.st.lit|0)+1; mk("fire"); toast("🔥 火生起來了！記得添柴，火才不會熄",2800); try{ meAv.say("有火了……！","#ffd27a",3); }catch(e){} hudFill(); saveBag(); } };
+    const iv=setInterval(()=>{ v=Math.max(0,v-1.2); B.style.width=v+"%"; if(v>25&&Math.random()<.5) chips(fx,fz,"#cfcfcf",.35,1); if(v>65&&Math.random()<.6) chips(fx,fz,"#ffb030",.3,2,true); },100);
+    box.querySelector("#fgGo").onpointerdown=e=>{ e.preventDefault(); if(done) return; if(!spend(.12,.1)){ end(false); return; } v=Math.min(100,v+8); B.style.width=v+"%"; try{ tone(260+v*3,.03,.04,"square"); }catch(e){} Tt.textContent=v<25?"用力搓！越快越熱":v<65?"冒煙了……繼續！":"有火星了！再快一點！"; if(v>=100) end(true); };
+    box.querySelector("#fgNo").onclick=()=>end(false); }
+  /* ---------- 木矛刺魚: the shallow water seen from above; fish shadows swim; strike when one is inside the ring ---------- */
+  function spearGame(){ const S=sv(); if(!S.tool.spear) return; if(!seeOk()) return; const P=spot(); let fish=[], misses=0, over=false, raf=0;
+    const box=document.createElement("div"); box.id="islSpear"; box.style.cssText="position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(6,14,18,.35)";
+    box.innerHTML=`<div style="background:rgba(16,28,32,.88);border:1px solid var(--gold);border-radius:18px;padding:12px;text-align:center;color:#f4ead2;width:min(92vw,360px)"><div id="spT" style="font-size:14px;margin-bottom:8px">魚影游進中間的圈圈時，按「刺！」</div>
+      <canvas id="spC" width="320" height="320" style="width:min(80vw,320px);height:min(80vw,320px);border-radius:50%;display:block;margin:0 auto;touch-action:none"></canvas>
+      <div style="display:flex;gap:8px;justify-content:center;margin-top:10px"><button class="glass isl-chip" id="spGo" style="font-size:17px;padding:12px 30px">🔱 刺！</button><button class="glass isl-chip" id="spNo">離開</button></div></div>`;
+    document.body.appendChild(box); mini(true); const cv=box.querySelector("#spC"), g=cv.getContext("2d"), Tt=box.querySelector("#spT"); window.MZ_HOLD=true; window.MZ_ISLBUSY=true; hold("spear");
+    const av=meAv, old=av.custPose; let ph=0, stab=0; av.custPose=dt=>{ ph+=dt; stab=Math.max(0,stab-dt*3); av.arms[0].rotation.set(-2.6+stab*1.9,0,.15); av.arms[1].rotation.set(-1.4+stab*.6,0,-.15); av.torso.rotation.x=.15+stab*.35; };
+    const spawn=()=>{ fish=[]; const n=2+(Math.random()*2|0); for(let i=0;i<n;i++) fish.push({a:Math.random()*6.283,r:40+Math.random()*90,w:(.4+Math.random()*.6)*(Math.random()<.5?-1:1),s:.8+Math.random()*.5,ph:Math.random()*6,flee:0}); }; spawn();
+    let last=performance.now(); const R=34;
+    const draw=now=>{ const dt=Math.min(.05,(now-last)/1000); last=now; const t=now/1000; g.clearRect(0,0,320,320); const grd=g.createRadialGradient(160,160,20,160,160,160); grd.addColorStop(0,P.fresh?"#5fb0a8":"#5ec4c0"); grd.addColorStop(1,P.fresh?"#2f6f78":"#2a7c98"); g.fillStyle=grd; g.beginPath(); g.arc(160,160,160,0,7); g.fill();
+      g.strokeStyle="rgba(255,255,255,.12)"; for(let i=0;i<6;i++){ g.beginPath(); g.arc(160+40*Math.sin(t*.3+i),160+30*Math.cos(t*.4+i*2),30+i*14+6*Math.sin(t+i),0,7); g.stroke(); }
+      for(const f of fish){ f.a+=f.w*dt*(f.flee?3.2:1); f.ph+=dt*6; f.r+=Math.sin(t*.7+f.ph*.1)*12*dt; if(f.flee){ f.r+=90*dt; } f.r=Math.max(8,Math.min(f.flee?400:130,f.r)); const x=160+Math.cos(f.a)*f.r, y=160+Math.sin(f.a)*f.r, h=f.a+Math.PI/2*(f.w>0?1:-1);
+        g.save(); g.translate(x,y); g.rotate(h); g.fillStyle="rgba(20,40,48,.55)"; g.beginPath(); g.ellipse(0,0,7*f.s,22*f.s,0,0,7); g.fill(); g.beginPath(); g.moveTo(0,20*f.s); g.lineTo(-7*f.s,30*f.s+3*Math.sin(f.ph)); g.lineTo(7*f.s,30*f.s-3*Math.sin(f.ph)); g.fill(); g.restore(); f.x=x; f.y=y; }
+      g.strokeStyle="rgba(255,236,180,.9)"; g.lineWidth=3; g.beginPath(); g.arc(160,160,R,0,7); g.stroke(); g.lineWidth=1;
+      if(stab>.5){ g.fillStyle="rgba(255,255,255,.5)"; g.beginPath(); g.arc(160,160,R*(1.6-stab),0,7); g.fill(); }
+      if(!over) raf=requestAnimationFrame(draw); };
+    raf=requestAnimationFrame(draw);
+    const end=()=>{ if(over) return; over=true; cancelAnimationFrame(raf); box.remove(); mini(false); if(av.custPose) av.custPose=old||null; av.torso.rotation.set(0,0,0); window.MZ_HOLD=false; window.MZ_ISLBUSY=false; restHold(); hudFill(); saveBag(); };
+    box.querySelector("#spGo").onpointerdown=e=>{ e.preventDefault(); if(over||stab>.3) return; if(!spend(.5,.3)){ end(); return; } stab=1; try{ tone(300,.05,.06,"triangle"); }catch(e){} chips(meAv.pos.x+Math.sin(meAv.rotY)*1.4,meAv.pos.y+Math.cos(meAv.rotY)*1.4,"#cfefff",.1,6,true);
+      const hitF=fish.find(f=>!f.flee&&Math.hypot(f.x-160,f.y-160)<R+6);
+      if(hitF){ fish=fish.filter(f=>f!==hitF); give("fish",1); S.st.speared=(S.st.speared|0)+1; wear("spear"); Tt.textContent="🐟 刺到了！"; toast("🐟 刺到一條魚！（要剖開烤熟才好吃）",2000); try{ [523,784].forEach((f,i)=>tone(f,.1,.05,"triangle",i*.08)); }catch(e){} if(!S.tool.spear||!fish.length) setTimeout(end,700); }
+      else { misses++; fish.forEach(f=>f.flee=1); Tt.textContent=misses>=3?"魚都嚇跑了……等一下再來":"💦 撲空了，魚嚇跑了……等牠們游回來"; try{ tone(160,.15,.05,"sine"); }catch(e){} if(misses>=3) setTimeout(end,900); else setTimeout(()=>{ if(!over){ spawn(); Tt.textContent="魚游回來了……"; } },1800); } };
+    box.querySelector("#spNo").onclick=end; }
+  /* ---------- the action buttons: what is right here ---------- */
   let chipBox=null;
-  function chipsUI(){ if(!ISL.on||document.getElementById("csBox")){ if(chipBox) chipBox.hidden=true; return; } if(!chipBox){ chipBox=document.createElement("div"); chipBox.id="islAct"; chipBox.style.cssText="position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 100px);z-index:9;display:flex;flex-direction:column-reverse;gap:8px;align-items:center"; document.body.appendChild(chipBox); }
-    const P=spot(), S=sv(), A=[];
-    if(P.fire&&S.b.fire&&!S.b.fire[2]) A.push(["light","🔥 鑽木取火"]);
-    if(P.fire&&S.b.fire&&S.b.fire[2]&&(S.inv.fish|0)>0) A.push(["cook","🍢 烤魚"]);
+  function chipsUI(){ if(!ISL.on||document.getElementById("csBox")||PL||document.getElementById("islSpear")||document.getElementById("islFireG")){ if(chipBox) chipBox.hidden=true; return; } if(!chipBox){ chipBox=document.createElement("div"); chipBox.id="islAct"; chipBox.style.cssText="position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 100px);z-index:9;display:flex;flex-direction:column-reverse;gap:8px;align-items:center"; document.body.appendChild(chipBox); }
+    const P=spot(), S=sv(), A=[]; const pk=pkNear(1.7);
+    if(pk) A.push(["pick",(PKK[pk.k].pull?"✋ 拔起":"✋ 撿起")+PKK[pk.k].n]);
+    if(P.fire&&S.b.fire){ if(!S.b.fire[2]) A.push(["light","🔥 鑽木取火"]); else { const left=Math.max(0,Math.round((S.b.fire[4]-Date.now())/60e3)); if((S.inv.stick|0)>0) A.push(["fuel",`🪵 添柴（還能燒 ${left} 分）`]); if((S.inv.fish|0)>0) A.push(["cook",S.tool.knife?"🍢 剖魚來烤":"🍢 烤魚（要先有石刀剖開）"]); if((S.inv.cwater|0)>0) A.push(["boil","♨️ 把椰殼裡的水煮開"]); } }
     if(P.hut) A.push(["sleep","😴 在草屋睡一覺"]);
-    if(P.tree){ if(S.tool.axe) A.push(["chop","🪓 砍樹"]); A.push(["stick","🪵 撿樹枝"]); }
-    if(P.palm){ A.push(["coco","🥥 搖椰子"]); if(S.tool.knife) A.push(["leaf","🍃 割椰葉"]); }
-    if(P.water&&S.tool.spear) A.push(["fish","🔱 叉魚"]);
-    if(P.beach){ A.push(["shell","🐚 撿貝殼"]); A.push(["stone","🪨 撿石頭"]); }
-    else if(P.water) A.push(["stone","🪨 撿石頭"]);
-    if(P.grass) A.push(["fiber","🌿 拔草纖維"]);
-    const two=A.slice(0,3), sig=two.map(a=>a[0]).join(); if(chipBox.dataset.sig!==sig){ chipBox.dataset.sig=sig; chipBox.innerHTML=two.map(a=>`<button class="glass isl-chip" data-isl="${a[0]}">${a[1]}</button>`).join(""); chipBox.querySelectorAll("button").forEach(b=>b.onclick=()=>{ try{ ensureAudio(); }catch(e){} act(b.dataset.isl); }); }
-    chipBox.hidden=busy||!!sheetKind||!two.length; }
-  /* cells you have picked over give less for a while (a 6 m grid, three takes each per five minutes) */
-  const USED=new Map(); const cellOk=(k)=>{ const c=k+":"+Math.floor(meAv.pos.x/6)+","+Math.floor(meAv.pos.y/6), now=Date.now(); const L=(USED.get(c)||[]).filter(t=>now-t<300e3); if(L.length>=3){ USED.set(c,L); return false; } L.push(now); USED.set(c,L); return true; };
-  const PALMC=new Map();
-  let lightN=0;
+    if(P.bench) A.push(["bench","🛠️ 工作台"]);
+    if(P.rock){ const t=S.rk[keyOf(P.rock)], wait=t?Math.ceil((t+10*60e3-Date.now())/60e3):0; if(wait>0) A.push(["x",`🪨 這塊岩石剛敲過（${wait} 分後）`]); else A.push(S.tool.hammer?["strike",`🔨 敲岩石（${HPR.get(keyOf(P.rock))??4}）`]:["x","🪨 大岩石：要石錘才敲得開"]); }
+    if(P.tree) A.push(S.tool.axe?["chop",`🪓 砍樹（${HPT.get(keyOf(P.tree))??Math.round(4+2*P.tree[2])}）`]:["x","🌳 這棵樹要石斧才砍得倒"]);
+    if(P.palm){ A.push(["shake","🌴 搖椰子"]); if(S.tool.knife) A.push(["leaf","🔪 割椰葉"]); }
+    if(P.shallow&&S.tool.spear) A.push(["spear","🔱 拿木矛刺魚"]);
+    if(P.fresh&&(S.inv.cshell|0)>0) A.push(["fill","🥥 用空椰殼裝水"]);
+    const shown=A.slice(0,3), sig=shown.map(a=>a[0]+a[1]).join("|"); if(chipBox.dataset.sig!==sig){ chipBox.dataset.sig=sig; chipBox.innerHTML=shown.map(a=>`<button class="glass isl-chip" data-isl="${a[0]}" ${a[0]==="x"?"disabled style=\"opacity:.6\"":""}>${a[1]}</button>`).join(""); chipBox.querySelectorAll("button").forEach(b=>b.onclick=()=>{ try{ ensureAudio(); }catch(e){} act(b.dataset.isl); }); }
+    chipBox.hidden=busy||!!sheetKind||!shown.length;
+    /* a soft ring round the thing you would pick up */
+    if(pk){ if(!pkRing){ const g=new T.RingGeometry(.26,.33,24); g.rotateX(-Math.PI/2); pkRing=new T.Mesh(g,new T.MeshBasicMaterial({color:"#fff4c8",transparent:true,opacity:.75,depthWrite:false})); pkRing.userData.islKeep=1; scene.add(pkRing); } const [x,z]=itemXZ(pk); const y=(()=>{ try{ return groundAt({},x,z); }catch(e){ return 0; } })(); pkRing.position.set(x,Math.max(y,ISL.seaY)+.04,z); pkRing.visible=true; } else if(pkRing) pkRing.visible=false; }
+  /* tap a thing on the ground: walk to it and pick it up */
+  window.MZ_ISLTAP=ray=>{ if(!ISL.on||busy||PL) return false; const ms=Object.values(PKG).map(G=>G.m); if(!ms.length) return false; const hits=ray.intersectObjects(ms,false); if(!hits.length) return false; const h=hits[0]; const G=Object.values(PKG).find(G=>G.m===h.object); const p=G&&G.items[h.instanceId]; if(!p) return false;
+    const [x,z]=itemXZ(p); if(Math.hypot(x-meAv.pos.x,z-meAv.pos.y)<1.7){ pick(p); return true; } pending={p,t:Date.now()}; try{ walkTo(x+(meAv.pos.x-x)*.15/Math.max(.2,Math.hypot(meAv.pos.x-x,meAv.pos.y-z)),z+(meAv.pos.y-z)*.15/Math.max(.2,Math.hypot(meAv.pos.x-x,meAv.pos.y-z))); }catch(e){} return true; };
   function act(k){ if(busy) return; const S=sv(), P=spot();
-    const got=(it,n,msg)=>{ give(it,n); toast(`${IT[it][0]} ${IT[it][1]} +${n}${msg?"　"+msg:""}`,1600); };
-    if(k==="light"){ if(!hpUse(1)) return; lightN++; try{ tone(300+lightN*40,.06,.06,"square"); }catch(e){} chips(S.b.fire[0],S.b.fire[1],"#d8c090"); if(lightN<8){ toast(`🔥 用力鑽……${"▮".repeat(lightN)}${"▯".repeat(8-lightN)}`,900); return; } lightN=0; S.b.fire[2]=1; mk("fire"); toast("🔥 火生起來了！暖暖的。",2600); try{ meAv.say("有火了……！","#ffd27a",3); }catch(e){} hudFill(); saveBag(); return; }
-    if(k==="cook"){ work("pick",2.2,()=>{ S.inv.fish--; give("cfish",1); toast("🍢 魚烤好了，香噴噴的（背包裡可以吃）",2200); }); return; }
-    if(k==="sleep"){ closeSheet(); veil(["……zzz","天亮了。"],()=>{ S.hp=HPMAX; S.st.slept=(S.st.slept|0)+1; },()=>{ toast("😴 睡飽了，體力全滿",2200); hudFill(); saveBag(); }); return; }
-    if(k==="chop"){ const t=P.tree; if(!t||!hpUse(4)) return; work("chop",2.4,()=>{ const key=t[0].toFixed(1)+","+t[1].toFixed(1); S.cut[key]=Date.now(); fall(t[0],t[1],t[2]); setTimeout(()=>{ try{ I().reload(t[0]+I().cx,t[1]+I().cz); }catch(e){} },50); got("wood",3,"（樹會慢慢再長回來）"); give("stick",1); }); return; }
-    if(k==="stick"){ if(!cellOk("stick")){ toast("這附近的樹枝撿完了，換個地方看看",1800); return; } if(!hpUse(1)) return; work("pick",1.2,()=>got("stick",1+(Math.random()<.4?1:0))); return; }
-    if(k==="coco"){ const id=P.palm[0].toFixed(1)+","+P.palm[1].toFixed(1), last=PALMC.get(id)||0; if(Date.now()-last<240e3){ toast("這棵椰子樹上的椰子還沒長好",1800); return; } if(!hpUse(2)) return; work("shake",1.4,()=>{ PALMC.set(id,Date.now()); got("coco",1+(Math.random()<.5?1:0),"（咚！掉下來了）"); }); return; }
-    if(k==="leaf"){ if(!cellOk("leaf")){ toast("這附近能割的椰葉割完了",1800); return; } if(!hpUse(2)) return; work("pick",1.4,()=>got("leaf",2)); return; }
-    if(k==="fish"){ if(!hpUse(2)) return; work("fish",2,()=>{ if(Math.random()<.55){ got("fish",1,"（叉到了！）"); } else toast("💦 撲了個空……魚游走了",1600); }); return; }
-    if(k==="shell"){ if(!cellOk("shell")){ toast("這片沙灘的貝殼撿完了，往別處走走",1800); return; } if(!hpUse(1)) return; work("pick",1.1,()=>got("shell",1)); return; }
-    if(k==="stone"){ if(!cellOk("stone")){ toast("這附近找不到合用的石頭了",1800); return; } if(!hpUse(1)) return; work("pick",1.1,()=>got("stone",1)); return; }
-    if(k==="fiber"){ if(!cellOk("fiber")){ toast("這片草拔得差不多了，換個地方",1800); return; } if(!hpUse(1)) return; work("pick",1.2,()=>got("fiber",1+(Math.random()<.5?1:0))); return; } }
-  /* crafting */
-  function craft(id){ const R=REC.find(r=>r[0]===id); if(!R) return; const S=sv(), P=spot();
-    if(R[3]==="bench"&&!P.bench){ toast("要站在工作台旁邊才能做",2200); return; } if(R[3]==="fire"&&!(P.fire&&S.b.fire&&S.b.fire[2])){ toast("要在點著的營火旁邊做",2200); return; } if(R[3]==="beach"&&!P.beach){ toast("木筏要在沙灘上做",2200); return; }
-    if(id==="axe"&&!S.tool.hammer){ toast("要先有石錘才能把石頭敲成斧頭",2400); return; } if(TOOLS[id]&&S.tool[id]){ toast("已經有了",1400); return; } if(["fire","bench","hut","raft"].includes(id)&&S.b[id]&&!(id==="fire")){ toast("已經做好了",1400); return; }
-    if(!has(R[2])){ toast("材料不夠",1600); return; } if(!hpUse(3)) return; take(R[2]); closeSheet();
-    work("pick",id==="hut"||id==="raft"?3.6:1.8,()=>{ if(TOOLS[id]) S.tool[id]=1; else if(id==="rope"||id==="torch"){ give(id,1); if(id==="torch") S.torchOn=1; torchSet(); }
-      else { const a=ahead(id==="hut"?3.2:1.6); S.b[id]=[+a[0].toFixed(2),+a[1].toFixed(2),0,+(a[2]+Math.PI).toFixed(2)]; if(id==="raft"){ S.raft=1; hudOn(true); } mk(id); }
-      toast(`✨ 做好了：${R[1]}`,2000); try{ [523,659,784].forEach((f,i)=>tone(f,.1,.05,"triangle",i*.08)); }catch(e){} }); }
+    if(k==="pick"){ pick(pkNear(1.7)); return; }
+    if(k==="bench"){ HANDLERS.islBag(); return; }
+    if(k==="light"){ lightGame(); return; }
+    if(k==="fuel"){ if((S.inv.stick|0)<1) return; S.inv.stick--; S.b.fire[4]=Math.min(Date.now()+10*60e3,Math.max(S.b.fire[4]||0,Date.now())+2*60e3); work("pick",.6,()=>{ toast("🪵 添了一根柴，火旺起來了",1600); },.6,()=>chips(S.b.fire[0],S.b.fire[1],"#ffb030",.4,4,true)); return; }
+    if(k==="cook"){ if(!S.tool.knife){ toast("生魚要先用石刀剖開、去掉內臟，才能烤",2600); return; } if(!spend(.3,.2)) return; S.inv.fish--; work("cook",3,()=>{ give("cfish",1); wear("knife"); toast("🍢 魚烤好了，香噴噴的（🎒 背包裡可以吃）",2400); },.4,()=>chips(S.b.fire[0],S.b.fire[1],"#ffd27a",.5,4,true),"knife"); return; }
+    if(k==="boil"){ S.inv.cwater--; work("cook",3.4,()=>{ give("bwater",1); S.st.boiled=(S.st.boiled|0); toast("🫖 水煮開了，可以安心喝（🎒 背包）",2400); },.5,()=>chips(S.b.fire[0],S.b.fire[1],"#e0f0ff",.6,5)); return; }
+    if(k==="fill"){ S.inv.cshell--; work("pick",1,()=>{ give("cwater",1); toast("💧 裝了一殼水（生水直接喝可能會肚子痛，煮開比較安全）",2600); },.5,()=>chips(meAv.pos.x+Math.sin(meAv.rotY)*.8,meAv.pos.y+Math.cos(meAv.rotY)*.8,"#bfe8ff",.1,6,true)); return; }
+    if(k==="sleep"){ closeSheet(); veil(["……zzz","天亮了。"],()=>{ S.food=Math.max(S.food,40); S.water=Math.max(S.water,30); S.sick=0; S.st.slept=(S.st.slept|0)+1; },()=>{ toast("😴 睡飽了，精神好多了（肚子有點餓）",2400); hudFill(); saveBag(); }); return; }
+    if(k==="strike"){ const r=P.rock; if(!r||!S.tool.hammer||!seeOk()) return; if(!spend(.6,.5)) return; const key=keyOf(r); const L=I(), rx=r[0]+L.cx, rz=r[1]+L.cz; meAv.rotY=Math.atan2(rx-meAv.pos.x,rz-meAv.pos.y);
+      work("strike",.62,()=>{},.55,()=>{ let hp=HPR.get(key)??4; hp--; HPR.set(key,hp); wear("hammer"); chips(rx-Math.sin(meAv.rotY)*.5,rz-Math.cos(meAv.rotY)*.5,"#ffe08a",L.hL(r[0],r[1])+.8,5,true); chips(rx,rz,"#9a978f",L.hL(r[0],r[1])+.9,4); try{ tone(900+Math.random()*200,.04,.06,"square"); tone(140,.08,.06,"triangle"); }catch(e){}
+        if(hp<=0){ HPR.delete(key); S.rk[key]=Date.now(); const a=Math.atan2(meAv.pos.x-rx,meAv.pos.y-rz); for(let i=0;i<3;i++){ const b=a+(i-1)*.6; dropAdd(i<2?"flint":"stone",rx+Math.sin(b)*(1.1+r[2]*.6),rz+Math.cos(b)*(1.1+r[2]*.6)); } pkBuild(); toast("🔺 啪！敲下了石片（撿起來）",2000); try{ tone(220,.2,.08,"sawtooth"); }catch(e){} } },"hammer"); return; }
+    if(k==="chop"){ const t=P.tree; if(!t||!S.tool.axe||!seeOk()) return; if(!spend(.8,.6)) return; const key=keyOf(t); const L=I(), tx=t[0]+L.cx, tz=t[1]+L.cz; meAv.rotY=Math.atan2(tx-meAv.pos.x,tz-meAv.pos.y);
+      work("chop",.62,()=>{},.55,()=>{ let hp=HPT.get(key)??Math.round(4+2*t[2]); hp--; HPT.set(key,hp); wear("axe"); chips(tx-Math.sin(meAv.rotY)*.35,tz-Math.cos(meAv.rotY)*.35,"#c8a070",L.hL(t[0],t[1])+.9,6); try{ tone(170+Math.random()*30,.07,.08,"square"); tone(90,.12,.06,"triangle"); }catch(e){}
+        if(hp<=0){ HPT.delete(key); S.cut[key]=Date.now(); S.st.felled=(S.st.felled|0)+1; const dir=Math.atan2(tx-meAv.pos.x,tz-meAv.pos.y); fall(t[0],t[1],t[2],dir); setTimeout(()=>{ try{ I().reload(tx,tz); }catch(e){} },50);
+          setTimeout(()=>{ for(let i=0;i<3;i++){ const d=1.3+i*1.1; dropAdd("log",tx+Math.sin(dir)*d+Math.cos(dir)*(i%2?.35:-.35),tz+Math.cos(dir)*d-Math.sin(dir)*(i%2?.35:-.35)); } dropAdd("stick",tx+Math.sin(dir)*4.4,tz+Math.cos(dir)*4.4); dropAdd("stick",tx+Math.sin(dir+.4)*3.6,tz+Math.cos(dir+.4)*3.6); pkBuild(); toast("🌲 樹倒了！把木頭撿起來（樹會慢慢長回來）",2400); },1500); } },"axe"); return; }
+    if(k==="shake"){ const p=P.palm; if(!p) return; const key=keyOf(p), last=S.pc[key]||0; if(Date.now()-last<5*60e3){ toast("這棵椰子樹上的椰子還沒長好",1800); return; } if(!spend(.4,.3)) return; const L=I(); meAv.rotY=Math.atan2(p[0]+L.cx-meAv.pos.x,p[1]+L.cz-meAv.pos.y);
+      let n=(SHK.get(key)||0)+1; SHK.set(key,n); work("shake",.8,()=>{ if(n<3){ toast(n===1?"🌴 搖……樹頂沙沙作響":"🌴 再搖……快掉下來了！",1200); return; } SHK.delete(key); S.pc[key]=Date.now(); const c=1+(Math.random()<.55?1:0); for(let i=0;i<c;i++) setTimeout(()=>cocoDrop(p),i*260); toast("🥥 咚！椰子掉下來了，去撿起來",1800); }); return; }
+    if(k==="leaf"){ const p=P.palm; if(!p||!S.tool.knife||!seeOk()) return; const key="lf"+keyOf(p), last=S.pc[key]||0; if(Date.now()-last<4*60e3){ toast("這棵的椰葉割過了，換一棵",1800); return; } if(!spend(.4,.3)) return; work("cut",1.2,()=>{ S.pc[key]=Date.now(); give("leaf",2); wear("knife"); toast("🍃 割下 2 片椰葉",1600); },.5,()=>chips(meAv.pos.x+Math.sin(meAv.rotY)*.7,meAv.pos.y+Math.cos(meAv.rotY)*.7,"#7fb06a",1.6,5),"knife"); return; }
+    if(k==="spear"){ spearGame(); return; } }
+  /* ---------- making things ---------- */
+  function craft(id){ if(busy||PL) return; const R=REC.find(r=>r[0]===id); if(!R) return; const S=sv(), P=spot();
+    if(R[3]==="bench"&&!P.bench){ toast("要站在工作台旁邊才能做",2200); return; } if(R[3]==="fire"&&!(P.fire&&fireOn())){ toast("要在點著的營火旁邊做",2200); return; }
+    if(TOOLS[id]&&S.tool[id]&&id!=="rod"){ toast(`已經有${R[1]}了（壞掉再做）`,1800); return; } if(id==="rod"&&S.tool.rod){ toast("已經有釣竿了",1400); return; } if(["bench","hut","raft"].includes(id)&&S.b[id]){ toast("已經蓋好了",1400); return; } if(id==="fire"&&S.b.fire){ toast("已經有營火了",1400); return; }
+    if(!has(R[2])){ toast("材料不夠",1600); return; }
+    if(BUILD[id]){ closeSheet(); placeStart(id); toast(id==="raft"?"走到沙灘上，選好位置":"選好位置，按「🔨 蓋在這裡」",2200); return; }
+    if(!spend(1,.6)) return; take(R[2]); closeSheet();
+    work("cut",1.8,()=>{ if(TOOLS[id]){ S.tool[id]=DUR[id]; S.st["mk_"+id]=(S.st["mk_"+id]|0)+1; } else { give(id,1); if(id==="torch"){ S.torchOn=1; S.tl=8*60; torchSet(); } }
+      toast(`✨ 做好了：${R[1]}${TOOLS[id]&&id!=="rod"?`（可以用 ${DUR[id]} 次）`:""}`,2200); try{ [523,659,784].forEach((f,i)=>tone(f,.1,.05,"triangle",i*.08)); }catch(e){} }); }
   HANDLERS.islCraft=v=>craft(v);
-  HANDLERS.islEat=v=>{ const S=sv(); if((S.inv[v]|0)<1) return; S.inv[v]--; const n=v==="cfish"?30:12; S.hp=Math.min(HPMAX,S.hp+n); if(v==="cfish") S.st.ate=(S.st.ate|0)+1; toast(v==="cfish"?`🍢 好吃！體力 +${n}`:`🥥 喝了椰子水，體力 +${n}`,1800); try{ tone(660,.08,.05,"triangle"); }catch(e){} hudFill(); saveBag(); HANDLERS.islBag(); };
-  HANDLERS.islTorch=()=>{ const S=sv(); S.torchOn=S.torchOn?0:1; torchSet(); hudFill(); };
-  HANDLERS.islBag=()=>{ const S=sv(), P=spot(); const inv=Object.keys(IT).filter(k=>(S.inv[k]|0)>0).map(k=>`<span class="chip" aria-pressed="false">${IT[k][0]} ${IT[k][1]} ×${S.inv[k]}</span>`).join("")||`<p class="note">還什麼都沒有。走到樹下、海邊、草地，下面會出現可以做的事。</p>`;
-    const tools=Object.keys(TOOLS).filter(k=>S.tool[k]).map(k=>`<span class="chip">${TOOLS[k]}</span>`).join("")||`<span class="note">還沒有工具</span>`;
+  HANDLERS.islEat=v=>{ if(busy) return; const S=sv(); if((S.inv[v]|0)<1) return; const done=(msg)=>{ toast(msg,2400); try{ tone(660,.08,.05,"triangle"); }catch(e){} hudFill(); saveBag(); if(sheetKind==="islBag") HANDLERS.islBag(); };
+    if(v==="coco"){ if(!S.tool.hammer&&(S.inv.stone|0)<1){ toast("椰子殼很硬，要拿一顆石頭（或石錘）才敲得開",2600); return; } closeSheet(); S.inv.coco--; work("strike",.7,()=>{ work("drink",1.2,()=>{ S.water=Math.min(FMAX,S.water+25); S.food=Math.min(FMAX,S.food+8); give("cshell",1); S.st.drank=(S.st.drank|0)+1; done("🥥 喝了椰子水、吃了椰肉（水分 +25、飽足 +8），留下一個空椰殼"); }); },.5,()=>{ chips(meAv.pos.x+Math.sin(meAv.rotY)*.5,meAv.pos.y+Math.cos(meAv.rotY)*.5,"#f6f0e0",.6,5); try{ tone(200,.08,.08,"square"); }catch(e){} },S.tool.hammer?"hammer":null); return; }
+    if(v==="bwater"){ closeSheet(); S.inv.bwater--; work("drink",1.2,()=>{ S.water=Math.min(FMAX,S.water+35); give("cshell",1); S.st.boiled=(S.st.boiled|0)+1; done("🫖 喝了煮開的水（水分 +35）"); }); return; }
+    if(v==="cwater"){ closeSheet(); S.inv.cwater--; work("drink",1.2,()=>{ S.water=Math.min(FMAX,S.water+30); give("cshell",1); if(Math.random()<.5){ S.sick=Date.now()+3*60e3; done("💧 喝了生水……肚子咕嚕咕嚕，開始痛了（3 分鐘內餓得快、渴得快）"); try{ meAv.say("肚子好痛……","#e8f4f2",3); }catch(e){} } else done("💧 喝了生水（水分 +30），還好沒事"); }); return; }
+    if(v==="cfish"){ closeSheet(); S.inv.cfish--; work("drink",1,()=>{ S.food=Math.min(FMAX,S.food+35); S.st.ate=(S.st.ate|0)+1; done("🍢 好吃！（飽足 +35）"); }); return; }
+    if(v==="fish"){ closeSheet(); S.inv.fish--; work("drink",1,()=>{ S.food=Math.min(FMAX,S.food+10); if(Math.random()<.7){ S.sick=Date.now()+3*60e3; done("🐟 吃了生魚……肚子痛起來了（飽足 +10）"); try{ meAv.say("嗚……","#e8f4f2",3); }catch(e){} } else done("🐟 吃了生魚（飽足 +10），腥腥的"); }); return; } };
+  HANDLERS.islTorch=()=>{ const S=sv(); S.torchOn=S.torchOn?0:1; if(S.torchOn&&!S.tl) S.tl=8*60; torchSet(); hudFill(); if(sheetKind==="islBag") HANDLERS.islBag(); };
+  HANDLERS.islBag=()=>{ const S=sv(), P=spot(); const inv=Object.keys(IT).filter(k=>(S.inv[k]|0)>0).map(k=>`<span class="chip" aria-pressed="false">${IT[k][0]} ${IT[k][1]} ×${S.inv[k]}</span>`).join("")||`<p class="note">還什麼都沒有。地上的枯枝、石頭、貝殼、草叢、掉下來的椰子，走過去就能撿。</p>`;
+    const tools=Object.keys(TOOLS).filter(k=>S.tool[k]).map(k=>`<span class="chip">${TOOLS[k]}${k==="rod"?"":`　${S.tool[k]}/${DUR[k]}`}</span>`).join("")||`<span class="note">還沒有工具</span>`;
     const where={hand:"隨地",bench:"工作台旁",fire:"營火旁",beach:"沙灘上"};
-    const rows=REC.map(r=>{ const done=(TOOLS[r[0]]&&S.tool[r[0]])||(["bench","hut","raft"].includes(r[0])&&S.b[r[0]]); const ok=has(r[2]); const need=Object.keys(r[2]).map(k=>`${IT[k][0]}${IT[k][1]} ${(S.inv[k]|0)}/${r[2][k]}`).join("　");
-      return `<div class="good" style="display:block;padding:8px 10px;margin:6px 0;${done?"opacity:.5":""}"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>${r[1]}</b><button class="${ok&&!done?"primary":"secondary"}" data-act="islCraft" data-v="${r[0]}" ${done?"disabled":""}>${done?"已完成":"製作"}</button></div><div class="note" style="margin:3px 0 0">${need}　·　${where[r[3]]}　·　${r[4]}</div></div>`; }).join("");
-    openSheet("islBag","🎒 背包・製作",`<p class="lead">體力 ${S.hp}/${HPMAX}　·　目標：${Q[S.q]?Q[S.q][0]:"都完成了！"}</p><div class="group"><span class="group-label">身上的東西</span><div class="chips">${inv}</div></div><div class="group"><span class="group-label">工具</span><div class="chips">${tools}${(S.inv.torch|0)>0?`<button class="chip" data-act="islTorch" aria-pressed="${!!S.torchOn}">🔥 火把 ${S.torchOn?"拿著":"收起"}</button>`:""}</div></div>
-      ${(S.inv.coco|0)+(S.inv.cfish|0)>0?`<div class="group"><span class="group-label">吃東西</span><div class="row">${(S.inv.coco|0)>0?`<button class="secondary" data-act="islEat" data-v="coco">🥥 喝椰子（體力 +12）</button>`:""}${(S.inv.cfish|0)>0?`<button class="secondary" data-act="islEat" data-v="cfish">🍢 吃烤魚（體力 +30）</button>`:""}</div></div>`:""}
+    const rows=REC.map(r=>{ const done=(TOOLS[r[0]]&&S.tool[r[0]])||(["bench","hut","raft"].includes(r[0])&&S.b[r[0]])||(r[0]==="fire"&&S.b.fire); const ok=has(r[2]); const need=Object.keys(r[2]).map(k=>`${IT[k][0]}${IT[k][1]} ${(S.inv[k]|0)}/${r[2][k]}`).join("　");
+      return `<div class="good" style="display:block;padding:8px 10px;margin:6px 0;${done?"opacity:.5":""}"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>${r[1]}</b><button class="${ok&&!done?"primary":"secondary"}" data-act="islCraft" data-v="${r[0]}" ${done?"disabled":""}>${done?(TOOLS[r[0]]?"還能用":"已完成"):BUILD[r[0]]?"擺位置":"製作"}</button></div><div class="note" style="margin:3px 0 0">${need}　·　${where[r[3]]}　·　${r[4]}</div></div>`; }).join("");
+    const eat=[]; if((S.inv.coco|0)>0) eat.push(`<button class="secondary" data-act="islEat" data-v="coco">🥥 敲開椰子喝</button>`); if((S.inv.bwater|0)>0) eat.push(`<button class="secondary" data-act="islEat" data-v="bwater">🫖 喝開水</button>`); if((S.inv.cwater|0)>0) eat.push(`<button class="secondary" data-act="islEat" data-v="cwater">💧 直接喝生水</button>`); if((S.inv.cfish|0)>0) eat.push(`<button class="secondary" data-act="islEat" data-v="cfish">🍢 吃烤魚</button>`); if((S.inv.fish|0)>0) eat.push(`<button class="secondary" data-act="islEat" data-v="fish">🐟 吃生魚</button>`);
+    openSheet("islBag","🎒 背包・製作",`<p class="lead">🍖 飽足 ${Math.round(S.food)}　💧 水分 ${Math.round(S.water)}${sick()?"　🤢 肚子痛":""}　·　目標：${Q[S.q]?Q[S.q][0]:"都完成了！"}</p><div class="group"><span class="group-label">身上的東西</span><div class="chips">${inv}</div></div><div class="group"><span class="group-label">工具（用久了會壞）</span><div class="chips">${tools}${(S.inv.torch|0)>0?`<button class="chip" data-act="islTorch" aria-pressed="${!!S.torchOn}">🔥 火把 ${S.torchOn?"拿著":"收起"}</button>`:""}</div></div>
+      ${eat.length?`<div class="group"><span class="group-label">吃喝</span><div class="row" style="flex-wrap:wrap">${eat.join("")}</div></div>`:""}
       <div class="group"><span class="group-label">製作</span>${rows}</div>`); };
-  /* the island bar: 體力, today's goal, the bag */
+  /* the island bar: 飽足, 水分, today's goal, the bag */
   function hudFill(){ if(!hud||!ISL.on) return; const S=sv(); let g=hud.querySelector("#islGoal"); if(!g){ hud.insertAdjacentHTML("beforeend",`<div id="islGoal" style="display:flex;flex-direction:column;gap:6px;align-items:flex-start;pointer-events:auto"></div>`); g=hud.querySelector("#islGoal"); }
-    const goal=Q[S.q]?Q[S.q][0]:"🛶 木筏做好了，隨時可以划回小鎮";
-    g.innerHTML=`<span class="fog" style="max-width:min(100%,460px);font-size:12.5px">📜 ${goal}</span><span style="display:flex;gap:6px;align-items:center"><span class="fog">💪 體力 ${S.hp}</span><button type="button" id="islBagB" style="white-space:nowrap">🎒 背包・製作</button></span>`; g.querySelector("#islBagB").onclick=()=>{ try{ ensureAudio(); }catch(e){} HANDLERS.islBag(); }; }
-  /* every half second: the buttons, the goal, the fire's flicker, hunger */
-  let hungerT=0;
-  setInterval(()=>{ try{ if(!ISL.on){ if(chipBox) chipBox.hidden=true; return; } chipsUI(); const S=sv();
+    const goal=Q[S.q]?Q[S.q][0]:"🛶 木筏做好了，隨時可以划回小鎮"; const bar=(v,c)=>`<i style="display:inline-block;width:46px;height:6px;border-radius:3px;background:rgba(255,255,255,.18);vertical-align:middle;margin-left:4px;overflow:hidden"><b style="display:block;height:100%;width:${Math.round(v)}%;background:${c}"></b></i>`;
+    g.innerHTML=`<span class="fog" style="max-width:min(100%,460px);font-size:12.5px">📜 ${goal}</span><span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span class="fog">🍖${bar(S.food,S.food<25?"#ff8a6a":"#f0c060")}　💧${bar(S.water,S.water<25?"#ff8a6a":"#6ac8ff")}${sick()?"　🤢":""}</span><button type="button" id="islBagB" style="white-space:nowrap">🎒 背包・製作</button></span>`; g.querySelector("#islBagB").onclick=()=>{ try{ ensureAudio(); }catch(e){} HANDLERS.islBag(); }; }
+  /* every half second: the buttons, the goal, the fire, hunger and thirst, the torch, respawns, a pending pick-up */
+  let foodT=0, waterT=0, pkT=0, warnT=0;
+  setInterval(()=>{ try{ if(!ISL.on){ if(chipBox) chipBox.hidden=true; window.MZ_ISLNOFISH=false; return; } const S=sv();
+      window.MZ_ISLNOFISH=!(S.n>1||S.tool.rod); /* (your own rod sank with the boat on the first trip) */
+      if(pkDirty||(pkT+=.5)>=20){ pkT=0; pkBuild(); }
+      if(pending){ const [x,z]=itemXZ(pending.p); if(Math.hypot(x-meAv.pos.x,z-meAv.pos.y)<1.7&&!busy){ const p=pending.p; pending=null; pick(p); } else if(Date.now()-pending.t>15000) pending=null; }
+      placeTick(); chipsUI();
       while(Q[S.q]&&Q[S.q][1](S)){ S.q++; const nx=Q[S.q]; try{ [523,659,784,1047].forEach((f,i)=>tone(f,.1,.05,"triangle",i*.07)); }catch(e){} toast(nx?`✔ 完成！下一步：${nx[0]}`:"✔ 全部完成！",3200); hudFill(); saveBag(); }
       const fg=BLT.fire&&BLT.fire.userData.fl; if(fg){ const t=performance.now()/1000; fg.forEach((m,i)=>{ m.scale.set(1,.85+.25*Math.sin(t*9+i*2),1); }); if(fireL) fireL.intensity=1.1+.3*Math.sin(t*13); }
-      if((hungerT+=.5)>=120){ hungerT=0; if(!(me.sp&&window.MZ_ENFREE)){ S.hp=Math.max(0,S.hp-1); hudFill(); } } }catch(e){ console.warn("isl tick",e); } },500);
+      if(S.b.fire&&S.b.fire[2]&&S.b.fire[4]&&Date.now()>S.b.fire[4]){ S.b.fire[2]=0; mk("fire"); toast("🔥 營火熄了……要再生一次火（記得常添柴）",2800); hudFill(); saveBag(); }
+      if(S.torchOn&&(S.inv.torch|0)>0){ S.tl=(S.tl==null?8*60:S.tl)-.5; if(S.tl<=0){ S.inv.torch--; S.tl=8*60; if(!(S.inv.torch>0)){ S.torchOn=0; toast("🔥 火把燒完了",2200); } torchSet(); hudFill(); } }
+      if(!freeE()){ const k=sick()?2:1; if((foodT+=.5*k)>=25){ foodT=0; S.food=Math.max(0,S.food-1); hudFill(); } if((waterT+=.5*k)>=18){ waterT=0; S.water=Math.max(0,S.water-1); hudFill(); }
+        if((S.food<15||S.water<15)&&(warnT+=.5)>=60){ warnT=0; try{ meAv.say(S.water<15?"好渴……":"好餓……","#e8f4f2",2.5); }catch(e){} } } }catch(e){ console.warn("isl tick",e); } },500);
   function enter(opt){ opt=opt||{}; const S=st(), first=opt.first!=null?opt.first:!S.n; const L=ISL.land;
     if(first){ capsize(()=>{ setOn(true,true); place(L[0],L[1],Math.PI); try{ TOWNX.isl.prep(); }catch(e){ console.warn(e); } S.n=(S.n||0)+1; saveBag(); },()=>{ try{ meAv.say("這裡……沒有人。","#e8f4f2",4); }catch(e){} }); return; }
     const lines=first?["海上起霧了……","雷聲很近。","……船翻了。"]:["划進霧裡……","霧散了。"];
@@ -14935,7 +15122,7 @@ const ISLE=(()=>{
   function resume(){ const S=st(); if(!S.on) return; const at=Array.isArray(S.at)&&islIn(S.at[0],S.at[1])?S.at:ISL.land; setOn(true,!!S.solo); place(at[0],at[1],Math.PI); try{ TOWNX.isl.prep(); }catch(e){} }
   let lastAt=0; setInterval(()=>{ try{ if(!ISL.on) return; try{ if((hidT=(hidT+1)%2)===0) mainHide(true); }catch(e){} const S=st(); S.at=[+meAv.pos.x.toFixed(1),+meAv.pos.y.toFixed(1)]; if(Date.now()-lastAt>20000){ lastAt=Date.now(); saveBag(); } }catch(e){} },4000);
   setTimeout(()=>{ try{ resume(); }catch(e){ console.warn("isl resume",e); } },0);
-  return {enter,leave,st,resume,mainHide,HID};
+  return {enter,leave,st,resume,mainHide,HID,_t:{pkList,PKG,sv,act,craft,spot,placeAct,pkNear}}; /* (_t: for the simulator tests) */
 })();
 
 /*TOWN>>*/
@@ -15019,6 +15206,7 @@ function pool(kind){ const s=String(L.slot()), rain=L.rain(), star=!!L.starNight
    each. ctl widens the green zone and forgives pulling too hard, pow reels faster and tires the fish, luck brings rarer fish, win
    is extra time to strike when the float goes under. Baits follow what anglers really use: each has the fish that like it (they
    bite about four times as often, come sooner, and stay hooked better). One bait is used up each time a fish takes it. ---------- */
+const ISLROD={k:"f",n:"簡易釣竿",p:0,ctl:0,pow:.95,luck:1,win:0,d:"夢見島上用樹枝、草繩和貝殼鉤做的釣竿。",hid:1}, ISLBAIT={k:"f",n:"貝肉",t:[],isl:1};
 const RODS=[
  {k:"f",n:"竹製手竿",p:300,ctl:0,pow:1,luck:1,win:0,d:"一根竹子加一條線，最單純的釣法。"},
  {k:"f",n:"玻纖溪流竿",p:1500,ctl:.03,pow:1.12,luck:1.15,win:.05,d:"輕巧有彈性，溪邊走跳很順手。"},
@@ -15114,8 +15302,8 @@ function rodModel(i){ const S=ROD_LOOK[i]||ROD_LOOK[0], G=new T.Group(), H=1.7, 
   return G; }
 function rodDispose(g){ g.traverse(q=>{ if(q.isMesh){ q.geometry.dispose(); if(!q.material.map) q.material.dispose(); } }); }
 const hasRod=i=>!!me.sp||!!(LF().rods&(1<<i));
-function rodFor(kind){ const k=kind==="o"?"s":"f", d=LF(), eq=k==="f"?d.eqF:d.eqS; if(eq&&RODS[eq-1]&&RODS[eq-1].k===k&&hasRod(eq-1)) return RODS[eq-1]; let best=null; RODS.forEach((r,i)=>{ if(r.k===k&&hasRod(i)) best=r; }); return best; }
-function baitFor(kind){ const k=kind==="o"?"s":"f", d=LF(), i=(k==="f"?d.bF:d.bS)|0; return i&&BAITS[i-1]&&BAITS[i-1].k===k&&d.bait[i-1]>0?BAITS[i-1]:null; }
+function rodFor(kind){ if(kind==="isl"&&window.MZ_ISLNOFISH===false&&ISL.on&&bag.isl&&bag.isl.tool&&bag.isl.tool.rod) return ISLROD; /* (夢見島: the 簡易釣竿 you made there) */ const k=kind==="o"?"s":"f", d=LF(), eq=k==="f"?d.eqF:d.eqS; if(eq&&RODS[eq-1]&&RODS[eq-1].k===k&&hasRod(eq-1)) return RODS[eq-1]; let best=null; RODS.forEach((r,i)=>{ if(r.k===k&&hasRod(i)) best=r; }); return best; }
+function baitFor(kind){ if(kind==="isl"&&ISL.on&&bag.isl&&bag.isl.tool&&bag.isl.tool.rod) return ISLBAIT; /* (on the island the hook is baited with shellfish meat: no bait from the shop needed) */ const k=kind==="o"?"s":"f", d=LF(), i=(k==="f"?d.bF:d.bS)|0; return i&&BAITS[i-1]&&BAITS[i-1].k===k&&d.bait[i-1]>0?BAITS[i-1]:null; }
 /* 釣竿・釣餌 made to be felt (主委 11/16: 「換一個要真的有變化的感覺」): a bait makes the fish it is for 6× as likely (was 4×) and those bite
    sooner; a rod widens the green zone, reels faster, holds big fish against their pull, lifts the rare ones and grows the catch.
    rodFx() turns a rod into those numbers (the shop and the picker show them), odds() the chances right here, right now. */
@@ -15242,7 +15430,7 @@ function startFish(pw=.35,dry){ if(F) return; if(!dry&&!enHas(1)) return; /* (11
   const line=new T.Mesh(new T.CylinderGeometry(.006,.006,1,4),new T.MeshBasicMaterial({color:"#f4f4f0"})); scene.add(line);
   const rod=rodModel(RODS.indexOf(rodS)); rod.position.set(.18,1.15,.55); rod.rotation.x=1.0; meAv.root.add(rod);
   F={ph:"cast",t:0,w,ov,bob,sh,ring,line,rod,y:w.w.y,fish:null,taps:0,nib:0,R:rodS,cd:.45+w.d*.05,arc:.8+w.d*.22};
-  const bk=w.w.k==="o"?"s":"f", bb=ov.querySelector("#lfBait"), showBait=()=>{ const b=baitFor(w.w.k); bb.innerHTML=`🎣 ${F?F.R.n:rodS.n}<br>${b?`🪱 ${b.n} ×${d.bait[BAITS.indexOf(b)]}`:"🪱 沒有餌了"}　<span style="opacity:.8">換竿・換餌 ▸</span>`; };
+  const bk=w.w.k==="o"?"s":"f", bb=ov.querySelector("#lfBait"), showBait=()=>{ const b=baitFor(w.w.k); bb.innerHTML=`🎣 ${F?F.R.n:rodS.n}<br>${b?`🪱 ${b.n}${b.isl?"":` ×${d.bait[BAITS.indexOf(b)]}`}`:"🪱 沒有餌了"}　<span style="opacity:.8">換竿・換餌 ▸</span>`; };
   /* 換竿・換餌 while fishing (主委 11/14): a little panel beside you with your rods and baits for this water */
   bb.onclick=()=>{ if(!F||["bite","fight","reel"].includes(F.ph)){ toast("魚上鉤時不能換",1400); return; } const old=ov.querySelector("#lfPick"); if(old){ old.remove(); return; }
     const pk=document.createElement("div"); pk.id="lfPick"; pk.style.cssText=`position:absolute;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 312px);max-height:42vh;overflow:auto;background:rgba(255,252,246,.97);border-radius:16px;padding:10px;color:#3b2416;font:700 14px ${UI_FONT};box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:5`;
@@ -15320,7 +15508,7 @@ const priceK=f=>f.w.includes("g")?1:f.w.includes("o")?.7:1.5;
 const price=(f,size)=>Math.round(f.p*priceK(f)*(.8+.4*(size-f.sz[0])/Math.max(1,f.sz[1]-f.sz[0])));
 HANDLERS.lfAgain=()=>{ closeSheet(); setTimeout(startFish,250); };
 HANDLERS.lfRelease=()=>{ if(HELD) HELD.t=9; const d=LF(); const e=d.inv.pop(); save(); closeSheet(); if(e) toast(`放生了「${FBY[e[0]].n}」，牠開心地游走了`,2200); };
-function fishTick(dt){ { const h=!!F; if(h&&!window.MZ_HOLD){ try{ meAv.path=[]; meAv.target.set(meAv.pos.x,meAv.pos.y); }catch(e){} } window.MZ_HOLD=h||!!CHUTE; } /* 釣魚時不能移動 (11/14 晚上): the walking code checks MZ_HOLD */ if(F&&Math.hypot(meAv.pos.x-F.w.x,meAv.pos.y-F.w.z)>14){ endFish(); return; } /* (taken somewhere else — the map, a teleport: put the rod away) */ if(F&&F.ph==="wait"&&!baitFor(F.w.w.k)){ F.ph="nobait"; F.t=0; msg("釣餌用完了，到釣具行補貨吧"); } if(F&&F.ph==="nobait"){ F.t+=dt; if(F.t>2.2) endFish(); return; } try{ fshTick(dt); chargeTick(dt); fxTick(dt); }catch(e){ console.warn("fsh",e); } if(!F){ nearT-=dt; if(nearT<=0){ nearT=.35; const can=!busy()&&TOWNX&&(TOWNX.on||meAv.pos.y>FRONT.walk1); near=can&&!HELD?findWater():null; if(chip) chip.hidden=!near; } return; }
+function fishTick(dt){ { const h=!!F; if(h&&!window.MZ_HOLD){ try{ meAv.path=[]; meAv.target.set(meAv.pos.x,meAv.pos.y); }catch(e){} } window.MZ_HOLD=h||!!CHUTE||!!window.MZ_ISLBUSY; } /* 釣魚時不能移動 (11/14 晚上): the walking code checks MZ_HOLD */ if(F&&Math.hypot(meAv.pos.x-F.w.x,meAv.pos.y-F.w.z)>14){ endFish(); return; } /* (taken somewhere else — the map, a teleport: put the rod away) */ if(F&&F.ph==="wait"&&!baitFor(F.w.w.k)){ F.ph="nobait"; F.t=0; msg("釣餌用完了，到釣具行補貨吧"); } if(F&&F.ph==="nobait"){ F.t+=dt; if(F.t>2.2) endFish(); return; } try{ fshTick(dt); chargeTick(dt); fxTick(dt); }catch(e){ console.warn("fsh",e); } if(!F){ nearT-=dt; if(nearT<=0){ nearT=.35; const can=!busy()&&TOWNX&&(TOWNX.on||meAv.pos.y>FRONT.walk1); near=can&&!HELD&&!window.MZ_ISLNOFISH?findWater():null; /* (夢見島 first trip: your rod sank with the boat — fishing comes back with the 簡易釣竿) */ if(chip) chip.hidden=!near; } return; }
   F.t+=dt; const w=F.w, y=F.y, a=meAv.root.position; fishCam(dt,w.x,w.z,y,false,F.ph==="wait"||F.ph==="nibble"||F.ph==="bite");
   /* the line from the rod tip to the float */ const tip=new T.Vector3(.18,1.15+.85*Math.cos(1.0),.55+.85*Math.sin(1.0)).applyMatrix4(meAv.root.matrixWorld), bp=F.bob.position, mid=tip.clone().add(bp).multiplyScalar(.5), L=tip.distanceTo(bp); F.line.position.copy(mid); F.line.scale.set(1,L,1); F.line.lookAt(bp); F.line.rotateX(Math.PI/2);
   if(F.ph==="cast"){ const k=Math.min(1,F.t/F.cd); bp.set(a.x+(w.x-a.x)*k,y+Math.sin(k*Math.PI)*F.arc+(1-k)*1.2,a.z+(w.z-a.z)*k); if(k>=1){ F.ph="wait"; F.t=0; try{ TOWNX.ripple(bp.x,bp.z,1); }catch(_){} fishWait(); msg(F.came?"有魚影靠過來了……浮標整個沉下去再拉":"等魚靠過來……浮標整個沉下去再拉"); F.ring.position.set(w.x,y+.01,w.z); F.ring.material.opacity=.7; F.rt=0; try{ tone(300,.08,.05,"sine"); }catch(e){} } return; }
@@ -15329,7 +15517,7 @@ function fishTick(dt){ { const h=!!F; if(h&&!window.MZ_HOLD){ try{ meAv.path=[];
   if(F.ph==="wait"){ const f=F.fish, s=F.came?F.came.L:.45+f.sh*.16;
     if(F.empty){ if(F.t>F.wt*.5&&!F.said){ F.said=1; msg("一點動靜也沒有……"); } if(F.t>F.wt){ msg("這裡好像沒有魚了，換個地方試試吧"); try{ tone(260,.2,.04,"triangle"); }catch(e){} F.ph="nobait"; F.t=0; } return; }
     const ws=F.came?0:F.wt*.45; if(F.t>ws){ const k=sm(ws,F.wt,F.t), an=F.an??(F.an=F.came?Math.atan2(F.came.x-w.x,F.came.z-w.z):Math.random()*6.283), d0=F.came?Math.max(.6,Math.hypot(F.came.x-w.x,F.came.z-w.z)):2.6, dd=(1-k)*d0+.2, wig=Math.sin(F.t*5)*.1*(1-k); F.sh.position.set(w.x+Math.sin(an+wig)*dd,y+.015,w.z+Math.cos(an+wig)*dd); F.sh.scale.setScalar(s); F.sh.rotation.z=an+Math.sin(F.t*6)*.1; F.sh.material.opacity=.36*(F.came?Math.min(1,F.t*2):sm(ws,ws+F.wt*.2,F.t)); }
-    if(F.t>F.wt){ F.ph="nibble"; F.t=0; F.nn=1+(Math.random()*(1+f.r)|0); F.nt=.5; F.dip=0; msg("有動靜了……看浮標"); const b=baitFor(w.w.k); F.bm=!!(b&&b.t.includes(f.id)); if(b){ const d=LF(), bi=BAITS.indexOf(b); d.bait[bi]--; save(); F.showBait(); } } return; }
+    if(F.t>F.wt){ F.ph="nibble"; F.t=0; F.nn=1+(Math.random()*(1+f.r)|0); F.nt=.5; F.dip=0; msg("有動靜了……看浮標"); const b=baitFor(w.w.k); F.bm=!!(b&&b.t.includes(f.id)); if(b&&!b.isl){ const d=LF(), bi=BAITS.indexOf(b); d.bait[bi]--; save(); F.showBait(); } } return; }
   if(F.ph==="nibble"){ F.dip=Math.max(0,F.dip-dt*.35); bp.y=y+bob-F.dip; F.nt-=dt; if(F.nt<=0){ if(F.nn<=0){ F.ph="bite"; F.t=0; F.bt=0; F.rt=0; try{ TOWNX.ripple(bp.x,bp.z,1.3); }catch(_){} F.ring.material.opacity=.95; msg("浮標沉下去了！"); try{ tone(180,.18,.08,"sine"); tone(120,.25,.06,"sine",.05); navigator.vibrate&&navigator.vibrate(120); }catch(e){} return; }
       F.nn--; F.nt=.65+Math.random()*.9; F.dip=F.fish.r>=2&&Math.random()<.35?.2:.07+Math.random()*.05; /* (a teasing deeper dip now and then) */ F.rt=0; F.ring.material.opacity=.5; try{ tone(420,.05,.03,"sine"); }catch(e){} } return; }
   if(F.ph==="bite"){ F.bt=F.t; bp.y=y-.42+Math.sin(F.t*30)*.015; F.sh.position.set(w.x,y+.015,w.z); if(F.t>biteWin(F.fish)){ msg("慢了一步，魚吃完餌跑掉了……"); try{ tone(200,.2,.05,"triangle"); }catch(e){} F.ph="miss"; F.t=0; spotUse(w.w.k,w.x,w.z); } return; }
