@@ -3987,7 +3987,7 @@ class Avatar{
   setName(n){ this.lastNameArg=n; if(this.label){ this.root.remove(this.label); relSprite(this.label); } if(this.glow){ this.root.remove(this.glow); this.glow=null; }
     if(this.sp){ this.label=spLabel(); this.label.position.y=1.46+(this.accLift||0); this.root.add(this.label); this.glow=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffd27a"),transparent:true,blending:T.AdditiveBlending,depthWrite:false})); this.glow.scale.set(1.1,.45,1); this.glow.position.y=1.46; this.root.add(this.glow); return; }
     if(!n){ this.label=null; return; } this.label=this.story?textSprite(n,{fs:28,h:.19,color:"#ffe9b0",bg:"rgba(90,20,14,.88)",border:"#d9aa3d",pad:16}):((t,tp)=>textSprite(t,{fs:30,h:.17,color:this.isMe?"#ffe2a0":"#fff",pre:tp&&tp.pre,preColor:tp&&tp.col}))((this.real&&me&&me.sp?"．":"")+n,this.npc?null:ttlPre((this.real&&me&&me.sp?"．":"")+n)); /* (the chair alone sees a dot before every real player's name) */ /* story characters: a dark-red pill with a gold edge, so nobody takes them for players */ this.label.position.y=1.42+(this.accLift||0); this.root.add(this.label); }
-  say(text,color,secs){ if(this.bubble){ this.root.remove(this.bubble); relSprite(this.bubble); } this.bubble=bubbleSprite(text,color||"#ffe2a0"); if(this.sp) this.bubble.scale.multiplyScalar(2); /* (11/22 主委「主委說話氣泡跟字要大一倍」) */ this.bubble.position.y=1.62+(this.accLift||0)+this.bubble.scale.y/2; this.root.add(this.bubble); this.bubbleT=secs||3.2; }
+  say(text,color,secs){ if(this.bubble){ if(this.bubble.parent) this.bubble.parent.remove(this.bubble); relSprite(this.bubble); } this.bubble=bubbleSprite(text,color||"#ffe2a0"); if(this.sp) this.bubble.scale.multiplyScalar(2); /* (11/22 主委「主委說話氣泡跟字要大一倍」) */ this.bubble.position.y=1.62+(this.accLift||0)+this.bubble.scale.y/2; this.root.add(this.bubble); this.bubbleT=secs||3.2; }
   sitAt(i){ this.seat=i; const s=SEATS[i]; this.target.copy(s); this.goalSeat=true; }
   moveTo(x,z){ this.seat=-1; this.goalSeat=false; this.target.set(x,z); this.path=[]; }
   bow(){ this.bowT=0; }
@@ -4060,11 +4060,11 @@ class Avatar{
       this.root.worldToLocal(_v1); _v1.z+=.07; this.incense.position.copy(_v1); this.incense.rotation.set(.42-this.torso.rotation.x*.35,0,0);
       if(!walking){ this.smokeT-=dt; if(this.smokeT<0){ this.smokeT=.55; this.tip.getWorldPosition(_v2); spawnSmoke(_v2.x,_v2.y+.03,_v2.z,{size:.07,grow:.14,life:2.2,op:.22,vy:.32}); } } }
     if(this.sp&&this.label&&this.label.userData.draw){ this.spT=(this.spT||0)+dt; if(this.spT-(this.spLast||0)>.09){ this.spLast=this.spT; this.label.userData.draw(this.spT*.35); } if(this.glow){ const k=1+Math.sin(this.spT*4)*.12; this.glow.scale.set(1.1*k,.45*k,1); this.glow.material.opacity=.65+Math.sin(this.spT*4)*.25; } }
-    if(this.bubble){ this.bubbleT-=dt; if(this.bubbleT<0){ this.root.remove(this.bubble); relSprite(this.bubble); this.bubble=null; } else this.bubble.material.opacity=Math.min(1,this.bubbleT*2); }
+    if(this.bubble){ this.bubbleT-=dt; if(this.bubbleT<0){ if(this.bubble.parent) this.bubble.parent.remove(this.bubble); relSprite(this.bubble); this.bubble=null; } else { this.bubble.material.opacity=Math.min(1,this.bubbleT*2); bubbleOut(this); } }
     if(this.shoulderPet) this.shoulderPet.quaternion.copy(this.arms[1].quaternion).invert();
     sparkTick(this,dt); emoTick(this,dt);
     return walking; }
-  dispose(){ scene.remove(this.root); if(this.npcId) npcRelease(this.npcId); if(this.flies) stinkFlies(this,false);
+  dispose(){ scene.remove(this.root); if(this.bubble&&this.bubble.parent===scene) scene.remove(this.bubble); if(this.npcId) npcRelease(this.npcId); if(this.flies) stinkFlies(this,false);
     /* give back what only this person used: the baked body, the name tag, the chat bubble, the effect pictures on the hat */
     try{ if(this.bubble){ relSprite(this.bubble); this.bubble=null; } if(this.label){ relSprite(this.label); }
       this.root.traverse(o=>{ if(o.userData&&o.userData.skinBake&&o.geometry) o.geometry.dispose(); });
@@ -4564,7 +4564,7 @@ function botExit(n){ const sd=n.pos.x<0?-1:1, z0=Math.max(HZ+3,Math.min(HZ+YX+15
 function botVanish(n){ if(n.vanishT!=null) return; n.vanishT=.55; n.target.copy(n.pos); n.path=[]; }
 function botTick(dt){ const now=performance.now(); botFps(dt);
   // 隱藏其他玩家: checked every frame, so nobody can pop back into view — everyone else goes, the kneeling demo worshippers too (the chair's call)
-  if(!customizing){ const zo=typeof TOWNX!=="undefined"&&TOWNX&&TOWNX.zone&&TOWNX.zone.off; for(const n of npcs){ const v=othersShown&&!(zo&&n.pos.y>-50.5); if(n.root.visible!==v) n.root.visible=v; } remotes.forEach(r=>{ const v=othersShown&&!(zo&&r.pos.y>-50.5); if(r.root.visible!==v) r.root.visible=v; }); } /* (in the town, the people still in the temple are not drawn — 主委 11/16) */
+  if(!customizing){ const zo=typeof TOWNX!=="undefined"&&TOWNX&&TOWNX.zone&&TOWNX.zone.off; for(const n of npcs){ const far=zo&&n.pos.y>-50.5, v=othersShown&&!far; n._ohid=!othersShown&&!far; if(n.root.visible!==v) n.root.visible=v; } remotes.forEach(r=>{ const far=zo&&r.pos.y>-50.5, v=othersShown&&!far; r._ohid=!othersShown&&!far; if(r.root.visible!==v) r.root.visible=v; }); } /* (in the town, the people still in the temple are not drawn — 主委 11/16) */
   // a big change in how many should be here (the chair set a new number, real players came in) is acted on within a second
   if(now>(BOT.chk||0)){ BOT.chk=now+1000; let live=0; for(const n of npcs) if(!n.leaving&&!n.classic) live++; if(Math.abs(live-botWant())>4&&BOT.nextAdjust>now+4000) BOT.nextAdjust=now+rand(500,1500); }
   if(now>BOT.nextAdjust){ const live=npcs.filter(n=>!n.leaving&&!n.classic), want=botWant(); BOT.nextAdjust=now+(Math.abs(live.length-want)>10?rand(600,1500):Math.abs(live.length-want)>4?rand(1500,4000):rand(15000,40000));
@@ -5141,7 +5141,13 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",
 let lookTab="me", draftLook=null;
 function openLook(first){ customizing=true; if(room) setTimeout(sendPresence,0); if(window.__retrack) setTimeout(window.__retrack,0); if(meAv.seat>=0){ meAv.seat=-1; } meAv.target.copy(meAv.pos); pendingStation=null; { const z=meAv.pos.y; meAv.rotY=z>HZ?0:((14.4-z)>(z+9)?0:Math.PI); meAv.faceGoal=meAv.rotY; } markDirty(); pvYaw=0; pvSpin=0; document.body.classList.add("customizing"); draftLook=me.look.slice(); setOthersVisible(false); updateStandBtn(); renderLook(first); }
 let othersShown=load("mz.others",true);
-function setOthersVisible(v){ npcs.forEach(n=>n.root.visible=v&&othersShown); remotes.forEach(r=>r.root.visible=v&&othersShown); }
+function setOthersVisible(v){ npcs.forEach(n=>{ n.root.visible=v&&othersShown; n._ohid=v&&!othersShown; }); remotes.forEach(r=>{ r.root.visible=v&&othersShown; r._ohid=v&&!othersShown; }); }
+/* 隱藏玩家時照樣看得到他們說的話 (11/26 主委「隱藏玩家 不要連聊天內容一起隱藏了」): a speech bubble hangs on the person, so hiding the
+   person hid what they said. While someone is hidden by the 👁 button, their bubble is moved out to float on its own at the same spot
+   (and goes back on them when they are shown again). Hidden for any other reason (in a house, in the other zone) it stays hidden. */
+function bubbleOut(a){ const b=a.bubble; if(!b) return; const out=!a.root.visible&&a._ohid&&!customizing;
+  if(out){ if(b.parent!==scene){ b.userData.ly=b.position.y; b.userData.ls=b.scale.clone(); scene.add(b); } a.root.updateMatrixWorld(); b.position.set(0,b.userData.ly,0).applyMatrix4(a.root.matrixWorld); b.scale.copy(b.userData.ls).multiply(a.root.scale); }
+  else if(b.parent===scene){ a.root.add(b); b.position.set(0,b.userData.ly,0); b.scale.copy(b.userData.ls); } }
 /* ---- 加到手機桌面: Android / computer Chrome get the system install box; iPhone gets a two-step picture guide ---- */
 let installEvt=null; const isStandalone=()=>matchMedia("(display-mode: standalone)").matches||matchMedia("(display-mode: fullscreen)").matches||navigator.standalone===true;
 window.addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); installEvt=e; });
@@ -12427,7 +12433,7 @@ function css(){ if($("#rmCss")) return; const st=document.createElement("style")
 .rm-s0{flex:none;border:1px solid rgba(255,220,150,.35);border-radius:8px;background:rgba(255,255,255,.08);color:#f3e7d0;font-size:12px;padding:5px 7px;font-family:inherit}
 .rm-lab{font-size:12px;color:#cbb;margin:2px 2px 4px;font-weight:700}.rm-ttl{font-weight:900;font-size:16px;color:#ffe2a0;margin:0 2px 6px}`; document.head.appendChild(st); }
 RM.dbg=()=>R; RM.bi=n=>bedInfo(n); RM.hmap=n=>{ const g=R.fg.children[n], t=ST().it[n], F=FURN[t[0]]; g.updateMatrixWorld(true); const ms=meshesOf(g), o=[]; for(let z=-F.d/2;z<=F.d/2+.001;z+=F.d/10){ const row=[]; for(let x=-F.w/2;x<=F.w/2+.001;x+=F.w/6){ const y=probe(g,ms,x,z,F.h+.6); row.push(y==null?"-":y.toFixed(2)); } o.push(z.toFixed(2)+": "+row.join(" ")); } return o.join("\n"); }; RM.tint=m=>daylight(m); RM.blk=t=>blocked(t); RM.fs=t=>freeSpot(t); /* (for tests) */
-RM.open=vis=>{ if(!SHOPX||!SHOPX.enter){ toast("房間還沒準備好，請稍等一下",2200); return; } RM.visit=null; if(vis&&vis.room){ const r=vis.room; for(const k in DEF) if(typeof r[k]!=="number") r[k]=DEF[k]; if(!Array.isArray(r.it)) r.it=[]; r.it=r.it.filter(t=>Array.isArray(t)&&FURN[t[0]]); r.inv={}; r.v=2; RM.visit={n:String(vis.n||"鄰居").slice(0,10),room:r}; } if(!vis&&!(RM.lot>=0)) RM.lot=-1; const D=build(), s=ST(); css(); V={...s}; const o={exposure:1.0}; const el=SHOPX.enter("room",o); try{ statInc("roomOpen"); }catch(e){}
+RM.open=vis=>{ if(!SHOPX||!SHOPX.enter){ toast("房間還沒準備好，請稍等一下",2200); return; } RM.visit=null; if(vis&&vis.room){ const r=vis.room; for(const k in DEF) if(typeof r[k]!=="number") r[k]=DEF[k]; if(!Array.isArray(r.it)) r.it=[]; r.it=r.it.filter(t=>Array.isArray(t)&&FURN[t[0]]); r.inv={}; r.v=2; RM.visit={n:String(vis.n||"鄰居").slice(0,10),room:r}; } if(!vis&&!(RM.lot>=0)) RM.lot=-1; try{ let mine=true; try{ mine=!!RM.visit||!LIFE||!LIFE.homeLot||LIFE.homeLot()===RM.lot; }catch(e){} if(mine) ST().it.forEach(t=>{ if(FURN[t[0]]) clampIt(t); }); }catch(e){} const D=build(), s=ST(); css(); V={...s}; const o={exposure:1.0}; const el=SHOPX.enter("room",o); try{ statInc("roomOpen"); }catch(e){}
   daylight();
   apply(); furnDraw(-1);
   const av=new Avatar(me.look.slice(),{npc:true,x:1.9,z:-RD/2+.3}); scene.remove(av.root); D.S.add(av.root); av.isMe=true; try{ av.setLook(me.look.slice()); }finally{ av.isMe=false; } av.moveSpeed=1.7; av.path=[]; try{ av.setAcc(myEq()); }catch(e){} /* (11/23 主委「家裡為什麼沒有頭飾裝飾了」: what you wear outside, you wear at home) */ RM.av=av; av.update(0); av.root.position.y=0; av.root.visible=false; let tIn=0, went=false;
@@ -12638,7 +12644,11 @@ function homeCat1(c,D,dt,av){ const g=c.g, its=ST().it; c.ph+=dt;
     if(c.tt<0){ if(c.y>.05){ const f=floorPt([g.position.x,g.position.z]); jump(f[0],0,f[1]); return; } const T=tops(), r=Math.random(); c.run=Math.random()<.3;
       if(T.length&&r<.5){ const o=T[(Math.random()*T.length)|0], side=Math.random()<.5?-1:1, ax=o.x+side*(o.hw+.32), az=o.z+(Math.random()-.5)*o.hd; c.top=o; c.to=[Math.max(-RW/2+.35,Math.min(RW/2-.35,ax)),Math.max(-RD/2+.35,Math.min(RD/2-.35,az))]; c.st="walk"; }
       else if(r<.78){ const P=av.root.position; c.to=floorPt([P.x,P.z]); c.st="walk"; } else { c.to=floorPt(null); c.st="walk"; } } } }
-RM.size=(w,d)=>{ if(w===RW&&d===RD) return; RW=w; RD=d; R=null; try{ ST().it.forEach(t=>{ if(FURN[t[0]]) clampIt(t); }); }catch(e){} };
+/* (11/26 主委「有人家具隔天一直疊起來」: size() used to pull every piece inside the new walls right away — but it is called before
+   open() switches to the house being visited, so peeking at a 樣品屋 or visiting a smaller neighbour's house squeezed YOUR OWN
+   furniture into their smaller room, piled against the walls, and it was saved that way. Now size() only sets the size, and open()
+   pulls pieces inside only for the room really being shown: your own room only when you are in your own house.) */
+RM.size=(w,d)=>{ if(w===RW&&d===RD) return; RW=w; RD=d; R=null; };
 RM.cookBtn=null; /* (LIFE puts the kitchen button here) */
 RM.furnShop=()=>{ const cats=FCAT.filter(c=>FURN.some(f=>!f.hide&&f.src==="b"&&f.c===c[0])); if(!cats.some(c=>c[0]===FS_CAT)) FS_CAT=cats[0][0];
   const list=FURN.map((f,j)=>j).filter(j=>!FURN[j].hide&&FURN[j].src==="b"&&FURN[j].c===FS_CAT);
