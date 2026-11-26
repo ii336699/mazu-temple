@@ -2017,3 +2017,9 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - 主委拉人：POST /pull（x-key）{to,on,by=主委 mz.id,slot,x,z} → lobby → 各 hall /h1 送給 tag=to 的連線 {t:"pull"}。被拉的人：pullMsg 立刻到主委身後，MZ_PULLTICK（meAv.update 後）每幀跟在主委後方 (slot+1)×1.4 m、高度跟主委（飛也跟），MZ_HOLD 鎖操作；放開就停在原地。放開一個時，後面的人重排 slot。測試頁沒伺服器只會提示。
 - 聊天室（RO 風）：主委工具「聊天室・帶人」→ 💬 聊天室：打標題開房／改標題／關房／看紀錄。lobby /croom：GET 目前房間＋最近 150 句；POST op open/close（要 key）、join/leave、say（0.9 秒一句、主委的字標金色）。廣播 hall /hb {t:"croom"}/{t:"crmsg"}。主委頭上有標題牌（textSprite，別人看得到在 av.sp 的人頭上），右側「💬 加入聊天室」#crChip bottom 378。測試頁存在 localStorage mz.croomL。
 - UI 總檢查（手機、電腦）新按鈕 0 問題。
+
+## 11/26 14:50 部署（只上五個功能）
+- 主委：「先部署這五個 荒島相關先不上」。main 從 fb1afb0 → e8b0b49（Cloudflare Workers Builds success）。
+- 做法：從 origin/main 開 deploy5，cherry-pick 6e3ee0c（房間聊天表情）、c8abb1a（UI 總檢查，面板層級 12，新浮動鈕才不會蓋住面板）、47cbc18（時間、座標、跟隨、拉人、聊天室＋worker /croom /pull）。c8abb1a 裡混進的翻船過場 capsize 已剔掉，enter() 還原成 main 的版本。
+- 正式站還沒上的：集章提示與女神泉桌（02b4bdd／72be7ae 的桌子部分）、商店禁轉畫面（23dfa67）、夢見島翻船過場與生存、小屋加蓋＋照相館再看一次＋看魚關掉鈕（ba0e4c4，跟島的工具列混在同一批）。
+- 下次部署 audio-fix 全部時，main 和 audio-fix 已分岔，直接把 audio-fix 合進 main（內容是 main 的超集，衝突只會在剔掉 capsize 那段，取 audio-fix 版本）。
