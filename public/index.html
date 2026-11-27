@@ -5,7 +5,12 @@
 <script>/* 歷代版本: when a past version is chosen (mz.ver), the rest of this page is not run — vers.js rebuilds that version and writes it here */
 (function(){ var v=null; try{ v=localStorage.getItem("mz.ver"); }catch(e){} if(!v) return; document.write('<div style="position:fixed;inset:0;background:#1d1410;color:#f5e6c8;display:flex;align-items:center;justify-content:center;font:16px system-ui">🕰 舊版本載入中…</div><script src="vers.js"><\/script><script>if(window.MZ_VBOOT) MZ_VBOOT('+JSON.stringify(v)+'); else { try{ localStorage.removeItem("mz.ver"); }catch(e){} location.reload(); }<\/script><plaintext style="display:none">'); })();
 </script>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<style>html{touch-action:manipulation}</style><!-- (11/27 玩家「手機平板不小心點兩下畫面就放大 變不回來」: no double-tap zoom anywhere) -->
+<script>(function(){ document.addEventListener("gesturestart",function(e){ e.preventDefault(); },{passive:false}); /* iPad/iPhone pinch on the page itself */
+  var vv=window.visualViewport, m=document.querySelector('meta[name="viewport"]'), busy=0; if(!vv||!m) return;
+  vv.addEventListener("resize",function(){ if(vv.scale>1.02&&!busy){ busy=1; setTimeout(function(){ var c=m.getAttribute("content"); m.setAttribute("content",c+",x=1"); setTimeout(function(){ m.setAttribute("content",c); busy=0; },60); },400); } }); /* (if it still zoomed in, put it back) */
+})();</script>
 <meta name="description" content="雲端天后宮：多人同殿參拜、擲筊求籤、點光明燈。">
 <meta name="theme-color" content="#140906">
 <title>雲端天后宮</title>

@@ -2077,3 +2077,5 @@ audio-fix（測試版）另外完成、**尚未部署**：
 - 模擬器開機：TOWNX.lotUp、HANDLERS.lfLotUp、viewLocked 都在，0 錯誤。
 - 正式站仍沒上：夢見島翻船過場、生存 v1/v2、刺魚、島上卡頓修正。
 - 主委問聊天室在哪：11/26 14:50 就上了，在 主委工具 → 🧪 測試模式 →「聊天室・帶人」→ 💬 聊天室（開房、關房、看紀錄）；開了以後玩家右邊才出現「💬 加入聊天室」。
+- (20:12 玩家「手機平板不小心點兩下畫面就放大 變不回來」) html{touch-action:manipulation}（全頁不再雙擊放大）、viewport 加 user-scalable=no、擋 gesturestart；萬一還是放大（visualViewport.scale>1.02），改一下 viewport meta 讓它彈回 1。未部署。
+- (20:08 主委「電腦變很卡」) 模擬器 1 分鐘只畫 6 幀，量不到；新版自動更新只用 HEAD，不是原因。請主委貼電腦上最近的「卡住」紀錄（斷線紀錄裡有分段時間）。
