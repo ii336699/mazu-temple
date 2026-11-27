@@ -7423,6 +7423,12 @@ function opDress(av,r){ const H=av.head, gold=mat("#e2b04a",{metalness:.7,roughn
   av.root.visible=false; }
 
 /* ---- the stage itself: model, coloured spotlights with visible beams, neon tubes and footlights ---- */
+/* (11/27 主委「電腦變得超卡」: a stage's spotlights used to come and go with the stage (built when a show first starts, hidden with it)
+   — and every time the number of lights in the scene changes, the graphics card prepares every material again: 40–100 programs, 15–30 s
+   on a computer. Five spotlights stand in the scene from the start, dark; each one a stage makes takes one of their places, and the
+   stage lights stay in the scene, dark, when the show stops) */
+const STAGE_LIT=!Q.phone&&!Q.low; /* (phones and 省電 have no stage spotlights at all — every extra light costs every pixel) */ const STAGE_PH=[]; if(STAGE_LIT) for(let i=0;i<5;i++){ const l=new T.SpotLight(0xffffff,0,1,.4,.6,1.2); l.position.set(0,-400,0); l.target.position.set(0,-401,0); scene.add(l,l.target); STAGE_PH.push(l); }
+function stageLight(root,from,tgt,dist,ang){ const sl=new T.SpotLight(0xffffff,0,dist,ang,ang===.42?.55:.6,1.2); root.updateMatrixWorld(true); sl.position.copy(root.localToWorld(from.clone())); sl.target=tgt; scene.add(sl); const ph=STAGE_PH.pop(); if(ph){ scene.remove(ph,ph.target); } return sl; }
 function opBuild(){ if(OP.built) return; OP.built=true;
   const root=new T.Group(); root.userData.noMerge=1; root.position.set(OP.x,0,OP.z); root.rotation.y=Math.PI; root.visible=false; scene.add(root); OP.root=root; const k=OP.k;
   loadModel("stage",m=>{ m.scale.setScalar(k); m.traverse(o=>{ if(o.isMesh&&o.material&&o.material.map){ const mt=o.material; mt.emissiveMap=mt.map; mt.emissive=new T.Color("#ffffff"); mt.emissiveIntensity=.25; OP.glowMats.push(mt); } }); root.add(m); });
@@ -7439,14 +7445,13 @@ function opBuild(){ if(OP.built) return; OP.built=true;
   for(let i=0;i<9;i++){ const sp=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color("#ffe2a0"),transparent:true,opacity:.7,blending:T.AdditiveBlending,depthWrite:false})); sp.position.copy(V(-.36+i*.09,.16,.13)); sp.scale.set(.5,.5,1); root.add(sp); } // footlights
   // three moving coloured spotlights from the truss, each with a soft visible beam
   const beamGeo=new T.CylinderGeometry(.15,2.2,1,20,1,true); beamGeo.translate(0,-.5,0);
-  for(let i=0;i<3;i++){ const from=V((i-1)*.3,.6,.22); const sl=Q.low?null:new T.SpotLight(0xffffff,0,22,.42,.55,1.2); const tgt=new T.Object3D(); root.add(tgt);
-    if(sl){ sl.position.copy(from); sl.target=tgt; root.add(sl); }
+  for(let i=0;i<3;i++){ const from=V((i-1)*.3,.6,.22); const tgt=new T.Object3D(); root.add(tgt); const sl=STAGE_LIT?stageLight(root,from,tgt,22,.42):null;
     const bm=new T.MeshBasicMaterial({color:new T.Color(),transparent:true,opacity:.11,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide,toneMapped:false}); const beam=new T.Mesh(beamGeo,bm); beam.position.copy(from); root.add(beam);
     OP.spots.push({sl,tgt,beam,bm,from,i}); }
   OP_ROLES.forEach(r=>{ const [x,z]=opW(r.side*.3,-.11); const av=new Avatar(r.look,{npc:true,x,z}); av.moveSpeed=0; av.sjBusy=1; av.noUmb=1; av.root.scale.setScalar(1.35); /* a touch larger than life so they read on the big stage */ opDress(av,r); OP.actors.push({av,role:r}); }); }
 
 function catsShow(v){ CATS.off=!v; CATS.list.forEach(c=>{ c.g.visible=!!v; }); }
-function opSet(on,at,name,cats){ if(cats!==undefined) catsShow(cats!==false); const was=OP.on; OP.on=!!on; OP.at=at||Date.now(); if(name!==undefined){ OP.name=String(name||"").slice(0,40); setNameCloth(OP.nameCloth,OP.name); } if(OP.on) opBuild(); if(OP.root) OP.root.visible=OP.on; if(!OP.on){ OP.actors.forEach(a=>a.av.root.visible=false); if(OP.aud){ OP.aud.pause(); } }
+function opSet(on,at,name,cats){ if(cats!==undefined) catsShow(cats!==false); const was=OP.on; OP.on=!!on; OP.at=at||Date.now(); if(name!==undefined){ OP.name=String(name||"").slice(0,40); setNameCloth(OP.nameCloth,OP.name); } if(OP.on) opBuild(); if(OP.root) OP.root.visible=OP.on; if(!OP.on){ OP.spots.forEach(q=>{ if(q.sl) q.sl.intensity=0; }); OP.actors.forEach(a=>a.av.root.visible=false); if(OP.aud){ OP.aud.pause(); } }
   if(OP.on&&!was&&Date.now()-OP.at<60000) toast("🎭 主委擺出歌仔戲台了！到廟埕看戲",4200); if(sheetKind==="chair"&&me.sp) openChair(); }
 async function opFetch(){ try{ const r=await fetch("/stage",{cache:"no-store"}); if(!r.ok) return; const j=await r.json(); if(Date.now()<(OP.setT||0)) return; /* (11/24 主委「按更新了會跳回原本的團名」: a copy cached a few seconds on the way can still be the old one — what the chair just set wins for 20 s) */ if(j&&(!!j.on!==OP.on||(j.on&&j.at!==OP.at)||(j.name||"")!==OP.name||(j.cats===false)!==CATS.off)) opSet(j.on,+j.at||0,j.name||"",j.cats); }catch(e){} }
 HANDLERS.toggleCats=async(v,b)=>{ if(!me.sp) return; const key=ck(); if(!key){ toast("請先在主委工具輸入密碼"); return; } const cats=CATS.off;
@@ -7601,7 +7606,7 @@ function ptBuild(){ if(PT.built) return; PT.built=true; const k=PT.k;
     const tas=new T.Group(); tas.position.set(s*.3*k,.3*k,.112*k); root.add(tas); for(let j=0;j<5;j++) mk(tas,new T.BoxGeometry(.006*k,.05*k,.003*k),mat("#f5c84a"),(j-2)*.006*k,-.03*k,0); }
   // spotlights from above the roof onto the window, each with a soft visible beam
   const beamGeo=new T.CylinderGeometry(.08,1.1,1,18,1,true); beamGeo.translate(0,-.5,0);
-  for(let i=0;i<2;i++){ const from=new T.Vector3((i?1:-1)*.35*k,.95*k,.55*k), sl=Q.low?null:new T.SpotLight(0xffffff,0,14,.4,.6,1.2), tgt=new T.Object3D(); root.add(tgt); if(sl){ sl.position.copy(from); sl.target=tgt; root.add(sl); }
+  for(let i=0;i<2;i++){ const from=new T.Vector3((i?1:-1)*.35*k,.95*k,.55*k), tgt=new T.Object3D(); root.add(tgt); const sl=STAGE_LIT?stageLight(root,from,tgt,14,.4):null;
     const bm=new T.MeshBasicMaterial({color:new T.Color(),transparent:true,opacity:.12,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide,toneMapped:false}); const beam=new T.Mesh(beamGeo,bm); beam.position.copy(from); root.add(beam); PT.spots.push({sl,tgt,beam,bm,from,i}); }
   // colour inside the stage window: rainbow washes on the backdrop, a row of chasing footlights, floating coloured lights
   const cs=(sc,z)=>{ const sp=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:new T.Color(),transparent:true,opacity:0,blending:T.AdditiveBlending,depthWrite:false})); sp.scale.setScalar(sc); sp.position.z=z*k; root.add(sp); return sp; };
@@ -7978,7 +7983,7 @@ function ptPose(A,gi,gt){ // where one puppet is: lx (across the window), h (hei
   else { const u=sm((gt-38.5)/1.3); lx=(iWin?s*.05:s*.14)+(s*.26-(iWin?s*.05:s*.14))*u; arms="run"; h=Math.abs(Math.sin(gt*11))*.014; phase="exit"; }
   if(h>.04) lz+=.08*Math.min(1,(h-.04)/.06); // high in the air: out in front of the frame so the stage doesn't hide them
   return {lx,h,lz,face,spin,flip,lean,arms,phase,s,other}; }
-function ptTick(dt){ if(!PT.on||!PT.root||!PT.root.visible){ ptMusic(); if(PT.voiceGain) PT.voiceGain.gain.value=0; return; }
+function ptTick(dt){ if(!PT.on||!PT.root||!PT.root.visible){ PT.spots.forEach(q=>{ if(q.sl&&q.sl.intensity) q.sl.intensity=0; }); ptMusic(); if(PT.voiceGain) PT.voiceGain.gain.value=0; return; }
   const d=Math.hypot(meAv.pos.x-PT.x,meAv.pos.y-(PT.z-.15*PT.k)); const want=d<4?1:d>14?0:1-(d-4)/10; /* same as the opera stage: full within 4 m of the front, silent past 14 m */ PT.prox+=(want-PT.prox)*Math.min(1,dt*1.2);
   const el=(Date.now()-PT.at)/1000, gi=Math.floor(el/PT_PAIR)%3, gt=el%PT_PAIR, k=PT.k, hear=PT.prox>.03&&soundOn&&ac&&PT.voiceGain&&!document.hidden;
   const cue=(name,fn)=>{ const key=Math.floor(el/PT_PAIR)+":"+name; if(PT.cues.has(key)) return; PT.cues.add(key); if(PT.cues.size>200) PT.cues=new Set([key]); if(hear) try{ fn(); }catch(e){} };
@@ -9534,7 +9539,15 @@ let VISGAP=0; document.addEventListener("visibilitychange",()=>{ if(document.hid
 const ftTxt=a=>a?`${Math.round(a[0])}ms（前段${Math.round(a[1])} 商店${Math.round(a[2])} 小鎮${Math.round(a[3])} 生活${Math.round(a[4])} 畫${Math.round(a[5])}${(a[6]||[]).filter(q=>q[1]>=50).sort((x,y)=>y[1]-x[1]).slice(0,3).map(q=>` ${q[0]}${Math.round(q[1])}`).join("")}）`:"?";
 /* (11/23 主委 閃退紀錄: 「生活」2–3 秒、「前段」7.5 秒 — the parts are marked inside too, so the slowest three are named) */
 const FMK={t:0,a:[],mk(n){ const t=performance.now(); this.a.push([n,t-this.t]); this.t=t; }}, LPF={a:[],w(n,f){ return function(){ const t0=performance.now(); try{ return f.apply(this,arguments); } finally{ LPF.a.push([n,performance.now()-t0]); } }; }};
-function slowCheck(gap){ try{ const r=renderer.info, tex=r.memory.textures, prog=(r.programs||[]).length; if(gap>2&&!document.hidden&&!VISGAP&&LQ.ready&&SLOW.n<6&&Date.now()-SLOW.sent>60e3){ SLOW.sent=Date.now(); SLOW.n++; crSend("slow",Object.assign(crInfo(),{msg:`卡住 ${gap.toFixed(1)} 秒・新貼圖 ${tex-SLOW.tex}・新著色程式 ${prog-SLOW.prog}・上一格 ${ftTxt(FTM.last)}・最久一格 ${ftTxt(FTM.worst)}・長任務 ${Math.round(LT.max)}ms×${LT.n}`})); FTM.worst=null; } VISGAP=0; LT.max=0; LT.n=0; SLOW.tex=tex; SLOW.prog=prog; }catch(e){} }
+/* (11/27 主委「電腦變得超卡」: computers stopped 13–27 s with 40–107 new shader programs at once — far more than one new thing needs, so
+   something every material depends on changed (lights, fog, shadows…). The note now names which programs were new, how the first one
+   differs from the one it replaced, and when the count of lights last changed) */
+function lightState(){ let P=0,S=0,D=0,H=0,sh=0; try{ scene.traverseVisible(o=>{ if(!o.isLight) return; if(o.isPointLight) P++; else if(o.isSpotLight) S++; else if(o.isDirectionalLight) D++; else if(o.isHemisphereLight) H++; if(o.castShadow) sh++; }); }catch(e){} return `P${P}S${S}D${D}H${H}影${sh}${scene.fog?(scene.fog.isFogExp2?"霧2":"霧"):"無霧"}${renderer.shadowMap.enabled?"":"關影"}`; }
+setInterval(()=>{ try{ if(document.hidden) return; const ls=lightState(); if(SLOW.ls&&ls!==SLOW.ls){ (SLOW.lch||(SLOW.lch=[])).push(`${new Date().toTimeString().slice(0,8)} ${SLOW.ls}→${ls}`); if(SLOW.lch.length>4) SLOW.lch.shift(); } SLOW.ls=ls; }catch(e){} },1500);
+function progWhy(){ try{ const cur=renderer.info.programs||[], old=SLOW.ps||new Set(), nw=cur.filter(q=>!old.has(q)); if(!nw.length) return ""; const cnt={}; nw.forEach(q=>{ const n=String(q.name||"?").replace(/Material$/,"").replace(/^Mesh/,""); cnt[n]=(cnt[n]||0)+1; });
+  let df=""; for(const q of nw){ const o=cur.find(z=>old.has(z)&&z.name===q.name&&z.cacheKey); if(!o||!q.cacheKey) continue; const A=String(o.cacheKey).split(","), B=String(q.cacheKey).split(","); if(Math.abs(A.length-B.length)>3) continue; const d=[]; for(let i=1;i<=Math.min(A.length,B.length)&&d.length<5;i++){ const x=A[A.length-i], y=B[B.length-i]; if(x!==y&&x.length<24&&y.length<24) d.push(`-${i}:${x}→${y}`); } if(d.length){ df=" 差"+d.join(" "); break; } }
+  return `・新程式 ${Object.entries(cnt).sort((x,y)=>y[1]-x[1]).slice(0,4).map(([n,c])=>n+"×"+c).join(" ")}${df}・燈 ${lightState()}${SLOW.lch&&SLOW.lch.length?"・燈變 "+SLOW.lch.join("；"):""}`; }catch(e){ return ""; } }
+function slowCheck(gap){ try{ const r=renderer.info, tex=r.memory.textures, prog=(r.programs||[]).length; if(gap>2&&!document.hidden&&!VISGAP&&LQ.ready&&SLOW.n<6&&Date.now()-SLOW.sent>60e3){ SLOW.sent=Date.now(); SLOW.n++; crSend("slow",Object.assign(crInfo(),{msg:`卡住 ${gap.toFixed(1)} 秒・新貼圖 ${tex-SLOW.tex}・新著色程式 ${prog-SLOW.prog}・上一格 ${ftTxt(FTM.last)}・最久一格 ${ftTxt(FTM.worst)}・長任務 ${Math.round(LT.max)}ms×${LT.n}${prog-SLOW.prog>=8?progWhy():""}`})); FTM.worst=null; } VISGAP=0; LT.max=0; LT.n=0; SLOW.tex=tex; if(prog!==SLOW.prog||!SLOW.ps) SLOW.ps=new Set(r.programs||[]); SLOW.prog=prog; }catch(e){} }
 function dresTick(){ const now=performance.now(), dt=DRES.last?(now-DRES.last)/1000:0; DRES.last=now; slowCheck(dt); if(document.hidden||!dt||dt>1.5||DRES.fw) return;
   const cap=frameCap(), r=dt*cap; DRES.ema+=(r-DRES.ema)*.05; DRES.cool-=dt; const L=dprLadder();
   if(DRES.ema>1.3){ DRES.slow+=dt; DRES.fast=0; if(DRES.slow>4&&DRES.cool<=0&&DRES.lvl<L.length-1){ DRES.lvl++; DRES.slow=0; DRES.cool=5; applyDPR(); } }
