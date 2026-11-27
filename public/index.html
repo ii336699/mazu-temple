@@ -14644,9 +14644,9 @@ const IS=(()=>{
   const ROCKS=[]; { const r=krng(5150), PH=typeof Q!=="undefined"&&Q.phone; const okR=(u,v)=>{ const R=Math.hypot(u,v), b=1-R/Rc(Math.atan2(v,u)); if(b<.06||b>.88) return false; const h=hL(u,v); if(h<.35||h>9) return false; if(pondD(u,v)<POND[2]+4||segD(BROOK,u,v)<4) return false; if(Math.hypot(u+cx-LAND[0],v+cz-LAND[1])<6) return false; if(TREES.some(q=>Math.hypot(q[0]-u,q[1]-v)<3)||PALMS.some(q=>Math.hypot(q[0]-u,q[1]-v)<3)||ROCKS.some(q=>Math.hypot(q[0]-u,q[1]-v)<9)) return false; return true; };
     for(let t=0;t<400&&ROCKS.length<2;t++){ const a=r()*6.283, d=9+r()*10, u=LAND[0]-cx+Math.cos(a)*d, v=LAND[1]-cz-Math.abs(Math.sin(a))*d; if(okR(u,v)) ROCKS.push([u,v,.8+r()*.4,r()*6.28]); }
     for(let t=0;t<4000&&ROCKS.length<(PH?12:18);t++){ const u=(r()*2-1)*85, v=(r()*2-1)*85; if(okR(u,v)) ROCKS.push([u,v,.8+r()*.5,r()*6.28]); } }
-  const SOLID=[...TREES.map(t=>[t[0],t[1],.45*t[2]]),...PALMS.map(p=>[p[0],p[1],.38]),...ROCKS.map(k=>[k[0],k[1],.78*k[2]])], SG=new Map(); /* (trunks you walk round; a 4 m grid so a step looks at a handful) */
+  const SOLID=[...TREES.map(t=>[t[0],t[1],.45*t[2]]),...PALMS.map(p=>[p[0],p[1],.38]),...ROCKS.map(k=>[k[0],k[1],.78*k[2],k])], SG=new Map(); /* (trunks you walk round; a 4 m grid so a step looks at a handful) */
   for(const s of SOLID){ const k=Math.floor(s[0]/4)+","+Math.floor(s[1]/4); (SG.get(k)||SG.set(k,[]).get(k)).push(s); }
-  const solidAt=(u,v)=>{ const gx=Math.floor(u/4), gz=Math.floor(v/4); for(let a=-1;a<=1;a++) for(let b=-1;b<=1;b++){ const L=SG.get((gx+a)+","+(gz+b)); if(L) for(const s of L) if(Math.hypot(s[0]-u,s[1]-v)<s[2]) return true; } return false; };
+  const solidAt=(u,v)=>{ const gx=Math.floor(u/4), gz=Math.floor(v/4); for(let a=-1;a<=1;a++) for(let b=-1;b<=1;b++){ const L=SG.get((gx+a)+","+(gz+b)); if(L) for(const s of L) if(Math.hypot(s[0]-u,s[1]-v)<s[2]&&!(s[3]&&ROCKGONE&&ROCKGONE(s[3]))) return true; } return false; };
   function walkI(x,z){ const [u,v]=loc(x,z), h=hL(u,v); if(h<-.32) return false; if(pondD(u,v)<POND[2]+.3) return false;
     if(solidAt(u,v)) return false;
     const a=hL(u+.5,v), b=hL(u-.5,v), c=hL(u,v+.5), d=hL(u,v-.5); if(Math.hypot(a-b,c-d)>TW.maxSlope) return false; return true; }
@@ -14688,7 +14688,7 @@ const IS=(()=>{
     const pos=[], col=[], idx=[], c=new T.Color(); let first=-1;
     for(let i=0;i<pts.length;i++){ const [u,v]=pts[i], wx=u+cx, wz=v+cz; if(wx<x0-2||wx>x1+2||wz<z0-2||wz>z1+2) continue; const [pu,pv]=pts[Math.max(0,i-1)], [nu,nv]=pts[Math.min(pts.length-1,i+1)], dx=nu-pu, dz=nv-pv, L=Math.hypot(dx,dz)||1, ox=-dz/L*1.05, oz=dx/L*1.05, y=Math.max(brookY(u,v),ISL.seaY+.02);
       const k=pos.length/3; pos.push(wx+ox,y,wz+oz,wx-ox,y,wz-oz); c.copy(WFR); col.push(c.r,c.g,c.b,c.r,c.g,c.b); if(first>=0&&k>=2) idx.push(k-2,k-1,k,k-1,k+1,k); first=k; }
-    if(pos.length<12) return; const g=new T.BufferGeometry(); g.setAttribute("position",new T.Float32BufferAttribute(pos,3)); g.setAttribute("color",new T.Float32BufferAttribute(col,3)); g.setIndex(idx); g.computeVertexNormals(); const m=new T.Mesh(g,wmI()); m.userData.keep=1; C.g.add(m); }
+    if(pos.length<12) return; const g=new T.BufferGeometry(); g.setAttribute("position",new T.Float32BufferAttribute(pos,3)); g.setAttribute("color",new T.Float32BufferAttribute(col,3)); g.setIndex(idx); g.computeVertexNormals(); const m=new T.Mesh(g,BRM||(BRM=(()=>{ const q=wmI().clone(); q.side=T.DoubleSide; return q; })())); m.userData.keep=1; C.g.add(m); } let BRM=null; /* (11/28 主委「那個水池的河流沒水」: the strip faced down — seen from above, nothing; both sides drawn now) */
   const WOOD=CL("#7a5a3c"), WOOD2=CL("#5e4630");
   function wreck(C){ const g=new T.Group(); g.position.set(LAND[0]+3.5,0,LAND[1]+5.5); g.rotation.y=.5; const bx=(w,h,d,x,y,z,ry,rz,col)=>{ const q=tint(new T.BoxGeometry(w,h,d),(a,b,c2,c)=>c.copy(col).multiplyScalar(.9+.2*Math.abs(Math.sin(a*7+c2*3)))); const m=new T.Mesh(q,wmI()); m.position.set(x,y,z); m.rotation.set(0,ry||0,rz||0); g.add(m); };
     const gy=x=>hL(LAND[0]+3.5-cx,LAND[1]+5.5-cz);
@@ -14703,16 +14703,17 @@ const IS=(()=>{
       if(Math.abs(POND[0]+cx-dx)<S/2+POND[2]&&Math.abs(POND[1]+cz-dz)<S/2+POND[2]&&POND[0]+cx>=x0&&POND[0]+cx<x1&&POND[1]+cz>=z0&&POND[1]+cz<z1) pondMesh(C);
       brookMesh(C,x0,x1,z0,z1);
       if(LAND[0]>=x0&&LAND[0]<x1&&LAND[1]>=z0&&LAND[1]<z1) wreck(C);
-      for(const k of ROCKS){ const x=k[0]+cx, z=k[1]+cz; if(x<x0||x>=x1||z<z0||z>=z1) continue; const g=tint(new T.DodecahedronGeometry(1,1),(a,b,c2,c)=>c.copy(ROCK).multiplyScalar(.78+.22*Math.abs(Math.sin(a*5.3+b*3.1+c2*2.7)))); g.scale(1.15*k[2],.78*k[2],1*k[2]); const m=new T.Mesh(g,wmI()); m.position.set(x,hL(k[0],k[1])+.18*k[2],z); m.rotation.y=k[3]; m.userData.keep=1; m.castShadow=true; C.g.add(m); }
+      for(const k of ROCKS){ const x=k[0]+cx, z=k[1]+cz; if(x<x0||x>=x1||z<z0||z>=z1) continue; /* (11/28 主委「石頭請用森林那種有紋路的石頭 並且敲破後會消失」: the forest's textured rocks; a broken one is gone until it is back) */
+        try{ nmat(); }catch(e){} const g=new T.Group(); g.userData.keep=1; g.userData.rock=k; const rr=krng(((k[0]*73+k[1]*31)|0)+999); mossRock({g},rr,x,hL(k[0],k[1])-.1*k[2],z,1.25*k[2],false); g.children.forEach(q=>{ q.castShadow=true; q.userData.keep=1; }); if(ROCKGONE&&ROCKGONE(k)) g.visible=false; RKG.set(k,g); C.g.add(g); }
       try{ propsScatter(C,x0,x1,z0,z1,(i+5)*31+(j+5)*7,(x,z)=>{ const [u,v]=loc(x,z); return hL(u,v)>.5&&Math.hypot(x-LAND[0],z-LAND[1])>9; }); }catch(e){} }}); }
   /* the sea: one wide sheet round the island, shallow turquoise to deep blue; it rises and falls a little (the tide on the wet sand) */
   let SEA=null; ISL.seaY=-.12;
   function seaOn(on){ if(on&&!SEA){ const g=new T.PlaneGeometry(760,760,95,95); g.rotateX(-Math.PI/2); tint(g,(x,y,z,c)=>{ const d=Math.hypot(x,z)/Rc(Math.atan2(z,x)); c.copy(WSH).lerp(WMI,sstep(1,1.12,d)).lerp(WDE,sstep(1.1,1.6,d)); }); SEA=new T.Mesh(g,wmI()); SEA.position.set(cx,ISL.seaY,cz); SEA.userData.keep=1; SEA.raycast=()=>{}; scene.add(SEA); }
     if(!on&&SEA){ scene.remove(SEA); SEA.geometry.dispose(); SEA=null; } }
   let t=0; function tick(dt){ t+=dt; if(SEA){ ISL.seaY=-.12+.06*Math.sin(t*.45); SEA.position.y=ISL.seaY; } }
-  let CUTF=null, STUMPG=null, STUMPM=null;
+  let CUTF=null, STUMPG=null, STUMPM=null, ROCKGONE=null; const RKG=new Map();
   return {seaOn,tick,hL,loc,base,LAND,TREES,PALMS,ROCKS,POND,BROOK,pondD,brookD:(u,v)=>segD(BROOK,u,v),cx,cz,
-    setCut(f){ CUTF=f; },
+    setCut(f){ CUTF=f; }, setRockGone(f){ ROCKGONE=f; }, rockShow(k,on){ const g=RKG.get(k); if(g) g.visible=!!on; },
     /* (11/27 主委「砍樹畫面會閃白色 加上卡頓」: a felled tree used to rebuild its whole 64 m district — the ground vanished for half a second
        (the white flash) while every shader was prepared again (the stutter). Now only that tree's trunk and crown are hidden, and its stump is put down) */
     fell(u,v,s){ const x=u+cx, z=v+cz; let hit=false; for(const id in LIVE){ if(!id.startsWith("isl")) continue; const C=LIVE[id]; C.g.traverse(o=>{ if(!o.isInstancedMesh||!o.userData.xz) return; const L=o.userData.xz; for(let i=0;i<L.length;i++){ if(Math.abs(L[i][0]-x)<.05&&Math.abs(L[i][1]-z)<.05){ const M=new T.Matrix4(); o.getMatrixAt(i,M); M.scale(new T.Vector3(1e-4,1e-4,1e-4)); o.setMatrixAt(i,M); o.instanceMatrix.needsUpdate=true; hit=true; } } });
@@ -14765,7 +14766,11 @@ const ISLE=(()=>{
   const HID=new Set(); let hidT=0;
   function farFromIsl(o){ if(o.userData&&o.userData.islKeep) return false; if(o===meAv.root||o.isLight||o.isCamera||(typeof sky!=="undefined"&&o===sky)) return false; if(o.position&&o.position.distanceTo(camera.position)<8) return false; /* (the sky and whatever travels with the camera stay) */ try{ const b=new T.Box3().setFromObject(o); if(b.isEmpty()) return false; const c=b.getCenter(new T.Vector3()), r=b.getSize(new T.Vector3()).length()/2; if(r>2500) return false; return Math.hypot(c.x-ISL.cx,c.z-ISL.cz)-r>420; }catch(e){ return false; } }
   function mainHide(on){ if(on){ for(const o of scene.children){ if(HID.has(o)||!o.visible) continue; if(farFromIsl(o)){ o.visible=false; HID.add(o); } } } else { for(const o of HID) o.visible=true; HID.clear(); } }
-  function setOn(on,solo){ ISL.on=on; try{ skyMat.uniforms.isl.value=on?1:0; }catch(e){} if(!on){ try{ mainHide(false); }catch(e){} } else [1500,4000].forEach(ms=>setTimeout(()=>{ try{ if(ISL.on) mainHide(true); }catch(e){ console.warn("isl hide",e); } },ms)); /* (after the camera has come over to the island) */ ISL.solo=on&&!!solo; { const S=st(); S.on=on?1:0; S.solo=ISL.solo?1:0; } document.body.classList.toggle("isl-on",on); document.body.classList.toggle("isl-solo",ISL.solo); try{ TOWNX.isl.seaOn(on); }catch(e){ console.warn(e); } bgmHush=on; hudOn(on); waves(on); try{ if(on) setTimeout(()=>{ try{ mkAll(); }catch(e){ console.warn("isl build",e); } },300); else clearAll(); }catch(e){} try{ markDirty(); }catch(e){} }
+  /* (11/28 主委「無人島的時間跟本島分開 無人島睡覺後真的會變白天」): the island keeps its own day (bag.isl.tod, the same 24-minute day
+     as the town but its own clock); sleeping in the hut wakes you in the morning. The town's clock comes back when you leave */
+  let todPrev, todLast=0; const todOn=on=>{ const S=st(); if(on){ if(todPrev===undefined) todPrev=window.MZ_TOD===undefined?null:window.MZ_TOD; if(typeof S.tod!=="number") S.tod=.08; window.MZ_TOD=S.tod; todLast=Date.now(); } else if(todPrev!==undefined){ if(todPrev==null) delete window.MZ_TOD; else window.MZ_TOD=todPrev; todPrev=undefined; } };
+  setInterval(()=>{ try{ if(!ISL.on) return; const S=st(), now=Date.now(); S.tod=((typeof S.tod==="number"?S.tod:.08)+Math.min(5,(now-todLast)/1000)/1440)%1; todLast=now; window.MZ_TOD=S.tod; }catch(e){} },1000);
+  function setOn(on,solo){ ISL.on=on; try{ todOn(on); }catch(e){} try{ skyMat.uniforms.isl.value=on?1:0; }catch(e){} if(!on){ try{ mainHide(false); }catch(e){} } else [1500,4000].forEach(ms=>setTimeout(()=>{ try{ if(ISL.on) mainHide(true); }catch(e){ console.warn("isl hide",e); } },ms)); /* (after the camera has come over to the island) */ ISL.solo=on&&!!solo; { const S=st(); S.on=on?1:0; S.solo=ISL.solo?1:0; } document.body.classList.toggle("isl-on",on); document.body.classList.toggle("isl-solo",ISL.solo); try{ TOWNX.isl.seaOn(on); }catch(e){ console.warn(e); } bgmHush=on; hudOn(on); waves(on); try{ if(on) setTimeout(()=>{ try{ mkAll(); }catch(e){ console.warn("isl build",e); } },300); else clearAll(); }catch(e){} try{ markDirty(); }catch(e){} }
   function place(x,z,face){ try{ if(meAv.seat>=0) meAv.seat=-1; }catch(e){} meAv.pos.set(x,z); meAv.target.set(x,z); meAv.path=[]; meAv.gy=0; if(face!=null){ meAv.rotY=face; meAv.faceGoal=face; } try{ inputReset(); }catch(e){} }
   /* 翻船過場 (11/25 主委: GPT 圖、Q 版剪影、抖動、打雷閃光): five pictures — 出港 → 起霧 → 雷雨 → 翻船 → 漂到島上 — each slowly
      pushing in, with rain, shaking, white lightning, thunder and waves made in WebAudio, one line of words each. The island is built
@@ -14879,6 +14884,7 @@ const ISLE=(()=>{
     if(S.v2!==1){ S.v2=1; if(S.hp!=null){ S.food=S.hp; S.water=Math.min(FMAX,S.hp+15); delete S.hp; } for(const k in S.tool) if(S.tool[k]===1) S.tool[k]=DUR[k]||20; if(S.inv.wood){ S.inv.log=(S.inv.log|0)+S.inv.wood; delete S.inv.wood; } S.q=0; } /* (saves from the first version) */
     if(S.food==null) S.food=FMAX; if(S.water==null) S.water=FMAX; S.q=S.q|0; return S; };
   const I=()=>TOWNX.isl, W2L=(x,z)=>[x-I().cx,z-I().cz];
+  const RKBACK=30*60e3; try{ TOWNX.isl.setRockGone(k=>{ const t=st().rk&&st().rk[k[0].toFixed(1)+","+k[1].toFixed(1)]; return !!t&&Date.now()-t<RKBACK; }); }catch(e){}
   try{ TOWNX.isl.setCut((u,v)=>{ const t=st().cut&&st().cut[u.toFixed(1)+","+v.toFixed(1)]; return !!t&&Date.now()-t<REGROW; }); }catch(e){}
   const has=(need)=>{ const S=sv(); return Object.keys(need).every(k=>(S.inv[k]|0)>=need[k]); };
   const take=(need)=>{ const S=sv(); for(const k in need) S.inv[k]=(S.inv[k]|0)-need[k]; };
@@ -14949,7 +14955,7 @@ const ISLE=(()=>{
   const keyOf=t=>t[0].toFixed(1)+","+t[1].toFixed(1);
   const HPT=new Map(), HPR=new Map(), SHK=new Map();
   function spot(){ const x=meAv.pos.x, z=meAv.pos.y, [u,v]=W2L(x,z), L=I(); const h=L.hL(u,v); const S=sv();
-    const tree=near(L.TREES.filter(t=>!S.cut[keyOf(t)]||Date.now()-S.cut[keyOf(t)]>=REGROW),2.7,u,v), palm=near(L.PALMS,2.6,u,v), rock=near(L.ROCKS||[],2.4,u,v);
+    const tree=near(L.TREES.filter(t=>!S.cut[keyOf(t)]||Date.now()-S.cut[keyOf(t)]>=REGROW),2.7,u,v), palm=near(L.PALMS,2.6,u,v), rock=near((L.ROCKS||[]).filter(r=>!(S.rk[keyOf(r)]&&Date.now()-S.rk[keyOf(r)]<RKBACK)),2.4,u,v);
     const fresh=L.pondD(u,v)<L.POND[2]+2.2||L.brookD(u,v)<2.8, shallow=(()=>{ for(const d of [1,2,3]) for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1],[.7,.7],[-.7,.7],[.7,-.7],[-.7,-.7]]){ let w=null; try{ w=TOWNX.water(x+a*d,z+b*d); }catch(e){} if(w&&L.hL(u+a*d,v+b*d)>-1.6) return true; } /* (real water within 3 m, and not deep) */ return fresh; })();
     const by=k=>S.b[k]&&Math.hypot(S.b[k][0]-x,S.b[k][1]-z)<(k==="hut"?3.4:2.6);
     return {x,z,u,v,h,tree,palm,rock,fresh,shallow,beach:h<.75&&h>-.3,fire:by("fire"),bench:by("bench"),hut:by("hut")}; }
@@ -15005,18 +15011,38 @@ const ISLE=(()=>{
       m(new T.CylinderGeometry(.05,.05,3.6,6),"#7a5233",0,1.96,0,Math.PI/2,0,0); for(const z of [-1.65,1.65]) for(const sd of [-1,1]) m(new T.CylinderGeometry(.05,.06,2.3,6),"#7a5233",sd*.56,.98,z,0,0,sd*Math.PI/6);
       m(new T.BoxGeometry(1.9,.05,3.2),"#b89a6a",0,.03,0); m(new T.BoxGeometry(1.1,.04,1.8),"#9d8456",0,.07,-.5); }
     else if(k==="raft"){ for(let i=0;i<7;i++) m(new T.CylinderGeometry(.14,.15,2.6,8),"#8a5e38",-.9+i*.3,.14,0,Math.PI/2,0,0); for(const z of [-.9,.9]) m(new T.BoxGeometry(2.3,.06,.12),"#c9b48a",0,.3,z); m(new T.CylinderGeometry(.04,.04,1.8,6),"#7a5233",.3,.9,1.2,0,0,.6); } }
-  function mk(k){ const S=sv(), p=S.b[k]; if(BLT[k]){ scene.remove(BLT[k]); BLT[k].traverse(o=>{ if(o.isMesh) o.geometry.dispose(); }); delete BLT[k]; } if(k==="fire"&&fireL) fireL.intensity=0; if(!p||!ISL.on) return;
+  function mk(k){ const S=sv(), p=S.b[k]; if(BLT[k]){ scene.remove(BLT[k]); BLT[k].traverse(o=>{ if(o.isMesh) o.geometry.dispose(); }); delete BLT[k]; } if(k==="fire"){ if(fireL) fireL.intensity=0; fireFx(false); } if(!p||!ISL.on) return;
     const g=new T.Group(); g.userData.islKeep=1; g.userData.noMerge=1; const m=(geo,col,x,y,z,rx,ry,rz,o)=>{ const ms=new T.Mesh(geo,new T.MeshStandardMaterial(Object.assign({color:col,roughness:.9},o||{}))); ms.position.set(x,y,z); ms.rotation.set(rx||0,ry||0,rz||0); ms.castShadow=true; g.add(ms); return ms; };
     bodyOf(k,g,m);
-    if(k==="fire"&&p[2]){ const fl=[]; for(let i=0;i<3;i++) fl.push(m(new T.ConeGeometry(.2-.05*i,.6-.12*i,7),i?"#ffd25a":"#ff7a2a",0,.45,0,0,0,0,{emissive:i?"#ffb020":"#ff5010",emissiveIntensity:1.6,transparent:true,opacity:.9})); g.userData.fl=fl;
+    if(k==="fire"&&p[2]){ g.userData.fl=[m(new T.SphereGeometry(.18,8,6),"#ff7a2a",0,.12,0,0,0,0,{emissive:"#ff4a10",emissiveIntensity:1.8})]; /* (the embers; the flames and smoke are particles: fireFx) */
       lightsUp(); }
-    const L=I(), [u,v]=W2L(p[0],p[1]); g.position.set(p[0],L.hL(u,v),p[1]); g.rotation.y=p[3]||0; scene.add(g); BLT[k]=g; if(g.userData.fl){ fireL.position.set(p[0],g.position.y+.9,p[1]); fireL.intensity=1.3; } }
+    const L=I(), [u,v]=W2L(p[0],p[1]); g.position.set(p[0],L.hL(u,v),p[1]); g.rotation.y=p[3]||0; scene.add(g); BLT[k]=g; if(g.userData.fl){ fireL.position.set(p[0],g.position.y+.9,p[1]); fireL.intensity=1.3; } if(k==="fire") fireFx(!!g.userData.fl,p[0],g.position.y,p[1]); }
+  /* (11/28 主委「火焰請用粒子特效做 並且會有煙 讓玩家可以找到火堆在哪」): flames that lick up and die, sparks now and then, and a column
+     of smoke rising high above the trees (drawn through the fog, so it can be seen from across the island) */
+  let FX=null;
+  function fireFx(on,x,y,z){ if(!on||!ISL.on){ if(FX){ scene.remove(FX.g); FX=null; } return; } if(FX){ FX.g.position.set(x,y,z); return; }
+    const g=new T.Group(); g.userData.islKeep=1; g.userData.noMerge=1; g.position.set(x,y,z); const P=[];
+    const mk1=(kind)=>{ const add=kind==="f"||kind==="s"; const mt=new T.SpriteMaterial({map:glowTex,color:kind==="f"?"#ffb040":kind==="s"?"#ffe08a":"#8c8a86",transparent:true,opacity:0,depthWrite:false,blending:add?T.AdditiveBlending:T.NormalBlending,fog:kind==="m"?false:true}); const sp=new T.Sprite(mt); sp.userData.islKeep=1; g.add(sp); const q={sp,mt,kind,t:Math.random()*(kind==="m"?8:1),life:1}; P.push(q); return q; };
+    for(let i=0;i<18;i++) mk1("f"); for(let i=0;i<6;i++) mk1("s"); for(let i=0;i<(Q.phone?16:24);i++) mk1("m");
+    scene.add(g); FX={g,P}; let last=performance.now();
+    const born=q=>{ q.t=0; const a=Math.random()*6.283, r=Math.random()*.22; if(q.kind==="f"){ q.life=.5+Math.random()*.5; q.p=[Math.cos(a)*r,.1,Math.sin(a)*r]; q.v=[(Math.random()-.5)*.15,1+Math.random()*.9,(Math.random()-.5)*.15]; }
+      else if(q.kind==="s"){ q.life=.8+Math.random()*.7; q.p=[Math.cos(a)*r,.3,Math.sin(a)*r]; q.v=[(Math.random()-.5)*1.2,1.8+Math.random()*1.4,(Math.random()-.5)*1.2]; }
+      else { q.life=7+Math.random()*4; q.p=[Math.cos(a)*r,.9,Math.sin(a)*r]; q.v=[.25+Math.random()*.2,1.25+Math.random()*.4,.1+(Math.random()-.5)*.2]; } };
+    P.forEach(q=>{ born(q); q.t=Math.random()*q.life; });
+    const loop=now=>{ if(!FX||FX.g!==g){ return; } const dt=Math.min(.05,(now-last)/1000); last=now;
+      for(const q of P){ q.t+=dt; if(q.t>=q.life) born(q); const f=q.t/q.life; q.p[0]+=q.v[0]*dt; q.p[1]+=q.v[1]*dt; q.p[2]+=q.v[2]*dt; q.sp.position.set(q.p[0],q.p[1],q.p[2]);
+        if(q.kind==="f"){ const s=.55*(1-f)+.12; q.sp.scale.set(s,s*1.35,1); q.mt.opacity=.9*Math.min(1,f*6)*(1-f); q.mt.color.setHSL(.12-.1*f,1,.6-.15*f); }
+        else if(q.kind==="s"){ q.v[1]-=2*dt; q.sp.scale.set(.07,.07,1); q.mt.opacity=f<.8?1:(1-f)*5; }
+        else { q.v[1]*=1-.06*dt; const s=.5+3.4*f; q.sp.scale.set(s,s,1); q.mt.opacity=.42*Math.min(1,f*4)*(1-f); } }
+      if(fireL) fireL.intensity=1.15+.25*Math.sin(now/70)+.15*Math.sin(now/37);
+      requestAnimationFrame(loop); };
+    requestAnimationFrame(loop); }
   /* (11/27 主委「現在好卡」: lighting the fire or a torch added a light to the scene, and every shader on screen was prepared again — a long
      freeze. Both lights are put in once when you land and stay, dark until something burns; the shaders are prepared then, behind the veil) */
   function lightsUp(){ if(!fireL) fireL=new T.PointLight("#ff9a40",0,11,1.6); if(!torchL){ torchL=new T.PointLight("#ffb060",0,12,1.5); torchL.position.set(.35,1.6,.2); } if(fireL.parent!==scene) scene.add(fireL); if(torchL.parent!==meAv.root) meAv.root.add(torchL); }
   function warm(){ if(Q.phone) return; try{ const g=new T.Group(), b=new T.BoxGeometry(.01,.01,.01); [MAT("l","#c8a070"),MAT("b","#ffe08a"),new T.MeshStandardMaterial({color:"#888",roughness:.9}),new T.MeshStandardMaterial({color:"#f80",emissive:"#f50",emissiveIntensity:1.6,transparent:true,opacity:.9})].forEach(m=>g.add(new T.Mesh(b,m))); Object.keys(TOOLLOOK).forEach(k=>{ const t=TG[k]||(TG[k]=TOOLLOOK[k]()); g.add(t); }); g.position.set(meAv.pos.x,(()=>{ try{ return groundAt({},meAv.pos.x,meAv.pos.y)+1; }catch(e){ return 1; } })(),meAv.pos.y); scene.add(g); renderer.compile(scene,camera); scene.remove(g); Object.values(TG).forEach(t=>g.remove(t)); }catch(e){ console.warn("isl warm",e); } }
   function mkAll(){ lightsUp(); for(const k of ["fire","bench","hut","raft"]) mk(k); torchSet(); pkDirty=true; warm(); }
-  function clearAll(){ mini(false); for(const k of Object.keys(BLT)){ scene.remove(BLT[k]); delete BLT[k]; } if(torchL&&torchL.parent){ torchL.parent.remove(torchL); } if(fireL&&fireL.parent){ fireL.parent.remove(fireL); } pkClear(); placeEnd(); hold(null); }
+  function clearAll(){ mini(false); try{ fireFx(false); }catch(e){} for(const k of Object.keys(BLT)){ scene.remove(BLT[k]); delete BLT[k]; } if(torchL&&torchL.parent){ torchL.parent.remove(torchL); } if(fireL&&fireL.parent){ fireL.parent.remove(fireL); } pkClear(); placeEnd(); hold(null); }
   function torchSet(){ const S=sv(); const on=ISL.on&&S.torchOn&&(S.inv.torch|0)>0; if(ISL.on){ lightsUp(); torchL.intensity=on?1.1:0; } if(!busy) restHold(); }
   const ahead=d=>[meAv.pos.x+Math.sin(meAv.rotY)*d,meAv.pos.y+Math.cos(meAv.rotY)*d,meAv.rotY];
   /* placing: a see-through copy follows in front of you; 「🔨 蓋在這裡」 then one blow per tap */
@@ -15025,11 +15051,11 @@ const ISLE=(()=>{
     bodyOf(k,g,m); scene.add(g); PL={k,g,mats,blows:0,ok:false,rot:0,set:false}; if(chipBox) chipBox.hidden=true; placeUI(); }
   function placeEnd(){ if(PL){ scene.remove(PL.g); PL.g.traverse(o=>{ if(o.isMesh) o.geometry.dispose(); }); PL=null; } const b=document.getElementById("islPlace"); if(b) b.remove(); }
   function placeOk(k,x,z){ const L=I(), [u,v]=W2L(x,z), h=L.hL(u,v); if(k==="raft") return h<.75&&h>-.35; const r=k==="hut"?1.6:k==="bench"?.8:.6; for(const [a,b] of [[0,0],[r,0],[-r,0],[0,r],[0,-r]]){ const hh=L.hL(u+a,v+b); if(hh<.08) return false; try{ if(TOWNX.water&&TOWNX.water(x+a,z+b)) return false; }catch(e){} } if(k==="hut"){ const S=sv(); if(!S.b.bench||Math.hypot(S.b.bench[0]-x,S.b.bench[1]-z)>14) return false; } return true; }
-  function placeTick(){ if(!PL) return; if(PL.set){ return; } const d=PL.k==="hut"?3.4:PL.k==="raft"?2.6:1.8, a=ahead(d); const L=I(), [u,v]=W2L(a[0],a[1]); PL.g.position.set(a[0],L.hL(u,v),a[1]); PL.g.rotation.y=a[2]+Math.PI+PL.rot; const ok=placeOk(PL.k,a[0],a[1]); if(ok!==PL.ok){ PL.ok=ok; PL.mats.forEach(m=>m.color.set(ok?"#9fe0b0":"#ff8a7a")); placeUI(); } }
+  function placeTick(){ if(!PL) return; if(PL.set){ return; } const d=PL.k==="hut"?3.4:PL.k==="raft"?2.6:1.8, a=PL.fix?[PL.fix[0],PL.fix[1],PL.fixR]:ahead(d); const L=I(), [u,v]=W2L(a[0],a[1]); PL.g.position.set(a[0],L.hL(u,v),a[1]); PL.g.rotation.y=a[2]+Math.PI+PL.rot; const ok=placeOk(PL.k,a[0],a[1]); if(ok!==PL.ok){ PL.ok=ok; PL.mats.forEach(m=>m.color.set(ok?"#9fe0b0":"#ff8a7a")); placeUI(); } }
   function placeUI(){ let b=document.getElementById("islPlace"); if(!PL){ if(b) b.remove(); return; } if(!b){ b=document.createElement("div"); b.id="islPlace"; b.style.cssText="position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 100px);z-index:9;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:auto"; document.body.appendChild(b); }
     const R=REC.find(r=>r[0]===PL.k), nm=R?R[1]:"";
     b.innerHTML=PL.set?`<span class="fog-tip">${nm}：再敲 ${BUILD[PL.k]-PL.blows} 下</span><button class="glass isl-chip" data-pl="blow">🔨 敲（${PL.blows}/${BUILD[PL.k]}）</button>`
-      :`<span class="fog-tip">${PL.ok?`走動調整位置，選好就蓋`:PL.k==="raft"?"木筏要擺在沙灘上":PL.k==="hut"?"草屋要蓋在工作台附近的平地":"這裡不能蓋（不平或有水）"}</span><div style="display:flex;gap:8px"><button class="glass isl-chip" data-pl="ok" ${PL.ok?"":"disabled style=\"opacity:.45\""}>🔨 蓋在這裡</button><button class="glass isl-chip" data-pl="rot">↻</button><button class="glass isl-chip" data-pl="no">✖</button></div>`;
+      :`<span class="fog-tip">${PL.ok?`點地上換位置，↻ 轉方向，選好就蓋`:PL.k==="raft"?"木筏要擺在沙灘上":PL.k==="hut"?"草屋要蓋在工作台附近的平地":"這裡不能蓋（不平或有水）"}</span><div style="display:flex;gap:8px"><button class="glass isl-chip" data-pl="ok" ${PL.ok?"":"disabled style=\"opacity:.45\""}>🔨 蓋在這裡</button><button class="glass isl-chip" data-pl="rot">↻</button><button class="glass isl-chip" data-pl="no">✖</button></div>`;
     b.querySelectorAll("button").forEach(x=>x.onclick=()=>{ try{ ensureAudio(); }catch(e){} placeAct(x.dataset.pl); }); }
   function placeAct(a){ if(!PL||busy) return; const S=sv(), k=PL.k, R=REC.find(r=>r[0]===k);
     if(a==="no"){ placeEnd(); toast("先不蓋了",1200); return; } if(a==="rot"){ PL.rot+=Math.PI/4; return; }
@@ -15093,9 +15119,9 @@ const ISLE=(()=>{
     const P=spot(), S=sv(), A=[]; const pk=pkNear(1.7);
     if(pk) A.push(["pick",(PKK[pk.k].pull?"✋ 拔起":"✋ 撿起")+PKK[pk.k].n]);
     if(P.fire&&S.b.fire){ if(!S.b.fire[2]) A.push(["light","🔥 鑽木取火"]); else { const left=Math.max(0,Math.round((S.b.fire[4]-Date.now())/60e3)); if((S.inv.stick|0)>0) A.push(["fuel",`🪵 添柴（還能燒 ${left} 分）`]); if((S.inv.fish|0)>0) A.push(["cook",S.tool.knife?"🍢 剖魚來烤":"🍢 烤魚（要先有石刀剖開）"]); if((S.inv.cwater|0)>0) A.push(["boil","♨️ 把椰殼裡的水煮開"]); } }
-    if(P.hut) A.push(["sleep","😴 在草屋睡一覺"]);
+    if(P.hut) A.push(["hutIn","🛖 進草屋"]);
     if(P.bench) A.push(["bench","🛠️ 工作台"]);
-    if(P.rock){ const t=S.rk[keyOf(P.rock)], wait=t?Math.ceil((t+10*60e3-Date.now())/60e3):0; if(wait>0) A.push(["x",`🪨 這塊岩石剛敲過（${wait} 分後）`]); else A.push(S.tool.hammer?["strike",`🔨 敲岩石（${HPR.get(keyOf(P.rock))??4}）`]:["x","🪨 大岩石：要石錘才敲得開"]); }
+    if(P.rock){ A.push(S.tool.hammer?["strike",`🔨 敲岩石（${HPR.get(keyOf(P.rock))??4}）`]:["x","🪨 大岩石：要石錘才敲得開"]); }
     if(P.tree) A.push(S.tool.axe?["chop",`🪓 砍樹（${HPT.get(keyOf(P.tree))??Math.round(4+2*P.tree[2])}）`]:["x","🌳 這棵樹要石斧才砍得倒"]);
     if(P.palm){ A.push(["shake","🌴 搖椰子"]); if(S.tool.knife) A.push(["leaf","🔪 割椰葉"]); }
     if(P.shallow&&S.tool.spear) A.push(["spear","🔱 拿木矛刺魚"]);
@@ -15105,7 +15131,9 @@ const ISLE=(()=>{
     /* a soft ring round the thing you would pick up */
     if(pk){ if(!pkRing){ const g=new T.RingGeometry(.26,.33,24); g.rotateX(-Math.PI/2); pkRing=new T.Mesh(g,new T.MeshBasicMaterial({color:"#fff4c8",transparent:true,opacity:.75,depthWrite:false})); pkRing.userData.islKeep=1; scene.add(pkRing); } const [x,z]=itemXZ(pk); const y=(()=>{ try{ return groundAt({},x,z); }catch(e){ return 0; } })(); pkRing.position.set(x,Math.max(y,ISL.seaY)+.04,z); pkRing.visible=true; } else if(pkRing) pkRing.visible=false; }
   /* tap a thing on the ground: walk to it and pick it up */
-  window.MZ_ISLTAP=ray=>{ if(!ISL.on||busy||PL) return false; const ms=Object.values(PKG).map(G=>G.m); if(!ms.length) return false; const hits=ray.intersectObjects(ms,false); if(!hits.length) return false; const h=hits[0]; const G=Object.values(PKG).find(G=>G.m===h.object); const p=G&&G.items[h.instanceId]; if(!p) return false;
+  window.MZ_ISLTAP=ray=>{ if(!ISL.on) return false;
+    if(PL&&!PL.set){ /* (11/28 主委「蓋東西的定位方式太爛了 有夠難選位置」: tap the ground where it should go) */ const L=I(); let y=(()=>{ try{ return groundAt({},meAv.pos.x,meAv.pos.y); }catch(e){ return 0; } })(), q=null; for(let i=0;i<3;i++){ const o=ray.origin, d=ray.direction; if(Math.abs(d.y)<1e-4) break; const t=(y-o.y)/d.y; if(t<0) break; q=[o.x+d.x*t,o.z+d.z*t]; const [u,v]=W2L(q[0],q[1]); y=L.hL(u,v); } if(q&&Math.hypot(q[0]-meAv.pos.x,q[1]-meAv.pos.y)<25){ PL.fix=q; PL.fixR=Math.atan2(q[0]-meAv.pos.x,q[1]-meAv.pos.y); PL.ok=null; placeTick(); try{ tone(660,.05,.05,"triangle"); }catch(e){} } return true; }
+    if(busy||PL) return false; const ms=Object.values(PKG).map(G=>G.m); if(!ms.length) return false; const hits=ray.intersectObjects(ms,false); if(!hits.length) return false; const h=hits[0]; const G=Object.values(PKG).find(G=>G.m===h.object); const p=G&&G.items[h.instanceId]; if(!p) return false;
     const [x,z]=itemXZ(p); if(Math.hypot(x-meAv.pos.x,z-meAv.pos.y)<1.7){ pick(p); return true; } pending={p,t:Date.now()}; try{ walkTo(x+(meAv.pos.x-x)*.15/Math.max(.2,Math.hypot(meAv.pos.x-x,meAv.pos.y-z)),z+(meAv.pos.y-z)*.15/Math.max(.2,Math.hypot(meAv.pos.x-x,meAv.pos.y-z))); }catch(e){} return true; };
   function act(k){ if(busy) return; const S=sv(), P=spot();
     if(k==="pick"){ pick(pkNear(1.7)); return; }
@@ -15115,10 +15143,12 @@ const ISLE=(()=>{
     if(k==="cook"){ if(!S.tool.knife){ toast("生魚要先用石刀剖開、去掉內臟，才能烤",2600); return; } if(!spend(.3,.2)) return; S.inv.fish--; work("cook",3,()=>{ give("cfish",1); wear("knife"); toast("🍢 魚烤好了，香噴噴的（🎒 背包裡可以吃）",2400); },.4,()=>chips(S.b.fire[0],S.b.fire[1],"#ffd27a",.5,4,true),"knife"); return; }
     if(k==="boil"){ S.inv.cwater--; work("cook",3.4,()=>{ give("bwater",1); S.st.boiled=(S.st.boiled|0); toast("🫖 水煮開了，可以安心喝（🎒 背包）",2400); },.5,()=>chips(S.b.fire[0],S.b.fire[1],"#e0f0ff",.6,5)); return; }
     if(k==="fill"){ S.inv.cshell--; work("pick",1,()=>{ give("cwater",1); toast("💧 裝了一殼水（生水直接喝可能會肚子痛，煮開比較安全）",2600); },.5,()=>chips(meAv.pos.x+Math.sin(meAv.rotY)*.8,meAv.pos.y+Math.cos(meAv.rotY)*.8,"#bfe8ff",.1,6,true)); return; }
-    if(k==="sleep"){ closeSheet(); veil(["……zzz","天亮了。"],()=>{ S.food=Math.max(S.food,40); S.water=Math.max(S.water,30); S.sick=0; S.st.slept=(S.st.slept|0)+1; },()=>{ toast("😴 睡飽了，精神好多了（肚子有點餓）",2400); hudFill(); saveBag(); }); return; }
+    if(k==="hutIn"){ const h=S.b.hut; if(!h) return; closeSheet(); veil([],()=>{ place(h[0],h[1],(h[3]||0)+Math.PI); },()=>{ const ph=(()=>{ try{ return ["清晨","白天","黃昏","夜晚"][LIFE.slot()]; }catch(e){ return ""; } })();
+        openSheet("islHut","🛖 草屋裡",`<p class="lead">椰葉擋住了風，地上鋪著乾草。外面是${ph}。</p><div class="row"><button class="primary" data-act="islSleep">😴 睡覺</button><button class="secondary" data-act="islHutOut">🚪 出去</button></div>`); }); return; } /* (11/28 主委「睡覺時要切換進去帳篷 點睡覺才睡覺」) */
+    if(k==="sleep"){ closeSheet(); veil(["……zzz","天亮了。"],()=>{ S.tod=.95; window.MZ_TOD=S.tod; S.food=Math.max(S.food,40); S.water=Math.max(S.water,30); S.sick=0; S.st.slept=(S.st.slept|0)+1; },()=>{ toast("😴 睡飽了，精神好多了（肚子有點餓）",2400); hudFill(); saveBag(); }); return; }
     if(k==="strike"){ const r=P.rock; if(!r||!S.tool.hammer||!seeOk()) return; if(!spend(.6,.5)) return; const key=keyOf(r); const L=I(), rx=r[0]+L.cx, rz=r[1]+L.cz; meAv.rotY=Math.atan2(rx-meAv.pos.x,rz-meAv.pos.y);
       work("strike",.62,()=>{},.55,()=>{ let hp=HPR.get(key)??4; hp--; HPR.set(key,hp); wear("hammer"); chips(rx-Math.sin(meAv.rotY)*.5,rz-Math.cos(meAv.rotY)*.5,"#ffe08a",L.hL(r[0],r[1])+.8,5,true); chips(rx,rz,"#9a978f",L.hL(r[0],r[1])+.9,4); try{ tone(900+Math.random()*200,.04,.06,"square"); tone(140,.08,.06,"triangle"); }catch(e){}
-        if(hp<=0){ HPR.delete(key); S.rk[key]=Date.now(); const a=Math.atan2(meAv.pos.x-rx,meAv.pos.y-rz); for(let i=0;i<3;i++){ const b=a+(i-1)*.6; dropAdd(i<2?"flint":"stone",rx+Math.sin(b)*(1.1+r[2]*.6),rz+Math.cos(b)*(1.1+r[2]*.6)); } pkBuild(); toast("🔺 啪！敲下了石片（撿起來）",2000); try{ tone(220,.2,.08,"sawtooth"); }catch(e){} } },"hammer"); return; }
+        if(hp<=0){ HPR.delete(key); S.rk[key]=Date.now(); try{ TOWNX.isl.rockShow(r,false); }catch(e){} chips(rx,rz,"#9a978f",L.hL(r[0],r[1])+.6,14); const a=Math.atan2(meAv.pos.x-rx,meAv.pos.y-rz); for(let i=0;i<3;i++){ const b=a+(i-1)*.6; dropAdd(i<2?"flint":"stone",rx+Math.sin(b)*(1.1+r[2]*.6),rz+Math.cos(b)*(1.1+r[2]*.6)); } pkBuild(); toast("🔺 啪！敲下了石片（撿起來）",2000); try{ tone(220,.2,.08,"sawtooth"); }catch(e){} } },"hammer"); return; }
     if(k==="chop"){ const t=P.tree; if(!t||!S.tool.axe||!seeOk()) return; if(!spend(.8,.6)) return; const key=keyOf(t); const L=I(), tx=t[0]+L.cx, tz=t[1]+L.cz; meAv.rotY=Math.atan2(tx-meAv.pos.x,tz-meAv.pos.y);
       work("chop",.62,()=>{},.55,()=>{ let hp=HPT.get(key)??Math.round(4+2*t[2]); hp--; HPT.set(key,hp); wear("axe"); chips(tx-Math.sin(meAv.rotY)*.35,tz-Math.cos(meAv.rotY)*.35,"#c8a070",L.hL(t[0],t[1])+.9,6); try{ tone(170+Math.random()*30,.07,.08,"square"); tone(90,.12,.06,"triangle"); }catch(e){}
         if(hp<=0){ HPT.delete(key); S.cut[key]=Date.now(); S.st.felled=(S.st.felled|0)+1; const dir=Math.atan2(tx-meAv.pos.x,tz-meAv.pos.y); fall(t[0],t[1],t[2],dir); try{ I().fell(t[0],t[1],t[2]); }catch(e){ console.warn("isl fell",e); }
@@ -15165,7 +15195,7 @@ const ISLE=(()=>{
       if(pending){ const [x,z]=itemXZ(pending.p); if(Math.hypot(x-meAv.pos.x,z-meAv.pos.y)<1.7&&!busy){ const p=pending.p; pending=null; pick(p); } else if(Date.now()-pending.t>15000) pending=null; }
       placeTick(); chipsUI();
       while(Q[S.q]&&Q[S.q][1](S)){ S.q++; const nx=Q[S.q]; try{ [523,659,784,1047].forEach((f,i)=>tone(f,.1,.05,"triangle",i*.07)); }catch(e){} toast(nx?`✔ 完成！下一步：${nx[0]}`:"✔ 全部完成！",3200); hudFill(); saveBag(); }
-      const fg=BLT.fire&&BLT.fire.userData.fl; if(fg){ const t=performance.now()/1000; fg.forEach((m,i)=>{ m.scale.set(1,.85+.25*Math.sin(t*9+i*2),1); }); if(fireL) fireL.intensity=1.1+.3*Math.sin(t*13); }
+
       if(S.b.fire&&S.b.fire[2]&&S.b.fire[4]&&Date.now()>S.b.fire[4]){ S.b.fire[2]=0; mk("fire"); toast("🔥 營火熄了……要再生一次火（記得常添柴）",2800); hudFill(); saveBag(); }
       if(S.torchOn&&(S.inv.torch|0)>0){ S.tl=(S.tl==null?8*60:S.tl)-.5; if(S.tl<=0){ S.inv.torch--; S.tl=8*60; if(!(S.inv.torch>0)){ S.torchOn=0; toast("🔥 火把燒完了",2200); } torchSet(); hudFill(); } }
       if(!freeE()){ const k=sick()?2:1; if((foodT+=.5*k)>=25){ foodT=0; S.food=Math.max(0,S.food-1); hudFill(); } if((waterT+=.5*k)>=18){ waterT=0; S.water=Math.max(0,S.water-1); hudFill(); }
@@ -15176,6 +15206,7 @@ const ISLE=(()=>{
     veil(lines,()=>{ setOn(true,first); place(L[0],L[1],Math.PI); try{ TOWNX.isl.prep(); }catch(e){ console.warn(e); } S.n=(S.n||0)+1; saveBag(); },()=>{
       if(first){ try{ meAv.say("這裡……沒有人。","#e8f4f2",4); }catch(e){} } else { try{ toast("🏝️ 回到夢見島了",2200); }catch(e){} } }); }
   function leave(force){ closeSheet(); if(!force&&!st().raft){ toast("還沒有船，回不去……",2400); return; } veil(["……"],()=>{ setOn(false); try{ TOWNX.isl.drop(); }catch(e){} place(28,-129.6,Math.PI); /* (wake on the plank pier by 老王) */ },()=>{ try{ toast("⚓ 你在碼頭醒來了",2600); }catch(e){} }); }
+  HANDLERS.islSleep=()=>{ closeSheet(); act("sleep"); }; HANDLERS.islHutOut=()=>{ closeSheet(); const h=sv().b.hut; if(h) place(h[0]+Math.sin((h[3]||0))*2.6,h[1]+Math.cos((h[3]||0))*2.6,h[3]||0); };
   HANDLERS.islLeave=()=>leave(); HANDLERS.islStay=()=>closeSheet();
   /* 碼頭的老王 (企劃: 第一次免費，之後每趟 300) */
   const FARE=300;
@@ -15189,7 +15220,7 @@ const ISLE=(()=>{
   function resume(){ const S=st(); if(!S.on) return; const at=Array.isArray(S.at)&&islIn(S.at[0],S.at[1])?S.at:ISL.land; setOn(true,!!S.solo); place(at[0],at[1],Math.PI); try{ TOWNX.isl.prep(); }catch(e){} }
   let lastAt=0; setInterval(()=>{ try{ if(!ISL.on) return; try{ if((hidT=(hidT+1)%2)===0) mainHide(true); }catch(e){} const S=st(); S.at=[+meAv.pos.x.toFixed(1),+meAv.pos.y.toFixed(1)]; if(Date.now()-lastAt>20000){ lastAt=Date.now(); saveBag(); } }catch(e){} },4000);
   setTimeout(()=>{ try{ resume(); }catch(e){ console.warn("isl resume",e); } },0);
-  return {enter,leave,st,resume,mainHide,HID,_t:{pkList,PKG,sv,act,craft,spot,placeAct,pkNear}}; /* (_t: for the simulator tests) */
+  return {enter,leave,st,resume,mainHide,HID,_t:{pkList,PKG,sv,act,craft,spot,placeAct,pkNear,mk,placeStart}}; /* (_t: for the simulator tests) */
 })();
 
 /*TOWN>>*/
