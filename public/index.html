@@ -1202,9 +1202,9 @@ const fontTextures=[plaqueTex,coupletL,coupletR,donateTex,lotSignTex,shopSignTex
 
 /* ---------- environment (sky + reflections) ---------- */
 const SUN=new T.Vector3(1,.11,-.22).normalize();
-const skyMat=new T.ShaderMaterial({side:T.BackSide,depthWrite:false,fog:false,uniforms:{sun:{value:SUN},time:{value:0},night:{value:0},day:{value:0},cloudy:{value:0},flash:{value:0}},
+const skyMat=new T.ShaderMaterial({side:T.BackSide,depthWrite:false,fog:false,uniforms:{sun:{value:SUN},time:{value:0},night:{value:0},day:{value:0},cloudy:{value:0},flash:{value:0},isl:{value:0}},
   vertexShader:`varying vec3 vD; void main(){ vD=normalize(position); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);} `,
-  fragmentShader:`varying vec3 vD; uniform vec3 sun; uniform float time; uniform float night; uniform float day; uniform float cloudy; uniform float flash;
+  fragmentShader:`varying vec3 vD; uniform vec3 sun; uniform float time; uniform float night; uniform float day; uniform float cloudy; uniform float flash; uniform float isl;
   float hash(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
   float noise(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f); return mix(mix(hash(i),hash(i+vec2(1.0,0.0)),f.x),mix(hash(i+vec2(0.0,1.0)),hash(i+vec2(1.0,1.0)),f.x),f.y); }
   float fbm(vec2 p){ float v=0.0, a=0.5; for(int i=0;i<5;i++){ v+=a*noise(p); p=p*2.03+vec2(1.7,9.2); a*=0.5; } return v; }
@@ -1235,20 +1235,21 @@ const skyMat=new T.ShaderMaterial({side:T.BackSide,depthWrite:false,fog:false,un
     float az=atan(d.z,d.x); vec2 ring=vec2(cos(az),sin(az));
     float m1=.03+.032*fbm(ring*2.4+3.1)+.008*sin(az*9.0);
     float m2=.012+.03*fbm(ring*4.3+7.7);
+    m1=mix(m1,-1.,isl); m2=mix(m2,-1.,isl); /* (夢見島: no mountains, open sea all round) */
     if(h<m1){ c=mix(c,mix(vec3(.52,.25,.34),c,.3),.88); }
     if(h<m2){ c=vec3(.17,.08,.1)+vec3(.14,.06,.03)*pow(s,3.0); }
-    if(h<0.0){ c=vec3(.11,.055,.05); }
+    if(h<0.0){ c=mix(vec3(.11,.055,.05),vec3(.02,.07,.11),isl); }
     vec3 dc=mix(vec3(.78,.87,.96),vec3(.36,.6,.92),smoothstep(0.,.35,h)); dc=mix(dc,vec3(.2,.42,.84),smoothstep(.35,.9,h)); dc+=vec3(1.,.95,.8)*pow(s,8.0)*.25;
     if(h>0.0&&day>.01){ vec2 uv2=d.xz/(h+.18); float q=fbm(uv2*vec2(.7,1.1)+vec2(time*.006,0.0)); float q2=fbm(uv2*2.2-vec2(time*.009,0.0)+3.0);
       float cv=smoothstep(.5,.78,q*.8+q2*.3)*smoothstep(.02,.12,h)*(1.0-smoothstep(.55,.85,h)); vec3 cw=mix(vec3(.72,.76,.84),vec3(1.0,.99,.97),smoothstep(.35,.8,q2+pow(s,2.0)*.3)); dc=mix(dc,cw,cv*.9); }
-    if(h<m1) dc=mix(vec3(.42,.52,.5),dc,.25); if(h<m2) dc=vec3(.24,.33,.28); if(h<0.0) dc=vec3(.18,.22,.18);
+    if(h<m1) dc=mix(vec3(.42,.52,.5),dc,.25); if(h<m2) dc=vec3(.24,.33,.28); if(h<0.0) dc=mix(vec3(.18,.22,.18),vec3(.12,.34,.45),isl);
     dc=mix(dc,vec3(1.,.98,.92)*2.4,smoothstep(.99984,.99993,s)*step(0.,h)); dc+=vec3(1.,.96,.85)*pow(s,700.)*.55*step(0.,h); c=mix(c,dc,day);
     c=mix(c,c*vec3(.16,.17,.32)+vec3(.006,.008,.03),night);
     vec3 sd=floor(normalize(vD)*260.); float st=fract(sin(dot(sd,vec3(12.9898,78.233,37.719)))*43758.5453); c+=vec3(.9,.92,1.)*step(.9975,st)*night*(1.-cloudy)*step(m1,h)*(.6+.4*sin(time*2.+st*40.));
     { float g=dot(c,vec3(.3,.5,.2)); vec3 oc=vec3(g)*vec3(.86,.9,.97)*(.78+.22*day); if(h>0.0){ vec2 uv3=d.xz/(h+.2); float q3=fbm(uv3*1.4+vec2(time*.02,0.0)); oc*=.82+.3*q3; } c=mix(c,oc,cloudy*.92); } /* overcast: grey, heavy cloud */
     c+=vec3(.75,.8,1.0)*flash*(.6+.4*step(0.,h));
     gl_FragColor=vec4(c,1.0); }`});
-if(CURVE.on) skyMat.fragmentShader=skyMat.fragmentShader.replace("if(h<0.0) dc=vec3(.18,.22,.18);","if(h<0.0) dc=mix(vec3(.24,.33,.28),vec3(.74,.84,.93),smoothstep(0.,-.12,h));").replace("if(h<0.0){ c=vec3(.11,.055,.05); }","if(h<0.0){ c=mix(vec3(.11,.055,.05),vec3(.32,.2,.24),smoothstep(0.,-.12,h)); }"); /* (滾筒世界: the ground rolls away below the horizon, so the sky under it shows — it fades to haze there instead of the dark hills colour) */
+if(CURVE.on) skyMat.fragmentShader=skyMat.fragmentShader.replace("if(h<0.0) dc=mix(vec3(.18,.22,.18),vec3(.12,.34,.45),isl);","if(h<0.0) dc=mix(mix(vec3(.24,.33,.28),vec3(.74,.84,.93),smoothstep(0.,-.12,h)),vec3(.12,.34,.45),isl);").replace("if(h<0.0){ c=mix(vec3(.11,.055,.05),vec3(.02,.07,.11),isl); }","if(h<0.0){ c=mix(mix(vec3(.11,.055,.05),vec3(.32,.2,.24),smoothstep(0.,-.12,h)),vec3(.02,.07,.11),isl); }"); /* (滾筒世界: the ground rolls away below the horizon, so the sky under it shows — it fades to haze there instead of the dark hills colour) */
 const sky=new T.Mesh(new T.SphereGeometry(150,32,16),skyMat); scene.add(sky); if(CURVE.on) sky.scale.setScalar(.56); /* (滾筒世界: the view ends at 90 m, so the sky dome comes inside it) */
 const envTex=cvs(256,128,(x,w,h)=>{ const g=x.createLinearGradient(0,0,0,h); g.addColorStop(0,"#2a1612"); g.addColorStop(.45,"#7a3a22"); g.addColorStop(.52,"#f0a060"); g.addColorStop(.6,"#3a1a10"); g.addColorStop(1,"#120806"); x.fillStyle=g; x.fillRect(0,0,w,h);
   for(let i=0;i<14;i++){ x.fillStyle="rgba(255,190,110,.5)"; x.beginPath(); x.arc(Math.random()*w,h*.3+Math.random()*12,3,0,7); x.fill(); } });
@@ -4180,8 +4181,9 @@ const raycaster=new T.Raycaster(); const ndc=new T.Vector2();
   scene.traverse(o=>{ if(o.isSprite&&o.material===glowMat&&(o.parent&&o.parent.children.some(c=>c.material===lanternMat)||o.userData.lanternGlow)) o.material=redGlow; }); }
 const pickables=[]; scene.traverse(o=>{ if(o.userData&&(o.userData.act||o.userData.seats||o.userData.floor)) pickables.push(o); }); ZEN.pick.forEach(o=>{ if(!pickables.includes(o)) pickables.push(o); });
 let pointers=new Map(), dragStart=null, pinchD=0, moved=false, camWideX=0, camTight=0; const CAMSEAT={done:-1};
-canvas.addEventListener("pointerdown",e=>{ canvas.setPointerCapture(e.pointerId); pointers.set(e.pointerId,{x:e.clientX,y:e.clientY}); if(pointers.size===1){ dragStart={x:e.clientX,y:e.clientY,t:performance.now(),yaw:camYaw,pitch:camPitch,pv:pvYaw}; moved=false; rotAnim=null; } else if(pointers.size===2){ const [a,b]=[...pointers.values()]; pinchD=Math.hypot(a.x-b.x,a.y-b.y); moved=true; } });
-canvas.addEventListener("pointermove",e=>{ if(!pointers.has(e.pointerId)) return; pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+const viewLocked=()=>document.body.classList.contains("inshop"); /* (11/25 23:20 主委「點進商店後禁止滑鼠移動」: inside a shop the mouse no longer turns, zooms or walks the world behind it) */
+canvas.addEventListener("pointerdown",e=>{ if(viewLocked()) return; canvas.setPointerCapture(e.pointerId); pointers.set(e.pointerId,{x:e.clientX,y:e.clientY}); if(pointers.size===1){ dragStart={x:e.clientX,y:e.clientY,t:performance.now(),yaw:camYaw,pitch:camPitch,pv:pvYaw}; moved=false; rotAnim=null; } else if(pointers.size===2){ const [a,b]=[...pointers.values()]; pinchD=Math.hypot(a.x-b.x,a.y-b.y); moved=true; } });
+canvas.addEventListener("pointermove",e=>{ if(!pointers.has(e.pointerId)||viewLocked()) return; pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(pointers.size===2&&fwZoomable()){ const [a,b]=[...pointers.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); FW_ZOOM=Math.max(1,Math.min(2.8,FW_ZOOM*d/Math.max(1,pinchD))); pinchD=d; return; } /* watching fireworks: two fingers zoom the lens in and out */
   if(pointers.size===2&&meAv&&meAv.pos.x<-23.5&&meAv.pos.y>-50){ const [a,b]=[...pointers.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); ZEN.fovX=Math.max(0,Math.min(34,(ZEN.fovX||0)+(pinchD-d)*.12)); pinchD=d; return; } /* 禪院: two fingers widen / narrow the lens */
   if(pointers.size===2){ const [a,b]=[...pointers.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); camDist=Math.max(2.4,Math.min(13,camDist*pinchD/d)); pinchD=d; return; }
@@ -4190,7 +4192,7 @@ function endPointer(e){ const wasTap=pointers.size===1&&dragStart&&!moved&&perfo
 /* with a mouse, one click on the ground does not walk you there (stray clicks kept sending people running): double-click the ground to walk; things (gods, stalls, seats) still answer one click */
 const TAPM={mouse:false,x:0,y:0,last:0,lx:0,ly:0,hinted:false};
 canvas.addEventListener("pointerup",endPointer); canvas.addEventListener("pointercancel",e=>{pointers.delete(e.pointerId); dragStart=null;});
-canvas.addEventListener("wheel",e=>{ e.preventDefault(); if(fwZoomable()){ FW_ZOOM=Math.max(1,Math.min(2.8,FW_ZOOM*(1-e.deltaY*.0015))); return; } if(customizing){ pvMode=e.deltaY<0?"face":"full"; syncPvSeg(); return; } if(meAv&&meAv.pos.x<-23.5&&meAv.pos.y>-50){ ZEN.fovX=Math.max(0,Math.min(34,(ZEN.fovX||0)+e.deltaY*.03)); return; } camDist=Math.max(2.4,Math.min(13,camDist*(1+e.deltaY*.001))); },{passive:false});
+canvas.addEventListener("wheel",e=>{ e.preventDefault(); if(viewLocked()) return; if(fwZoomable()){ FW_ZOOM=Math.max(1,Math.min(2.8,FW_ZOOM*(1-e.deltaY*.0015))); return; } if(customizing){ pvMode=e.deltaY<0?"face":"full"; syncPvSeg(); return; } if(meAv&&meAv.pos.x<-23.5&&meAv.pos.y>-50){ ZEN.fovX=Math.max(0,Math.min(34,(ZEN.fovX||0)+e.deltaY*.03)); return; } camDist=Math.max(2.4,Math.min(13,camDist*(1+e.deltaY*.001))); },{passive:false});
 
 let pendingStation=null; let nearKey=null;
 const STATION_LABEL={gacha:"招財貓扭蛋機",xuantian:"玄天上帝",guangong:"關聖帝君",fountain:"觀音噴泉",cats:"跳舞小貓",lot:"求籤",altar:"媽祖供桌",shop:"服務處",burn:"金爐",donate:"香油錢",lamp:"光明燈",lampR:"光明燈",bell:"敲鐘",drum:"擊鼓",tiangong:"天公爐",caishen:"財神爺",yuelao:"月老",huye:"虎爺",jieqian:"解籤處",wish:"許願樹"};
@@ -5472,7 +5474,7 @@ HANDLERS.spin=v=>{ pvSpin=0; pvYaw+= (+v)*Math.PI/4; };
 HANDLERS.pv=v=>{ if(v==="turn"){ pvSpin=Math.PI*2; return; } pvMode=v; syncPvSeg(); };
 HANDLERS.rollName=()=>{ const el=$("#nameInput"); if(el){ el.value=randomName(); el.focus(); } };
 HANDLERS.tab=v=>{ { const n=$("#nameInput"); if(n) me.name=n.value; } lookTab=v; renderLook(firstVisitPending); sheetBody.scrollTop=0; };
-HANDLERS.look=v=>{ const [i,n]=v.split(":").map(Number); if(i===3&&n===16&&!me.sp){ toast("這是主委專屬背心"); return; } if(!premOwned(i,n)){ toast(i===1?"這款髮型要到小鎮西側巷弄的理髮廳購買":"這款要到小鎮西側巷弄的美容院購買",3000); return; } if(i===3&&!styleOwned(n)){ toast(`「${STYLES[n]}」要到禪房旁的服飾店購買`,2800); return; } if(!Number.isInteger(i)||i<0||i>=LOOK_RANGE.length||!Number.isInteger(n)||n<0||n>=LOOK_RANGE[i]) return; draftLook[i]=n; if(i===1&&n>0){ draftLook[2]=HAIR_PRESET_COLOR[n]; } draftLook=sanitizeLook(draftLook,!!me.sp); meAv.setLook(draftLook); if(i===1) sheetBody.querySelectorAll(`[data-v^="2:"]`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===`2:${draftLook[2]}`))); sheetBody.querySelectorAll(`[data-v^="${i}:"]`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===v))); };
+HANDLERS.look=v=>{ const [i,n]=v.split(":").map(Number); if(i===3&&n===16&&!me.sp){ toast("這是主委專屬背心"); return; } if(!premOwned(i,n)){ toast(i===1?"這款髮型要到小鎮東側巷弄的理髮廳購買":"這款要到小鎮東側巷弄的美容院購買",3000); return; } if(i===3&&!styleOwned(n)){ toast(`「${STYLES[n]}」要到禪房旁的服飾店購買`,2800); return; } if(!Number.isInteger(i)||i<0||i>=LOOK_RANGE.length||!Number.isInteger(n)||n<0||n>=LOOK_RANGE[i]) return; draftLook[i]=n; if(i===1&&n>0){ draftLook[2]=HAIR_PRESET_COLOR[n]; } draftLook=sanitizeLook(draftLook,!!me.sp); meAv.setLook(draftLook); if(i===1) sheetBody.querySelectorAll(`[data-v^="2:"]`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===`2:${draftLook[2]}`))); sheetBody.querySelectorAll(`[data-v^="${i}:"]`).forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===v))); };
 HANDLERS.randomLook=()=>{ draftLook=randomLook(!!me.sp); draftLook[6]=0; if(!premOwned(1,draftLook[1])) draftLook[1]=1+Math.floor(Math.random()*24); if(!premOwned(7,draftLook[7])) draftLook[7]=Math.floor(Math.random()*15); if(!premOwned(9,draftLook[9])) draftLook[9]=Math.floor(Math.random()*4); if(!premOwned(13,draftLook[13])) draftLook[13]=0; if(!styleOwned(draftLook[3])) draftLook[3]=Math.floor(Math.random()*16); meAv.setLook(draftLook); renderLook(firstVisitPending); };
 HANDLERS.saveLook=async()=>{ setTimeout(()=>{ if(NET_ME()) profSave(false); },2500); const raw=$("#nameInput").value.trim(); if(hasAddLine(raw)){ toast("名字不能寫加賴",2800); return; } const ok=await _chk(raw);
   if(ok){ me.sp=1; me.name=SP_NAME; } else if(raw===SP_NAME&&me.sp){ me.name=SP_NAME; } else { me.sp=0; me.name=[SP_NAME,SP_OLD].includes(cleanName(raw))?"":cleanName(raw); }
@@ -13056,6 +13058,8 @@ function oldStreetLife(C,x0,x1){ const g=new T.Group(); C.g.add(g); const glow=K
 TW.lotSign={}; TW.lotTxt=i=>{ try{ return typeof LIFE!=="undefined"&&LIFE&&LIFE.lotTxt?LIFE.lotTxt(i):null; }catch(e){ return null; } };
 function lotBoard(i,cv){ const t=TW.lotTxt(i)||{t:"售",s:LOTS[i].p.toLocaleString("en-US")+" 幣",c:"#b3261e"}; const x=cv.getContext("2d"), W=cv.width, H=cv.height; x.clearRect(0,0,W,H); x.fillStyle="#fbf6ea"; x.fillRect(0,0,W,H); x.fillStyle=t.c; x.fillRect(0,0,W,H*.5); x.strokeStyle="rgba(0,0,0,.3)"; x.lineWidth=8; x.strokeRect(4,4,W-8,H-8);
   x.textAlign="center"; x.textBaseline="middle"; x.fillStyle="#fff"; x.font=`900 ${H*.32}px "Noto Sans TC","PingFang TC",sans-serif`; x.fillText(t.t,W/2,H*.27); x.fillStyle="#2a1a12"; x.font=`800 ${H*.2}px "Noto Sans TC","PingFang TC",sans-serif`; x.fillText(t.s,W/2,H*.74); }
+TW.lotUp=i=>{ const b=TOWNB.find(q=>q.lot===i); if(!b||(b.fl|0)>=2) return false; b.fl=2; if(b.roof==="tile") b.roof="gable"; const L=LOTS[i]; if(L){ L.fl=2; L.up=1; }
+  for(const d of CH){ if(!LIVE[d.id]||!d.c) continue; if(Math.hypot(d.c[0]-(b.axis==="x"?b.c:b.f),d.c[1]-(b.axis==="x"?b.f:b.c))>(d.r||40)+12) continue; try{ unload(d.id); load(d); }catch(e){ console.warn("lotUp",e); } } return true; }; /* (11/26 主委: a 小屋 built up to two floors — every screen redraws it once it hears) */
 TW.lotRefresh=i=>{ const m=TW.lotSign[i]; if(!m||!m.parent) return; lotBoard(i,m.material.map.image); m.material.map.needsUpdate=true; };
 function villageLane(C,li,zc){ street(C,-97,-26,zc-3,zc+3,"x",undefined,undefined,{end0:1}); rowBuild(C,["vil"+li+"n","vil"+li+"s"]);
   for(const x of [-88,-70,-52,-36]){ lamp(C,x,zc-2.6); } const r=krng(li*7+3);
@@ -13871,7 +13875,7 @@ function southC(x,z,h,c){ const n=.5+.5*nz(x*1.3,z*1.3); c.copy(LAWN).multiplySc
    beach — 「做成有高矮胖瘦」): every tree of a kind in a district is one instanced draw per material, each with its own height, girth,
    turn and a slight lean. The models are a lightened copy (cedar 1.5k triangles, palm 3.3k). */
 const TREEM={};
-function treeModel(name,cb){ if(TREEM[name]){ cb(TREEM[name]); return; } loadShared(name,m=>{ if(!TREEM[name]){ m.updateMatrixWorld(true); const bb=new T.Box3().setFromObject(m), c=bb.getCenter(new T.Vector3()), parts=[]; m.traverse(o=>{ if(!o.isMesh) return; const g=o.geometry.clone(); g.applyMatrix4(o.matrixWorld); g.translate(-c.x,-bb.min.y,-c.z); const mt=o.material; mt.side=/Frond|Needle|Grass/i.test(mt.name||"")?T.DoubleSide:mt.side; if(mt.map) mt.alphaTest=mt.transparent?.5:0; mt.transparent=false; mt.depthWrite=true; mt.roughness=Math.max(.8,mt.roughness||0); mt.metalness=0; /* (the undersides of the boughs came out black in the shade: a little of the tree's own colour always shows) */ if(mt.map){ mt.emissive=new T.Color("#ffffff"); mt.emissiveMap=mt.map; mt.emissiveIntensity=.34; } else { mt.emissive=mt.color.clone(); mt.emissiveIntensity=.3; } parts.push({g,m:mt}); }); TREEM[name]={parts,h:bb.max.y-bb.min.y}; } cb(TREEM[name]); }); }
+function treeModel(name,cb){ if(TREEM[name]){ cb(TREEM[name]); return; } loadShared(name,m=>{ if(!TREEM[name]){ m.updateMatrixWorld(true); const bb=new T.Box3().setFromObject(m), c=bb.getCenter(new T.Vector3()), parts=[]; m.traverse(o=>{ if(!o.isMesh) return; const g=o.geometry.clone(); g.applyMatrix4(o.matrixWorld); g.translate(-c.x,-bb.min.y,-c.z); const mt=o.material; mt.side=/Frond|Needle|Grass/i.test(mt.name||"")?T.DoubleSide:mt.side; if(mt.map) mt.alphaTest=mt.transparent?.5:0; mt.transparent=false; mt.depthWrite=true; mt.roughness=Math.max(.8,mt.roughness||0); mt.metalness=0; /* (the undersides of the boughs came out black in the shade: a little of the tree's own colour always shows) */ const glow=/palm/i.test(name)?0:1; if(glow<1&&mt.color){ const c=mt.color, l=(c.r+c.g+c.b)/3; c.lerp(new T.Color(l,l,l),.35).multiplyScalar(.5); } /* (11/26 00:20 主委「椰子樹樹幹還是太亮 有點像螢光了」: no glow at all, the colour toned down and less saturated) */ /* (11/25 23:27 主委「椰子樹亮度太怪了 好像有打燈」: the palms keep only a trace of it) */ if(!glow){ mt.emissive=new T.Color(0); mt.emissiveIntensity=0; } else if(mt.map){ mt.emissive=new T.Color("#ffffff"); mt.emissiveMap=mt.map; mt.emissiveIntensity=.34; } else { mt.emissive=mt.color.clone(); mt.emissiveIntensity=.3; } parts.push({g,m:mt}); }); TREEM[name]={parts,h:bb.max.y-bb.min.y}; } cb(TREEM[name]); }); }
 /* (11/17 主委「刪除椰子樹跟杉木」: where a cedar stood there is one of the chair's trunk trees now, deep green; the palms are gone) */
 function pine(C,x,y,z,s,r){ twTree({C,x,z,s:s*.9,pine:1}); (C.lpt||(C.lpt=[])).push([x,y,z,s*(.8+r()*.55),1,r()*6.283,"deep"]); }
 function palmAt(){}
@@ -14583,7 +14587,7 @@ const IS=(()=>{
   function base(u,v){ const r=Math.hypot(u,v), d=r/Rc(Math.atan2(v,u)), b=1-d;
     if(d>=1) return .05-2.4*sstep(1,1.2,d);
     return .05+.45*sstep(0,.16,b)+3*sstep(.14,.62,b)*(.75+.25*nz(u*.6,v*.6))+13*Math.exp(-((u-HILL[0])**2+(v-HILL[1])**2)/520)*sstep(.05,.35,b); }
-  const PONDY=base(POND[0],POND[1])-.35;
+  const PONDY=(()=>{ let m=1e9; for(let i=0;i<64;i++){ const a=i/64*Math.PI*2; for(const r of [POND[2]+.8,POND[2]+1.8,POND[2]+3]) m=Math.min(m,base(POND[0]+Math.cos(a)*r*1.1,POND[1]+Math.sin(a)*r*1.1)); } return m-.4; })(); /* (11/25 23:25 主委「那片湖怪怪的 水面高度在半空中」: the water was set from the middle of a slope, above the low side of its own bank — now from the lowest point of the rim) */
   const pondD=(u,v)=>Math.hypot(u-POND[0],v-POND[1])*(1+.08*Math.sin(Math.atan2(v-POND[1],u-POND[0])*3));
   function hL(u,v){ let h=base(u,v); const pd=pondD(u,v); if(pd<POND[2]+3) h=Math.min(h,h*(1-sstep(POND[2]+3,POND[2],pd))+(PONDY-1.1)*sstep(POND[2]+3,POND[2],pd)); const bd=segD(BROOK,u,v); if(bd<3) h-=.8*sstep(2.6,.8,bd)*sstep(-.1,.4,h); return h; }
   const brookY=(u,v)=>base(u,v)-.42;
@@ -14698,7 +14702,12 @@ const ISLE=(()=>{
     const n=A.sampleRate*4, b=A.createBuffer(1,n,A.sampleRate), d=b.getChannelData(0); let last=0; for(let i=0;i<n;i++){ const w=Math.random()*2-1; last=(last+.02*w)/1.02; d[i]=last*3.2; }
     const src=A.createBufferSource(); src.buffer=b; src.loop=true; const f=A.createBiquadFilter(); f.type="lowpass"; f.frequency.value=650; const g=A.createGain(); g.gain.value=0; const sw=A.createGain(); sw.gain.value=.5;
     const lfo=A.createOscillator(); lfo.frequency.value=.11; const lg=A.createGain(); lg.gain.value=.35; lfo.connect(lg); lg.connect(sw.gain); src.connect(f); f.connect(sw); sw.connect(g); g.connect(A.destination); src.start(); lfo.start(); g.gain.setTargetAtTime(.16*(typeof mVol==="function"?Math.max(.3,mVol()):1),A.currentTime,1.5); wav={ac:A,src,g}; }catch(e){ console.warn("isl waves",e); } }
-  function setOn(on,solo){ ISL.on=on; ISL.solo=on&&!!solo; { const S=st(); S.on=on?1:0; S.solo=ISL.solo?1:0; } document.body.classList.toggle("isl-on",on); document.body.classList.toggle("isl-solo",ISL.solo); try{ TOWNX.isl.seaOn(on); }catch(e){ console.warn(e); } bgmHush=on; hudOn(on); waves(on); try{ markDirty(); }catch(e){} }
+  /* (11/25 23:25 主委「島的遠景不要有山 一望無際的海就好」: on the island everything of the mainland — town, temple, hills — is hidden,
+     so all round is open sea; anything far from the island added later is caught every two seconds) */
+  const HID=new Set(); let hidT=0;
+  function farFromIsl(o){ if(o.userData&&o.userData.islKeep) return false; if(o===meAv.root||o.isLight||o.isCamera||(typeof sky!=="undefined"&&o===sky)) return false; if(o.position&&o.position.distanceTo(camera.position)<8) return false; /* (the sky and whatever travels with the camera stay) */ try{ const b=new T.Box3().setFromObject(o); if(b.isEmpty()) return false; const c=b.getCenter(new T.Vector3()), r=b.getSize(new T.Vector3()).length()/2; if(r>2500) return false; return Math.hypot(c.x-ISL.cx,c.z-ISL.cz)-r>420; }catch(e){ return false; } }
+  function mainHide(on){ if(on){ for(const o of scene.children){ if(HID.has(o)||!o.visible) continue; if(farFromIsl(o)){ o.visible=false; HID.add(o); } } } else { for(const o of HID) o.visible=true; HID.clear(); } }
+  function setOn(on,solo){ ISL.on=on; try{ skyMat.uniforms.isl.value=on?1:0; }catch(e){} if(!on){ try{ mainHide(false); }catch(e){} } else [1500,4000].forEach(ms=>setTimeout(()=>{ try{ if(ISL.on) mainHide(true); }catch(e){ console.warn("isl hide",e); } },ms)); /* (after the camera has come over to the island) */ ISL.solo=on&&!!solo; { const S=st(); S.on=on?1:0; S.solo=ISL.solo?1:0; } document.body.classList.toggle("isl-on",on); document.body.classList.toggle("isl-solo",ISL.solo); try{ TOWNX.isl.seaOn(on); }catch(e){ console.warn(e); } bgmHush=on; hudOn(on); waves(on); try{ markDirty(); }catch(e){} }
   function place(x,z,face){ try{ if(meAv.seat>=0) meAv.seat=-1; }catch(e){} meAv.pos.set(x,z); meAv.target.set(x,z); meAv.path=[]; meAv.gy=0; if(face!=null){ meAv.rotY=face; meAv.faceGoal=face; } try{ inputReset(); }catch(e){} }
   function enter(opt){ opt=opt||{}; const S=st(), first=opt.first!=null?opt.first:!S.n; const L=ISL.land;
     const lines=first?["海上起霧了……","雷聲很近。","……船翻了。"]:["划進霧裡……","霧散了。"];
@@ -14716,9 +14725,9 @@ const ISLE=(()=>{
   HANDLERS.tmIsl=v=>{ closeSheet(); if(v==="first") enter({first:true}); else if(v==="again") enter({first:false}); else if(v==="back"){ if(ISL.on) leave(true); else toast("你現在不在島上",1800); } else if(v==="reset"){ bag.isl={n:0}; saveBag(); toast("↩️ 夢見島紀錄清空了（下次算第一次）",2200); } };
   /* you closed the game on the island: you open it on the island again, where you were (bag.isl.at, kept every few seconds) */
   function resume(){ const S=st(); if(!S.on) return; const at=Array.isArray(S.at)&&islIn(S.at[0],S.at[1])?S.at:ISL.land; setOn(true,!!S.solo); place(at[0],at[1],Math.PI); try{ TOWNX.isl.prep(); }catch(e){} }
-  let lastAt=0; setInterval(()=>{ try{ if(!ISL.on) return; const S=st(); S.at=[+meAv.pos.x.toFixed(1),+meAv.pos.y.toFixed(1)]; if(Date.now()-lastAt>20000){ lastAt=Date.now(); saveBag(); } }catch(e){} },4000);
+  let lastAt=0; setInterval(()=>{ try{ if(!ISL.on) return; try{ if((hidT=(hidT+1)%2)===0) mainHide(true); }catch(e){} const S=st(); S.at=[+meAv.pos.x.toFixed(1),+meAv.pos.y.toFixed(1)]; if(Date.now()-lastAt>20000){ lastAt=Date.now(); saveBag(); } }catch(e){} },4000);
   setTimeout(()=>{ try{ resume(); }catch(e){ console.warn("isl resume",e); } },0);
-  return {enter,leave,st,resume};
+  return {enter,leave,st,resume,mainHide,HID};
 })();
 
 /*TOWN>>*/
@@ -15410,7 +15419,7 @@ function tipFor(n){ const r=FISH.filter(f=>f.r>=2); const f=r[(Math.random()*r.l
   if(n.tip==="fish") return fishTip; if(n.tip==="meteor") return L.meteorHint?L.meteorHint():"晚上偶爾會有流星，第一個找到的人會有好運。";
   if(n.tip==="goddess") return "森林最裡面有一座女神泉，丟一枚平安幣下去，女神問你的時候要說實話喔。";
   if(n.tip==="garden") return "河濱公園的「我的花圃」可以種東西，種子在花店買，記得澆水才長得快。";
-  if(n.tip==="salon") return "西側巷弄的理髮廳有新的精緻髮型，美容院可以換眼睛、鼻子、嘴巴。";
+  if(n.tip==="salon") return "東側巷弄的理髮廳有新的精緻髮型，美容院可以換眼睛、鼻子、嘴巴。";
   if(n.tip==="games") return "小吃廣場有擠冰淇淋跟中藥對對碰，玩得好會有平安幣喔。"; return fishTip; }
 const GIFTS={10:[300,0,"n"],30:[0,1,"n"],60:[1000,2,"n"]}, GF={10:1,30:2,60:4}; /* (which return gifts were given: one bit each) */
 function npcSheet(n,line){ try{ if(line&&String(line).length<=40) window.MZ_DY("npc",1,[n.n,String(line)]); }catch(e){} const R=NR(n.id), t=tier(R.a); openSheet("lfNpc","💬 "+n.n,`<p class="note" style="margin:0 0 6px">${hearts(R.a)}　好感 ${R.a}</p><p class="lead">「${line}」</p>
@@ -15611,7 +15620,7 @@ L.tick4=dt=>{ iceTick(dt); herbTick(dt);  };
 /* ---------- 流星: on about one game night in three, a meteor falls somewhere in or around the town — the same night, the same
    moment and the same place for everyone (worked out from the game day). A beam of light shows where it came down; whoever gets
    there first (the server keeps track) gets a special prize, everyone after still gets a little stardust. ---------- */
-const MSPOT=[[61.5,-150,"南岸森林"],[66,-206.6,"天后山頂"],[40,84,"廟前沙灘"],[12,-125,"河濱公園"],[64.5,-71.5,"噴水池廣場"],[84.6,-251.2,"女神泉"],[-21.5,-170,"西山小徑"],[-18,96,"燈塔附近"],[8,-87,"西側巷弄"],[55,-128,"河堤邊"],[-60,-74,"天后新村"],[-50,-203,"溪邊步道"]]; /* (11/16 晚上: the new map — the beach in front of the temple, the falls, the goddess's path, the village) */
+const MSPOT=[[61.5,-150,"南岸森林"],[66,-206.6,"天后山頂"],[40,84,"廟前沙灘"],[12,-125,"河濱公園"],[64.5,-71.5,"噴水池廣場"],[84.6,-251.2,"女神泉"],[-21.5,-170,"西山小徑"],[-18,96,"燈塔附近"],[8,-87,"東側巷弄"],[55,-128,"河堤邊"],[-60,-74,"天后新村"],[-50,-203,"溪邊步道"]]; /* (11/16 晚上: the new map — the beach in front of the temple, the falls, the goddess's path, the village) */
 const hsh=n=>{ n=(n^61)^(n>>>16); n=Math.imul(n,9); n^=n>>>4; n=Math.imul(n,0x27d4eb2d); n^=n>>>15; return n>>>0; };
 function meteorOf(D){ const h=hsh(D*7919+13); if(h%3&&!(L.forceD===D)) return null; const p=.58+((h>>>3)%100)/100*.2, at=(D+p)*TOD_LEN*1000; const sp=MSPOT[(h>>>11)%MSPOT.length]; return {id:D,at,end:(D+.86)*TOD_LEN*1000,x:sp[0],z:sp[1],nm:sp[2]}; }
 const curD=()=>Math.floor(Date.now()/1000/TOD_LEN);
@@ -15933,7 +15942,7 @@ function ivOpen(k,open){ ivClose(true); const K=KEEP[k]; const R=ivBuild(k); IV.
     if(P.bun){ try{ plush(av.head,HAIRC[look[2]],0,.05,-.265,.092,.086,.086); plush(av.head,"#c0392b",0,.045,-.225,.07,.07,.025); }catch(e){} } /* (a bun at the back, under the cap — a cap hides the hairdo's own bun; with a red band, 11/15) */
     if(P.rod){ const r=new T.Mesh(new T.CylinderGeometry(.012,.02,1.3,6),new T.MeshStandardMaterial({color:"#6b4a2e",roughness:.6})); r.position.set(0,-.3,.35); r.rotation.x=1.1; av.arms[1].add(r); } IV.avs.push(av); });
   KS[k]={avs:IV.avs,sp:{x:meAv.pos.x,z:meAv.pos.y,ry:0},t:0,mode:K.mode,last:0,busy:true,inside:1};
-  window.MZ_VIEW={scene:IV.scene,cam:IV.cam}; document.body.classList.add("inshop");
+  window.MZ_VIEW={scene:IV.scene,cam:IV.cam}; document.body.classList.add("inshop"); try{ pointers.clear(); dragStart=null; }catch(e){}
   const ui=document.createElement("div"); ui.id="ivUI"; ui.innerHTML=`<div id="ivBox" style="position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 12px);z-index:30;background:rgba(255,252,246,.96);border:2px solid #c9a27a;border-radius:16px;padding:10px 14px;box-shadow:0 6px 18px rgba(80,40,10,.25);color:#3b2416;font:700 16px/1.6 ${UI_FONT};min-height:52px"><b id="ivName" style="color:#8e1c14;font-size:14px"></b><div id="ivText"></div></div><button class="secondary" id="ivX" style="position:fixed;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);z-index:30">🚪 離開</button>`;
   document.body.appendChild(ui); ui.querySelector("#ivX").onclick=()=>{ closeSheet(); ivClose(); };
   IV.open=open; IV.opened=false; IV.idle=0; return K; }
@@ -16744,7 +16753,7 @@ GL["tw:photo"]=async()=>{ if(KEEP["tw:photo"].soon&&!me.sp){ toast("照相館還
   /* (11/22 主委: on later visits 阿光 says a line first — still collecting: 「你都拍完了嗎？還沒啊？再繼續加油喔！」; after the ending:
      「謝謝你的幫忙，下次需要幫忙再跟你說」 — then the album is one tap away) */
   const line=P.end?"謝謝你的幫忙，下次需要幫忙再跟你說！":"你都拍完了嗎？還沒啊？再繼續加油喔！";
-  openSheet("lfPhHi","📷 照相館・阿光",`<p class="lead" style="line-height:1.9">「${line}」</p><div class="row"><button class="secondary" data-act="lfPhAlbum">📔 看相簿</button><button class="primary" data-act="lfPhBye">${P.end?"不客氣！":"好，我會加油！"}</button></div>`);
+  openSheet("lfPhHi","📷 照相館・阿光",`<p class="lead" style="line-height:1.9">「${line}」</p><div class="row"><button class="secondary" data-act="lfPhAlbum">📔 看相簿</button>${P.end?`<button class="secondary" data-act="lfPhEnd">🎞️ 再看一次完成動畫</button>`:""}<button class="primary" data-act="lfPhBye">${P.end?"不客氣！":"好，我會加油！"}</button></div>`); /* (11/25 23:32 主委「照相館如果完成任務了 增加一個再看一次完成動畫的功能」: right here at 阿光, not only at the bottom of the album) */
   try{ window.MZ_BABBLE&&window.MZ_BABBLE(Math.min(1.8,line.length*.06),1.1); const S=KS["tw:photo"]; if(S) keepSay(S.avs[0],line.slice(0,18)+(line.length>18?"……":"")); }catch(e){} };
 HANDLERS.lfPhBye=()=>closeSheet();
 /* the last visit: 阿光 holds the full album */
@@ -17406,7 +17415,7 @@ const HMD=()=>{ const d=LF(); d.hm=d.hm||{own:[],cur:-1}; if(!Array.isArray(d.hm
 const LOTS_=()=>TOWNX.LOTS||[];
 const HSV={on:false,list:{},at:0,busy:false}; /* the lobby's list: lot → {n, pub, mine} */
 async function hsFetch(force){ if(HSV.busy){ if(force){ try{ await HSV.p; }catch(e){} } else return; } if(!force&&Date.now()-HSV.at<45000) return; HSV.busy=true; HSV.at=Date.now(); let done; HSV.p=new Promise(r=>done=r); try{ const ctl=new AbortController(); const t=setTimeout(()=>ctl.abort(),4000); const r=await fetch("/houses",{cache:"no-store",signal:ctl.signal}); clearTimeout(t); const j=await r.json(); if(j&&j.ok&&Array.isArray(j.list)){ HSV.on=true; HSV.list={}; j.list.forEach(h=>{ HSV.list[h.l]=h; }); HSV.at=Date.now();
-    const m=j.list.find(h=>h.mine), h=HMD(); if(m){ h.own=[m.l]; h.cur=m.l; h.pub=!!m.pub; } else if(h.cur>=0&&HSV.list[h.cur]){ h.own=[]; h.cur=-1; } save(); lotRefreshAll(); } }catch(e){} HSV.busy=false; done(); }
+    const m=j.list.find(h=>h.mine), h=HMD(); j.list.forEach(q=>{ if(q.up) try{ TOWNX.lotUp(q.l); }catch(e){} }); if(m){ h.own=[m.l]; h.cur=m.l; h.pub=!!m.pub; if(m.up) h.up=1; } else if(h.cur>=0&&HSV.list[h.cur]){ h.own=[]; h.cur=-1; } save(); lotRefreshAll(); } }catch(e){} HSV.busy=false; done(); }
 async function hsPost(b){ try{ const r=await fetch("/house",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(b)}); return await r.json(); }catch(e){ return null; } }
 const lotOwner=i=>{ const h=HMD(); if(h.cur===i) return {mine:1,n:me.name||"我",pub:h.pub}; const s=HSV.list[i]; return s?{mine:0,n:s.n,pub:s.pub}:null; };
 const nm5=n=>{ n=String(n||"香客"); return n.length>5?n.slice(0,5)+"…":n; };
@@ -17425,13 +17434,21 @@ function homeMark(){ const p=homeSpot(); if(!p){ if(HMK){ HMK.visible=false; HMK
     const ic=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(cv),transparent:true,depthWrite:false,fog:false})); ic.scale.set(1.3,1.3,1); ic.position.y=23; HMK.userData.ic=ic; HMK.add(ic); HMK.userData.beam=beam; scene.add(HMK); }
   HMK.position.set(p.x,p.y-1.2,p.z); HMK.userData.y0=p.y-1.2; }
 L.tick9=dt=>{ try{ if(!TOWNX||!TOWNX.on){ if(HMK) HMK.visible=false; return; } hsFetch(); if(!HMK) homeMark(); if(!HMK||HMK.userData.off) return; HMK.visible=true; const u=HMK.userData; u.t=(u.t||0)+dt; u.ic.position.y=23+Math.sin(u.t*2)*.3; u.beam.material.opacity=.75+.25*Math.sin(u.t*1.6); const d=Math.hypot(meAv.pos.x-HMK.position.x,meAv.pos.y-HMK.position.z), k=Math.max(1,Math.min(2.2,d/30)); u.ic.scale.set(1.3*k,1.3*k,1); }catch(e){}  };
-function lotRefreshAll(){ LOTS_().forEach(Lt=>{ try{ TOWNX.lotRefresh(Lt.i); const o=lotOwner(Lt.i); STATION_LABEL["tw:lot:"+Lt.i]=o&&o.mine?"🏠 我的家":o?`${nm5(o.n)}的家`:lotNm(Lt.i); }catch(e){} }); homeMark(); }
+function lotRefreshAll(){ try{ const h=HMD(); if(h.cur>=0&&h.up) TOWNX.lotUp(h.cur); }catch(e){} LOTS_().forEach(Lt=>{ try{ TOWNX.lotRefresh(Lt.i); const o=lotOwner(Lt.i); STATION_LABEL["tw:lot:"+Lt.i]=o&&o.mine?"🏠 我的家":o?`${nm5(o.n)}的家`:lotNm(Lt.i); }catch(e){} }); homeMark(); }
 L.isHome=k=>k==="tw:lot:"+HMD().cur; L.homeLot=()=>HMD().cur; L.homeInfo=()=>{ const h=HMD(); return {cur:h.cur,pub:h.pub}; }; HANDLERS.homePub=async v=>{ const h=HMD(); if(h.cur<0||(v==="1")===!!h.pub) return; h.pub=v==="1"; save(); if(HSV.on){ await hsPost({op:"set",pub:h.pub}); if(HSV.list[h.cur]) HSV.list[h.cur].pub=h.pub; } lotRefreshAll(); toast(h.pub?"🔓 開放參觀了，鎮上的人可以進來看":"🔒 改成不公開了",2200); try{ openGfx(); }catch(e){} }; setTimeout(()=>{ try{ lotRefreshAll(); hsFetch(true); }catch(e){} },2500);
-L.lot=async i=>{ const Lt=LOTS_()[i]; if(!Lt) return; await hsFetch(true); const h=HMD(), S=TOWNX.LOT_SZ[Lt.k], o=lotOwner(i), pr=dPrice("tw:furn",Lt.p), rm=S.room, ih=inHouse(i);
+const lotK=i=>{ const Lt=LOTS_()[i]; if(!Lt) return "S"; const h=HMD(); return (Lt.k==="M"||Lt.up||(h.cur===i&&h.up)||(HSV.list[i]&&HSV.list[i].up))?"M":"S"; }; /* (a 小屋 built up counts as 大間 inside) */
+const upPrice=i=>{ const Lt=LOTS_()[i]; return Lt?dPrice("tw:furn",Math.round((Lt.p*30000/14000-Lt.p+2000)/500)*500):0; }; /* (the difference to a 大間 in the same spot, plus 2,000 for the work) */
+HANDLERS.lfLotUp=()=>{ const h=HMD(), i=h.cur; if(i<0||lotK(i)!=="S") return; const pr=upPrice(i); openSheet("lfLot","⬆️ 加蓋成兩層樓",`<p class="lead">把${lotNm(i)}加蓋成兩層樓：外觀變高，屋裡變成 10×8 公尺的大間，原本的家具都留在家裡。</p><p class="lead">費用 <b>${pr.toLocaleString("en-US")}</b> 平安幣，付完馬上完成。</p><div class="row"><button class="primary" data-act="lfLotUpOk">付錢加蓋</button><button class="secondary" data-act="lfLotNo">先不要</button></div>`); };
+HANDLERS.lfLotUpOk=async()=>{ const h=HMD(), i=h.cur; if(i<0||lotK(i)!=="S") return; const pr=upPrice(i); if(!me.sp&&bag.coins<pr){ try{ buzz(); }catch(e){} toast(`平安幣不夠（還差 ${(pr-bag.coins).toLocaleString("en-US")}）`,2600); return; }
+  if(HSV.on){ const j=await hsPost({op:"up"}); if(!j||!j.ok){ toast("現在加蓋不了，等一下再試",2600); return; } if(HSV.list[i]) HSV.list[i].up=true; }
+  if(!me.sp) bag.coins-=pr; h.up=1; h.upP=pr; save(); try{ profSave(true); }catch(e){} try{ TOWNX.lotUp(i); }catch(e){ console.warn(e); } try{ [392,523,659,784,1047].forEach((f,k)=>tone(f,.18,.06,"triangle",k*.09)); }catch(e){} lotRefreshAll();
+  openSheet("lfLot2","🎉 加蓋好了！",`<p class="lead">${lotNm(i)}變成兩層樓了！屋裡現在是 10×8 公尺的大間，家具都在原位。</p><div class="row"><button class="primary" data-act="lfLotIn" data-v="${i}">進去看看</button></div>`); };
+L.lot=async i=>{ const Lt=LOTS_()[i]; if(!Lt) return; await hsFetch(true); const h=HMD(), S=TOWNX.LOT_SZ[lotK(i)], o=lotOwner(i), pr=dPrice("tw:furn",Lt.p), rm=S.room, ih=inHouse(i);
   const who=ih.n?`<p class="note">現在屋裡有 ${ih.n} 個人${ih.owner?"（主人在家）":""}。</p>`:"";
   if(o&&o.mine){ openSheet("lfLot","🏠 我的家・"+lotNm(i),`<p class="lead">${S.n}，房間 ${rm[0]}×${rm[1]} 公尺。</p>${who}
      <div class="row"><button class="primary" data-act="lfLotIn" data-v="${i}">進去</button></div>
      <div class="lf-row"><div class="t"><b>${h.pub?"🔓 開放參觀":"🔒 不公開"}</b><br><small>${h.pub?"鎮上的人都可以進來看你的家；你在家的時候，大家會在房間裡看到你。":"只有你自己進得去，門牌上會寫「不公開」。"}</small></div><button class="secondary" data-act="lfLotPub">${h.pub?"改成不公開":"開放參觀"}</button></div>
+     ${lotK(i)==="S"?`<div class="lf-row"><div class="t"><b>⬆️ 加蓋成兩層樓</b><br><small>外面變成兩層樓，屋裡變成大間（10×8 公尺），家具都留著。付完錢馬上完成。</small></div><button class="secondary" data-act="lfLotUp">${upPrice(i).toLocaleString("en-US")} 幣</button></div>`:""}
      <div class="lf-row"><div class="t"><b>賣掉房子</b><br><small>退回一半的錢（${Math.round(Lt.p/2).toLocaleString("en-US")} 平安幣），家具會留在住宅巷的小家。</small></div><button class="secondary" data-act="lfLotSell">賣掉</button></div>`); return; }
   if(o){ openSheet("lfLot","🏡 "+o.n+"的家",`<p class="lead">門牌：${lotNm(i)}・<b>${o.n}</b>的家（${S.n}）。</p>${who}${o.pub?`<div class="row"><button class="primary" data-act="lfLotVisit" data-v="${i}">進去參觀</button></div><p class="note">主人開放大家參觀。進去以後可以坐坐椅子、躺躺床，但不能動主人的家具。</p>`:`<p class="note">🔒 主人沒有開放參觀。</p>`}`); return; }
   const mine=h.cur>=0?h.cur:-1;
@@ -17445,13 +17462,13 @@ HANDLERS.lfLotBuy=async v=>{ const i=+v, Lt=LOTS_()[i], h=HMD(); if(!Lt||h.cur>=
 HANDLERS.lfLotPub=async()=>{ const h=HMD(); h.pub=!h.pub; save(); if(HSV.on){ await hsPost({op:"set",pub:h.pub}); if(HSV.list[h.cur]) HSV.list[h.cur].pub=h.pub; } lotRefreshAll(); toast(h.pub?"🔓 開放參觀了，鎮上的人可以進來看":"🔒 改成不公開了",2200); if(h.cur>=0) L.lot(h.cur); };
 HANDLERS.lfLotSell=()=>{ const h=HMD(), Lt=LOTS_()[h.cur]; if(!Lt) return; openSheet("lfLot","賣掉房子？",`<p class="lead">確定要賣掉${lotNm(h.cur)}嗎？會退回 ${Math.round(Lt.p/2).toLocaleString("en-US")} 平安幣，房子就是別人的了。</p><div class="row"><button class="primary" data-act="lfLotSellOk">確定賣掉</button><button class="secondary" data-act="lfLotNo">先不要</button></div>`); };
 HANDLERS.lfLotNo=()=>closeSheet();
-HANDLERS.lfLotSellOk=async()=>{ const h=HMD(), i=h.cur, Lt=LOTS_()[i]; if(!Lt) return; if(HSV.on){ const j=await hsPost({op:"sell"}); if(!j||!j.ok){ toast("現在賣不了，等一下再試",2400); return; } delete HSV.list[i]; } bag.coins+=Math.round(Lt.p/2); h.own=[]; h.cur=-1; save(); try{ profSave(true); chaChing(); }catch(e){} lotRefreshAll(); closeSheet(); toast(`賣掉了，拿回 ${Math.round(Lt.p/2).toLocaleString("en-US")} 平安幣。你的家回到住宅巷的小家。`,3200); };
-HANDLERS.lfLotIn=v=>{ const i=+v, Lt=LOTS_()[i]; if(!Lt||!(HMD().cur===i||me.sp)) return; closeSheet(); const r=TOWNX.LOT_SZ[Lt.k].room; try{ ROOMX.lot=i; ROOMX.size(r[0],r[1]); ROOMX.open(); }catch(e){ console.warn(e); } };
+HANDLERS.lfLotSellOk=async()=>{ const h=HMD(), i=h.cur, Lt=LOTS_()[i]; if(!Lt) return; if(HSV.on){ const j=await hsPost({op:"sell"}); if(!j||!j.ok){ toast("現在賣不了，等一下再試",2400); return; } delete HSV.list[i]; } bag.coins+=Math.round(Lt.p/2)+Math.round((h.upP|0)/2); h.own=[]; h.cur=-1; h.up=0; h.upP=0; save(); try{ profSave(true); chaChing(); }catch(e){} lotRefreshAll(); closeSheet(); toast(`賣掉了，拿回 ${Math.round(Lt.p/2).toLocaleString("en-US")} 平安幣。你的家回到住宅巷的小家。`,3200); };
+HANDLERS.lfLotIn=v=>{ const i=+v, Lt=LOTS_()[i]; if(!Lt||!(HMD().cur===i||me.sp)) return; closeSheet(); const r=TOWNX.LOT_SZ[lotK(i)].room; try{ ROOMX.lot=i; ROOMX.size(r[0],r[1]); ROOMX.open(); }catch(e){ console.warn(e); } };
 /* (11/22 主委「我要怎麼看房子大小間差別」: any house for sale can be walked into empty before buying) */
 HANDLERS.lfLotPeek=v=>{ const i=+v, Lt=LOTS_()[i]; if(!Lt||lotOwner(i)) return; closeSheet(); const r=TOWNX.LOT_SZ[Lt.k].room; try{ ROOMX.lot=i; ROOMX.size(r[0],r[1]); ROOMX.open({n:"樣品屋",room:{}}); }catch(e){ console.warn(e); } };
 HANDLERS.lfLotVisit=async v=>{ const i=+v, Lt=LOTS_()[i]; if(!Lt) return; let room=null, n=(lotOwner(i)||{}).n||"鄰居";
   try{ const r=await fetch("/house?l="+i,{cache:"no-store"}); const j=await r.json(); if(!j.ok){ toast(j.closed?"🔒 主人沒有開放參觀":"這間現在進不去",2400); return; } n=j.n||n; try{ room=j.room?JSON.parse(j.room):null; }catch(e){} }catch(e){ toast("這間現在進不去",2200); return; }
-  closeSheet(); const r=TOWNX.LOT_SZ[Lt.k].room; try{ ROOMX.lot=i; ROOMX.size(r[0],r[1]); ROOMX.open({n,room:room||{}}); }catch(e){ console.warn(e); } };
+  closeSheet(); const r=TOWNX.LOT_SZ[lotK(i)].room; try{ ROOMX.lot=i; ROOMX.size(r[0],r[1]); ROOMX.open({n,room:room||{}}); }catch(e){ console.warn(e); } };
 /* the owner's room goes up to the lobby when they leave it (so visitors see it as it is) */
 function roomUp(){ const h=HMD(); if(!HSV.on||h.cur<0) return; try{ hsPost({op:"room",room:ROOMX.snap()}); }catch(e){} }
 try{ ROOMX.onLeave=()=>{ if(ROOMX.lot>=0&&ROOMX.lot===HMD().cur) roomUp(); }; }catch(e){}
@@ -17586,7 +17603,7 @@ HANDLERS.stpWear=()=>{ closeSheet(); try{ me.look[3]=27; meAv.setLook(me.look); 
    the book comes from 小胖; each of the 12 places has a little table with a stamp and an ink pad; walk up to it and press 📮 蓋章.
    The map does not show them — the book lists the places by name and 小胖 gives a hint. */
 const stpGot=()=>{ const S=STP(); if(!S.got&&S.m) S.got=1; return !!S.got; };
-const STP_HINT=["過了河往南走，森林的入口，樹蔭底下","爬到天后山最高的地方，滑翔傘起飛的旁邊","廟前面的沙灘，聽得到海浪的地方","小鎮河邊的公園，常有人在散步","有噴水池的那個廣場","森林最深處，住著女神的泉水旁邊","往西邊的山上走，小路上","晚上會亮的那座燈塔底下","小鎮西邊彎彎曲曲的小巷子裡","沿著河堤一直走","大家住的天后新村裡","溪水旁邊的步道"];
+/* (11/25 23:17 主委: hints follow the minimap — north is up; the 理髮廳 lane is east of the main street) */ const STP_HINT=["小鎮北邊，過了河上那座拱橋，橋頭就是森林的入口，樹蔭底下","爬到天后山最高的地方，滑翔傘起飛的旁邊","廟前面的沙灘，聽得到海浪的地方","小鎮河邊的公園，常有人在散步","有噴水池的那個廣場","森林最深處，住著女神的泉水旁邊","往西邊的山上走，小路上","晚上會亮的那座燈塔底下","讓你變美的地方：理髮廳和美容院那條小巷子裡","沿著河堤一直走","大家住的天后新村裡","溪水旁邊的步道"];
 const STB={g:null,near:-1,t:0}; window.MZ_STB=STB;
 /* where each stamp table stands (11/25 主委「重疊的移開」: 河濱公園 was inside the pavilion with its bench, 噴水池 under the big tree,
    女神泉 against a stone lantern, 天后新村 in a house corner — moved onto open ground nearby) */
@@ -17726,7 +17743,9 @@ L.seasonShop=()=>`<h4 style="margin:10px 0 4px">食材・調味料</h4><p class=
 HANDLERS.lfIng=v=>{ const q=IB[v]; if(!q) return; const pr=dPrice("tw:grocer",q[2]); if((INGD()[v]|0)>=40){ toast("帶太多了，先煮掉一些吧",1800); return; } if(!me.sp){ if(bag.coins<pr){ try{ buzz(); }catch(e){} toast("平安幣不夠",2000); return; } bag.coins-=pr; } INGD()[v]=(INGD()[v]|0)+(SEASON.has(v)?5:1); save(); try{ chaChing(); }catch(e){} toast(`買了${q[1]}${SEASON.has(v)?"（可以用 5 次）":""}`,1600); grocer(); };
 
 
-L.dbg=()=>({F,near,LF:LF(),pool,FGLB,HELD}); L.press=()=>press(); L.start=()=>startFish(); L.hold=(id,ln)=>{ ln=ln||.8; fishLoad(); let tries=0; const go=()=>{ if((!FGLB||!FGLB[id])&&tries++<200){ setTimeout(go,300); return; } if(HELD&&HELD.g&&HELD.g.parent) HELD.g.parent.remove(HELD.g); const f=FBY[id], g=fishMesh(f); g.scale.setScalar(ln); scene.add(g); HELD={g,t:.6,from:meAv.root.position.clone().add(new T.Vector3(Math.sin(meAv.rotY)*3,0,Math.cos(meAv.rotY)*3)),len:ln}; L.heldFreeze=1; }; go(); };
+L.dbg=()=>({F,near,LF:LF(),pool,FGLB,HELD}); L.press=()=>press(); L.start=()=>startFish(); L.hold=(id,ln)=>{ ln=ln||.8; fishLoad(); let tries=0; const go=()=>{ if((!FGLB||!FGLB[id])&&tries++<200){ setTimeout(go,300); return; } if(HELD&&HELD.g&&HELD.g.parent) HELD.g.parent.remove(HELD.g); const f=FBY[id], g=fishMesh(f); g.scale.setScalar(ln); scene.add(g); HELD={g,t:.6,from:meAv.root.position.clone().add(new T.Vector3(Math.sin(meAv.rotY)*3,0,Math.cos(meAv.rotY)*3)),len:ln}; L.heldFreeze=1;
+    /* (11/26 00:22 主委「看魚模型要有關掉的按鈕」) */ let b=document.getElementById("fvBar"); if(!b){ b=document.createElement("div"); b.id="fvBar"; b.style.cssText="position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 190px);z-index:11;display:flex;gap:8px"; b.innerHTML=`${me.sp?`<button class="secondary" data-k="n">▶ 下一隻</button>`:""}<button class="primary" data-k="x">✖ 關掉</button>`; document.body.appendChild(b);
+      b.onclick=e=>{ const k=e.target&&e.target.dataset&&e.target.dataset.k; if(k==="x"){ L.heldFreeze=0; if(HELD) HELD.t=9; b.remove(); } else if(k==="n"){ try{ HANDLERS.tmFish(); }catch(_){ } } }; } }; go(); };
 /* (11/23: each part of the town life is timed for the 卡住 notes) */ try{ chuteTick=LPF.w("滑翔",chuteTick); }catch(e){} try{ fishTick=LPF.w("釣魚",fishTick); }catch(e){} try{ fshTick=LPF.w("魚影",fshTick); }catch(e){} try{ heldTick=LPF.w("釣到",heldTick); }catch(e){} try{ goddessTick=LPF.w("女神",goddessTick); }catch(e){} try{ mmTick=LPF.w("流星",mmTick); }catch(e){} try{ npcTick=LPF.w("NPC",npcTick); }catch(e){} try{ iceTick=LPF.w("冰淇淋",iceTick); }catch(e){} try{ herbTick=LPF.w("中藥",herbTick); }catch(e){} try{ meteorTick=LPF.w("流星石",meteorTick); }catch(e){} try{ keepTick=LPF.w("店員",keepTick); }catch(e){} try{ bugTick=LPF.w("昆蟲",bugTick); }catch(e){} try{ digTick=LPF.w("挖掘",digTick); }catch(e){} try{ ckTick=LPF.w("廚房",ckTick); }catch(e){} try{ if(L.tick9){ const t9=L.tick9; L.tick9=LPF.w("房屋",t9); } }catch(e){}
 return L; })();
 /*LIFE>>*/
