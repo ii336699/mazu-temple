@@ -15002,21 +15002,34 @@ const ISLE=(()=>{
     box.innerHTML=`<div style="background:rgba(16,28,32,.88);border:1px solid var(--gold);border-radius:18px;padding:12px;text-align:center;color:#f4ead2;width:min(92vw,360px)"><div id="spT" style="font-size:14px;margin-bottom:8px">魚影游進中間的圈圈時，按「刺！」</div>
       <canvas id="spC" width="320" height="320" style="width:min(80vw,320px);height:min(80vw,320px);border-radius:50%;display:block;margin:0 auto;touch-action:none"></canvas>
       <div style="display:flex;gap:8px;justify-content:center;margin-top:10px"><button class="glass isl-chip" id="spGo" style="font-size:17px;padding:12px 30px">🔱 刺！</button><button class="glass isl-chip" id="spNo">離開</button></div></div>`;
-    document.body.appendChild(box); mini(true); const cv=box.querySelector("#spC"), g=cv.getContext("2d"), Tt=box.querySelector("#spT"); window.MZ_HOLD=true; window.MZ_ISLBUSY=true; hold("spear");
+    document.body.appendChild(box); box._f=()=>fish; /* (for the simulator tests) */ mini(true); const cv=box.querySelector("#spC"), g=cv.getContext("2d"), Tt=box.querySelector("#spT"); window.MZ_HOLD=true; window.MZ_ISLBUSY=true; hold("spear");
     const av=meAv, old=av.custPose; let ph=0, stab=0; av.custPose=dt=>{ ph+=dt; stab=Math.max(0,stab-dt*3); av.arms[0].rotation.set(-2.6+stab*1.9,0,.15); av.arms[1].rotation.set(-1.4+stab*.6,0,-.15); av.torso.rotation.x=.15+stab*.35; };
-    const spawn=()=>{ fish=[]; const n=2+(Math.random()*2|0); for(let i=0;i<n;i++) fish.push({a:Math.random()*6.283,r:40+Math.random()*90,w:(.4+Math.random()*.6)*(Math.random()<.5?-1:1),s:.8+Math.random()*.5,ph:Math.random()*6,flee:0}); }; spawn();
+    /* (11/27 主委「魚影一直不進中間圈圈 叉不了 還有魚為什麼是橫著游」: they used to circle the centre at a fixed distance, never
+       inside the ring, and were drawn turned 90°. Now each fish swims to one spot after another in the pool — about half of those
+       spots are in or right by the ring — sometimes stops there for a moment, and always points its head the way it is going.) */
+    const PR=130, pickWP=f=>{ const inner=Math.random()<.5, a=Math.random()*6.283, r=inner?Math.random()*26:40+Math.random()*(PR-50); f.tx=160+Math.cos(a)*r; f.ty=160+Math.sin(a)*r; };
+    const spawn=()=>{ fish=[]; const n=2+(Math.random()*2|0); for(let i=0;i<n;i++){ const a=Math.random()*6.283, r=70+Math.random()*55; const f={x:160+Math.cos(a)*r,y:160+Math.sin(a)*r,h:Math.random()*6.283,v:0,s:.8+Math.random()*.5,ph:Math.random()*6,rest:Math.random()*1.2,flee:0,sp:38+Math.random()*26}; pickWP(f); fish.push(f); } }; spawn();
     let last=performance.now(); const R=34;
     const draw=now=>{ const dt=Math.min(.05,(now-last)/1000); last=now; const t=now/1000; g.clearRect(0,0,320,320); const grd=g.createRadialGradient(160,160,20,160,160,160); grd.addColorStop(0,P.fresh?"#5fb0a8":"#5ec4c0"); grd.addColorStop(1,P.fresh?"#2f6f78":"#2a7c98"); g.fillStyle=grd; g.beginPath(); g.arc(160,160,160,0,7); g.fill();
       g.strokeStyle="rgba(255,255,255,.12)"; for(let i=0;i<6;i++){ g.beginPath(); g.arc(160+40*Math.sin(t*.3+i),160+30*Math.cos(t*.4+i*2),30+i*14+6*Math.sin(t+i),0,7); g.stroke(); }
-      for(const f of fish){ f.a+=f.w*dt*(f.flee?3.2:1); f.ph+=dt*6; f.r+=Math.sin(t*.7+f.ph*.1)*12*dt; if(f.flee){ f.r+=90*dt; } f.r=Math.max(8,Math.min(f.flee?400:130,f.r)); const x=160+Math.cos(f.a)*f.r, y=160+Math.sin(f.a)*f.r, h=f.a+Math.PI/2*(f.w>0?1:-1);
-        g.save(); g.translate(x,y); g.rotate(h); g.fillStyle="rgba(20,40,48,.55)"; g.beginPath(); g.ellipse(0,0,7*f.s,22*f.s,0,0,7); g.fill(); g.beginPath(); g.moveTo(0,20*f.s); g.lineTo(-7*f.s,30*f.s+3*Math.sin(f.ph)); g.lineTo(7*f.s,30*f.s-3*Math.sin(f.ph)); g.fill(); g.restore(); f.x=x; f.y=y; }
+      for(const f of fish){ f.ph+=dt*(6+f.v*.08);
+        if(f.flee){ const a=Math.atan2(f.y-160,f.x-160); f.tx=160+Math.cos(a)*400; f.ty=160+Math.sin(a)*400; }
+        const dx=f.tx-f.x, dy=f.ty-f.y, d=Math.hypot(dx,dy);
+        if(!f.flee&&d<6){ if(f.rest<=0) f.rest=Math.random()<.45?.6+Math.random()*1.4:0; f.rest-=dt; if(f.rest<=0){ pickWP(f); f.rest=0; } }
+        const want=f.flee?f.sp*3.2:(d<6?0:f.sp*Math.min(1,d/40+.35)); f.v+=(want-f.v)*Math.min(1,dt*3);
+        if(d>1){ const ta=Math.atan2(dy,dx); let da=ta-f.h; while(da>Math.PI) da-=6.283; while(da<-Math.PI) da+=6.283; f.h+=da*Math.min(1,dt*(f.flee?8:3)); }
+        f.x+=Math.cos(f.h)*f.v*dt; f.y+=Math.sin(f.h)*f.v*dt;
+        if(!f.flee){ const rr=Math.hypot(f.x-160,f.y-160); if(rr>PR){ f.x=160+(f.x-160)*PR/rr; f.y=160+(f.y-160)*PR/rr; pickWP(f); } }
+        const wig=Math.sin(f.ph)*(.08+Math.min(.12,f.v*.002));
+        g.save(); g.translate(f.x,f.y); g.rotate(f.h+Math.PI/2+wig); /* (the body is drawn head up: turn it so the head leads) */ g.fillStyle="rgba(20,40,48,.55)";
+        g.beginPath(); g.ellipse(0,0,7*f.s,22*f.s,0,0,7); g.fill(); g.beginPath(); g.moveTo(0,18*f.s); g.lineTo(-8*f.s,31*f.s+4*Math.sin(f.ph)); g.lineTo(8*f.s,31*f.s-4*Math.sin(f.ph)); g.fill(); g.restore(); }
       g.strokeStyle="rgba(255,236,180,.9)"; g.lineWidth=3; g.beginPath(); g.arc(160,160,R,0,7); g.stroke(); g.lineWidth=1;
       if(stab>.5){ g.fillStyle="rgba(255,255,255,.5)"; g.beginPath(); g.arc(160,160,R*(1.6-stab),0,7); g.fill(); }
       if(!over) raf=requestAnimationFrame(draw); };
     raf=requestAnimationFrame(draw);
     const end=()=>{ if(over) return; over=true; cancelAnimationFrame(raf); box.remove(); mini(false); if(av.custPose) av.custPose=old||null; av.torso.rotation.set(0,0,0); window.MZ_HOLD=false; window.MZ_ISLBUSY=false; restHold(); hudFill(); saveBag(); };
     box.querySelector("#spGo").onpointerdown=e=>{ e.preventDefault(); if(over||stab>.3) return; if(!spend(.5,.3)){ end(); return; } stab=1; try{ tone(300,.05,.06,"triangle"); }catch(e){} chips(meAv.pos.x+Math.sin(meAv.rotY)*1.4,meAv.pos.y+Math.cos(meAv.rotY)*1.4,"#cfefff",.1,6,true);
-      const hitF=fish.find(f=>!f.flee&&Math.hypot(f.x-160,f.y-160)<R+6);
+      const hitF=fish.find(f=>!f.flee&&Math.hypot(f.x-160,f.y-160)<R+10*f.s);
       if(hitF){ fish=fish.filter(f=>f!==hitF); give("fish",1); S.st.speared=(S.st.speared|0)+1; wear("spear"); Tt.textContent="🐟 刺到了！"; toast("🐟 刺到一條魚！（要剖開烤熟才好吃）",2000); try{ [523,784].forEach((f,i)=>tone(f,.1,.05,"triangle",i*.08)); }catch(e){} if(!S.tool.spear||!fish.length) setTimeout(end,700); }
       else { misses++; fish.forEach(f=>f.flee=1); Tt.textContent=misses>=3?"魚都嚇跑了……等一下再來":"💦 撲空了，魚嚇跑了……等牠們游回來"; try{ tone(160,.15,.05,"sine"); }catch(e){} if(misses>=3) setTimeout(end,900); else setTimeout(()=>{ if(!over){ spawn(); Tt.textContent="魚游回來了……"; } },1800); } };
     box.querySelector("#spNo").onclick=end; }
