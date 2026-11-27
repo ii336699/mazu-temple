@@ -749,7 +749,7 @@ export class Lobby extends DurableObject {
       if (req.method === "GET") { const l = url.searchParams.get("l") | 0, H = HS[l]; if (!H) return json({ ok: false, empty: true }); if (!H.pub && H.u !== uid) return json({ ok: false, closed: true, n: H.n }); return json({ ok: true, n: H.n, pub: !!H.pub, up: !!H.up, room: (await this.ctx.storage.get("HR:" + l)) || "" }); }
       this.lastHouse = this.lastHouse || new Map(); const now = Date.now(); if (now - (this.lastHouse.get(uid) || 0) < 1500) return json({ ok: false, slow: true }); this.lastHouse.set(uid, now);
       let b = {}; try { b = await req.json(); } catch {} const op = String(b.op || ""), have = mine();
-      if (op === "buy") { const l = Math.floor(Number(b.l)); if (!(l >= 0 && l < 80)) return json({ ok: false }); /* (11/23: 天后新村 40 + 住宅巷's houses) */ if (HS[l] && HS[l].u !== uid) return json({ ok: false, taken: true, n: HS[l].n }); if (have >= 0 && have !== l) return json({ ok: false, have });
+      if (op === "buy") { const l = Math.floor(Number(b.l)); if (!(l >= 0 && l < 200)) return json({ ok: false }); /* (11/23: 天后新村 40 + 住宅巷's houses) */ if (HS[l] && HS[l].u !== uid) return json({ ok: false, taken: true, n: HS[l].n }); if (have >= 0 && have !== l) return json({ ok: false, have });
         HS[l] = { u: uid, n: clean(b.n, 10) || "香客", pub: !!b.pub, at: now }; await this.ctx.storage.put("HS", HS); return json({ ok: true }); }
       if (have < 0) return json({ ok: false, none: true });
       if (op === "sell") { delete HS[have]; await this.ctx.storage.put("HS", HS); await this.ctx.storage.delete("HR:" + have); return json({ ok: true, l: have }); }

@@ -4660,7 +4660,7 @@ HANDLERS.onlineGo=v=>{ if(!me.sp) return; const o=ONLINE.get(v); if(!o){ toast("
   if(hm>=0){ try{ const Lt=TOWNX.LOTS[hm]; if(Lt){ x=Lt.x; z=Lt.f+(Lt.ry?-1.6:1.6); } }catch(e){} }
   closeSheet(); if(meAv.seat>=0) try{ standUp(); }catch(e){} const a=Math.random()*6.283; x+=Math.sin(a)*1.4; z+=Math.cos(a)*1.4; meAv.pos.set(x,z); meAv.target.set(x,z); meAv.path=[]; toast(`🫥 瞬移到 ${String(pr.n||"玩家").slice(0,10)} 身邊${hm>=0?"（他在家裡，你在他家門口）":""}`,2400); };
 },0);
-function syncPeers(peers){ try{ onlineNote(peers); }catch(e){} ROOM_PEERS.clear(); for(const p of peers){ const pr=p.presence; if(!p.sameTab&&pr&&pr.v===1&&Number.isInteger(pr.hm)&&pr.hm>=0&&pr.hm<80) ROOM_PEERS.set(p.peer,pr); } const seen=new Set(); const valid=peers.filter(p=>!p.sameTab&&p.kind==="viewer"&&p.presence&&p.presence.v===1&&p.presence.u!==0), nReal=PEERS.n=valid.length, cap=figCap(nReal);
+function syncPeers(peers){ try{ onlineNote(peers); }catch(e){} ROOM_PEERS.clear(); for(const p of peers){ const pr=p.presence; if(!p.sameTab&&pr&&pr.v===1&&Number.isInteger(pr.hm)&&pr.hm>=0&&pr.hm<200) ROOM_PEERS.set(p.peer,pr); } const seen=new Set(); const valid=peers.filter(p=>!p.sameTab&&p.kind==="viewer"&&p.presence&&p.presence.v===1&&p.presence.u!==0), nReal=PEERS.n=valid.length, cap=figCap(nReal);
   const rank=new Map(); if(nReal>cap){ const mx=meAv.pos.x, mz=meAv.pos.y; valid.map(p=>{ const pr=p.presence; return [p.peer,pr.q===1?-1:Math.hypot(num(pr.x,-110,160,0)-mx,num(pr.z,-300,125,HZ+12)-mz)]; }).sort((a,b)=>a[1]-b[1]).forEach(([id],i)=>rank.set(id,i)); }
   let made=0;
   for(const p of peers){ if(p.sameTab||p.kind!=="viewer") continue; const pr=p.presence||{}; if(pr.v!==1||pr.u===0||ISL.on) continue; /* (夢見島: nobody else on your island) */
@@ -5248,7 +5248,7 @@ HANDLERS.applyCode=()=>{ const d=readCode(($("#pasteCode")||{}).value); if(!d){ 
   draftLook=me.look.slice(); meAv.setLook(draftLook); meAv.setName(myLabel()); meAv.setAmulet(!!bag.items.fu); meAv.setThread(threadOn()); markDirty(); renderLook(firstVisitPending); toast("已找回你的名字、造型和背包",3000); };
 /* ---- 角色存檔: the server keeps a copy of your character (look, name, 平安幣, bag, recent 籤詩) under a long-lived cookie, so a
    cleared browser brings it back by itself; the 取回碼 moves it to another app or phone. Gifts from the 主委 arrive the same way. ---- */
-const lotNm=i=>i<40?`天后新村 ${i+1} 號`:`住宅巷 ${i-39} 號`; /* (11/23 主委「把那些裝飾房子改成玩家可以買」: lots 40+ are the houses of 住宅巷) */
+const lotNm=i=>i<40?`天后新村 ${i+1} 號`:i<63?`住宅巷 ${i-39} 號`:`天后東村 ${i-62} 號`; /* (11/27: lots 63+ are 天后東村) */ /* (11/23 主委「把那些裝飾房子改成玩家可以買」: lots 40+ are the houses of 住宅巷) */
 const PROF={last:"",code:load("mz.rc",""),busy:false,shown:load("mz.rcShown",false)};
 /* the character server is reachable on the site, or simulated inside the test page (window.MZ_SIM, set only by the test build) */
 const NET_ME=()=>USE_CF||!!window.MZ_SIM;
@@ -13042,6 +13042,14 @@ const TOWNB=(()=>{ const out=[]; let sd=101;
   { const pal=[["#f3e3c8","#b8574a"],["#dfe9e4","#4f6f8f"],["#f6d6cf","#8a4b3a"],["#e8ddf0","#6a5a8a"],["#fbeec0","#a8623a"],["#d8e6f2","#c0504a"]];
     const six=(z0)=>[67,73.8,80.6].map((a,k)=>{ const c=pal[(k+(z0?3:0))%6]; return {a,w:5.8,d:6.2,kind:"house",fl:2,col:c[0],rcol:c[1],roof:k===1?"hip":"gable"}; });
     row("hN3","x",-105,Math.PI,67,86.4,"house",six(0)); row("hS3","x",-111,0,67,86.4,"house",six(1)); }
+  /* 天后東村 (11/27 主委「我在（103.0, -92.8） 把這一塊未開發地圖蓋滿住宅 一二樓都有」): the wood east of the town (x 87–133, z −118 to −46)
+     is a neighbourhood now — three lanes (住宅巷 carried on at z −108, 老街 carried on at z −77, a new lane at z −58) and an avenue
+     across them at x 110–116; five houses each side of each lane, one- and two-storey mixed. Added after every other row, so every
+     house already for sale keeps its number; these are lots 63–92. */
+  { const pal=[["#f6e7d0","#b8574a"],["#e2ece6","#4f6f8f"],["#f8dcd2","#8a4b3a"],["#ebe1f2","#6a5a8a"],["#fbf0c4","#a8623a"],["#dbe8f3","#c0504a"],["#efe6dc","#5a7a4a"]];
+    let q=0; const ev=(dp)=>[88.8,95.6,102.4,116.8,123.6].map((a,k)=>{ const c=pal[(q++)%7], fl=((q*7)%5)<2?2:1; return {a,w:5.8,d:dp,kind:"house",fl,col:c[0],rcol:c[1],roof:fl===2?(k%2?"hip":"gable"):(k%3?"gable":"hip")}; });
+    const two=(id,f,ry,dp)=>{ const L=ev(dp); row(id,"x",f,ry,88.6,109.6,"house",L.slice(0,3)); row(id+"2","x",f,ry,116.6,133,"house",L.slice(3)); }; /* (each side in two runs, so nothing is built on the avenue) */
+    two("eA",-105,Math.PI,6.2); two("eAs",-111,0,6.2); two("eB",-73,Math.PI,5.4); two("eBs",-81,0,6.2); two("eC",-55,Math.PI,6); two("eCs",-61,0,5.4); }
   LOTS.forEach(L=>out.push({row:"vil"+VIL.lanes.indexOf(L.ry?L.f-3:L.f+3)+(L.ry?"s":"n"),axis:"x",f:L.f,ry:L.ry,c:L.x,w:L.w,d:L.d,kind:"house",fl:L.fl,col:L.col,rcol:L.rcol,roof:L.roof,seed:900+L.i*13,key:"tw:lot:"+L.i,name:null,lot:L.i}));
   /* (11/14) a generated building may never overlap a named one in the same street front: 一粥七天 had a second wall in the very same plane — that was its flicker */
   for(let i=out.length-1;i>=0;i--){ const b=out[i]; if(b.key||b.deco) continue; if(out.some(q=>q!==b&&q.key&&q.f===b.f&&q.axis===b.axis&&Math.abs(q.c-b.c)<(q.w+b.w)/2-.05)) out.splice(i,1); }
@@ -13096,7 +13104,7 @@ const CH=[
    /* 公車站 (11/22 主委「刪除公車站」: taken away) */
    for(const z of [-54,-66]){ lamp(C,23,z); lamp(C,33,z); } for(const [x,z] of [[19,-56],[20,-66],[38,-55],[43,-61],[37,-62]]) tree(C,x,z,1.2); }},
  {id:"oldE1",c:[47,-77],r:22,build:C=>{ street(C,33.2,61,-81,-73,"x"); rowBuild(C,["oN","oS"],[33,61]); oldStreetLife(C,33.2,61); for(const x of [46,58]) lamp(C,gapNear(["oS"],x,33.2,61),-79.8); }},
- {id:"oldE2",c:[75,-77],r:22,build:C=>{ congeeCart(C,64.6,-79.3); street(C,61,88,-81,-73,"x",undefined,undefined,{end1:1}); rowBuild(C,["oN2","oS"],[61,90]); oldStreetLife(C,61,88); for(const x of [70,82]) lamp(C,gapNear(["oS"],x,61,88),-79.8);
+ {id:"oldE2",c:[75,-77],r:22,build:C=>{ congeeCart(C,64.6,-79.3); street(C,61,88,-81,-73,"x"); rowBuild(C,["oN2","oS"],[61,90]); oldStreetLife(C,61,88); for(const x of [70,82]) lamp(C,gapNear(["oS"],x,61,88),-79.8);
    /* the fountain square opening off the old street */ ground(C,"plaza",57.4,66.6,-73,-66.2,.016,true,3); const g=new T.Group(); g.position.set(62,0,-69.5); C.g.add(g); const st=km("#e2dccf",{roughness:.6});
    kp(g,kcyl(),st,0,.28,0,1.75,.56,1.75); kp(g,kcyl(),km("#7ec8d8",{roughness:.15}),0,.5,0,1.55,.1,1.55).userData.keep=1; kp(g,kcyl(),st,0,.95,0,.22,1.3,.22); kp(g,kcyl(),st,0,1.6,0,.75,.14,.75); kp(g,ksph(),km("#bfe8f0",{roughness:.1,transparent:true,opacity:.75}),0,1.75,0,.55,.35,.55).userData.keep=1;
    for(const [x,z,ry] of [[58.6,-67.4,Math.PI/2],[65.4,-67.4,-Math.PI/2]]) bench(C,x,z,ry); for(const [x,z] of [[58.2,-71.8],[65.8,-71.8]]) tree(C,x,z,1.1); { const r=krng(5); for(let k=0;k<5;k++) pot(g,-3.8+k*1.9,3.0,1.1,r); } shrine(C.g,57.9,-66.7,Math.PI/2+.2); }},
@@ -13117,7 +13125,7 @@ const CH=[
  {id:"vil1",c:[-60,-84],r:38,build:C=>{ villageLane(C,1,-84); }},
  {id:"vil2",c:[-60,-104],r:38,build:C=>{ villageLane(C,2,-104); }},
  {id:"laneE",c:[50,-108],r:22,build:C=>{ street(C,33.2,66,-111,-105,"x"); rowBuild(C,["hN2","hS2"]); for(const x of [40,54]) lamp(C,gapNear(["hN2"],x),-105.6); ground(C,"pave",62,70,-117,-99,.008,false,2); { const g=new T.Group(); C.g.add(g); pole(g,36,-110.6); pole(g,50,-110.6); pole(g,64,-110.6); wire(g,[36.4,-110.6],[50.4,-110.6],6.8,.5); wire(g,[50.4,-110.6],[64.4,-110.6],6.8,.5); vend(g,65.4,-105.6,Math.PI); } }},
- {id:"laneE2",c:[77,-108],r:14,build:C=>{ street(C,66,86.4,-111,-105,"x",undefined,undefined,{end1:1}); rowBuild(C,["hN3","hS3"]); ground(C,"plaza",66,87,-118,-111.6,.012,true,4); ground(C,"plaza",66,87,-104.4,-98,.012,true,4); for(const x of [70.4,77.2]) lamp(C,gapNear(["hN3"],x),-105.6); }},
+ {id:"laneE2",c:[77,-108],r:14,build:C=>{ street(C,66,86.4,-111,-105,"x"); rowBuild(C,["hN3","hS3"]); ground(C,"plaza",66,87,-118,-111.6,.012,true,4); ground(C,"plaza",66,87,-104.4,-98,.012,true,4); for(const x of [70.4,77.2]) lamp(C,gapNear(["hN3"],x),-105.6); }},
  {id:"pier",c:[28,-124],r:18,build:C=>{ street(C,25,33.2,-131,-105,"z",ROAD_A0,ROAD_A1); /* (11/17 主委「橋頭的磁磚也改成柏油路就好」: the street runs on to the bridge, no tiled square) */ const wood=mat("#8a6246",{roughness:.85}); /* 木板碼頭 (11/16 主委「那座橋請做成木板橋，不要是色塊」): planks with gaps, two beams under them, a rail on both sides */
    { const pw=[mat("#9a7050",{roughness:.85}),mat("#8a6246",{roughness:.85}),mat("#a87c58",{roughness:.85})], dk=mat("#5a3e2a",{roughness:.9}); /* (11/17 主委「釣魚碼頭地名移除 那邊做成一條過去對岸的橋」: the plank walk runs right across the river now) */ for(let k=0;k<28;k++){ const z=-130.6-k*.5; box(3.5,.07,.44,pw[k%3],28+((k*37)%7-3)*.01,.02,z,C.g); }
      for(const x of [26.6,29.4]) box(.16,.14,14,dk,x,-.08,-137.5,C.g); for(const x of [26.1,29.9]){ box(.07,.07,14,wood,x,.85,-137.5,C.g); for(let k=0;k<9;k++) box(.08,.85,.08,wood,x,.43,-130.7-k*1.7,C.g); } }
@@ -13196,7 +13204,7 @@ NT.walk=(x,z)=>{ if(x<86||x>182||z>-52||z<-131) return false;
   if(lineD(TRAIL,x,z)[0]<1.25||lineD(TRAIL2,x,z)[0]<1.25) return true;
   for(const m of MEADOW) if(Math.hypot(x-m[0],z-m[1])<m[2]) return true;
   return false; };
-NT.walkOpen=(x,z)=>{ if(x<134.5&&z>-120) return false; /* 密林 (11/16): the old valley is all trees, you stop at its edge */ const b=brookD(x,z); if(b[0]<brookW(b[1],b[2])+.45) return false; for(const r of NT.block) if(Math.hypot(x-r[0],z-r[1])<r[2]) return false; if(x>134.5&&eastH(x,z)<-.12) return false; return true; }; /* (11/16: everything but the water and the rocks; east: the river) */
+NT.walkOpen=(x,z)=>{ if(x<134.5&&z>-120) return x>86.8&&x<133.6&&z>-118.2&&z<-45.6; /* (11/27 天后東村: walk anywhere but the houses) */ /* 密林 (11/16): the old valley is all trees, you stop at its edge */ const b=brookD(x,z); if(b[0]<brookW(b[1],b[2])+.45) return false; for(const r of NT.block) if(Math.hypot(x-r[0],z-r[1])<r[2]) return false; if(x>134.5&&eastH(x,z)<-.12) return false; return true; }; /* (11/16: everything but the water and the rocks; east: the river) */
 /* ---- shared bits: one set of uniforms (time, night) for all the water and the fireflies; paints made once ---- */
 NT.U={uT:{value:0},uNight:{value:0}};
 let NM=null; function nmat(){ if(NM) return NM; const S=(c,o)=>new T.MeshStandardMaterial(Object.assign({color:c,roughness:.92,metalness:0},o||{}));
@@ -13251,7 +13259,7 @@ function nbench(C,x,z,ry){ if(x||z) benchSeats(x,z,ry,.2); const g=new T.Group()
 const nz=(x,z)=>Math.sin(x*.21+z*.13)*Math.cos(z*.17-x*.07)+.5*Math.sin(x*.47-z*.39);
 const walkGap=(x,z)=>{ let d=Math.min(lineD(TRAIL,x,z)[0]-1.25,lineD(TRAIL2,x,z)[0]-1.25); for(const m of MEADOW) d=Math.min(d,Math.hypot(x-m[0],z-m[1])-m[2]); return Math.max(0,d); };
 TW.valleyH=(x,z)=>valleyH(x,z); TW.beachH=(x,z)=>beachH(x,z);
-function valleyH(x,z){ const w=walkGap(x,z); let h=sstep(1.2,9,w)*(1.7+1.2*nz(x,z))*sstep(-120,-114,z)*sstep(-44,-50,z);  /* (11/16 主委「把瀑布那區塊都刪除，融合過來山谷這邊」: no cliff and no falls — the brook rises in a little pond in the valley) */ /* (11/16: a real rock face now — 6.5 m in about 2 m — so the falls drop clear of it into their pool instead of sliding into the hill) */ /* the cliff the waterfall drops from; (11/16) the hills and the cliff slope down to the plain at the valley's ends, no cut-off half hill */
+function valleyH(x,z){ if(x>86&&x<135&&z>-121&&z<-43) return 0; /* (11/27 天后東村: the old valley is flat ground for the houses) */ const w=walkGap(x,z); let h=sstep(1.2,9,w)*(1.7+1.2*nz(x,z))*sstep(-120,-114,z)*sstep(-44,-50,z);  /* (11/16 主委「把瀑布那區塊都刪除，融合過來山谷這邊」: no cliff and no falls — the brook rises in a little pond in the valley) */ /* (11/16: a real rock face now — 6.5 m in about 2 m — so the falls drop clear of it into their pool instead of sliding into the hill) */ /* the cliff the waterfall drops from; (11/16) the hills and the cliff slope down to the plain at the valley's ends, no cut-off half hill */
   h*=sstep(134.5,127,x)*sstep(86.5,90,x); const b=brookD(x,z), hw=brookW(b[1],b[2]), k=sstep(hw-.3,hw+1.3,b[0]); return -.55*(1-k)+h*k; }
 /* (11/16: seen from above, the 3.4 m grass picture repeated like a chessboard) the picture is read twice, at two sizes and offset,
    and a slow light/dark wave runs over it, so no square repeats */
@@ -13780,15 +13788,15 @@ const NCH=[
  {id:"riverW",c:[-70,-137.5],r:50,build:C=>{ nmat(); const r=rng(71); terrain(C,-150,-17,-143.6,-131.4,riverH,riverC,0); mirrorPlane(C,-150,-17,-142.6,-132.4,RIVER_Y); for(let k=0;k<26;k++){ const x=-148+r()*128; if(x>-29&&x<-17.5) continue; const zc=-137.5+1.1*Math.sin(x*.07+.5), sd=r()<.5?-1:1; reeds(C,r,x,zc+sd*(4.3+r()*.6)); } }},
  {id:"riverE",c:[104,-137.5],r:34,build:C=>{ nmat(); const r=rng(73); terrain(C,73,134.5,-143.6,-131.4,riverH,riverC,0); mirrorPlane(C,73,163,-142.6,-132.4,RIVER_Y); for(let k=0;k<16;k++){ const x=74+r()*60, zc=-137.5+1.1*Math.sin(x*.07+.5), sd=r()<.5?-1:1; reeds(C,r,x,zc+sd*(4.3+r()*.6)); } }},
  {id:"brook",c:[110,-84],r:34,build:C=>{ nmat(); lawnHole(); const r=rng(11);
-   terrain(C,86.5,135,-120,-43.5,valleyH,valleyC); /* (runs on to −43.5: the slope runs down instead of ending in a wall) */
-   /* 密林 (11/16 主委「那邊全部都沒有溪河了…變成一堆樹林」, 走不進去的密林): where the waterfall and the brook were, a thick wood of pines and
-      broadleaf trees right to the edge of the town, ferns and mossy rocks under them; you cannot walk in */
-   const tr=(x,z,s)=>{ const h=valleyH(x,z); if(r()<.55) pine(C,x,h-.12,z,s,r); else { const n0=C.g.children.length; softTree(C,r,x,z,s*.95,r()<.12?"maple":""); C.g.children.slice(n0).forEach(o=>o.position.y+=h-.12); } };
-   for(let k=0,n=Q.lite?190:330;k<n;k++){ const x=87+r()*47.5, z=-119.5+r()*74; tr(x,z,1+r()*.75); }
-   for(let k=0;k<40;k++){ const z=-118+k*1.85+r()*.8; tr(87.2+r()*1.6,z,1.1+r()*.5); } /* (the edge by the town: a close row, no gaps to see an empty floor through) */
-   { const r2=rng(211); for(let k=0;k<300;k++){ const x=87+r2()*47, z=-118+r2()*72, h=valleyH(x,z), q=r2(); if(q<.3) mossRock(C,r2,x,h-.15,z,.4+r2()*1.0,r2()<.7); } }
-   meadow(C,87,134,-118,-46,1500,380,valleyH,()=>true,11);
-   fireflies(C,60,110,-82,18,5); }},
+   /* 天后東村 (11/27 主委「把這一塊未開發地圖蓋滿住宅 一二樓都有」): where the 密林 was — flat lawn, three lanes, an avenue, thirty houses */
+   terrain(C,86.5,135,-120,-43.5,valleyH,valleyC);
+   street(C,86.4,133,-111,-105,"x",undefined,undefined,{end1:1}); street(C,88,133,-81,-73,"x",undefined,undefined,{end1:1}); street(C,86.8,133,-61,-55,"x",undefined,undefined,{end1:1});
+   street(C,110,116,-105,-81,"z"); street(C,110,116,-73,-61,"z"); street(C,110,116,-55,-45.6,"z");
+   rowBuild(C,["eA","eAs","eB","eBs","eC","eCs","eA2","eAs2","eB2","eBs2","eC2","eCs2"]);
+   for(const x of [92,105,121,130]){ lamp(C,x,-105.6); lamp(C,x,-73.6); lamp(C,x,-55.6); }
+   /* the green between the lanes: a little park either side of the avenue */
+   for(const [x0,x1] of [[89,108.5],[117.5,132.5]]){ ground(C,"plaza",x0,x1,-96.4,-89.6,.012,true,4); for(let k=0;k<4;k++){ const x=x0+1.6+k*(x1-x0-3.2)/3; softTree(C,r,x,-97.8,1.05+r()*.3,r()<.25?"pink":""); } nbench(C,(x0+x1)/2-2.2,-93,Math.PI); nbench(C,(x0+x1)/2+2.2,-93,Math.PI); }
+   meadow(C,87,134,-118,-46,PHONE?400:700,160,valleyH,(x,z)=>(z>-98.6&&z<-87.4&&(x<109.5||x>116.5))||z>-48,11); }},
  {id:"front",c:[0,92],r:64,build:C0=>{ nmat(); lawnHole(); const r=rng(29); const C=FRONTG(C0);
    frontGround(C0); sea(C); sun(C);
    /* 椰子樹 on the sand (11/16): along the top of the beach and here and there down it — tall and short, thin and stout */
