@@ -1126,6 +1126,7 @@ const scene=new T.Scene();
 scene.background=new T.Color("#1a0d09");
 scene.fog=new T.Fog("#1f100b",34,90);
 /* 視野範圍 近 / 很近: whatever the scene sets the fog to (day, night, the lake view …), it never reaches farther than this — beyond it there is only mist */
+{ const R1=renderer.render.bind(renderer), C1=renderer.compile.bind(renderer); renderer.render=(s,c)=>{ if(s===scene) try{ lightKeep(); }catch(e){} return R1(s,c); }; renderer.compile=(s,c)=>{ if(s===scene) try{ lightKeep(); }catch(e){} return C1(s,c); }; } /* (11/27: every drawing of the world — reflections, previews, the frame — first keeps the number of lights steady; see LK) */
 if(VIEW.k) try{ const VF=[0,46,30][VIEW.k], R0=renderer.render.bind(renderer); renderer.render=(s,c)=>{ if(s===scene&&s.fog){ if(s.fog.far>VF) s.fog.far=VF; if(s.fog.near>VF*.35) s.fog.near=VF*.35; } R0(s,c); }; }catch(e){}
 const camera=new T.PerspectiveCamera(55,1,0.15,200);
 
@@ -4732,7 +4733,7 @@ function verWatch(){ if(verWatch.on) return; verWatch.on=1; let tag="";
   ask().then(t=>{ tag=t; });
   setInterval(async()=>{ if(!tag||verWatch.go) return; const t=await ask(); if(!t||t===tag) return; verWatch.go=1;
     const quiet=()=>{ const typing=document.activeElement&&/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName); let shop=false; try{ shop=!!(SHOPX&&SHOPX.on); }catch(e){}
-      return !sheetKind&&!customizing&&!typing&&!shop&&!window.MZ_HOLD&&!document.getElementById("csBox"); };
+      return !document.hidden&&!(typeof SAVE!=="undefined"&&SAVE.dead)&&!sheetKind&&!customizing&&!typing&&!shop&&!window.MZ_HOLD&&!document.getElementById("csBox"); }; /* (11/27 玩家「手機登一次 電腦一直顯示已經用另一個裝置登入」: a phone left open in the background reloaded itself for a new version and took the character back — only a page someone is looking at, and still playing, updates itself) */
     const go=setInterval(()=>{ if(!quiet()) return; clearInterval(go); toast("遊戲有新版本，馬上幫你更新",2600); try{ saveBag(); }catch(e){} try{ profSave(false); }catch(e){} setTimeout(()=>location.reload(),2600); },3000); },180000); }
 let USE_CF=false;
 async function probeCF(){ try{ const r=await fetch("/halls",{cache:"no-store"}); if(!r.ok) return null; const j=await r.json(); return j&&Array.isArray(j.counts)?j:null; }catch(e){ return null; } }
@@ -9541,10 +9542,22 @@ const FMK={t:0,a:[],mk(n){ const t=performance.now(); this.a.push([n,t-this.t]);
    something every material depends on changed (lights, fog, shadows…). The note now names which programs were new, how the first one
    differs from the one it replaced, and when the count of lights last changed) */
 function lightState(){ let P=0,S=0,D=0,H=0,sh=0; try{ scene.traverseVisible(o=>{ if(!o.isLight) return; if(o.isPointLight) P++; else if(o.isSpotLight) S++; else if(o.isDirectionalLight) D++; else if(o.isHemisphereLight) H++; if(o.castShadow) sh++; }); }catch(e){} return `P${P}S${S}D${D}H${H}影${sh}${scene.fog?(scene.fog.isFogExp2?"霧2":"霧"):"無霧"}${renderer.shadowMap.enabled?"":"關影"}`; }
-setInterval(()=>{ try{ if(document.hidden) return; const ls=lightState(); if(SLOW.ls&&ls!==SLOW.ls){ (SLOW.lch||(SLOW.lch=[])).push(`${new Date().toTimeString().slice(0,8)} ${SLOW.ls}→${ls}`); if(SLOW.lch.length>4) SLOW.lch.shift(); } SLOW.ls=ls; }catch(e){} },1500);
+setInterval(()=>{ try{ if(document.hidden) return; const ls=lightState(); if(SLOW.ls&&ls!==SLOW.ls){ try{ const nm=[]; for(const l of LK.L) if(lkLive(l)){ let p=l.parent, path=[]; for(let i=0;i<3&&p&&p!==scene;i++){ path.push(p.name||p.userData&&p.userData.id||p.type); p=p.parent; } nm.push((l.isSpotLight?"S":"P")+"#"+l.color.getHexString()+"<"+path.join("<")); } SLOW.lnm=nm.slice(-6).join(","); }catch(e){} (SLOW.lch||(SLOW.lch=[])).push(`${new Date().toTimeString().slice(0,8)} ${SLOW.ls}→${ls}`); if(SLOW.lch.length>4) SLOW.lch.shift(); } SLOW.ls=ls; }catch(e){} },1500);
+/* (11/27 22:39 主委「還是很卡」: the notes now show it — point lights going 5→7→9 now and then (P7S8→P9S8), each time every material
+   prepared again, 15–25 s on a computer. Whatever brings them, the scene keeps the same number of lights from frame to frame: dark
+   stand-in lights fill the gap up to a budget, and step aside one for one when a real light shows up. The budget only ever grows, so a
+   new high costs one preparing, never the same again and again) */
+const LK={L:new Set(),fill:{P:[],S:[]},bud:null,seen:0};
+(()=>{ const A=T.Object3D.prototype.add; T.Object3D.prototype.add=function(...os){ const r=A.apply(this,os); for(const o of os){ if(!o||o.userData&&o.userData.lkFill) continue; if(o.isLight){ if(o.isPointLight||o.isSpotLight) LK.L.add(o); } else if(o.children&&o.children.length) o.traverse(q=>{ if((q.isPointLight||q.isSpotLight)&&!(q.userData&&q.userData.lkFill)) LK.L.add(q); }); } return r; }; })();
+function lkLive(o){ if(!o.visible) return false; let p=o.parent; while(p){ if(p===scene) return true; if(!p.visible) return false; p=p.parent; } return false; }
+function lightKeep(){ if(!LK.bud) scene.traverse(q=>{ if((q.isPointLight||q.isSpotLight)&&!q.userData.lkFill) LK.L.add(q); }); const now={P:0,S:0}; for(const l of LK.L){ if(!l.parent){ continue; } if(lkLive(l)) now[l.isSpotLight?"S":"P"]++; }
+  if(!LK.bud){ const ph=typeof Q!=="undefined"&&Q.phone; LK.bud={P:now.P+(ph?2:4),S:now.S+(ph?0:1)}; }
+  for(const k of ["P","S"]){ if(now[k]>LK.bud[k]){ LK.bud[k]=now[k]; LK.seen++; } const want=LK.bud[k]-now[k], F=LK.fill[k];
+    while(F.length<want){ const l=k==="S"?new T.SpotLight(0xffffff,0,1):new T.PointLight(0xffffff,0,1); l.userData.lkFill=1; l.position.set(0,-500,0); scene.add(l); if(l.target){ l.target.position.set(0,-501,0); scene.add(l.target); } F.push(l); }
+    while(F.length>want){ const l=F.pop(); scene.remove(l); if(l.target) scene.remove(l.target); } } }
 function progWhy(){ try{ const cur=renderer.info.programs||[], old=SLOW.ps||new Set(), nw=cur.filter(q=>!old.has(q)); if(!nw.length) return ""; const cnt={}; nw.forEach(q=>{ const n=String(q.name||"?").replace(/Material$/,"").replace(/^Mesh/,""); cnt[n]=(cnt[n]||0)+1; });
   let df=""; for(const q of nw){ const o=cur.find(z=>old.has(z)&&z.name===q.name&&z.cacheKey); if(!o||!q.cacheKey) continue; const A=String(o.cacheKey).split(","), B=String(q.cacheKey).split(","); if(Math.abs(A.length-B.length)>3) continue; const d=[]; for(let i=1;i<=Math.min(A.length,B.length)&&d.length<5;i++){ const x=A[A.length-i], y=B[B.length-i]; if(x!==y&&x.length<24&&y.length<24) d.push(`-${i}:${x}→${y}`); } if(d.length){ df=" 差"+d.join(" "); break; } }
-  return `・新程式 ${Object.entries(cnt).sort((x,y)=>y[1]-x[1]).slice(0,4).map(([n,c])=>n+"×"+c).join(" ")}${df}・燈 ${lightState()}${SLOW.lch&&SLOW.lch.length?"・燈變 "+SLOW.lch.join("；"):""}`; }catch(e){ return ""; } }
+  return `・新程式 ${Object.entries(cnt).sort((x,y)=>y[1]-x[1]).slice(0,4).map(([n,c])=>n+"×"+c).join(" ")}${df}・燈 ${lightState()}${LK.bud?` 預留P${LK.bud.P}S${LK.bud.S}`:""}${SLOW.lnm?" 燈:"+SLOW.lnm:""}${SLOW.lch&&SLOW.lch.length?"・燈變 "+SLOW.lch.join("；"):""}`; }catch(e){ return ""; } }
 function slowCheck(gap){ try{ const r=renderer.info, tex=r.memory.textures, prog=(r.programs||[]).length; if(gap>2&&!document.hidden&&!VISGAP&&LQ.ready&&SLOW.n<6&&Date.now()-SLOW.sent>60e3){ SLOW.sent=Date.now(); SLOW.n++; crSend("slow",Object.assign(crInfo(),{msg:`卡住 ${gap.toFixed(1)} 秒・新貼圖 ${tex-SLOW.tex}・新著色程式 ${prog-SLOW.prog}・上一格 ${ftTxt(FTM.last)}・最久一格 ${ftTxt(FTM.worst)}・長任務 ${Math.round(LT.max)}ms×${LT.n}${prog-SLOW.prog>=8?progWhy():""}`})); FTM.worst=null; } VISGAP=0; LT.max=0; LT.n=0; SLOW.tex=tex; if(prog!==SLOW.prog||!SLOW.ps) SLOW.ps=new Set(r.programs||[]); SLOW.prog=prog; }catch(e){} }
 function dresTick(){ const now=performance.now(), dt=DRES.last?(now-DRES.last)/1000:0; DRES.last=now; slowCheck(dt); if(document.hidden||!dt||dt>1.5||DRES.fw) return;
   const cap=frameCap(), r=dt*cap; DRES.ema+=(r-DRES.ema)*.05; DRES.cool-=dt; const L=dprLadder();
@@ -13202,7 +13215,7 @@ NT.walk=(x,z)=>{ if(x<86||x>182||z>-52||z<-131) return false;
   if(lineD(TRAIL,x,z)[0]<1.25||lineD(TRAIL2,x,z)[0]<1.25) return true;
   for(const m of MEADOW) if(Math.hypot(x-m[0],z-m[1])<m[2]) return true;
   return false; };
-NT.walkOpen=(x,z)=>{ if(x<134.5&&z>-120) return x>86.8&&x<133.6&&z>-118.2&&z<-45.6; /* (11/27 天后東村: walk anywhere but the houses) */ /* 密林 (11/16): the old valley is all trees, you stop at its edge */ const b=brookD(x,z); if(b[0]<brookW(b[1],b[2])+.45) return false; for(const r of NT.block) if(Math.hypot(x-r[0],z-r[1])<r[2]) return false; if(x>134.5&&eastH(x,z)<-.12) return false; return true; }; /* (11/16: everything but the water and the rocks; east: the river) */
+NT.walkOpen=(x,z)=>{ if(x<134.5&&z>-120) return x>85.4&&x<133.6&&z>-118.2&&z<-45.6; /* (11/27 天后東村: walk anywhere but the houses) */ /* 密林 (11/16): the old valley is all trees, you stop at its edge */ const b=brookD(x,z); if(b[0]<brookW(b[1],b[2])+.45) return false; for(const r of NT.block) if(Math.hypot(x-r[0],z-r[1])<r[2]) return false; if(x>134.5&&eastH(x,z)<-.12) return false; return true; }; /* (11/16: everything but the water and the rocks; east: the river) */
 /* ---- shared bits: one set of uniforms (time, night) for all the water and the fireflies; paints made once ---- */
 NT.U={uT:{value:0},uNight:{value:0}};
 let NM=null; function nmat(){ if(NM) return NM; const S=(c,o)=>new T.MeshStandardMaterial(Object.assign({color:c,roughness:.92,metalness:0},o||{}));
@@ -17340,7 +17353,7 @@ function shovelMesh(){ /* (11/22 晚 主委「鏟子很怪」: a plain garden sp
 function digStart(){ const o=digNear; if(!o||DG.act) return; if(!enHas(3)) return; /* (11/24 QA: 精力 before the shovel) */ const S=SHOVEL(); if(S.u<=0){ toast("要先有鏟子：小鎮主街的雜貨店（威利）有賣",2600); return; } const dd=LF(); if(dd.dgD!==today()){ dd.dgD=today(); dd.dgN=0; } if(!o.ev&&(dd.dgN|0)>=DIG_DAY&&!me.sp){ toast(`今天挖了 ${DIG_DAY} 次，手好痠……明天再挖吧`,2600); return; } if(!enPay(3)) return;
   meAv.path=[]; meAv.target.copy(meAv.pos); meAv.faceGoal=Math.atan2(o.x-meAv.pos.x,o.z-meAv.pos.y); const sv=shovelMesh(); const hand=meAv.hands&&meAv.hands[0]; (hand||meAv.root).add(sv); sv.position.set(0,-.1,.05); sv.rotation.set(2.6,0,0);
   DG.act={o,sv,t:0,hits:0}; }
-function digReward(o){ const S=SHOVEL(); if(o.ev){ const dd=LF(); (dd.evd||(dd.evd={}))[o.ev]=Date.now(); } else { S.u--; const dd=LF(); dd.dgN=(dd.dgN|0)+1; } /* (11/25 活動地洞: the chair's hole costs no shovel use and no daily dig, one per player, and gives something good) */ const DP=o.ev?DIGS.filter(c=>["fossil","gem","treasure"].includes(c[3])||c[0]==="$furn"||c[0]==="$hat"||c[0]==="$coins"):DIGS; let tot=0; DP.forEach(q=>tot+=q[5]); let r=Math.random()*tot, q=DP[0]; for(const c of DP){ r-=c[5]; if(r<=0){ q=c; break; } }
+function digReward(o){ const S=SHOVEL(); if(o.ev){ const dd=LF(); (dd.evd||(dd.evd={}))[o.ev]=Date.now(); } else { S.u--; const dd=LF(); dd.dgN=(dd.dgN|0)+1; } /* (11/25 活動地洞: the chair's hole costs no shovel use and no daily dig, one per player, and gives something good) */ const DP=o.ev?DIGS.filter(c=>["fossil","gem","treasure"].includes(c[3])||c[0]==="$furn"||c[0]==="$hat"||c[0]==="$coins"):DIGS; let tot=0; DP.forEach(q=>tot+=q[5]); let r=Math.random()*tot, q=DP[0]; for(const c of DP){ r-=c[5]; if(r<=0){ q=c; break; } } if(o.force) q=DIGS.find(c=>c[0]===o.force)||q;
   let ic=q[2], name=q[1], line=q[7], extra="";
   if(q[0]==="$coins"){ const c=50+((Math.random()*6)|0)*50; bag.coins+=c; name=`${c} 平安幣`; line="一小袋錢，誰掉的呢？"; }
   else if(q[0]==="$gacha"){ bag.gacha=Math.min(255,(bag.gacha||0)+1); name="扭蛋幣 1 枚"; line="拿去廟埕的招財貓扭蛋機轉頭飾吧。"; }
@@ -17358,7 +17371,7 @@ function digPop(o,q,good,S,ic,name,line){ if(digReward.again){ ic=digReward.agai
   setTimeout(()=>digCard(ic,name,line,q,good,S),900); }
 function digCard(ic,name,line,q,good,S){ const c=document.createElement("div"); c.className="bug-card"; c.innerHTML=`<div class="bc-in ${good?"r4":q[3]==="junk"?"":"r3"}">${good?`<div class="bc-burst"></div>`:""}${/\.webp$|^data:/.test(ic)?`<img src="${ic}" alt="" style="width:132px;height:132px;object-fit:contain;position:relative;animation:bcW 1.2s ease-in-out infinite">`:`<span style="font-size:96px;line-height:1.1;position:relative;animation:bcW 1.2s ease-in-out infinite">${ic}</span>`}<b>${name}</b>${q[3]==="junk"?`<span class="bc-r" style="color:#8a7a6a">……是垃圾</span>`:({fossil:"化石！",gem:"寶石！",treasure:"寶物！",tackle:"古老的釣具！"})[q[3]]?`<span class="bc-r">${({fossil:"化石！",gem:"寶石！",treasure:"寶物！",tackle:"古老的釣具！"})[q[3]]}</span>`:""}<small>${line}</small><small class="bc-u">鏟子還能用 ${Math.max(0,S.u)} 次</small></div>`;
   document.body.appendChild(c); c.onclick=()=>c.remove(); setTimeout(()=>{ c.classList.add("out"); setTimeout(()=>c.remove(),400); },2800); }
-L.tick8=dt=>{ try{ digTick(dt); }catch(e){ console.warn("dig",e); }  };
+L.tick8=dt=>{ try{ digTick(dt); }catch(e){ console.warn("dig",e); }  }; L.digTest=id=>digReward({x:meAv.pos.x+.6,gy:0,z:meAv.pos.y,force:id}); /* (test: dig up a given thing) */
 function digTick(dt){ const inTown=TOWNX&&TOWNX.on&&!ISL.on, p=meAv.pos, c=digChip();
   if(!inTown){ while(DG.list.length) digRemove(DG.list[0]); c.hidden=true; return; }
   const evD=EVT.dig>Date.now(); DG.t-=dt; if(DG.t<=0){ DG.t=evD?10+Math.random()*10:90+Math.random()*60; if(DG.list.filter(o=>!o.ev).length<(evD?7:3)) digSpawn(); } try{ evDigDrops(); }catch(e){ console.warn("evt dig",e); }
